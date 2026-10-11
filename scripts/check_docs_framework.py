@@ -1,6 +1,6 @@
 """PR-time gate for the documentation framework (DOCFRAME-004, Spec 047).
 
-Checks G-01 through G-07.
+Checks G-01 through G-08.
 
 Exit 0 when all checks pass.  Non-zero on failure; one line per violation
 printed to stderr, sorted by path for stable diffs.
@@ -13,7 +13,7 @@ Drift-gate::
 
     kind:       rule
     rule: every Markdown file resolves to exactly one documentation class and obeys the framework's
-        placement, nav and bridge rules (G-01 through G-07)
+        placement, nav, bridge and list-nesting rules (G-01 through G-08)
     domain:     explanation
 """
 
@@ -249,6 +249,85 @@ def _check_g07(repo_root: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# G-08: list nesting is indented for Python-Markdown
+# ---------------------------------------------------------------------------
+
+# A list marker and the column its item's content starts at.
+_LIST_MARKER_RE = re.compile(r"^( *)([-*+]|\d+[.)])( +)\S")
+# Python-Markdown keeps a line in a list item only at multiples of this.
+# GitHub (CommonMark) uses the item's content column instead, so `1. x` plus
+# a 3-space `- y` nests on GitHub and flattens into the outer list on the
+# docs site; a 2-space table after a blank line leaves the list there.
+_PYMD_INDENT = 4
+
+
+def find_under_indented(text: str) -> list[tuple[int, str, int, int]]:
+    """Return ``(lineno, what, indent, required)`` per line Python-Markdown would un-nest.
+
+    Containment is judged as CommonMark does: a marker, or a block after a
+    blank line, at or past an open item's content column belongs to it. A
+    line at depth *d* must then sit at ``4 * d`` spaces or more. Lazy
+    continuation lines (no blank line before) are not checked and keep the
+    list open, even at column 0; nor is a
+    list that directly follows paragraph text: Python-Markdown renders that
+    as text, so it has no nesting to lose.
+    """
+    found: list[tuple[int, str, int, int]] = []
+    content_cols: list[int] = []  # content column of each open item, outermost first
+    in_fence = after_blank = False
+    after_text = False  # previous line is outside any list and continues a paragraph
+    for lineno, line in enumerate(text.splitlines(), 1):
+        was_in_fence = in_fence
+        in_fence = _is_in_fence(line, in_fence)
+        if was_in_fence:
+            continue  # fence body or closing line
+        if not line.strip():
+            after_blank, after_text = True, False
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        m = _LIST_MARKER_RE.match(line)
+        if m is not None and not content_cols and after_text:
+            m = None  # no list starts here under Python-Markdown
+        if m is not None or (after_blank and indent > 0):
+            while content_cols and indent < content_cols[-1]:
+                content_cols.pop()
+            required = _PYMD_INDENT * len(content_cols)
+            if indent < required:
+                found.append((lineno, "list marker" if m else "list-item block", indent, required))
+            if m is not None:
+                content_cols.append(indent + len(m.group(2)) + len(m.group(3)))
+        elif indent == 0 and (after_blank or line.startswith(("#", "```", "~~~"))):
+            content_cols.clear()  # unindented block ends the list; a lazy line does not
+        after_blank = False
+        after_text = not content_cols and not line.lstrip().startswith(("#", "```", "~~~"))
+    return found
+
+
+def _published_markdown(repo_root: Path) -> list[Path]:
+    """Dual sources plus ``docs-src/`` pages: everything rendered by Python-Markdown."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        paths = {entry.source for entry in scan_dual_files(repo_root)}
+    docs_src = repo_root / "docs-src"
+    if docs_src.is_dir():
+        paths.update(md.resolve() for md in docs_src.rglob("*.md"))
+    return sorted(paths)
+
+
+def _check_g08(repo_root: Path) -> list[str]:
+    repo_root = repo_root.resolve()
+    hits = sorted(
+        (path.relative_to(repo_root).as_posix(), *hit)
+        for path in _published_markdown(repo_root)
+        for hit in find_under_indented(path.read_text(encoding="utf-8"))
+    )
+    return [
+        f"G-08 {rel}:{lineno}: nested {what} indented {indent}, Python-Markdown needs {required}"
+        for rel, lineno, what, indent, required in hits
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -260,6 +339,7 @@ _CHECKS = [
     ("G-05", _check_g05),
     ("G-06", _check_g06),
     ("G-07", _check_g07),
+    ("G-08", _check_g08),
 ]
 
 
@@ -276,7 +356,7 @@ def main() -> int:
             print(line, file=sys.stderr)
         return 1
 
-    print(f"docs-framework check passed ({len(_CHECKS)} checks: G-01..G-07).")
+    print(f"docs-framework check passed ({len(_CHECKS)} checks: G-01..G-08).")
     return 0
 
 

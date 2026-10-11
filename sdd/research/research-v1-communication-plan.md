@@ -198,14 +198,14 @@ previous version's long menu of speculative pitches has been cut.
 ### Tier 4 — Content and media
 
 - **Blog posts** (publish on personal site; cross-post to dev.to):
-  1. **Methodology** — "Spec-driven development with formal verification:
-     building a Python storage library". The most distinctive piece.
-  2. **Problem story** — "Every team writes the same S3 wrapper. Here's
-     why we open-sourced ours."
-  3. **Use case** — "A portable data lake with Python — no Spark
-     required." Built on the shipped data lake patterns guide.
-  4. **SFTP bridge** — "SFTP isn't dead: bridging legacy and cloud with
-     one Python API." Targets finance / healthcare specifically.
+    1. **Methodology** — "Spec-driven development with formal verification:
+       building a Python storage library". The most distinctive piece.
+    2. **Problem story** — "Every team writes the same S3 wrapper. Here's
+       why we open-sourced ours."
+    3. **Use case** — "A portable data lake with Python — no Spark
+       required." Built on the shipped data lake patterns guide.
+    4. **SFTP bridge** — "SFTP isn't dead: bridging legacy and cloud with
+       one Python API." Targets finance / healthcare specifically.
 - **Newsletters** — Python Weekly, PyCoders, Data Engineering Weekly,
   Console.dev, TLDR, Changelog.
 - **Podcasts** — pitch Talk Python, Python Bytes, Data Engineering

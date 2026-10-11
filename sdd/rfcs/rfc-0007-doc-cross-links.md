@@ -345,11 +345,11 @@ Adding ~57 `## See also` sections creates ~57 new link targets to maintain.
 - **GitHub source URLs:** `mkdocs build --strict` does **not** validate
   external URLs. If an example file is renamed or moved, the GitHub link
   silently breaks. Options:
-  - **Accept the risk** — example files rarely move, and the link text
-    includes the filename, making stale links easy to spot.
-  - **Follow-up: add a link checker** — e.g., `mkdocs-linkcheck` plugin or
-    a CI step running `lychee` against the built site. This is out of scope
-    for this proposal but would catch GitHub URL rot.
+    - **Accept the risk** — example files rarely move, and the link text
+      includes the filename, making stale links easy to spot.
+    - **Follow-up: add a link checker** — e.g., `mkdocs-linkcheck` plugin or
+      a CI step running `lychee` against the built site. This is out of scope
+      for this proposal but would catch GitHub URL rot.
 - **Ripple-check coverage:** `sdd/CLAUDE-REFERENCE.md` already requires
   checking example and guide pages when API symbols change. Adding "check
   See also links" to the ripple-check table would formalise this.

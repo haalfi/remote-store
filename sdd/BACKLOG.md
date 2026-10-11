@@ -470,6 +470,14 @@ no clause of the contract ships unexercised.
 **Promise:** a user gets set up, picks the right backend, writes their own, or
 copies an example, without opening an issue.
 
+- [ ] **BUG-321 — A list that directly follows paragraph text renders as literal dashes on the docs site**
+  spec: DOCFRAME-004 · effort: S · audience: user.site
+  GitHub starts a list right after a paragraph line; Python-Markdown needs a
+  blank line, so `guides/observe.md`'s `Parameters:` + `- max_queue …` reaches
+  the site as one paragraph with literal dashes. Scanning the G-08 published
+  set for a top-level marker after paragraph text finds 447 sites in 81 files.
+  Open decision: none on shape (insert the blank line; extend G-08).
+
 - [ ] **BK-364 — `transfer-operations.md` documents partial files for `download` only, and the other direction is the one that can destroy data**
   spec: — · effort: S · audience: user.site
   `transfer-operations.md` warns that a failed `download` can leave a partial
@@ -521,7 +529,7 @@ copies an example, without opening an issue.
   and nothing checks it against `_nav.yml`. Re-measured, `index.md`,
   `reference/changelog.md`, `explanation/contributing.md` and
   `development-story.md` match no pattern and no comment says why, so both
-  bundles omit them. Open decision: one check with BK-327's G-08, or two.
+  bundles omit them. Open decision: one check with BK-327's new gate, or two.
   Detail: [dossier](backlog/bk-376-llmstxt-sections-hand-listed.md)
 
 - [ ] **BK-332 — Schedule the custom-backend rehearsal**
@@ -735,6 +743,14 @@ give them a way to absorb.
 **Promise:** the artifacts maintainers coordinate through — this file, the
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
+
+- [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**
+  spec: DOCFRAME-004 · effort: S · audience: contributor.process
+  The DOCFRAME-004 table says G-07 is "`mkdocs build --strict` succeeds";
+  `_check_g07` asserts that `docs-src/api/` does not exist. Its Performance
+  paragraph says G-06 and G-07 invoke MkDocs; `_check_g06` parses `_nav.yml`
+  and neither calls MkDocs. Found reviewing PR #1115. Open decision: correct
+  the spec to the code, or move the strict build into the gate.
 
 - [ ] **ID-235 — Backlog-file integrity lint (structure and inbound tracker citations)**
   spec: — · effort: S · audience: contributor.tooling

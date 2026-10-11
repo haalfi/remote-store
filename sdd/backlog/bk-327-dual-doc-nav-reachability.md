@@ -17,7 +17,7 @@ hand-written and unchecked. So `hatch run docs-gate` goes green on a page that i
 unreachable, unlisted, or both. Each surface had a live instance repaired by hand
 in PR #938: `drift-rules` was absent from both, `ci-operations` was in `_nav.yml`
 and absent from `_index.tmpl`.
-Fix shape: a G-08 in `scripts/check_docs_framework.py` differencing emitted dual
+Fix shape: a new gate in `scripts/check_docs_framework.py` differencing emitted dual
 `dest` paths against both `_nav.yml` and the `_index.tmpl` Documents list;
 raising `nav.omitted_files` to WARNING covers the nav half only.
 An unstated bound on `docs-gate` being trusted past its range
@@ -31,3 +31,8 @@ dest=explanation/design/' sdd` finds eight markers on line 2 of their files
 both `docs-src/explanation/design/_nav.yml` (lines 1-8) and `_index.tmpl`'s
 Documents list (lines 7-14). `check_docs_framework.py` still defines G-01
 through G-07 only. Found by the ADR-0040 § 3 conversion.
+
+## Correction, 2026-10-10
+
+BUG-320 took G-08 for list-nesting indentation, so this item's gate takes the
+next free ID.

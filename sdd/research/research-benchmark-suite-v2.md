@@ -104,10 +104,10 @@ Extend `benchmarks/_toxiproxy.py`:
 
 - Support multiple proxy names (not just `"azurite"`)
 - Add named profiles:
-  - `clean` — no toxics (baseline)
-  - `rtt20` — 20ms latency, 7ms jitter
-  - `rtt50` — 50ms latency, 17ms jitter
-  - `rtt100` — 100ms latency, 33ms jitter
+    - `clean` — no toxics (baseline)
+    - `rtt20` — 20ms latency, 7ms jitter
+    - `rtt50` — 50ms latency, 17ms jitter
+    - `rtt100` — 100ms latency, 33ms jitter
 - Add `apply_profile(proxy_name, profile_name)` function
 - Add `clear_all_toxics(proxy_name)` function
 - Keep existing `set_latency()` / `clear_latency()` as low-level API
@@ -153,22 +153,22 @@ Create `benchmarks/charts.py` (or extend `report.py`):
 **Charts to generate (3 total):**
 
 1. **Overhead % by backend** — grouped bar chart
-   - X-axis: operation (write 1MB, read 1MB, exists, list 50, delete)
-   - Bars: overhead % vs raw SDK
-   - Groups: one color per backend (S3, Azure, SFTP, Local)
-   - This answers: "what am I paying?"
+    - X-axis: operation (write 1MB, read 1MB, exists, list 50, delete)
+    - Bars: overhead % vs raw SDK
+    - Groups: one color per backend (S3, Azure, SFTP, Local)
+    - This answers: "what am I paying?"
 
 2. **Overhead vs RTT** — line chart *(requires Phase 1 data)*
-   - X-axis: network profile (0ms, 20ms, 50ms, 100ms)
-   - Y-axis: overhead %
-   - Lines: one per operation category (I/O ops, metadata ops)
-   - This is the killer chart — shows overhead collapsing under latency
+    - X-axis: network profile (0ms, 20ms, 50ms, 100ms)
+    - Y-axis: overhead %
+    - Lines: one per operation category (I/O ops, metadata ops)
+    - This is the killer chart — shows overhead collapsing under latency
 
 3. **Throughput by file size** — line chart
-   - X-axis: file size (1KB, 64KB, 1MB, 10MB)
-   - Y-axis: MB/s
-   - Lines: remote-store vs raw SDK, one chart per backend
-   - Shows where remote-store converges with raw SDK
+    - X-axis: file size (1KB, 64KB, 1MB, 10MB)
+    - Y-axis: MB/s
+    - Lines: remote-store vs raw SDK, one chart per backend
+    - Shows where remote-store converges with raw SDK
 
 **Chart style:** clean, minimal, no gridlines clutter. Match the project's
 visual identity. SVG for crisp rendering in docs.

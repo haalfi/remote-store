@@ -25,10 +25,10 @@ rounds, locally (BK-404) and in CI (ID-266)?
   unmeasured.
 - **Two selection-free fixes are cheaper and carry no risk of skipping a
   test:**
-  - BUG-301 removes 157 of 721 Stage-1 worker-seconds (22%, audit-022 § L2
-    and § H1);
-  - BK-401 takes the coverage run from 310 s to 250 s at `-n 4` (19%,
-    audit-022 § L1).
+    - BUG-301 removes 157 of 721 Stage-1 worker-seconds (22%, audit-022 § L2
+      and § H1);
+    - BK-401 takes the coverage run from 310 s to 250 s at `-n 4` (19%,
+      audit-022 § L1).
 
 ## When to revisit
 
@@ -157,24 +157,24 @@ interpreter.**
 - **Portability:** the 3.13 map was copied and the `_sftp.py` function-body
   seed run on each interpreter with `POC_EXTRA="-n 4"`.
 
-  | Interpreter | Tests run | Wall | Note |
-  | --- | --- | --- | --- |
-  | 3.11.15 | 11,932 (full) | 256.0 s | map discarded |
-  | 3.12.3 | 11,932 (full) | 237.5 s | map discarded |
-  | 3.14.0rc2 | 0 | 19.6 s | INTERNALERROR under default `sysmon` |
-  | 3.14.0rc2, `COVERAGE_CORE=ctrace` | 11,850 (full) | 195.9 s | map discarded; 15 failed, 8 errors |
+    | Interpreter | Tests run | Wall | Note |
+    | --- | --- | --- | --- |
+    | 3.11.15 | 11,932 (full) | 256.0 s | map discarded |
+    | 3.12.3 | 11,932 (full) | 237.5 s | map discarded |
+    | 3.14.0rc2 | 0 | 19.6 s | INTERNALERROR under default `sysmon` |
+    | 3.14.0rc2, `COVERAGE_CORE=ctrace` | 11,850 (full) | 195.9 s | map discarded; 15 failed, 8 errors |
 
-  - **Why the map is discarded:** `testmon/db.py`'s
-    `fetch_or_create_environment` starts a new environment when either the
-    full Python version (`3.13.14`) or the installed-package string
-    (major.minor per package) differs, and deletes the old one: the 3.11 copy
-    afterwards held only `environment_id` 2, with all 11,932 executions.
-  - **The 3.14 failures are not testmon's.** A testmon-free control on
-    3.14.0rc2 (`-n 4 -p no:testmon`) gave 14 failed and 8 errors: four
-    `test_bench_report.py` argparse help-format `ValueError`s in the rc's
-    stdlib, the rest pydantic (`_eval_type() got an unexpected keyword
-    argument`) and dagster paths. The seeded run added only the seed's
-    failure.
+    - **Why the map is discarded:** `testmon/db.py`'s
+      `fetch_or_create_environment` starts a new environment when either the
+      full Python version (`3.13.14`) or the installed-package string
+      (major.minor per package) differs, and deletes the old one: the 3.11 copy
+      afterwards held only `environment_id` 2, with all 11,932 executions.
+    - **The 3.14 failures are not testmon's.** A testmon-free control on
+      3.14.0rc2 (`-n 4 -p no:testmon`) gave 14 failed and 8 errors: four
+      `test_bench_report.py` argparse help-format `ValueError`s in the rc's
+      stdlib, the rest pydantic (`_eval_type() got an unexpected keyword
+      argument`) and dagster paths. The seeded run added only the seed's
+      failure.
 
 ## Appendix D: tests that read source as text
 
@@ -191,21 +191,21 @@ missing:
   `importlib._bootstrap` within six frames could drop such reads; re-running
   with the narrower check (10,998 passed, 541.9 s) gave the same 15 files with
   identical per-file counts.
-  - **`tests/scripts/` (8), read through the scripts they drive:**
-    `test_check_capability_parity.py`, `test_check_docstring_parity.py`,
-    `test_check_no_retrospective.py`, `test_check_no_tracker_refs.py`,
-    `test_check_rst_roles.py`, `test_check_test_placement.py`,
-    `test_gen_features.py`, `test_gen_graph.py`.
-  - **Elsewhere, direct reads (2):** `tests/ext/test_contract.py:85,106` and
-    `tests/backends/graph/aio/test_utils.py:173` parse or read `src/` source
-    themselves.
-  - **Elsewhere, unclassified (5):** `tests/aio/test_async_to_sync_adapter.py`,
-    `tests/backends/graph/aio/test_auth.py`,
-    `tests/backends/s3/test_write_result_pbt.py`, `tests/ext/test_observe.py`,
-    `tests/ext/test_otel.py`. Their own source shows no read; the hits likely
-    come from library code that renders source (`linecache`,
-    `inspect.getsource`), which caches, so which file records the read can
-    depend on test order.
+    - **`tests/scripts/` (8), read through the scripts they drive:**
+      `test_check_capability_parity.py`, `test_check_docstring_parity.py`,
+      `test_check_no_retrospective.py`, `test_check_no_tracker_refs.py`,
+      `test_check_rst_roles.py`, `test_check_test_placement.py`,
+      `test_gen_features.py`, `test_gen_graph.py`.
+    - **Elsewhere, direct reads (2):** `tests/ext/test_contract.py:85,106` and
+      `tests/backends/graph/aio/test_utils.py:173` parse or read `src/` source
+      themselves.
+    - **Elsewhere, unclassified (5):** `tests/aio/test_async_to_sync_adapter.py`,
+      `tests/backends/graph/aio/test_auth.py`,
+      `tests/backends/s3/test_write_result_pbt.py`, `tests/ext/test_observe.py`,
+      `tests/ext/test_otel.py`. Their own source shows no read; the hits likely
+      come from library code that renders source (`linecache`,
+      `inspect.getsource`), which caches, so which file records the read can
+      depend on test order.
 - **Non-`src/` readers, not measured.** The scan drops paths outside `src/`.
   Known examples: `tests/backends/conformance/test_large_payload_guard.py:60-63`
   (`ast.parse` on `conformance/**/test_*.py`),

@@ -66,36 +66,36 @@ a draft that is never merged) as one commit to
   finding, and rule (c) does not touch it. This is the fix-commit classifier's
   definition (report § Run B baseline), so run B is scored by the rule it ran.
 - **Mechanism.**
-  - The fixer names the check, runs it before committing, and quotes it with
-    what it returned in the reply: a command, a grep, a count, or the
-    enumerated cases.
-  - A round whose only must-fix findings are check-closed prose counts as
-    converged, and the fix pass after it is verified by its recorded checks,
-    not by a review round.
-  - The exit gates already met (unprimed, whole-file, measuring) stay met
-    across a check-closed prose fix. A prose fix narrowing a behavioural claim
-    is measured by its own check.
-  - The Step 5 report lists each check-closed prose finding with its check and
-    what it returned.
+    - The fixer names the check, runs it before committing, and quotes it with
+      what it returned in the reply: a command, a grep, a count, or the
+      enumerated cases.
+    - A round whose only must-fix findings are check-closed prose counts as
+      converged, and the fix pass after it is verified by its recorded checks,
+      not by a review round.
+    - The exit gates already met (unprimed, whole-file, measuring) stay met
+      across a check-closed prose fix. A prose fix narrowing a behavioural claim
+      is measured by its own check.
+    - The Step 5 report lists each check-closed prose finding with its check and
+      what it returned.
 - **Not covered.** A prose finding no check can settle, which the report puts at
   6% (judgement), and every code or test finding go through the loop as before.
 - **Clauses it waives**, for check-closed prose only, each at its home, as the
   variant commit names them:
-  - [ADR-0033](../adrs/0033-ship-convergence-driven-review.md)'s *Terminate the
-    review loop on convergence*: a round whose only must-fix findings are
-    check-closed prose counts as converged;
-  - ADR-0033's *The loop may not end on an unreviewed fix pass*: that fix pass
-    is verified by its recorded checks;
-  - [ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md)'s *The loop
-    cannot end until an unprimed reviewer has seen the final state*;
-  - [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md)'s
-    whole-file gate: a met gate stays met across a check-closed prose fix;
-  - [ADR-0035](../adrs/0035-vary-method-not-model.md)'s *A premise about
-    existing behaviour is executed, not read, before it ships*: a met gate stays
-    met, and a prose fix narrowing a behavioural claim is measured by its own
-    check.
+    - [ADR-0033](../adrs/0033-ship-convergence-driven-review.md)'s *Terminate the
+      review loop on convergence*: a round whose only must-fix findings are
+      check-closed prose counts as converged;
+    - ADR-0033's *The loop may not end on an unreviewed fix pass*: that fix pass
+      is verified by its recorded checks;
+    - [ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md)'s *The loop
+      cannot end until an unprimed reviewer has seen the final state*;
+    - [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md)'s
+      whole-file gate: a met gate stays met across a check-closed prose fix;
+    - [ADR-0035](../adrs/0035-vary-method-not-model.md)'s *A premise about
+      existing behaviour is executed, not read, before it ships*: a met gate stays
+      met, and a prose fix narrowing a behavioural claim is measured by its own
+      check.
 
-  ADR-0036 is unchanged.
+    ADR-0036 is unchanged.
 - **Process budget.** Rule (c) grows `ship/SKILL.md`, so under
   [BK-422](../traces/bk-422-process-budget.yml) the variant commit records a
   raise with `python scripts/check_process_budget.py --raise --item BK-418` and

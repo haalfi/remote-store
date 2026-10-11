@@ -341,28 +341,28 @@ profiling shows the overhead matters.
   S3/Azure (non-HNS), memory profile is similar to `write_atomic()` with
   `SpooledTemporaryFile` providing disk spill for files > 8 MB.
 - **Testing:** Spec `022-streaming-atomic-writes.md` must include tests for:
-  - **Success path (SAW-003):** temp file created during write, promoted to
-    target on `__exit__(None)`, temp artifact no longer exists, target
-    readable with correct content.
-  - **Exception path (SAW-004, SAW-005):** exception inside `with` block,
-    target path unchanged (no partial file), temp artifact cleaned up.
-  - **Early close (SAW-005):** caller calls `f.close()` before exiting
-    context — behaviour defined (promote or raise).
-  - **`AlreadyExists` guard (SAW-006):** `overwrite=False` raises when
-    target exists; `overwrite=True` succeeds and replaces content.
-  - **`InvalidPath` (SAW-007):** empty path raises `InvalidPath`.
-  - **Per-backend temp-path validation (SAW-008/009/010/011/012):**
-    - Local: `mkstemp` temp file exists in parent dir during write.
-    - SFTP: `.~tmp.*` file exists on server during write, removed after.
-    - S3/S3-PyArrow: `SpooledTemporaryFile` used (no server-side temp).
-    - Azure non-HNS: buffered PUT; Azure HNS: temp blob + DFS rename.
-    - Memory: `BytesIO` buffer, committed on success.
-  - **Content correctness:** multi-chunk write, content matches after
-    promotion (all 6 backends).
-  - **Observe hook (SAW-014):** `on_write` fires after successful promotion,
-    does not fire on exception path.
-  - **OTel span (SAW-015):** span covers full open-write-promote lifecycle.
-  - Integration with PyArrow `pq.write_table()` (example, not unit test).
+    - **Success path (SAW-003):** temp file created during write, promoted to
+      target on `__exit__(None)`, temp artifact no longer exists, target
+      readable with correct content.
+    - **Exception path (SAW-004, SAW-005):** exception inside `with` block,
+      target path unchanged (no partial file), temp artifact cleaned up.
+    - **Early close (SAW-005):** caller calls `f.close()` before exiting
+      context — behaviour defined (promote or raise).
+    - **`AlreadyExists` guard (SAW-006):** `overwrite=False` raises when
+      target exists; `overwrite=True` succeeds and replaces content.
+    - **`InvalidPath` (SAW-007):** empty path raises `InvalidPath`.
+    - **Per-backend temp-path validation (SAW-008/009/010/011/012):**
+        - Local: `mkstemp` temp file exists in parent dir during write.
+        - SFTP: `.~tmp.*` file exists on server during write, removed after.
+        - S3/S3-PyArrow: `SpooledTemporaryFile` used (no server-side temp).
+        - Azure non-HNS: buffered PUT; Azure HNS: temp blob + DFS rename.
+        - Memory: `BytesIO` buffer, committed on success.
+    - **Content correctness:** multi-chunk write, content matches after
+      promotion (all 6 backends).
+    - **Observe hook (SAW-014):** `on_write` fires after successful promotion,
+      does not fire on exception path.
+    - **OTel span (SAW-015):** span covers full open-write-promote lifecycle.
+    - Integration with PyArrow `pq.write_table()` (example, not unit test).
 
 ## Open Questions
 

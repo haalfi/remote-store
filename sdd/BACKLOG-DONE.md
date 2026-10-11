@@ -298,6 +298,20 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-320 — Nested lists indented for GitHub render flattened on the docs site**
+  spec: DOCFRAME-004 · effort: S · audience: user.site, contributor.tooling
+  Python-Markdown keeps a line in a list item only at 4 spaces per level;
+  GitHub uses the item's content column, so `CONTENT-RULES.md`'s 3-space
+  sub-bullets rendered as rules 7–14. Re-indented the 32 published sources
+  G-08 flagged; markdown-it's CommonMark output is unchanged per file, and
+  against a pre-fix `mkdocs build` every changed page keeps its text, list
+  items and code blocks. G-08 in
+  `check_docs_framework.py` now fails on such nesting.
+  `mdx_truly_sane_lists` was rejected: it dropped list items on other pages.
+  Lists glued to paragraph text were filed as BUG-321. Tests:
+  `tests/scripts/test_check_docs_framework.py`. Trace:
+  [bug-320](traces/bug-320-nested-list-indent.yml).
+
 - [x] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
   spec: BE-021 · effort: S · audience: user.api
   `list_files`, `list_folders` and `iter_children` now scan with `os.scandir`

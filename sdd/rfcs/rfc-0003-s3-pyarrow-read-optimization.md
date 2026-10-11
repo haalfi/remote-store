@@ -175,14 +175,14 @@ anyone wrapping the stream in `io.TextIOWrapper`.
   bypasses `BufferedReader`. Expect reduced per-chunk overhead and lower peak
   memory for chunked streaming reads.
 - **Testing:** Existing tests cover correctness:
-  - `tests/test_stream.py` — `_ErrorMappingStream` read/readinto paths
-  - `tests/backends/test_conformance.py` — chunked reads, position tracking
-  - `tests/backends/test_s3_pyarrow.py` — S3-PyArrow specific tests
-  - `tests/test_transfer.py` — streaming transfers
+    - `tests/test_stream.py` — `_ErrorMappingStream` read/readinto paths
+    - `tests/backends/test_conformance.py` — chunked reads, position tracking
+    - `tests/backends/test_s3_pyarrow.py` — S3-PyArrow specific tests
+    - `tests/test_transfer.py` — streaming transfers
 
-  Additionally, add a structural assertion that `S3PyArrowBackend.read()`
-  returns a stream that is NOT wrapped in `BufferedReader`, to prevent
-  regression.
+    Additionally, add a structural assertion that `S3PyArrowBackend.read()`
+    returns a stream that is NOT wrapped in `BufferedReader`, to prevent
+    regression.
 - **Scope:** Only `S3PyArrowBackend`. Other backends (S3, SFTP, Azure, Local,
   Memory) are untouched.
 
