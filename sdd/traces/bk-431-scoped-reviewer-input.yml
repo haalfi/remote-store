@@ -125,3 +125,18 @@ phases:
           title`, so solo passes keep agent: reviewer. wc -c rvw-pr:
           SKILL.md 21,567, measuring.md 5,397, posting.md 4,971.
         outcome: ok
+      - file: "(A/B) PR #1125 at 8a5e31960, analyze-only, unprimed, one run each"
+        section: "general-purpose on master's rvw-pr vs reviewer on the split rvw-pr"
+        read_type: verify
+        extract: >-
+          tokkit.parse_file over both subagent transcripts: old 26 calls,
+          first context 39,861, units 455,780, rvw-pr read tokens 22,641, 3
+          findings; new 28 calls, first context 19,713, units 348,421,
+          rvw-pr read tokens 9,356, 1 finding. The new finding is a subset of
+          the old pass's first (measuring.md's reader claim); the old pass
+          also found posting.md's same claim, a stale "header block above"
+          pointer and "only" beside the tool list, all fixed. The cheaper
+          pass found less here; one run each cannot separate the input from
+          run-to-run variance, which is what the next measured delivery
+          decides (ADR-0045).
+        outcome: ok

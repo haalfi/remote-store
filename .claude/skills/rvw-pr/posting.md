@@ -1,8 +1,9 @@
 # `/rvw-pr` Step 4: posting the review
 
-Read by a [`/rvw-pr`](SKILL.md) pass at its Step 4 when it posts. An
-analyze-only panel member does not post and does not read this file; the
-Comment rules that bind every pass stay in `SKILL.md` Step 4.
+Two readers: a [`/rvw-pr`](SKILL.md) pass that posts, at its Step 4; and
+`/ship`'s orchestrator when it posts a panel round. An analyze-only panel
+member does not post and does not read this file; the Comment rules that bind
+every pass stay in `SKILL.md` Step 4.
 
 **Use the pending-review flow — three steps, in order.** The GitHub MCP server silently drops inline comments if you pass them as a `comments:` array on a single `submit`/`create` call. Always:
 

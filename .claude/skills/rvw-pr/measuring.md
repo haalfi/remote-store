@@ -1,8 +1,9 @@
 # `/rvw-pr`: the measuring pass
 
-Read by a [`/rvw-pr`](SKILL.md) pass whose invoking prompt says **measuring**,
-before its Step 1; every other rule of that file still binds. A pass without
-that word does not read this file and runs none of it.
+Two readers: a [`/rvw-pr`](SKILL.md) pass whose invoking prompt says
+**measuring**, before its Step 1, with every other rule of that file still
+binding; and `/orchestrate`'s measuring reviewer, bound by reference to the
+safe set below. A `/rvw-pr` pass without that word does not read this file.
 
 **Measuring pass.** If the invoking prompt says **measuring**, you reach your verdict by *executing*, not by reading, and Bash is opened to exactly this set:
 

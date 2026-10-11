@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 297568,
+  "total": 297759,
   "files": {
     "CLAUDE.md": 17421,
     ".claude/output-styles/interview.md": 2105,
@@ -20,9 +20,9 @@
     ".claude/skills/pr/SKILL.md": 5425,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
-    ".claude/skills/rvw-pr/measuring.md": 5397,
-    ".claude/skills/rvw-pr/posting.md": 4971,
-    ".claude/skills/rvw-pr/SKILL.md": 21699,
+    ".claude/skills/rvw-pr/measuring.md": 5482,
+    ".claude/skills/rvw-pr/posting.md": 5030,
+    ".claude/skills/rvw-pr/SKILL.md": 21746,
     ".claude/skills/ship/SKILL.md": 53836,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
@@ -50,13 +50,19 @@
       "item": "BK-431",
       "from": 295228,
       "to": 297494,
-      "reason": "rvw-pr split by mode plus the reviewer agent: glob widened to .claude/skills/*/*.md so the split files stay measured; SKILL.md 30702 -> 21567 (what every pass reads), measuring.md 5397 and posting.md 4971 (read only by a measuring or a posting pass), reviewer.md 1071, /ship and /orchestrate links -27 net; CLAUDE-REFERENCE.md -11 was already off its recorded size on master"
+      "reason": "rvw-pr split by mode plus the reviewer agent: glob widened to .claude/skills/*/*.md so the split files stay measured; SKILL.md 30702 -> 21567 (what every pass reads), measuring.md 5397 and posting.md 4971 (skipped by a non-measuring, analyze-only pass), reviewer.md 1071, /ship and /orchestrate links -27 net; CLAUDE-REFERENCE.md -11 was already off its recorded size on master"
     },
     {
       "item": "BK-431",
       "from": 297494,
       "to": 297568,
       "reason": "PR #1125 review: rvw-pr frontmatter names reviewer.md's tools: as the binding list (+132); /ship's false extent clause about other agent types deleted (-58)"
+    },
+    {
+      "item": "BK-431",
+      "from": 297568,
+      "to": 297759,
+      "reason": "PR #1125 A/B review (old vs new reviewer, analyze-only): measuring.md and posting.md headers name both readers each (+85, +59); SKILL.md search-discipline pointer to measuring.md and ToolSearch caveat (+47)"
     }
   ]
 }
