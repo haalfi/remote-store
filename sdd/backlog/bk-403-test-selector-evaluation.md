@@ -85,3 +85,9 @@ full".
   judged on net time saved rather than Phase 0's zero-miss exit, since this
   lane is a speed lane and the merge-head gate is the safety net:
   [`bucket-rules.md`](../research/bk-403-phase-0/bucket-rules.md).
+- **2026-10-11, closed: `hatch run fast` adopted.** The bucket rules stay
+  unreplayed. The selector that shipped judges each gate run's diff against
+  the last green tree instead of the PR's, routes `all`'s non-test members by
+  path, always adds last-failed tests, and calibrates on its own timings. The
+  maintainer fixed the bar first: net time saved, misses allowed.
+  [Report](../research/bk-403-fast-gate/report.md).

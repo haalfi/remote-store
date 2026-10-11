@@ -1,0 +1,154 @@
+id: BK-403
+title: "No change-scoped test selector has been chosen for this suite; one of three candidates is measured"
+trigger: >-
+  Phase 0 had stopped RFC-0019's D5 selector (72.6% of code PRs fell back to
+  the full suite) and the bucket rules sat unreplayed. The maintainer asked for
+  better selection ideas from the last weeks of PRs, commits and transcripts,
+  with the local gate only needing to be good enough as the first gate, and
+  chose to prototype directly.
+source_items:
+  - BK-403
+  - BK-404
+audience:
+  - contributor.tooling
+  - infra.test
+  - contributor.process
+co_shipped_items:
+  - BK-404
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/backlog/bk-403-test-selector-evaluation.md
+  - sdd/backlog/bk-404-selected-tests-hatch-target.md
+  - sdd/CLAUDE-REFERENCE.md
+  - .claude/skills/ship/SKILL.md
+  - .claude/skills/orchestrate/SKILL.md
+  - CLAUDE.md
+  - CONTRIBUTING.md
+surprising_ripples:
+  - sdd/process-budget.json
+  - sdd/rfcs/rfc-0019-two-speed-test-gate.md
+  - sdd/backlog/id-266-two-speed-ci-gate.md
+  - scripts/gen_gate_inventory.py
+decisions:
+  - sdd/decisions/001b9759-69f9-4d4e-a7c1-916f63a61dcf.jsonl
+orient:
+  - items: [BK-404]
+    verdict: subsumes
+    evidence: >-
+      bk-404 dossier § Prescription: one hatch target over BK-403's selector,
+      with the skill wiring as its open decision; built here and wired at the
+      maintainer's choice (everywhere), so both close together.
+  - items: [BK-408, ID-266]
+    verdict: constrains
+    evidence: >-
+      BK-408's index entry: RFC-0019's zero-escape exits are a merge-barrier
+      bar. The maintainer fixed net time saved for the local gate before the
+      build. ID-266's dossier: CI runs the full gate on every push today, which
+      is what lets the local gate miss; a CI fast lane must keep a full run
+      before merge. Both stay open.
+  - items: [BK-402]
+    verdict: constrains
+    evidence: >-
+      Index entry: eight tests/scripts files read src/ other than by import, so
+      every src/ change selects tests/scripts/ rather than trusting imports.
+  - items: [BUG-302, BUG-306, BUG-316, BK-400]
+    verdict: unrelated
+    evidence: >-
+      CI class patterns and CI shard durations; the local gate classifies paths
+      itself and estimates from its own recorded timings, not
+      .test_durations_pass1 alone.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-403-test-selector-evaluation.md
+        section: "(full)"
+        read_type: gate
+        extract: "Two candidates failed; bucket rules unmeasured; consumers BK-404 and ID-266"
+      - file: sdd/research/bk-403-phase-0/report.md
+        section: "Answer; Why typical diffs fall back to FULL"
+        read_type: gate
+        extract: >-
+          The unit was the whole PR diff; pyproject.toml and .github/** fired on
+          59 of 106, base modules on most of the rest. Pytest only, not the
+          other members of all
+      - file: sdd/research/bk-403-phase-0/bucket-rules.md
+        section: "(full)"
+        read_type: reference
+        extract: "Per-key pyproject classification and the net-time bar, reused"
+      - file: sdd/backlog/bk-404-selected-tests-hatch-target.md
+        section: "(full)"
+        read_type: gate
+        extract: "R3 / BK-271: a selected target must answer the one-definition argument"
+      - file: pyproject.toml
+        section: "scripts all, preflight, test-cov-s1"
+        read_type: reference
+        extract: >-
+          all has ten members; measured them one by one (207 s, tests 157 s)
+          before designing, since Phase 0 had priced tests only
+  - id: implement
+    name: Selector and target
+    steps:
+      - file: sdd/research/bk-403-phase-0/selector.py
+        section: "Analysis (hub resolution, backend reach)"
+        read_type: reference
+        extract: >-
+          Hub-resolved import graph reimplemented compactly. My first cut listed
+          tests/e2e and tests/aio conftests as root importers, which sent every
+          backend source FULL in the replay; they scope to their directories
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.*] sources"
+        read_type: reference
+        extract: "Backend reach; fixtures.toml stage gives the Stage-1 ids"
+      - file: .test_durations_pass1
+        section: "(keys)"
+        read_type: reference
+        outcome: unclear
+        extract: >-
+          No tests/scripts/ entries at all, so my estimate called a
+          tests/scripts selection 3% when it is 19% locally, and would have run
+          it on one process. The gate now records its own JUnit timings
+      - file: scripts/run_tests.py
+        section: "compute_workers; RS_TEST_WORKERS"
+        read_type: reference
+        extract: >-
+          Worker runs at 8/12/14/16: 12 fastest; 26 s collection per worker is
+          the floor, not the tests
+      - file: pyproject.toml
+        section: "{args} scripts"
+        read_type: reference
+        extract: >-
+          My fast script lacked {args}, so --plan was dropped and the first
+          plan call ran the whole gate
+  - id: wire
+    name: Skills and gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: gate
+        extract: "The code path ran all for /pr and /fix-pr; now fast"
+      - file: .claude/skills/ship/SKILL.md
+        section: "Step 3; Close each round"
+        read_type: gate
+        extract: "Step 3 ran all and then /pr ran it again; now /pr's gate only"
+      - file: .claude/skills/pr/SKILL.md
+        section: "Steps 1-2"
+        read_type: reference
+        extract: >-
+          /pr pushes in its pre-check, before validating; my first ship wording
+          said the gate ran before the push
+      - file: scripts/check_process_budget.py
+        section: "--update"
+        read_type: verify
+        extract: >-
+          My wiring edits grew the process files by 178 bytes; cut my own
+          additions back under budget and locked in the lower total
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Backlog item touched; New test file"
+        read_type: verify
+        extract: "Trace, done entries linking dossiers; os_sensitive on the git-driving test file"

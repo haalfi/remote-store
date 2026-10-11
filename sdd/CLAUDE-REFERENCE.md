@@ -536,10 +536,8 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   failures, re-run until clean.
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `infra/*.py`,
       `.claude/hooks/`, `sdd/rfcs/rfc-0015-{findings,rounds}.py`,
-      `pyproject.toml`, or `.python-version`** → run `hatch run fast`: the
-      members of `all` (constituent scripts in `pyproject.toml`) that the change
-      since its last green run can affect, tests selected by path
-      (`scripts/fast_gate.py`; CI runs the rest). The two
+      `pyproject.toml`, or `.python-version`** → run `hatch run fast`, the
+      members of `all` the change can affect (`scripts/fast_gate.py`). The two
       RFC-0015 scripts ride with `.claude/hooks/` below: they are pinned by
       `tests/scripts/` and gated in CI by the same `hooks` output. Other
       `sdd/rfcs/*.py` have no test and are not listed. All but

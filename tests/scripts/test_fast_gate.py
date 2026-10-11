@@ -18,6 +18,9 @@ import pytest
 
 _SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "fast_gate.py"
 
+# Git index copies, `--git-path` resolution and repo-relative paths differ by OS.
+pytestmark = pytest.mark.os_sensitive
+
 
 def _load_module():
     spec = importlib.util.spec_from_file_location("fast_gate", _SCRIPT)

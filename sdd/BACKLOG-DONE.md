@@ -298,6 +298,26 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
+  spec: — · effort: M · audience: infra.test, contributor.tooling
+  Chosen and built: `scripts/fast_gate.py` selects against the last green
+  run's tree, not the PR's whole diff, judged on net time saved with CI's full
+  gate as the barrier. Replayed over 1,099 commits of 155 PRs it runs the full
+  suite on 8.2% and models a third of `all`'s time;
+  [report](research/bk-403-fast-gate/report.md). Tests:
+  `tests/scripts/test_fast_gate.py`. Trace:
+  [bk-403-fast-gate](traces/bk-403-fast-gate.yml). Detail:
+  [dossier](backlog/bk-403-test-selector-evaluation.md).
+
+- [x] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
+  spec: — · effort: M · audience: contributor.tooling
+  `hatch run fast` runs BK-403's selection plus the `all` members the change
+  can affect, and replaces `all` in the PR validation gates, `/ship` and
+  `/orchestrate`, everywhere at the maintainer's choice, to inspect in use
+  (report § Revisit). `all` stays for releases. Trace:
+  [bk-403-fast-gate](traces/bk-403-fast-gate.yml). Detail:
+  [dossier](backlog/bk-404-selected-tests-hatch-target.md).
+
 - [x] **BK-430 — A review loop may close prose on a check that cannot fail, and no standing rule weighs a cheaper delivery by its defects**
   spec: — · effort: M · audience: contributor.process
   [ADR-0045](adrs/0045-close-on-a-check-that-can-fail.md), amending ADR-0033
