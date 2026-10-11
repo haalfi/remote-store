@@ -11417,35 +11417,39 @@ a draft that is never merged) as one commit to
   skills, comments, CHANGELOG, the trace. Every other finding is a code or test
   finding, and rule (c) does not touch it. This is the fix-commit classifier's
   definition (report § Run B baseline), so run B is scored by the rule it ran.</li>
-<li><strong>Mechanism.</strong></li>
+<li><strong>Mechanism.</strong><ul>
 <li>The fixer names the check, runs it before committing, and quotes it with
-    what it returned in the reply: a command, a grep, a count, or the
-    enumerated cases.</li>
+  what it returned in the reply: a command, a grep, a count, or the
+  enumerated cases.</li>
 <li>A round whose only must-fix findings are check-closed prose counts as
-    converged, and the fix pass after it is verified by its recorded checks,
-    not by a review round.</li>
+  converged, and the fix pass after it is verified by its recorded checks,
+  not by a review round.</li>
 <li>The exit gates already met (unprimed, whole-file, measuring) stay met
-    across a check-closed prose fix. A prose fix narrowing a behavioural claim
-    is measured by its own check.</li>
+  across a check-closed prose fix. A prose fix narrowing a behavioural claim
+  is measured by its own check.</li>
 <li>The Step 5 report lists each check-closed prose finding with its check and
-    what it returned.</li>
+  what it returned.</li>
+</ul>
+</li>
 <li><strong>Not covered.</strong> A prose finding no check can settle, which the report puts at
   6% (judgement), and every code or test finding go through the loop as before.</li>
-<li><strong>Clauses it waives</strong>, for check-closed prose only, each at its home, as the
-  variant commit names them:</li>
+<li>
+<p><strong>Clauses it waives</strong>, for check-closed prose only, each at its home, as the
+  variant commit names them:</p>
+<ul>
 <li><a href="../../adrs/0033-ship-convergence-driven-review/">ADR-0033</a>'s <em>Terminate the
-    review loop on convergence</em>: a round whose only must-fix findings are
-    check-closed prose counts as converged;</li>
+  review loop on convergence</em>: a round whose only must-fix findings are
+  check-closed prose counts as converged;</li>
 <li>ADR-0033's <em>The loop may not end on an unreviewed fix pass</em>: that fix pass
-    is verified by its recorded checks;</li>
+  is verified by its recorded checks;</li>
 <li><a href="../../adrs/0034-ship-panel-rounds-and-unprimed-exit/">ADR-0034</a>'s <em>The loop
-    cannot end until an unprimed reviewer has seen the final state</em>;</li>
+  cannot end until an unprimed reviewer has seen the final state</em>;</li>
 <li><a href="../../adrs/0037-whole-file-gate-and-derived-figures/">ADR-0037</a>'s
-    whole-file gate: a met gate stays met across a check-closed prose fix;</li>
+  whole-file gate: a met gate stays met across a check-closed prose fix;</li>
 <li><a href="../../adrs/0035-vary-method-not-model/">ADR-0035</a>'s <em>A premise about
-    existing behaviour is executed, not read, before it ships</em>: a met gate stays
-    met, and a prose fix narrowing a behavioural claim is measured by its own
-    check.</li>
+  existing behaviour is executed, not read, before it ships</em>: a met gate stays
+  met, and a prose fix narrowing a behavioural claim is measured by its own
+  check.</li>
 </ul>
 <p>ADR-0036 is unchanged.
 - <strong>Process budget.</strong> Rule (c) grows <code>ship/SKILL.md</code>, so under
@@ -11454,6 +11458,8 @@ a draft that is never merged) as one commit to
   commits <code>sdd/process-budget.json</code> beside the skill: 295,438 to 297,425 bytes at
   the variant's current head (its <code>raises</code> entry). The budget file is
   bookkeeping, not behaviour.</p>
+</li>
+</ul>
 <h3 id="not-in-run-b">Not in run B<a class="headerlink" href="#not-in-run-b" title="Permanent link">&para;</a></h3>
 <p><strong>Two candidates that act on the same cost stay out, so that rule (c) is the
 only change run B scores.</strong></p>

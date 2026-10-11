@@ -11319,28 +11319,32 @@ live in D3 and D8.</p>
   operation, the <strong>connect</strong> budget moves to its <code>Session</code> (RFC-0017 D5);
   per-operation retry stays each driver's native
   mechanism, as that record decides.</li>
-<li><strong><a href="../0012-async-store-backend-api/">ADR-0012</a></strong>, <em>separate async types</em> and
+<li>
+<p><strong><a href="../0012-async-store-backend-api/">ADR-0012</a></strong>, <em>separate async types</em> and
   its dismissal of Option E: the types stay separate, and the dismissal is
-  narrowed rather than reversed. By driver kind, the sync surface is:</li>
+  narrowed rather than reversed. By driver kind, the sync surface is:</p>
+<ul>
 <li><strong>sync drivers</strong> (Memory, Local, SFTP, the SQL pair, S3, HTTP; Memory
-    also keeps an async driver of its own): served by the sync kernel, whose
-    shared surface is generated as native sync source from the async kernel
-    and whose sync-only surface is hand-written (the Decision above);</li>
+  also keeps an async driver of its own): served by the sync kernel, whose
+  shared surface is generated as native sync source from the async kernel
+  and whose sync-only surface is hand-written (the Decision above);</li>
 <li><strong>async drivers with a generated sync twin</strong> (Azure): served by that
-    twin, generated except for its stream-returning primitives, through the
-    sync kernel, with no runtime wrapper;</li>
+  twin, generated except for its stream-returning primitives, through the
+  sync kernel, with no runtime wrapper;</li>
 <li><strong>async-only drivers</strong> (Graph): reached by sync callers through
-    <code>AsyncBackendSyncAdapter</code> over the async kernel, the runtime wrapper
-    ADR-0012's Option E describes, as they are today.</li>
+  <code>AsyncBackendSyncAdapter</code> over the async kernel, the runtime wrapper
+  ADR-0012's Option E describes, as they are today.</li>
 </ul>
 <p>Async-first source is taken for the kernel and the Azure driver. Option E's
-  runtime wrapper stays where ADR-0025 already uses it.
+runtime wrapper stays where ADR-0025 already uses it.
 - <strong><a href="../0025-async-to-sync-backend-adapter/">ADR-0025</a></strong>, its scope: the
   adapter stays the sync route for async-only backends (Graph), and is not the
   route for Azure, which gets a generated sync driver. Its capability
   translation is unchanged. The "reverse if a native async seekable-read op is
   added" does not fire, because <code>get_range</code> is a driver primitive and the
   async surface gains no seekable-read operation.</p>
+</li>
+</ul>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Positive:</strong> each contract clause is implemented once, so a clause fixed is

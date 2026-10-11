@@ -12259,10 +12259,10 @@ for one clause:</p>
 </ul>
 <h3 id="caveats-on-the-type-b-verdicts">Caveats on the type-(b) verdicts<a class="headerlink" href="#caveats-on-the-type-b-verdicts" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>SQL-QUERY-061 / SQL-QUERY-063</strong> ride entirely on shared-base coverage via
+<li>
+<p><strong>SQL-QUERY-061 / SQL-QUERY-063</strong> ride entirely on shared-base coverage via
   <code>SqlBlobBackend</code> tests; there is no <code>sqlquery</code> conformance fixture and no
-  <code>SqlQueryBackend</code>-specific close / PRAGMA assertion. The weakest type-(b) rows.</li>
-</ul>
+  <code>SqlQueryBackend</code>-specific close / PRAGMA assertion. The weakest type-(b) rows.</p>
 <blockquote>
 <p><strong>Half of this caveat has since closed.</strong> BK-340 registered the <code>sqlquery</code>
 conformance fixture, so the "no conformance fixture" clause no longer holds —
@@ -12280,6 +12280,8 @@ diagnosis above is left as written; this note records what changed under it.
   exercised but not mechanism-asserted (closest is the test that a stream failure
   mid-write leaves no truncated object).</p>
 </blockquote>
+</li>
+</ul>
 <h3 id="discovery-follow-up">Discovery follow-up<a class="headerlink" href="#discovery-follow-up" title="Permanent link">&para;</a></h3>
 <p><code>HTTP-CON-004</code> surfaced a <strong>three-way capability divergence</strong> not visible to the first
 pass: the runtime constant <code>_CAPABILITIES</code> (<code>_http.py:41</code>) declares

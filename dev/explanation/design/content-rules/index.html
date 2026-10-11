@@ -11335,19 +11335,19 @@ framework</a>): placement →
 <p><a id="code-examples-sourced"></a><strong>A fenced block in published prose is generated or sourced, not typed.</strong> [review-enforced]
    Each block comes from one of two homes, and a hand-written fence is the
    bounded exception.</p>
-</li>
+<ul>
 <li><strong>Runnable code</strong> comes from <code>examples/snippets/</code> via <code>pymdownx.snippets</code>
-     <code>--8&lt;--</code> regions, so CI catches API drift.</li>
+  <code>--8&lt;--</code> regions, so CI catches API drift.</li>
 <li><strong>A generated non-code artefact</strong>, such as a diagram derived from the
-     repository, comes from a <code>gen_*</code> script with a <code>--check</code> gate, committed
-     under <code>docs-src/_data/</code> and included the same way. A diagram with dates
-     in it is a Rule 1 violation the moment it is typed by hand.</li>
+  repository, comes from a <code>gen_*</code> script with a <code>--check</code> gate, committed
+  under <code>docs-src/_data/</code> and included the same way. A diagram with dates
+  in it is a Rule 1 violation the moment it is typed by hand.</li>
 <li><strong>A hand-written fence</strong> is allowed only for a snippet that cannot execute
-     in CI (e.g. it needs real credentials) or an illustration of markup, and
-     notes its reason inline.</li>
-<li>
-<p><strong>A literal <code>--8&lt;--</code></strong> inside an illustration is escaped with a leading
-     <code>;</code>, or <code>pymdownx.snippets</code> expands it.</p>
+  in CI (e.g. it needs real credentials) or an illustration of markup, and
+  notes its reason inline.</li>
+<li><strong>A literal <code>--8&lt;--</code></strong> inside an illustration is escaped with a leading
+  <code>;</code>, or <code>pymdownx.snippets</code> expands it.</li>
+</ul>
 </li>
 <li>
 <p><a id="kernsatz"></a><strong>Lead with the Kernsatz</strong> — the core claim, stated first. [review-enforced]
@@ -11357,20 +11357,20 @@ framework</a>): placement →
    the section is not yet understood well enough to write, so return to the
    source — the material the section is about — instead of writing around the
    gap.</p>
-</li>
+<ul>
 <li>The opening defines any term the section coins or uses in a sense the
-     reader cannot be assumed to hold. A one-clause gloss plus a link satisfies
-     both this and Rule 4.</li>
+  reader cannot be assumed to hold. A one-clause gloss plus a link satisfies
+  both this and Rule 4.</li>
 <li>What follows the Kernsatz is detail the Kernsatz earned. A claim that is
-     absent and a claim that arrives late both fail this rule.</li>
+  absent and a claim that arrives late both fail this rule.</li>
 <li>A <em>section</em> is a heading-delimited unit of Markdown prose at any heading
-     level; a list item, a table and a YAML block are not sections, and a
-     section whose body is mostly a table still opens with the claim the table
-     serves.</li>
-<li>
-<p><em>Substantially rewritten</em> means the section's claim changed, not its
-     wording; a section that stated no claim before is substantially rewritten
-     by definition.</p>
+  level; a list item, a table and a YAML block are not sections, and a
+  section whose body is mostly a table still opens with the claim the table
+  serves.</li>
+<li><em>Substantially rewritten</em> means the section's claim changed, not its
+  wording; a section that stated no claim before is substantially rewritten
+  by definition.</li>
+</ul>
 </li>
 <li>
 <p><a id="change-details-what-it-changes"></a><strong>A change details only the behaviour it owns.</strong> [review-enforced]
@@ -11379,18 +11379,20 @@ framework</a>): placement →
    or a docstring made accurate does; it <em>leaves alone</em> everything else. Text
    the change writes, such as a docstring, a spec clause, a guide, a migration
    note or a dossier, describes in detail only behaviour the change owns.</p>
-</li>
+<ul>
 <li>Behaviour the change leaves alone already has a home, the code (Rule 5)
-     and the item, spec or ADR that governs it, so the change gives it at most
-     a one-line pointer to that item.</li>
+  and the item, spec or ADR that governs it, so the change gives it at most
+  a one-line pointer to that item.</li>
 <li>A finding on such detail is fixed by deleting it or replacing it with the
-     pointer, never by narrowing it.</li>
+  pointer, never by narrowing it.</li>
 <li><strong>This binds description, not premise.</strong> A claim the change relies on,
-     such as the behaviour its code assumes or the reason it gives for itself,
-     belongs to the change: a refuted premise is fixed by changing behaviour or
-     filed, never by deleting the sentence.</li>
+  such as the behaviour its code assumes or the reason it gives for itself,
+  belongs to the change: a refuted premise is fixed by changing behaviour or
+  filed, never by deleting the sentence.</li>
 <li>The fix shapes this restricts are in
-     <a href="https://github.com/haalfi/remote-store/blob/master/.claude/skills/fix-pr/SKILL.md#step-3-fix"><code>/fix-pr</code> Step 3</a>.</li>
+  <a href="https://github.com/haalfi/remote-store/blob/master/.claude/skills/fix-pr/SKILL.md#step-3-fix"><code>/fix-pr</code> Step 3</a>.</li>
+</ul>
+</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="examples-bad-good">Examples (bad → good)<a class="headerlink" href="#examples-bad-good" title="Permanent link">&para;</a></h3>

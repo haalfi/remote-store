@@ -11334,11 +11334,13 @@ rounds, locally (BK-404) and in CI (ID-266)?</p>
   (<code>uv pip install -e ".[dev]"</code>), and how often a cached map would survive is
   unmeasured.</li>
 <li><strong>Two selection-free fixes are cheaper and carry no risk of skipping a
-  test:</strong></li>
+  test:</strong><ul>
 <li>BUG-301 removes 157 of 721 Stage-1 worker-seconds (22%, audit-022 § L2
-    and § H1);</li>
+  and § H1);</li>
 <li>BK-401 takes the coverage run from 310 s to 250 s at <code>-n 4</code> (19%,
-    audit-022 § L1).</li>
+  audit-022 § L1).</li>
+</ul>
+</li>
 </ul>
 <h2 id="when-to-revisit">When to revisit<a class="headerlink" href="#when-to-revisit" title="Permanent link">&para;</a></h2>
 <p>Only if, after BUG-301 and BK-401 land, local rounds are still a measured
@@ -11610,9 +11612,9 @@ interpreter.</strong></p>
   without <code>--cov=remote_store</code>: 77 executions, 87 fingerprints and 308 links
   each. Under <code>--cov</code> the report measures only the selected run (15% total on
   a no-change run), so a selected run must never assert the coverage floor.</li>
-<li><strong>Portability:</strong> the 3.13 map was copied and the <code>_sftp.py</code> function-body
-  seed run on each interpreter with <code>POC_EXTRA="-n 4"</code>.</li>
-</ul>
+<li>
+<p><strong>Portability:</strong> the 3.13 map was copied and the <code>_sftp.py</code> function-body
+  seed run on each interpreter with <code>POC_EXTRA="-n 4"</code>.</p>
 <table>
 <thead>
 <tr>
@@ -11651,16 +11653,18 @@ interpreter.</strong></p>
 </table>
 <ul>
 <li><strong>Why the map is discarded:</strong> <code>testmon/db.py</code>'s
-    <code>fetch_or_create_environment</code> starts a new environment when either the
-    full Python version (<code>3.13.14</code>) or the installed-package string
-    (major.minor per package) differs, and deletes the old one: the 3.11 copy
-    afterwards held only <code>environment_id</code> 2, with all 11,932 executions.</li>
+  <code>fetch_or_create_environment</code> starts a new environment when either the
+  full Python version (<code>3.13.14</code>) or the installed-package string
+  (major.minor per package) differs, and deletes the old one: the 3.11 copy
+  afterwards held only <code>environment_id</code> 2, with all 11,932 executions.</li>
 <li><strong>The 3.14 failures are not testmon's.</strong> A testmon-free control on
-    3.14.0rc2 (<code>-n 4 -p no:testmon</code>) gave 14 failed and 8 errors: four
-    <code>test_bench_report.py</code> argparse help-format <code>ValueError</code>s in the rc's
-    stdlib, the rest pydantic (<code>_eval_type() got an unexpected keyword
-    argument</code>) and dagster paths. The seeded run added only the seed's
-    failure.</li>
+  3.14.0rc2 (<code>-n 4 -p no:testmon</code>) gave 14 failed and 8 errors: four
+  <code>test_bench_report.py</code> argparse help-format <code>ValueError</code>s in the rc's
+  stdlib, the rest pydantic (<code>_eval_type() got an unexpected keyword
+  argument</code>) and dagster paths. The seeded run added only the seed's
+  failure.</li>
+</ul>
+</li>
 </ul>
 <h2 id="appendix-d-tests-that-read-source-as-text">Appendix D: tests that read source as text<a class="headerlink" href="#appendix-d-tests-that-read-source-as-text" title="Permanent link">&para;</a></h2>
 <p><strong>The text-read set is larger than audit-022's two files, and this PoC did
@@ -11675,22 +11679,24 @@ missing:</p>
   subprocess are not seen. A first scan that excluded any open with
   <code>importlib._bootstrap</code> within six frames could drop such reads; re-running
   with the narrower check (10,998 passed, 541.9 s) gave the same 15 files with
-  identical per-file counts.</li>
+  identical per-file counts.<ul>
 <li><strong><code>tests/scripts/</code> (8), read through the scripts they drive:</strong>
-    <code>test_check_capability_parity.py</code>, <code>test_check_docstring_parity.py</code>,
-    <code>test_check_no_retrospective.py</code>, <code>test_check_no_tracker_refs.py</code>,
-    <code>test_check_rst_roles.py</code>, <code>test_check_test_placement.py</code>,
-    <code>test_gen_features.py</code>, <code>test_gen_graph.py</code>.</li>
+  <code>test_check_capability_parity.py</code>, <code>test_check_docstring_parity.py</code>,
+  <code>test_check_no_retrospective.py</code>, <code>test_check_no_tracker_refs.py</code>,
+  <code>test_check_rst_roles.py</code>, <code>test_check_test_placement.py</code>,
+  <code>test_gen_features.py</code>, <code>test_gen_graph.py</code>.</li>
 <li><strong>Elsewhere, direct reads (2):</strong> <code>tests/ext/test_contract.py:85,106</code> and
-    <code>tests/backends/graph/aio/test_utils.py:173</code> parse or read <code>src/</code> source
-    themselves.</li>
+  <code>tests/backends/graph/aio/test_utils.py:173</code> parse or read <code>src/</code> source
+  themselves.</li>
 <li><strong>Elsewhere, unclassified (5):</strong> <code>tests/aio/test_async_to_sync_adapter.py</code>,
-    <code>tests/backends/graph/aio/test_auth.py</code>,
-    <code>tests/backends/s3/test_write_result_pbt.py</code>, <code>tests/ext/test_observe.py</code>,
-    <code>tests/ext/test_otel.py</code>. Their own source shows no read; the hits likely
-    come from library code that renders source (<code>linecache</code>,
-    <code>inspect.getsource</code>), which caches, so which file records the read can
-    depend on test order.</li>
+  <code>tests/backends/graph/aio/test_auth.py</code>,
+  <code>tests/backends/s3/test_write_result_pbt.py</code>, <code>tests/ext/test_observe.py</code>,
+  <code>tests/ext/test_otel.py</code>. Their own source shows no read; the hits likely
+  come from library code that renders source (<code>linecache</code>,
+  <code>inspect.getsource</code>), which caches, so which file records the read can
+  depend on test order.</li>
+</ul>
+</li>
 <li><strong>Non-<code>src/</code> readers, not measured.</strong> The scan drops paths outside <code>src/</code>.
   Known examples: <code>tests/backends/conformance/test_large_payload_guard.py:60-63</code>
   (<code>ast.parse</code> on <code>conformance/**/test_*.py</code>),

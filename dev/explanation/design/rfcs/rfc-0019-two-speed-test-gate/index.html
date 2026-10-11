@@ -11819,59 +11819,61 @@ job depends on every other full-lane job and runs after they finish
 refines what runs inside <code>code</code> jobs and never turns on a job the filter turned
 off.</strong></p>
 <ul>
-<li><strong>Lanes collapse without code.</strong> When <code>code=false</code> (docs, formal, TLA or
+<li>
+<p><strong>Lanes collapse without code.</strong> When <code>code=false</code> (docs, formal, TLA or
   hooks only), both lanes would run the same jobs, so <code>setup</code> classifies that
   run as the <strong>full lane</strong>, whatever the event. The lane is therefore full on
-  any of four conditions:</li>
+  any of four conditions:</p>
+<ul>
 <li>a <code>merge-candidate</code> label event;</li>
 <li>a master push;</li>
 <li><code>code=false</code> on an event that starts a lane (<code>opened</code>, <code>synchronize</code>,
-    <code>reopened</code>);</li>
+  <code>reopened</code>);</li>
 <li>a selection that is FULL (D5).</li>
 </ul>
 <p>A FULL selection runs every job anyway, so it is the full lane and needs no
-  label. That is also what keeps <code>dependabot-auto-merge.yml</code> working: a pip
-  bump touches <code>pyproject.toml</code>, which is a FULL row. A <code>labeled</code> event for any
-  other label starts no lane, even with <code>code=false</code> (D3). The same final job
-  posts <code>merge-gate</code> in every case. D2's "the
-  fast lane never posts" and the single-poster lint hold as written, and a docs
-  PR needs no label.
+label. That is also what keeps <code>dependabot-auto-merge.yml</code> working: a pip
+bump touches <code>pyproject.toml</code>, which is a FULL row. A <code>labeled</code> event for any
+other label starts no lane, even with <code>code=false</code> (D3). The same final job
+posts <code>merge-gate</code> in every case. D2's "the
+fast lane never posts" and the single-poster lint hold as written, and a docs
+PR needs no label.
 - <strong>The non-code classification fails toward code.</strong> Because a non-code run
   posts <code>merge-gate</code>, a misclassification is a merge-barrier defect, not a
   slowdown.
-  - <strong>The property the barrier needs:</strong> every tracked file a test reads or
-    imports classifies into a class whose jobs run that test. "Classify as
-    code" is too broad. It would undo deliberate carve-outs whose own jobs run
-    the reading tests: <code>.claude/hooks/</code> and the RFC-0015 scripts are
-    <code>HOOKS_PAT</code> (run by <code>tooling-tests</code>, <code>ci.yml</code> comment above <code>HOOKS_PAT</code>),
-    and <code>sdd/formal/MemoryBackend-py/</code>, which <code>tests/backends/dafny/_helpers.py</code>
-    imports, is <code>FORMAL_PAT</code> (run by <code>verify-formal</code>).
-  - An error in the classifier itself selects the code class and the full
-    lane.
-  - The class outputs are recorded in the same structured output as the
-    selection (D7).
-  - <strong>A known violator exists today.</strong> <code>CODE_PAT</code> names
-    <code>docs-src/reference/FEATURES.md</code>, which does not exist (<code>git ls-files</code>).
-    The real generated file is the root <code>FEATURES.md</code>: it matches neither
-    <code>CODE_PAT</code> nor <code>DOCS_PAT</code>, and <code>tests/scripts/test_gen_features.py</code> reads
-    it. A <code>FEATURES.md</code>-only diff therefore classifies as non-code. Today that
-    means nothing runs and <code>gate</code> passes. Under this RFC it would post
-    <code>merge-gate</code>. The fix is tracked as BUG-302, outside this RFC, and must
-    land before Phase 4.
-  - <strong>Phase 0 audits every class pattern:</strong> each literal path in <code>CODE_PAT</code>,
-    <code>DOCS_PAT</code>, <code>FORMAL_PAT</code>, <code>TLA_PAT</code> and <code>HOOKS_PAT</code> must match a tracked
-    file, and every tracked file a test reads must meet the property above.
-    The audit is expected to find more than BUG-302. <code>tests/scripts/</code> tests read
-    <code>sdd/</code> files that are <code>DOCS_PAT</code> only, and <code>tooling-tests</code> runs only for
-    <code>code</code> or <code>hooks</code>, so those tests do not run on a docs-only PR today. Each
-    such case is listed. It is then either moved to a class whose jobs run the
-    test, or recorded as accepted because a <code>docs-gate</code> check covers the same
-    claim.
-  - <strong>Phase 4's classifier migration carries this as a test.</strong> The history
-    replay must show identical class outputs, with one exception: a
-    non-code → code change is allowed when it is a listed correction, such as
-    the <code>FEATURES.md</code> fix. A code → non-code change always blocks the
-    migration.
+- <strong>The property the barrier needs:</strong> every tracked file a test reads or
+  imports classifies into a class whose jobs run that test. "Classify as
+  code" is too broad. It would undo deliberate carve-outs whose own jobs run
+  the reading tests: <code>.claude/hooks/</code> and the RFC-0015 scripts are
+  <code>HOOKS_PAT</code> (run by <code>tooling-tests</code>, <code>ci.yml</code> comment above <code>HOOKS_PAT</code>),
+  and <code>sdd/formal/MemoryBackend-py/</code>, which <code>tests/backends/dafny/_helpers.py</code>
+  imports, is <code>FORMAL_PAT</code> (run by <code>verify-formal</code>).
+- An error in the classifier itself selects the code class and the full
+  lane.
+- The class outputs are recorded in the same structured output as the
+  selection (D7).
+- <strong>A known violator exists today.</strong> <code>CODE_PAT</code> names
+  <code>docs-src/reference/FEATURES.md</code>, which does not exist (<code>git ls-files</code>).
+  The real generated file is the root <code>FEATURES.md</code>: it matches neither
+  <code>CODE_PAT</code> nor <code>DOCS_PAT</code>, and <code>tests/scripts/test_gen_features.py</code> reads
+  it. A <code>FEATURES.md</code>-only diff therefore classifies as non-code. Today that
+  means nothing runs and <code>gate</code> passes. Under this RFC it would post
+  <code>merge-gate</code>. The fix is tracked as BUG-302, outside this RFC, and must
+  land before Phase 4.
+- <strong>Phase 0 audits every class pattern:</strong> each literal path in <code>CODE_PAT</code>,
+  <code>DOCS_PAT</code>, <code>FORMAL_PAT</code>, <code>TLA_PAT</code> and <code>HOOKS_PAT</code> must match a tracked
+  file, and every tracked file a test reads must meet the property above.
+  The audit is expected to find more than BUG-302. <code>tests/scripts/</code> tests read
+  <code>sdd/</code> files that are <code>DOCS_PAT</code> only, and <code>tooling-tests</code> runs only for
+  <code>code</code> or <code>hooks</code>, so those tests do not run on a docs-only PR today. Each
+  such case is listed. It is then either moved to a class whose jobs run the
+  test, or recorded as accepted because a <code>docs-gate</code> check covers the same
+  claim.
+- <strong>Phase 4's classifier migration carries this as a test.</strong> The history
+  replay must show identical class outputs, with one exception: a
+  non-code → code change is allowed when it is a listed correction, such as
+  the <code>FEATURES.md</code> fix. A code → non-code change always blocks the
+  migration.
 - <strong>Locally the same split.</strong> The <code>/pr</code> mechanical gate already composes
   <code>all</code> for code diffs and <code>lint</code> + <code>docs-gate</code> otherwise
   (<a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md#pr-validation-gates">PR validation gates</a>); the
@@ -11879,6 +11881,8 @@ off.</strong></p>
 - <strong>One classifier, later.</strong> The class patterns move from <code>ci.yml</code>'s bash into
   the selector in Phase 4, once the selector is proven, so path classification
   has one home (§ Roadmap).</p>
+</li>
+</ul>
 <h3 id="d5-the-selector-four-layers-fail-open">D5. The selector: four layers, fail open<a class="headerlink" href="#d5-the-selector-four-layers-fail-open" title="Permanent link">&para;</a></h3>
 <p><strong>Input is the diff from the merge base to HEAD (plus the working tree
 locally); output is either <code>FULL</code> with a reason, or pytest arguments and
@@ -11969,8 +11973,6 @@ the result and are always unioned, never skipped:</p>
 <li>
 <p><strong>Path classes</strong>, first matching row per path. A committed table in the
    style of <code>scripts/drift_smoke_map.py</code>'s <code>SMOKE_TARGETS</code>:</p>
-</li>
-</ul>
 <table>
 <thead>
 <tr>
@@ -12034,68 +12036,74 @@ the result and are always unioned, never skipped:</p>
 </tbody>
 </table>
 <p>FULL in the pilot |
-   | <code>fixtures.toml</code> | conformance limited to the fixture ids whose block changed (both versions parsed), <code>tests/backends/fixtures/</code>, and the same registry consumers as the fixture-module row; FULL if it does not parse. FULL in the pilot |
-   | <code>examples/notebooks/**</code> | no tests; the <code>notebooks</code> job |
-   | Other <code>examples/**</code> | the <code>examples</code> job, plus the tests that import or read examples directly: <code>tests/test_examples.py</code> and <code>tests/test_snippets.py</code> (both <code>from examples.…</code>), and <code>tests/backends/conformance/test_examples.py</code> (opens an example by path). The <code>examples</code> job runs only <code>run_examples.py</code>, not these tests |
-   | <code>tests/scripts/run_examples.py</code>, <code>tests/scripts/run_notebooks.py</code> | the <code>examples</code> or <code>notebooks</code> job, plus layers 2 and 4 for tests that import or read them |
-   | <code>scripts/&lt;x&gt;.py</code> | <code>tests/scripts/test_&lt;x&gt;.py</code>, with leading underscores of <code>&lt;x&gt;</code> dropped (<code>_dafny_classorder.py</code> → <code>test_dafny_classorder.py</code>); FULL if no such test exists. An empty mapping is never an empty selection |
-   | Generated artifacts (<code>FEATURES.md</code>, graph data) | their generator and check tests |
-   | Anything unmatched | FULL |</p>
-<ol>
-<li><strong>Static import graph.</strong> An <code>ast</code>-built reverse graph from each <code>src/</code>
-   module to the test files that depend on it. Its edge rule:</li>
+| <code>fixtures.toml</code> | conformance limited to the fixture ids whose block changed (both versions parsed), <code>tests/backends/fixtures/</code>, and the same registry consumers as the fixture-module row; FULL if it does not parse. FULL in the pilot |
+| <code>examples/notebooks/**</code> | no tests; the <code>notebooks</code> job |
+| Other <code>examples/**</code> | the <code>examples</code> job, plus the tests that import or read examples directly: <code>tests/test_examples.py</code> and <code>tests/test_snippets.py</code> (both <code>from examples.…</code>), and <code>tests/backends/conformance/test_examples.py</code> (opens an example by path). The <code>examples</code> job runs only <code>run_examples.py</code>, not these tests |
+| <code>tests/scripts/run_examples.py</code>, <code>tests/scripts/run_notebooks.py</code> | the <code>examples</code> or <code>notebooks</code> job, plus layers 2 and 4 for tests that import or read them |
+| <code>scripts/&lt;x&gt;.py</code> | <code>tests/scripts/test_&lt;x&gt;.py</code>, with leading underscores of <code>&lt;x&gt;</code> dropped (<code>_dafny_classorder.py</code> → <code>test_dafny_classorder.py</code>); FULL if no such test exists. An empty mapping is never an empty selection |
+| Generated artifacts (<code>FEATURES.md</code>, graph data) | their generator and check tests |
+| Anything unmatched | FULL |</p>
+</li>
+<li>
+<p><strong>Static import graph.</strong> An <code>ast</code>-built reverse graph from each <code>src/</code>
+   module to the test files that depend on it. Its edge rule:</p>
+<ul>
 <li><strong>Every import counts</strong>: module-level, function-local (most <code>_flat_ns</code>
-     uses are lazy, e.g. <code>_s3_base.py</code>, <code>_azure.py</code>, <code>_sftp.py</code>) and inside
-     <code>TYPE_CHECKING</code>, which over-selects slightly rather than miss.</li>
+  uses are lazy, e.g. <code>_s3_base.py</code>, <code>_azure.py</code>, <code>_sftp.py</code>) and inside
+  <code>TYPE_CHECKING</code>, which over-selects slightly rather than miss.</li>
 <li><strong><code>src/</code> → <code>src/</code> edges are followed transitively</strong>, and so are edges
-     through <code>tests/</code> helper modules.</li>
+  through <code>tests/</code> helper modules.</li>
 <li><strong>The graph covers <code>tests/</code> and <code>scripts/</code> modules as nodes, not only
-     <code>src/</code>.</strong> A test module imported by another test (for example,
-     <code>test_async_extended.py</code> imports from <code>test_atomic.py</code>) selects its
-     importers. Scripts import each other by bare name after a <code>sys.path</code>
-     insert (<code>from gen_features import …</code>, <code>from _trace_corpus import …</code>), so a
-     bare import that matches <code>scripts/&lt;name&gt;.py</code> is an edge.</li>
+  <code>src/</code>.</strong> A test module imported by another test (for example,
+  <code>test_async_extended.py</code> imports from <code>test_atomic.py</code>) selects its
+  importers. Scripts import each other by bare name after a <code>sys.path</code>
+  insert (<code>from gen_features import …</code>, <code>from _trace_corpus import …</code>), so a
+  bare import that matches <code>scripts/&lt;name&gt;.py</code> is an edge.</li>
 <li><strong>String-named imports count.</strong> Tests import modules by name:
-     <code>importlib.import_module</code>, <code>__import__</code> and <code>pytest.importorskip</code>, often
-     from a parametrize list (<code>tests/test_capabilities.py</code>,
-     <code>tests/backends/conformance/test_health_probe_declared.py</code>, the
-     <code>tests/backends/s3/</code> helpers). Every string literal in a test file that
-     names an existing module (<code>remote_store.…</code> or <code>tests.…</code>) is an edge. A
-     dynamic import whose target is not a literal puts the file in an
-     always-run set for every code change. D7's cross-check cannot see these
-     edges: those tests touch only class-body lines, which are import-phase. So
-     this rule is held by seeds, not by the oracle.</li>
+  <code>importlib.import_module</code>, <code>__import__</code> and <code>pytest.importorskip</code>, often
+  from a parametrize list (<code>tests/test_capabilities.py</code>,
+  <code>tests/backends/conformance/test_health_probe_declared.py</code>, the
+  <code>tests/backends/s3/</code> helpers). Every string literal in a test file that
+  names an existing module (<code>remote_store.…</code> or <code>tests.…</code>) is an edge. A
+  dynamic import whose target is not a literal puts the file in an
+  always-run set for every code change. D7's cross-check cannot see these
+  edges: those tests touch only class-body lines, which are import-phase. So
+  this rule is held by seeds, not by the oracle.</li>
 <li><strong>Package <code>__init__.py</code> files are re-export hubs, not dependencies.</strong>
-     <code>remote_store/__init__.py</code> imports <code>_store</code>, <code>_path</code>, <code>_config</code>,
-     <code>_registry</code>, <code>_proxy</code> and every <code>ext.*</code> module, so treating it as a node
-     would make every module reach every test. Instead, an import of a name
-     from a hub resolves to the module that defines that name, using the hub's
-     own import statements. <code>import remote_store</code> followed by
-     <code>remote_store.&lt;name&gt;</code> resolves the same way.</li>
+  <code>remote_store/__init__.py</code> imports <code>_store</code>, <code>_path</code>, <code>_config</code>,
+  <code>_registry</code>, <code>_proxy</code> and every <code>ext.*</code> module, so treating it as a node
+  would make every module reach every test. Instead, an import of a name
+  from a hub resolves to the module that defines that name, using the hub's
+  own import statements. <code>import remote_store</code> followed by
+  <code>remote_store.&lt;name&gt;</code> resolves the same way.</li>
 <li><strong>Fail open:</strong> an unresolvable hub import (star import, <code>getattr</code>, a bare
-     module object passed around) depends on every module the hub imports.
-     Editing a hub is FULL (layer 1).</li>
+  module object passed around) depends on every module the hub imports.
+  Editing a hub is FULL (layer 1).</li>
 <li><strong>Import-time effects:</strong> importing any submodule runs the package
-     <code>__init__</code>, so a module's top-level code runs in every test. A module
-     whose top level does more than define names (registration, patching,
-     environment reads) is therefore a core module (layer 1, FULL). Phase 0
-     derives that list by AST scan, and D7's cross-check ignores import-phase
-     lines for the same reason.</li>
-<li><strong>Backend axis.</strong> It limits conformance to the fixtures of the backends a
-   change can reach, using two static registry facts:</li>
+  <code>__init__</code>, so a module's top-level code runs in every test. A module
+  whose top level does more than define names (registration, patching,
+  environment reads) is therefore a core module (layer 1, FULL). Phase 0
+  derives that list by AST scan, and D7's cross-check ignores import-phase
+  lines for the same reason.</li>
+</ul>
+</li>
+<li>
+<p><strong>Backend axis.</strong> It limits conformance to the fixtures of the backends a
+   change can reach, using two static registry facts:</p>
+<ul>
 <li><code>backends.toml</code> names each backend's <code>sources</code> and <code>async_sources</code>, the
-     latter covering <code>src/remote_store/aio/backends/</code>;</li>
+  latter covering <code>src/remote_store/aio/backends/</code>;</li>
 <li><code>fixtures.toml</code> names each fixture's <code>backend</code>.</li>
-</ol>
+</ul>
 <p>A changed <code>src/</code> module selects every backend whose source modules reach it
-   through layer-2 edges. A shared helper such as <code>_flat_ns.py</code>, <code>_s3_base.py</code>
-   or <code>_fileinfo.py</code> therefore selects the several backends that import it,
-   not a backend named after the file. The selection is the fixture ids of
-   those backends, plus <code>tests/backends/&lt;backend&gt;/</code>. A helper that reaches
-   every backend hits the cut-off and runs FULL.</p>
+through layer-2 edges. A shared helper such as <code>_flat_ns.py</code>, <code>_s3_base.py</code>
+or <code>_fileinfo.py</code> therefore selects the several backends that import it,
+not a backend named after the file. The selection is the fixture ids of
+those backends, plus <code>tests/backends/&lt;backend&gt;/</code>. A helper that reaches
+every backend hits the cut-off and runs FULL.</p>
 <p>The filter goes through the fixture registry (<code>fixture_params</code> honours an
-   allowlist of fixture ids), not <code>-k</code>. <code>-k s3</code> also matches <code>s3_pyarrow</code> and
-   <code>s3_boto3</code>, which <code>SMOKE_TARGETS</code> already works around.
+allowlist of fixture ids), not <code>-k</code>. <code>-k s3</code> also matches <code>s3_pyarrow</code> and
+<code>s3_boto3</code>, which <code>SMOKE_TARGETS</code> already works around.
 4. <strong>Text readers.</strong> A generated table maps <code>.py</code> source globs to the tests
    that read them as text, for <code>src/</code>, <code>tests/</code> and <code>scripts/</code> alike. Non-Python
    inputs (cassettes, <code>fixtures.toml</code>, generated artifacts) are out of its
@@ -12104,26 +12112,28 @@ the result and are always unioned, never skipped:</p>
    research § "If it is ever built" ("<code>.py</code> files as text"), and it keeps the
    pilot's "listed in the inventory → FULL" rule from overriding those rows. It is built by two
    independent methods, because each has blind spots the other covers:
-   - <strong>Runtime scan,</strong> extending <code>sdd/research/bk-403-testmon-poc/srcreads.py</code>
-     from readers of <code>src/</code> to readers of <code>tests/</code> and <code>scripts/</code> files.
-     Research Appendix D records two
-     blind spots in it: subprocess reads are not seen, and
-     <code>linecache</code>/<code>inspect.getsource</code> attribution depends on test order. A rerun
-     in the fixed default order reproduces both blind spots, so it is run in
-     default order <strong>and</strong> under <code>hatch run test-isolation</code>'s randomised
-     order, and the union is kept.
-   - <strong>Static scan:</strong> <code>read_text</code>, <code>open</code>, <code>ast.parse</code>, <code>glob</code>/<code>rglob</code> and
-     <code>subprocess</code> calls whose targets resolve to repository paths, across
-     <code>tests/</code> and <code>scripts/</code>. 16 files under <code>tests/</code> call <code>subprocess.*</code>
-     (Grep <code>subprocess\.(run|check_output|call|Popen)</code> over <code>tests/</code>, count
-     mode), mostly in <code>tests/scripts/</code>.</p>
+- <strong>Runtime scan,</strong> extending <code>sdd/research/bk-403-testmon-poc/srcreads.py</code>
+  from readers of <code>src/</code> to readers of <code>tests/</code> and <code>scripts/</code> files.
+  Research Appendix D records two
+  blind spots in it: subprocess reads are not seen, and
+  <code>linecache</code>/<code>inspect.getsource</code> attribution depends on test order. A rerun
+  in the fixed default order reproduces both blind spots, so it is run in
+  default order <strong>and</strong> under <code>hatch run test-isolation</code>'s randomised
+  order, and the union is kept.
+- <strong>Static scan:</strong> <code>read_text</code>, <code>open</code>, <code>ast.parse</code>, <code>glob</code>/<code>rglob</code> and
+  <code>subprocess</code> calls whose targets resolve to repository paths, across
+  <code>tests/</code> and <code>scripts/</code>. 16 files under <code>tests/</code> call <code>subprocess.*</code>
+  (Grep <code>subprocess\.(run|check_output|call|Popen)</code> over <code>tests/</code>, count
+  mode), mostly in <code>tests/scripts/</code>.</p>
 <p>Completeness cannot be proven, so the criterion is agreement between the
-   methods. A reader found by only one method is investigated and added before
-   the table is accepted. The static half is regenerated by D7's freshness
-   check. Examples of readers of test files: <code>test_large_payload_guard.py</code>
-   parses <code>conformance/**/test_*.py</code>, and <code>test_registry.py</code> reads
-   <code>conformance/**/*.py</code> (research Appendix D). A conformance test edit
-   therefore also selects those readers.</p>
+methods. A reader found by only one method is investigated and added before
+the table is accepted. The static half is regenerated by D7's freshness
+check. Examples of readers of test files: <code>test_large_payload_guard.py</code>
+parses <code>conformance/**/test_*.py</code>, and <code>test_registry.py</code> reads
+<code>conformance/**/*.py</code> (research Appendix D). A conformance test edit
+therefore also selects those readers.</p>
+</li>
+</ul>
 <p><strong>Cut-off:</strong> a selection whose estimated cost is above a threshold runs FULL,
 because above it selection saves too little to be worth the risk. Cost is
 measured in estimated wall-clock time and jobs triggered, not test count: a
@@ -12231,7 +12241,8 @@ survives that job's filters:
 <p><strong>A rule table drifts, so four independent checks hold it against reality,
 none of which selects anything.</strong></p>
 <ol>
-<li><strong>Seed tests.</strong> The PoC's 13 seeds become unit tests of the selector, plus
+<li>
+<p><strong>Seed tests.</strong> The PoC's 13 seeds become unit tests of the selector, plus
    seeds for text readers, the D6 job rules, string-named imports, test or
    script modules imported by other tests or scripts, a failure only a
    <code>*_strict</code> fixture reaches through a shared fixture module, an example edit
@@ -12241,28 +12252,29 @@ none of which selects anything.</strong></p>
    test job (D6, including the e2e-only
    <code>os_sensitive</code> edit), and a registry-consumer case (an <code>azure_replay_hns.py</code>
    edit that breaks a <code>tests/backends/azure/</code> test). They compute
-   selections only and run in seconds. Each seed asserts two things:</li>
+   selections only and run in seconds. Each seed asserts two things:</p>
+<ul>
 <li><strong>The selection contains the known failing test.</strong></li>
 <li>
 <p><strong>Its expected mode, <code>SELECTED</code> or <code>FULL</code> with its reason.</strong> Containment
-     alone passes vacuously under FULL. Under the pilot (layer-1 rows plus mapped
-     readers, layers 2–3 absent), a hand mapping of research Appendix B
-     puts 11 of the 13 PoC seeds in FULL:</p>
+  alone passes vacuously under FULL. Under the pilot (layer-1 rows plus mapped
+  readers, layers 2–3 absent), a hand mapping of research Appendix B
+  puts 11 of the 13 PoC seeds in FULL:</p>
 <ul>
 <li>both <code>conftest.py</code> seeds, <code>__init__.py</code> and <code>pyproject.toml</code>;</li>
 <li>five non-leaf <code>src/</code> modules (<code>_path</code>, <code>_registry</code>, <code>_azure</code>, <code>_sftp</code>
-   twice);</li>
+  twice);</li>
 <li>the <code>memory.py</code> fixture module and <code>fixtures.toml</code>, since the
-   fixture-registry rows are FULL in the pilot.</li>
+  fixture-registry rows are FULL in the pilot.</li>
 </ul>
 <p>The other two are SELECTED: the Azure cassette and <code>FEATURES.md</code>.
- Pinning the mode makes a FULL → SELECTED change visible when a layer is
- added, and so is a regression the other way.</p>
+Pinning the mode makes a FULL → SELECTED change visible when a layer is
+added, and so is a regression the other way.</p>
 </li>
-</ol>
+</ul>
 <p>Every non-FULL layer-1 row needs at least one <code>SELECTED</code> seed. The Phase 0
-   report states how many seeds a narrowing rule decided, not only how many
-   passed.
+report states how many seeds a narrowing rule decided, not only how many
+passed.
 2. <strong>Text-reader freshness.</strong> A check regenerates the static half of the layer-4
    table (D5) and diffs it against the committed copy. A new test that reads
    a file as text then fails in its own PR, instead of turning up only in the
@@ -12276,23 +12288,25 @@ none of which selects anything.</strong></p>
 4. <strong>Escape log.</strong> Each full run compares its failures with the fast selection
    for the same head. A failing test the fast lane skipped is an escape. Each
    escape is classified as one of:
-   - selector defect;
-   - stale or incomplete rule;
-   - environment-only failure;
-   - nondeterministic failure;
-   - failure in a job the selector does not represent;
-   - failure only the full coverage gate finds.</p>
+- selector defect;
+- stale or incomplete rule;
+- environment-only failure;
+- nondeterministic failure;
+- failure in a job the selector does not represent;
+- failure only the full coverage gate finds.</p>
 <p>Zero-escape exit criteria count only deterministic, selector-reachable
-   escapes (the first two classes). The others are reported, and routed to
-   their own owners.</p>
+escapes (the first two classes). The others are reported, and routed to
+their own owners.</p>
 <p><strong>A class other than the first two needs evidence</strong>, or a judgment call
-   could argue a real miss away:
-   - <em>environment-only</em>: the same test fails on the base commit in the same
-     job, or passes on every other leg;
-   - <em>nondeterministic</em>: it passes on an unchanged rerun of the same commit;
-   - <em>not represented</em>: the failing job has no D6 rule;
-   - <em>coverage-only</em>: no test failed, only the floor.</p>
+could argue a real miss away:
+- <em>environment-only</em>: the same test fails on the base commit in the same
+  job, or passes on every other leg;
+- <em>nondeterministic</em>: it passes on an unchanged rerun of the same commit;
+- <em>not represented</em>: the failing job has no D6 rule;
+- <em>coverage-only</em>: no test failed, only the floor.</p>
 <p>An escape without that evidence counts as a selector defect.</p>
+</li>
+</ol>
 <p><strong>Every fast run is observable.</strong> The selector writes structured output (JSON
 artifact and job summary) containing:</p>
 <ul>
@@ -12456,15 +12470,17 @@ on CI configuration, contributor tooling and two process records.</strong></p>
    A cut-off would have mattered little: the stop came from the FULL rate,
    before any selection reached a threshold.</li>
 <li><strong>Name of the local target.</strong></li>
-<li><strong>Skill integration.</strong> This covers three changes:</li>
+<li>
+<p><strong>Skill integration.</strong> This covers three changes:</p>
+<ul>
 <li><code>/ship</code> and <code>/fix-pr</code> running the fast target before round pushes;</li>
 <li><code>/ship</code> setting <code>merge-candidate</code> at its close;</li>
 <li><code>/pr</code> running the fast target instead of <code>all</code> before opening a PR.</li>
-</ol>
+</ul>
 <p>These are out of this RFC's scope by the maintainer's choice, but not
-   without an owner. The BK-404 and ID-266 dossiers keep them in scope, so both
-   items stay open until the edits land. Until then, the label is set by hand,
-   and D1's local fast target is used by hand.
+without an owner. The BK-404 and ID-266 dossiers keep them in scope, so both
+items stay open until the edits land. Until then, the label is set by hand,
+and D1's local fast target is used by hand.
 5. <strong>Late failures.</strong> The full run now comes at the close, so a failure the
    selector did not reach shows one round later than today. The escape log
    measures how often.
@@ -12478,6 +12494,8 @@ on CI configuration, contributor tooling and two process records.</strong></p>
    Two alternatives are worth weighing: a merge queue, if the account gains
    one, and an explicit <code>workflow_dispatch</code> or comment command. Revisit at the
    Phase 4 ADR.</p>
+</li>
+</ol>
 <p><strong>Decided while drafting</strong> (maintainer, 2026-10-03): rules plus static graph
 over a coverage map; the merge-candidate signal over draft state or approval;
 auxiliary jobs get their own path rules rather than always or never running;

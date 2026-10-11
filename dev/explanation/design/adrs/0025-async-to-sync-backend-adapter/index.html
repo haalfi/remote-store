@@ -11679,12 +11679,12 @@ constructor.</p>
   unwinding; subsequent calls on the same adapter are unaffected,
   but external observers (logs, metrics) may see overlapping
   "cancelled" and "completed-cleanup" events.</li>
-<li><strong>Worker-thread starvation under high concurrency.</strong> All sync
+<li>
+<p><strong>Worker-thread starvation under high concurrency.</strong> All sync
   callers share one event loop; backends that are CPU-bound (rare
   for I/O backends, but possible for <code>_graph_transfer</code>'s chunk
   hashing) can stall sibling calls. Mitigation deferred to backend
-  authors via <code>asyncio.to_thread</code> for hot CPU paths.</li>
-</ul>
+  authors via <code>asyncio.to_thread</code> for hot CPU paths.</p>
 <blockquote>
 <p>Superseded by <a href="../0029-graph-transfer-blocking-io-offload/">ADR-0029</a>:
 the Graph transfer path does no hashing; the real stall source is
@@ -11715,6 +11715,8 @@ blocking spool <strong>I/O</strong>, now offloaded in-backend via <code>asyncio.
   access. Random-access callers route through <code>read_seekable</code> and
   pay the spool fallback (above).</p>
 </blockquote>
+</li>
+</ul>
 <h2 id="followups">Followups<a class="headerlink" href="#followups" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Normative spec block (<code>ASYNC-NNN</code>) — landed.</strong> ID-142 amended

@@ -15340,6 +15340,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BUG-320: Nested lists indented for GitHub render flattened on the docs site</li>
 <li>BUG-280: <code>LocalBackend</code>'s three listing methods leak a raw <code>PermissionError</code></li>
 <li>BUG-317: pymdown-extensions 12.2 breaks the docs build, so every docs job fails</li>
 </ul>
@@ -15934,30 +15935,32 @@
 <h2 id="0280-2026-06-15">[0.28.0] - 2026-06-15<a class="headerlink" href="#0280-2026-06-15" title="Permanent link">&para;</a></h2>
 <h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Microsoft Graph backend (<code>GraphBackend</code>)</strong> (ID-127): a native-async backend
+<li>
+<p><strong>Microsoft Graph backend (<code>GraphBackend</code>)</strong> (ID-127): a native-async backend
   for OneDrive, SharePoint, and Teams document libraries via <code>httpx</code> + <code>msal</code>,
   installed with <code>remote-store[graph]</code>. It is <strong>async-only</strong> — construct it with
   <code>AsyncStore(backend=GraphBackend(...))</code>; there is no sync <code>Store</code> wrapper or
-  config <code>type=</code> string. It covers the full Store surface:</li>
+  config <code>type=</code> string. It covers the full Store surface:</p>
+<ul>
 <li><strong>Read path</strong> — <code>read</code> / <code>read_bytes</code> / <code>get_file_info</code> / <code>exists</code> /
-    <code>is_file</code> / <code>is_folder</code>, with range reads, download-URL expiry recovery,
-    in-backend retry, and a SharePoint range fallback that is scoped to the
-    drive and self-heals (BK-259).</li>
+  <code>is_file</code> / <code>is_folder</code>, with range reads, download-URL expiry recovery,
+  in-backend retry, and a SharePoint range fallback that is scoped to the
+  drive and self-heals (BK-259).</li>
 <li><strong>Listing</strong> — <code>iter_children</code> / <code>list_files</code> / <code>list_folders</code> /
-    <code>get_folder_info</code>.</li>
+  <code>get_folder_info</code>.</li>
 <li><strong>Write path</strong> — <code>write</code> / <code>write_atomic</code> (small <code>PUT /content</code> plus a
-    large-file upload session), auto-mkdir, and a native <code>WriteResult</code>.</li>
+  large-file upload session), auto-mkdir, and a native <code>WriteResult</code>.</li>
 <li><strong>Mutate path</strong> — <code>delete</code> / <code>delete_folder</code> / <code>move</code> / <code>copy</code> with async
-    copy/move monitor polling.</li>
+  copy/move monitor polling.</li>
 <li><code>GraphBackend(base_path=…)</code> scopes a backend to a drive subfolder (GR-058).</li>
 <li><code>write</code> / <code>move</code> / <code>copy</code> raise <code>InvalidPath</code> for folder targets,
-    file-ancestor descents, and directory destinations, matching the
-    hierarchical backends' error fidelity.</li>
+  file-ancestor descents, and directory destinations, matching the
+  hierarchical backends' error fidelity.</li>
 <li>Public companions <code>GraphAuth</code> and <code>GraphUtils</code>; config auto-wraps
-    <code>client_secret</code> / <code>client_certificate</code> in <code>Secret</code>.</li>
-<li>
-<p>Ships with a setup and usage guide plus full capability listings (FEATURES,
-    capabilities matrix, choosing-a-backend, README).</p>
+  <code>client_secret</code> / <code>client_certificate</code> in <code>Secret</code>.</li>
+<li>Ships with a setup and usage guide plus full capability listings (FEATURES,
+  capabilities matrix, choosing-a-backend, README).</li>
+</ul>
 </li>
 <li>
 <p><strong><code>ResourceLocked</code> error</strong> (ID-127): a new <code>RemoteStoreError</code> subtype for a
@@ -16547,28 +16550,26 @@ or silently corrupted state. Sync and async siblings are kept in lockstep throug
 <li>
 <p><strong><code>WriteResult</code>: write methods return rich metadata; <code>Store.head()</code>; user metadata; hashing helpers; async parity</strong> (ID-146, ID-148, ID-013b):
   The entire write surface now returns a structured result and accepts optional user metadata.</p>
-</li>
-<li>
-<p><strong><code>WriteResult</code> dataclass</strong> — every <code>write*()</code> call returns <code>WriteResult(path, size, source,
-    digest, etag, version_id, last_modified, metadata)</code>. <code>source</code> signals origin:
-    <code>NativeSource</code> (from the backend's write response), <code>BasicSource</code> (from a post-write stat),
-    or <code>SidecarSource</code> (from <code>ext.write</code>). Two new capabilities gate the rich fields:
-    <code>WRITE_RESULT_NATIVE</code> (backend populates <code>etag</code>, <code>digest</code>, <code>version_id</code>, <code>last_modified</code>
-    from its own response) and <code>USER_METADATA</code> (caller-supplied <code>metadata=</code> is persisted).</p>
-</li>
+<ul>
+<li><strong><code>WriteResult</code> dataclass</strong> — every <code>write*()</code> call returns <code>WriteResult(path, size, source,
+  digest, etag, version_id, last_modified, metadata)</code>. <code>source</code> signals origin:
+  <code>NativeSource</code> (from the backend's write response), <code>BasicSource</code> (from a post-write stat),
+  or <code>SidecarSource</code> (from <code>ext.write</code>). Two new capabilities gate the rich fields:
+  <code>WRITE_RESULT_NATIVE</code> (backend populates <code>etag</code>, <code>digest</code>, <code>version_id</code>, <code>last_modified</code>
+  from its own response) and <code>USER_METADATA</code> (caller-supplied <code>metadata=</code> is persisted).</li>
 <li><strong><code>Store.head(path)</code></strong> — retrieves file metadata as a <code>WriteResult</code> without reading content;
-    gated on <code>Capability.METADATA</code>.</li>
+  gated on <code>Capability.METADATA</code>.</li>
 <li><strong><code>ext.write</code></strong> — <code>write_with_hash</code> and <code>open_atomic_with_hash</code> guarantee a client-side
-    SHA-256 digest in <code>WriteResult.digest</code> regardless of whether the backend declares
-    <code>WRITE_RESULT_NATIVE</code>; suitable for integrity-critical pipelines.</li>
+  SHA-256 digest in <code>WriteResult.digest</code> regardless of whether the backend declares
+  <code>WRITE_RESULT_NATIVE</code>; suitable for integrity-critical pipelines.</li>
 <li><strong>Async parity</strong> — <code>AsyncStore.write*()</code> and <code>AsyncBackend.write</code> / <code>write_atomic</code>
-    return <code>WriteResult</code> and accept <code>metadata=</code>; <code>Capability.USER_METADATA</code> enforced at the
-    <code>AsyncStore</code> layer; <code>aio.ext.write.write_with_hash</code> mirrors the sync helper.</li>
+  return <code>WriteResult</code> and accept <code>metadata=</code>; <code>Capability.USER_METADATA</code> enforced at the
+  <code>AsyncStore</code> layer; <code>aio.ext.write.write_with_hash</code> mirrors the sync helper.</li>
 <li><strong>Proxy forwarding</strong> — <code>ProxyStore</code>, <code>ObservedStore</code>, and <code>CachedStore</code> all forward
-    <code>WriteResult</code> and <code>head()</code>; <code>StoreEvent.metadata["write_result"]</code> is populated on
-    successful writes.</li>
-<li>
-<p>Docs: Write Integrity guide; RFC-0011 (Implemented).</p>
+  <code>WriteResult</code> and <code>head()</code>; <code>StoreEvent.metadata["write_result"]</code> is populated on
+  successful writes.</li>
+<li>Docs: Write Integrity guide; RFC-0011 (Implemented).</li>
+</ul>
 </li>
 <li>
 <p><strong><code>AsyncBackendSyncAdapter</code></strong> (ID-141–143c): new public class wrapping any
@@ -17687,13 +17688,15 @@ or silently corrupted state. Sync and async siblings are kept in lockstep throug
 <h2 id="0190-2026-03-23">[0.19.0] - 2026-03-23<a class="headerlink" href="#0190-2026-03-23" title="Permanent link">&para;</a></h2>
 <h3 id="changed_12">Changed<a class="headerlink" href="#changed_12" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Renamed ext factory functions for naming consistency</strong> (BK-010):</li>
+<li><strong>Renamed ext factory functions for naming consistency</strong> (BK-010):<ul>
 <li><code>pydantic_to_registry_config()</code> → <code>from_pydantic()</code> — matches the <code>from_*</code>
-    pattern used by <code>from_yaml</code>, <code>from_dict</code>, <code>from_toml</code>.</li>
+  pattern used by <code>from_yaml</code>, <code>from_dict</code>, <code>from_toml</code>.</li>
 <li><code>remote_store_io_manager()</code> → <code>dagster_io_manager()</code> — drops redundant
-    <code>remote_store_</code> prefix, matches <code>pyarrow_fs</code> pattern.</li>
+  <code>remote_store_</code> prefix, matches <code>pyarrow_fs</code> pattern.</li>
 <li><code>cached_store()</code> → <code>cache()</code> — bare verb, matches <code>observe()</code>.</li>
 <li>Old names remain as deprecated aliases emitting <code>DeprecationWarning</code>.</li>
+</ul>
+</li>
 </ul>
 <h3 id="documentation_14">Documentation<a class="headerlink" href="#documentation_14" title="Permanent link">&para;</a></h3>
 <ul>
@@ -18166,10 +18169,12 @@ or silently corrupted state. Sync and async siblings are kept in lockstep throug
 <h2 id="0110-2026-03-01">[0.11.0] - 2026-03-01<a class="headerlink" href="#0110-2026-03-01" title="Permanent link">&para;</a></h2>
 <h3 id="added_19">Added<a class="headerlink" href="#added_19" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Glob pattern matching — three-tier design (ADR-0009)</strong> (BK-002, ID-007)</li>
+<li><strong>Glob pattern matching — three-tier design (ADR-0009)</strong> (BK-002, ID-007)<ul>
 <li><strong>Tier 1:</strong> <code>list_files(pattern=…)</code> — universal <code>fnmatch</code> name filtering, works with every backend (needs only <code>LIST</code>)</li>
 <li><strong>Tier 2:</strong> <code>Store.glob()</code> / <code>Capability.GLOB</code> — native backend glob, capability-gated (like <code>unwrap()</code>). <code>LocalBackend</code> implements via <code>pathlib</code></li>
 <li><strong>Tier 3:</strong> <code>ext.glob.glob_files()</code> — portable full-glob fallback with <code>**</code> recursive patterns and <code>[abc]</code>/<code>[!abc]</code> character classes; delegates to native glob when available, otherwise <code>list_files</code> + client-side regex</li>
+</ul>
+</li>
 </ul>
 <h3 id="changed_17">Changed<a class="headerlink" href="#changed_17" title="Permanent link">&para;</a></h3>
 <ul>
@@ -18324,9 +18329,11 @@ or silently corrupted state. Sync and async siblings are kept in lockstep throug
 <h2 id="040-2026-02-19">[0.4.0] - 2026-02-19<a class="headerlink" href="#040-2026-02-19" title="Permanent link">&para;</a></h2>
 <h3 id="added_28">Added<a class="headerlink" href="#added_28" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>S3-PyArrow hybrid backend</strong> — uses PyArrow's C++ S3 filesystem for reads/writes/copies (higher throughput for large files) and s3fs for listing/metadata/deletion. Drop-in alternative to <code>S3Backend</code> with the same constructor signature.</li>
+<li><strong>S3-PyArrow hybrid backend</strong> — uses PyArrow's C++ S3 filesystem for reads/writes/copies (higher throughput for large files) and s3fs for listing/metadata/deletion. Drop-in alternative to <code>S3Backend</code> with the same constructor signature.<ul>
 <li>Install via <code>pip install "remote-store[s3-pyarrow]"</code></li>
 <li>Spec: <code>sdd/specs/011-s3-pyarrow-backend.md</code></li>
+</ul>
+</li>
 <li>New optional extra: <code>s3-pyarrow</code> (requires <code>s3fs&gt;=2024.2.0</code> and <code>pyarrow&gt;=14.0.0</code>)</li>
 <li>Dual <code>unwrap()</code> support: returns either <code>pyarrow.fs.S3FileSystem</code> or <code>s3fs.S3FileSystem</code></li>
 </ul>

@@ -12311,11 +12311,13 @@ to its deserialized object.</p>
 <p><strong>Behaviour:</strong></p>
 <ol>
 <li>If <code>context.has_asset_partitions</code> is true <strong>and</strong>
-   <code>len(context.asset_partition_keys) &gt; 1</code>:</li>
+   <code>len(context.asset_partition_keys) &gt; 1</code>:<ul>
 <li>For each key in <code>context.asset_partition_keys</code>, derive the storage
-     path (or dataset key) using the asset key plus that partition key.</li>
+  path (or dataset key) using the asset key plus that partition key.</li>
 <li>Read and deserialize each partition independently.</li>
 <li>Return <code>{partition_key: deserialized_object, ...}</code>.</li>
+</ul>
+</li>
 <li>Otherwise (single or no partition): existing behaviour — return a single
    deserialized object.</li>
 </ol>
@@ -12346,8 +12348,8 @@ referenced by string from <code>dagster.yaml</code> (<code>module: remote_store.
 <code>class: RemoteStoreComputeLogManager</code>), so the import path is part of the
 public contract. The <code>ConfigurableClass</code> hooks are:</p>
 <ul>
-<li><code>config_type()</code> returns a config schema with fields:</li>
-</ul>
+<li>
+<p><code>config_type()</code> returns a config schema with fields:</p>
 <table>
 <thead>
 <tr>
@@ -12402,9 +12404,11 @@ public contract. The <code>ConfigurableClass</code> hooks are:</p>
 </tr>
 </tbody>
 </table>
-<ul>
-<li><code>inst_data</code> (property) returns the <code>ConfigurableClassData</code> passed to the
-  constructor, or <code>None</code> when constructed directly.</li>
+</li>
+<li>
+<p><code>inst_data</code> (property) returns the <code>ConfigurableClassData</code> passed to the
+  constructor, or <code>None</code> when constructed directly.</p>
+</li>
 <li><code>from_config_value(inst_data, config_value)</code> returns
   <code>cls(inst_data=inst_data, **config_value)</code>.</li>
 </ul>

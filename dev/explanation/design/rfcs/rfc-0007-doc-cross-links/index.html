@@ -12202,12 +12202,14 @@ it an official project convention.</p>
   catches all broken relative links at build time. This is already in CI.</li>
 <li><strong>GitHub source URLs:</strong> <code>mkdocs build --strict</code> does <strong>not</strong> validate
   external URLs. If an example file is renamed or moved, the GitHub link
-  silently breaks. Options:</li>
+  silently breaks. Options:<ul>
 <li><strong>Accept the risk</strong> — example files rarely move, and the link text
-    includes the filename, making stale links easy to spot.</li>
+  includes the filename, making stale links easy to spot.</li>
 <li><strong>Follow-up: add a link checker</strong> — e.g., <code>mkdocs-linkcheck</code> plugin or
-    a CI step running <code>lychee</code> against the built site. This is out of scope
-    for this proposal but would catch GitHub URL rot.</li>
+  a CI step running <code>lychee</code> against the built site. This is out of scope
+  for this proposal but would catch GitHub URL rot.</li>
+</ul>
+</li>
 <li><strong>Ripple-check coverage:</strong> <code>sdd/CLAUDE-REFERENCE.md</code> already requires
   checking example and guide pages when API symbols change. Adding "check
   See also links" to the ripple-check table would formalise this.</li>

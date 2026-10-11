@@ -11670,11 +11670,11 @@
 </li>
 <li>
 <p><strong>Loss of ADLS Gen2 native semantics.</strong> adlfs wraps <code>azure-storage-blob</code> under the hood and hides the ADLS Gen2 file/directory distinction. Key advantages are lost or attenuated:</p>
-</li>
+<ul>
 <li><strong>Atomic rename/move</strong> — ADLS Gen2's strongest differentiator. adlfs may not use the native rename API in all code paths.</li>
 <li><strong>True <code>write_atomic</code></strong> — With the direct SDK, temp-file + rename works natively (like LocalBackend), which is more robust than relying on PUT-level atomicity.</li>
-<li>
-<p><strong>Real directory operations</strong> — Native <code>list_files</code>/<code>list_folders</code> without prefix hacking.</p>
+<li><strong>Real directory operations</strong> — Native <code>list_files</code>/<code>list_folders</code> without prefix hacking.</li>
+</ul>
 </li>
 <li>
 <p><strong>Transitive dependency weight.</strong> adlfs pulls in <code>azure-core</code>, <code>azure-identity</code>, <code>azure-storage-blob</code>, and <code>fsspec</code> as runtime dependencies. The direct SDK (<code>azure-storage-file-datalake</code>) also depends on <code>azure-core</code> and <code>azure-storage-blob</code> internally, but does not require <code>fsspec</code> — keeping the dependency footprint focused.</p>

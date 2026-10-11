@@ -12258,21 +12258,25 @@ count is 0 and path is not empty string.</p>
 <p><strong>Invariant:</strong> Two-stage filtering — SQL-side narrowing, then client-side
 regex to enforce GLOB-014 semantics (<code>*</code> = <code>[^/]*</code>, <code>?</code> = <code>[^/]</code>):</p>
 <ol>
-<li><strong>SQL narrowing:</strong> on every dialect, by two literal parts of the pattern,
-   each applied only when non-empty:</li>
+<li>
+<p><strong>SQL narrowing:</strong> on every dialect, by two literal parts of the pattern,
+   each applied only when non-empty:</p>
+<ul>
 <li><code>extract_prefix(pattern)</code>, the longest literal directory prefix: keys
-     under <code>prefix/</code>, by the SQL-BLOB-061 predicate.</li>
+  under <code>prefix/</code>, by the SQL-BLOB-061 predicate.</li>
 <li>The literal tail after the last <code>*</code>, <code>?</code>, <code>[</code> or <code>]</code>: escaped
-     <code>key LIKE '%' || tail ESCAPE '\'</code>, or the same followed by one <code>\n</code>,
-     because the client-side regex anchors with <code>$</code>, which also accepts one
-     trailing newline. A tail that follows <code>**</code> drops its leading <code>/</code>,
-     because <code>**/</code> also matches zero directories.</li>
-</ol>
+  <code>key LIKE '%' || tail ESCAPE '\'</code>, or the same followed by one <code>\n</code>,
+  because the client-side regex anchors with <code>$</code>, which also accepts one
+  trailing newline. A tail that follows <code>**</code> drops its leading <code>/</code>,
+  because <code>**/</code> also matches zero directories.</li>
+</ul>
 <p>Wildcards themselves are never translated to <code>LIKE</code>: <code>%/</code> cannot match the
-   zero directories <code>**/</code> can, and <code>[...]</code> has no <code>LIKE</code> form.
+zero directories <code>**/</code> can, and <code>[...]</code> has no <code>LIKE</code> form.
 2. <strong>Client-side regex:</strong> <code>pattern_to_regex(pattern)</code> from <code>_glob.py</code> filters
    the SQL result set to enforce GLOB-014 semantics, ensuring <code>*</code> and <code>?</code> do
    not match path separators.</p>
+</li>
+</ol>
 <p>Return <code>FileInfo</code> for all matching keys.</p>
 <hr />
 <h2 id="engine-connection">Engine &amp; Connection<a class="headerlink" href="#engine-connection" title="Permanent link">&para;</a></h2>

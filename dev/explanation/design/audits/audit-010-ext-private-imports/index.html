@@ -11378,10 +11378,12 @@
 <li>
 <p><strong>Resolve Category 1 internals</strong><br />
    Three symbols have no public path and each requires a decision:</p>
-</li>
+<ul>
 <li><code>_glob</code> utilities (<code>extract_prefix</code>, <code>needs_recursive</code>, <code>pattern_to_regex</code>) — expose as public or internalise inside <code>ext.glob</code></li>
 <li><code>_registry._BACKEND_FACTORIES</code>, <code>_register_builtin_backends</code> — decide via ADR if these are stable API</li>
 <li><code>_store._validate_metadata</code> — expose as public helper or remove from extension use</li>
+</ul>
+</li>
 </ol>
 <hr />
 <h2 id="non-findings">Non-Findings<a class="headerlink" href="#non-findings" title="Permanent link">&para;</a></h2>

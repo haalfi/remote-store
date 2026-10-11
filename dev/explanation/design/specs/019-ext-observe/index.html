@@ -12072,14 +12072,18 @@ conventions:</p>
 <ul>
 <li><strong>Span name:</strong> <code>store.{operation}</code> (e.g., <code>store.read</code>, <code>store.write</code>).</li>
 <li><strong>Span kind:</strong> <code>SpanKind.CLIENT</code>.</li>
-<li><strong>Attributes:</strong></li>
+<li><strong>Attributes:</strong><ul>
 <li><code>remote_store.operation</code> (str): operation name.</li>
 <li><code>remote_store.backend</code> (str): backend name.</li>
 <li><code>remote_store.path</code> (str): store-relative key.</li>
-<li><strong>On error:</strong></li>
+</ul>
+</li>
+<li><strong>On error:</strong><ul>
 <li><code>span.set_status(StatusCode.ERROR, str(exc))</code>.</li>
 <li><code>span.record_exception(exc)</code>.</li>
 <li><code>error.type</code> attribute set to the exception class's qualified name.</li>
+</ul>
+</li>
 </ul>
 <h3 id="obs-013-metric-instruments">OBS-013: Metric Instruments<a class="headerlink" href="#obs-013-metric-instruments" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The <code>on_any</code> hook records the following metrics:</p>

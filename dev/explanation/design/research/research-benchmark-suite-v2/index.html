@@ -11941,11 +11941,13 @@ already covers 50/1k/10k listings and 1KB–100MB throughput.</p>
 <p>Extend <code>benchmarks/_toxiproxy.py</code>:</p>
 <ul>
 <li>Support multiple proxy names (not just <code>"azurite"</code>)</li>
-<li>Add named profiles:</li>
+<li>Add named profiles:<ul>
 <li><code>clean</code> — no toxics (baseline)</li>
 <li><code>rtt20</code> — 20ms latency, 7ms jitter</li>
 <li><code>rtt50</code> — 50ms latency, 17ms jitter</li>
 <li><code>rtt100</code> — 100ms latency, 33ms jitter</li>
+</ul>
+</li>
 <li>Add <code>apply_profile(proxy_name, profile_name)</code> function</li>
 <li>Add <code>clear_all_toxics(proxy_name)</code> function</li>
 <li>Keep existing <code>set_latency()</code> / <code>clear_latency()</code> as low-level API</li>
@@ -12013,29 +12015,33 @@ already covers 50/1k/10k listings and 1KB–100MB throughput.</p>
 </ul>
 <p><strong>Charts to generate (3 total):</strong></p>
 <ol>
-<li><strong>Overhead % by backend</strong> — grouped bar chart</li>
+<li>
+<p><strong>Overhead % by backend</strong> — grouped bar chart</p>
+<ul>
 <li>X-axis: operation (write 1MB, read 1MB, exists, list 50, delete)</li>
 <li>Bars: overhead % vs raw SDK</li>
 <li>Groups: one color per backend (S3, Azure, SFTP, Local)</li>
-<li>
-<p>This answers: "what am I paying?"</p>
+<li>This answers: "what am I paying?"</li>
+</ul>
 </li>
 <li>
 <p><strong>Overhead vs RTT</strong> — line chart <em>(requires Phase 1 data)</em></p>
-</li>
+<ul>
 <li>X-axis: network profile (0ms, 20ms, 50ms, 100ms)</li>
 <li>Y-axis: overhead %</li>
 <li>Lines: one per operation category (I/O ops, metadata ops)</li>
-<li>
-<p>This is the killer chart — shows overhead collapsing under latency</p>
+<li>This is the killer chart — shows overhead collapsing under latency</li>
+</ul>
 </li>
 <li>
 <p><strong>Throughput by file size</strong> — line chart</p>
-</li>
+<ul>
 <li>X-axis: file size (1KB, 64KB, 1MB, 10MB)</li>
 <li>Y-axis: MB/s</li>
 <li>Lines: remote-store vs raw SDK, one chart per backend</li>
 <li>Shows where remote-store converges with raw SDK</li>
+</ul>
+</li>
 </ol>
 <p><strong>Chart style:</strong> clean, minimal, no gridlines clutter. Match the project's
 visual identity. SVG for crisp rendering in docs.</p>

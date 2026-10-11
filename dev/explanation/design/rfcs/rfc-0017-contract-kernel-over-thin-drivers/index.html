@@ -12497,7 +12497,8 @@ and its answer keeps <code>classify</code>.</p>
   replacement keeps the name, and for
   <code>unwrap(s3fs.S3FileSystem)</code> callers at step 2. <code>Store</code> callers see no
   change in interface.</li>
-<li><strong>Performance:</strong> the kernel issues the same probes the per-backend code
+<li>
+<p><strong>Performance:</strong> the kernel issues the same probes the per-backend code
   issues today (one <code>stat</code> or one <code>list_page(limit=1)</code> on the error path;
   the file-ancestor walk only when opted in; <code>ensure_parents</code> only for
   explicit parents), and the S3 driver drops the s3fs layer.
@@ -12516,25 +12517,26 @@ and its answer keeps <code>classify</code>.</p>
   each driver's check-then-remove, the calls it issues today. Two
   replacements change
   data paths and are measured under D8's benchmark gate in the PR that
-  lands them:</li>
+  lands them:</p>
+<ul>
 <li><code>S3PyArrowBackend</code>: reads move from PyArrow's C++ S3 filesystem to the
-    boto3 driver.</li>
+  boto3 driver.</li>
 <li>sync <code>AzureBackend</code>: its replacement is generated from the async driver,
-    whose <code>get_range</code> keeps the ranged <code>read_seekable</code>
-    (<code>_AzureRangeReader</code>, one Range request per read) the class has today;
-    <code>open_atomic</code> stays the spool-and-upload the kernel synthesises without
-    <code>open_write</code>, which is what flat and HNS <code>AzureBackend</code> do today.</li>
+  whose <code>get_range</code> keeps the ranged <code>read_seekable</code>
+  (<code>_AzureRangeReader</code>, one Range request per read) the class has today;
+  <code>open_atomic</code> stays the spool-and-upload the kernel synthesises without
+  <code>open_write</code>, which is what flat and HNS <code>AzureBackend</code> do today.</li>
 </ul>
 <p>The rejected adapter route for sync Azure (Open Question 1) is kept here as
-  the reason it was rejected. The sync class never declared <code>SEEKABLE_READ</code>,
-  so what it would have lost is its <code>read_seekable</code> override, replaced by the
-  adapter's spool; a call from a thread with a running event loop raises
-  <code>RuntimeError</code>, so sync <code>Store</code> over Azure would stop working inside
-  notebooks and <code>pytest-asyncio</code> tests; <code>unwrap()</code> raises
-  <code>CapabilityNotSupported</code> by default; a caller-supplied sync <code>credential=</code>
-  is handed to the async SDK unchanged; <code>error.backend</code> carries the async
-  driver's name; and <code>type="azure"</code> needs the wrapping registration D4
-  describes.
+the reason it was rejected. The sync class never declared <code>SEEKABLE_READ</code>,
+so what it would have lost is its <code>read_seekable</code> override, replaced by the
+adapter's spool; a call from a thread with a running event loop raises
+<code>RuntimeError</code>, so sync <code>Store</code> over Azure would stop working inside
+notebooks and <code>pytest-asyncio</code> tests; <code>unwrap()</code> raises
+<code>CapabilityNotSupported</code> by default; a caller-supplied sync <code>credential=</code>
+is handed to the async SDK unchanged; <code>error.backend</code> carries the async
+driver's name; and <code>type="azure"</code> needs the wrapping registration D4
+describes.
 - <strong>Risks:</strong> a kernel defect is a regression on every migrated class at once.
   BUG-249 reached one class; its kernel equivalent reaches every driver. That
   is the price of applying a rule once, and it is bounded by D3 migrating one
@@ -12630,6 +12632,8 @@ and its answer keeps <code>classify</code>.</p>
   and published as a description, not a criterion:</strong> the 164 guard call
   lines and 22 per-class wrappers, most of the 395 <code>except</code> arms outside
   classifiers, two S3 classes, one Azure class.</p>
+</li>
+</ul>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong>D6:</strong> async kernel with a generated sync twin, or a sync-only kernel

@@ -11414,9 +11414,11 @@
 <li><strong>Specs are authoritative</strong>: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which <a href="#intent-attribution">Rule 7</a> qualifies: that makes the claim undecided, not the code right.</li>
 <li><strong>ADRs are immutable once Accepted</strong>: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.</li>
 <li><strong>IDs are stable</strong>: once assigned, a section ID never changes meaning. Deprecated sections are marked <code>[DEPRECATED]</code>, not removed.</li>
-<li><a id="workflows"></a><strong>Workflows</strong>:</li>
+<li><a id="workflows"></a><strong>Workflows</strong>:<ul>
 <li><strong>Features</strong>: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.</li>
 <li><strong>Bug fixes</strong>: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec. The reproduction lives in the item's dossier where it has one (<a href="#backlog">§ Backlog</a>).</li>
+</ul>
+</li>
 <li><a id="intent-attribution"></a><strong>Prose records the resolution; it does not win the argument</strong>: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against a claim the conformance suite never asserted. See <a href="#attribution-inside-the-intent-domain">§ Attribution inside the intent domain</a>.</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
@@ -11458,12 +11460,12 @@ in that order.</p>
 <li><strong>The resolution is written into the prose spec.</strong> A disagreement closed by
    editing only a postcondition, only a test, or only a backend is not closed.
    Amend the spec section in the same change.</li>
-<li><strong>Prose carries no presumption of correctness.</strong> It is the only description in
+<li>
+<p><strong>Prose carries no presumption of correctness.</strong> It is the only description in
    this domain with no mechanical counterpart, so a prose claim is evidence of
    intent and of nothing else. Four defeaters strip that presumption — two keyed on
    the model, two on the suite and shipped behaviour. Rows 1 and 3 also settle which
-   side moves; rows 2 and 4 reopen the question instead:</li>
-</ol>
+   side moves; rows 2 and 4 reopen the question instead:</p>
 <table>
 <thead>
 <tr>
@@ -11495,11 +11497,13 @@ in that order.</p>
 </tr>
 </tbody>
 </table>
-<ol>
-<li><strong>Two mechanical sides agreeing is not a vote.</strong> A postcondition and a test
+</li>
+<li>
+<p><strong>Two mechanical sides agreeing is not a vote.</strong> A postcondition and a test
    written in one change from one reading are one description, not two. Establish
    independence per <a href="../drift-rules/#independence"><code>DRIFT-RULES.md</code> Rule 8</a> before
-   counting them as agreement.</li>
+   counting them as agreement.</p>
+</li>
 <li><strong>ADRs and RFCs record decisions, not contracts.</strong> Where either disagrees with
    a spec about what the system must do, the spec governs; supersede the ADR
    rather than editing it (<a href="#rules">Rule 4</a> above).</li>

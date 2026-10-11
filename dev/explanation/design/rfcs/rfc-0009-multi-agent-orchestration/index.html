@@ -11470,15 +11470,19 @@
 <p><strong>Orchestrator workflow:</strong></p>
 <ol>
 <li>Pre-check: BACKLOG entry exists, spec drafted, ripple-check table consulted</li>
-<li>Spawn experts in parallel (Task tool):</li>
+<li>Spawn experts in parallel (Task tool):<ul>
 <li><strong>Store &amp; Backend Expert</strong> → <code>src/remote_store/backends/_gcs.py</code> (ABC impl, error mapping, capabilities)</li>
 <li><strong>Extension Expert</strong> → <code>src/remote_store/ext/gcs_datasets.py</code> (extension impl, ADR-0008 pattern, public API contract)</li>
 <li><strong>Testing Expert</strong> → <code>tests/test_gcs_conformance.py</code> + <code>tests/ext/test_gcs_datasets.py</code> (conformance fixtures, extension tests, coverage)</li>
 <li><strong>Documentation Expert</strong> → <code>guides/backends/gcs.md</code> + <code>guides/extensions/gcs-datasets.md</code> (user guides, docstrings)</li>
+</ul>
+</li>
 <li>Experts execute in parallel, each reading their relevant specs first</li>
-<li>Orchestrator collects results → runs ripple-checks:</li>
+<li>Orchestrator collects results → runs ripple-checks:<ul>
 <li>README backends table, <code>pyproject.toml</code> extras, examples, auto-registration</li>
 <li>CHANGELOG + BACKLOG updates</li>
+</ul>
+</li>
 <li>Compile PR, push, report</li>
 </ol>
 <p><strong>Success criteria:</strong>
@@ -11503,27 +11507,31 @@
 - Do not invent behavior — all design traces to a spec</p>
 <h2 id="alternatives-considered">Alternatives Considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>No orchestration</strong> — Continue single-agent workflow</li>
 <li>
-<p><strong>Rejected:</strong> Scales poorly as backlog grows; ID-013 and BK-123 are already context-constrained</p>
+<p><strong>No orchestration</strong> — Continue single-agent workflow</p>
+<ul>
+<li><strong>Rejected:</strong> Scales poorly as backlog grows; ID-013 and BK-123 are already context-constrained</li>
+</ul>
 </li>
 <li>
 <p><strong>Seven specialist experts</strong> (Spec Reviewer, Backend, Extension, Testing, Doc, Ripple Auditor, Async/Perf)</p>
-</li>
-<li>
-<p><strong>Rejected:</strong> Over-engineered; ripple-checks and audits are orchestrator tasks, not separate experts</p>
+<ul>
+<li><strong>Rejected:</strong> Over-engineered; ripple-checks and audits are orchestrator tasks, not separate experts</li>
+</ul>
 </li>
 <li>
 <p><strong>Custom Python orchestrator (ThreadPoolExecutor + Anthropic SDK)</strong></p>
-</li>
+<ul>
 <li><strong>Considered:</strong> Needed if cost optimization or fine-grained model selection becomes critical</li>
-<li>
-<p><strong>Deferred:</strong> Start with Claude Code native (KISS), optional future upgrade</p>
+<li><strong>Deferred:</strong> Start with Claude Code native (KISS), optional future upgrade</li>
+</ul>
 </li>
 <li>
 <p><strong>Per-concern specialized sessions</strong> (separate Claude Code session per role)</p>
-</li>
+<ul>
 <li><strong>Rejected:</strong> No coordination; duplicate work; complex state management</li>
+</ul>
+</li>
 </ol>
 <h2 id="impact">Impact<a class="headerlink" href="#impact" title="Permanent link">&para;</a></h2>
 <ul>
@@ -11535,11 +11543,15 @@
 </ul>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>First test case:</strong> Which task to validate orchestration on?</li>
+<li><strong>First test case:</strong> Which task to validate orchestration on?<ul>
 <li>New backend (e.g., GCS) — isolated, fast feedback</li>
 <li>Existing backlog item (ID-013, BK-123) — real-world complexity</li>
-<li><strong>Skill or ad-hoc?</strong> Should orchestrator be a dedicated skill (e.g., <code>/orchestrate</code>), or ad-hoc prompt in main session?</li>
+</ul>
+</li>
+<li><strong>Skill or ad-hoc?</strong> Should orchestrator be a dedicated skill (e.g., <code>/orchestrate</code>), or ad-hoc prompt in main session?<ul>
 <li>Recommendation: Start ad-hoc, formalize as skill if it becomes routine</li>
+</ul>
+</li>
 <li><strong>Model selection:</strong> Which model for expert subagents (Haiku vs Sonnet)?</li>
 <li><strong>Expert prompt templates:</strong> Detailed prompt templates for each expert role belong in the implementation (skill definition or CLAUDE.md section), not in this RFC. To be designed during implementation.</li>
 </ol>
@@ -11549,11 +11561,13 @@
 <li><strong>Ripple-check table:</strong> <code>sdd/CLAUDE-REFERENCE.md</code> (§ Ripple-check table &gt; Detailed checklist) — orchestrator must verify post-implementation</li>
 <li><strong>Code conventions:</strong> <code>sdd/DESIGN.md</code> (experts follow domain-specific conventions)</li>
 <li><strong>Documentation standards:</strong> <code>sdd/DOCUMENTATION.md</code>, <code>CONTRIBUTING.md</code> (authoritative document format)</li>
-<li><strong>Expert domain specs:</strong></li>
+<li><strong>Expert domain specs:</strong><ul>
 <li><strong>Store &amp; Backend:</strong> <code>sdd/specs/001-store-api.md</code>, <code>sdd/specs/003-backend-adapter-contract.md</code>, <code>sdd/specs/005-error-model.md</code>, backend-specific specs</li>
 <li><strong>Extension:</strong> <code>sdd/specs/024-ext-partition.md</code>, <code>031-ext-dagster.md</code>, <code>033-ext-streams.md</code>, <code>034-ext-integrity.md</code>; <code>sdd/adrs/0008-extension-architecture.md</code></li>
 <li><strong>Testing:</strong> <code>sdd/DESIGN.md</code> (test conventions), <code>@pytest.mark.spec("ID")</code> traceability</li>
 <li><strong>Documentation:</strong> <code>sdd/DOCUMENTATION.md</code> (Diátaxis structure), docstring examples in codebase</li>
+</ul>
+</li>
 <li><strong>In-progress work:</strong> <code>sdd/BACKLOG.md</code> (ID-013 async, ID-018 conda-forge, BK-123 memory audit)</li>
 <li><strong>Claude Code instructions:</strong> <code>CLAUDE.md</code> (ripple-checks, spec discipline, branch workflow)</li>
 </ul>

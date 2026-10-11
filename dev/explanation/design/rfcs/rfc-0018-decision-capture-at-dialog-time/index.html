@@ -12004,20 +12004,20 @@ dismissal control there) and had the session open in a browser as well.</p>
   only <code>PreToolUse</code> fired. Identical to step 0's denial, so the cross on its
   own is a denial to the harness, not a distinct dismissal. Repeated once with nothing
   sent from the browser (extra call): the same.</li>
-<li><strong>a′. Dismissal accompanied by a message from the browser</strong> (extra call, an
+<li>
+<p><strong>a′. Dismissal accompanied by a message from the browser</strong> (extra call, an
   interrupt attempt that the app does not offer; the user pressed the cross
   and, in the browser, sent a message). <code>PreToolUse</code> then <code>PostToolUse</code>, same
   <code>tool_use_id</code>; the agent saw
   <code>The user answered: "…"="[User dismissed — do not proceed, wait for next instruction]"</code>.
-  The payload carried the sentinel as the answer, twice:</li>
-</ul>
+  The payload carried the sentinel as the answer, twice:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">"tool_response"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"questions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">…</span><span class="p">],</span><span class="w"> </span><span class="nt">"answers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"Extra probe (turn interrupt): …"</span><span class="p">:</span><span class="w"> </span><span class="s2">"[User dismissed — do not proceed, wait for next instruction]"</span><span class="p">}}</span>
 </code></pre></div>
 <p><code>tool_input.answers</code> held the same map. Under D3 as first written this reads
-  <code>other</code> (it matches no label), which hides a dismissal; hence the
-  <code>unanswered</code> row now names the sentinel. What produces the sentinel is not
-  isolated: the cross alone yielded the denial, the cross plus a browser message
-  the sentinel, and a message without the cross was not run.
+<code>other</code> (it matches no label), which hides a dismissal; hence the
+<code>unanswered</code> row now names the sentinel. What produces the sentinel is not
+isolated: the cross alone yielded the denial, the cross plus a browser message
+the sentinel, and a message without the cross was not run.
 - <strong>b. Timeout.</strong> Unobserved. The dialog stayed open 365 s (Pre and Post
   timestamps 365.4 s apart) with no hook event in between; the user then
   answered with free text. Whether a timeout exists, and at what length, is
@@ -12047,6 +12047,8 @@ dismissal control there) and had the session open in a browser as well.</p>
   tail. A re-shown dialog under a new
   <code>tool_use_id</code> would leave two <code>asked</code> events for one decision, the first
   <code>unanswered</code>.</p>
+</li>
+</ul>
 <p><strong>Result.</strong> <code>PostToolUseFailure</code> fired in none of them, so D3's <code>failed</code> row,
 D4.2's both-events report and "Post events are exclusive" are neither confirmed
 nor contradicted. The follow-up amends five places (from the diff against

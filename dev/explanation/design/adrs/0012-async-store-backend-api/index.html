@@ -11317,8 +11317,10 @@ is a realized consequence of auto-wrapping, covered under Consequences.</p>
   backends without changing the <code>AsyncStore</code> API.</li>
 <li>No breaking changes to the existing sync API.</li>
 <li>Same error model, path model, capability model, metadata types.</li>
-<li>Doubles the abstraction surface — <code>Backend</code> + <code>AsyncBackend</code>, <code>Store</code></li>
+<li>Doubles the abstraction surface — <code>Backend</code> + <code>AsyncBackend</code>, <code>Store</code><ul>
 <li><code>AsyncStore</code>. Mitigated by drift-protection tests (ADR-0010 pattern).</li>
+</ul>
+</li>
 <li><code>SyncBackendAdapter</code> materializes iterators, increasing memory for
   large listings on wrapped sync backends. Native async backends stream.</li>
 <li>Extension modules need async variants (Phase 3).</li>

@@ -11636,17 +11636,21 @@ anyone wrapping the stream in <code>io.TextIOWrapper</code>.</p>
   <code>streaming_read</code> benchmark path). <code>read_bytes()</code> is unaffected — it already
   bypasses <code>BufferedReader</code>. Expect reduced per-chunk overhead and lower peak
   memory for chunked streaming reads.</li>
-<li><strong>Testing:</strong> Existing tests cover correctness:</li>
+<li>
+<p><strong>Testing:</strong> Existing tests cover correctness:</p>
+<ul>
 <li><code>tests/test_stream.py</code> — <code>_ErrorMappingStream</code> read/readinto paths</li>
 <li><code>tests/backends/test_conformance.py</code> — chunked reads, position tracking</li>
 <li><code>tests/backends/test_s3_pyarrow.py</code> — S3-PyArrow specific tests</li>
 <li><code>tests/test_transfer.py</code> — streaming transfers</li>
 </ul>
 <p>Additionally, add a structural assertion that <code>S3PyArrowBackend.read()</code>
-  returns a stream that is NOT wrapped in <code>BufferedReader</code>, to prevent
-  regression.
+returns a stream that is NOT wrapped in <code>BufferedReader</code>, to prevent
+regression.
 - <strong>Scope:</strong> Only <code>S3PyArrowBackend</code>. Other backends (S3, SFTP, Azure, Local,
   Memory) are untouched.</p>
+</li>
+</ul>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong>Should other backends also drop <code>BufferedReader</code>?</strong> The SFTP backend also

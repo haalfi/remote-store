@@ -12197,13 +12197,15 @@ for registering retryable exception types. These are global — not per-instance
 <p><strong>File:</strong> <code>src/remote_store/backends/_s3_pyarrow.py</code></p>
 <ul>
 <li><strong>Data path (PyArrow C++ S3):</strong> PyArrow exposes <code>retry_strategy</code> on
-  <code>S3FileSystem</code> with two strategy classes:</li>
+  <code>S3FileSystem</code> with two strategy classes:<ul>
 <li><code>AwsStandardS3RetryStrategy(max_attempts=3)</code> — default, exponential
-    backoff, broad error coverage (recommended).</li>
+  backoff, broad error coverage (recommended).</li>
 <li><code>AwsDefaultS3RetryStrategy(max_attempts=N)</code> — legacy, narrower coverage.
-  The <strong>only configurable knob</strong> is <code>max_attempts</code>. Backoff timing, jitter,
-  and error classification are not configurable through PyArrow's API.
-  Related timeout parameters: <code>request_timeout</code>, <code>connect_timeout</code>.</li>
+The <strong>only configurable knob</strong> is <code>max_attempts</code>. Backoff timing, jitter,
+and error classification are not configurable through PyArrow's API.
+Related timeout parameters: <code>request_timeout</code>, <code>connect_timeout</code>.</li>
+</ul>
+</li>
 <li><strong>Control path (s3fs):</strong> Same as S3 backend above.</li>
 </ul>
 <h3 id="25-local-memory-no-retry-correct">2.5 Local / Memory — No retry (correct)<a class="headerlink" href="#25-local-memory-no-retry-correct" title="Permanent link">&para;</a></h3>

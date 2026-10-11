@@ -11952,16 +11952,16 @@ profiling shows the overhead matters.</p>
   file in memory — peak memory drops from O(file_size) to O(chunk_size). For
   S3/Azure (non-HNS), memory profile is similar to <code>write_atomic()</code> with
   <code>SpooledTemporaryFile</code> providing disk spill for files &gt; 8 MB.</li>
-<li><strong>Testing:</strong> Spec <code>022-streaming-atomic-writes.md</code> must include tests for:</li>
+<li><strong>Testing:</strong> Spec <code>022-streaming-atomic-writes.md</code> must include tests for:<ul>
 <li><strong>Success path (SAW-003):</strong> temp file created during write, promoted to
-    target on <code>__exit__(None)</code>, temp artifact no longer exists, target
-    readable with correct content.</li>
+  target on <code>__exit__(None)</code>, temp artifact no longer exists, target
+  readable with correct content.</li>
 <li><strong>Exception path (SAW-004, SAW-005):</strong> exception inside <code>with</code> block,
-    target path unchanged (no partial file), temp artifact cleaned up.</li>
+  target path unchanged (no partial file), temp artifact cleaned up.</li>
 <li><strong>Early close (SAW-005):</strong> caller calls <code>f.close()</code> before exiting
-    context — behaviour defined (promote or raise).</li>
+  context — behaviour defined (promote or raise).</li>
 <li><strong><code>AlreadyExists</code> guard (SAW-006):</strong> <code>overwrite=False</code> raises when
-    target exists; <code>overwrite=True</code> succeeds and replaces content.</li>
+  target exists; <code>overwrite=True</code> succeeds and replaces content.</li>
 <li><strong><code>InvalidPath</code> (SAW-007):</strong> empty path raises <code>InvalidPath</code>.</li>
 <li><strong>Per-backend temp-path validation (SAW-008/009/010/011/012):</strong><ul>
 <li>Local: <code>mkstemp</code> temp file exists in parent dir during write.</li>
@@ -11972,11 +11972,13 @@ profiling shows the overhead matters.</p>
 </ul>
 </li>
 <li><strong>Content correctness:</strong> multi-chunk write, content matches after
-    promotion (all 6 backends).</li>
+  promotion (all 6 backends).</li>
 <li><strong>Observe hook (SAW-014):</strong> <code>on_write</code> fires after successful promotion,
-    does not fire on exception path.</li>
+  does not fire on exception path.</li>
 <li><strong>OTel span (SAW-015):</strong> span covers full open-write-promote lifecycle.</li>
 <li>Integration with PyArrow <code>pq.write_table()</code> (example, not unit test).</li>
+</ul>
+</li>
 </ul>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
 <ol>

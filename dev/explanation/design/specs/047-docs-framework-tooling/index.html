@@ -11457,6 +11457,11 @@ every PR.</p>
 <td>DOCUMENTATION R8</td>
 <td><code>mkdocs build --strict</code> succeeds. (<code>--strict</code> promotes all warnings to failures; MkDocs 1.x does not accept <code>error</code> as a literal value for <code>validation.links.not_found</code>.)</td>
 </tr>
+<tr>
+<td>G-08</td>
+<td>AUTHORING R3</td>
+<td>In every dual source and <code>docs-src/**/*.md</code>, a list marker or a block after a blank line that CommonMark places inside a list item sits at <code>4 × depth</code> spaces or more, so Python-Markdown nests it as GitHub does. Lazy continuation lines and a list directly after paragraph text (no list to Python-Markdown) are not checked.</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Failure output:</strong> one line per violation, formatted
@@ -11464,7 +11469,7 @@ every PR.</p>
 path) so diffs in CI logs are minimal.</p>
 <p><strong>Performance:</strong> scan + checks G-01 through G-05 run in under 5 seconds
 on the full tree; G-06 and G-07 invoke MkDocs, bounded by docs build
-time.</p>
+time. G-08 is a line scan over the published sources.</p>
 <p><strong>Rationale:</strong> <a href="../../authoring/">AUTHORING.md</a> Rule 5.</p>
 <hr />
 <h2 id="docframe-005-bridge-replaces-not-augments">DOCFRAME-005: Bridge Replaces, Not Augments<a class="headerlink" href="#docframe-005-bridge-replaces-not-augments" title="Permanent link">&para;</a></h2>
@@ -11831,7 +11836,7 @@ package's PyPI long description — honest.</p>
 </tr>
 </tbody>
 </table>
-<p><code>tests/scripts/test_check_docs_framework.py</code> (gate — DOCFRAME-004, G-02..G-06):</p>
+<p><code>tests/scripts/test_check_docs_framework.py</code> (gate — DOCFRAME-004, G-02..G-06, G-08):</p>
 <table>
 <thead>
 <tr>
@@ -11895,6 +11900,71 @@ package's PyPI long description — honest.</p>
 <td><code>test_g06_correct_prefix_passes</code></td>
 <td>G-06</td>
 <td>positive control</td>
+</tr>
+<tr>
+<td><code>test_fixture_flattens_under_python_markdown</code></td>
+<td>G-08</td>
+<td>anchors the fixture to the renderer</td>
+</tr>
+<tr>
+<td><code>test_nested_list_under_four_spaces_fails</code></td>
+<td>G-08</td>
+<td>3-space bullets under <code>1.</code></td>
+</tr>
+<tr>
+<td><code>test_two_space_bullet_nesting_fails</code></td>
+<td>G-08</td>
+<td>depth 2 needs 8</td>
+</tr>
+<tr>
+<td><code>test_nested_list_in_docs_src_fails</code></td>
+<td>G-08</td>
+<td>docs-only sources</td>
+</tr>
+<tr>
+<td><code>test_block_fixture_leaves_list_under_python_markdown</code></td>
+<td>G-08</td>
+<td>anchors the block fixture</td>
+</tr>
+<tr>
+<td><code>test_under_indented_list_item_block_fails</code></td>
+<td>G-08</td>
+<td>table after a blank line</td>
+</tr>
+<tr>
+<td><code>test_g08_skips_lazy_continuation</code></td>
+<td>G-08</td>
+<td></td>
+</tr>
+<tr>
+<td><code>test_nesting_after_column_zero_lazy_line_fails</code></td>
+<td>G-08</td>
+<td>a column-0 lazy line keeps the item open</td>
+</tr>
+<tr>
+<td><code>test_g08_skips_list_glued_to_paragraph</code></td>
+<td>G-08</td>
+<td>no list to Python-Markdown</td>
+</tr>
+<tr>
+<td><code>test_g08_skips_fence_body_inside_item</code></td>
+<td>G-08</td>
+<td>fence inside an open item</td>
+</tr>
+<tr>
+<td><code>test_g08_new_list_after_paragraph_break</code></td>
+<td>G-08</td>
+<td>text after a blank line closes the list</td>
+</tr>
+<tr>
+<td><code>test_g08_four_space_nesting_passes</code></td>
+<td>G-08</td>
+<td>positive control</td>
+</tr>
+<tr>
+<td><code>test_g08_against_live_repo</code></td>
+<td>G-08</td>
+<td>live repo</td>
 </tr>
 </tbody>
 </table>

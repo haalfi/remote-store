@@ -13498,16 +13498,16 @@ digest is relying on behavior that HTTP servers do not guarantee.</p>
 </code></pre></div>
 <p><strong>Key distinctions:</strong></p>
 <ol>
-<li><strong><code>digest</code></strong> is a <strong>verified content digest</strong> — the actual hash of
+<li>
+<p><strong><code>digest</code></strong> is a <strong>verified content digest</strong> — the actual hash of
    the file's bytes, with a known algorithm. Backends populate this only
-   when they can <strong>guarantee</strong> it represents the content.</li>
-</ol>
+   when they can <strong>guarantee</strong> it represents the content.</p>
 <p><strong>Backend population rules:</strong></p>
 <p>ETags are opaque version/cache tokens in every backend. They go to
-   <code>etag</code>, never to <code>digest</code> — even when they <em>happen</em> to look like a
-   hex-encoded hash (e.g., S3 single-part uploads). <code>digest</code> is only
-   populated when the backend returns a checksum through a <strong>dedicated
-   checksum API</strong> that explicitly guarantees content integrity.</p>
+<code>etag</code>, never to <code>digest</code> — even when they <em>happen</em> to look like a
+hex-encoded hash (e.g., S3 single-part uploads). <code>digest</code> is only
+populated when the backend returns a checksum through a <strong>dedicated
+checksum API</strong> that explicitly guarantees content integrity.</p>
 <table>
 <thead>
 <tr>
@@ -13544,7 +13544,7 @@ digest is relying on behavior that HTTP servers do not guarantee.</p>
 </tr>
 </tbody>
 </table>
-<ol>
+</li>
 <li>
 <p><strong><code>etag</code></strong> is an <strong>opaque backend tag</strong> — useful for conditional
    requests and change detection, but explicitly <strong>not comparable across
@@ -13635,11 +13635,13 @@ before any backend populates the field avoids a painful migration.</p>
 </ol>
 <h3 id="path-decision-make-before-investing-in-proxymiddleware-infra">Path decision (make before investing in proxy/middleware infra)<a class="headerlink" href="#path-decision-make-before-investing-in-proxymiddleware-infra" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Choose Path 1 or Path 2 based on the extension roadmap.</strong></li>
+<li><strong>Choose Path 1 or Path 2 based on the extension roadmap.</strong><ul>
 <li>If extensions = observe + cache only → Path 1 (ProxyStore).</li>
 <li>If retry, rate-limit, or similar extensions are planned → Path 2
-     (middleware). Do not choose Path 1 as a stepping stone with a
-     vague intent to do Path 2 later.</li>
+  (middleware). Do not choose Path 1 as a stepping stone with a
+  vague intent to do Path 2 later.</li>
+</ul>
+</li>
 </ol>
 <h3 id="path-1-follow-up">Path 1 follow-up<a class="headerlink" href="#path-1-follow-up" title="Permanent link">&para;</a></h3>
 <p>7a. Extract <code>ProxyStore</code> base class (ID-094, internal refactor).

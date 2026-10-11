@@ -13117,7 +13117,8 @@ re-entries differently:</p>
    caller's original error surfaced, and <code>_map_exception</code> classified it as a
    generic <code>RemoteStoreError</code> — which does <em>not</em> clear the cached client, so
    SFTP-010 tier 2 never fired on the operation that surfaced the drop.</li>
-<li><strong>Skipped teardown.</strong> Every promote-or-rename path skips what follows a dead
+<li>
+<p><strong>Skipped teardown.</strong> Every promote-or-rename path skips what follows a dead
    rename: <code>_promote</code> skips the fallback and <code>move</code> skips its own fallback chain.
    <strong>Each saves one bound, not the chain's length</strong> — the displace re-raises a
    dead-connection failure, so the <code>rename</code> behind it and the copy fallback's two
@@ -13135,54 +13136,55 @@ re-entries differently:</p>
    residue keeps its backup. And <strong>every</strong>
    paramiko file handle held in a <code>with</code> block skips its close on a
    dead-connection exit, since <code>SFTPFile.close()</code> flushes and then issues a
-   synchronous <code>CMD_CLOSE</code> whose reply never comes.</li>
-</ol>
+   synchronous <code>CMD_CLOSE</code> whose reply never comes.</p>
 <p>That last is the worst of the set when unguarded, because paramiko swallows
-   the timeout raised inside its own close, making it a wait with no error to
-   explain it. The guard is one helper (<code>_handle</code>) rather than a per-site
-   repeat, because the site that first exposed it was not the only one:
-   <code>read_bytes</code>, <code>write</code>, <code>write_atomic</code>, <code>copy</code> and <code>move</code>'s copy fallback all
-   hold a handle the same way, and <code>open_atomic</code> applies the same rule inline
-   (its clean-exit close must sit inside <code>_errors</code> so a flush failure still
-   maps). Measured at a 2 s bound, on a stream that goes quiet mid-transfer:
-   4.00 s before the guard and 2.00 s after for both <code>write</code> and <code>write_atomic</code>,
-   and 6.9 s before and 2.0 s after for <code>copy</code>, which holds two handles rather
-   than one.</p>
+the timeout raised inside its own close, making it a wait with no error to
+explain it. The guard is one helper (<code>_handle</code>) rather than a per-site
+repeat, because the site that first exposed it was not the only one:
+<code>read_bytes</code>, <code>write</code>, <code>write_atomic</code>, <code>copy</code> and <code>move</code>'s copy fallback all
+hold a handle the same way, and <code>open_atomic</code> applies the same rule inline
+(its clean-exit close must sit inside <code>_errors</code> so a flush failure still
+maps). Measured at a 2 s bound, on a stream that goes quiet mid-transfer:
+4.00 s before the guard and 2.00 s after for both <code>write</code> and <code>write_atomic</code>,
+and 6.9 s before and 2.0 s after for <code>copy</code>, which holds two handles rather
+than one.</p>
 <p>Three of the five call sites are measured that way; the other two are named
-   here rather than counted as covered, because the helper being shared is not
-   evidence that a site was exercised. <code>read_bytes</code> prefetches, so a stall inside
-   its read fails in paramiko's prefetch machinery rather than on the close of a
-   partly-read handle, and a test there would pin something other than what it
-   claimed. <code>move</code>'s copy fallback (<code>_copy_and_delete</code>) is reached only when both
-   <code>posix_rename</code> and <code>rename</code> fail for non-dead reasons; its handles are
-   exercised, but never against a stall, because a dead channel stops the ladder
-   a rung above them.</p>
+here rather than counted as covered, because the helper being shared is not
+evidence that a site was exercised. <code>read_bytes</code> prefetches, so a stall inside
+its read fails in paramiko's prefetch machinery rather than on the close of a
+partly-read handle, and a test there would pin something other than what it
+claimed. <code>move</code>'s copy fallback (<code>_copy_and_delete</code>) is reached only when both
+<code>posix_rename</code> and <code>rename</code> fail for non-dead reasons; its handles are
+exercised, but never against a stall, because a dead channel stops the ladder
+a rung above them.</p>
 <p>The distinction is drawn because <code>copy</code> shipped unrouted for a round while
-   five artifacts named it covered — the call-site list was read as evidence that
-   the list had been run. The same reading is what put a <code>no cover</code> pragma on too
-   much code twice: first over <code>move</code>'s dead-rename guard, then over
-   <code>_move_fallback</code>'s own, each of which is reachable well outside the case the
-   pragma named. Each split moved the pragma down a level; what finally removed
-   it was staging the refusal client-side, which reaches every rung on a live
-   connection. Both guards have a test apiece.</p>
+five artifacts named it covered — the call-site list was read as evidence that
+the list had been run. The same reading is what put a <code>no cover</code> pragma on too
+much code twice: first over <code>move</code>'s dead-rename guard, then over
+<code>_move_fallback</code>'s own, each of which is reachable well outside the case the
+pragma named. Each split moved the pragma down a level; what finally removed
+it was staging the refusal client-side, which reaches every rung on a live
+connection. Both guards have a test apiece.</p>
 <p>The helper bounds what the caller waits inline; it does not promise the
-   round-trip is never made. <code>SFTPFile.__del__</code> calls <code>_close(async_=True)</code>
-   unconditionally, and the <code>BufferedFile.close</code> inside it — which flushes —
-   sits outside <code>_close</code>'s own <code>try</code>, so a <em>write</em> handle still holding buffered
-   bytes can attempt one blocking write when it is collected, on whatever thread
-   collects it. A read handle cannot: its write buffer is empty and <code>_write_all</code>
-   returns without a round-trip.</p>
+round-trip is never made. <code>SFTPFile.__del__</code> calls <code>_close(async_=True)</code>
+unconditionally, and the <code>BufferedFile.close</code> inside it — which flushes —
+sits outside <code>_close</code>'s own <code>try</code>, so a <em>write</em> handle still holding buffered
+bytes can attempt one blocking write when it is collected, on whatever thread
+collects it. A read handle cannot: its write buffer is empty and <code>_write_all</code>
+returns without a round-trip.</p>
 <p>The <code>move</code> guard is a case where a coverage pragma hid a gap. A
-   <code># pragma: no cover -- fallback for servers without posix_rename</code> sat on
-   <code>_rename_fallback</code> and named a bound that does not hold: the residue
-   subsection below establishes that neither fallback is confined to servers
-   lacking the extension. What the gap was: the dead-connection guard above it is
-   reachable on <em>any</em> server, since a stalled channel fails <code>posix_rename</code> like
-   anything else. Splitting <code>_move_fallback</code> out is what stopped the pragma
-   covering that guard; the pragma itself is gone, because denying the promote on
-   a live connection reaches both fallbacks and the copy rung below them
-   (<code>tests/backends/sftp/test_atomic_fallback.py</code>). A pragma whose stated bound
-   is wrong is the shape to look for here, not the pragma.</p>
+<code># pragma: no cover -- fallback for servers without posix_rename</code> sat on
+<code>_rename_fallback</code> and named a bound that does not hold: the residue
+subsection below establishes that neither fallback is confined to servers
+lacking the extension. What the gap was: the dead-connection guard above it is
+reachable on <em>any</em> server, since a stalled channel fails <code>posix_rename</code> like
+anything else. Splitting <code>_move_fallback</code> out is what stopped the pragma
+covering that guard; the pragma itself is gone, because denying the promote on
+a live connection reaches both fallbacks and the copy rung below them
+(<code>tests/backends/sftp/test_atomic_fallback.py</code>). A pragma whose stated bound
+is wrong is the shape to look for here, not the pragma.</p>
+</li>
+</ol>
 <p><strong>Bounded, with one stated exception.</strong> It is not fixed here:</p>
 <ul>
 <li><strong>The <code>subsystem</code> request.</strong> <code>Channel.invoke_subsystem</code> waits in

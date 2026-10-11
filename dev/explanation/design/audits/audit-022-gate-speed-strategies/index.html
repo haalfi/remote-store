@@ -11622,9 +11622,9 @@ the JUnit report, 11,932 tests, 721 s total):</p>
 </table>
 <p>Two observations show how much a map would select away, and where it must not:</p>
 <ul>
-<li><strong>Conformance is parametrized by backend.</strong> The 4,649 conformance tests split
-  by the backend name in their test id:</li>
-</ul>
+<li>
+<p><strong>Conformance is parametrized by backend.</strong> The 4,649 conformance tests split
+  by the backend name in their test id:</p>
 <table>
 <thead>
 <tr>
@@ -11680,14 +11680,14 @@ the JUnit report, 11,932 tests, 721 s total):</p>
 </tbody>
 </table>
 <p>A change to <code>backends/_sftp.py</code> reaches the <code>sftp</code> column plus
-  <code>tests/backends/sftp/</code>. It does not reach the nine other named backend
-  columns.
+<code>tests/backends/sftp/</code>. It does not reach the nine other named backend
+columns.
 - <strong><code>tests/scripts/</code> is 2,064 tests (17%), but it is not unreachable from
   <code>src/</code>.</strong> It reaches <code>src/</code> in two ways:
-  - <strong>By import.</strong> <code>tests/scripts/test_gen_features.py</code> imports
-    <code>remote_store._retry</code>, <code>remote_store.backends._http</code>,
-    <code>remote_store.backends._s3_base</code> and <code>Store</code>.
-  - <strong>By reading source as text.</strong>
+- <strong>By import.</strong> <code>tests/scripts/test_gen_features.py</code> imports
+  <code>remote_store._retry</code>, <code>remote_store.backends._http</code>,
+  <code>remote_store.backends._s3_base</code> and <code>Store</code>.
+- <strong>By reading source as text.</strong>
     - <code>scripts/gen_features.py:259</code> reads <code>src/remote_store/_registry.py</code> with
       <code>read_text</code>, and <code>test_gen_features.py</code> drives it.
     - <code>scripts/check_test_placement.py:104</code> AST-walks
@@ -11696,9 +11696,11 @@ the JUnit report, 11,932 tests, 721 s total):</p>
       <code>remote_store</code> imports sit inside string fixtures; its real imports are
       <code>ast</code>, <code>importlib.util</code>, <code>sys</code> and <code>pathlib</code>.</p>
 <p>A <code>Grep</code> for <code>remote_store</code> over <code>tests/scripts/</code> matches 21 files. That
-  counts text occurrences, not dependent files. So a map has to place these per
-  test file, not exclude the directory. The <code>ci.yml</code> comment above
-  <code>tooling-tests</code> ("not remote_store") makes the same wrong claim.</p>
+counts text occurrences, not dependent files. So a map has to place these per
+test file, not exclude the directory. The <code>ci.yml</code> comment above
+<code>tooling-tests</code> ("not remote_store") makes the same wrong claim.</p>
+</li>
+</ul>
 <p><strong>Which selection mechanism fits this repo.</strong> Selection tools differ in where
 their map comes from: runtime coverage, the git diff, static imports, or a
 build graph. Two facts about the repo decide among them:
@@ -11834,21 +11836,25 @@ waste to superseded runs. It does not narrow what a run does.</p>
 reversal clause names merge-queue capacity as missing. <strong>The PR's draft state is
 the single selector:</strong></p>
 <ul>
-<li><strong>Draft PR: in-progress lane.</strong> Lint, typecheck, and the H1 map-selected
+<li>
+<p><strong>Draft PR: in-progress lane.</strong> Lint, typecheck, and the H1 map-selected
   tests on every supported interpreter (see the <code>/ship</code> constraint below). The
-  tier is set per leg:</li>
+  tier is set per leg:</p>
+<ul>
 <li><strong>Non-primary legs:</strong> Stage 1, selected. No Docker.</li>
 <li><strong>Primary leg:</strong> Stage 2, selected, with <code>prepare-images</code>. It keeps the
-    live backends, which ADR-0043 makes the per-PR carrier of the live-backend
-    guarantee.</li>
+  live backends, which ADR-0043 makes the per-PR carrier of the live-backend
+  guarantee.</li>
 </ul>
 <p>Dropping the primary to Stage 1 would be cheaper, but a round touching
-  <code>_s3.py</code> or <code>_sftp.py</code> would then see only moto or in-process SFTP until the
-  close. That trade is the ADR's to make, not a default.
+<code>_s3.py</code> or <code>_sftp.py</code> would then see only moto or in-process SFTP until the
+close. That trade is the ADR's to make, not a default.
 - <strong>Non-draft PR: pre-merge lane.</strong> This covers every non-draft PR, including
   one opened as non-draft and one converted from draft. It runs the current
   full <code>ci.yml</code> gate, including the coverage floor.
 - <strong>Post-merge:</strong> <code>ci-full.yml</code> as today.</p>
+</li>
+</ul>
 <p><strong>The merge invariant needs two <code>ci.yml</code> changes.</strong> The invariant is that
 nothing merges without one full green run on the final head. Today it does not
 hold under this selector:
