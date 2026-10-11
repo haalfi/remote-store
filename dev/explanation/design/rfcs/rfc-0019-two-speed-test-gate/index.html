@@ -11579,7 +11579,11 @@ and the median wall-clock share is 100%, against targets of at most 30% and
   amended here.</li>
 </ul>
 <p>Tracked as <strong>BK-403</strong>, with the design for BK-404 (local target) and ID-266
-(CI lane). All three stay open.</p>
+(CI lane). <strong>2026-10-11: BK-403 and BK-404 closed on a different selector</strong>,
+<code>hatch run fast</code>, which judges each gate run's diff against the last green tree
+rather than a PR's whole diff
+(<a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-403-fast-gate/report.md">report</a>). Its local part supersedes
+this RFC's; the CI lane (ID-266) stays open, and D5's rules are not what ships.</p>
 <p><em>Superseded framing:</em> this RFC sought approval for Phase 0 and a limited local
 pilot, and treated the target architecture below as the direction rather than a
 build order.</p>

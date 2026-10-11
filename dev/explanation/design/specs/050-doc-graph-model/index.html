@@ -11786,7 +11786,7 @@ introduce set-ordering nondeterminism.</p>
 <p><strong>Invariant:</strong> <code>scripts/gen_graph.py --check</code> and
 <code>scripts/gen_graph_viz.py --check</code> exit non-zero (without writing) when the
 committed <code>graph.json</code> / <code>graph_viz.html</code> would differ from a fresh build. Both
-run in the pre-commit gate (<code>hatch run all</code>) and in CI; a source change that is
+run in <code>preflight</code>, which the pre-commit gate (<code>hatch run fast</code>) always runs, and in CI; a source change that is
 not accompanied by regenerated artifacts fails the gate.</p>
 <p><strong>Invariant (schema_version ripple):</strong> Bumping <code>schema_version</code> requires updating
 every consumer that pins or reads it: the <code>gen_graph_viz.py</code> schema-compatibility
