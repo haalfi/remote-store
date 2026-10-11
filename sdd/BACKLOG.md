@@ -1023,4 +1023,19 @@ sessions work is measured before it becomes process.
   only or not reached and lists the author's doubts, but no round must take up a
   not-reached row or the platforms and edge cases the change touches. Run B's five
   rounds never raised #1113's two regressions run A had caught ([report](research/token-usage/report.md#the-two-deliveries-compared) § Learnings).
-  Open decision: [proposal 9](research/research-token-spend-means.md#6-proposals), a handoff the loop converges against, each row covered or waived.
+  Open decision: [proposal 9](research/research-token-spend-means.md#6-proposals), a handoff the loop converges against, each row covered or waived. BK-430 overlaps: when a check covers a row.
+
+- [ ] **BK-430 — A review loop may close prose on a check that cannot fail, and no standing rule weighs a cheaper delivery by its defects**
+  spec: — · effort: M · audience: contributor.process
+  Four of run B's ten prose closes ran a check that could not have shown the claim false, and run B, at a quarter of
+  run A's units, closed its loop with two regressions run A's PR had avoided ([report](research/token-usage/report.md#run-b-ship-bug-280-on-the-means) § Run B, § Rule (c), § The two deliveries compared);
+  before #1113 merged, one was fixed and the other left to BUG-318 ([BUG-280's done entry](BACKLOG-DONE.md)). RFC-0020's decision rule judged
+  run B by its defects as well as its spend, for that run alone; rule (c), not on master, lacked the falsifiable-check clause.
+  Open decision: [proposals 2 and 3](research/research-token-spend-means.md#6-proposals) as standing rules. BK-425 overlaps: when a check covers a row.
+
+- [ ] **BK-431 — Review subagents pay the session prefix again, and no smaller reviewer input is tested**
+  spec: — · effort: M · audience: contributor.process, contributor.tooling
+  A subagent pays about 53k tokens of prefix before it works, and review
+  subagents re-read the same process files ([report](research/token-usage/report.md) § Learnings, § 9 hypothesis 3).
+  Run B's 11 review-loop subagents were 34.6% of its units (§ Run B, phase table).
+  Open decision: [proposal 5](research/research-token-spend-means.md#6-proposals), a scoped reviewer input, measured on a delivery as run B was.
