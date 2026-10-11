@@ -88,7 +88,9 @@ phases:
           picks its subagent with agent:. Whether unlisted tools' schemas
           leave the prefix, and whether deferred MCP tools load in such an
           agent, are not documented. The docs say agent files are watched
-          mid-session, which the probe above contradicts in a worktree.
+          mid-session: the throwaway file above was refused on the call right
+          after the one that wrote it, while the committed reviewer.md was listed later in
+          the same session, so pickup came with a delay, not at once.
         outcome: unclear
   - id: implement
     name: Implement
@@ -109,4 +111,17 @@ phases:
           Two links bind its measuring reviewer to rvw-pr's allowlist and
           base-branch recipe; both now point at rvw-pr/measuring.md.
           /orchestrate's spawn type is unchanged (plan: one path measured).
+        outcome: ok
+      - file: "(probe) reviewer agent at commit 2b89e4a9b"
+        section: "same one-word probe; a ToolSearch-then-call probe"
+        read_type: verify
+        extract: >-
+          Once the committed .claude/agents/reviewer.md was listed as an
+          agent type later in this session, the probe's subagent total was
+          reviewer 19,809 against general-purpose 39,923, both spawned in
+          the same session: 20,114 fewer tokens before any work. A reviewer
+          loaded mcp__MCP_DOCKER__pull_request_read through ToolSearch and
+          returned PR #1113's title, matching `gh pr view 1113 --json
+          title`, so solo passes keep agent: reviewer. wc -c rvw-pr:
+          SKILL.md 21,567, measuring.md 5,397, posting.md 4,971.
         outcome: ok
