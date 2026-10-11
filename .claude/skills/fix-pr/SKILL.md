@@ -231,14 +231,14 @@ executed.
   the loop and beyond
   ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
 - **A fix to a quantified claim is scoped to the quantifier, not to the
-  finding.** Principle 9 owed the enumeration when the claim was written; a
-  finding on it means that was not run. Run it now: the fix covers the
-  claim's whole extent and the reply states the enumeration. Closing a
-  finding to its own wording leaves the rest of the class open while it reads
-  as closed: "every operation except the two deletes" was closed to the
-  subset a reviewer measured, and caught again three rounds later. When the quantified claim is about behaviour this PR leaves alone and the
-  change does not rely on it, its extent is not yours to complete:
-  delete it (Step 3, shape 2).
+  finding.** Principle 9 owed the enumeration at writing time; a finding means
+  it was not run, or a later edit broke the claim. Run it now: the fix covers
+  the whole extent and the reply states the enumeration. A fix to the
+  finding's own wording leaves the class open while it reads as closed: "every
+  operation except the two deletes" was closed to the measured subset and
+  caught again three rounds later. A quantified claim about behaviour this PR
+  leaves alone and does not rely on is not yours to complete: delete it
+  (Step 3, shape 2).
 - Sweep your own fixes the same way: a fix changes a thing, and every other
   description of that thing — docstring, comment, spec table, guide — is now
   suspect. The class sweep above fires on a review finding; nothing but this

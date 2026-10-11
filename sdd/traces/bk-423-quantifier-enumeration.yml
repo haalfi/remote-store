@@ -80,11 +80,18 @@ phases:
       - file: CLAUDE.md
         section: "Principles (9)"
         read_type: gate
-        extract: "Extend the subject to quantifiers; add report § 5 as their measured failure mode"
+        extract: >-
+          Extend the subject to quantifiers; add report § 5 as their measured
+          failure mode. The artifact list missed docstrings and comments, where
+          run B's cited cases sat; the review caught it and the list now names them.
       - file: scripts/check_process_budget.py
         section: "(full)"
         read_type: gate
-        extract: "+141 bytes on CLAUDE.md; cut /fix-pr's quantifier rule to net -81 and --update"
+        extract: >-
+          CLAUDE.md 16931 to 17119 (+188), /fix-pr 14682 to 14382 (-300), net
+          -112, locked with --update (sizes from sdd/process-budget.json). The
+          first version stated +141, measured before the anchor was added; the
+          review caught it.
   - id: verify
     name: Verify
     steps:
