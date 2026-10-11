@@ -205,3 +205,50 @@ phases:
           decision that lives in BACKLOG. The new pass ran backlog-show by
           Bash in the main tree, outside its permitted Bash uses.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1125 --trace-block-only` at head e1ffa91.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1125 --trace-block-only"
+  pr: 1125
+  review_rounds: 6
+  submissions: 1
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.04
+  by_file:
+    - path: ".claude/skills/rvw-pr/SKILL.md"
+      findings: 1
+    - path: ".claude/skills/ship/SKILL.md"
+      findings: 1
+  untouched_files:
+    - ".claude/agents/reviewer.md"
+    - ".claude/skills/orchestrate/SKILL.md"
+    - ".claude/skills/rvw-pr/measuring.md"
+    - ".claude/skills/rvw-pr/posting.md"
+    - "CLAUDE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/adrs/0035-vary-method-not-model.md"
+    - "sdd/adrs/0046-review-tools-come-from-the-agent.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/decisions/c09288d7-a16e-487a-afcc-be52197f7119.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/traces/bk-431-scoped-reviewer-input.yml"
+  review_driven_commits:
+    - sha: "6b7251a"
+      subject: "fix: address PR #1125 review"
+    - sha: "c6d33ba"
+      subject: "BK-431: Fix the A/B review's findings; record old vs new reviewer"
+    - sha: "9e8bc06"
+      subject: "BK-431: Persona-staffed members keep their type; trim reviewer.md"
+    - sha: "bda8eef"
+      subject: "BK-431: Fix the round-3 A/B findings; re-lock the budget map"
+    - sha: "4ffed32"
+      subject: "BK-431: ADR-0046, a review pass's tools come from its agent"
+    - sha: "e1ffa91"
+      subject: "BK-431: Probe agent: reviewer in a fork; mark ADR-0035's amended bullet"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
