@@ -582,6 +582,10 @@ pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
 all = ["preflight", "lint", "format-check", "typecheck", "test-cov-s1", "examples", "notebooks", "check-links", "docs-check", "docs-build"]
+# The members of `all` that the change since the last green run can affect,
+# with tests selected by path (BK-403, BK-404). For in-progress rounds; `all`
+# and CI stay the merge barrier. Rules and flags: the scripts/fast_gate.py docstring.
+fast = "python scripts/fast_gate.py {args}"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]

@@ -432,7 +432,7 @@ orchestrator fixes directly.
    record an entry, with its diagnosis, under BACKLOG-DONE.md § Decided
    against. Every entry links the item's dossier, if it has one. Authoritative:
    [`sdd/BACKLOG.md` § How this file works](../../../sdd/BACKLOG.md#how-this-file-works).
-4. **Validate**: Run `hatch run all`. Fix failures (max 2 attempts — see Rules).
+4. **Validate**: Run `hatch run fast`. Fix failures (max 2 attempts — see Rules).
 5. Stage all changes, commit with backlog ID prefix.
 6. Push feature branch (never master).
 7. Report: mode used, authoring experts spawned, **the lens and method of each
@@ -448,7 +448,7 @@ orchestrator fixes directly.
 
 - Never push to master. Push the feature branch.
 - If an expert reports a spec contradiction, **stop and ask the user**.
-- If `hatch run all` fails after 2 fix attempts, report the failure and stop.
+- If `hatch run fast` fails after 2 fix attempts, report the failure and stop.
 - Commit message: `<BACKLOG-ID>: <short description>`.
 - The orchestrator handles cross-domain files and everything in
   [nobody's domain](#nobodys-domain), which is that clause's set and is not

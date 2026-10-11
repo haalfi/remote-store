@@ -237,7 +237,8 @@ pipx install hatch
 pip install --user hatch
 
 # Run any hatch script — .venv/ is auto-built on first invocation:
-hatch run all    # or run individual steps:
+hatch run fast   # the checks your change since the last green run can affect
+hatch run all    # every check; or run individual steps:
 hatch run lint
 hatch run typecheck
 hatch run test-cov         # coverage variants — see pyproject.toml comments for which to use when
@@ -540,7 +541,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - **New backend**: see [§ Adding a New Backend](#adding-a-new-backend) above.
 - **New extension**: see [§ Adding an Extension](#adding-an-extension) above (12-step checklist).
 - **New Store method / cross-reference validation**: see the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
-- **Pre-PR validation**: run the [PR validation gates](sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — `hatch run all` for a code change, or the lighter `hatch run lint` + `hatch run docs-gate` for a docs/specs-only change — then verify CHANGELOG and BACKLOG are updated and check the ripple-check table in `sdd/CLAUDE-REFERENCE.md`. Running `hatch run all` is always a safe superset if you would rather not classify the diff.
+- **Pre-PR validation**: run the [PR validation gates](sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — `hatch run fast` for a code change, or the lighter `hatch run lint` + `hatch run docs-gate` for a docs/specs-only change — then verify CHANGELOG and BACKLOG are updated and check the ripple-check table in `sdd/CLAUDE-REFERENCE.md`. `fast` runs only what the change since its last green run can affect; CI runs every check on the PR, and `hatch run all` runs them locally.
 
 <a id="release"></a>
 ## Release

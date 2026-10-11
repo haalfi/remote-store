@@ -536,9 +536,10 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   failures, re-run until clean.
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `infra/*.py`,
       `.claude/hooks/`, `sdd/rfcs/rfc-0015-{findings,rounds}.py`,
-      `pyproject.toml`, or `.python-version`** → run `hatch run all`, the full
-      pre-PR superset (its
-      constituent scripts are the source of truth in `pyproject.toml`). The two
+      `pyproject.toml`, or `.python-version`** → run `hatch run fast`: the
+      members of `all` (constituent scripts in `pyproject.toml`) that the change
+      since its last green run can affect, tests selected by path
+      (`scripts/fast_gate.py`; CI runs the rest). The two
       RFC-0015 scripts ride with `.claude/hooks/` below: they are pinned by
       `tests/scripts/` and gated in CI by the same `hooks` output. Other
       `sdd/rfcs/*.py` have no test and are not listed. All but
@@ -553,12 +554,12 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
       `CODE_PAT`: CI gates it through a separate `hooks` output so it runs
       `tooling-tests` alone rather than the full code fan-out (the reasoning, and
       the job count behind it, live beside `HOOKS_PAT` in `ci.yml`). Locally there
-      is no such split, so a hook edit takes the same `hatch run all` as code.
+      is no such split, so a hook edit takes the same `hatch run fast` as code.
       The remaining `CODE_PAT` members are
       generated artefacts (FEATURES, the graph data — drift
       caught by `preflight` on this path) and CI config (workflows, actions —
       validated only by CI, which re-runs itself on those paths).
-      `all` uses the no-Docker `test-cov-s1` variant (no 95% floor); that floor is
+      `fast` runs Stage 1 without coverage (no 95% floor); that floor is
       deliberately CI/publish-only, so do **not** substitute `test-cov-strict`
       (see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).
     - **No code touched** (docs / specs / skills / pure config only) → run
