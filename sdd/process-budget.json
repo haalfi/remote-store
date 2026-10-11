@@ -8,9 +8,9 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 295263,
+  "total": 295252,
   "files": {
-    "CLAUDE.md": 17194,
+    "CLAUDE.md": 17294,
     ".claude/output-styles/interview.md": 2105,
     ".claude/skills/audit/SKILL.md": 1355,
     ".claude/skills/drift/SKILL.md": 23728,
@@ -21,7 +21,7 @@
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
     ".claude/skills/rvw-pr/SKILL.md": 30783,
-    ".claude/skills/ship/SKILL.md": 54463,
+    ".claude/skills/ship/SKILL.md": 54352,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
     ".claude/agents/sdd-expert.md": 1726,

@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 43 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 44 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Proposed
 
@@ -1039,6 +1039,9 @@ unchanged.
   further stop clause — no ending until every changed file has been read whole
   against the final state. Convergence itself is unchanged; what a round must
   have looked at before it can be clean is not.
+  *Amended by [ADR-0044](0044-ship-subject-list-review-contract.md):* a
+  further stop clause — no ending until every subject-list row is covered or
+  waived by the user.
 
 - **The loop may not end on an unreviewed fix pass.** Whatever the last round
   changed is itself reviewed before the PR is declared ready; that verification
@@ -1388,6 +1391,25 @@ guarantee still gates each PR.
 account gains merge-queue or larger-runner capacity.
 
 > supersedes ADR-0032.
+
+### [ADR-0044](0044-ship-subject-list-review-contract.md): The Subject List Is the Review's Contract
+
+- **The Step 1 subject list is the review's contract, and the loop cannot end
+  until every row is covered or the user waived it.** Each row names a subject,
+  the platforms and edge cases it touches, its known risk, and its executed,
+  read only or not reached mark; it travels in the handoff to the session that
+  runs the loop. Scoped briefs carry the uncovered rows, each assigned to a
+  member. A row is covered when a pass reports its verdict on it and the method;
+  a row whose risk is behaviour is covered only by running it. Uncovered rows
+  that alone block the stop go to the user in one dialog, and only the user
+  waives one: the session that wants to stop is not the one to decide what it
+  may leave unreviewed. *Reverse if* covering rows adds rounds across a
+  meaningful sample of deliveries without changing what ships.
+
+The row shape, the brief item and the dialog are operational contract and live
+in `.claude/skills/ship/SKILL.md`.
+
+> amends ADR-0033 (clause).
 
 ## Superseded
 
