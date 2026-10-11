@@ -930,9 +930,9 @@ coverage floor.
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round
   (audit-022 § M1). [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md) proposes a
-  fast lane on every push and a full lane on a `merge-candidate` head. The local
-  gate is selected since BK-403 (`scripts/fast_gate.py`) and leans on CI's full run per push.
-  Open decision: whether the CI lane reuses that selector; then RFC-0019 Phases 1–3 and ADR-0043's amendment.
+  fast lane on every push and a full lane on a `merge-candidate` head. Parked: over 93
+  days a fast lane could have saved at most 2.9 h, against 7.5 h of merge waiting it
+  leaves ([report](research/id-266-ci-wait/report.md)). Re-measure 2027-01-11.
   Detail: [dossier](backlog/id-266-two-speed-ci-gate.md)
 
 - [ ] **BK-400 — The shard durations go stale between manual refreshes, so the primary shards balance on partial data**
