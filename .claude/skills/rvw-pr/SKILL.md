@@ -5,7 +5,7 @@ context: fork
 agent: reviewer
 argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
-# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads, Step 1's pinned diff read from a review root, Step 4's posted-count verification, Step 1's metadata-only carve-out for a measuring pass verifying a claim about the comments endpoint, and — in a measuring pass — the allowlisted gates (never for fixing, regenerating, or filesystem scouting). Five uses; the body's opening paragraph enumerates the same five and the two must be changed together.
+# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads, Step 1's pinned diff read from a review root, Step 4's posted-count verification, Step 1's metadata-only carve-out for a measuring pass verifying a claim about the comments endpoint, and — in a measuring pass — the allowlisted gates (never for fixing, regenerating, or filesystem scouting). Five uses; the body's opening paragraph enumerates the same five and the two must be changed together. A pass gets only the tools in .claude/agents/reviewer.md's `tools:`; allowed-tools just pre-approves them, so change both together.
 ---
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.

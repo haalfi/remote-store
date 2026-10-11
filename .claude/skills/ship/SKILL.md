@@ -359,8 +359,7 @@ would be read as a claim to verify. An unprimed pass gets the number and the
 root alone.
 
 **Panels spawn `Agent`s with `subagent_type: reviewer`**, because `/rvw-pr`
-cannot form one; a member spawned as any other type carries editing tools.
-Each prompt instructs the member to read and execute
+cannot form one. Each prompt instructs the member to read and execute
 `.claude/skills/rvw-pr/SKILL.md`, and must carry what the spawn path does not
 supply:
 
