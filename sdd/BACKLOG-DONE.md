@@ -298,6 +298,22 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-430 — A review loop may close prose on a check that cannot fail, and no standing rule weighs a cheaper delivery by its defects**
+  spec: — · effort: M · audience: contributor.process
+  [ADR-0045](adrs/0045-close-on-a-check-that-can-fail.md), amending ADR-0033
+  and ADR-0044, makes research proposals 2 and 3 standing rules: a close that
+  rests on a check (fix shape 3, a refute's evidence, a covered row) counts only
+  if the check could have returned the claim false, stated in `/fix-pr` Step 3
+  and `/ship`'s triage and row coverage; and a `/ship` tuning justified by
+  fewer units or rounds also compares the defects its deliveries shipped.
+  Evidence: four of run B's ten check-closed prose findings ran a check that
+  could not fail, and run B closed its loop with two regressions run A had
+  avoided, one fixed before #1113 merged
+  ([report](research/token-usage/report.md#rule-c-against-the-decision-rule)).
+  Process files raised 294,945 to 295,265 bytes after `/ship`'s two copies of
+  the `/fix-pr` obligations became pointers (`scripts/check_process_budget.py`). Trace:
+  [bk-430](traces/bk-430-falsifiable-checks.yml).
+
 - [x] **BK-425 — `/ship`'s handoff tells the review what was built, not what it must cover**
   spec: — · effort: M · audience: contributor.process
   The `/ship` subject list is now the review's contract

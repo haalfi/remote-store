@@ -26,7 +26,8 @@ BK-425, from the token-spend research. Two deliveries of `/ship BUG-280` were
 compared case by case
 ([report § The two deliveries compared](../research/token-usage/report.md#the-two-deliveries-compared)).
 Run B (#1113) was the better fix in a third of the lines and reached it in five
-review rounds, but it shipped two regressions run A (#1093) had avoided: a link
+review rounds, but its loop closed with two regressions run A (#1093) had
+avoided, the first fixed before merge: a link
 into a folder the caller cannot enter makes the whole listing raise, and a
 subfolder in the classic delete-pending state on Windows raises
 `PermissionDenied`. Run A's round 7 had measured the second state.
@@ -55,6 +56,8 @@ saving only while its reviewers still reach what the change touches
   waives one: the session that wants to stop is not the one to decide what it
   may leave unreviewed. *Reverse if* covering rows adds rounds across a
   meaningful sample of deliveries without changing what ships.
+  *Amended by [ADR-0045](0045-close-on-a-check-that-can-fail.md):* the method
+  that covers a row must be one that could have found the row's risk.
 
 The row shape, the brief item and the dialog are operational contract and live
 in `.claude/skills/ship/SKILL.md`.

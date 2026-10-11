@@ -112,6 +112,8 @@ it, since the figure is one delivery's history and not a forward estimate.
   an adjudication. ADR-0020's "user is the sole tie-breaker" is unchanged and
   still governs what the code *should* do. *Reverse only* as a deliberate
   authority change, per ADR-0020.
+  *Amended by [ADR-0045](0045-close-on-a-check-that-can-fail.md):* a
+  measurement settles a dispute only if it could have come out the other way.
 
 Which skill to reach for is a use decision, not one this record makes. That,
 with the step sequence, lens menu, brief requirements and triage table, is

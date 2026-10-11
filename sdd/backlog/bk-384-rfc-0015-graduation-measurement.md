@@ -111,3 +111,13 @@ Under BK-425 (trace `sdd/traces/bk-425-handoff-review-contract.yml`),
 waived it. Rounds that cover rows can add findings and rounds, so a delivery
 sampled here that ran under it should say so beside its counts. The graduation
 ADR this item owes amends ADR-0033 as amended by ADR-0044.
+
+## A falsifiability clause on closes, 2026-10-11
+
+Under BK-430 (trace `sdd/traces/bk-430-falsifiable-checks.yml`),
+[ADR-0045](../adrs/0045-close-on-a-check-that-can-fail.md) amends ADR-0033 and
+ADR-0044: a close by D2's shape (3), a refute's evidence or a covered row counts
+only if its check could have returned the claim false. D2's five shapes are
+unchanged in number and text; a close that would have counted before may now
+stay open, so a delivery sampled here that ran under it should say so beside
+its shape histogram.

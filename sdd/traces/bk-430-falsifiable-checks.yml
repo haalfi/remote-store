@@ -1,0 +1,172 @@
+id: BK-430
+title: "A review loop may close prose on a check that cannot fail, and no standing rule weighs a cheaper delivery by its defects"
+trigger: "Run B of /ship BUG-280: four of ten check-closed prose findings ran a check that could not show the claim false, and the 4x cheaper loop closed with two regressions run A had avoided, one fixed before #1113 merged (report § Rule (c) against the decision rule, § The two deliveries compared)"
+source_items:
+  - BK-430
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/adrs/DIGEST.md
+  - sdd/process-budget.json
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
+surprising_ripples:
+  - CLAUDE.md
+  - .claude/skills/orchestrate/SKILL.md
+decisions:
+  - sdd/decisions/f4419e46-e713-4605-867a-e1286a2dc3da.jsonl
+orient:
+  - items: [BK-384]
+    verdict: constrains
+    evidence: >-
+      The five fix shapes are RFC-0015 D2, which BK-384 is measuring for graduation;
+      its dossier records each later change to D2 or the stop rule as a dated note
+      ("D2 restricted, 2026-10-10" for BK-418, "A sixth stop clause, 2026-10-11" for
+      BK-425) so a sampled delivery can say which form it ran. A falsifiability
+      clause on shape (3) or on Refute is such a change: it owes the same dated
+      note, and must not alter D2's shape count or text beyond the clause.
+  - items: [BK-366]
+    verdict: unrelated
+    evidence: >-
+      Its exit criterion is each open BUG- classified escaped or caught with the
+      catching mechanism named (dossier § Exit criteria), a repo-level reading of
+      detection versus quality. Proposal 2 judges one delivery against the one it
+      replaces (research § 6 proposal 2); BK-366 supplies no per-delivery defect
+      measure and needs none from this item.
+  - items: [BK-404, ID-266]
+    verdict: unrelated
+    evidence: >-
+      Both edit .claude/skills/ship/SKILL.md for the gate a round pushes against
+      (RFC-0019 D1, BK-404 dossier line 50); neither touches triage, fix shapes or
+      the stop rule this item amends. Shared file only: a rebase risk with the
+      gate work running in parallel, not a scope question.
+  - items: [ID-268]
+    verdict: unrelated
+    evidence: >-
+      Its open decision is where the trace's review: block is pasted at the close
+      (index entry); the defects-with-spend rule does not touch the close step.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-token-spend-means.md
+        section: "§ 3, § 5, § 6"
+        read_type: gate
+        extract: "Proposal 2: judge a cheaper delivery also by defects vs the delivery it replaces. Proposal 3: a check counts only if it can return the claim false; rule (c) stays out of /ship"
+        outcome: ok
+      - file: sdd/research/token-usage/report.md
+        section: "Rule (c) against the decision rule"
+        read_type: gate
+        extract: "4 of 10 prose closes: git grep for wording (x2), gen-backlogid-check on item text; the decision rule lacked a falsifiable-check clause"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Triage each finding; Stop rule"
+        read_type: gate
+        extract: "On master the closes by check are fix shape (3) derivation, the Refute verdict's evidence, and row coverage by a review pass or CI lane; none requires the check to be able to fail"
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 3; Rules"
+        read_type: gate
+        extract: "Shape (3) mirrored; action-claims enforced at reply authoring"
+        outcome: ok
+      - file: sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
+        section: "whole dossier"
+        read_type: reference
+        extract: "D2 changes are recorded as dated notes for the graduation sample"
+        outcome: ok
+      - file: sdd/backlog/bk-366-bug-share-undiagnosed.md
+        section: "whole dossier"
+        read_type: reference
+        extract: "Repo-level escaped/caught classification; no per-delivery defect measure"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/adrs/0033-ship-convergence-driven-review.md
+        section: "Decision"
+        read_type: gate
+        extract: "Triage lives in the skill; the clause P3 amends is 'factual disputes are settled by measurement'"
+        outcome: ok
+      - file: sdd/adrs/0037-whole-file-gate-and-derived-figures.md
+        section: "Decision, derivation clause"
+        read_type: gate
+        extract: "Asks where a figure came from, not whether a closing check could fail; left untouched"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "GitHub operations"
+        read_type: reference
+        extract: "Enumerates /ship's records as 'six'; a seventh owes the count and the list (git grep 'six records|all six' found no other live copy)"
+        outcome: ok
+      - file: scripts/check_process_budget.py
+        section: "module docstring"
+        read_type: gate
+        extract: "Budget at 294945 of 294945; after two review rounds /ship's two partial copies of the /fix-pr obligations are pointers (/ship -198 net), and the remaining +320 (fix-pr +296, CLAUDE.md +126, orchestrate +96) is raised under BK-430; per-file sizes against origin/master with CRLF counted as LF"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/research/token-usage/report.md
+        section: "Rule (c) against the decision rule"
+        read_type: verify
+        extract: >-
+          The new clause applied by hand to run B's closes: the two wording greps
+          (_stat_entry docstring, 'never skipped') and gen-backlogid-check on
+          BUG-318/319's text each test wording or shape, not the content claimed,
+          so close nothing; the deletion and removed-citation greps would have
+          returned a hit had the text survived, and the two probes and the
+          enumeration against collected tests could return the claim false, so
+          those close
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1121 --trace-block-only` at head 212cd21.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1121 --trace-block-only"
+  pr: 1121
+  review_rounds: 3
+  submissions: 2
+  findings: 8
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.11
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 1, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.52
+  by_file:
+    - path: ".claude/skills/ship/SKILL.md"
+      findings: 2
+    - path: "sdd/adrs/0045-close-on-a-check-that-can-fail.md"
+      findings: 2
+    - path: ".claude/skills/fix-pr/SKILL.md"
+      findings: 1
+    - path: ".claude/skills/orchestrate/SKILL.md"
+      findings: 1
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "sdd/process-budget.json"
+      findings: 1
+  untouched_files:
+    - "CLAUDE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/adrs/0033-ship-convergence-driven-review.md"
+    - "sdd/adrs/0044-ship-subject-list-review-contract.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/backlog/bk-384-rfc-0015-graduation-measurement.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/f4419e46-e713-4605-867a-e1286a2dc3da.jsonl"
+    - "sdd/traces/bk-430-falsifiable-checks.yml"
+  review_driven_commits:
+    - sha: "9425dd3"
+      subject: "BK-430: fix: address PR #1121 review"
+    - sha: "4b55b76"
+      subject: "BK-430: decision log"
+    - sha: "212cd21"
+      subject: "BK-430: fix: address PR #1121 review round 2"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

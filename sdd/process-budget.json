@@ -8,20 +8,20 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 294945,
+  "total": 295265,
   "files": {
-    "CLAUDE.md": 17294,
+    "CLAUDE.md": 17420,
     ".claude/output-styles/interview.md": 2105,
     ".claude/skills/audit/SKILL.md": 1355,
     ".claude/skills/drift/SKILL.md": 23728,
-    ".claude/skills/fix-pr/SKILL.md": 14249,
+    ".claude/skills/fix-pr/SKILL.md": 14545,
     ".claude/skills/mutation/SKILL.md": 5984,
-    ".claude/skills/orchestrate/SKILL.md": 25993,
+    ".claude/skills/orchestrate/SKILL.md": 26089,
     ".claude/skills/pr/SKILL.md": 5425,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
     ".claude/skills/rvw-pr/SKILL.md": 30702,
-    ".claude/skills/ship/SKILL.md": 54126,
+    ".claude/skills/ship/SKILL.md": 53928,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
     ".claude/agents/sdd-expert.md": 1726,
@@ -36,6 +36,12 @@
       "from": 293333,
       "to": 295438,
       "reason": "measured set widened to .claude/output-styles/, which settings.json loads into every session (PR #1110 review)"
+    },
+    {
+      "item": "BK-430",
+      "from": 294945,
+      "to": 295265,
+      "reason": "ADR-0045 clauses, per file against master (CRLF as LF): /fix-pr Steps 2 and 3 +296, CLAUDE.md seventh /ship record +126, /orchestrate Steps 6 and 7 +96, /ship -198 net (its two partial copies of the /fix-pr obligations became pointers, which outweighs its new clauses)"
     }
   ]
 }

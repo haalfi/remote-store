@@ -136,7 +136,9 @@ current: it sizes panels and briefs, and it is **the review's contract**
 ([ADR-0044](../../../sdd/adrs/0044-ship-subject-list-review-contract.md)): the
 loop ends only when every row is covered or the user waived it (Stop rule). The
 mark is the author's evidence; coverage is the loop's. A row is covered only by
-a review pass reporting on it or a CI lane executing it (brief item 4), whatever
+a review pass reporting on it or a CI lane executing it (brief item 4), by a
+method that could have found its risk
+([ADR-0045](../../../sdd/adrs/0045-close-on-a-check-that-can-fail.md)), whatever
 its mark, and the orchestrator records which against the row.
 
 The third delivery was scoped by where a symptom was reported, and a capable
@@ -587,7 +589,7 @@ worktree root only.
 |---|---|---|
 | Must-fix | Wrong once merged: bad behaviour, a false statement in a durable artifact, a shipping gap. Fix in this PR. | Exactly one of shapes (1) to (4) below, named in the reply |
 | File-it | Real, but outside this PR's scope. Backlog item, cited in the reply. | Shape (5) |
-| Refute | Wrong or already handled. Reply with the evidence; do not fix. | — |
+| Refute | Wrong or already handled. Reply with evidence that could have shown the finding right; do not fix. | — |
 | Preference | A `Consistency:` finding on prose that cites no rule and arrived without the six lines. Reply *preference, six lines absent*; no backlog item; never fixed in-loop. A finding citing a `CONTENT-RULES` or `DRIFT-RULES` rule is a violation and is triaged as a Must-fix. | — |
 
 **A fix removes, measures, narrows or enumerates; it never argues.** A finding
@@ -602,14 +604,8 @@ pointer to the item that owns it, unless the change relies on it
 **(5)** filing, which is the File-it verdict. A
 Must-fix takes (1) to (4), as the table says. *Write a rationale* is not a
 shape. The fix-shape column is required, and the
-fix pass owes what [`/fix-pr`](../fix-pr/SKILL.md) Step 3 lists under each
-shape: a reviewer's *why* answered by shape (3) or the no-reason sentence, a
-test added in a fix pass mutation-checked before push, a reviewer's figure
-re-derived rather than carried, a measured claim bounded by its instrument, and
-a `Consistency:` finding on prose that cites no rule and lacks the six-line
-form triaged *Preference*, the fourth row above (a false statement in prose is
-a `Bug:` or `Spec:` finding, a rule violation is a Must-fix, and neither needs
-the six lines). The evidence is
+fix pass owes everything [`/fix-pr`](../fix-pr/SKILL.md) Step 3 lists under the
+shapes. The evidence is
 [RFC-0015 D2](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md): every one of the
 four failures it maps was the fixer writing something it had not run, and the
 measuring member catching it one round later.
@@ -622,9 +618,8 @@ accepting every finding degrades the work, so verify before fixing.
 `hatch run all` green → commit → push → **check CI** → reply to **every** thread
 and resolve it → remove the round's review worktree. Use
 [`/fix-pr`](../fix-pr/SKILL.md)'s comment-fetch and thread-resolve mechanics and
-its Rules — a fix pass here owes the finding's class, the sibling sweep of its own
-changes, the fix shape per must-fix reply and the mutation per added test exactly
-as one run under that skill does. Never start the next round against unpushed
+its Rules — a fix pass here owes what its Step 3 and Rules require, exactly as
+one run under that skill does. Never start the next round against unpushed
 code: the reviewer would target stale lines.
 
 **The local gate does not stand in for CI, and cannot.** `hatch run all` is a
@@ -687,7 +682,7 @@ unprimed pass. A PR making no such claim satisfies it vacuously, exactly as a
 round that fixed nothing satisfies the fix-pass clause.
 
 **Nor on a subject-list row nobody took up.** Run B of `/ship BUG-280`
-converged in five rounds and shipped two regressions run A had caught, a link
+ended after five rounds with two regressions run A had caught, a link
 into a locked folder and a Windows delete-pending state: no row named them and
 no round had to reach a `not reached` one
 ([report § The two deliveries compared](../../../sdd/research/token-usage/report.md#the-two-deliveries-compared)).
@@ -744,7 +739,10 @@ which dropped the model axis and added the measuring member; and
 fourth (PR #956), which added the whole-file gate after a converged, CI-green loop
 left defects in all eight files a single whole-file read then had to touch. Read
 all four before tuning any of the above; the row clause's record is
-[ADR-0044](../../../sdd/adrs/0044-ship-subject-list-review-contract.md).
+[ADR-0044](../../../sdd/adrs/0044-ship-subject-list-review-contract.md). A
+tuning justified by fewer units or rounds also compares the defects its
+deliveries shipped with those they replace; spend alone justifies none
+([ADR-0045](../../../sdd/adrs/0045-close-on-a-check-that-can-fail.md)).
 
 **Reviewer *selection* is not in that set** —
 [ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md) decides it,

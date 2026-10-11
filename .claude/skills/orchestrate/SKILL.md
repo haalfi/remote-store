@@ -402,8 +402,9 @@ orchestrator fixes directly.
    changes; a fix to a claim of extent scoped to the extent. Step 3's
    six-line triage bullet is satisfiable here because the reviewer contract
    above asks for those lines on every prose finding. This step has no reply
-   to name the shape in, so the shape per fix, and the mutation per added
-   test, are named in the Step 7 report instead. The shape rule is a rule
+   to name the shape in, so the shape per fix, the mutation per added test,
+   and the refuting result per check that closes a fix are named in the Step
+   7 report instead. The shape rule is a rule
    about fixes, not loops, which is why it binds here as it does under `/ship`
    ([RFC-0015](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) Open
    Question 1).
@@ -436,7 +437,8 @@ orchestrator fixes directly.
 6. Push feature branch (never master).
 7. Report: mode used, authoring experts spawned, **the lens and method of each
    reviewer per round** and what the measuring one ran, **the fix shape per
-   finding fixed and the mutation per added test** (Step 6), the subject set with
+   finding fixed, the mutation per added test and the refuting result per
+   check-closed fix** (Step 6), the subject set with
    each entry marked executed / read only / not reached, files changed,
    ripple-checks completed, validation status, deferred items (if any). A
    subject left `not reached` is a stated coverage bound, not an oversight —

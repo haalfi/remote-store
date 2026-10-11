@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 44 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 45 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Proposed
 
@@ -1072,6 +1072,8 @@ unchanged.
   an adjudication. ADR-0020's "user is the sole tie-breaker" is unchanged and
   still governs what the code *should* do. *Reverse only* as a deliberate
   authority change, per ADR-0020.
+  *Amended by [ADR-0045](0045-close-on-a-check-that-can-fail.md):* a
+  measurement settles a dispute only if it could have come out the other way.
 
 Which skill to reach for is a use decision, not one this record makes. That,
 with the step sequence, lens menu, brief requirements and triage table, is
@@ -1405,11 +1407,40 @@ account gains merge-queue or larger-runner capacity.
   waives one: the session that wants to stop is not the one to decide what it
   may leave unreviewed. *Reverse if* covering rows adds rounds across a
   meaningful sample of deliveries without changing what ships.
+  *Amended by [ADR-0045](0045-close-on-a-check-that-can-fail.md):* the method
+  that covers a row must be one that could have found the row's risk.
 
 The row shape, the brief item and the dialog are operational contract and live
 in `.claude/skills/ship/SKILL.md`.
 
 > amends ADR-0033 (clause).
+
+### [ADR-0045](0045-close-on-a-check-that-can-fail.md): A Close Rests on a Check That Can Fail, and Spend Is Judged With Defects
+
+- **A close that rests on a check counts only if the check could have returned
+  the claim false.** This binds every close by evidence in a review loop: fix
+  shape (3), a refute's evidence, and a subject-list row marked covered. The
+  reply names the result that would have refuted the claim; a check that tests
+  wording or shape is evidence about wording or shape, never about content. A
+  test added in a fix pass already owes this through its mutation check; this
+  clause gives every other check the same obligation. *Reverse if* the clause
+  adds rounds across a meaningful sample of deliveries without changing what
+  ships.
+
+- **A change to the review loop justified by spend also compares the defects
+  its deliveries shipped.** Fewer units or rounds justify a change to `/ship`
+  only beside the defects those deliveries shipped against the deliveries they
+  replace; spend alone never does, since the shorter loop that found less is
+  exactly what it rewards. *Reverse if* defect counts per delivery prove too
+  sparse to compare, at which point the cheaper honest answer is to stop
+  claiming a saving.
+
+Where each clause sits in the triage table, the fix-pass obligations and the
+row coverage is operational contract and lives in
+`.claude/skills/ship/SKILL.md`, `.claude/skills/fix-pr/SKILL.md` and
+`.claude/skills/orchestrate/SKILL.md`.
+
+> amends ADR-0033, ADR-0044 (clause).
 
 ## Superseded
 
