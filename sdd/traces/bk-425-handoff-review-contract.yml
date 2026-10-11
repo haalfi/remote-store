@@ -1,0 +1,215 @@
+id: BK-425
+title: "/ship's handoff tells the review what was built, not what it must cover"
+trigger: >-
+  Run B's five review rounds never raised the two regressions run A had caught
+  on #1113 (a link into a locked folder, the Windows delete-pending state):
+  the handoff marked subjects executed, read only or not reached, but nothing
+  required a round to take up a not-reached row or the platforms and edge
+  cases the change touches (report § The two deliveries compared, § Learnings;
+  research-token-spend-means.md § 6 proposal 9).
+source_items:
+  - BK-425
+audience:
+  - contributor.process
+decisions:
+  - sdd/decisions/1eb63e38-d23c-411c-ada0-db6d189af555.jsonl
+expected_ripples:
+  - CLAUDE.md
+  - sdd/adrs/0033-ship-convergence-driven-review.md
+  - sdd/adrs/DIGEST.md
+  - sdd/process-budget.json
+  - sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
+  - sdd/backlogid.json
+surprising_ripples:
+  - .claude/skills/rvw-pr/SKILL.md
+orient:
+  - items: [BK-430]
+    verdict: constrains
+    evidence: >-
+      Filed by PR #1118 after this orient ran, merged before this PR; its open decision now reads "proposals 2 and 3 as standing rules.
+      BK-425 overlaps: when a check covers a row". Proposal 3 (a check counts
+      only if it can return the claim false) bears on when a row is covered;
+      proposal 2 (never target spend alone: weigh a cheaper delivery by its
+      defects) measures outcomes, not coverage (research-token-spend-means.md
+      § 6). Not folded: the agreed scope stands and BK-430 keeps its decision.
+  - items: [BK-384]
+    verdict: constrains
+    evidence: >-
+      bk-384 dossier: "if accepted, an ADR amending ADR-0033/0034/0035/0037",
+      and the sample is "the next three deliveries". A new stop clause amends
+      ADR-0033's Decision, so it must take its target from the Amends fields
+      and leave BK-384's later ADR something to amend; and /ship § Rules keeps
+      the one-measuring-member cap "so that panel composition does not move
+      finding counts while fix shape is what is measured", so a coverage
+      clause that adds rounds is a confound BK-384 must record, not a reason
+      to wait (its sample is whichever deliveries come next).
+  - items: [BK-346]
+    verdict: constrains
+    evidence: >-
+      bk-346 dossier: six Pre-work rows "answer a neighbouring question". The
+      handoff already carries "the Pre-work rows still to discharge"; a
+      contract whose platform and edge-case rows were derived from that table
+      alone would inherit its blind spots. Rows come from the change's own
+      words (§ Enumerate the subjects), the ripple rows only as a cross-check.
+  - items: [BK-404, ID-266]
+    verdict: unrelated
+    evidence: >-
+      Both share .claude/skills/ship/SKILL.md (bk-404 dossier: "Sequence the
+      two edits together"), but their edits are the gate run per round push
+      and a merge-candidate signal at the close (RFC-0019 D1), both blocked on
+      BK-403. Neither touches the handoff, the briefs or the stop rule.
+  - items: [ID-268]
+    verdict: unrelated
+    evidence: >-
+      id-268 dossier cites ship/SKILL.md only for who posts a round marker
+      (clean rounds, panel posting), lines that cite by number and are already
+      stale. Its subject is the close's review: block, not what a round covers.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-425 (hatch run backlog-show)"
+        read_type: gate
+        extract: "Open decision is proposal 9: a handoff the loop converges against, each row covered or waived"
+      - file: sdd/research/research-token-spend-means.md
+        section: "6. Proposals (9)"
+        read_type: reference
+        extract: "Rows: behaviour changed, platforms and edge cases, evidence per row, known risks; converge when every row is covered or waived"
+      - file: sdd/research/token-usage/report.md
+        section: "The two deliveries compared; Learnings"
+        read_type: reference
+        extract: "Missed rows were a Windows deletion state and a link into a locked folder, both platform or edge cases no subject named"
+      - file: .claude/skills/ship/SKILL.md
+        section: "Enumerate the subjects; Hand off at the PR; Resume at the PR; Every scoped brief must carry; Stop rule"
+        read_type: reference
+        extract: "The subject list already has the marks; nothing in briefs or stop rule binds a not-reached row"
+      - file: sdd/adrs/0033-ship-convergence-driven-review.md
+        section: "Status (Amends), Decision"
+        read_type: reference
+        extract: "Stop clauses live in ADR-0033's first Decision bullet; 0034 and 0037 each added one by amendment. Amends fields: 0033 none, 0034 0033, 0035 0033+0034, 0036 0020+0035, 0037 0033+0034"
+      - file: sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
+        section: "Exit criteria"
+        read_type: reference
+        extract: "Its future ADR amends 0033/0034/0035/0037; sample is the next three deliveries"
+      - file: sdd/backlog/bk-346-ripple-check-blind-spots.md
+        section: "(head, instances 1-6)"
+        read_type: reference
+        extract: "Pre-work rows answer adjacent questions; do not derive contract rows from them alone"
+      - file: sdd/backlog/bk-404-selected-tests-hatch-target.md
+        section: "Constraints"
+        read_type: reference
+        extract: "Its ship edit is the per-push gate; unrelated to handoff content"
+      - file: sdd/backlog/id-268-pr-close-step.md
+        section: "Clean rounds"
+        read_type: reference
+        extract: "Cites ship/SKILL.md for round markers only"
+      - file: scripts/check_process_budget.py
+        section: "(run)"
+        read_type: gate
+        extract: "295263 of 295263 bytes: no headroom, every byte added to ship/SKILL.md needs a cut"
+  - id: implement
+    name: Implement
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Enumerate the subjects; Hand off; Every scoped brief must carry (3, new 4); Stop rule; Rules; Step 5"
+        read_type: gate
+        extract: >-
+          Rows gain platforms and edge cases, risk and mark; brief item 4 carries
+          the uncovered rows; a sixth stop clause with the user-waiver dialog.
+          Paid for by cutting item 3's recipe history and tmp/ paragraph (CLAUDE.md
+          § Trace authoring states it) and compressing the round-1 paragraph.
+      - file: sdd/adrs/0037-whole-file-gate-and-derived-figures.md
+        section: "Status, Decision"
+        read_type: reference
+        extract: "Template for a stop-clause amendment; 0037 amended 0034 because it appends a pass, this clause appends none"
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived CHANGELOG rule), orient"
+        read_type: gate
+        extract: "contributor.process with no user-facing framework: no CHANGELOG entry owed"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check rows ADR, Backlog item touched (hatch run ref-rows)"
+        read_type: gate
+        extract: "ADR edit owes gen-adr-digest; close owes BACKLOG-DONE entry and trace"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_process_budget.py
+        section: "(run)"
+        read_type: verify
+        extract: >-
+          Against origin/master's sdd/process-budget.json, after the round-2 fix:
+          ship/SKILL.md 54463 to 54126, rvw-pr/SKILL.md 30783 to 30702,
+          CLAUDE.md 17194 to 17294, total 295263 to 294945
+      - file: sdd/000-process.md
+        section: "Document types (Research row)"
+        read_type: verify
+        outcome: misleading
+        extract: >-
+          I added status pointers (BK-425 adopted) to the research record and
+          report; the Research row makes them point-in-time snapshots, changed
+          only for factual errors. A peer session flagged it; both restored to
+          master, PR #1118 owns reverting earlier pointers. My miss: I followed
+          BK-423's precedent instead of the row.
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 5"
+        read_type: verify
+        extract: >-
+          Round 1 (#1119): coverage needed a place in the reviewer's report
+          (fixed with Row: lines) and the mark vs coverage needed relating
+          (fixed in § Enumerate; width and ceiling now read uncovered rows).
+          Round 2 verified that fix and found my § Enumerate line had dropped
+          the CI-lane route brief item 4 allows, "Read all four" no longer
+          reaching ADR-0044, and BK-430 cited before it exists on master
+      - file: sdd/backlogid.json
+        section: "BK"
+        read_type: verify
+        extract: >-
+          BK 423 to 425: the file holds the highest ID per prefix in
+          BACKLOG-DONE.md (scripts/gen_backlogid.py docstring), and closing
+          BK-425 raised it. I first misread it as an open-item high-water mark
+review:
+  # Derived by `hatch run ship-report 1119 --trace-block-only` at head ce8dd7a.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1119 --trace-block-only"
+  pr: 1119
+  review_rounds: 3
+  submissions: 2
+  findings: 5
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.05
+    - round: 2
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.2
+  by_file:
+    - path: ".claude/skills/ship/SKILL.md"
+      findings: 4
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/rvw-pr/SKILL.md"
+    - "CLAUDE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/adrs/0033-ship-convergence-driven-review.md"
+    - "sdd/adrs/0044-ship-subject-list-review-contract.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/backlog/bk-384-rfc-0015-graduation-measurement.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/1eb63e38-d23c-411c-ada0-db6d189af555.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/traces/bk-425-handoff-review-contract.yml"
+  review_driven_commits:
+    - sha: "179d3a1"
+      subject: "BK-425: fix: address PR #1119 review"
+    - sha: "5981b7b"
+      subject: "BK-425: fix: address PR #1119 review round 2"
+    - sha: "ce8dd7a"
+      subject: "BK-425: Correct the trace after rebasing onto #1118"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

@@ -127,11 +127,17 @@ which files the diff edits, and the gap between the two answers is where defects
 survive review — the diff is what you touched, the subject set is what you are
 answerable for.
 
-Mark each subject **executed**, **read only**, or **not reached**, and keep the
-list current: it sizes panels, it is what a completeness critic checks, and the
-Step 5 report accounts for it. A subject still `not reached` at the end is a
-stated coverage bound, not an oversight — say so rather than letting silence
-imply coverage.
+Each row names the subject, the platforms and edge cases it touches (an OS, an
+interpreter, a filesystem state, a race, a link), its known risk, and a mark:
+**executed**, **read only**, or **not reached**. Take rows from the change's
+words; the Pre-work rows are a cross-check, never the source, since some answer
+a neighbouring question ([BK-346](../../../sdd/BACKLOG.md)). Keep the list
+current: it sizes panels and briefs, and it is **the review's contract**
+([ADR-0044](../../../sdd/adrs/0044-ship-subject-list-review-contract.md)): the
+loop ends only when every row is covered or the user waived it (Stop rule). The
+mark is the author's evidence; coverage is the loop's. A row is covered only by
+a review pass reporting on it or a CI lane executing it (brief item 4), whatever
+its mark, and the orchestrator records which against the row.
 
 The third delivery was scoped by where a symptom was reported, and a capable
 backend the new clause bound by *specification* went unnamed for six rounds
@@ -170,7 +176,8 @@ returns, write `tmp/ship-handoff-<N>.md` and stop:
 
 - PR number, branch, head SHA, and the working directory;
 - the approved plan, verbatim;
-- the Step 1 subject list with its executed / read only / not reached marks;
+- the Step 1 subject list, every row with its platforms and edge cases, risk
+  and mark;
 - the orient verdicts and the scope the Step 1 dialog agreed;
 - the trace path, the Pre-work rows still to discharge in Step 5, and open
   decisions;
@@ -218,8 +225,8 @@ persona owns
 
 Width is a judgement, not a formula: a quiet round keeps the next narrow — a panel
 of one scoped member is still a round, though from round 3 an odd round's
-unprimed sibling always rides along — and a broad diff, a loud round, or subjects
-still `not reached` widen it. Width follows the subject set, not the file list:
+unprimed sibling always rides along — and a broad diff, a loud round, or uncovered
+rows widen it. Width follows the subject set, not the file list:
 sizing a panel by the diff's breadth is how a bound subject the diff never touched
 goes unnamed.
 
@@ -545,44 +552,29 @@ are not substitutes.
    three of its four findings on two of those eight files
    ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
 
-   This replaces a two-call `gh api` recipe that each round ran by hand. Three
-   shaping decisions in it each fixed a measured regression — findings are rows
-   with no `in_reply_to_id`, *both* endpoints are paged, and untouched is the
-   changed-file list minus the **union** across every page, never minus page
-   one's. They now live in `scripts/ship_report.py`'s docstring, beside the code
-   that implements them, which is where a reason belongs once it stops being a
-   rule someone has to remember ([RFC-0015](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) D4).
-   The orchestrator no longer re-derives them, and cannot get them subtly wrong.
-
-   **`tmp/` is gitignored, and nothing durable holds this until the close.**
-   That is RFC-0015 Open Question 5's answer: a PR comment would prime nobody,
-   because reviewers never fetch comments, and the durable copy is the trace's
-   `review:` block written once the loop ends.
+   The measured reasons for its shape live in `scripts/ship_report.py`'s
+   docstring ([RFC-0015](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) D4).
 
    **Running it is the orchestrator's job, done while writing the brief. Put the
-   *result* in the brief; never the command.** It reads PR *comments*, and
-   `/rvw-pr` Step 1 forbids a reviewer from fetching those — that prohibition is
-   the whole mechanism keeping unprimed passes unprimed, so a brief asking a
-   member to run `ship-report` turns that member into one that has read the
-   conversation.
+   *result* in the brief; never the command**: it reads PR *comments*, which
+   `/rvw-pr` Step 1 forbids a reviewer to fetch.
 
-   **No reviewer runs `ship-report`, including a measuring member**, and that is
-   a narrowing from what the two-call recipe allowed. Two independent reasons,
-   either sufficient: `hatch run ship-report` is not on `/rvw-pr`'s by-name
-   measuring allowlist, which is an enumeration and not a pattern; and the
-   script reads comment **bodies**, where that skill's metadata carve-out is
-   bounded to paths, review ids and counts — so a member running it would have
-   read the conversation, which is the one thing the unprimed discipline cannot
-   survive. Its behavioural claims are pinned by its guards under
-   `tests/scripts/`, which every `hatch run all` executes, so nothing is
-   unverified by the narrowing; what is lost is a reviewer re-deriving the
-   figures independently, and that is RFC-0015 D6's deferred half to solve
-   (BK-384), not a gap to paper over by widening a permission.
+   **No reviewer runs `ship-report`, including a measuring member**: it is not
+   on `/rvw-pr`'s by-name measuring allowlist, and it reads comment **bodies**,
+   beyond that skill's metadata carve-out. Its guards under `tests/scripts/`
+   pin its claims; a reviewer re-deriving the figures is RFC-0015 D6's deferred
+   half (BK-384), not a reason to widen a permission.
 
-4. **Whether the verdict is reached by reading the diff, by reading each changed
+4. **The uncovered subject-list rows assigned to this member**; each open row
+   goes to some member of the round. A row is covered when a pass reports its
+   verdict on the row and how it got there, on `/rvw-pr` Step 5's `Row:` lines;
+   a row whose risk is behaviour is covered only by running it, by a measuring
+   member or a CI lane that executes it.
+
+5. **Whether the verdict is reached by reading the diff, by reading each changed
    file whole, or by running**, and for a measuring member, what to run and
    against which revision.
-5. **Explicit permission to find nothing**, or round N manufactures a finding. On
+6. **Explicit permission to find nothing**, or round N manufactures a finding. On
    the closing round add: weight toward what would be *wrong once merged*, away
    from stylistic refinement.
 
@@ -654,14 +646,15 @@ what was refuted and why. The PR record is where that survives.
 > **Stop when the most recent round yields zero must-fix findings, that round
 > reviewed the most recent fix pass, an unprimed reviewer has seen the final
 > state and found nothing must-fix, every changed file outside `sdd/decisions/`
-> has been read whole against that final state, *and* every behavioural claim the PR makes has been
-> executed by a measuring pass.**
+> has been read whole against that final state, every behavioural claim the PR makes has been
+> executed by a measuring pass, *and* every subject-list row is covered or
+> waived by the user.**
 
-The last four clauses close the loop's measured blind spots. **Three of them name
-a member and an append; the fix-pass clause names neither** — its remedy is a
-verification round (see the Ceiling bullet), and it can be satisfied vacuously
-with no successor at all. An appended pass counts toward the ceiling only if it
-finds something.
+The last five clauses close the loop's measured blind spots. **Three of them name
+a member and an append; the fix-pass and row clauses name neither** — the
+fix-pass remedy is a verification round (see the Ceiling bullet), and it can be
+satisfied vacuously with no successor at all. An appended pass counts toward the
+ceiling only if it finds something.
 
 **It cannot end on an unreviewed fix pass**: a fix pass is not trusted work — it
 is new code written under time pressure by someone already wrong once in this
@@ -693,12 +686,18 @@ asserts anything about existing behaviour**, append one, on the same terms as th
 unprimed pass. A PR making no such claim satisfies it vacuously, exactly as a
 round that fixed nothing satisfies the fix-pass clause.
 
-A clean unprimed round 1 on a diff warranting no other lens still leaves the
-whole-file clause to discharge, plus the measuring clause when the diff asserts
-anything about existing behaviour. It can discharge neither itself: an unprimed
-pass gets the PR number and the root alone, so it never carries a whole-file
-brief or the `measuring` token. Such a delivery closes on one appended pass, or two, never on
-round 1.
+**Nor on a subject-list row nobody took up.** Run B of `/ship BUG-280`
+converged in five rounds and shipped two regressions run A had caught, a link
+into a locked folder and a Windows delete-pending state: no row named them and
+no round had to reach a `not reached` one
+([report § The two deliveries compared](../../../sdd/research/token-usage/report.md#the-two-deliveries-compared)).
+When only rows block the stop, put them to the user in one `AskUserQuestion`,
+recommending per row a covering pass or a waiver with its reason; a waived row
+is a stated coverage bound, the rest go to the next round's briefs.
+
+A clean unprimed round 1 discharges neither the whole-file nor the measuring
+clause, nor any row: it gets the PR number and the root alone, so no brief, no
+`measuring` token and no rows. Such a delivery never closes on round 1.
 
 - **Floor: lens coverage, not a round count.** Every lens the diff *warrants* must
   have been applied. A one-surface change may warrant only the broad round; a diff
@@ -706,11 +705,11 @@ round 1.
   disagree, or changes a published surface warrants those lenses, and round 1 by
   construction did not apply them — a clean sweep is silent about questions nobody
   asked. **This is a floor on what has been *looked at*, never a licence to stop**:
-  that is the stop rule's five clauses, and they bind independently.
+  that is the stop rule's six clauses, and they bind independently.
 - **Ceiling: 5 finding-rounds, and it is soft.** On reaching it, escalate to the
   user **with the evidence, not the count**: findings per round with their
-  character, the severity trend, what the last round found, and which subjects are
-  still `not reached`. The count triggers the escalation; it is not what the
+  character, the severity trend, what the last round found, and which rows are
+  still uncovered. The count triggers the escalation; it is not what the
   decision is made on, and a bare "five rounds elapsed, continue?" hands the user
   the one number the loop already knows is a poor termination signal. Both
   escalations in the third delivery found more than the round before them, and the
@@ -744,12 +743,8 @@ which dropped the model axis and added the measuring member; and
 [ADR-0037](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md) the
 fourth (PR #956), which added the whole-file gate after a converged, CI-green loop
 left defects in all eight files a single whole-file read then had to touch. Read
-all four before tuning any of the above: they are the evidence that finding counts
-plateau while severity keeps falling, that consecutive rounds each found defects
-in the previous round's fixes, that scoped rounds leave unnamed surface
-unexamined, that what separated the productive rounds was method rather than
-reviewer identity, and that a clean round is silent about everything outside the
-hunks it read.
+all four before tuning any of the above; the row clause's record is
+[ADR-0044](../../../sdd/adrs/0044-ship-subject-list-review-contract.md).
 
 **Reviewer *selection* is not in that set** —
 [ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md) decides it,
@@ -819,8 +814,8 @@ neither substitutes for the other.
    fix — each with what it caught — whether the repeat-site check fired and on
    what condition, or that it did not, what was filed rather than fixed, any
    surface the gate never executed, the **final state of the Step 1 subject
-   list** (as carried by the handoff) with each entry marked executed / read
-   only / not reached, and the orient verdicts with the scope they led to, from
+   list** (as carried by the handoff), each row covered, by which pass, or
+   waived, with the user's reason, and the orient verdicts with the scope they led to, from
    the trace's `orient:` key, or from the plan when there is no trace. Every figure
    names its derivation
    ([CLAUDE.md principle 9](../../../CLAUDE.md#principles)); a report about a loop
@@ -836,6 +831,7 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 - Never end the loop on a state no unprimed reviewer has seen.
 - Never end the loop on a changed file outside `sdd/decisions/` no pass has read whole.
 - Never end the loop on a behavioural claim no measuring pass has executed.
+- Never end the loop on a subject-list row neither covered nor waived by the user.
 - Never end the loop on a red or unread CI.
 - Reviewers are read-only and fresh each round; the **subagents** — authors, and
   fixers delegated for depth — may decline an instruction with evidence. The

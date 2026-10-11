@@ -79,6 +79,9 @@ it, since the figure is one delivery's history and not a forward estimate.
   further stop clause — no ending until every changed file has been read whole
   against the final state. Convergence itself is unchanged; what a round must
   have looked at before it can be clean is not.
+  *Amended by [ADR-0044](0044-ship-subject-list-review-contract.md):* a
+  further stop clause — no ending until every subject-list row is covered or
+  waived by the user.
 
 - **The loop may not end on an unreviewed fix pass.** Whatever the last round
   changed is itself reviewed before the PR is declared ready; that verification

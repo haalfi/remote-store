@@ -167,16 +167,18 @@ Use `/rvw-pr` for PR reviews, not the built-in `/review` CLI command.
 
 `/ship` delivers a whole task as one merge-ready PR, planning and building before
 reviewing to convergence rather than to a round count. Its rationale is spread
-across five records, each covering a different part of the loop:
+across six records, each covering a different part of the loop:
 [ADR-0033](sdd/adrs/0033-ship-convergence-driven-review.md) (convergence over a
 round count),
 [ADR-0034](sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md) (panel rounds,
 unprimed exit gate),
 [ADR-0035](sdd/adrs/0035-vary-method-not-model.md) (method over model),
 [ADR-0036](sdd/adrs/0036-reviewers-by-subject-and-method.md) (subject and method
-over domain persona; the fixer role) and
+over domain persona; the fixer role),
 [ADR-0037](sdd/adrs/0037-whole-file-gate-and-derived-figures.md) (the whole-file
-exit gate; figures that name their derivation). **Read all five, and take each
+exit gate; figures that name their derivation) and
+[ADR-0044](sdd/adrs/0044-ship-subject-list-review-contract.md) (the subject
+list as review contract). **Read all six, and take each
 record's amendment targets from its own `Amends` field** — the parentheses above
 are topics, not amendment claims, and the chain is not linear. Which record
 changes which clause is the thing a reader most needs and the thing most easily

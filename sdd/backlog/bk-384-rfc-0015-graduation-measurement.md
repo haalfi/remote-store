@@ -102,3 +102,12 @@ on, takes shape (2)
 D2's five shapes are unchanged in number and text. A delivery sampled here
 that merged after this ran D2 in the restricted form, and its shape histogram
 should say so.
+
+## A sixth stop clause, 2026-10-11
+
+Under BK-425 (trace `sdd/traces/bk-425-handoff-review-contract.yml`),
+[ADR-0044](../adrs/0044-ship-subject-list-review-contract.md) amends ADR-0033:
+`/ship`'s loop stops only when every subject-list row is covered or the user
+waived it. Rounds that cover rows can add findings and rounds, so a delivery
+sampled here that ran under it should say so beside its counts. The graduation
+ADR this item owes amends ADR-0033 as amended by ADR-0044.
