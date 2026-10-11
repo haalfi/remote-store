@@ -15,8 +15,9 @@ compared with the time spent waiting on CI at merge, which it leaves alone?
 
 ## Answer
 
-**At most 8.7 h in the last 93 days, against 7.5 h of merge waiting that the
-fast lane leaves in place.** The bound counts each waited-on run at its full
+**At most 8.7 h of the waiting that PR timestamps show in the last 93 days,
+against 7.5 h of merge waiting that the fast lane leaves in place.** Waits the
+timestamps cannot show are not bounded (§ Bounds). The bound counts each waited-on run at its full
 duration, so the fast lane's own run time and the escapes it moves to the close
 both come off it.
 
@@ -45,7 +46,7 @@ next events are measured:
   before it pushes (`.claude/skills/ship/SKILL.md` § Close each round).
 - **The first push, comment, review reply or review**, on PRs merged in the
   window, up to the merge: bins 170, 85, 64, 39, 38, excess 96. 539 of the
-  1,233 runs had activity before they ended, so nobody waited on them.
+  1,233 runs had activity before they ended, so they fall outside the bins.
 
 Each excess event saves at most its run's duration. The bound sums the
 durations of the longest first-bin runs, as many as the excess, so no choice of
@@ -58,8 +59,9 @@ where RFC-0019 § Roadmap prices an escape at a fix pass, its re-review and
 another full run.
 
 **Bounds.** Waiting is inferred from timestamps, not observed. Reading CI
-leaves no timestamp, and a session that waited and then did nothing on the PR
-is not counted. Runs are matched to merges and activity by branch name.
+leaves no timestamp, so two waits are not counted: one that ends in nothing on
+the PR, and one that follows activity during the run, such as a reply posted
+before the run ends and then a wait before the next push. Runs are matched to merges and activity by branch name.
 Earlier history is not used: the code-sized median was 2.8 min in 2026-03 and
 8.0 min in 2026-07 (`measure.py tmp/ci-wait 2026-03-01 2026-04-01T00:00:00Z`
 and `… 2026-07-01 2026-08-01T00:00:00Z`), so only the recent window describes
