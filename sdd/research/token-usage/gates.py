@@ -20,20 +20,19 @@ from __future__ import annotations
 import json
 import re
 import statistics as st
-from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import _common as c
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 GATE = re.compile(r"hatch run (all|test-cov[\w-]*|test)\b")
 WAITING = re.compile(r"background|waiting|gate is still running|CI (is )?(still )?running|monitor", re.I)
 
-
-def ts(s: str) -> datetime:
-    return datetime.fromisoformat(s.replace("Z", "+00:00"))
-
-
-UNTIL: str | None = None
+ts = c.when
+UNTIL: datetime | None = None
 
 
 def records(path: Path):
@@ -42,7 +41,7 @@ def records(path: Path):
             r = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if UNTIL and (r.get("timestamp") or "") > UNTIL:
+        if UNTIL and r.get("timestamp") and ts(r["timestamp"]) > UNTIL:
             return
         yield r
 
@@ -106,7 +105,9 @@ def main(argv=None) -> int:
         "--transcripts", type=Path, action="append", required=True, help="transcript file or folder (repeatable)"
     )
     ap.add_argument("--name", default="gates", help="result file name")
-    ap.add_argument("--until", default=None, help="ISO timestamp: ignore records after it")
+    ap.add_argument(
+        "--until", type=c.when, default=None, help="ISO timestamp, UTC when it has no offset: ignore records after it"
+    )
     args = c.resolve(ap.parse_args(argv))
     global UNTIL
     UNTIL = args.until

@@ -92,12 +92,29 @@ class TestParse:
 
     def test_result_attributed_to_target_with_carried_cost(self):
         s = rtu.parse(_session(), "s")
-        # 400 chars // 4 = 100 tokens, re-read by calls 2 and 3.
-        assert s.results == {"Read sdd/BACKLOG.md": [100, 200]}
+        # 400 chars x 0.421 = 168 tokens, re-read by calls 2 and 3.
+        assert s.results == {"Read sdd/BACKLOG.md": [168, 336]}
 
     def test_result_after_last_call_carries_nothing(self):
         lines = [_assistant("m1", _usage(inp=1), _read("t1", "f")), _result("t1", "b" * 40)]
-        assert rtu.parse(lines, "s").results == {"Read f": [10, 0]}
+        assert rtu.parse(lines, "s").results == {"Read f": [17, 0]}
+
+    def test_prefix_is_carried_by_every_call(self):
+        assert rtu.parse(_session(), "s").prefix_carried == 1010 * 3
+
+    def test_hidden_thinking_is_output_beyond_visible_and_carried_by_later_calls(self):
+        s = rtu.parse(_session(), "s")
+        # Call 1 shows 32 visible chars over its two records ("x" and the Read input,
+        # 31 chars as JSON): 32 x 0.318 = 10 tokens of its 50 output, so 40 hidden.
+        # Calls 2 and 3 show nothing, so all 20 and 30 are hidden.
+        assert s.hidden == 40 + 20 + 30
+        # 0.947 of each stays in context for the calls after it: 2, 1 and 0.
+        assert s.hidden_carried == round(0.947 * (40 * 2 + 20 * 1))
+
+    def test_hidden_thinking_is_never_negative(self):
+        long_text = {"type": "text", "text": "y" * 1000}
+        s = rtu.parse([_assistant("m1", _usage(out=5), long_text), _assistant("m2", _usage(out=0))], "s")
+        assert (s.hidden, s.hidden_carried) == (0, 0)
 
     def test_legacy_usage_without_ttl_split_counts_as_5m_write(self):
         usage = {"input_tokens": 0, "cache_creation_input_tokens": 80, "output_tokens": 0}
@@ -115,7 +132,7 @@ class TestParse:
                 }
             }
         )
-        assert rtu.parse([line], "s").results == {"?": [2, 0]}
+        assert rtu.parse([line], "s").results == {"?": [3, 0]}
 
     @pytest.mark.parametrize("ident", [{}, {"id": 123}], ids=["missing", "not-a-string"])
     def test_responses_without_string_id_each_count(self, ident):
@@ -176,9 +193,9 @@ class TestTraceReads:
         by = {r.path: r for r in rows}
         assert (read, bad) == (2, 0)
         assert (len(by["big.md"].traces), by["big.md"].steps, by["big.md"].gates) == (2, 3, 2)
-        assert by["big.md"].size == 100
-        assert by["big.md"].exposure == 200
-        assert (len(by["small.md"].traces), by["small.md"].exposure) == (1, 10)
+        assert by["big.md"].size == 168
+        assert by["big.md"].exposure == 336
+        assert (len(by["small.md"].traces), by["small.md"].exposure) == (1, 17)
 
     def test_missing_file_and_directory_have_no_size(self, repo):
         self._write(repo, "a.yml", _trace([{"file": "gone.md"}, {"file": "sdd/traces"}]))
@@ -236,7 +253,7 @@ class TestTraceReads:
         out = capsys.readouterr().out
         assert "across 1 trace(s)" in out
         assert out.index("`big.md`") < out.index("`small.md`")
-        assert "| 100 | 1 | 100 | 1 | 1 | 100 | `big.md` |" in out
+        assert "| 168 | 1 | 100 | 1 | 1 | 168 | `big.md` |" in out
 
     def test_repo_root_is_explicit_not_derived_from_traces_dir(self, repo, tmp_path, capsys):
         # A corpus outside <repo>/sdd/traces still sizes against --repo-root.
@@ -246,7 +263,7 @@ class TestTraceReads:
         empty = repo / "no-transcripts"
         empty.mkdir()
         assert rtu.main([str(empty), "--traces-dir", str(snap), "--repo-root", str(repo)]) == 0
-        assert "| 100 | 1 | 100 | 1 | 0 | 100 | `big.md` |" in capsys.readouterr().out
+        assert "| 168 | 1 | 100 | 1 | 0 | 168 | `big.md` |" in capsys.readouterr().out
 
 
 @pytest.fixture
@@ -266,8 +283,11 @@ class TestMain:
         assert "2 transcript(s)" in out
         assert "| main.jsonl | 3 | 1,010 |" in out
         assert f"| {Path('sess') / 'agent.jsonl'} | 3 |" in out
-        # Aggregated over both transcripts.
-        assert "| 400 | 200 | `Read sdd/BACKLOG.md` |" in out
+        # Aggregated over both transcripts, ranked with the prefix and hidden thinking.
+        assert "| 672 | 336 | `Read sdd/BACKLOG.md` |" in out
+        assert "| 6,060 | 2,020 | *session prefix* |" in out
+        assert "| 190 | 180 | *hidden thinking* |" in out
+        assert out.index("*session prefix*") < out.index("`Read sdd/BACKLOG.md`") < out.index("*hidden thinking*")
 
     def test_top_limits_result_rows(self, tmp_path, capsys, no_traces):
         lines = [
