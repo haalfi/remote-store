@@ -1001,14 +1001,6 @@ coverage floor.
 it has piled up or the rounds that repair its own fixes. A change to how
 sessions work is measured before it becomes process.
 
-- [~] **BK-418 — `/ship` spends most of a delivery after the PR opens, and no intervention against it is measured**
-  spec: — · effort: L · audience: contributor.process, contributor.tooling
-  Run A (`/ship BUG-280`) spent 59.3 M units; run B, on the means and rule (c),
-  15.0 M in five rounds ([research record](research/token-usage/report.md)
-  § Run B); rule (c) saved no round, so Draft [RFC-0020](rfcs/rfc-0020-ship-token-interventions.md)
-  keeps it out of `/ship`. Open decision: BK-423, and whether the next
-  deliveries are measured the same way.
-
 - [ ] **BK-420 — BK-414's lookup tool is not yet measured against its baseline of 78 search-and-reread cycles**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   BK-414 pointed `CLAUDE.md` and five skills at `scripts/sdd_lookup.py` to cut
@@ -1016,14 +1008,6 @@ sessions work is measured before it becomes process.
   78 over 37 transcripts before it. Re-walk the transcripts about 30 days after
   #1099 merges, by [BK-414's dossier](backlog/bk-414-sdd-lookup.md) § Acceptance
   measure. Open decision: keep, change or remove the pointers, by that result.
-
-- [ ] **BK-423 — A universal quantifier in process prose owes no enumeration until a reviewer refutes it**
-  spec: — · effort: S · audience: contributor.process
-  Principle 9 makes a figure name its derivation before it is written; "every",
-  "all" and "never" owe theirs only after a finding, under `/fix-pr` § Rules'
-  quantifier rule. SCOPE findings, overstated quantifiers and missing cases, are
-  91 of 321 long-loop prose findings ([research record](research/token-usage/report.md) § 5).
-  Open decision: extend principle 9 to quantifiers, after RFC-0020's run B is scored.
 
 - [ ] **BK-424 — The token kit dates a run's phases from records that can point at the wrong event**
   spec: — · effort: S · audience: contributor.tooling

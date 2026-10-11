@@ -298,6 +298,36 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-423 — A universal quantifier in process prose owes no enumeration until a reviewer refutes it**
+  spec: — · effort: S · audience: contributor.process
+  [`CLAUDE.md` principle 9](../CLAUDE.md#principles) now covers "every", "all"
+  and "never": the enumeration, or the query or link that yields it, is run
+  before the claim is written, as for a figure. Evidence: SCOPE findings are 91
+  of 321 long-loop prose findings, and two of run B's four closes whose check
+  could not fail were on claims of extent: "a subfolder is never skipped", and
+  `_stat_entry`'s docstring naming one of the cases that return `None` (#1113's
+  round 3 and 4 findings; [report](research/token-usage/report.md) § 5,
+  § Run B). `/fix-pr`'s quantifier rule stays as the fix-time half, cut so
+  the process budget fell (295,438 to 295,357 bytes,
+  `scripts/check_process_budget.py`). Trace:
+  [bk-423](traces/bk-423-quantifier-enumeration.yml).
+
+- [x] **BK-418 — `/ship` spends most of a delivery after the PR opens, and no intervention against it is measured**
+  spec: — · effort: L · audience: contributor.process, contributor.tooling
+  Measured: run A (`/ship BUG-280`, #1093) spent 59.3 M units, run B on the
+  means 15.0 M in five rounds ([report](research/token-usage/report.md)
+  § Run B). Its own PRs: #1098, #1100, #1102 to #1104, #1106, #1111 and #1114
+  (`git log --oneline --grep "^BK-418" master`); the other means are listed in
+  the outcome's appendix. Rule (c), the one intervention run B tested, saved no
+  round and stayed out of `/ship` (RFC-0020, #1101 closed). Outcome:
+  [`research-token-spend-means.md`](research/research-token-spend-means.md).
+  Its last open decision, BK-423, closed with it. Traces:
+  [token-usage](traces/bk-418-token-usage.yml),
+  [claims](traces/bk-418-claims.yml), [orient](traces/bk-418-orient.yml),
+  [run-b-baseline](traces/bk-418-run-b-baseline.yml),
+  [rfc-rewrite](traces/bk-418-rfc-rewrite.yml),
+  [run-b-record](traces/bk-418-run-b-record.yml).
+
 - [x] **BUG-320 — Nested lists indented for GitHub render flattened on the docs site**
   spec: DOCFRAME-004 · effort: S · audience: user.site, contributor.tooling
   Python-Markdown keeps a line in a list item only at 4 spaces per level;

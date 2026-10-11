@@ -8,13 +8,13 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 295438,
+  "total": 295357,
   "files": {
-    "CLAUDE.md": 16931,
+    "CLAUDE.md": 17094,
     ".claude/output-styles/interview.md": 2105,
     ".claude/skills/audit/SKILL.md": 1355,
     ".claude/skills/drift/SKILL.md": 23728,
-    ".claude/skills/fix-pr/SKILL.md": 14682,
+    ".claude/skills/fix-pr/SKILL.md": 14438,
     ".claude/skills/mutation/SKILL.md": 5984,
     ".claude/skills/orchestrate/SKILL.md": 25998,
     ".claude/skills/pr/SKILL.md": 5425,

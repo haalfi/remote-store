@@ -1,0 +1,105 @@
+id: BK-423
+title: "A universal quantifier in process prose owes no enumeration until a reviewer refutes it"
+trigger: >-
+  Principle 9 made a figure name its derivation before it was written, but
+  "every", "all" and "never" owed theirs only after a finding, under /fix-pr's
+  quantifier rule. SCOPE findings were 91 of 321 long-loop prose findings
+  (report § 5), and in run B two of the four prose closes whose check could not
+  fail were on claims of extent ("a subfolder is never skipped", and the
+  `_stat_entry` docstring naming one of the cases that return None).
+source_items:
+  - BK-423
+  - BK-418
+audience:
+  - contributor.process
+co_shipped_items:
+  - BK-418
+decisions:
+  - sdd/decisions/00f8f289-efbb-4f38-a085-a0fd36c585e7.jsonl
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/process-budget.json
+surprising_ripples:
+  - sdd/rfcs/rfc-0020-ship-token-interventions.md
+  - sdd/research/research-token-spend-means.md
+  - sdd/research/token-usage/report.md
+orient:
+  - items: [BK-418]
+    verdict: constrains
+    evidence: >-
+      BACKLOG.md BK-418: "Open decision: BK-423, and whether the next
+      deliveries are measured the same way." Deciding BK-423 leaves BK-418 no
+      open decision; the maintainer chose (2026-10-11) to close it with the
+      research doc as its outcome, in this PR.
+  - items: [BK-363]
+    verdict: unrelated
+    evidence: >-
+      Found by `backlog-find "fix-pr"`. Its subject is which coordination
+      artefacts demand a trace (BACKLOG.md BK-363), not how a claim is
+      authored or fixed; it does not touch /fix-pr § Rules' quantifier rule.
+  - items: [BK-404]
+    verdict: unrelated
+    evidence: >-
+      Found by `backlog-find "fix-pr"`. Its dossier asks which tests /fix-pr's
+      gate runs (bk-404-selected-tests-hatch-target.md); no claim wording.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-423, BK-418, BK-420, BK-424 (hatch run backlog-show)"
+        read_type: gate
+        extract: "BK-423's open decision is extending principle 9; BK-418 waits only on it"
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Rules (quantified claim)"
+        read_type: reference
+        extract: "The existing rule binds at fix time only; it stays as the fix-time half"
+      - file: sdd/adrs/0037-whole-file-gate-and-derived-figures.md
+        section: "Decision"
+        read_type: reference
+        extract: "Principle 9's source decision covers figures and action claims, not quantifiers"
+      - file: sdd/research/research-token-spend-means.md
+        section: "6. Proposals (4, 9)"
+        read_type: reference
+        extract: "Proposal 4 is BK-423; proposal 9 is the next item"
+      - file: sdd/research/token-usage/report.md
+        section: "5 (prose classes); Run B decision rule"
+        read_type: reference
+        extract: "SCOPE 91 of 321; two of run B's four non-falsifying closes were on 'never' claims"
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "Not in run B"
+        read_type: reference
+        extract: "BK-423 was held only until run B was scored"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 2, 3"
+        read_type: reference
+        extract: "Rule 2 forbids copied enumerations in narrative; principle 9's derivation can be a query or link, so no conflict"
+  - id: implement
+    name: Implement
+    steps:
+      - file: CLAUDE.md
+        section: "Principles (9)"
+        read_type: gate
+        extract: "Extend the subject to quantifiers; add report § 5 as their measured failure mode"
+      - file: scripts/check_process_budget.py
+        section: "(full)"
+        read_type: gate
+        extract: "+141 bytes on CLAUDE.md; cut /fix-pr's quantifier rule to net -81 and --update"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works (Completing work)"
+        read_type: verify
+        extract: "Delete from index, [x] entry in BACKLOG-DONE, sweep present-tense citations of both IDs"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Backlog item touched (hatch run ref-rows)"
+        read_type: verify
+        extract: "Live trace, orient key, audience drives CHANGELOG: contributor.process with no new framework, so none owed"
+      - file: sdd/research/token-usage/report.md
+        section: "Run B decision rule"
+        read_type: verify
+        extract: >-
+          The report names the two wording-grep closes; I had recalled both as
+          "never" claims, but #1113's comments show one is a docstring listing
+          one of several None cases. Corrected before commit.

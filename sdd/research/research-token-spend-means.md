@@ -1,7 +1,7 @@
 # Research: A Delivery Costs What It Carries — Ordering Controls for Agent Token Spend
 
 **Date:** 2026-10-10
-**Backlog items:** BK-418 (the interventions and their test), with the means it led to under BK-414, BK-419, BK-421, BK-422, BUG-314 and BUG-315; open follow-ups BK-420, BK-423, BK-424.
+**Backlog items:** BK-418 (the interventions and their test), with the means it led to under BK-414, BK-419, BK-421, BK-422, BUG-314 and BUG-315; follow-ups BK-420, BK-424, and BK-423 (proposal 4, adopted into `CLAUDE.md` principle 9 on 2026-10-11, when BK-418 closed with this record as its outcome).
 **Status:** Research complete for one measured comparison; the argument is settled as of the date above, its generality is not. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md#document-types). Every figure is derived in the research record [`token-usage/report.md`](token-usage/report.md) and linked from here rather than copied; where the two differ, the record wins. Its folder also holds the scripts, the result files and a page of the figures, [`token-usage/token-spend-analysis.html`](token-usage/token-spend-analysis.html).
 **Related:** [`research-code-abundance-goals-and-values.md`](research-code-abundance-goals-and-values.md) argues that the controls that work against understanding debt fix the *order* of operations; this record finds the same for token spend. [`research-appropriate-level-of-detail.md`](research-appropriate-level-of-detail.md) is the source of the detail rule in § 3.
 
@@ -306,7 +306,7 @@ reason in § 4: it saved no round.
 "never" are where the scope findings come from; principle 9 already makes a
 figure name its derivation before it is written, and the same order would
 remove the cases the next round would otherwise list
-([BK-423](../BACKLOG.md)).
+([BK-423](../BACKLOG-DONE.md)).
 
 **5. Keep the review on what the review needs.** The untested hypotheses in
 [report § 9](token-usage/report.md#9-hypotheses) point the same way: every
