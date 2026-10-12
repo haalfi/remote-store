@@ -734,15 +734,14 @@ Choices the decisions above left open, as built:
 - **`get_folder_info` on an empty aggregate** stats the key: fail-open on
   `parents == "none"`, where it is the error path's type probe, and fail-closed
   with folder objects, where an empty folder exists and the stat decides.
-- **Wrong-type probes by namespace.** A hierarchical driver's `stat` answers
-  alone; on a flat driver a `stat` miss is followed by one
-  `list_page(key, delimiter="/", limit=1)`, RFC-0017's "one `stat` or one
-  `list_page(limit=1)`", for every probe that must see a folder (`exists`,
-  `is_folder`, `get_file_info`, the file-key probes, `move`'s source
-  check); `is_file` stays one `stat`. A write target is probed only on a
-  hierarchical namespace, by a `stat` of the key and then of its ancestors
-  (decision 6). Which refusals are probed, and for which keys: § Condition
-  space.
+- **Wrong-type probes by namespace.** Every call that asks what is at a key
+  asks one method, `_state` (§ Re-plan after round 10). On a flat driver
+  its `stat` miss is followed by one `list_page(key, delimiter="/",
+  limit=1)`, RFC-0017's "one `stat` or one `list_page(limit=1)`", except
+  where no folder can matter: `is_file` and a write target's determinant
+  stay one `stat`. On a hierarchical driver the ancestors' `stat` calls
+  follow a `stat` that raises, and a miss on the error path of a write
+  target or a listing.
 - **Absent container.** The kernel reads it as `NotFound` for every `Op` but
   `write`, `write_atomic`, `open_atomic`, `probe`, the identity scopes and
   `close`, which keep `classify`'s answer; an error the driver raised
@@ -760,8 +759,9 @@ Choices the decisions above left open, as built:
   it, since the kernel calls it with no probe before it (BE-031);
   `list_page(follow_links=False)` never lists a link's target, and `delete`
   removes a link itself, since the walk lists `key` with no `stat` first
-  (BE-031, added 2026-10-12); `delete`, `move`, `rename` and `copy` refuse
-  an absent or non-file key (the source, for the two-key ones), and on a
+  (BE-031, added 2026-10-12); `get`, `delete`, `move`, `rename` and `copy` refuse
+  an absent or non-file key (the source, for the two-key ones); `list_page`
+  refuses a prefix that is a file or lies under one, or lists nothing; and on a
   hierarchical namespace every write primitive and `ensure_parents` refuse a
   folder at the key or a file above it, all without changing anything and in
   any shape, which the kernel types (§ Condition space); on a flat namespace
@@ -850,8 +850,9 @@ each time):
    destination check missed, and the write-target probes kept walking after
    the answer was known.
 
-**Axes**, each a parameter of the product, which runs every cell in both
-runtimes and counts them from `pytest --collect-only -q` on the file:
+**Axes** of the product as it stood through round 10, each a parameter,
+counted from `pytest --collect-only -q` on the file then. § Re-plan after
+round 10 replaced it with one shared axis set; this table is that history:
 
 | Product | Axes | Cells |
 |---|---|---|
@@ -868,12 +869,17 @@ absent or non-file key; a listing of a file prefix or one under a file; and,
 on a hierarchical namespace, a write meeting a folder at the key or a file
 above it, and `ensure_parents` meeting a file above it. So the
 driver decides *that* a call fails, never *how* it is typed. The kernel's
-determinants, before the wire is reached: the source check where it runs
-first (a rename route, or `ensure_parents` present), the destination `stat`
-of `move` by rename, and `write_atomic` by temp and rename without
-`overwrite`. The kernel's error-path probes type every refusal in the probe
-set. A dead service, a lock and a non-empty folder pass through, since they
-say nothing about the key.
+determinants, whose failure is the call's (the callers of `_file_entry`,
+`_write_target` and the opt-in walk in `_async/kernel.py`, enumerated
+2026-10-12): the probes `exists`, `is_file` and `is_folder`, whose `stat`
+is the answer; `get_file_info` and a ranged `read_seekable`; the source
+check of a self-operation, of a rename route, and of every transfer when
+the driver has explicit parents or the opt-in walk is on; the destination
+`stat` of `move` by rename, and of `write_atomic` by temp and rename without
+`overwrite`; the opt-in file-ancestor walk; and the empty-aggregate `stat`
+of `get_folder_info` with folder objects. The kernel's error-path probes
+type every refusal in the probe set. A dead service, a lock and a non-empty
+folder pass through, since they say nothing about the key.
 
 **What the product found against the kernel at `b9351b5`** (the review's
 last head; this section's first fake, `pytest --junitxml` grouped by
@@ -926,3 +932,98 @@ Construction failed 2 cells (explicit without `ensure_parents` built). The
 two targeted cells failed in both runtimes: `move` with `overwrite` answered
 `AlreadyExists`, and an `AlreadyExists` on `a/b/c/d/e` spent five `stat`s
 where one answers.
+
+## Re-plan after round 10 (2026-10-12, the kernel PR's review)
+
+**Why.** The third closing round over `7e20b25` found a flat listing whose
+denied or untyped first page answered empty while the prefix held files: a
+silent wrong value, more severe than round 9's, in code a fix pass changed,
+so `/ship`'s divergence check fired. Rounds 7 to 10 had one shape: each fix
+added a probe to one call family, and the next round found a family or an
+axis nobody had crossed. Six helpers each answered "what is at this key"
+with their own namespace and `stat` rules (`_probe`, `_stat_open`,
+`_folder_is_wrong_type`, `_target_is_wrong_type`, `_holds_nothing`,
+`_target_stat`, over `_node_at`), and the maintainer had the work re-planned
+in a fresh session before anything was fixed.
+
+**Decisions** (the maintainer through the interview, the recommended option
+each time):
+
+10. One classifier and one oracle. `_state(op, key)` answers absent, file,
+    folder, under a file or unknown for every call that needs a file or a
+    folder, and each family maps a refusal and that answer to its result.
+    Extending each helper in place, and narrowing the kernel's job back to
+    driver obligations (reversing decision 9), were the alternatives.
+11. A `stat` under a file that raises untyped or a denial is typed by the
+    kernel: on a hierarchical namespace a `stat` that raises in the probe set
+    is followed by the ancestors' `stat` calls, a file among them makes the
+    key absent for a probe or a read, and the wrong type for a write. A
+    driver obligation that `stat` answers `None` or `NotFound` there was the
+    alternative.
+12. The double race of round 10 (a file `move`'s check missed, gone before a
+    rename that cannot replace displaced it) is fixed here: the move then
+    lands. Filing it was the alternative.
+13. The product runs as one pytest item per family and runtime, every cell
+    checked and each disagreeing cell named, after it reached 60,996 cells.
+    Pruning below the 40k bound the plan set, and a separate lane, were the
+    alternatives. The bound's premise proved half wrong: the run's crashes
+    were the fake's `asyncio.run` per call, which on Windows opens a socket
+    pair per loop and exhausted the socket buffers (WinError 10055); with
+    one loop kept for the process the whole product runs in 8.16 s.
+
+**The classifier.** BE-030 states it as *What is at a key*; `_state` and
+`_above` in `_async/kernel.py` are its one implementation. On a flat
+namespace a key is never under a file and a file at a prefix rules out
+nothing below it, which is round 10's defect: `_holds_nothing` inferred
+"empty" from a file at a flat prefix.
+
+**The shared axis set**, defined once in `tests/_kernel/test_condition_space.py`
+and crossed by every family where reachable (the module docstring states the
+one pruning rule): the driver (`namespace` × `parents`); eight key states
+(absent, absent under an absent folder, a file, an empty folder, a folder
+holding a file, under a file, deeper under a file, a flat key shadowing a
+prefix); the refusal (the wire's own, in each native shape where the state
+makes it refuse, or one injected on the family's first primitive call
+whatever the state); and six `stat` behaviours (truthful; ENOTDIR, untyped
+or denied under a file; the cell's own key denied; every `stat` down).
+`delete_folder` stays in `test_delete_folder.py`, compared with the decided
+model over the model's key states and its enumerated probe space, both of
+which already hold a key under a file and a raising `stat`.
+
+| Family | Cells, sync + async |
+|---|---|
+| Probes (`exists`, `is_file`, `is_folder`) | 297 + 297 |
+| File-shaped reads (`read`, `read_bytes`, `read_seekable` ranged and spooled, `delete` with and without `missing_ok`, `get_file_info`) | 4707 + 3231 |
+| Writes (six routes, sync-only `open_atomic` included) | 11376 + 7584 |
+| Transfers (five routes) | 11656 + 11656 |
+| Folder-shaped calls (four listings, `get_folder_info` by listing and by push-down) | 4908 + 4908 |
+| `glob`, capability gates, construction (parametrized) | 56, 296, 24 |
+
+Counts from the denominators each family's assertion prints, and
+`pytest --collect-only` for the parametrized three: 60,996 in all.
+
+**What it found at `72ae8f9`** (the review's last head, the same run): 2405
+cells. Probes 126: a `stat` raising untyped or denied under a file, or
+denied with an absent ancestor, raised where BE-004/BE-005 answer `False`.
+Reads 189: the same `stat` shapes made `get_file_info` and a ranged
+`read_seekable` raise where BE-016 answers `NotFound`. Writes 468 and
+transfers 592: the same shapes made the rename routes' and temp-and-rename's
+determinant raise raw where BE-030 answers `InvalidPath` for a file above,
+or a miss for an absent ancestor. Folder-shaped calls 1030: a denied or
+untyped first page on a flat prefix, real folder or not, answered empty
+(round 10's defect), the push-down let `AlreadyExists`, `PermissionDenied`
+and untyped refusals through raw where the listing route types them, and
+the empty aggregate's determinant raised raw under a file. Plus the race as
+a targeted cell in `test_kernel.py`, failing in both runtimes with `NotFound`
+naming the destination.
+
+**Mutations** of the new classifier, each in the async source with the sync
+twin regenerated, `tests/_kernel` run per mutation; all ten killed (product
+cells failing in parentheses): `_holds_nothing`'s flat branch dropped (216);
+round 10's "anything but `BackendUnavailable` holds nothing" (2256, where
+it failed 2 incidental cells at `72ae8f9`); the ancestor walk dropped
+(5803); the walk shortcut inverted (1456); a raising `stat` not walked
+(4203); an unknown answer read as absent (2266); an absent ancestor read as
+unknown (213); the push-down routed around the listing rule (440); a write
+target under a file not typed by its determinant (72); and the race fix
+removed (killed by its targeted cell).

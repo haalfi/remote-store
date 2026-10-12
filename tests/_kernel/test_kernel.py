@@ -1133,6 +1133,20 @@ def test_a_rename_move_with_overwrite_replaces_what_its_check_missed(runtime: st
     assert sorted(store.files) == ["t"]  # nothing parked left behind
 
 
+@pytest.mark.spec("BE-018")
+def test_a_missed_file_that_vanishes_before_it_is_displaced_lets_the_move_land(runtime: str) -> None:
+    # A rename that cannot replace meets a file its check missed, and that file is
+    # gone by the time it is displaced: the destination is free, so the move lands.
+    # BE-018 keeps NotFound for an absent source; this one is a file.
+    store = FakeStore(parents="implicit").add("s", data=b"S")
+    run = make_kernel(runtime, store, protocols=("remove_folder", "rename"), rename_replaces=False)
+    store.fault("rename", hook=lambda: store.add("t", data=b"OTHER"), key="s")
+    store.fault("rename", hook=lambda: store.files.pop("t"), key="t")
+    run.move("s", "t", overwrite=True)
+    assert sorted(store.files) == ["t"]
+    assert store.files["t"].data == b"S"
+
+
 @pytest.mark.spec("BE-021")
 @pytest.mark.spec("BE-030")
 def test_a_write_target_probe_stops_once_the_answer_is_known(runtime: str) -> None:

@@ -32,6 +32,7 @@ decisions:
   - sdd/decisions/928fc3d9-dfbb-4d87-b779-7281d8006272.jsonl
   - sdd/decisions/161fd42b-6d1f-4889-be67-61ba9eea371b.jsonl
   - sdd/decisions/e400c054-34a8-4b6a-9223-19ba7df58e5c.jsonl
+  - sdd/decisions/7246c534-758c-483d-bc50-654ef7f109db.jsonl
 # The kernel PR's orient (2026-10-11); the planning PRs predate the key.
 orient:
   - items: [BK-399]
@@ -588,3 +589,40 @@ phases:
         section: "_Adapter"
         read_type: verify
         extract: "the model's explicit drivers carry no ensure_parents, so the construction refusal stopped the model comparison; the adapter now presents one that fails if delete_folder ever calls it"
+  - id: replan_round10
+    name: Re-plan after round 10, one classifier and one generated oracle (kernel PR)
+    steps:
+      - file: tmp/ship-handoff-1127.md
+        section: "Resume state after review round 10"
+        read_type: gate
+        extract: "the divergence check fired on round 10's flat listing that hid files; the maintainer had the work re-planned before any fix"
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "every _choke site (25 here, 4 in backend.py)"
+        read_type: verify
+        extract: "six helpers each answered what is at a key with their own namespace and stat rules; that per-family re-derivation is the shape rounds 7 to 10 kept finding"
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "As landed; Condition space"
+        read_type: gate
+        extract: "decisions 1 to 9, the products' axes and what each held fixed; three bullets round 10 flagged as incomplete lists"
+        outcome: misleading
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-030"
+        read_type: gate
+        extract: "the file-key and folder-key paragraphs, rewritten around What is at a key; 'all on the error path' was false against its own bullets"
+        outcome: misleading
+      - file: sdd/rfcs/rfc-0017-delete-folder-measure.py
+        section: "HIER_STATES; the 88-cell enum"
+        read_type: verify
+        extract: "the model's states hold a key under a file and its enum a raising stat, so delete_folder's stat axis is already enumerated there and stays out of the new product"
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "is_folder docstring (lines 363 to 377)"
+        read_type: verify
+        extract: "a same-named object shadows the prefix, so is_folder answers False for a flat shadowing key: the oracle's answer for that state, taken from today's behaviour, not the kernel's"
+      - file: tests/_kernel/test_condition_space.py
+        section: "first run at 72ae8f9's kernel"
+        read_type: verify
+        extract: "89,764 then 60,996 cells, workers crashing; my 'pytest per-item cost' diagnosis was half wrong: the fake's asyncio.run per call exhausted Windows socket buffers (WinError 10055); with one loop the product runs in 8.16 s and 2405 cells failed before the fix"
+      - file: tests/_kernel/test_condition_space.py
+        section: "mutation check after the refactor"
+        read_type: verify
+        extract: "ten mutations of the classifier and its callers, all killed; round 10's 'anything but BackendUnavailable holds nothing' now fails 2256 cells, where it failed 2 incidental ones"

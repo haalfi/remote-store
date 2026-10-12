@@ -1346,7 +1346,8 @@ an answer the other clauses of this spec leave to the backend. A backend not on
 the kernel is unaffected by them. The decisions behind them, with their
 measurements, are recorded in BK-389's dossier: the key rule and
 `delete_folder` in its planning decisions 6 and 8, the wrong-type answers,
-gates and driver obligations in its § Condition space.
+gates and driver obligations in its § Condition space and § Re-plan after
+round 10.
 
 ### BE-030: Key Rule on the Kernel
 
@@ -1397,15 +1398,38 @@ BE-008's "no native directory concept" is the flat namespace, and the kernel
 refuses to construct over a flat driver with folder objects (`parents` other
 than `"none"`), whose `stat` could not see them, and over an explicit-parents
 driver without `ensure_parents`, which could not create a write's parents
-(BE-009). The answers, all on the error path, so a call that finds its file
-probes nothing (BE-021):
+(BE-009).
+
+*What is at a key* is one answer every call below reads: absent, a file, a
+folder, under a file, or unknown. The `stat` of the key decides when it
+answers. A miss (`None`, or a `NotFound` or `InvalidPath`, as a POSIX `stat`
+under a file raises ENOTDIR) is followed on a flat driver by one
+`list_page(limit=1)`, since a flat `stat` cannot see a prefix, except where
+no folder can matter (`is_file`, a write target's determinant). On a
+hierarchical driver the ancestors' `stat` calls, shallowest first and each
+fail-open, follow a `stat` that raises a refusal in the probe set below,
+and a miss on the error path of a write target or a listing: a file among
+them puts the key under a file, an absent one makes the key absent, and
+otherwise the key's own `stat` answer stands. A flat namespace has nothing
+under a file, and a key shadowing a prefix answers as its file. A `stat`
+that cannot answer is unknown, which a **determinant** raises and an
+**error-path probe** reads as no answer, leaving the refusal it was asked
+about standing (BE-021). The determinants, run whether or not the call
+fails: the probes `exists`, `is_file` and `is_folder`, where absent and
+under a file answer `False`; `get_file_info` and a ranged `read_seekable`;
+the source check below; the destination `stat` where the kernel stats a
+write target first; the opt-in file-ancestor walk; and the empty-aggregate
+`stat` of `get_folder_info` with folder objects. Every other probe is on
+the error path, so a call that succeeds without a determinant probes
+nothing. The answers:
 
 - *A file-shaped key* (`read`, `read_bytes`, `read_seekable`, `delete`,
   `get_file_info`): a driver refusal typed `NotFound`, `AlreadyExists`,
-  `PermissionDenied` or untyped gets one fail-open probe of the key (`stat`,
-  and on a flat driver after a miss one `list_page(limit=1)`); a folder there
-  answers `InvalidPath`. `get_file_info` and a ranged `read_seekable` take
-  that probe as their determinant instead. The driver's `get` and `delete`
+  `PermissionDenied` or untyped (the probe set) gets the key's state; a
+  folder there answers `InvalidPath`, and otherwise the refusal stands.
+  `get_file_info` and a ranged `read_seekable` take the state as their
+  determinant instead: a folder is `InvalidPath`, absent or under a file
+  `NotFound`. The driver's `get` and `delete`
   refuse an absent key, or one that is no file, without changing anything,
   in any shape; a wire whose delete succeeds for a missing key checks first.
 - *A write target* (`write`, `write_atomic`, `open_atomic`, the `move`/`copy`
@@ -1414,15 +1438,15 @@ probes nothing (BE-021):
   folder at the key, or a file above it, and `ensure_parents` a file above it,
   without changing anything, in whatever shape the wire has (EISDIR, EEXIST
   from an exclusive create or `os.makedirs`, a Windows access denial, ENOENT);
-  a refusal in the set above gets one fail-open `stat` of the target, where a
-  folder answers `InvalidPath` and a file ends the probes, and otherwise one
-  per ancestor, shallowest first, until a file answers `InvalidPath` or an
-  ancestor is confirmed absent; both answers name the target. Where the kernel stats the
-  target first (`write_atomic` by temp and rename without `overwrite`, `move`
-  by rename) that `stat` is the determinant, and a `NotFound` from it (a
-  `stat` under a file may raise ENOTDIR) is a miss; with `overwrite`, a file
+  a refusal in the probe set gets the target's state, where a folder or a
+  file above answers `InvalidPath` naming the target, and otherwise the
+  refusal stands. Where the kernel stats the target first (`write_atomic` by
+  temp and rename without `overwrite`, `move` by rename) that `stat` is the
+  determinant: a file is `AlreadyExists` without `overwrite`, a folder or a
+  file above `InvalidPath`, and a miss goes on to the wire; with `overwrite`, a file
   that check missed is replaced, or displaced and restored by a rename that
-  cannot replace, never answered `AlreadyExists`. On a flat namespace
+  cannot replace, never answered `AlreadyExists`, and one gone before it is
+  displaced leaves the destination free for the move. On a flat namespace
   nothing is checked: a key that shadows a prefix or sits under a file is
   written. The opt-in file-ancestor walk (`reject_write_under_file_ancestor`)
   counts only a confirmed miss as no ancestor and propagates any other probe
@@ -1432,22 +1456,27 @@ probes nothing (BE-021):
 - *Two keys* (`move`, `copy`), in BE-018's order: the driver's `move`,
   `rename` and `copy` refuse an absent source, or one that is no file,
   without changing anything, in any shape, since the kernel checks the source
-  first only on a rename route or when `ensure_parents` or the ancestor walk
-  runs. A refusal in
-  the set above, or an `InvalidPath`, gets a fail-open probe of the source,
-  whose absence answers `NotFound` and whose folder answers `InvalidPath`,
+  first only on a rename route, for a self-operation, and on every transfer
+  when the driver has explicit parents or the opt-in walk is on. A refusal in
+  the probe set, or an `InvalidPath`, gets the source's state on the error
+  path: absent or under a file answers `NotFound` and a folder `InvalidPath`,
   both naming the source; then the destination as a write target. Otherwise
   the refusal stands, naming the destination when it is an `AlreadyExists`,
   or a `NotFound` or `InvalidPath` with the source confirmed a file.
 
 **A key a call needs to be a folder** (`list_files`, `list_folders`,
-`iter_children`, the `get_folder_info` aggregate): a refusal on the listing's
-first page is an empty listing when it is a `NotFound` or `InvalidPath`, or
-when it is in the set above (a wire's ENOTDIR or WinError 267 for a file
-prefix) and fail-open probes find no folder: nothing or a file at the prefix,
-or, when that probe cannot answer, a file above it. `get_folder_info` then
-types the empty aggregate (BE-017). The driver's `list_page` refuses a prefix
-that is a file, or lies under one, in any shape, or lists nothing.
+`iter_children`, the `get_folder_info` aggregate, by listing or by the
+driver's `folder_stats`): a refusal on the listing's first page, or of
+`folder_stats`, is an empty listing when it is a `NotFound` or `InvalidPath`.
+On a hierarchical namespace it is one too when it is in the probe set (a
+wire's ENOTDIR or WinError 267 for a file prefix) and the prefix's state is
+absent, a file or under a file. On a flat namespace such a refusal
+propagates, since a file at a flat prefix rules out nothing below it, as it
+does for a folder or an unknown state. `get_folder_info` then types the
+empty aggregate (BE-017): a file is `InvalidPath`, absent or under a file
+`NotFound`, by a determinant `stat` with folder objects and fail-open
+without them. The driver's `list_page` refuses a prefix that is a file, or
+lies under one, in any shape, or lists nothing.
 
 Any other refusal (`BackendUnavailable`, `ResourceLocked`, `DirectoryNotEmpty`)
 says nothing about the key and passes through unprobed.
@@ -1502,9 +1531,10 @@ canonical `""` names the root, a folder, and yields nothing. Worked examples:
 `"d\\*.csv"` raise `InvalidPath`.
 
 **Conformance:** fake-driver kernel cells in `tests/_kernel/`, run against both
-runtimes; Memory's cells arrive with its migration. The file-key, write-target,
-two-key, folder-key, capability-gate and construction rules are generated as
-cell products in
+runtimes; Memory's cells arrive with its migration. *What is at a key* and
+every rule reading it (the probes, the file-key, write-target, two-key and
+folder-key rules), the capability gates and construction are generated as
+cell products over one shared axis set in
 `tests/_kernel/test_condition_space.py`, with an oracle written from this
 clause.
 

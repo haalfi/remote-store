@@ -40,6 +40,22 @@ from remote_store._resolution import ResolutionPlan
 RUNTIMES = ("sync", "async")
 T0 = datetime(2026, 1, 1, tzinfo=UTC)
 
+_LOOP: asyncio.AbstractEventLoop | None = None
+
+
+def run_async(awaitable: Any) -> Any:
+    """Run *awaitable* on one event loop kept for the process.
+
+    Not ``asyncio.run``: that builds a new loop per call, and on Windows each
+    Proactor loop opens a socket pair, so a product of tens of thousands of
+    async cells exhausted the socket buffers (WinError 10055) and crashed
+    xdist workers.
+    """
+    global _LOOP  # noqa: PLW0603 - one loop per process, created on first use
+    if _LOOP is None or _LOOP.is_closed():
+        _LOOP = asyncio.new_event_loop()
+    return _LOOP.run_until_complete(awaitable)
+
 
 # --- the wire's native exceptions ---------------------------------------------
 
@@ -144,11 +160,13 @@ class FakeStore:
     unrecognised code), and the shape a write or ``ensure_parents`` raises
     under a file; unset, writes raise ``FakeIsDir`` at a folder and
     ``FakeParentIsFile`` under a file, and reads ``FakeMissing``.
-    ``stat_under_file``, when set, is raised by ``stat`` for a key under a
-    file, as POSIX ``stat`` raises ENOTDIR; unset, that ``stat`` answers
-    ``None``. ``listing_refusal``, when set, is the shape ``list_page`` raises
-    for a prefix that is a file or lies under one (POSIX ENOTDIR, Windows
-    WinError 267, an unrecognised code); unset, ``FakeNotDir`` for a file and
+    ``stat_fault``, when set, is asked for every ``stat`` and returns the
+    native class to raise for that key, or ``None`` to answer (a POSIX
+    ``stat`` raising ENOTDIR under a file, a denial of one key, a dead
+    service); unset, ``stat`` answers, ``None`` under a file.
+    ``listing_refusal``, when set, is the shape ``list_page`` raises for a
+    prefix that is a file or lies under one (POSIX ENOTDIR, Windows WinError
+    267, an unrecognised code); unset, ``FakeNotDir`` for a file and
     ``FakeMissing`` under one. ``dst_first`` makes the two-key primitives
     check the destination before the source.
     """
@@ -157,7 +175,7 @@ class FakeStore:
         self.parents = parents
         self.namespace = "hierarchical"
         self.folder_refusal: type[FakeWireError] | None = None
-        self.stat_under_file: type[FakeWireError] | None = None
+        self.stat_fault: Callable[[str], type[FakeWireError] | None] | None = None
         self.listing_refusal: type[FakeWireError] | None = None
         self.dst_first = False
         self.files: dict[str, FileRec] = {}
@@ -271,8 +289,8 @@ class FakeStore:
 
     def stat(self, key: str, *, follow_links: bool = True) -> Entry | None:
         self._hit("stat", key)
-        if self.stat_under_file is not None and self._under_file(key):
-            raise self.stat_under_file(key)
+        if self.stat_fault is not None and (raised := self.stat_fault(key)) is not None:
+            raise raised(key)
         if self._under_file(key) or self.kind(key, follow_links) is None:
             return None
         return self._entry(key, follow_links)
@@ -796,7 +814,7 @@ class Runner:
         if self.runtime == "sync":
             self.kernel.close()
         else:
-            asyncio.run(self.kernel.aclose())
+            run_async(self.kernel.aclose())
 
     def __getattr__(self, name: str) -> Callable[..., Any]:
         method = getattr(self.kernel, name)
@@ -819,12 +837,12 @@ class Runner:
         async def collect() -> bytes:
             return b"".join([chunk async for chunk in self.kernel.read(path)])
 
-        return asyncio.run(collect())
+        return run_async(collect())
 
     def write(self, path: str, data: bytes, **kwargs: Any) -> Any:
         if self.runtime == "sync":
             return self.kernel.write(path, data, **kwargs)
-        return asyncio.run(self.kernel.write(path, data, **kwargs))
+        return run_async(self.kernel.write(path, data, **kwargs))
 
 
 def _settle(result: Any, name: str) -> Any:
@@ -833,9 +851,9 @@ def _settle(result: Any, name: str) -> Any:
         async def collect() -> list[Any]:
             return [item async for item in result]
 
-        return asyncio.run(collect())
+        return run_async(collect())
     if inspect.iscoroutine(result):
-        return asyncio.run(result)
+        return run_async(result)
     if isinstance(result, Iterator):
         return list(result)
     return result

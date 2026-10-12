@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, BinaryIO, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability
-from remote_store._errors import InvalidPath, NotFound, RemoteStoreError
+from remote_store._errors import RemoteStoreError
 from remote_store._kernel._model import Op
 from remote_store._kernel._sync.kernel import _KernelCore
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
@@ -63,11 +63,7 @@ class DriverBackend(_KernelCore, Backend):
             return Backend.read_seekable(self, path)
         self._guard()
         key = self._file_key(path)
-        entry = self._node_at(Op.READ_SEEKABLE, key)
-        if entry is None:
-            raise NotFound(f"Not found: {key}", path=key, backend=self.name)
-        if entry.kind != "file":
-            raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name)
+        entry = self._file_entry(Op.READ_SEEKABLE, key)
         return cast("BinaryIO", _RangeReader(self, self._range, key, entry.size))
 
     def open_atomic(self, path: str, *, overwrite: bool = False) -> AbstractContextManager[BinaryIO]:

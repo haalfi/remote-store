@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+import enum
 import logging
 import uuid
 from typing import TYPE_CHECKING, Literal
@@ -118,6 +119,24 @@ def _write_result(target: RemotePath, result: PutResult) -> WriteResult:
         last_modified=result.last_modified,
         metadata=result.metadata,
     )
+
+
+class _State(enum.Enum):
+    """What ``_state`` finds at a key."""
+
+    ABSENT = "absent"
+    FILE = "file"
+    FOLDER = "folder"
+    UNDER_FILE = "under a file"  # hierarchical only: an ancestor is a file
+    UNKNOWN = "unknown"  # a stat that could not answer; its error rides along
+
+
+@dataclasses.dataclass(frozen=True)
+class _Seen:
+    state: _State
+    entry: Entry | None = None  # the stat's entry, for FILE and FOLDER where it answered
+    error: RemoteStoreError | None = None  # the stat's error, for UNKNOWN
+    above: str | None = None  # the file ancestor, for UNDER_FILE
 
 
 class _Omitted:
@@ -329,35 +348,81 @@ class _KernelCore:
         with self._choke(op, key):
             return self._driver.stat(key, follow_links=follow_links)
 
-    def _node_at(self, op: Op, key: str) -> Entry | None:
-        """What is at *key*: ``stat``, and on a flat driver one listing probe for a folder.
+    def _state(self, op: Op, key: str, *, walk: bool, folders: bool = True) -> _Seen:
+        """What is at *key*, the one answer every call that needs a file or a folder reads.
 
-        A flat wire's ``stat`` is a lookup of the key and cannot see a prefix,
-        so a miss there is followed by one ``list_page(limit=1)``, the probe
-        the flat classes issue today; a hierarchical ``stat`` answers alone.
+        A ``stat`` that answers decides. A miss
+        (``None``, or a ``NotFound`` or ``InvalidPath``, as a POSIX ``stat``
+        under a file raises ENOTDIR) is followed on a flat driver by one
+        ``list_page(limit=1)``, since a flat ``stat`` cannot see a prefix
+        (unless *folders* is false: ``is_file`` and a write target need no
+        folder), and on a hierarchical one, when *walk*, by the ancestors'
+        ``stat`` calls. A ``stat`` that raises a refusal in the probe set gets
+        those ancestor calls on a hierarchical driver whether or not *walk*:
+        a file above makes the key's refusal the wrong type, and an absent
+        ancestor makes the key absent. Anything else is ``UNKNOWN``, carrying
+        the error, which a determinant raises and an error-path probe reads as
+        no answer. A flat namespace has nothing under a file: a key may sit
+        below one, or shadow a prefix, and is then its own key.
         """
-        entry = self._stat(op, key)
-        if entry is not None or not key or self._driver.namespace != "flat":
-            return entry
-        with self._choke(op, key):
-            page = self._driver.list_page(key, delimiter="/", limit=1)
-        return Entry(key, "folder") if page.entries or page.prefixes else None
-
-    def _probe(self, op: Op, key: str) -> tuple[bool, Entry | None]:
-        """An error-path probe of what is at *key*: ``(known, entry)``, fail-open.
-
-        A probe that raises answers ``(False, None)``: the refusal it was
-        asked about stands.
-        """
-        # BE-021: an error-path probe fails open.
+        # BE-030's *What is at a key*; BE-021's fail-open for the error-path callers.
+        hier = self._driver.namespace != "flat"
         try:
-            return True, self._node_at(op, key)
-        except RemoteStoreError:
-            return False, None
+            entry = self._stat(op, key)
+        except (NotFound, InvalidPath):
+            entry = None
+        except RemoteStoreError as err:
+            if hier and self._may_be_a_folder(err):
+                return self._above(op, key, err)
+            return _Seen(_State.UNKNOWN, error=err)
+        if entry is not None:
+            return _Seen(_State.FILE if entry.kind == "file" else _State.FOLDER, entry=entry)
+        if not hier:
+            if not folders:
+                return _Seen(_State.ABSENT)
+            try:
+                with self._choke(op, key):
+                    page = self._driver.list_page(key, delimiter="/", limit=1)
+            except RemoteStoreError as err:
+                return _Seen(_State.UNKNOWN, error=err)
+            return _Seen(_State.FOLDER if page.entries or page.prefixes else _State.ABSENT)
+        return self._above(op, key, None) if walk else _Seen(_State.ABSENT)
 
-    def _stat_open(self, op: Op, key: str) -> Entry | None:
-        """``_probe``'s entry alone: a raising probe reads as no answer."""
-        return (self._probe(op, key))[1]
+    def _above(self, op: Op, key: str, err: RemoteStoreError | None) -> _Seen:
+        """A hierarchical key's ancestors, shallowest first, each ``stat`` fail-open.
+
+        A file among them puts *key* under a file; an absent one makes *key*
+        absent, since nothing below it can exist. A folder or an ancestor that
+        cannot answer goes on to the next. Past the last one *key* is absent
+        when its own ``stat`` missed, and ``UNKNOWN`` with that ``stat``'s
+        error *err* when it raised.
+        """
+        for ancestor in _keys.ancestors(key):
+            try:
+                entry = self._stat(op, ancestor)
+            except (NotFound, InvalidPath):
+                entry = None
+            except RemoteStoreError:
+                continue
+            if entry is None:
+                return _Seen(_State.ABSENT)
+            if entry.kind == "file":
+                return _Seen(_State.UNDER_FILE, above=ancestor)
+        return _Seen(_State.ABSENT) if err is None else _Seen(_State.UNKNOWN, error=err)
+
+    def _file_entry(self, op: Op, key: str) -> Entry:
+        """A determinant file key: the file's entry, or the error its state answers."""
+        seen = self._state(op, key, walk=False)
+        if seen.error is not None:
+            raise seen.error
+        if seen.state is _State.FOLDER:
+            raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name)
+        if seen.entry is None or seen.state is not _State.FILE:
+            raise NotFound(f"Not found: {key}", path=key, backend=self.name)
+        return seen.entry
+
+    def _under_file(self, seen: _Seen, key: str) -> InvalidPath:
+        return InvalidPath(f"An ancestor of the path is a file: {seen.above}", path=key, backend=self.name)
 
     @staticmethod
     def _may_be_a_folder(err: RemoteStoreError) -> bool:
@@ -374,71 +439,56 @@ class _KernelCore:
         # BE-021: the type-mismatch row binds every backend, on the error path.
         if not self._may_be_a_folder(err):
             return
-        entry = self._stat_open(op, key)
-        if entry is not None and entry.kind == "folder":
+        if (self._state(op, key, walk=False)).state is _State.FOLDER:
             raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
 
     def _target_is_wrong_type(self, err: RemoteStoreError, op: Op, key: str) -> None:
         """After a write's refusal at *key*: a folder there, or a file above it, is ``InvalidPath``.
 
         A hierarchical driver's write primitives refuse both in whatever shape
-        its wire has, and fail-open ``stat`` calls type the refusal: one of the
-        key, then, when nothing is known there, one per ancestor, shallowest
-        first, until a file is found or an ancestor is confirmed absent. A file
-        at the key rules out a file above it, so the walk is skipped. A flat
-        namespace meets neither: it writes a key that shadows a prefix or sits
-        under a file, so nothing is probed.
+        its wire has, and ``_state``'s fail-open probes type the refusal. A
+        flat namespace meets neither: it writes a key that shadows a prefix
+        or sits under a file, so nothing is probed.
         """
         # BE-008's order and flat exemption, as BE-030 states them for the kernel.
         if self._driver.namespace == "flat" or not self._may_be_a_folder(err):
             return
-        known, entry = self._probe(op, key)
-        if known and entry is not None:
-            if entry.kind == "folder":
-                raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
-            return
-        for ancestor in _keys.ancestors(key):
-            known, entry = self._probe(op, ancestor)
-            if not known:
-                continue
-            if entry is None:
-                return
-            if entry.kind == "file":
-                raise InvalidPath(
-                    f"An ancestor of the path is a file: {ancestor}", path=key, backend=self.name
-                ) from err
+        seen = self._state(op, key, walk=True)
+        if seen.state is _State.FOLDER:
+            raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
+        if seen.state is _State.UNDER_FILE:
+            raise self._under_file(seen, key) from err
 
     def _holds_nothing(self, err: RemoteStoreError, op: Op, key: str) -> bool:
-        """Whether a listing's first-page refusal says the prefix holds nothing.
+        """Whether a listing's or an aggregate's first refusal says the prefix holds nothing.
 
-        A ``NotFound`` or ``InvalidPath`` does. Another refusal in the probe set
-        does when fail-open probes find no folder: nothing or a file at the
-        prefix, or, when that probe cannot answer, a file above it.
+        A ``NotFound`` or ``InvalidPath`` does. On a hierarchical namespace
+        another refusal in the probe set does when ``_state`` finds no folder:
+        nothing at the prefix, a file there, or a file above it. On a flat one
+        it never does: a file at the prefix rules out nothing below it.
         """
-        # BE-014, BE-015, BE-026: a non-folder lists nothing; BE-021's error path.
+        # BE-014, BE-015, BE-017, BE-026: a non-folder holds nothing; BE-021's error path.
         if isinstance(err, (NotFound, InvalidPath)):
             return True
-        if not key or not self._may_be_a_folder(err):
+        if not key or self._driver.namespace == "flat" or not self._may_be_a_folder(err):
             return False
-        known, entry = self._probe(op, key)
-        if known:
-            return entry is None or entry.kind == "file"
-        for ancestor in _keys.ancestors(key):
-            known, entry = self._probe(op, ancestor)
-            if known and (entry is None or entry.kind == "file"):
-                return True
-        return False
+        seen = self._state(op, key, walk=True)
+        return seen.state in (_State.ABSENT, _State.FILE, _State.UNDER_FILE)
 
-    def _target_stat(self, op: Op, key: str) -> Entry | None:
-        """A write target's determinant ``stat``: a ``NotFound`` is a miss.
+    def _write_target(self, op: Op, key: str) -> Entry | None:
+        """A write target's determinant: the entry there, ``None`` for a miss.
 
-        A ``stat`` under a file may raise ENOTDIR, typed ``NotFound``; the
-        write that follows then meets the file above and its refusal is typed.
+        A ``stat`` alone, so on a flat namespace a key may shadow a prefix. A
+        file above the key, which a raising ``stat`` lets ``_state`` find, is
+        ``InvalidPath``; a ``stat`` that cannot answer fails the call.
         """
-        try:
-            return self._stat(op, key)
-        except NotFound:
-            return None
+        # BE-008's flat exemption, as BE-030 states it for the kernel.
+        seen = self._state(op, key, walk=False, folders=False)
+        if seen.error is not None:
+            raise seen.error
+        if seen.state is _State.UNDER_FILE:
+            raise self._under_file(seen, key)
+        return seen.entry
 
     def _file_info(self, entry: Entry) -> FileInfo:
         return FileInfo(
@@ -485,38 +535,35 @@ class _KernelCore:
 
     # region: probes (BE-004, BE-005, BE-029)
 
-    def _node(self, op: Op, path: str, *, folders: bool = True) -> Entry | None:
-        # BE-021: the three probes return False on a traversal error rather than raise.
+    def _node(self, op: Op, path: str, *, folders: bool = True) -> _State:
+        # BE-021: the three probes answer False on a traversal error rather than raise:
+        # absent and under a file are no node, and only a stat that cannot answer raises.
         # `folders=False` (is_file) needs no listing probe: a stat sees every file.
-        self._guard()
-        key = self._key(path)
-        try:
-            return self._node_at(op, key) if folders else self._stat(op, key)
-        except (NotFound, InvalidPath):
-            return None
+        seen = self._state(op, self._key(path), walk=False, folders=folders)
+        if seen.error is not None:
+            raise seen.error
+        return seen.state
 
     def exists(self, path: str) -> bool:
         """Whether a file or folder exists at *path*; the root always does."""
         self._guard()
         if not self._key(path):
             return True
-        return self._node(Op.EXISTS, path) is not None
+        return self._node(Op.EXISTS, path) in (_State.FILE, _State.FOLDER)
 
     def is_file(self, path: str) -> bool:
         """Whether *path* is an existing file; never for the root."""
         self._guard()
         if not self._key(path):
             return False
-        entry = self._node(Op.IS_FILE, path, folders=False)
-        return entry is not None and entry.kind == "file"
+        return self._node(Op.IS_FILE, path, folders=False) is _State.FILE
 
     def is_folder(self, path: str) -> bool:
         """Whether *path* is an existing folder; always for the root."""
         self._guard()
         if not self._key(path):
             return True
-        entry = self._node(Op.IS_FOLDER, path)
-        return entry is not None and entry.kind == "folder"
+        return self._node(Op.IS_FOLDER, path) is _State.FOLDER
 
     # endregion
 
@@ -544,12 +591,7 @@ class _KernelCore:
         """The file's metadata; a folder is ``InvalidPath``, absence ``NotFound``."""
         self._guard()
         key = self._file_key(path)
-        entry = self._node_at(Op.GET_FILE_INFO, key)
-        if entry is None:
-            raise NotFound(f"Not found: {key}", path=key, backend=self.name)
-        if entry.kind != "file":
-            raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name)
-        return self._file_info(entry)
+        return self._file_info(self._file_entry(Op.GET_FILE_INFO, key))
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Remove the file at *path*; type mismatch outranks *missing_ok*."""
@@ -687,9 +729,7 @@ class _KernelCore:
         assert self._rename is not None
         op = Op.WRITE_ATOMIC
         if not overwrite:
-            # A write target: a stat alone, so on a flat namespace a key may
-            # shadow a prefix (BE-008's flat exemption).
-            existing = self._target_stat(op, key)
+            existing = self._write_target(op, key)
             if existing is not None:
                 raise self._occupied(existing, key)
         temp = _temp_key(key)
@@ -728,11 +768,7 @@ class _KernelCore:
         self._transfer(Op.COPY, src, dst, overwrite)
 
     def _require_file(self, op: Op, key: str) -> None:
-        entry = self._node_at(op, key)
-        if entry is None:
-            raise NotFound(f"Not found: {key}", path=key, backend=self.name)
-        if entry.kind != "file":
-            raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name)
+        self._file_entry(op, key)
 
     def _transfer(self, op: Op, src: str, dst: str, overwrite: bool) -> None:
         # The declared capability decides, ahead of the closed guard and the key
@@ -789,16 +825,16 @@ class _KernelCore:
         # BE-018: the source's NotFound outranks the destination's preconditions.
         if not (self._may_be_a_folder(err) or isinstance(err, InvalidPath)):
             return
-        known, entry = self._probe(op, source)
-        if known and entry is None:
+        seen = (self._state(op, source, walk=False)).state
+        if seen in (_State.ABSENT, _State.UNDER_FILE):
             if isinstance(err, NotFound):
                 err.path = source
                 return
             raise NotFound(f"Not found: {source}", path=source, backend=self.name) from err
-        if known and entry is not None and entry.kind == "folder":
+        if seen is _State.FOLDER:
             raise InvalidPath(f"Is a folder, not a file: {source}", path=source, backend=self.name) from err
         self._target_is_wrong_type(err, op, target)
-        source_is_file = known and entry is not None
+        source_is_file = seen is _State.FILE
         if isinstance(err, AlreadyExists) or (source_is_file and isinstance(err, (NotFound, InvalidPath))):
             err.path = target
 
@@ -826,7 +862,7 @@ class _KernelCore:
         op = Op.MOVE
         if not source_checked:
             self._require_file(op, source)
-        existing = self._target_stat(op, target)  # a write target: BE-008's flat exemption
+        existing = self._write_target(op, target)
         if existing is not None and (existing.kind == "folder" or not overwrite):
             raise self._occupied(existing, target)
         if self._rename.rename_replaces:
@@ -845,8 +881,13 @@ class _KernelCore:
         # Displace and restore: a rename that cannot replace moves the old file
         # aside, and puts it back when the move itself fails.
         parked = _temp_key(target)
-        with self._choke(op, target):
-            self._rename.rename(target, parked, replace=False)
+        try:
+            with self._choke(op, target):
+                self._rename.rename(target, parked, replace=False)
+        except NotFound:
+            # The file to displace is gone already, so the destination is free.
+            self._rename_source(source, target, replace=False)
+            return
         try:
             self._rename_source(source, target, replace=False)
         except BaseException:
@@ -1008,7 +1049,10 @@ class _KernelCore:
             try:
                 with self._choke(op, key):
                     count, size, latest = self._stats.folder_stats(key)
-            except NotFound:
+            except RemoteStoreError as err:
+                # The push-down's refusal answers as the listing's first page would.
+                if not self._holds_nothing(err, op, key):
+                    raise
                 count, size, latest = 0, 0, None
             latest = None if latest is None else _known_modified_at(latest)
         else:
@@ -1025,12 +1069,13 @@ class _KernelCore:
             # objects this is the error path's type probe, fail-open; with them an
             # empty folder exists, so the stat is the determinant and fails closed
             # (BE-021's fail-open is a property of the call site).
-            flat = self._driver.parents == "none"
-            node = self._stat_open(op, key) if flat else self._node_at(op, key)
-            if node is None:
-                raise NotFound(f"Not found: {key}", path=key, backend=self.name)
-            if node.kind == "file":
+            seen = self._state(op, key, walk=False)
+            if seen.error is not None and self._driver.parents != "none":
+                raise seen.error
+            if seen.state is _State.FILE:
                 raise InvalidPath(f"Is a file, not a folder: {key}", path=key, backend=self.name)
+            if seen.state is not _State.FOLDER:
+                raise NotFound(f"Not found: {key}", path=key, backend=self.name)
         return FolderInfo(path=RemotePath.from_backend_path(key), file_count=count, total_size=size, modified_at=latest)
 
     # endregion
