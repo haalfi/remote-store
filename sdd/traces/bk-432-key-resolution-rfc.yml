@@ -1,0 +1,108 @@
+id: BK-432
+title: "No logical model says what a key resolves to, so every operation re-derives it from driver refusals"
+trigger: "PR #1127's review had run twelve rounds without converging. Each fix typed one more combination of refusal shape and key state, and the closing round found delete_folder's own probe rule disagreeing with the shared classifier. The maintainer observed that the spec has no model of the key as a chain location/.../item, so every clause re-states what happens on the way to the key"
+source_items:
+  - BK-432
+  - BK-389
+audience:
+  - library.maintainer
+  - user.api
+  - contributor.process
+decisions:
+  - sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl
+orient:
+  - items: [BK-389, BK-394]
+    verdict: constrains
+    evidence: "Decision log 85069900 (dialog 'PR 1127'): the maintainer parked #1127 with its 7 threads open until this model exists, so BK-389 resumes by re-deriving delete_folder and spec 003's cut from it. BK-394 (index entry: 'After BK-389') is where a backend first runs on the kernel, so the breaking flat change (a shadowed key is a file for every operation) first lands there"
+  - items: [BUG-292, BK-382, BUG-253]
+    verdict: constrains
+    evidence: "BUG-292 dossier § Decision (2026-09-29, BK-387): 'Only a confirmed miss, a not-found answer from the probe, reads as no ancestor. Any other probe error propagates'. That becomes the model's observation rule for Blocked. Spec 003 BE-008 (lines 471-479) gives flat backends the opt-in reject_write_under_file_ancestor, so on flat Blocked is a write outcome under a store policy. The three remain backend fixes"
+  - items: [BUG-257, BUG-255, BUG-318]
+    verdict: constrains
+    evidence: "BUG-257 dossier: Graph keys the first-page bound per HTTP request, not per walk, and its index entry says RFC-0017 Open Question 2 is decided (BK-389 dossier, decision 1) in agreement. The model's 'changed under the walk' takes BE-021's first-page bound once per operation"
+  - items: [BUG-299, BUG-300, BK-398]
+    verdict: unrelated
+    evidence: "Index entries: a '..' key written then refused, a backslash key stored then refused, and the native round-trip identity. All three concern how a key is spelled (layer 0, BE-030's key rule), not what it resolves to"
+  - items: [BUG-319, BUG-293, BUG-245, BK-345]
+    verdict: unrelated
+    evidence: "Index entries: a raw PermissionError leak, Azure arms re-typing a typed error, a constructor's NoSuchTableError, and the absent-container gate. They map wire errors into types at the choke point or at construction; the model consumes typed refusal shapes and does not change that mapping"
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "Re-plan after round 10"
+        read_type: gate
+        extract: "Rounds 7 to 10 had one shape (each fix probed one more call family); the re-plan merged six helpers into _state. PR #1127's open review threads at a630ef5 show the same condition in delete_folder's own probe rule (_df_kind, _probe_wanted), which the session-local /ship handoff flagged as a design decision"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "_state, _above, _may_be_a_folder, _df_kind, _probe_wanted, _df_error_path"
+        read_type: reference
+        extract: "_state treats a raising NotFound/InvalidPath stat as a miss and probes untyped, NotFound, AlreadyExists and PermissionDenied; delete_folder's _probe_wanted probes only NotFound and untyped, and _df_kind has no miss tolerance. Two rules for one stat answer"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "§4 Filesystem model; §5 IsChildOf, AllAncestorsTraversable; Valid() (line 536)"
+        read_type: reference
+        extract: "Filesystem = map<Path, Entry>; Valid() requires every ancestor of an entry to be a directory, so the formal model holds the explicit-folder geometry only. Flat, implicit and under-a-file have no representation"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/driver.py
+        section: "Driver protocol docstring (namespace, parents)"
+        read_type: reference
+        extract: "Geometry is already namespace x parents; a flat driver with folder objects is refused at construction"
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "_is_link, _resolve symlink-escape rejection"
+        read_type: reference
+        extract: "Local follows links implicitly and rejects a target escaping the root; no capability or public option declares links. SFTP not checked"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 flat file-ancestor opt-in (lines 471-499)"
+        read_type: reference
+        extract: "reject_write_under_file_ancestor is a per-instance opt-in on flat backends, so 'f/x is just another key' holds only with it off. Corrected the outline's flat invariant"
+        outcome: ok
+      - file: sdd/backlog/bug-292-ancestor-gate-fails-open.md
+        section: "(full)"
+        read_type: reference
+        extract: "Decided fail-closed for the file-ancestor probe: only a confirmed miss reads as no ancestor"
+        outcome: ok
+      - file: sdd/backlog/bug-257-graph-walk-first-page-bound.md
+        section: "(full)"
+        read_type: reference
+        extract: "The first-page bound is per operation, not per request"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works; 1. Failures are predictable (BK-389, BK-394)"
+        read_type: gate
+        extract: "On this stacked branch BK-389 is already in BACKLOG-DONE, so BK-432 sits directly above BK-394, which now waits on it; ID from gen-backlogid --check --remote (BK=432)"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-030 What is at a key, the four key-shape rules and the folder-key rule (lines 1403-1485)"
+        read_type: reference
+        extract: "BE-030 already distinguishes determinants from error-path probes and states one answer for each key; what it lacks is outcomes as the primary abstraction, a probe set per (call, shape) rather than one per family, delete_folder's rule (BE-031 is separate), and links. A flat prefix read as a file is InvalidPath (BE-021's type-mismatch row), which corrected the draft's first Prefix row"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Status; Summary"
+        read_type: reference
+        extract: "RFC shape: Status, Summary, Motivation, Decisions, Alternatives, Impact, Open Questions with a decided-while-drafting list"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "_prepare_write"
+        read_type: reference
+        extract: "ensure_parents(key) takes the key alone, so no result needs the depth of absence; the opt-in walk counts only NotFound as a miss (determinant, fail-closed)"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "public async methods; _kernel/backend.py read, read_seekable, open_atomic"
+        read_type: reference
+        extract: "19 keyed operations grouped into the RFC's seven families: git grep -n -E '^    async def [a-z]' over _async/kernel.py gives 18, minus check_health and aclose; git grep -n -E '^    (async )?def (read|read_seekable|open_atomic)\\(' over _kernel adds 3 in backend.py (aio_backend.py's read is the async twin of the same operation)"
+        outcome: ok
+  - id: revise
+    name: Revise
+    steps:
+      - file: sdd/rfcs/rfc-0021-key-resolution-model.md
+        section: "(full)"
+        read_type: reference
+        extract: "Maintainer rejected the first draft's geometry-parameterised outcome set (semantic model) for one tree plus a partial decode per encoding, then moved all mechanics out of Decisions into Appendix A (the draft spec section) per principle 8"
+        outcome: misleading
