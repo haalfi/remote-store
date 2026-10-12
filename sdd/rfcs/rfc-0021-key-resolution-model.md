@@ -116,8 +116,9 @@ the encoding, stated once. ([A.6](#a6-empty-folders))
 ### D7. Links follow one store-wide policy
 
 How a link decodes is one policy for the whole store, never a per-call option.
-`delete_folder` never follows a link, and `delete` removes the link itself,
-whatever the policy. The public option comes later. ([A.7](#a7-links))
+`delete`, `delete_folder` and a `move` source name the entry at the key, so
+for them a link is always an item. A link that does not decode is refused like
+a key the rule refuses. The public option comes later. ([A.7](#a7-links))
 
 ### D8. Refusals are observations of the encoding
 
@@ -168,11 +169,16 @@ CHANGELOG entry and a migration note:
 | write an item over a folder (D4) | flat | written, whether or not the opt-in is on | `InvalidPath` | one `list_page(limit=1)` per write |
 | listing an item `k` and a prefix `k/` together (D3) | flat | both listed | the prefix omitted and logged | none; flat drivers list in byte-lexicographic order (A.3) |
 | folder operation on a key that is an item with raw entries below it (D3) | flat | `list_files`, `get_folder_info` and `delete_folder` act on `k/` | empty, `InvalidPath` for `get_folder_info` and `delete_folder` | one `stat` per folder operation |
-| listing a link (D7) | SFTP | hidden | listed per the store's link policy; a link escaping the root, dangling or looping is omitted | none |
+| listing a link (D7) | SFTP | hidden | listed per the store's link policy; a link that does not decode is omitted | none |
+| listing a link that does not decode (D7) | Local | listed (read from `_local.py`: listings stat through links with no containment check) | omitted and logged | none |
+| recursive listing through a link to a folder in the root (D7) | Local | not descended (`os.walk(followlinks=False)`) | descended under `follow_within_root` | the linked subtree's listing |
 
-BE-021's cost table records the costs when the clauses land. A stored key the
-key rule refuses (`a\b`) is already omitted and logged today (BE-030), so it
-does not change.
+Keyed calls on a link that does not decode keep today's Local answer,
+`InvalidPath`. BE-021's cost table records the costs when the clauses land. A
+stored key the key rule refuses (`a\b`) is already omitted and logged today
+(BE-030), and a recursive `delete_folder` over it already answers
+`DirectoryNotEmpty` (BE-031). A.3 makes that the rule for every omitted entry,
+so it does not change.
 
 - **Public API.** `reject_write_under_file_ancestor`, a constructor keyword on
   five flat backends (BE-008), loses its effect, since the check it enabled
@@ -194,8 +200,8 @@ does not change.
 - **Formal model:** `Valid()` in `BackendContract.dfy` already is A.1's tree. A
   follow-up adds a `decode` function for each encoding, with refinement lemmas
   showing that each encoding's operations commute with `decode`.
-- **SFTP's links** decode by A.7's policy once SFTP runs on the kernel.
-  BUG-323, its recursive delete through a link at the key, is fixed
+- **Local's and SFTP's links** decode by A.7's policy once each runs on the
+  kernel. BUG-323, SFTP's recursive delete through a link at the key, is fixed
   independently of this RFC.
 - **Follow-ups**, filed when this RFC is accepted: the public link option and a
   capability that exposes `links`, and the Dafny `decode` functions.
@@ -219,17 +225,24 @@ does not change.
   Keyed lookups trust the encoding, as a stated limit.
 - Writes that would make the encoding undecodable are always `InvalidPath`.
 - An emptied folder's existence depends on the encoding, stated once.
-- Links: a `links` property, a store-level policy, `no_follow` for
-  `delete_folder`, `delete` removing the link, and `InvalidPath` for a write to
-  a link under `no_follow`. A link that does not decode resolves to `Nothing`
-  and listings omit it. Only the model is in scope; the public option comes
-  later.
+- Links: a `links` property, a store-level policy, and `InvalidPath` for a
+  write to a link under `no_follow`. Only the model is in scope; the public
+  option comes later.
+- After the divergence check fired on links (round 2 found a write through an
+  escaping link): a link that does not decode is refused like a key the rule
+  refuses (`InvalidPath` on keyed calls, omitted from listings), and `delete`,
+  `delete_folder` and a `move` source name the entry at the key, so for them a
+  link is always an item.
+- An omitted raw entry keeps its folder non-empty, so a recursive
+  `delete_folder` that cannot remove it answers `DirectoryNotEmpty`.
 - On a flat encoding, the probe, read-file and delete-file families trust the
   encoding, so `delete("k/a.txt")` below an item removes the raw entry.
 - A flat driver's `list_page` returns keys in byte-lexicographic order, a
   driver obligation, so the kernel needs no buffer for the recursive omission.
 - A link as a transfer source: `move` moves the link, and `copy` copies the
   target's content (`InvalidPath` under `no_follow`).
+- Local and SFTP have links. SFTP's were measured (below); Local's are read
+  from `_local.py`.
 - SFTP has links (`links="present"`), measured on the `atmoz/sftp` container
   with `SFTPBackend` as on master. Today it follows a link on keyed calls,
   hides it in listings, and lists or reads through it at its own key, which
@@ -301,7 +314,16 @@ These raw states decode to no tree:
   `delete("k/a.txt")` removes it, which is how such an entry is cleaned up.
   This is a limit of the model. A.4 keeps the library's own writes from
   producing it.
-- **A link that does not decode**, at a key, resolves to `Nothing`.
+- **A link that does not decode** is refused like a key the rule refuses:
+  every keyed operation answers `InvalidPath`, except `delete`, which removes
+  the link (A.7). It never resolves to `Nothing`, so nothing is written
+  through it.
+- **Omitted entries keep a folder non-empty.** A recursive `delete_folder`
+  removes only what it can list, so an omitted entry below the folder remains
+  and the call answers `DirectoryNotEmpty`, as BE-031 already rules for a key
+  the rule refuses. On a flat encoding, a recursive `delete_folder` of an
+  item `k` answers `InvalidPath` and removes nothing. One of `k`'s parent
+  removes `k` and leaves `k/a.txt`, so it answers `DirectoryNotEmpty`.
 - **`unwrap()`** reaches any raw entry.
 
 ### A.4 Writes
@@ -338,7 +360,9 @@ flat wire: another writer can act between the check and the write.
 | `Nothing`, path through an item | F / F / F | `NotFound` | `InvalidPath` | `NotFound` | empty | `NotFound` |
 
 The last row is what the tree answers. On a flat encoding the probe, read-file
-and delete-file families trust the encoding instead (A.3).
+and delete-file families trust the encoding instead (A.3). For `delete`,
+`delete_folder` and a `move` source, a link at the key resolves to `Item`
+(A.7). A link that does not decode never reaches this table (A.3).
 `missing_ok` turns a delete's `NotFound` into success. `get_folder_info`
 types an empty aggregate as BE-017 states. The per-operation clauses keep what
 is specific to them, such as `overwrite`, cursors, `max_depth` and the
@@ -358,17 +382,20 @@ folder, so there it vanishes. With folder objects it stays.
   Under `follow_within_root` a link decodes to its target's node, and a target
   outside the root does not decode. Under `no_follow` a link decodes to an
   item.
-- `delete_folder` is the destructive tree operation, and it decodes under
-  `no_follow` whatever the policy, since following a link would delete its
-  target's contents.
-- `delete` on a link removes the link, never its target, under either policy
-  (BE-031's existing rule). `move` with a link as its source moves the link
-  entry and leaves the target alone, as a rename does. `copy` reads through
-  the link and writes a regular item under `follow_within_root`. Under
-  `no_follow` it is `InvalidPath`, like a write to a link.
-- A write to a link goes to the target under `follow_within_root`. Under
-  `no_follow` it is `InvalidPath`, since replacing a link the store did not
+- **Entry operations.** `delete`, `delete_folder` and a `move` source name the
+  entry at the key itself, so for them the last segment decodes under
+  `no_follow` whatever the policy, and a link there is an `Item`. A.5's `Item`
+  row then gives their answers: `delete` removes the link, never its target
+  (BE-031's existing rule); `delete_folder` answers `InvalidPath`; `move` moves
+  the link entry and leaves the target alone, as a rename does. Following a
+  link there would delete or move its target's contents.
+- **Every other operation** reads through a link under the store policy. Under
+  `follow_within_root` a `copy` from a link writes a regular item with the
+  target's content, and a write to a link goes to its target. Under
+  `no_follow` both are `InvalidPath`, since replacing a link the store did not
   make would destroy it without a signal.
+- **A link that does not decode** (its target outside the root, dangling, or
+  in a loop) is refused like a key the rule refuses (A.3).
 
 ### A.8 Observations
 
