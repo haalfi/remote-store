@@ -1434,11 +1434,15 @@ error-path probes, in one place.
   where the wire has one (`rmdir`, a lock). A driver whose `parents` is
   `"explicit"` or `"implicit"`, which has folder objects, MUST provide it; the
   kernel refuses to construct over one that does not. It is never called when
-  `parents == "none"`.
+  `parents == "none"`. A folder object persists until `remove_folder` or
+  `delete_tree` removes it: emptying a folder does not remove it.
 - `delete_tree(key)`, optional, removes a folder's whole tree. Where folder
-  objects exist it refuses a file or an absent key without removing anything,
-  and a wire whose tree delete also removes a file item checks first and
-  documents that race. With `parents == "none"` it removes what lies under the
+  objects exist it refuses a file, a link (never traversed) or an absent key
+  without removing anything, removes a link below `key` as an entry without
+  following it, and a wire whose tree delete also removes a file item checks
+  first and documents that race. The kernel calls it with no probe before it,
+  so the link refusal is the driver's: it is what keeps the table's link row
+  true on this route. With `parents == "none"` it removes what lies under the
   prefix and leaves a file named by the key itself.
 
 **`stat` and `list_page` take `follow_links`**, default `True`. `delete_folder`
@@ -1479,8 +1483,9 @@ says nothing about the key. A `delete_tree` refusal gets the `stat` probe only.
   a listed key BE-030 omits is left, and the call then answers
   `DirectoryNotEmpty`.
   The listing is the determinant and fails closed, except that a `NotFound`
-  from it is an empty listing: an absent prefix, or an absent container, holds
-  nothing (BE-013). After an empty listing, `stat`: a file → `InvalidPath`,
+  on its first page is an empty listing: an absent prefix, or an absent
+  container, holds nothing (BE-013). On a later page a `NotFound` reports a
+  change under the scan and propagates, BE-021's first-page bound. After an empty listing, `stat`: a file → `InvalidPath`,
   anything else → `NotFound`, to which `missing_ok` applies; a raising `stat`
   leaves the empty listing's `NotFound` (fail-open). After a non-empty listing a
   refusal passes through unprobed.

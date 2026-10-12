@@ -26,7 +26,7 @@ from remote_store._errors import DirectoryNotEmpty, InvalidPath, NotFound, Permi
 from remote_store._kernel._model import Entry, Op, Page
 from remote_store._kernel.aio_backend import AsyncDriverBackend
 from remote_store._kernel.backend import DriverBackend
-from tests._kernel._fake import RUNTIMES, FakeDenied, FakeOdd, FakeStore, make_kernel
+from tests._kernel._fake import RUNTIMES, FakeContainerGone, FakeDenied, FakeOdd, FakeStore, make_kernel
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -278,6 +278,27 @@ def test_parents_none_over_an_omitted_key(runtime: str, with_tree: bool) -> None
     assert ("delete", "d/b\\c") not in store.calls
 
 
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("missing_ok", [False, True])
+def test_parents_none_propagates_a_not_found_after_the_first_page(runtime: str, missing_ok: bool) -> None:
+    # BE-021's first-page bound: a later page's NotFound reports a change under the scan.
+    store = FakeStore(parents="none", page_size=1).add("d/a", "d/b", "d/c")
+    run = make_kernel(runtime, store, protocols=())
+    store.fault("list_page", FakeContainerGone("deleted under the scan"), key="d", nth=2)
+    with pytest.raises(NotFound):
+        run.delete_folder("d", recursive=True, missing_ok=missing_ok)
+    assert sorted(store.files) == ["d/a", "d/b", "d/c"]
+
+
+def test_an_implicit_walk_removes_the_persistent_folders(runtime: str) -> None:
+    # Implicit folders persist until removed (Graph, Azure HNS), so the walk's
+    # last remove_folder finds the folder it emptied.
+    store = FakeStore(parents="implicit").add("k/a", "k/s/b", "k/t/")
+    run = make_kernel(runtime, store, protocols=("remove_folder",))
+    run.delete_folder("k", recursive=True)
+    assert (store.files, sorted(store.folders)) == ({}, [])
+
+
 def test_parents_none_tolerates_a_file_deleted_under_the_walk(runtime: str) -> None:
     store = FakeStore(parents="none").add("d/a", "d/b")
     run = make_kernel(runtime, store, protocols=())
@@ -286,12 +307,15 @@ def test_parents_none_tolerates_a_file_deleted_under_the_walk(runtime: str) -> N
     assert store.files == {}
 
 
+@pytest.mark.parametrize("protocols", [("remove_folder",), ("remove_folder", "delete_tree")])
 @pytest.mark.parametrize("recursive", [False, True])
 @pytest.mark.parametrize("target", ["d", "nowhere", "f"])
-def test_a_link_at_the_key_is_never_a_folder(runtime: str, recursive: bool, target: str) -> None:
+def test_a_link_at_the_key_is_never_a_folder(
+    runtime: str, recursive: bool, target: str, protocols: tuple[str, ...]
+) -> None:
     store = FakeStore().add("d/a", "f")
     store.links["l"] = target
-    run = make_kernel(runtime, store, protocols=("remove_folder",))
+    run = make_kernel(runtime, store, protocols=protocols)
     with pytest.raises(InvalidPath):
         run.delete_folder("l", recursive=recursive, missing_ok=True)
     assert "d/a" in store.files

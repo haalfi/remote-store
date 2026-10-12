@@ -49,6 +49,11 @@ for _mod in (
     "remote_store.backends._sqlalchemy",
     "remote_store.aio.backends._azure",
     "remote_store.aio.backends._graph.backend",
+    # The contract kernel's two classes are concrete Backend subclasses too;
+    # imported here so whether they are checked never depends on what else
+    # the session imported first.
+    "remote_store._kernel.backend",
+    "remote_store._kernel.aio_backend",
 ):
     with contextlib.suppress(ImportError):
         __import__(_mod)

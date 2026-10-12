@@ -495,14 +495,35 @@ class _AsyncKernelCore:
                 await self._parents_maker.ensure_parents(key)
 
     async def _put(
-        self, op: Op, key: str, content: _io.Content, overwrite: bool, metadata: Mapping[str, str] | None
+        self,
+        op: Op,
+        key: str,
+        content: _io.Content,
+        overwrite: bool,
+        metadata: Mapping[str, str] | None,
+        *,
+        at: str | None = None,
     ) -> PutResult:
+        """``put`` to *at* (default *key*); every error names the caller's *key*."""
         try:
             with self._choke(op, key):
-                return await self._driver.put(key, content, overwrite=overwrite, metadata=metadata)
+                return await self._driver.put(at or key, content, overwrite=overwrite, metadata=metadata)
         except NotFound as err:
             await self._folder_is_wrong_type(err, op, key)
             raise
+
+    def _require(self, capability: Capability, key: str, what: str) -> None:
+        # A declared capability decides, not the protocols behind it (BE-010, BE-024);
+        # construction already refuses a declaration its protocols cannot back.
+        if not self.capabilities.supports(capability):
+            raise CapabilityNotSupported(
+                f"Backend '{self.name}' {what}", path=key, backend=self.name, capability=capability.value
+            )
+
+    def _require_metadata(self, metadata: Mapping[str, str] | None, key: str) -> None:
+        # WR-010's strict gate, before any I/O; an empty mapping is a no-op.
+        if metadata:
+            self._require(Capability.USER_METADATA, key, "does not store user metadata")
 
     async def write(
         self,
@@ -515,6 +536,7 @@ class _AsyncKernelCore:
         """Write the file at *path*; the root is refused before any transfer."""
         self._guard()
         key = self._write_key(path)
+        self._require_metadata(metadata, key)
         target = RemotePath(key)  # built before the driver commits (BE-030 step 5)
         await self._prepare_write(Op.WRITE, key)
         return _write_result(target, await self._put(Op.WRITE, key, content, overwrite, metadata))
@@ -530,16 +552,10 @@ class _AsyncKernelCore:
         """Write atomically: ``put`` where it is atomic, else a wire temporary, else temp and rename."""
         self._guard()
         key = self._write_key(path)
+        # Capability data: decided before the parents are created.
+        self._require(Capability.ATOMIC_WRITE, key, "cannot write atomically")
+        self._require_metadata(metadata, key)
         target = RemotePath(key)
-        renames = self._rename is not None and self._rename.rename_replaces
-        if not (self._driver.put_is_atomic or self._open_write is not None or renames):
-            # Capability data: decided before the parents are created.
-            raise CapabilityNotSupported(
-                f"Backend '{self.name}' cannot write atomically",
-                path=key,
-                backend=self.name,
-                capability=Capability.ATOMIC_WRITE.value,
-            )
         await self._prepare_write(Op.WRITE_ATOMIC, key)
         if self._driver.put_is_atomic:
             result = await self._put(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
@@ -575,7 +591,7 @@ class _AsyncKernelCore:
                 raise self._occupied(existing, key)
         temp = _temp_key(key)
         try:
-            result = await self._put(op, temp, content, True, metadata)
+            result = await self._put(op, key, content, True, metadata, at=temp)
             # replace=overwrite: a file written after the check above is refused,
             # never silently replaced.
             with self._choke(op, key):
@@ -815,8 +831,9 @@ class _AsyncKernelCore:
     async def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
         """Files matching *pattern*, refused and normalised by the pattern rule."""
         globber = self._globber
-        if globber is None:
-            # Capability data, so ahead of the closed guard (BE-030 § glob).
+        if globber is None or not self.capabilities.supports(Capability.GLOB):
+            # Capability data, so ahead of the closed guard (BE-030 § glob); the
+            # declaration decides, as BE-024 states.
             raise CapabilityNotSupported(
                 f"Backend '{self.name}' does not support glob."
                 " Use list_files(pattern=...) for name filtering"
@@ -891,8 +908,12 @@ class _AsyncKernelCore:
                 omitted.log()
             count, size, latest = tally.count, tally.size, tally.latest
         if count == 0 and key:
-            # The error path: an empty aggregate is a folder, a file or nothing.
-            node = await self._stat_open(op, key)
+            # An empty aggregate is a folder, a file or nothing. Without folder
+            # objects this is the error path's type probe, fail-open; with them an
+            # empty folder exists, so the stat is the determinant and fails closed
+            # (BE-021's fail-open is a property of the call site).
+            flat = self._driver.parents == "none"
+            node = await (self._stat_open(op, key) if flat else self._node_at(op, key))
             if node is None:
                 raise NotFound(f"Not found: {key}", path=key, backend=self.name)
             if node.kind == "file":
@@ -915,20 +936,31 @@ class _AsyncKernelCore:
         entry = await self._stat(Op.DELETE_FOLDER, key, follow_links=False)
         return None if entry is None else entry.kind
 
-    async def _df_list(self, key: str, delimiter: str | None, limit: int | None) -> tuple[list[str], list[str]]:
+    async def _df_list(
+        self, key: str, delimiter: str | None, limit: int | None, *, absent_is_empty: bool = False
+    ) -> tuple[list[str], list[str]]:
         """Raw keys under *key*: files (and links), and folders. Unfiltered on purpose.
 
         A probe must see every entry, the omitted ones included, or it
-        would call a folder holding only those empty.
+        would call a folder holding only those empty. ``absent_is_empty``
+        reads a ``NotFound`` on the first page as an empty listing; on a later
+        page it reports a change under the scan and propagates.
         """
         files: list[str] = []
         folders: list[str] = []
         cursor: object | None = None
+        first = True
         while True:
-            with self._choke(Op.DELETE_FOLDER, key):
-                page = await self._driver.list_page(
-                    key, delimiter=delimiter, cursor=cursor, limit=limit, follow_links=False
-                )
+            try:
+                with self._choke(Op.DELETE_FOLDER, key):
+                    page = await self._driver.list_page(
+                        key, delimiter=delimiter, cursor=cursor, limit=limit, follow_links=False
+                    )
+            except NotFound:
+                if absent_is_empty and first:
+                    return [], []
+                raise
+            first = False
             files += [e.key for e in page.entries if e.kind == "file"]
             folders += [e.key for e in page.entries if e.kind == "folder"]
             folders += list(page.prefixes)
@@ -1065,12 +1097,10 @@ class _AsyncKernelCore:
         return None
 
     async def _df_listing(self, key: str, delimiter: str | None, limit: int | None) -> tuple[list[str], list[str]]:
-        # The determinant fails closed, but a NotFound is an empty listing: an
-        # absent prefix or an absent container holds nothing (BE-013).
-        try:
-            return await self._df_list(key, delimiter, limit)
-        except NotFound:
-            return [], []
+        # The determinant fails closed, but a NotFound on its first page is an
+        # empty listing: an absent prefix or an absent container holds nothing
+        # (BE-013); a later page's NotFound propagates (BE-021's bound).
+        return await self._df_list(key, delimiter, limit, absent_is_empty=True)
 
     async def _df_none(self, key: str, recursive: bool, missing_ok: bool) -> None:
         if not recursive:

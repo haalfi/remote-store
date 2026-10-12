@@ -129,9 +129,10 @@ class FileRec:
 class FakeStore:
     """An in-memory tree or key space, with faults and a call log.
 
-    ``parents``: ``"explicit"`` keeps folders as their own nodes;
-    ``"implicit"`` and ``"none"`` derive them from keys (an explicit folder can
-    still be added on ``"implicit"``). ``links`` maps a key to the target
+    ``parents``: ``"explicit"`` and ``"implicit"`` keep folders as their own
+    nodes until ``remove_folder`` or ``delete_tree`` removes them, as Graph and
+    Azure HNS do; ``"implicit"`` creates the missing ones on a write, where
+    ``"explicit"`` refuses it. ``"none"`` derives folders from keys. ``links`` maps a key to the target
     key; a link resolves through it with ``follow_links``, and is a
     non-folder entry without it.
     """
@@ -160,7 +161,7 @@ class FakeStore:
         return self
 
     def _mkdirs(self, key: str) -> None:
-        if self.parents == "explicit":
+        if self.parents != "none":
             parts = key.split("/")
             self.folders.update("/".join(parts[:i]) for i in range(1, len(parts)))
 
@@ -213,7 +214,7 @@ class FakeStore:
             return True
         if key in self.folders:
             return True
-        if self.parents == "explicit":
+        if self.parents != "none":
             return False
         prefix = key + "/"
         return any(k.startswith(prefix) for k in self.files) or any(f.startswith(prefix) for f in self.folders)
@@ -270,6 +271,7 @@ class FakeStore:
             raise FakeMissing(f"no parent: {key}")
         if key in self.files and not overwrite:
             raise FakeExists(key)
+        self._mkdirs(key)  # an implicit wire creates the missing folders
         self.files[key] = FileRec(data, T0, dict(metadata) if metadata else None)
         return PutResult(size=len(data))
 
@@ -347,7 +349,12 @@ class FakeStore:
             raise FakeExists(dst)
         if self.kind(dst) == "folder":
             raise FakeIsDir(dst)
+        self._implicit_parents(dst)
         self.files[dst] = self.files.pop(src)
+
+    def _implicit_parents(self, key: str) -> None:
+        if self.parents == "implicit":
+            self._mkdirs(key)
 
     def rename(self, src: str, dst: str, *, replace: bool) -> None:
         self._hit("rename", src)
@@ -359,6 +366,7 @@ class FakeStore:
             raise FakeIsDir(dst)
         if dst in self.files and not replace:
             raise FakeExists(dst)
+        self._implicit_parents(dst)
         self.files[dst] = self.files.pop(src)
 
     def copy(self, src: str, dst: str, *, overwrite: bool) -> None:
@@ -372,6 +380,7 @@ class FakeStore:
         if dst in self.files and not overwrite:
             raise FakeExists(dst)
         rec = self.files[src]
+        self._implicit_parents(dst)
         self.files[dst] = FileRec(rec.data, rec.modified_at, rec.metadata)
 
     def delete_tree(self, key: str) -> None:
@@ -667,6 +676,21 @@ def _async_optional(name: str) -> dict[str, Callable[..., Any]]:
 # --- the kernel under test, and how a cell calls it ---------------------------------
 
 
+def _backed(protocols: tuple[str, ...], *, put_is_atomic: bool, rename_replaces: bool) -> set[Capability]:
+    """The capabilities a driver presenting *protocols* can back, beyond the four basic ones."""
+    caps = {Capability.READ, Capability.WRITE, Capability.LIST, Capability.DELETE, Capability.USER_METADATA}
+    replaces = "rename" in protocols and rename_replaces
+    if put_is_atomic or "open_write" in protocols or replaces:
+        caps.add(Capability.ATOMIC_WRITE)
+    if "glob" in protocols:
+        caps.add(Capability.GLOB)
+    if "copy" in protocols:
+        caps.add(Capability.COPY)
+    if {"atomic_move", "rename", "copy"} & set(protocols):
+        caps.add(Capability.MOVE)
+    return caps
+
+
 def make_kernel(
     runtime: str,
     store: FakeStore | None = None,
@@ -682,7 +706,9 @@ def make_kernel(
     """A kernel of *runtime* over a fake driver presenting *protocols*.
 
     Defaults: every optional protocol but ``ensure_parents``' absence on a
-    store without explicit parents, the store's ``parents``.
+    store without explicit parents, the store's ``parents``, and the
+    capabilities those protocols back (``_backed``), as a well-formed driver
+    declares them; *caps*, when given, is declared exactly instead.
     """
     store = store or FakeStore()
     store.handles = []  # type: ignore[attr-defined]
@@ -693,7 +719,9 @@ def make_kernel(
     for proto in protocols:
         members.update(_SYNC_OPTIONAL[proto] if runtime == "sync" else _async_optional(proto))
     cls = type(f"Fake{runtime.title()}Driver", (base,), members)
-    capset = CapabilitySet(set(caps) or {Capability.READ, Capability.WRITE, Capability.LIST, Capability.DELETE})
+    capset = CapabilitySet(
+        set(caps) or _backed(protocols, put_is_atomic=put_is_atomic, rename_replaces=rename_replaces)
+    )
     driver = cls(
         store,
         name="fake",

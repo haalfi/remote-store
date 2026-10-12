@@ -747,6 +747,18 @@ def test_max_depth_bounds_a_recursive_listing(runtime: str, max_depth: int | Non
     assert keys_of(run.list_files("d", max_depth=max_depth)) == ["d/a"]
 
 
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("push_down", [False, True])
+def test_an_empty_folders_info_fails_closed_on_a_driver_with_folder_objects(runtime: str, push_down: bool) -> None:
+    # The stat after an empty aggregate is the determinant here, not an error-path probe.
+    store = FakeStore().add("e/")
+    protocols = ("remove_folder", "folder_stats") if push_down else ("remove_folder",)
+    run = make_kernel(runtime, store, protocols=protocols)
+    store.fault("stat", FakeDenied("stat denied"), key="e")
+    with pytest.raises(PermissionDenied, match="stat denied"):
+        run.get_folder_info("e")
+
+
 @pytest.mark.spec("BE-017")
 @pytest.mark.parametrize("push_down", [False, True])
 def test_folder_modified_at_is_the_latest_known_time(runtime: str, push_down: bool) -> None:
@@ -863,6 +875,32 @@ def test_write_atomic_takes_the_strongest_route_the_driver_presents(
     assert sorted(store.files) == ["a"]  # no temporary left behind
 
 
+@pytest.mark.spec("BE-010")
+@pytest.mark.spec("BE-024")
+def test_an_undeclared_capability_is_refused_though_the_driver_could(runtime: str) -> None:
+    # The declared capabilities decide (BE-010, BE-024), not the protocols behind them.
+    store = FakeStore().add("d/a.csv")
+    caps = (Capability.READ, Capability.WRITE, Capability.LIST, Capability.DELETE)
+    run = make_kernel(runtime, store, protocols=("remove_folder", "glob", "open_write"), caps=caps)
+    with pytest.raises(CapabilityNotSupported, match="glob"):
+        run.glob("d/*.csv")
+    with pytest.raises(CapabilityNotSupported, match="atomic"):
+        run.write_atomic("b", b"x")
+    assert run.store.calls == []
+
+
+@pytest.mark.spec("WR-010")
+@pytest.mark.parametrize("member", ["write", "write_atomic"])
+def test_metadata_without_user_metadata_is_refused_before_any_io(runtime: str, member: str) -> None:
+    caps = (Capability.READ, Capability.WRITE, Capability.LIST, Capability.DELETE, Capability.ATOMIC_WRITE)
+    run = make_kernel(runtime, FakeStore(), protocols=("remove_folder", "open_write"), caps=caps)
+    with pytest.raises(CapabilityNotSupported, match="metadata"):
+        getattr(run, member)("a", b"x", metadata={"k": "v"})
+    assert run.store.calls == []
+    getattr(run, member)("b", b"x", metadata={})  # the empty-mapping carve-out
+    assert "b" in run.store.files
+
+
 @pytest.mark.spec("BE-011")
 def test_write_atomic_without_a_route_is_capability_not_supported(runtime: str) -> None:
     run = make_kernel(runtime, FakeStore(), protocols=("remove_folder",))
@@ -898,8 +936,9 @@ def test_a_failed_put_of_the_temporary_removes_it(runtime: str) -> None:
     store = FakeStore().add("a", data=b"old")
     run = make_kernel(runtime, store, protocols=("remove_folder", "rename"))
     store.fault("put", FakeDown("upload lost"))
-    with pytest.raises(BackendUnavailable, match="upload lost"):
+    with pytest.raises(BackendUnavailable, match="upload lost") as caught:
         run.write_atomic("a", b"new", overwrite=True)
+    assert caught.value.path == "a"  # the caller's key, never the hidden temporary
     (temp,) = [k for p, k in store.calls if p == "put"]
     assert ("delete", temp) in store.calls  # a wire may leave a partial temporary
     assert store.files["a"].data == b"old"

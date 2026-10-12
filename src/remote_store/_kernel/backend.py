@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, BinaryIO, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability
-from remote_store._errors import CapabilityNotSupported, InvalidPath, NotFound
+from remote_store._errors import InvalidPath, NotFound
 from remote_store._kernel._model import Op
 from remote_store._kernel._sync.kernel import _KernelCore
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
@@ -75,16 +75,11 @@ class DriverBackend(_KernelCore, Backend):
         """A temporary promoted to *path* on exit: on the wire, or spooled then written atomically."""
         self._guard()
         key = self._write_key(path)
+        # The declared capability decides; construction guarantees a route behind it.
+        self._require(Capability.ATOMIC_WRITE, key, "cannot write atomically")
         if self._open_write is not None:
             return _HandleWriter(self, key, overwrite)
-        if self._driver.put_is_atomic or (self._rename is not None and self._rename.rename_replaces):
-            return _SpoolThenWrite(self, key, overwrite)
-        raise CapabilityNotSupported(
-            f"Backend '{self.name}' cannot write atomically",
-            path=key,
-            backend=self.name,
-            capability=Capability.ATOMIC_WRITE.value,
-        )
+        return _SpoolThenWrite(self, key, overwrite)
 
 
 class _RangeReader(io.RawIOBase):

@@ -719,6 +719,14 @@ Choices the decisions above left open, as built:
   `ensure_parents` is not refused; writes under a missing folder then fail on
   its wire. `move`, `copy` and `write_atomic` decide their means before
   `ensure_parents` runs, so a refused call creates no folders.
+- **Capabilities.** `glob`, `write_atomic` and `open_atomic` are refused by
+  the declared capability (`GLOB`, `ATOMIC_WRITE`), not by the protocols
+  behind it, and a write with a non-empty `metadata` by `USER_METADATA`
+  (WR-010's strict gate), all before any I/O; `copy` and `move`, which spec
+  003 gives no capability clause, go by their means.
+- **`get_folder_info` on an empty aggregate** stats the key: fail-open on
+  `parents == "none"`, where it is the error path's type probe, and fail-closed
+  with folder objects, where an empty folder exists and the stat decides.
 - **Wrong-type probes by namespace.** A hierarchical driver's `stat` answers
   alone; on a flat driver a `stat` miss is followed by one
   `list_page(key, delimiter="/", limit=1)`, RFC-0017's "one `stat` or one
@@ -738,6 +746,8 @@ Choices the decisions above left open, as built:
   `_ErrorMappingStream` does today (SIO-012). A first draft mapped every
   `Exception` on the async side only.
 - **Driver obligations the kernel relies on instead of probing:**
+  `SupportsDeleteTree.delete_tree` refuses a link at `key` without traversing
+  it, since the kernel calls it with no probe before it (BE-031);
   `SupportsRename.rename`, `SupportsCopy.copy` and `SupportsAtomicMove.move`
   refuse a folder at `dst` whatever `replace` or `overwrite` is (the
   temp-and-rename write promotes without a `stat` when `overwrite`; on a flat

@@ -222,7 +222,9 @@ class AsyncSupportsDeleteTree(Protocol):
         """Remove the folder at *key* and everything under it.
 
         Where folder objects exist (``parents`` is not ``"none"``), refuses a
-        file or an absent key without removing anything. With
+        file, a link (a non-folder entry, never traversed) or an absent key
+        without removing anything, and removes a link below *key* as an entry
+        without following it. With
         ``parents == "none"`` it removes what lies under the prefix ``key/``
         and leaves a file named by *key* itself.
         """
