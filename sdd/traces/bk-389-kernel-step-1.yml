@@ -30,6 +30,8 @@ co_shipped_items:
   - BK-399
 decisions:
   - sdd/decisions/928fc3d9-dfbb-4d87-b779-7281d8006272.jsonl
+  - sdd/decisions/161fd42b-6d1f-4889-be67-61ba9eea371b.jsonl
+  - sdd/decisions/e400c054-34a8-4b6a-9223-19ba7df58e5c.jsonl
 # The kernel PR's orient (2026-10-11); the planning PRs predate the key.
 orient:
   - items: [BK-399]
@@ -540,3 +542,31 @@ phases:
         section: "14 mutations at load-bearing points"
         read_type: verify
         extract: "13 killed; the survivor was a dead branch inherited from the model (on_way in _df_stands, unreachable since the walk tolerates NotFound first), removed"
+  - id: enumerate
+    name: The repeat-site condition enumerated (kernel PR, after review round 7)
+    steps:
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "As landed"
+        read_type: gate
+        extract: "the write-target, capability and driver-obligation bullets round 7 refuted; four of them became false and were rewritten with the fix"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 order and flat exemption; BE-010; BE-011; BE-018; BE-019; BE-021 roster and error path; BE-030; BE-031"
+        read_type: gate
+        extract: "BE-008 exempts 'no native directory concept' and BE-021's roster binds 'hierarchical backends'; the two disagree only on (hierarchical, none), which keyed the namespace decision"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D1 Driver attributes (line 142)"
+        read_type: reference
+        extract: "flat drivers are parents none; Graph, HNS, Local and SFTP hierarchical: no driver is flat with folder objects, so construction can refuse it"
+      - file: src/remote_store/backends/_local.py
+        section: "read (lines 239 to 245)"
+        read_type: verify
+        extract: "Windows raises PermissionError for a directory and Local re-checks is_dir(): the wire shape the kernel's probe set must include"
+      - file: tests/_kernel/_fake.py
+        section: "_write_refusal, _flat_stat"
+        read_type: verify
+        extract: "the fake's flat stat hid folder objects, so flat+explicit modelled a driver no clause allows; round 7's first finding was measured on it"
+        outcome: misleading
+      - file: tests/_kernel/test_condition_space.py
+        section: "first run, at b9351b5's kernel"
+        read_type: verify
+        extract: "1600 of 7680 cells failed before the fix; the fix's first draft failed 168, an absent source overridden by a destination folder, against BE-018's order, corrected before the commit"

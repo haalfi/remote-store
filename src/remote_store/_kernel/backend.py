@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, BinaryIO, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability
-from remote_store._errors import InvalidPath, NotFound
+from remote_store._errors import InvalidPath, NotFound, RemoteStoreError
 from remote_store._kernel._model import Op
 from remote_store._kernel._sync.kernel import _KernelCore
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
     from types import TracebackType
 
-    from remote_store._errors import RemoteStoreError
     from remote_store._kernel._sync.driver import SupportsRangeRead, WriteHandle
 
 _SPOOL_MAX = 8 * 1024 * 1024
@@ -167,8 +166,12 @@ class _HandleWriter:
         core = self._core
         assert core._open_write is not None
         core._prepare_write(Op.OPEN_ATOMIC, self._key)
-        with core._choke(Op.OPEN_ATOMIC, self._key):
-            self._handle = core._open_write.open_write(self._key, overwrite=self._overwrite, metadata=None)
+        try:
+            with core._choke(Op.OPEN_ATOMIC, self._key):
+                self._handle = core._open_write.open_write(self._key, overwrite=self._overwrite, metadata=None)
+        except RemoteStoreError as err:
+            core._target_is_wrong_type(err, Op.OPEN_ATOMIC, self._key)
+            raise
         return cast("BinaryIO", _HandleStream(core, self._handle, self._key))
 
     def __exit__(
@@ -186,9 +189,11 @@ class _HandleWriter:
         try:
             with self._core._choke(Op.OPEN_ATOMIC, self._key):
                 handle.commit()
-        except BaseException:
+        except BaseException as err:
             with contextlib.suppress(Exception):
                 handle.abort()
+            if isinstance(err, RemoteStoreError):
+                self._core._target_is_wrong_type(err, Op.OPEN_ATOMIC, self._key)
             raise
 
 

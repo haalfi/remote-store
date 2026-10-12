@@ -1372,18 +1372,53 @@ total** below.
 **Gates around the pipeline.** A declared-capability gate comes before step 1,
 closed or not, since capability data is not a live operation: `GLOB` for
 `glob` (the pattern rule below), `ATOMIC_WRITE` for `write_atomic` and
-`open_atomic` (BE-010), each refused with `CapabilityNotSupported` by the
-declaration, whatever protocols the driver presents. WR-010's metadata gate on
-`write` and `write_atomic` comes after step 4 and before step 5, so the root
+`open_atomic` (BE-011), `MOVE` for `move` and `COPY` for `copy`, a
+self-operation included, each refused with `CapabilityNotSupported` by the
+declaration, whatever protocols the driver presents. The kernel refuses to
+construct over a declaration its protocols cannot back. WR-010's metadata gate
+on `write` and `write_atomic` comes after step 4 and before step 5, so the root
 refusal stays BE-008's first precondition and the gate stays ahead of any I/O.
+That ranks it ahead of BE-008's type and overwrite checks, which on the kernel
+are answered by the driver's write itself, so `write(folder, metadata=…)` on a
+class without `USER_METADATA` answers `CapabilityNotSupported`, where
+`BackendContract.dfy`'s `Write` requires `InvalidPath` whatever the metadata.
+Matching the model would cost every write carrying metadata a `stat`, so a
+class on the kernel departs from it in that state; reconciling the model is
+BK-394's, with the first class on the kernel.
 
-**A write target on a flat namespace is checked with `stat` alone.** Where a
-folder matters (the probes, a file-shaped source, the error-path wrong-type
-checks), a flat driver's `stat` miss is followed by one `list_page(limit=1)`,
-since a flat `stat` cannot see a prefix. The target of `write`, `write_atomic`,
-`open_atomic` and the `move`/`copy` destination is not: BE-008's flat-namespace
-exemption skips the type-conflict check there, so a key that shadows a prefix
-is written.
+**A key a call needs to be a file.** `namespace` decides what a driver's wire
+can hold: on `"flat"` a key may shadow a prefix or sit under a file and `stat`
+cannot see a prefix; on `"hierarchical"` neither can happen. On the kernel,
+BE-008's "no native directory concept" is the flat namespace, and the kernel
+refuses to construct over a flat driver with folder objects (`parents` other
+than `"none"`), whose `stat` could not see them. The answers, all on the error
+path, so a call that finds its file probes nothing (BE-021):
+
+- *A file-shaped key* (`read`, `read_bytes`, `read_seekable`, `delete`,
+  `get_file_info`): a driver refusal typed `NotFound`, `AlreadyExists`,
+  `PermissionDenied` or untyped gets one fail-open probe of the key (`stat`,
+  and on a flat driver after a miss one `list_page(limit=1)`); a folder there
+  answers `InvalidPath`. `get_file_info` and a ranged `read_seekable` take
+  that probe as their determinant instead.
+- *A write target* (`write`, `write_atomic`, `open_atomic`, the `move`/`copy`
+  destination) on a hierarchical namespace: the driver's write primitives
+  (`put`, `open_write` and its commit, `rename`, `copy`, `move`) refuse a
+  folder at the key, or a file above it, without changing anything, in
+  whatever shape the wire has (EISDIR, EEXIST from an exclusive create, a
+  Windows access denial, ENOENT); a refusal in the set above gets one
+  fail-open `stat`, and a folder answers `InvalidPath` naming the target. Where
+  the kernel stats the target first (`write_atomic` by temp and rename without
+  `overwrite`, `move` by rename) that `stat` is the determinant. On a flat
+  namespace nothing is checked: a key that shadows a prefix is written.
+- *Two keys* (`move`, `copy`), in BE-018's order: a refusal in the set above,
+  or an `InvalidPath`, gets a fail-open probe of the source, whose absence
+  answers `NotFound` and whose folder answers `InvalidPath`, both naming the
+  source; then the destination as a write target. Otherwise the refusal
+  stands, naming the destination when it is an `AlreadyExists`, or a
+  `NotFound` or `InvalidPath` with the source confirmed a file.
+
+Any other refusal (`BackendUnavailable`, `ResourceLocked`, `DirectoryNotEmpty`)
+says nothing about the key and passes through unprobed.
 
 For a key passing step 2, a canonical `""` is exactly BE-029's "addresses the
 root" predicate, so every operation gets the wide predicate: the write side and
@@ -1435,7 +1470,10 @@ canonical `""` names the root, a folder, and yields nothing. Worked examples:
 `"d\\*.csv"` raise `InvalidPath`.
 
 **Conformance:** fake-driver kernel cells in `tests/_kernel/`, run against both
-runtimes; Memory's cells arrive with its migration.
+runtimes; Memory's cells arrive with its migration. The file-key, write-target,
+two-key and capability-gate rules are generated as cell products in
+`tests/_kernel/test_condition_space.py`, with an oracle written from this
+clause.
 
 ### BE-031: `delete_folder` on the Kernel
 
@@ -1465,6 +1503,10 @@ error-path probes, in one place.
 alone calls both with `False`, a view in which a link (dangling or not, or a
 Windows junction) is a non-folder entry. So a link at `key` answers
 `InvalidPath`, and a link below it is deleted as an entry, never traversed.
+The walk lists `key` with no `stat` first, so the view is a driver obligation:
+`list_page` with `follow_links=False` refuses a link at `prefix` or lists
+nothing, never its target's entries, and `delete` on a link removes the link,
+never its target.
 
 **The probe rule.** A refusal that is a typed `NotFound` or an untyped
 `RemoteStoreError` gets the error-path probes: one `stat`, then, for a folder

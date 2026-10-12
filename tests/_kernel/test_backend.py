@@ -175,6 +175,46 @@ def test_a_stream_whose_failure_condemned_the_connection_is_not_closed_again() -
     assert ("stream.close", "f") in store.calls
 
 
+SYNC_ONLY = {
+    "read_seekable-range": (("remove_folder", "range"), lambda k, r: r.kernel.read_seekable(k)),
+    "read_seekable-spool": (("remove_folder",), lambda k, r: r.kernel.read_seekable(k)),
+    "open_atomic-handle": (("remove_folder", "open_write"), lambda k, r: r.kernel.open_atomic(k).__enter__()),
+    "open_atomic-spool": (("remove_folder", "rename"), lambda k, r: _spool_and_exit(r, k)),
+}
+REFUSED = ["/", "/./", "/f", "d/../f", "..", "f\0", "d\\f", "\\"]
+
+
+def _spool_and_exit(run: object, key: str) -> None:
+    with run.kernel.open_atomic(key) as handle:  # type: ignore[attr-defined]
+        handle.write(b"x")
+
+
+@pytest.mark.spec("BE-030")
+@pytest.mark.parametrize("key", REFUSED)
+@pytest.mark.parametrize("member", sorted(SYNC_ONLY))
+def test_a_refused_key_never_reaches_the_driver_on_the_sync_only_members(member: str, key: str) -> None:
+    protocols, call = SYNC_ONLY[member]
+    run = make_kernel("sync", _store(), protocols=protocols)
+    run.store.calls.clear()
+    with pytest.raises(InvalidPath):
+        call(key, run)
+    assert run.store.calls == []
+
+
+@pytest.mark.spec("BE-020")
+@pytest.mark.spec("BE-030")
+@pytest.mark.parametrize("key", ["f", "", "/f"])
+@pytest.mark.parametrize("member", sorted(SYNC_ONLY))
+def test_a_terminal_close_ranks_first_on_the_sync_only_members(member: str, key: str) -> None:
+    protocols, call = SYNC_ONLY[member]
+    run = make_kernel("sync", _store(), protocols=protocols, close_is_terminal=True)
+    run.close()
+    run.store.calls.clear()
+    with pytest.raises(BackendUnavailable):
+        call(key, run)
+    assert run.store.calls == []
+
+
 @pytest.mark.spec("BE-011")
 @pytest.mark.parametrize("key", ["a", "", "/x"])
 def test_open_atomic_without_a_route_is_capability_not_supported(key: str) -> None:

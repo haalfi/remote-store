@@ -744,17 +744,6 @@ def test_a_flat_destination_may_shadow_a_prefix(runtime: str, protocols: tuple[s
     assert sorted(k for k in store.files if "/" in k) == ["k/x", "p/y", "w/z"]
 
 
-@pytest.mark.spec("BE-018")
-@pytest.mark.spec("BE-010")
-def test_a_new_key_on_a_flat_driver_with_folder_objects_is_written(runtime: str) -> None:
-    # Its listing 404s an absent prefix; the destination check must not ask it.
-    store = FakeStore(parents="explicit").add("s", data=b"S")
-    run = make_kernel(runtime, store, namespace="flat", protocols=("remove_folder", "rename"))
-    run.write_atomic("new", b"N")
-    run.move("s", "moved")
-    assert sorted(store.files) == ["moved", "new"]
-
-
 @pytest.mark.spec("BE-021")
 def test_a_hit_spends_no_probe(runtime: str) -> None:
     run = _kernel(runtime)
@@ -912,10 +901,10 @@ def test_write_atomic_takes_the_strongest_route_the_driver_presents(
     assert sorted(store.files) == ["a"]  # no temporary left behind
 
 
-@pytest.mark.spec("BE-010")
+@pytest.mark.spec("BE-011")
 @pytest.mark.spec("BE-024")
 def test_an_undeclared_capability_is_refused_though_the_driver_could(runtime: str) -> None:
-    # The declared capabilities decide (BE-010, BE-024), not the protocols behind them.
+    # The declared capabilities decide (BE-011, BE-024), not the protocols behind them.
     store = FakeStore().add("d/a.csv")
     caps = (Capability.READ, Capability.WRITE, Capability.LIST, Capability.DELETE)
     run = make_kernel(runtime, store, protocols=("remove_folder", "glob", "open_write"), caps=caps)
@@ -927,7 +916,7 @@ def test_an_undeclared_capability_is_refused_though_the_driver_could(runtime: st
 
 
 @pytest.mark.spec("BE-030")
-@pytest.mark.spec("BE-010")
+@pytest.mark.spec("BE-011")
 @pytest.mark.parametrize("key", ["a", "", "/x", "d/../x"])
 def test_an_undeclared_atomic_write_outranks_the_closed_guard_and_the_key_rule(runtime: str, key: str) -> None:
     # Capability data is not a live operation: refused first, as glob's is.
@@ -1085,7 +1074,7 @@ def test_a_failed_restore_is_logged_with_where_the_old_file_lies(
 )
 def test_a_destination_refusal_names_the_destination(runtime: str, member: str, protocols: str) -> None:
     store = FakeStore().add("s", data=b"S").add("t", data=b"T").add("dir/x")
-    caps = (Capability.READ, Capability.WRITE, Capability.COPY) if protocols == "copy" else ()
+    caps = (Capability.READ, Capability.WRITE, Capability.COPY, Capability.MOVE) if protocols == "copy" else ()
     run = make_kernel(runtime, store, protocols=("remove_folder", protocols), caps=caps)
     with pytest.raises(AlreadyExists) as exists:
         getattr(run, member)("s", "t")

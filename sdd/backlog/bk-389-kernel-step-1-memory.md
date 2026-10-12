@@ -711,7 +711,8 @@ Choices the decisions above left open, as built:
   `get_range` returns `bytes` and may return fewer than asked. `copy`,
   `SupportsAtomicMove.move` and `open_write` take `overwrite`;
   `SupportsRename` declares `rename_replaces`.
-- **Construction** refuses, with `ValueError`, a driver with folder objects and
+- **Construction** refuses, with `ValueError`, a flat driver with folder objects
+  (added 2026-10-12, § Condition space); a driver with folder objects and
   no `remove_folder`; a declared capability its protocols cannot back, for each
   of `ATOMIC_MOVE`, `ATOMIC_WRITE`, `GLOB`, `COPY` and `MOVE` (the checks in
   `_check_construction`); and a class whose own `close_is_terminal` differs
@@ -719,12 +720,13 @@ Choices the decisions above left open, as built:
   `ensure_parents` is not refused; writes under a missing folder then fail on
   its wire. `move`, `copy` and `write_atomic` decide their means before
   `ensure_parents` runs, so a refused call creates no folders.
-- **Capabilities.** `glob`, `write_atomic` and `open_atomic` are refused by
-  the declared capability (`GLOB`, `ATOMIC_WRITE`), not by the protocols
-  behind it, ahead of the closed guard and the key rule (BE-030), and a
-  write with a non-empty `metadata` by `USER_METADATA` (WR-010's strict
-  gate) after the root refusal, all before any I/O; `copy` and `move`, which spec
-  003 gives no capability clause, go by their means.
+- **Capabilities.** `glob`, `write_atomic`, `open_atomic`, `move` and `copy`
+  are refused by the declared capability (`GLOB`, `ATOMIC_WRITE`, `MOVE`,
+  `COPY`), not by the protocols behind it, ahead of the closed guard and the
+  key rule (BE-030), and a write with a non-empty `metadata` by
+  `USER_METADATA` (WR-010's strict gate) after the root refusal, all before
+  any I/O. `move` and `copy` went by their means until 2026-10-12
+  (§ Condition space).
 - **`get_folder_info` on an empty aggregate** stats the key: fail-open on
   `parents == "none"`, where it is the error path's type probe, and fail-closed
   with folder objects, where an empty folder exists and the stat decides.
@@ -732,10 +734,10 @@ Choices the decisions above left open, as built:
   alone; on a flat driver a `stat` miss is followed by one
   `list_page(key, delimiter="/", limit=1)`, RFC-0017's "one `stat` or one
   `list_page(limit=1)`", for every probe that must see a folder (`exists`,
-  `is_folder`, `get_file_info`, the error-path probes, `move`'s source
-  check); `is_file` stays one `stat`, and so does every write target (`write`,
-  `write_atomic`, `open_atomic`, the `move`/`copy` destination), where BE-008's
-  flat exemption lets a key shadow a prefix (BE-030).
+  `is_folder`, `get_file_info`, the file-key probes, `move`'s source
+  check); `is_file` stays one `stat`, and so does every write target, which
+  is probed only on a hierarchical namespace. Which refusals are probed, and
+  for which keys: § Condition space.
 - **Absent container.** The kernel reads it as `NotFound` for every `Op` but
   `write`, `write_atomic`, `open_atomic`, `probe`, the identity scopes and
   `close`, which keep `classify`'s answer; an error the driver raised
@@ -751,16 +753,20 @@ Choices the decisions above left open, as built:
 - **Driver obligations the kernel relies on instead of probing:**
   `SupportsDeleteTree.delete_tree` refuses a link at `key` without traversing
   it, since the kernel calls it with no probe before it (BE-031);
-  with folder objects, `SupportsRename.rename`, `SupportsCopy.copy` and
-  `SupportsAtomicMove.move` refuse a folder at `dst` whatever `replace` or
-  `overwrite` is (the temp-and-rename write promotes without a `stat` when
-  `overwrite`), and the kernel then names `dst` in the error; on a flat wire
-  they write a key that shadows a prefix, BE-008's flat exemption; `connection_dead` is pure inspection, passed as the sync
-  stream's `is_fatal` (SIO-010).
+  `list_page(follow_links=False)` never lists a link's target, and `delete`
+  removes a link itself, since the walk lists `key` with no `stat` first
+  (BE-031, added 2026-10-12); on a hierarchical namespace every write
+  primitive refuses a folder at its key, or a file above it, in any shape,
+  which the kernel types (§ Condition space); on a flat one they write a key
+  that shadows a prefix, BE-008's flat exemption; `connection_dead` is pure
+  inspection, passed as the sync stream's `is_fatal` (SIO-010).
 - **`delete_folder` departs from the formal model in one state:** a walk
   over a stored key BE-030 omits answers `DirectoryNotEmpty`, where
   `BackendContract.dfy`'s `DeleteFolder` requires a recursive call to
-  succeed; BE-031 says so, and BK-394 reconciles the model.
+  succeed; BE-031 says so, and BK-394 reconciles the model. **`write` departs
+  in one more:** WR-010's gate outranks the type and overwrite checks the
+  driver's write answers, where `Write` requires `InvalidPath` and
+  `AlreadyExists` whatever the metadata; BE-030 says so (added 2026-10-12).
 - **`unasync` is pinned in the `dev` extra**, not in the hatch environment
   alone as the evidence above (2026-10-02) proposed: CI's test jobs install
   `.[dev]`, not the hatch env, and import the generator's tests, so an
@@ -768,3 +774,87 @@ Choices the decisions above left open, as built:
 - **`_flat_ns._addressable_segments` is restated, not imported:** importing it
   runs `remote_store.backends.__init__`, which imports every backend, and the
   backends will subclass the kernel.
+
+## Condition space (2026-10-12, the kernel PR's review)
+
+**Why it is enumerated.** The kernel PR's review refuted one condition four
+times, in rounds 3, 5, 6 and 7: how a folder at a key a call needs to be a file
+is detected and typed, and by whom (the kernel's probes or a driver
+obligation). Each narrowing was argued from one reading and refuted by a state
+it did not consider, so the maintainer had the space written down once and
+generated as a test before anything else was fixed (`/ship`'s repeat-site
+check). The rule is BE-030's **A key a call needs to be a file**. This section
+holds the axes and the decisions, and
+`tests/_kernel/test_condition_space.py` holds the product, whose oracle is
+written from the rule.
+
+**Decisions** (the maintainer through the interview, the recommended option
+each time):
+
+1. A flat driver with folder objects is refused at construction. Its `stat`
+   cannot see its own folder objects. No planned driver is one: RFC-0017 D1
+   lists flat drivers as `parents == "none"`, and Graph, HNS, Local and SFTP
+   as hierarchical.
+2. `namespace`, not `parents`, keys the write-target check. On the kernel,
+   BE-008's "no native directory concept" is the flat namespace. Keyed on
+   `parents == "none"`, a write onto a folder on (hierarchical, `none`) gave
+   two answers for one state: `InvalidPath` on the routes that stat first,
+   the wire's raw refusal on the others. `parents` governs folder objects
+   only (`remove_folder`, `delete_tree`, `ensure_parents`, empty folders).
+3. The kernel types the refusal: one fail-open probe after any refusal typed
+   `NotFound`, `AlreadyExists`, `PermissionDenied` or untyped. A driver
+   refuses a folder in its wire's own shape and is not asked to type it,
+   which would put an `is_dir()` re-check like `_local.py`'s in the driver,
+   against D1. A pre-write `stat` was rejected: it puts a round trip on the
+   hot path, against BE-021.
+4. WR-010's gate keeps its place, and BE-030 records the departure from
+   `BackendContract.dfy`'s `Write`. BK-394 reconciles the model.
+5. `move` and `copy` are gated on the declared `MOVE` and `COPY`, ahead of
+   the closed guard, as `write_atomic` is (the maintainer's round-6 decision
+   for that gate).
+
+**Axes**, each a parameter of the product, which runs every cell in both
+runtimes and counts them from `pytest --collect-only -q` on the file:
+
+| Product | Axes | Cells |
+|---|---|---|
+| A write onto each state | route (`write`; `write_atomic` by atomic put, wire temporary, temp and rename; `open_atomic` by wire temporary, by spool, sync only) × driver (flat/`none`, hierarchical/`none`, `implicit`, `explicit`) × target (absent, file, folder, under a file) × `overwrite` × the wire's folder refusal (EISDIR, EEXIST, EACCES, ENOENT, untyped, a dead service), the last only where a hierarchical wire meets a folder | 620 |
+| A transfer between each pair of states | route (`move` by atomic move, replacing rename, displace and restore, copy then delete; `copy`) × driver × source (file, absent, folder) × destination (as above) × `overwrite` × the wire's key order (source or destination first) × folder refusal, where a folder is met | 6320 |
+| A file-shaped read on each state | call (`read`, `read_bytes`, `read_seekable` ranged and spooled, `delete` with and without `missing_ok`, `get_file_info`) × driver × state × folder refusal at a folder | 432 |
+| Each capability gate | op (`glob`, `write_atomic`, `open_atomic`, `move`, `copy`, a `write` and a `write_atomic` carrying metadata) × declared × backed by protocols × posture (open, terminal-closed) × key (valid, root, refused, and self for `move`/`copy`) | 296 |
+| Construction | `namespace` × `parents` | 12 |
+
+**Who decides each answer.** The driver's obligations: refuse, in any shape,
+a folder or a file above a write's key on a hierarchical namespace, and
+change nothing. The kernel's determinants, before the wire is reached: the
+source check where it runs first (a rename route, or `ensure_parents`
+present), the destination `stat` of `move` by rename, and `write_atomic` by
+temp and rename without `overwrite`. The kernel's error-path probes decide
+every other answer. A dead service, a lock and a non-empty folder pass
+through, since they say nothing about the key.
+
+**What the product found against the kernel at `b9351b5`** (the review's
+last head; this section's fake, `pytest --junitxml` grouped by assertion).
+1600 of its 7680 cells failed:
+
+- writes, 180: a folder at the target answered in the wire's shape
+  (`AlreadyExists`, `PermissionDenied`, untyped, 51 each) where it should be
+  `InvalidPath`, and `NotFound` on the routes with no probe at all (the wire
+  temporary's commit, the temp-and-rename promote, 27);
+- transfers, 1248: a folder at either key answered in the wire's shape
+  (`AlreadyExists` 306, `PermissionDenied` 318, untyped 318), and a
+  destination folder refused as ENOENT answered `NotFound` (72); with folders
+  at both keys, the `InvalidPath` named the destination (96); and on a
+  destination-first wire an absent source answered the destination's refusal
+  (`InvalidPath` 72, `AlreadyExists` 18, `PermissionDenied` 24, untyped 24),
+  where BE-018 ranks the source's `NotFound` first;
+- reads, 108: a folder answered `AlreadyExists`, `PermissionDenied` or
+  untyped (36 each), since only a `NotFound` was probed;
+- capability gates, 60: `move` and `copy` with the capability undeclared,
+  presented or not, answered by the call, the closed guard or the key rule
+  where `CapabilityNotSupported` ranks first;
+- construction, 4: flat with folder objects built.
+
+The fix's first draft failed 168 cells, all one shape: an absent source's
+`NotFound` overridden by a folder at the destination, against BE-018's order.
+It was corrected before the commit.

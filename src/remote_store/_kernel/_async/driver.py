@@ -34,6 +34,15 @@ class AsyncDriver(Protocol):
     Two more attributes are optional and read with defaults: ``stream_catch``,
     the exception types a stream from ``get`` raises beyond ``OSError`` and
     ``EOFError``, and ``size_probe``, a ``SEEK_END`` resolver for that stream.
+
+    ``namespace`` says what the wire can hold and ``stat`` can see: on
+    ``"flat"`` a key may shadow a prefix or sit under a file, and ``stat`` is
+    blind to a prefix; on ``"hierarchical"`` neither can happen, so every
+    write primitive refuses a folder at its key, or a file above it, without
+    changing anything, in whatever shape the wire has; the kernel types the
+    refusal. ``parents`` says whether folders are objects. A flat driver with
+    folder objects is refused at construction, since its ``stat`` could not
+    see them.
     """
 
     name: str
@@ -47,9 +56,10 @@ class AsyncDriver(Protocol):
         """The node at *key*, file or folder, or ``None`` when absent.
 
         On a flat wire it may be a lookup of the key alone, blind to a prefix:
-        where a folder matters (a probe, a source, a wrong-type check) the
+        where a folder matters (a probe, a file-shaped key, a source) the
         kernel finds one there with one ``list_page(limit=1)``; at a write
         target it asks ``stat`` alone, since a flat key may shadow a prefix.
+        With folder objects it returns the folder object at *key*.
 
         ``follow_links=False`` is ``delete_folder``'s view: a link is then a
         non-folder entry, whatever it points to.
@@ -72,7 +82,7 @@ class AsyncDriver(Protocol):
         ...
 
     async def delete(self, key: str) -> None:
-        """Remove the file at *key*."""
+        """Remove the file at *key*; a link there is removed itself, never its target."""
         ...
 
     async def list_page(
@@ -89,6 +99,12 @@ class AsyncDriver(Protocol):
         With ``delimiter="/"`` the page holds the immediate files and the
         immediate subfolders as ``prefixes``; with ``None`` it holds every file
         under *prefix*, and the next page is reached through ``cursor``.
+
+        ``follow_links=False`` is ``delete_folder``'s view: a link is a
+        non-folder entry, listed as one and never descended into, and a link
+        at *prefix* itself is no folder, so the call refuses it or lists
+        nothing, never its target's entries. ``delete_folder`` deletes what
+        this view lists, with no ``stat`` before the listing.
         """
         ...
 
@@ -181,9 +197,9 @@ class AsyncSupportsAtomicMove(Protocol):
     async def move(self, src: str, dst: str, *, overwrite: bool) -> None:
         """Move the file *src* to *dst*.
 
-        With folder objects, refuses a folder at *dst*, *overwrite* or not,
-        without changing anything. On a flat wire a key that shadows a prefix
-        is written: the flat namespace skips the type-conflict check.
+        On a hierarchical namespace, refuses a folder at *dst*, *overwrite* or
+        not, without changing anything. On a flat one a key that shadows a
+        prefix is written: the flat namespace skips the type-conflict check.
         """
         ...
 
@@ -197,11 +213,11 @@ class AsyncSupportsRename(Protocol):
     async def rename(self, src: str, dst: str, *, replace: bool) -> None:
         """Rename *src* to *dst*, replacing a file there only when *replace*.
 
-        With folder objects, refuses a folder at *dst*, *replace* or not,
-        without changing anything, as ``rename(2)`` and ``os.replace`` do: the
-        kernel's temp-and-rename write relies on it rather than probing first.
-        On a flat wire a key that shadows a prefix is written: the flat
-        namespace skips the type-conflict check.
+        On a hierarchical namespace, refuses a folder at *dst*, *replace* or
+        not, without changing anything, as ``rename(2)`` and ``os.replace``
+        do: the kernel's temp-and-rename write relies on it rather than
+        probing first. On a flat one a key that shadows a prefix is written:
+        the flat namespace skips the type-conflict check.
         """
         ...
 
@@ -213,9 +229,9 @@ class AsyncSupportsCopy(Protocol):
     async def copy(self, src: str, dst: str, *, overwrite: bool) -> None:
         """Copy the file *src* to *dst*.
 
-        With folder objects, refuses a folder at *dst*, *overwrite* or not,
-        without changing anything. On a flat wire a key that shadows a prefix
-        is written: the flat namespace skips the type-conflict check.
+        On a hierarchical namespace, refuses a folder at *dst*, *overwrite* or
+        not, without changing anything. On a flat one a key that shadows a
+        prefix is written: the flat namespace skips the type-conflict check.
         """
         ...
 

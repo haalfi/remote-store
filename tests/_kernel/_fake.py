@@ -135,10 +135,22 @@ class FakeStore:
     ``"explicit"`` refuses it. ``"none"`` derives folders from keys. ``links`` maps a key to the target
     key; a link resolves through it with ``follow_links``, and is a
     non-folder entry without it.
+
+    ``namespace`` is set by ``make_kernel`` from the driver's. A hierarchical
+    wire cannot hold a file where a folder is, nor under a file, so its write
+    primitives refuse both; a flat one writes either (BE-008's exemption).
+    ``folder_refusal``, when set, is the native shape every primitive raises
+    at a folder where it needs a file (a wire's EEXIST, Windows EACCES, an
+    unrecognised code); unset, writes raise ``FakeIsDir`` and reads
+    ``FakeMissing``. ``dst_first`` makes the two-key primitives check the
+    destination before the source.
     """
 
     def __init__(self, *, parents: str = "explicit", page_size: int = 1000) -> None:
         self.parents = parents
+        self.namespace = "hierarchical"
+        self.folder_refusal: type[FakeWireError] | None = None
+        self.dst_first = False
         self.files: dict[str, FileRec] = {}
         self.folders: set[str] = set()
         self.links: dict[str, str] = {}
@@ -254,26 +266,41 @@ class FakeStore:
             return None
         return self._entry(key, follow_links)
 
+    def _not_a_file(self, key: str) -> FakeWireError:
+        """What a read, a delete or a two-key source raises for a key that is no file."""
+        if self.folder_refusal is not None and not self._under_file(key) and self.kind(key) == "folder":
+            return self.folder_refusal(key)
+        return FakeMissing(key)
+
     def get(self, key: str) -> bytes:
         self._hit("get", key)
         target = self._resolve(key, True)
         if target not in self.files:
-            raise FakeMissing(key)
+            raise self._not_a_file(key)
         return self.files[target].data
 
     def _write_refusal(self, key: str) -> FakeWireError | None:
-        """What a wire with folder objects refuses at a write's target.
+        """What a hierarchical wire refuses at a write's target: a folder, or a file above it.
 
-        A flat wire (``parents == "none"``) refuses neither: BE-008's flat
-        exemption, so a key may shadow a prefix or sit under a file.
+        A flat wire refuses neither: BE-008's flat exemption, so a key may
+        shadow a prefix or sit under a file.
         """
-        if self.parents == "none":
+        if self.namespace == "flat":
             return None
         if self._under_file(key):
             return FakeParentIsFile(key)
         if self.kind(key) == "folder":
-            return FakeIsDir(key)
+            return (self.folder_refusal or FakeIsDir)(key)
         return None
+
+    def _transfer_refusal(self, src: str, dst: str, overwrite: bool) -> FakeWireError | None:
+        """A two-key primitive's checks, in the wire's order (``dst_first``)."""
+        src_refusal = None if src in self.files else self._not_a_file(src)
+        dst_refusal = self._write_refusal(dst)
+        if dst_refusal is None and dst in self.files and not overwrite:
+            dst_refusal = FakeExists(dst)
+        first, second = (dst_refusal, src_refusal) if self.dst_first else (src_refusal, dst_refusal)
+        return first or second
 
     def put(self, key: str, data: bytes, *, overwrite: bool, metadata: Any) -> PutResult:
         self._hit("put", key)
@@ -293,7 +320,7 @@ class FakeStore:
             del self.links[key]
             return
         if key not in self.files:
-            raise FakeMissing(key)
+            raise self._not_a_file(key)
         del self.files[key]
 
     def list_page(
@@ -353,12 +380,8 @@ class FakeStore:
 
     def move(self, src: str, dst: str, *, overwrite: bool) -> None:
         self._hit("move", src)
-        if src not in self.files:
-            raise FakeMissing(src)
-        if (refusal := self._write_refusal(dst)) is not None:  # SupportsAtomicMove's obligation
+        if (refusal := self._transfer_refusal(src, dst, overwrite)) is not None:  # SupportsAtomicMove's obligation
             raise refusal
-        if dst in self.files and not overwrite:
-            raise FakeExists(dst)
         self._implicit_parents(dst)
         self.files[dst] = self.files.pop(src)
 
@@ -368,24 +391,16 @@ class FakeStore:
 
     def rename(self, src: str, dst: str, *, replace: bool) -> None:
         self._hit("rename", src)
-        if src not in self.files:
-            raise FakeMissing(src)
         # SupportsRename's obligation, as rename(2) and os.replace refuse a folder.
-        if (refusal := self._write_refusal(dst)) is not None:
+        if (refusal := self._transfer_refusal(src, dst, replace)) is not None:
             raise refusal
-        if dst in self.files and not replace:
-            raise FakeExists(dst)
         self._implicit_parents(dst)
         self.files[dst] = self.files.pop(src)
 
     def copy(self, src: str, dst: str, *, overwrite: bool) -> None:
         self._hit("copy", src)
-        if src not in self.files:
-            raise FakeMissing(src)
-        if (refusal := self._write_refusal(dst)) is not None:  # SupportsCopy's obligation
+        if (refusal := self._transfer_refusal(src, dst, overwrite)) is not None:  # SupportsCopy's obligation
             raise refusal
-        if dst in self.files and not overwrite:
-            raise FakeExists(dst)
         rec = self.files[src]
         self._implicit_parents(dst)
         self.files[dst] = FileRec(rec.data, rec.modified_at, rec.metadata)
@@ -726,6 +741,7 @@ def make_kernel(
     """
     store = store or FakeStore()
     store.handles = []  # type: ignore[attr-defined]
+    store.namespace = namespace
     if protocols is None:
         protocols = tuple(p for p in ALL_PROTOCOLS if p != "remove_folder" or store.parents != "none")
     base: type[_SyncBase] = _SyncBase if runtime == "sync" else _AsyncBase

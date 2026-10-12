@@ -28,6 +28,7 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
+    PermissionDenied,
     RemoteStoreError,
 )
 from remote_store._kernel import _keys
@@ -75,6 +76,10 @@ def _check_construction(driver: AsyncDriver) -> None:
     Construction is not an operation, so this raises ``ValueError``, not a
     mapped error; wrapping construction is deferred to D3 step 3 (OQ5).
     """
+    if driver.namespace == "flat" and driver.parents != "none":
+        # A flat stat cannot see a folder object, so nothing could type one at a key (BE-030).
+        msg = f"driver {driver.name!r} is flat but has folder objects (parents={driver.parents!r})"
+        raise ValueError(msg)
     if driver.parents != "none" and not isinstance(driver, AsyncSupportsRemoveFolder):
         msg = f"driver {driver.name!r} has folder objects (parents={driver.parents!r}) but no remove_folder"
         raise ValueError(msg)
@@ -341,21 +346,54 @@ class _AsyncKernelCore:
             page = await self._driver.list_page(key, delimiter="/", limit=1)
         return Entry(key, "folder") if page.entries or page.prefixes else None
 
-    async def _stat_open(self, op: Op, key: str, *, folders: bool = True) -> Entry | None:
-        """An error-path probe: fail-open, so a raising probe reads as no answer.
+    async def _probe(self, op: Op, key: str) -> tuple[bool, Entry | None]:
+        """An error-path probe of what is at *key*: ``(known, entry)``, fail-open.
 
-        ``folders=False`` is a write target's view: a ``stat`` alone, so a flat
-        driver never sees a prefix there (the flat namespace's exemption).
+        A probe that raises answers ``(False, None)``: the refusal it was
+        asked about stands.
         """
+        # BE-021: an error-path probe fails open.
         try:
-            return await (self._node_at(op, key) if folders else self._stat(op, key))
+            return True, await self._node_at(op, key)
         except RemoteStoreError:
-            return None
+            return False, None
+
+    async def _stat_open(self, op: Op, key: str) -> Entry | None:
+        """``_probe``'s entry alone: a raising probe reads as no answer."""
+        return (await self._probe(op, key))[1]
+
+    @staticmethod
+    def _may_be_a_folder(err: RemoteStoreError) -> bool:
+        """Whether a refusal may be the wire's way of meeting a folder where it needs a file.
+
+        Wires say it as EISDIR, as EEXIST from an exclusive create, as a Windows
+        EACCES, as ENOENT, or in a code nobody classified. A dead service, a
+        lock or a non-empty folder says nothing about the key's type.
+        """
+        return type(err) is RemoteStoreError or isinstance(err, (NotFound, AlreadyExists, PermissionDenied))
 
     async def _folder_is_wrong_type(self, err: RemoteStoreError, op: Op, key: str) -> None:
-        """After a ``NotFound`` from a file-shaped call: a folder there is ``InvalidPath``."""
+        """After a file-shaped call's refusal: a folder there is ``InvalidPath``."""
+        # BE-021: the type-mismatch row binds every backend, on the error path.
+        if not self._may_be_a_folder(err):
+            return
         entry = await self._stat_open(op, key)
         if entry is not None and entry.kind == "folder":
+            raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
+
+    async def _target_is_wrong_type(self, err: RemoteStoreError, op: Op, key: str) -> None:
+        """After a write's refusal at *key*: a folder there is ``InvalidPath``.
+
+        A hierarchical driver's write primitives refuse a folder at the key in
+        whatever shape its wire has, and one fail-open ``stat`` types it. A flat
+        namespace has no folder to meet: it writes a key that shadows a prefix,
+        and its ``stat`` could not see one, so nothing is probed.
+        """
+        # BE-008's order and flat exemption, as BE-030 states them for the kernel.
+        if self._driver.namespace == "flat" or not self._may_be_a_folder(err):
+            return
+        known, entry = await self._probe(op, key)
+        if known and entry is not None and entry.kind == "folder":
             raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
 
     def _file_info(self, entry: Entry) -> FileInfo:
@@ -444,7 +482,7 @@ class _AsyncKernelCore:
         try:
             with self._choke(op, key):
                 stream = await self._driver.get(key)
-        except NotFound as err:
+        except RemoteStoreError as err:
             await self._folder_is_wrong_type(err, op, key)
             raise
         return key, stream
@@ -473,9 +511,9 @@ class _AsyncKernelCore:
         try:
             with self._choke(Op.DELETE, key):
                 await self._driver.delete(key)
-        except NotFound as err:
+        except RemoteStoreError as err:
             await self._folder_is_wrong_type(err, Op.DELETE, key)
-            if missing_ok:
+            if missing_ok and isinstance(err, NotFound):
                 return
             raise
 
@@ -512,13 +550,13 @@ class _AsyncKernelCore:
         try:
             with self._choke(op, key):
                 return await self._driver.put(at or key, content, overwrite=overwrite, metadata=metadata)
-        except NotFound as err:
-            await self._folder_is_wrong_type(err, op, key)
+        except RemoteStoreError as err:
+            await self._target_is_wrong_type(err, op, key)
             raise
 
     def _require(self, capability: Capability, key: str, what: str) -> None:
-        # A declared capability decides, not the protocols behind it (BE-010, BE-024);
-        # construction already refuses a declaration its protocols cannot back.
+        # A declared capability decides, not the protocols behind it (BE-011, BE-024,
+        # BE-030); construction already refuses a declaration its protocols cannot back.
         if not self.capabilities.supports(capability):
             raise CapabilityNotSupported(
                 f"Backend '{self.name}' {what}", path=key, backend=self.name, capability=capability.value
@@ -574,15 +612,21 @@ class _AsyncKernelCore:
         self, op: Op, key: str, content: _io.Content, overwrite: bool, metadata: Mapping[str, str] | None
     ) -> PutResult:
         assert self._open_write is not None
-        with self._choke(op, key):
-            handle = await self._open_write.open_write(key, overwrite=overwrite, metadata=metadata)
+        try:
+            with self._choke(op, key):
+                handle = await self._open_write.open_write(key, overwrite=overwrite, metadata=metadata)
+        except RemoteStoreError as err:
+            await self._target_is_wrong_type(err, op, key)
+            raise
         try:
             with self._choke(op, key):
                 await _io.feed(handle, content)
                 return await handle.commit()
-        except BaseException:
+        except BaseException as err:
             with contextlib.suppress(Exception):
                 await handle.abort()
+            if isinstance(err, RemoteStoreError):
+                await self._target_is_wrong_type(err, op, key)
             raise
 
     async def _write_temp_and_rename(
@@ -601,8 +645,12 @@ class _AsyncKernelCore:
             result = await self._put(op, key, content, True, metadata, at=temp)
             # replace=overwrite: a file written after the check above is refused,
             # never silently replaced.
-            with self._choke(op, key):
-                await self._rename.rename(temp, key, replace=overwrite)
+            try:
+                with self._choke(op, key):
+                    await self._rename.rename(temp, key, replace=overwrite)
+            except RemoteStoreError as err:
+                await self._target_is_wrong_type(err, op, key)
+                raise
         except BaseException:
             # A failed put can leave a partial temporary on some wires.
             with contextlib.suppress(Exception):
@@ -635,6 +683,12 @@ class _AsyncKernelCore:
             raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name)
 
     async def _transfer(self, op: Op, src: str, dst: str, overwrite: bool) -> None:
+        # The declared capability decides, ahead of the closed guard and the key
+        # rule, as for write_atomic (BE-030); construction guarantees a means behind it.
+        if op is Op.COPY:
+            self._require(Capability.COPY, src, "cannot copy")
+        else:
+            self._require(Capability.MOVE, src, "cannot move")
         self._guard()
         # BE-018: a root source first, then a root destination, both ahead of the
         # source-existence check, and decided from the key.
@@ -644,15 +698,6 @@ class _AsyncKernelCore:
             # BK-301: a self-operation is decided on the canonical keys.
             await self._require_file(op, source)
             return
-        # The means is capability data: decided before anything reaches the wire.
-        if op is Op.COPY and self._copier is None:
-            raise CapabilityNotSupported(
-                f"Backend '{self.name}' cannot copy", path=source, backend=self.name, capability="copy"
-            )
-        if op is Op.MOVE and self._atomic_move is None and self._rename is None and self._copier is None:
-            raise CapabilityNotSupported(
-                f"Backend '{self.name}' cannot move", path=source, backend=self.name, capability="move"
-            )
         # The source's NotFound outranks the destination's preconditions (BE-018), so
         # the source is confirmed before the ancestor walk or parent creation can
         # answer or act for the destination.
@@ -666,11 +711,8 @@ class _AsyncKernelCore:
             try:
                 with self._choke(op, source):
                     await self._atomic_move.move(source, target, overwrite=overwrite)
-            except NotFound as err:
-                await self._folder_is_wrong_type(err, op, source)
-                raise
-            except (AlreadyExists, InvalidPath) as err:
-                await self._destination_refused(err, op, source, target)
+            except RemoteStoreError as err:
+                await self._transfer_refused(err, op, source, target)
                 raise
         elif self._rename is not None:
             await self._rename_into(source, target, overwrite, source_checked=source_checked)
@@ -679,38 +721,42 @@ class _AsyncKernelCore:
             with self._choke(op, source):
                 await self._driver.delete(source)
 
-    async def _destination_is_wrong_type(self, err: RemoteStoreError, op: Op, key: str) -> None:
-        entry = await self._stat_open(op, key, folders=False)
-        if entry is not None and entry.kind == "folder":
-            raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
+    async def _transfer_refused(self, err: RemoteStoreError, op: Op, source: str, target: str) -> None:
+        """Answer a two-key call's refusal from the keys' states, the source's first.
 
-    async def _destination_refused(self, err: RemoteStoreError, op: Op, source: str, target: str) -> None:
-        """Name the destination in a refusal a two-key call raised under the source's key.
-
-        ``classify`` sees the source key, so the choke point filled it in. A
-        folder at the destination is ``InvalidPath`` naming it; an
-        ``AlreadyExists`` can only be about the destination; any other
-        ``InvalidPath`` is the destination's (a file ancestor) when
-        the source is still a file, which one fail-open probe confirms.
+        The wire may check either key first, and ``classify`` saw only the
+        source, so the choke point named it. When the refusal may be about a
+        key's state, fail-open probes re-answer it: an absent source is
+        ``NotFound`` and a folder there ``InvalidPath``, both naming the source;
+        then a folder at the destination is ``InvalidPath`` naming it (a write
+        target, so only on a hierarchical namespace). Otherwise the refusal
+        stands, naming the destination when it can only be the destination's:
+        an ``AlreadyExists``, or a ``NotFound`` or ``InvalidPath`` with the
+        source confirmed a file.
         """
-        await self._destination_is_wrong_type(err, op, target)
-        if isinstance(err, AlreadyExists):
+        # BE-018: the source's NotFound outranks the destination's preconditions.
+        if not (self._may_be_a_folder(err) or isinstance(err, InvalidPath)):
+            return
+        known, entry = await self._probe(op, source)
+        if known and entry is None:
+            if isinstance(err, NotFound):
+                err.path = source
+                return
+            raise NotFound(f"Not found: {source}", path=source, backend=self.name) from err
+        if known and entry is not None and entry.kind == "folder":
+            raise InvalidPath(f"Is a folder, not a file: {source}", path=source, backend=self.name) from err
+        await self._target_is_wrong_type(err, op, target)
+        source_is_file = known and entry is not None
+        if isinstance(err, AlreadyExists) or (source_is_file and isinstance(err, (NotFound, InvalidPath))):
             err.path = target
-        elif err.path == source:
-            entry = await self._stat_open(op, source)
-            if entry is not None and entry.kind == "file":
-                err.path = target
 
     async def _copy(self, op: Op, source: str, target: str, overwrite: bool) -> None:
         assert self._copier is not None
         try:
             with self._choke(op, source):
                 await self._copier.copy(source, target, overwrite=overwrite)
-        except NotFound as err:
-            await self._folder_is_wrong_type(err, op, source)
-            raise
-        except (AlreadyExists, InvalidPath) as err:
-            await self._destination_refused(err, op, source, target)
+        except RemoteStoreError as err:
+            await self._transfer_refused(err, op, source, target)
             raise
 
     async def _rename_source(self, source: str, target: str, *, replace: bool) -> None:
@@ -718,9 +764,9 @@ class _AsyncKernelCore:
         try:
             with self._choke(Op.MOVE, source):
                 await self._rename.rename(source, target, replace=replace)
-        except (AlreadyExists, InvalidPath) as err:
-            # A file or folder that appeared at the destination after its check.
-            await self._destination_refused(err, Op.MOVE, source, target)
+        except RemoteStoreError as err:
+            # A key that changed under the move after its checks.
+            await self._transfer_refused(err, Op.MOVE, source, target)
             raise
 
     async def _rename_into(self, source: str, target: str, overwrite: bool, *, source_checked: bool) -> None:
