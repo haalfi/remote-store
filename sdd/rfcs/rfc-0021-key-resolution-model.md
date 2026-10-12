@@ -99,8 +99,8 @@ ancestor. That is a stated limit of the model. ([A.3](#a3-undecodable-states))
 ### D4. The library never writes a state that does not decode
 
 Writing below an item, or writing an item over a folder, is `InvalidPath` on
-every backend. This retires BE-008's opt-in check. It cannot stop another
-writer. ([A.4](#a4-writes))
+every backend. The first replaces BE-008's opt-in check. The second has no
+check today. Neither can stop another writer. ([A.4](#a4-writes))
 
 ### D5. One result table
 
@@ -116,15 +116,16 @@ the encoding, stated once. ([A.6](#a6-empty-folders))
 ### D7. Links follow one store-wide policy
 
 How a link decodes is one policy for the whole store, never a per-call option.
-Destructive tree operations never follow a link, whatever the policy. The
-public option comes later. ([A.7](#a7-links))
+`delete_folder` never follows a link, and `delete` removes the link itself,
+whatever the policy. The public option comes later. ([A.7](#a7-links))
 
 ### D8. Refusals are observations of the encoding
 
-The kernel probes only until the result for the operation's family is
-decided. A probe that decides the result fails closed. A probe that only types
-a refusal fails open, so the refusal stands. Each driver obligation is stated
-once. ([A.8](#a8-observations))
+After a refusal, the kernel probes only until the result for the operation's
+family is decided. A probe that runs whether or not the call fails fails
+closed. A probe that runs only because the call refused fails open, so the
+refusal stands. Each driver obligation is stated once.
+([A.8](#a8-observations))
 
 ### D9. Changes under an operation
 
@@ -157,24 +158,34 @@ point to it. The formal `decode` functions are a follow-up.
 <a id="impact"></a>
 ## Impact
 
-**Behaviour changes and costs**, all on flat encodings and all on the kernel.
-They land through BK-389's resume, then BK-394 onward, each with a CHANGELOG
-entry and a migration note:
+**Behaviour changes and costs**, on the kernel. They land through BK-389's
+resume, then BK-394 onward, as each backend moves onto the kernel, each with a
+CHANGELOG entry and a migration note:
 
-| Change | Today | Under this RFC | Cost |
-|---|---|---|---|
-| write below an item, or an item over a folder (D4) | written, unless the opt-in is on | `InvalidPath`; BE-008's opt-in retired | one `stat` per ancestor, plus one `list_page(limit=1)`, per write |
-| listing a raw state that does not decode (D3) | listed | omitted and logged | none |
-| folder operation on a key that is an item (D3) | acts on `k/` | empty, or `InvalidPath` for `delete_folder` | one `stat` per folder operation |
+| Change | Encoding | Today | Under this RFC | Cost |
+|---|---|---|---|---|
+| write below an item (D4) | flat | written, unless `reject_write_under_file_ancestor` is on | `InvalidPath` | one `stat` per ancestor, per write |
+| write an item over a folder (D4) | flat | written, whether or not the opt-in is on | `InvalidPath` | one `list_page(limit=1)` per write |
+| listing an item `k` and a prefix `k/` together (D3) | flat | both listed | the prefix omitted and logged | none if an item lists before its prefix; otherwise per-listing buffering (Open question 1) |
+| folder operation on a key that is an item with raw entries below it (D3) | flat | `list_files`, `get_folder_info` and `delete_folder` act on `k/` | empty, `InvalidPath` for `get_folder_info` and `delete_folder` | one `stat` per folder operation |
+| listing a link (D7) | SFTP | hidden | listed per the store's link policy; a link escaping the root, dangling or looping is omitted | none |
 
-BE-021's cost table records both costs when the clauses land.
+BE-021's cost table records the costs when the clauses land. A stored key the
+key rule refuses (`a\b`) is already omitted and logged today (BE-030), so it
+does not change.
 
+- **Public API.** `reject_write_under_file_ancestor`, a constructor keyword on
+  five flat backends (BE-008), loses its effect, since the check it enabled
+  becomes unconditional. Each backend retires it when it moves onto the
+  kernel. Until then BE-008's text keeps binding the backends not yet on the
+  kernel, and spec 003 marks which clause binds which.
 - **PR #1127** resumes against this model. `delete_folder` reads the shared
-  resolver, which answers both open spec findings (A.8 settles the second).
+  resolver, which answers its first open spec finding. Its second, whether a
+  `PermissionDenied` is probed, is decided by A.8's tables (Open question 2).
   The five open text findings are fixed against the new text.
 - **Spec 003** gains Appendix A as one section. These texts are replaced by a
-  pointer to it:
-    - BE-030's *What is at a key*;
+  pointer to it, for the backends on the kernel:
+    - BE-030's *What is at a key*, with its list of determinants moved into A.8;
     - the folder and file-above rows of BE-008 and BE-021;
     - BE-008's flat exemption and its opt-in file-ancestor walk;
     - BE-031's probe rule, and its "a file and a prefix both" row.
@@ -183,12 +194,11 @@ BE-021's cost table records both costs when the clauses land.
 - **Formal model:** `Valid()` in `BackendContract.dfy` already is A.1's tree. A
   follow-up adds a `decode` function for each encoding, with refinement lemmas
   showing that each encoding's operations commute with `decode`.
-- **SFTP's links** decode by A.7's policy once SFTP runs on the kernel. Today
-  it follows a link on keyed calls and hides it in listings. BUG-323, its
-  recursive delete through a link at the key, is fixed independently of this
-  RFC.
-- **No public API change in this RFC.** The link option and a capability that
-  exposes `links` are a follow-up item, filed when this RFC is accepted.
+- **SFTP's links** decode by A.7's policy once SFTP runs on the kernel.
+  BUG-323, its recursive delete through a link at the key, is fixed
+  independently of this RFC.
+- **Follow-ups**, filed when this RFC is accepted: the public link option and a
+  capability that exposes `links`, and the Dafny `decode` functions.
 
 ## Open Questions
 
@@ -196,6 +206,14 @@ BE-021's cost table records both costs when the clauses land.
    before the entries below `k/`. That holds for a lexicographic listing,
    because `k` sorts before `k/`. Is that order a driver obligation, or does
    the kernel buffer?
+2. **A.8's observation tables.** One table per encoding property, giving
+   (call, refusal shape) → the A.5 rows it is compatible with, and the driver
+   obligations that narrow them. They decide, among others, whether a
+   `PermissionDenied` is probed (PR #1127's second open finding). Owned by
+   BK-432 and drafted before this RFC is accepted.
+3. **A link as a transfer source.** Under `follow_within_root`, does `move`
+   move the link or the target's content, and does `copy` copy the link or the
+   content?
 
 ### Decided while drafting (maintainer, 2026-10-12)
 
@@ -208,9 +226,13 @@ BE-021's cost table records both costs when the clauses land.
   Keyed lookups trust the encoding, as a stated limit.
 - Writes that would make the encoding undecodable are always `InvalidPath`.
 - An emptied folder's existence depends on the encoding, stated once.
-- Links: a `links` property, a store-level policy, `no_follow` for destructive
-  tree operations, and `InvalidPath` for a write to a link under `no_follow`.
-  Only the model is in scope; the public option comes later.
+- Links: a `links` property, a store-level policy, `no_follow` for
+  `delete_folder`, `delete` removing the link, and `InvalidPath` for a write to
+  a link under `no_follow`. A link that does not decode resolves to `Nothing`
+  and listings omit it. Only the model is in scope; the public option comes
+  later.
+- On a flat encoding, the probe, read-file and delete-file families trust the
+  encoding, so `delete("k/a.txt")` below an item removes the raw entry.
 - SFTP has links (`links="present"`), measured on the `atmoz/sftp` container
   with `SFTPBackend` as on master. Today it follows a link on keyed calls,
   hides it in listings, and lists or reads through it at its own key, which
@@ -260,22 +282,27 @@ These raw states decode to no tree:
 
 - an item at `k` together with entries below `k/`, on a flat encoding;
 - a stored key the key rule refuses, such as `a\b` (BK-399's case);
-- a loop of links.
+- under `follow_within_root`, a link whose target is outside the root, a
+  dangling link, and a loop of links.
 
 ### A.3 Undecodable states
 
 - **Listings.** A listing of `k`'s parent that returns `k` as an item and `k/`
   as a prefix omits the prefix. A recursive listing omits every entry below an
-  item it has listed. Each omission is logged. This extends BE-030's omission
-  of a key the rule refuses, and the listing itself shows what to omit.
+  item it has listed. A link that does not decode is omitted too. Each
+  omission is logged. This extends BE-030's omission of a key the rule
+  refuses, and the listing itself shows what to omit.
 - **Folder operations on an item.** `list_files(k)` is empty and
   `delete_folder(k)` answers `InvalidPath` when `k` is an item. On a flat
   encoding, a listing of `k/` cannot see an item `k`, so a flat folder
   operation `stat`s `k` first, success included.
-- **Keyed lookups.** On a flat encoding, a lookup does not walk its key's
-  ancestors, so `read("k/a.txt")` finds a raw entry another tool wrote below
-  an item `k`. This is a limit of the model. A.4 keeps the library's own
-  writes from producing it.
+- **Keyed lookups.** On a flat encoding, the probe, read-file and
+  delete-file families do not walk their key's ancestors. So `read("k/a.txt")`
+  finds a raw entry another tool wrote below an item `k`, and
+  `delete("k/a.txt")` removes it, which is how such an entry is cleaned up.
+  This is a limit of the model. A.4 keeps the library's own writes from
+  producing it.
+- **A link that does not decode**, at a key, resolves to `Nothing`.
 - **`unwrap()`** reaches any raw entry.
 
 ### A.4 Writes
@@ -306,11 +333,13 @@ flat wire: another writer can act between the check and the write.
 
 | Resolves to | probe `exists`/`is_file`/`is_folder` | read-file | write-file | delete-file | folder-read | delete-folder |
 |---|---|---|---|---|---|---|
-| `Item` | T / T / F | the item | replaced, or `AlreadyExists` without `overwrite` | removed | empty | `InvalidPath` |
+| `Item` | T / T / F | the item | replaced, or `AlreadyExists` without `overwrite`; a link under `no_follow` is `InvalidPath` (A.7) | removed | empty | `InvalidPath` |
 | `Folder` | T / F / T | `InvalidPath` | `InvalidPath` | `InvalidPath` | its children | removed, or `DirectoryNotEmpty` |
 | `Nothing` | F / F / F | `NotFound` | written, parents created | `NotFound` | empty | `NotFound` |
 | `Nothing`, path through an item | F / F / F | `NotFound` | `InvalidPath` | `NotFound` | empty | `NotFound` |
 
+The last row is what the tree answers. On a flat encoding the probe, read-file
+and delete-file families trust the encoding instead (A.3).
 `missing_ok` turns a delete's `NotFound` into success. `get_folder_info`
 types an empty aggregate as BE-017 states. The per-operation clauses keep what
 is specific to them, such as `overwrite`, cursors, `max_depth` and the
@@ -318,10 +347,9 @@ synthesised write routes, and cite this table for the rest.
 
 ### A.6 Empty folders
 
-The tree allows an empty folder. An encoding without folder objects cannot
-hold one, so a folder whose last child is deleted there vanishes. With folder
-objects it stays. No operation creates an empty folder, but deletes produce
-one.
+The tree allows an empty folder. A folder becomes empty when its last child is
+deleted or moved out. An encoding without folder objects cannot hold an empty
+folder, so there it vanishes. With folder objects it stays.
 
 ### A.7 Links
 
@@ -331,8 +359,12 @@ one.
   Under `follow_within_root` a link decodes to its target's node, and a target
   outside the root does not decode. Under `no_follow` a link decodes to an
   item.
-- Destructive tree operations decode under `no_follow` whatever the policy,
-  since following a link would delete its target's contents.
+- `delete_folder` is the destructive tree operation, and it decodes under
+  `no_follow` whatever the policy, since following a link would delete its
+  target's contents.
+- `delete` on a link removes the link, never its target, under either policy
+  (BE-031's existing rule). A `move` or `copy` whose source is a link is Open
+  question 3.
 - A write to a link goes to the target under `follow_within_root`. Under
   `no_follow` it is `InvalidPath`, since replacing a link the store did not
   make would destroy it without a signal.
@@ -344,16 +376,22 @@ item but not a folder, and a `list_page(limit=1)` sees whether a folder is
 empty. A refusal arrives as `NotFound`, `InvalidPath`, `AlreadyExists`,
 `PermissionDenied`, an untyped `RemoteStoreError`, or another type. For each
 encoding property one table gives **(call, shape) → the A.5 rows it is
-compatible with**. Then:
+compatible with** (Open question 2). Then:
 
-1. On success, a call probes nothing beyond A.3 and A.4.
+1. A call that succeeds runs only its *determinants*: the probes that run
+   whether or not it fails. They are A.3's `stat` before a flat folder
+   operation, A.4's write checks, and those BE-030 lists today: the probes
+   `exists`, `is_file` and `is_folder`; `get_file_info` and a ranged
+   `read_seekable`; the transfer source check; the destination `stat` where
+   the kernel stats a write target first (`write_atomic` by temp and rename
+   without `overwrite`, `move` by rename); and `get_folder_info`'s
+   empty-aggregate `stat` with folder objects.
 2. On a refusal whose compatible rows give more than one result for the
    family, the kernel probes, cheapest call first. For example, delete-folder
    answers `NotFound` in both `Nothing` rows, so it never tells them apart.
-3. A probe that decides whether the operation proceeds, or what it returns,
-   fails closed: its failure is the operation's failure. A probe that only
-   types a refusal that already happened fails open: the refusal stands
-   (BE-021).
+3. A determinant fails closed: its failure is the operation's failure. A probe
+   that runs only because the call refused fails open: if it cannot answer,
+   the refusal stands (BE-021).
 
 A driver obligation removes rows from a shape's compatible set, and the table
 states it once. For example, "an encoding that refuses non-tree writes types
@@ -372,4 +410,7 @@ mid-walk, is the same rule.
 
 Two generated suites. One crosses tree state with key, for the results in A.5.
 The other crosses encoding property, raw state and refusal shape, for A.3, A.4
-and A.8.
+and A.8. Its fake driver must be able to return an item and a prefix of the
+same name on one listing page, as a real flat wire does. Today's
+`tests/_kernel/_fake.py` cannot, so it would pass A.3's omission rule without
+exercising it.

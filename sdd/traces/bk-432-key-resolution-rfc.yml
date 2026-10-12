@@ -6,7 +6,6 @@ source_items:
   - BK-389
 audience:
   - library.maintainer
-  - user.api
   - contributor.process
 decisions:
   - sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl
@@ -18,7 +17,7 @@ orient:
     evidence: "Decision log 85069900 (dialog 'PR 1127'): the maintainer parked #1127 with its 7 threads open until this model exists, so BK-389 resumes by re-deriving delete_folder and spec 003's cut from it. BK-394 (index entry: 'After BK-389') is where a backend first runs on the kernel, so the breaking flat change (a shadowed key is a file for every operation) first lands there"
   - items: [BUG-292, BK-382, BUG-253]
     verdict: constrains
-    evidence: "BUG-292 dossier § Decision (2026-09-29, BK-387): 'Only a confirmed miss, a not-found answer from the probe, reads as no ancestor. Any other probe error propagates'. That becomes the model's observation rule for Blocked. Spec 003 BE-008 (lines 471-479) gives flat backends the opt-in reject_write_under_file_ancestor, so on flat Blocked is a write outcome under a store policy. The three remain backend fixes"
+    evidence: "BUG-292 dossier § Decision (2026-09-29, BK-387): 'Only a confirmed miss, a not-found answer from the probe, reads as no ancestor. Any other probe error propagates'. That is the model's rule for write checks, which decide the result and so fail closed. Spec 003 BE-008 gives flat backends the opt-in reject_write_under_file_ancestor, which the model makes unconditional. The three remain backend fixes"
   - items: [BUG-257, BUG-255, BUG-318]
     verdict: constrains
     evidence: "BUG-257 dossier: Graph keys the first-page bound per HTTP request, not per walk, and its index entry says RFC-0017 Open Question 2 is decided (BK-389 dossier, decision 1) in agreement. The model's 'changed under the walk' takes BE-021's first-page bound once per operation"
@@ -107,12 +106,12 @@ phases:
         section: "(full)"
         read_type: reference
         extract: "Maintainer rejected the first draft's geometry-parameterised outcome set (semantic model) for one tree plus a partial decode per encoding, then moved all mechanics out of Decisions into Appendix A (the draft spec section) per principle 8"
-        outcome: misleading
+        outcome: ok
   - id: verify
     name: Verify
     steps:
       - file: src/remote_store/backends/_sftp.py
         section: "stat call sites, listdir_attr listings, _rmtree, _collect_folder_stats"
         read_type: verify
-        extract: "Measured on atmoz/sftp:alpine with paramiko-made links (scratch probe, not committed): keyed calls follow links, listings skip them (lrwxrwxrwx mode), list_files on a link lists the target, write through a link writes the target, a nested link is removed by a recursive delete, and delete_folder(link_to_folder, recursive) emptied the target and raised NotFound, filed as BUG-323. Closed RFC-0021 OQ1"
+        extract: "Measured on atmoz/sftp:alpine with paramiko-made links (scratch probe, not committed): keyed calls follow links, listings skip them (lrwxrwxrwx mode), list_files on a link lists the target, write through a link writes the target, a nested link is removed by a recursive delete, and delete_folder(link_to_folder, recursive) emptied the target and raised NotFound, filed as BUG-323. Closed the RFC question on SFTP links"
         outcome: ok

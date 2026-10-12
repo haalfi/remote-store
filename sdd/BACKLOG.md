@@ -294,7 +294,7 @@ failure it was.
   none; amend all three to BE-025's non-canonical exception.
 
 - [ ] **BK-432 — No logical model says what a key resolves to, so every operation re-derives it from driver refusals**
-  spec: BE-004, BE-005, BE-008, BE-013, BE-014, BE-021, BE-030, BE-031 · effort: L · audience: library.maintainer, user.api, contributor.process
+  spec: BE-004, BE-005, BE-008, BE-013, BE-014, BE-017, BE-021, BE-030, BE-031 · effort: L · audience: library.maintainer, user.api, contributor.process
   Spec 003 states per operation what an absent key, a file, a folder, a key under a file or a
   shadowed prefix answers, and `BackendContract.dfy`'s `Valid()` models only explicit folders.
   The kernel's two probe rules disagree on one `stat` answer (PR #1127, parked until this
