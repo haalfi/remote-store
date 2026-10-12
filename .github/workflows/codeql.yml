@@ -41,6 +41,51 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
+        with:
+          upload: never
+          output: sarif-results
+
+      # The kernel's Protocol classes use `...` as method bodies, which
+      # py/ineffectual-statement flags on every method. CodeQL config can only
+      # exclude a rule everywhere or ignore a path for all rules, so drop that
+      # one rule's results here, before upload: only in these files, and only
+      # where the flagged text is exactly `...`, so a real ineffectual
+      # statement in the same files is still reported.
+      - name: Drop placeholder-body results in kernel protocols
+        shell: python
+        run: |
+          import fnmatch, json, pathlib
+          rule = "py/ineffectual-statement"
+          globs = ["src/remote_store/_kernel/*/driver.py", "src/remote_store/_kernel/*/_io.py"]
+          path = pathlib.Path("sarif-results/python.sarif")
+          sarif = json.loads(path.read_text(encoding="utf-8"))
+          def flagged_text(loc):
+              reg = loc.get("region", {})
+              line = reg.get("startLine")
+              if line is None or reg.get("endLine", line) != line or "startColumn" not in reg or "endColumn" not in reg:
+                  return None
+              lines = pathlib.Path(loc["artifactLocation"]["uri"]).read_text(encoding="utf-8").splitlines()
+              return lines[line - 1][reg["startColumn"] - 1 : reg["endColumn"] - 1]
+          def keep(r):
+              if r.get("ruleId", r.get("rule", {}).get("id")) != rule:
+                  return True
+              loc = r["locations"][0]["physicalLocation"]
+              if not any(fnmatch.fnmatch(loc["artifactLocation"]["uri"], g) for g in globs):
+                  return True
+              return flagged_text(loc) != "..."
+          for run in sarif["runs"]:
+              before = len(run["results"])
+              run["results"] = [r for r in run["results"] if keep(r)]
+              print(f"dropped {before - len(run['results'])} {rule} results")
+          path.write_text(json.dumps(sarif), encoding="utf-8")
+
+      - name: Upload CodeQL results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: sarif-results/python.sarif
+          # The category earlier analyses were stored under, so alerts keep
+          # their history instead of reopening as new ones.
+          category: .github/workflows/codeql.yml:analyze
 
   dependency-review:
     name: Dependency Review
