@@ -253,6 +253,9 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 - **What it does:** CodeQL static analysis. The weekly full sweep runs regardless
   of paths, catching what the path-filtered push/PR runs miss.
 - **When:** push / PR, plus Monday 06:00 UTC.
+- **Filtered before upload:** `py/ineffectual-statement` results in the
+  kernel's `driver.py` and `_io.py`, where `...` is the Protocol method body.
+  The file globs and the reason live in the workflow's filter step.
 - **Where the finding shows up:** **code-scanning alerts in the repository
   Security tab** — GitHub's canonical surface for this class. By design it opens
   no rolling issue and has no triage skill; this is the one sanctioned exception
