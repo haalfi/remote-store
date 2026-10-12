@@ -115,3 +115,8 @@ phases:
         read_type: verify
         extract: "Measured on atmoz/sftp:alpine with paramiko-made links (scratch probe, not committed): keyed calls follow links, listings skip them (lrwxrwxrwx mode), list_files on a link lists the target, write through a link writes the target, a nested link is removed by a recursive delete, and delete_folder(link_to_folder, recursive) emptied the target and raised NotFound, filed as BUG-323. Closed the RFC question on SFTP links"
         outcome: ok
+      - file: sdd/formal/StoreTree.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "bash scripts/dafny_verify.sh StoreTree.dfy: 33 verified, 0 errors. Nine mutants, each a copy of the file under sdd/formal/ verified the same way and then deleted, each failed verification: (1) FlatWriteChecks without the below-k conjunct; (2) without the ancestor conjunct; (3) Children at depth |k|+2; (4) FlatDeleteTree deleting every key below k, hidden or not; (5) FlatMoveIsTheTree without FlatWriteChecks; (6) FlatChildren returning full keys; (7) the flat get/delete probe without its stat (the closing round's false-success finding); (8) KernelAnswer replacing a refusal on any concluded row; (9) the hierarchical write probe without its ancestor stats. The first run of section 11 failed RefusalAnswersAreTrue on a flat delete_tree probed stat-first, which found the missing flat delete_tree row in A.8"
+        outcome: ok

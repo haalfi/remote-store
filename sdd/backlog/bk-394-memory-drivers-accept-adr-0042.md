@@ -13,7 +13,7 @@ two PRs: BK-389 lands the kernel, private, under the Proposed
 [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md); this item lands
 the two Memory drivers on it and is **the PR that accepts ADR-0042 and
 RFC-0017**, the first backend on the new design. **It merges only after the
-v0.33.0 tag, and after BK-389 and BK-398.** The decisions both halves rest on are in
+v0.33.0 tag, and after BK-389, BK-432 and BK-398.** The decisions both halves rest on are in
 [BK-389's dossier](bk-389-kernel-step-1-memory.md) § Decisions; read them
 first.
 

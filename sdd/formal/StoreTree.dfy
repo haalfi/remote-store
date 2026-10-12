@@ -19,15 +19,21 @@
 //       no empty folder (A.6).
 //   §8  After the stat that finds no item, a flat listing of k/ returns
 //       exactly the tree's children of k (A.3, A.5's folder-read column).
-//   §9  A recursive delete_folder by walking deletes the visible subtree, and
-//       an entry the listing omits keeps the folder non-empty (A.3).
+//   §9  A recursive delete_folder by walking deletes what its listings return
+//       below k, an entry the listing omits keeps the folder non-empty, and
+//       an item above k hides nothing (A.3's stated limit).
 //   §10 A flat move or copy, its destination checked by A.4, keeps the
 //       encoding decodable and moves or copies exactly that item.
+//   §11 Refusals as observations (A.8): for every call, namespace and row,
+//       the kernel's answer after a refusal in the probe set is the refusal
+//       or the A.5 result of the row actually there, never a result for a row
+//       where the call would have succeeded; and every row where the call
+//       must refuse is typed.
 //
-// Not modelled here: links (A.7), refusals as observations (A.8), a listing's
-// omissions as observed page by page (A.3's order obligation), and changes
-// under an operation (A.9).  A hierarchical
-// encoding with folder objects is the tree itself, so §3 covers its writes.
+// Not modelled here: links (A.7), a listing's omissions as observed page by
+// page (A.3's order obligation), and changes under an operation (A.9).  A
+// hierarchical encoding with folder objects is the tree itself, so §3 covers
+// its writes.
 
 module StoreTree {
 
@@ -375,16 +381,18 @@ module StoreTree {
   // §9  delete_folder on a flat encoding
   // -------------------------------------------------------------------------
 
-  // A raw key is visible when no item lies above it.  A.3: a listing omits
-  // the rest, so a walk never deletes them.
-  ghost predicate Visible(r: Flat, b: Key) {
-    forall a :: a in r ==> !ProperPrefix(a, b)
+  // A walk of k/ sees only what its listings return, so a raw key below k is
+  // visible to it when no item lies between k and that key.  An item above k
+  // is never listed, so it hides nothing: A.3's stated limit for flat folder
+  // operations below an item.
+  ghost predicate VisibleBelow(r: Flat, k: Key, b: Key) {
+    forall a :: a in r && ProperPrefix(k, a) ==> !ProperPrefix(a, b)
   }
 
-  // A recursive delete_folder by walking: it deletes every visible raw key
-  // below k, and nothing else.
+  // A recursive delete_folder by walking: it deletes every raw key below k
+  // that its listings return, and nothing else.
   ghost function FlatDeleteTree(r: Flat, k: Key): Flat {
-    set b | b in r && !(ProperPrefix(k, b) && Visible(r, b))
+    set b | b in r && !(ProperPrefix(k, b) && VisibleBelow(r, k, b))
   }
 
   // On a decodable encoding every raw key is visible, so the walk removes
@@ -400,12 +408,26 @@ module StoreTree {
     FlatItems(FlatDeleteTree(r, k));
   }
 
-  // A.3: an omitted raw key keeps the folder non-empty.  After the walk, a
-  // raw key remains below k exactly when one was hidden by an item above it,
-  // and the final remove then answers DirectoryNotEmpty.
-  lemma OmittedKeepsFolderNonEmpty(r: Flat, k: Key)
-    ensures (exists b :: b in FlatDeleteTree(r, k) && ProperPrefix(k, b)) <==>
-      (exists b :: b in r && ProperPrefix(k, b) && !Visible(r, b))
+  // A.3: an omitted raw key keeps the folder non-empty.  An item i the walk
+  // lists below k is deleted, and a raw key b below i, which the listing
+  // omits, is kept, so k/ still holds b and the kernel answers
+  // DirectoryNotEmpty from its listing.
+  lemma OmittedKeepsFolderNonEmpty(r: Flat, k: Key, i: Key, b: Key)
+    requires i in r && b in r && ProperPrefix(k, i) && ProperPrefix(i, b)
+    requires VisibleBelow(r, k, i)
+    ensures i !in FlatDeleteTree(r, k)
+    ensures b in FlatDeleteTree(r, k) && ProperPrefix(k, b)
+  {
+    assert b[..|k|] == i[..|k|];
+  }
+
+  // The stated limit, made explicit: an item above k hides nothing from the
+  // walk, so a raw key below k is deleted even when the tree would put k
+  // through an item.
+  lemma ItemAboveHidesNothing(r: Flat, k: Key, a: Key, b: Key)
+    requires a in r && b in r && ProperPrefix(a, k) && ProperPrefix(k, b)
+    requires forall c :: c in r && ProperPrefix(k, c) ==> !ProperPrefix(c, b)
+    ensures b !in FlatDeleteTree(r, k)
   {}
 
   // -------------------------------------------------------------------------
@@ -435,4 +457,141 @@ module StoreTree {
     FlatWriteKeepsDecodable(r, dst);
     FlatWriteCommutes(r, dst);
   }
+
+  // -------------------------------------------------------------------------
+  // §11  Refusals as observations (A.8)
+  // -------------------------------------------------------------------------
+  //
+  // A driver call refused in the probe set may arrive on any row: drivers owe
+  // no rule about how a refusal is typed, and a denial or a dead connection
+  // can meet an existing item as well as a missing one.  The kernel then
+  // probes, concludes a row, and replaces the refusal with that row's A.5
+  // result only when the call must refuse there.  The lemma: whatever the
+  // actual row, the answer is the refusal itself or the A.5 result of the
+  // row that is really there, and never a result for a row where the call
+  // would have succeeded.
+
+  // What is at the key, one level finer than Res: a folder is empty or not.
+  datatype Row = AtItem | AtEmptyFolder | AtFullFolder | AtNothing | AtThroughItem
+
+  // A.2's property that decides what one stat sees.
+  datatype Namespace = FlatNs | HierNs
+
+  datatype Call =
+    | Get | Delete
+    | Put(overwrite: bool)
+    | RemoveFolder | DeleteTree
+
+  datatype Answer =
+    | Ok | ENotFound | EInvalidPath | EAlreadyExists | EDirectoryNotEmpty
+
+  // A.5's result for each call and row.
+  function A5(c: Call, row: Row): Answer {
+    match c
+    case Get | Delete =>
+      (match row
+       case AtItem => Ok
+       case AtEmptyFolder | AtFullFolder => EInvalidPath
+       case AtNothing | AtThroughItem => ENotFound)
+    case Put(overwrite) =>
+      (match row
+       case AtItem => if overwrite then Ok else EAlreadyExists
+       case AtEmptyFolder | AtFullFolder | AtThroughItem => EInvalidPath
+       case AtNothing => Ok)
+    case RemoveFolder =>
+      (match row
+       case AtItem => EInvalidPath
+       case AtEmptyFolder => Ok
+       case AtFullFolder => EDirectoryNotEmpty
+       case AtNothing | AtThroughItem => ENotFound)
+    case DeleteTree =>
+      (match row
+       case AtItem => EInvalidPath
+       case AtEmptyFolder | AtFullFolder => Ok
+       case AtNothing | AtThroughItem => ENotFound)
+  }
+
+  // The rows on which the call must refuse: A.8's driver obligations.
+  predicate MustRefuse(c: Call, row: Row) {
+    A5(c, row) != Ok
+  }
+
+  // What the probe calls see at each row.
+  datatype StatSees = SeesItem | SeesFolder | SeesNone
+
+  function Stat(ns: Namespace, row: Row): StatSees {
+    match row
+    case AtItem => SeesItem
+    case AtEmptyFolder | AtFullFolder => if ns == HierNs then SeesFolder else SeesNone
+    case AtNothing | AtThroughItem => SeesNone
+  }
+
+  predicate ListNonEmpty(row: Row) {
+    row == AtFullFolder
+  }
+
+  predicate AncestorIsItem(row: Row) {
+    row == AtThroughItem
+  }
+
+  // A flat encoding holds no empty folder (§7).
+  predicate Possible(ns: Namespace, row: Row) {
+    !(ns == FlatNs && row == AtEmptyFolder)
+  }
+
+  // The kernel's probe after a refusal, as A.8's tables state it: the row it
+  // concludes, or None when it leaves the refusal standing.
+  function Probe(ns: Namespace, c: Call, row: Row): Option<Row> {
+    var s := Stat(ns, row);
+    match c
+    case Get | Delete =>
+      if s == SeesItem then Some(AtItem)
+      else if s == SeesFolder then Some(AtFullFolder)
+      else if ns == FlatNs && ListNonEmpty(row) then Some(AtFullFolder)
+      else Some(AtNothing)
+    case Put(_) =>
+      if s == SeesItem then Some(AtItem)
+      else if s == SeesFolder then Some(AtFullFolder)
+      else if ns == FlatNs && ListNonEmpty(row) then Some(AtFullFolder)
+      else if ns == HierNs && AncestorIsItem(row) then Some(AtThroughItem)
+      else Some(AtNothing)
+    case RemoveFolder | DeleteTree =>
+      if ns == FlatNs then
+        // BE-031's flat order: list first, stat only after an empty listing.
+        if ListNonEmpty(row) then Some(AtFullFolder)
+        else if s == SeesItem then Some(AtItem)
+        else Some(AtNothing)
+      else if s == SeesItem then Some(AtItem)
+      else if s == SeesNone then Some(AtNothing)
+      else if ListNonEmpty(row) then Some(AtFullFolder)
+      else Some(AtEmptyFolder)
+  }
+
+  datatype Option<T> = None | Some(value: T)
+
+  // A.8 rule 3: the concluded row's result replaces the refusal only where
+  // the call must refuse; anywhere else the refusal stands.
+  function KernelAnswer(ns: Namespace, c: Call, row: Row): Option<Answer> {
+    var p := Probe(ns, c, row);
+    if p.Some? && MustRefuse(c, p.value) then Some(A5(c, p.value)) else None
+  }
+
+  // The answer after a refusal is the refusal (None) or the A.5 result of
+  // the row actually there, and never a result for a row where the call
+  // would have succeeded.  So a delete refused on an existing item is never
+  // reported as NotFound, which missing_ok would turn into success.
+  lemma RefusalAnswersAreTrue(ns: Namespace, c: Call, row: Row)
+    requires Possible(ns, row)
+    ensures KernelAnswer(ns, c, row).Some? ==>
+      MustRefuse(c, row) && KernelAnswer(ns, c, row).value == A5(c, row)
+  {}
+
+  // And the probe is not idle: wherever the call must refuse, the kernel
+  // types the refusal, except on a flat encoding where a write's refusal of
+  // an ancestor item is A.4's determinant's job, not the probe's.
+  lemma RefusalsAreTyped(ns: Namespace, c: Call, row: Row)
+    requires Possible(ns, row) && MustRefuse(c, row)
+    requires !(ns == FlatNs && c.Put? && row == AtThroughItem)
+    ensures KernelAnswer(ns, c, row) == Some(A5(c, row))
+  {}
 }
