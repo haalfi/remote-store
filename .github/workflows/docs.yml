@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false  # a one-off .[docs] key per pyproject hash (BK-411)
       - run: uv pip install -e ".[docs]"
@@ -52,7 +52,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false  # a one-off .[docs] key per pyproject hash (BK-411)
       - run: uv pip install -e ".[docs]"
