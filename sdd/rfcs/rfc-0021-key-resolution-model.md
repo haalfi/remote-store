@@ -188,8 +188,8 @@ so it does not change.
   kernel. Until then BE-008's text keeps binding the backends not yet on the
   kernel, and spec 003 marks which clause binds which.
 - **PR #1127** resumes against this model. `delete_folder` reads the shared
-  resolver, which answers its first open spec finding. Its second, whether a
-  `PermissionDenied` is probed, is decided by A.8's tables (Open question 1).
+  resolver, which answers its first open spec finding. A.8 answers its second:
+  a `PermissionDenied` is in the probe set, and drivers owe no typing rule.
   The five open text findings are fixed against the new text.
 - **Spec 003** gains Appendix A as one section. These texts are replaced by a
   pointer to it, for the backends on the kernel:
@@ -200,26 +200,10 @@ so it does not change.
 - **Tests:** two generated suites (A.10) replace
   `tests/_kernel/test_condition_space.py`'s hand-assembled axes.
 - **Formal model:** `Valid()` in `BackendContract.dfy` already is A.1's tree.
-  `sdd/formal/StoreTree.dfy` states the model in Dafny. Its state and what it
-  still owes before acceptance are in Open question 2.
-- **Local's and SFTP's links** decode by A.7's policy once each runs on the
-  kernel. BUG-323, SFTP's recursive delete through a link at the key, is fixed
-  independently of this RFC.
-- **Follow-ups**, filed when this RFC is accepted: the public link option and a
-  capability that exposes `links`, and wiring the Dafny encodings into
-  `BackendContract.dfy`'s operations.
-
-## Open Questions
-
-1. **A.8's observation tables.** One table per encoding property, giving
-   (call, refusal shape) → the A.5 rows it is compatible with, and the driver
-   obligations that narrow them. They decide, among others, whether a
-   `PermissionDenied` is probed (PR #1127's second open finding). Owned by
-   BK-432 and drafted before this RFC is accepted.
-2. **The Dafny sketch.** `sdd/formal/StoreTree.dfy` verifies with
-   `bash scripts/dafny_verify.sh StoreTree.dfy` (28 verified, 0 errors), and
-   CI's `verify-formal` job runs it. Six mutants, each weakening one check or
-   rule, fail verification. Covered:
+  `sdd/formal/StoreTree.dfy` states the model in Dafny and verifies with
+  `bash scripts/dafny_verify.sh StoreTree.dfy` (28 verified, 0 errors). CI's
+  `verify-formal` job runs it. Six mutants, each weakening one check or rule,
+  fail verification. It covers:
     - the tree and its resolution;
     - a flat encoding's partial `decode`, which yields a valid tree;
     - a flat lookup, a `list_page(k, limit=1)` and an ancestor `stat` agree
@@ -234,9 +218,19 @@ so it does not change.
       copies exactly its item;
     - a flat encoding holds no empty folder (A.6).
 
-    Still open: the hierarchical encoding's refusals, which belong with Open
-    question 1's tables. Links (A.7), observations (A.8) and changes under an
-    operation (A.9) stay outside the sketch.
+    Links (A.7), the refusal tables (A.8) and changes under an operation
+    (A.9) are outside the sketch.
+- **Local's and SFTP's links** decode by A.7's policy once each runs on the
+  kernel. BUG-323, SFTP's recursive delete through a link at the key, is fixed
+  independently of this RFC.
+- **Follow-ups**, filed when this RFC is accepted: the public link option and a
+  capability that exposes `links`, and wiring the Dafny encodings into
+  `BackendContract.dfy`'s operations.
+
+## Open Questions
+
+None. The two items owed before acceptance are done: A.8's tables, and the
+Dafny sketch described under Impact.
 
 ### Decided while drafting (maintainer, 2026-10-12)
 
@@ -262,6 +256,9 @@ so it does not change.
   link is always an item.
 - An omitted raw entry keeps its folder non-empty, so a recursive
   `delete_folder` that cannot remove it answers `DirectoryNotEmpty`.
+- One probe set (`NotFound`, `InvalidPath`, `AlreadyExists`,
+  `PermissionDenied`, untyped) for every call, and no driver obligation on how
+  a refusal is typed (A.8). `delete_folder`'s narrower set goes.
 - On a flat encoding, the probe, read-file and delete-file families trust the
   encoding, so `delete("k/a.txt")` below an item removes the raw entry.
 - A flat driver's `list_page` returns keys in byte-lexicographic order, a
@@ -429,9 +426,13 @@ folder, so there it vanishes. With folder objects it stays.
 A driver call observes the encoding, often only partly: a flat `stat` sees an
 item but not a folder, and a `list_page(limit=1)` sees whether a folder is
 empty. A refusal arrives as `NotFound`, `InvalidPath`, `AlreadyExists`,
-`PermissionDenied`, an untyped `RemoteStoreError`, or another type. For each
-encoding property one table gives **(call, shape) → the A.5 rows it is
-compatible with** (Open question 1). Then:
+`PermissionDenied`, an untyped `RemoteStoreError`, or another type.
+
+**The probe set** is those first five shapes. Drivers owe no rule about which
+of them a refusal takes: a wire's ENOTDIR may arrive as any of them, so each
+is compatible with every A.5 row the call can refuse on. Any other type
+(`BackendUnavailable`, `ResourceLocked`, `DirectoryNotEmpty`, ...) says
+nothing about the key and passes through unprobed. Then:
 
 1. A call that succeeds runs only its *determinants*: the probes that run
    whether or not it fails. They are A.3's `stat` before a flat folder
@@ -446,13 +447,44 @@ compatible with** (Open question 1). Then:
    answers `NotFound` in both `Nothing` rows, so it never tells them apart.
 3. A determinant fails closed: its failure is the operation's failure. A probe
    that runs only because the call refused fails open: if it cannot answer,
-   the refusal stands (BE-021).
+   the refusal stands (BE-021). When it answers, the row's A.5 result
+   replaces the refusal.
 
-A driver obligation removes rows from a shape's compatible set, and the table
-states it once. For example, "an encoding that refuses non-tree writes types
-ENOTDIR as `NotFound`, never `PermissionDenied`" removes the
-path-through-an-item row from `PermissionDenied`'s set. Without it the kernel
-probes a `PermissionDenied`.
+**Flat encoding** (`parents="none"`). A `stat` sees an item or answers
+`None`; it cannot tell a folder from nothing. Per call, after a refusal in
+the probe set:
+
+| Call | Rows it can refuse on | Results differ? | Probe |
+|---|---|---|---|
+| `get`, `delete` | `Folder`, `Nothing` | yes: `InvalidPath` against `NotFound` | `list_page(k, limit=1)`: non-empty is `Folder` |
+| `put`, `open_write`, commit | none: A.4's checks ran first, so the key is `Item` or `Nothing` | no | none; the refusal stands |
+| `list_page(k)`, first page | `Item`, `Nothing` (A.3's `stat` ran first) | no: both are empty | none; a `NotFound` or `InvalidPath` reads as empty, any other shape stands |
+| `move`, `copy` | the source as `get`, the destination as `put` | as those | as those |
+
+**Hierarchical encoding** (folder objects, `parents` other than `"none"`). A
+`stat` sees an item or a folder. A miss is `None`, or a `NotFound` or
+`InvalidPath`, since a POSIX `stat` below an item raises ENOTDIR. Per call,
+after a refusal in the probe set:
+
+| Call | Rows it can refuse on | Results differ? | Probe |
+|---|---|---|---|
+| `get`, `delete` | `Folder`, `Nothing`, through an item | yes: `InvalidPath` against `NotFound` | `stat(k)`: a folder is `InvalidPath`, a miss `NotFound` |
+| write primitives (`put`, `open_write` and commit, `rename`, `copy`, `move` at the destination) | `Folder`, through an item; `Item` without `overwrite` | yes | `stat(k)`: a folder is `InvalidPath`, an item `AlreadyExists`; on a miss, the ancestors' `stat`s, shallowest first: an item among them is `InvalidPath` |
+| `ensure_parents` | through an item | no: `InvalidPath` | the ancestors' `stat`s, which name the item for the message |
+| `remove_folder` | `Item`, `Nothing`, through an item, a non-empty `Folder` | yes | `stat(k)` under `no_follow`: an item is `InvalidPath`, a miss `NotFound`; a folder then `list_page(k, limit=1)`: non-empty is `DirectoryNotEmpty` |
+| `delete_tree` | `Item`, `Nothing`, through an item | yes | `stat(k)` under `no_follow` |
+| `list_page(k)`, first page | `Item`, `Nothing`, through an item, an unreadable `Folder` | yes: empty against the refusal | `stat(k)`: a folder keeps the refusal, anything else is empty |
+
+**What drivers owe instead**, each stated once here:
+
+- A refusal changes nothing.
+- `get` and `delete` refuse a key that is not an item, and every write
+  primitive refuses a folder at its key or an item above it (hierarchical).
+  `remove_folder` refuses anything but an empty folder, and `delete_tree`
+  refuses an item, a link or nothing.
+- A flat driver's `list_page` returns keys in byte-lexicographic order (A.3).
+- `list_page` with `follow_links=False` never lists a link's target, and
+  `delete` on a link removes the link (A.7).
 
 ### A.9 Changes under an operation
 
