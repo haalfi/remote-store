@@ -463,13 +463,13 @@ module StoreTree {
   // -------------------------------------------------------------------------
   //
   // A driver call refused in the probe set may arrive on any row: drivers owe
-  // no rule about how a refusal is typed, and a denial or a dead connection
-  // can meet an existing item as well as a missing one.  The kernel then
-  // probes, concludes a row, and replaces the refusal with that row's A.5
-  // result only when the call must refuse there.  The lemma: whatever the
-  // actual row, the answer is the refusal itself or the A.5 result of the
-  // row that is really there, and never a result for a row where the call
-  // would have succeeded.
+  // no rule about how a refusal is typed, except the two A.8 names, and a
+  // denial or a dead connection can meet an existing item as well as a
+  // missing one.  The kernel then probes, concludes a row, and replaces the
+  // refusal with that row's A.5 result only where A.8 rule 4 allows it: on a
+  // row where the call must refuse, or, for a listing, on a row that holds
+  // nothing.  The lemmas: whatever the actual row, the answer is the refusal
+  // itself or the A.5 result of the row that is really there.
 
   // What is at the key, one level finer than Res: a folder is empty or not.
   datatype Row = AtItem | AtEmptyFolder | AtFullFolder | AtNothing | AtThroughItem
@@ -477,13 +477,17 @@ module StoreTree {
   // A.2's property that decides what one stat sees.
   datatype Namespace = FlatNs | HierNs
 
+  // Every driver call A.8's tables name.  move, copy and rename are a source
+  // read as Get and a destination written as Put.
   datatype Call =
     | Get | Delete
     | Put(overwrite: bool)
+    | EnsureParents
     | RemoveFolder | DeleteTree
+    | ListFirstPage
 
   datatype Answer =
-    | Ok | ENotFound | EInvalidPath | EAlreadyExists | EDirectoryNotEmpty
+    | Ok | EmptyListing | ENotFound | EInvalidPath | EAlreadyExists | EDirectoryNotEmpty
 
   // A.5's result for each call and row.
   function A5(c: Call, row: Row): Answer {
@@ -498,6 +502,10 @@ module StoreTree {
        case AtItem => if overwrite then Ok else EAlreadyExists
        case AtEmptyFolder | AtFullFolder | AtThroughItem => EInvalidPath
        case AtNothing => Ok)
+    case EnsureParents =>
+      (match row
+       case AtThroughItem => EInvalidPath
+       case _ => Ok)
     case RemoveFolder =>
       (match row
        case AtItem => EInvalidPath
@@ -509,11 +517,20 @@ module StoreTree {
        case AtItem => EInvalidPath
        case AtEmptyFolder | AtFullFolder => Ok
        case AtNothing | AtThroughItem => ENotFound)
+    case ListFirstPage =>
+      (match row
+       case AtEmptyFolder | AtFullFolder => Ok
+       case AtItem | AtNothing | AtThroughItem => EmptyListing)
   }
 
   // The rows on which the call must refuse: A.8's driver obligations.
   predicate MustRefuse(c: Call, row: Row) {
-    A5(c, row) != Ok
+    A5(c, row) != Ok && A5(c, row) != EmptyListing
+  }
+
+  // A.8 rule 4: the results a probe may put in place of a refusal.
+  predicate MaySubstitute(c: Call, row: Row) {
+    MustRefuse(c, row) || A5(c, row) == EmptyListing
   }
 
   // What the probe calls see at each row.
@@ -534,14 +551,33 @@ module StoreTree {
     row == AtThroughItem
   }
 
-  // A flat encoding holds no empty folder (§7).
-  predicate Possible(ns: Namespace, row: Row) {
-    !(ns == FlatNs && row == AtEmptyFolder)
+  // The refusal's shape, where an obligation reads it.
+  datatype Shape = NotFoundOrInvalidPath | OtherShape
+
+  // The rows a call can meet at all.  A flat encoding holds no empty folder
+  // (§7).  A flat write runs A.4's checks first, so its key is no folder and
+  // nothing above it is an item.  A flat listing runs after A.3's stat found
+  // no item.  ensure_parents runs only with folder objects, on a
+  // hierarchical namespace.
+  predicate Possible(ns: Namespace, c: Call, row: Row) {
+    && !(ns == FlatNs && row == AtEmptyFolder)
+    && !(ns == FlatNs && c.Put? && (row == AtFullFolder || row == AtThroughItem))
+    && !(ns == FlatNs && c == ListFirstPage && row == AtItem)
+    && !(ns == FlatNs && c == EnsureParents)
   }
+
+  // A.8's flat listing obligation: a flat list_page answers NotFound or
+  // InvalidPath only when nothing lies under the prefix.
+  predicate Obligation(ns: Namespace, c: Call, row: Row, sh: Shape) {
+    (ns == FlatNs && c == ListFirstPage && sh == NotFoundOrInvalidPath) ==>
+      (row == AtNothing || row == AtThroughItem)
+  }
+
+  datatype Option<T> = None | Some(value: T)
 
   // The kernel's probe after a refusal, as A.8's tables state it: the row it
   // concludes, or None when it leaves the refusal standing.
-  function Probe(ns: Namespace, c: Call, row: Row): Option<Row> {
+  function Probe(ns: Namespace, c: Call, row: Row, sh: Shape): Option<Row> {
     var s := Stat(ns, row);
     match c
     case Get | Delete =>
@@ -551,10 +587,12 @@ module StoreTree {
       else Some(AtNothing)
     case Put(_) =>
       if s == SeesItem then Some(AtItem)
+      else if ns == FlatNs then None
       else if s == SeesFolder then Some(AtFullFolder)
-      else if ns == FlatNs && ListNonEmpty(row) then Some(AtFullFolder)
-      else if ns == HierNs && AncestorIsItem(row) then Some(AtThroughItem)
+      else if AncestorIsItem(row) then Some(AtThroughItem)
       else Some(AtNothing)
+    case EnsureParents =>
+      if AncestorIsItem(row) then Some(AtThroughItem) else None
     case RemoveFolder | DeleteTree =>
       if ns == FlatNs then
         // BE-031's flat order: list first, stat only after an empty listing.
@@ -565,33 +603,37 @@ module StoreTree {
       else if s == SeesNone then Some(AtNothing)
       else if ListNonEmpty(row) then Some(AtFullFolder)
       else Some(AtEmptyFolder)
+    case ListFirstPage =>
+      if ns == FlatNs then
+        // No probe can see a flat folder; the obligation reads the shape.
+        if sh == NotFoundOrInvalidPath then Some(AtNothing) else None
+      else if s == SeesFolder then None
+      else if s == SeesItem then Some(AtItem)
+      else Some(AtNothing)
   }
 
-  datatype Option<T> = None | Some(value: T)
-
-  // A.8 rule 3: the concluded row's result replaces the refusal only where
-  // the call must refuse; anywhere else the refusal stands.
-  function KernelAnswer(ns: Namespace, c: Call, row: Row): Option<Answer> {
-    var p := Probe(ns, c, row);
-    if p.Some? && MustRefuse(c, p.value) then Some(A5(c, p.value)) else None
+  function KernelAnswer(ns: Namespace, c: Call, row: Row, sh: Shape): Option<Answer> {
+    var p := Probe(ns, c, row, sh);
+    if p.Some? && MaySubstitute(c, p.value) then Some(A5(c, p.value)) else None
   }
 
-  // The answer after a refusal is the refusal (None) or the A.5 result of
-  // the row actually there, and never a result for a row where the call
-  // would have succeeded.  So a delete refused on an existing item is never
-  // reported as NotFound, which missing_ok would turn into success.
-  lemma RefusalAnswersAreTrue(ns: Namespace, c: Call, row: Row)
-    requires Possible(ns, row)
-    ensures KernelAnswer(ns, c, row).Some? ==>
-      MustRefuse(c, row) && KernelAnswer(ns, c, row).value == A5(c, row)
+  // A.8 rule 4: the answer after a refusal is the refusal (None) or the A.5
+  // result of the row actually there, and only a result the rule allows: so
+  // a delete refused on an existing item is never reported as NotFound, which
+  // missing_ok would turn into success, and a listing refused on a folder that
+  // holds entries is never reported as empty.
+  lemma RefusalAnswersAreTrue(ns: Namespace, c: Call, row: Row, sh: Shape)
+    requires Possible(ns, c, row) && Obligation(ns, c, row, sh)
+    ensures KernelAnswer(ns, c, row, sh).Some? ==>
+      MaySubstitute(c, row) && KernelAnswer(ns, c, row, sh).value == A5(c, row)
   {}
 
-  // And the probe is not idle: wherever the call must refuse, the kernel
-  // types the refusal, except on a flat encoding where a write's refusal of
-  // an ancestor item is A.4's determinant's job, not the probe's.
-  lemma RefusalsAreTyped(ns: Namespace, c: Call, row: Row)
-    requires Possible(ns, row) && MustRefuse(c, row)
-    requires !(ns == FlatNs && c.Put? && row == AtThroughItem)
-    ensures KernelAnswer(ns, c, row) == Some(A5(c, row))
+  // And the probe is not idle: wherever the call must refuse, or a listing's
+  // row holds nothing, the kernel types the refusal.  The flat listing
+  // depends on its shape, since no probe can see a flat folder.
+  lemma RefusalsAreTyped(ns: Namespace, c: Call, row: Row, sh: Shape)
+    requires Possible(ns, c, row) && MaySubstitute(c, row)
+    requires (ns == FlatNs && c == ListFirstPage) ==> sh == NotFoundOrInvalidPath
+    ensures KernelAnswer(ns, c, row, sh) == Some(A5(c, row))
   {}
 }

@@ -208,7 +208,7 @@ stored key the key rule refuses (`a\b`) is already omitted and logged today
 - **Formal model:** `Valid()` in `BackendContract.dfy` already is A.1's tree.
   `sdd/formal/StoreTree.dfy` states the model in Dafny and verifies with
   `bash scripts/dafny_verify.sh StoreTree.dfy` (33 verified, 0 errors). CI's
-  `verify-formal` job runs it. Nine mutants, each weakening one check or rule,
+  `verify-formal` job runs it. Eleven mutants, each weakening one check or rule,
   fail verification; the trace's verify phase lists each edit and the
   command. It covers:
     - the tree and its resolution;
@@ -279,6 +279,10 @@ argued in prose only, as D10 states.
   with links signals a link that does not decode with `InvalidPath`. A
   link that does not decode outranks the entry rule, so only `delete` removes
   it; a read of a link under `no_follow` is `InvalidPath`.
+- A flat driver's `list_page` answers `NotFound` or `InvalidPath` only when
+  nothing lies under the prefix (A.8), so a refused first page reads as empty
+  without hiding entries. The verification pass after the closing round found
+  the gap, and `StoreTree.dfy` §11 now models listings.
 - A flat driver's `list_page` returns keys in byte-lexicographic order, a
   driver obligation, so the kernel needs no buffer for the recursive omission.
 - A link as a transfer source: `move` moves the link, and `copy` copies the
@@ -397,7 +401,7 @@ flat wire: another writer can act between the check and the write.
 | delete-file | `delete` |
 | folder-read | `list_files`, `list_folders`, `iter_children`, `get_folder_info`, and `glob` over its pattern's literal prefix |
 | delete-folder | `delete_folder` |
-| transfer | `move`, `copy`: the source as read-file, the destination as write-file, in BE-018's order |
+| transfer | `move`, `copy`: the source as read-file, except that a `move` source names the entry at the key (A.7); the destination as write-file; in BE-018's order |
 
 | Resolves to | probe `exists`/`is_file`/`is_folder` | read-file | write-file | delete-file | folder-read | delete-folder |
 |---|---|---|---|---|---|---|
@@ -456,8 +460,8 @@ empty. A refusal arrives as `NotFound`, `InvalidPath`, `AlreadyExists`,
 `PermissionDenied`, an untyped `RemoteStoreError`, or another type.
 
 **The probe set** is those first five shapes. Drivers owe no rule about which
-of them a refusal takes, except the one for drivers with links below: a
-wire's ENOTDIR may arrive as any of them. Any other type
+of them a refusal takes, except the two typing rules at the end of this
+section: a wire's ENOTDIR may arrive as any of them. Any other type
 (`BackendUnavailable`, `ResourceLocked`, `DirectoryNotEmpty`, ...) says
 nothing about the key and passes through unprobed. Then:
 
@@ -475,18 +479,23 @@ nothing about the key and passes through unprobed. Then:
 3. A determinant fails closed: its failure is the operation's failure. A probe
    that runs only because the call refused fails open: if it cannot answer,
    the refusal stands (BE-021).
-4. **A probe replaces the refusal only on a row where the call must refuse.**
-   A refusal in the probe set can meet any row, since a denial or a dead
-   connection meets an existing item as well as a missing one. So when the
-   probe concludes a row where A.5 gives the call success (an item for
-   `get`, an empty folder for `remove_folder`, nothing for a write), the
-   refusal stands. Otherwise that row's A.5 result replaces it.
+4. **A probe replaces the refusal only on a row where the call must refuse,
+   or, for a listing, on a row that holds nothing.** A refusal in the probe
+   set can meet any row, since a denial or a dead connection meets an
+   existing item as well as a missing one. So when the probe concludes a row
+   where A.5 gives the call success (an item for `get`, an empty folder for
+   `remove_folder`, nothing for a write, a folder for a listing), the refusal
+   stands. Otherwise that row's A.5 result replaces it.
 
 The tables split by `namespace`, which decides what one `stat` sees; a
 `parents="none"` driver on a hierarchical namespace takes the hierarchical
 table, except that its `delete_folder` follows BE-031's `parents="none"`
-sequence and so the flat `delete_tree` row, and it has no `remove_folder`. `StoreTree.dfy` §11 enumerates every call, namespace and row, and proves
-rule 4: the answer is the refusal or the A.5 result of the row actually there.
+sequence and so the flat `delete_tree` row, and it has no `remove_folder`.
+`StoreTree.dfy` §11 enumerates every call these tables name (`get`,
+`delete`, `put`, `ensure_parents`, `remove_folder`, `delete_tree`, the first
+listing page; `move`, `copy` and `rename` as a source read and a destination
+write), each namespace and each row, and proves rule 4: the answer is the
+refusal or the A.5 result of the row actually there.
 
 **Flat namespace.** A `stat` sees an item or answers `None`; it cannot tell a
 folder from nothing. Per call, after a refusal in the probe set:
@@ -496,7 +505,7 @@ folder from nothing. Per call, after a refusal in the probe set:
 | `get`, `delete` | `stat(k)`, then on `None` `list_page(k, limit=1)` | an item: the refusal stands; a non-empty listing: `InvalidPath`; an empty one: `NotFound` |
 | `put`, `open_write`, commit | `stat(k)` (A.4's checks ran first, so the key is no folder and nothing above it is an item) | an item without `overwrite`: `AlreadyExists`; anything else: the refusal stands |
 | `delete_tree` (BE-031's flat order) | `list_page(k, limit=1)` first, then `stat(k)` after an empty listing | a non-empty listing: the refusal stands; then an item: `InvalidPath`; `None`: `NotFound` |
-| `list_page(k)`, first page | none (A.3's `stat` ran first and found no item) | a `NotFound` or `InvalidPath` is an empty listing, since a flat folder exists only while it holds entries; any other shape stands |
+| `list_page(k)`, first page | none: no probe can see a flat folder, and A.3's `stat` ran first and found no item | a `NotFound` or `InvalidPath` is an empty listing, by the flat listing obligation below; any other shape stands |
 | `move`, `copy` | the source as `get`, the destination as `put` | as those |
 
 **Hierarchical namespace.** A `stat` sees an item or a folder. A miss is
@@ -525,8 +534,13 @@ raises ENOTDIR. Per call, after a refusal in the probe set:
 - A driver declaring `links="present"` refuses a key whose link does not decode
   with `InvalidPath`, from `stat` and from every call, and types its own
   ENOTDIR as `NotFound`. So an `InvalidPath` from such a driver's `stat` means
-  "does not decode", never a miss. This is the one typing rule, and it binds
-  only drivers with links.
+  "does not decode", never a miss. This typing rule binds only drivers with
+  links.
+- A flat driver's `list_page` answers `NotFound` or `InvalidPath` only when
+  nothing lies under the prefix, an absent container included (BE-021).
+  Since no probe can see a flat folder, this is what lets a refused first
+  page read as empty without hiding entries. This typing rule binds only
+  flat drivers' listings.
 
 ### A.9 Changes under an operation
 
