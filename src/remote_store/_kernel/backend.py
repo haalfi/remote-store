@@ -64,7 +64,7 @@ class DriverBackend(_KernelCore, Backend):
             return Backend.read_seekable(self, path)
         self._guard()
         key = self._file_key(path)
-        entry = self._stat(Op.READ_SEEKABLE, key)
+        entry = self._node_at(Op.READ_SEEKABLE, key)
         if entry is None:
             raise NotFound(f"Not found: {key}", path=key, backend=self.name)
         if entry.kind != "file":
@@ -127,9 +127,18 @@ class _RangeReader(io.RawIOBase):
         return len(data)
 
     def readall(self) -> bytes:
-        """The rest of the file in one ranged request, not one per default buffer."""
-        want = max(self._size - self._pos, 0)
-        return self._fetch(want) if want else b""
+        """The rest of the file: one ranged request, repeated only after a short answer.
+
+        ``get_range`` may return fewer bytes than asked, so the rest is asked
+        for again until it has all arrived or an answer comes back empty.
+        """
+        chunks: list[bytes] = []
+        while (want := self._size - self._pos) > 0:
+            data = self._fetch(want)
+            if not data:
+                break
+            chunks.append(data)
+        return b"".join(chunks)
 
 
 class _HandleStream(io.RawIOBase):

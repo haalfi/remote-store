@@ -39,6 +39,9 @@ class Driver(Protocol):
     def stat(self, key: str, *, follow_links: bool = True) -> Entry | None:
         """The node at *key*, file or folder, or ``None`` when absent.
 
+        On a flat wire it may be a lookup of the key alone, blind to a prefix:
+        the kernel finds a folder there with one ``list_page(limit=1)``.
+
         ``follow_links=False`` is ``delete_folder``'s view: a link is then a
         non-folder entry, whatever it points to.
         """
@@ -167,7 +170,11 @@ class SupportsAtomicMove(Protocol):
     """A move the wire performs whole; the kernel never sequences its checks."""
 
     def move(self, src: str, dst: str, *, overwrite: bool) -> None:
-        """Move the file *src* to *dst*."""
+        """Move the file *src* to *dst*.
+
+        Refuses a folder at *dst*, *overwrite* or not, without changing
+        anything; on a flat wire a folder is a non-empty prefix.
+        """
         ...
 
 
@@ -192,7 +199,11 @@ class SupportsCopy(Protocol):
     """A copy on the wire."""
 
     def copy(self, src: str, dst: str, *, overwrite: bool) -> None:
-        """Copy the file *src* to *dst*."""
+        """Copy the file *src* to *dst*.
+
+        Refuses a folder at *dst*, *overwrite* or not, without changing
+        anything; on a flat wire a folder is a non-empty prefix.
+        """
         ...
 
 
@@ -203,7 +214,10 @@ class SupportsDeleteTree(Protocol):
     def delete_tree(self, key: str) -> None:
         """Remove the folder at *key* and everything under it.
 
-        Refuses a file or an absent key without removing anything.
+        Where folder objects exist (``parents`` is not ``"none"``), refuses a
+        file or an absent key without removing anything. With
+        ``parents == "none"`` it removes what lies under the prefix ``key/``
+        and leaves a file named by *key* itself.
         """
         ...
 

@@ -1348,14 +1348,18 @@ measurements, are recorded in BK-389's dossier, decisions 6 and 8.
 
 ### BE-030: Key Rule on the Kernel
 
-**Invariant:** a class on the kernel validates and normalises every key before
-its driver sees it, and decides the root on the result. A driver receives only
-canonical keys: no leading `/`, no empty, `.` or `..` segment, no null byte, no
-backslash, and `""` for the root.
+**Invariant:** a class on the kernel validates and normalises every key an
+operation names before its driver sees it, and decides the root on the result.
+An operation's driver call receives only canonical keys: no leading `/`, no
+empty, `.` or `..` segment, no null byte, no backslash, and `""` for the root.
+The addressing members are the one exception, stated under **Addressing stays
+total** below.
 
 **Pipeline, per operation**, in this order:
 
-1. The closed guard (BE-020), when the driver declares `close_is_terminal`.
+1. The closed guard (BE-020), when the driver declares `close_is_terminal`. The
+   class's own `close_is_terminal` must be the driver's; the kernel refuses to
+   construct over one that differs.
 2. Refusals, raising `InvalidPath`: a key starting with `/`, a `..` segment, a
    null byte, a backslash.
 3. Normalisation: empty and `.` segments are dropped, so `//`, `/./` and a
@@ -1461,12 +1465,13 @@ says nothing about the key. A `delete_tree` refusal gets the `stat` probe only.
 - *Folder objects, `recursive=True`, with `delete_tree`:* `delete_tree(key)`.
 - *Folder objects, `recursive=True`, without it (the walk):* `list_page(prefix,
   delimiter="/")` down the tree, then every file deleted, then `remove_folder`
-  deepest first and `key` last. On the way, a refusal goes through the probe
-  rule for its own entry with two differences: an absent outcome is tolerated
-  (the entry is already gone), and a file `delete` whose probe finds a file keeps
+  deepest first and `key` last. On the way, a typed `NotFound` from any call
+  (a subfolder's listing, a file's `delete`, a subfolder's `remove_folder`) is
+  tolerated without a probe: the entry is already gone. Any other refusal on the
+  way goes through the probe rule for its own entry with two differences: an
+  absent outcome is tolerated, and a file `delete` whose probe finds a file keeps
   its own refusal. A refusal of `key`'s own listing goes through the probe rule
-  for `key`; a subfolder listing answering `NotFound` is tolerated. Only the
-  calls on `key` itself apply `missing_ok`.
+  for `key`. Only the calls on `key` itself apply `missing_ok`.
 - *`parents == "none"`:* list first, `stat` only after an empty listing. A
   non-recursive call lists `limit=1` with `delimiter="/"`; a recursive one lists
   with `delimiter=None`, `limit=1` before `delete_tree`, or paged without

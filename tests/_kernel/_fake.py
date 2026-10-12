@@ -145,6 +145,7 @@ class FakeStore:
         self.faults: list[Fault] = []
         self.container = True
         self.page_size = page_size
+        self.range_cap: int | None = None
 
     # arrangement
 
@@ -333,7 +334,8 @@ class FakeStore:
         self._hit("get_range", key)
         if key not in self.files:
             raise FakeMissing(key)
-        return self.files[key].data[offset : offset + length]
+        # ``range_cap``: a wire that answers a range with fewer bytes than asked.
+        return self.files[key].data[offset : offset + min(length, self.range_cap or length)]
 
     def move(self, src: str, dst: str, *, overwrite: bool) -> None:
         self._hit("move", src)
@@ -359,6 +361,8 @@ class FakeStore:
         self._hit("copy", src)
         if src not in self.files:
             raise FakeMissing(src)
+        if self.kind(dst) == "folder":  # SupportsCopy's obligation
+            raise FakeIsDir(dst)
         if dst in self.files and not overwrite:
             raise FakeExists(dst)
         rec = self.files[src]
@@ -475,7 +479,7 @@ class _SyncBase:
         self.classified: list[tuple[str, Op, str]] = []
 
     def stat(self, key: str, *, follow_links: bool = True) -> Entry | None:
-        return self.store.stat(key, follow_links=follow_links)
+        return _flat_stat(self, self.store.stat(key, follow_links=follow_links))
 
     def get(self, key: str) -> Any:
         return _FaultyStream(self.store, key, self.store.get(key))
@@ -528,6 +532,13 @@ class _SyncBase:
 
     def resolve(self, key: str) -> ResolutionPlan:
         return ResolutionPlan(kind="fake", backend=self.name, key=key, native_path=f"plan:{key}", details={})
+
+
+def _flat_stat(driver: _SyncBase, entry: Entry | None) -> Entry | None:
+    # A flat wire's stat is a HEAD on the key: it never sees a prefix as a folder.
+    if driver.namespace == "flat" and entry is not None and entry.kind == "folder":
+        return None
+    return entry
 
 
 class _FaultyStream(io.BytesIO):
@@ -599,7 +610,7 @@ class _AsyncHandle:
 
 class _AsyncBase(_SyncBase):
     async def stat(self, key: str, *, follow_links: bool = True) -> Entry | None:  # type: ignore[override]
-        return self.store.stat(key, follow_links=follow_links)
+        return _flat_stat(self, self.store.stat(key, follow_links=follow_links))
 
     async def get(self, key: str) -> AsyncIterator[bytes]:  # type: ignore[override]
         return _chunks(self.store, key, self.store.get(key))
@@ -687,7 +698,9 @@ def make_kernel(
         close_is_terminal=close_is_terminal,
         rename_replaces=rename_replaces,
     )
-    kernel_cls = DriverBackend if runtime == "sync" else AsyncDriverBackend
+    base_cls = DriverBackend if runtime == "sync" else AsyncDriverBackend
+    # A class on the kernel declares the driver's close posture as its own ClassVar.
+    kernel_cls = type(f"Fake{runtime.title()}Kernel", (base_cls,), {"close_is_terminal": close_is_terminal})
     kernel = kernel_cls(driver, reject_write_under_file_ancestor=reject_write_under_file_ancestor)
     return Runner(runtime, kernel, store, driver)
 

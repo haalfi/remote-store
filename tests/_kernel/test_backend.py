@@ -51,6 +51,16 @@ def test_reading_the_rest_of_a_ranged_stream_is_one_request() -> None:
 
 
 @pytest.mark.spec("SEEK-001")
+def test_a_short_range_answer_is_completed_not_truncated() -> None:
+    store = FakeStore().add("big", data=bytes(range(256)) * 40)  # 10240 bytes
+    store.range_cap = 4096  # the wire answers at most 4 KiB per range
+    run = make_kernel("sync", store, protocols=("remove_folder", "range"))
+    with run.kernel.read_seekable("big") as stream:
+        assert stream.read() == store.files["big"].data
+    assert len(store.called("get_range")) == 3
+
+
+@pytest.mark.spec("SEEK-001")
 def test_read_seekable_spools_over_read_without_ranged_reads() -> None:
     run = make_kernel("sync", _store(), protocols=("remove_folder",))
     with run.kernel.read_seekable("f") as stream:

@@ -9,6 +9,7 @@ the kernel's choke point or its own rules.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -348,6 +349,32 @@ def test_glob_folder_listings_and_iter_children_omit_a_non_canonical_key(
 
 
 @pytest.mark.spec("BE-030")
+@pytest.mark.parametrize("member", ["list_files", "list_folders", "iter_children", "glob"])
+def test_a_listing_stopped_early_still_logs_what_it_omitted(
+    runtime: str, member: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    store = FakeStore()
+    store.add("d/a.csv", "d/b/x")
+    store.files["d/\\x.csv"] = store.files["d/a.csv"]  # sorts before d/a.csv
+    store.folders.add("d/\\y")  # and before d/b
+    run = make_kernel(runtime, store, caps=(Capability.READ, Capability.LIST, Capability.GLOB))
+    arg = "d/*.csv" if member == "glob" else "d"
+    listing = getattr(run.kernel, member)(arg)
+
+    async def first_then_stop() -> None:
+        await listing.__anext__()
+        await listing.aclose()
+
+    with caplog.at_level("WARNING", logger="remote_store._kernel"):
+        if runtime == "sync":
+            next(listing)
+            listing.close()
+        else:
+            asyncio.run(first_then_stop())
+    assert [r.getMessage() for r in caplog.records if "omitted 1 listed key(s)" in r.getMessage()]
+
+
+@pytest.mark.spec("BE-030")
 @pytest.mark.spec("BE-031")
 def test_a_recursive_delete_cannot_empty_a_folder_holding_an_omitted_key(runtime: str) -> None:
     store = FakeStore()
@@ -666,6 +693,32 @@ def test_a_raising_wrong_type_probe_leaves_the_original_not_found(runtime: str) 
 
 
 @pytest.mark.spec("BE-021")
+@pytest.mark.spec("BE-018")
+def test_a_flat_driver_finds_a_prefix_folder_by_one_listing_probe(runtime: str) -> None:
+    # A flat wire's stat is a HEAD: it cannot see the prefix "d", so the kernel
+    # asks one list_page(limit=1) instead, as the flat classes do today (BK-324).
+    store = FakeStore(parents="none").add("d/x", "f")
+    run = make_kernel(runtime, store, namespace="flat", protocols=("copy",))
+    for call in (
+        lambda: run.read_bytes("d"),
+        lambda: run.get_file_info("d"),
+        lambda: run.delete("d", missing_ok=True),
+        lambda: run.copy("d", "e"),
+        lambda: run.move("d", "e"),
+    ):
+        with pytest.raises(InvalidPath):
+            call()
+    assert (run.exists("d"), run.is_folder("d"), run.is_file("d")) == (True, True, False)
+    assert (run.exists("zz"), run.is_folder("zz")) == (False, False)
+    assert sorted(store.files) == ["d/x", "f"]
+    probes = [c for c in store.calls if c == ("list_page", "d")]
+    assert probes  # the prefix was found by listing, never by stat
+    store.calls.clear()
+    assert run.read_bytes("f") == b"x"
+    assert store.called("list_page") == []  # a hit spends no probe
+
+
+@pytest.mark.spec("BE-021")
 def test_a_hit_spends_no_probe(runtime: str) -> None:
     run = _kernel(runtime)
     assert run.read_bytes("f") == b"F"
@@ -918,6 +971,56 @@ def test_move_over_an_existing_file_by_each_route(
 
 
 @pytest.mark.spec("BE-018")
+def test_a_failed_restore_is_logged_with_where_the_old_file_lies(
+    runtime: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    store = FakeStore().add("s", data=b"S").add("t", data=b"T")
+    run = make_kernel(runtime, store, protocols=("remove_folder", "rename"), rename_replaces=False)
+    store.fault("rename", FakeDown("move lost"), nth=2)  # the move itself
+    # The restore: a fault counts only the calls that reach it, and the raise
+    # on the move stopped the scan before this one, so it is its second.
+    store.fault("rename", FakeDown("restore lost"), nth=2)
+    with caplog.at_level("WARNING", logger="remote_store._kernel"), pytest.raises(BackendUnavailable):
+        run.move("s", "t", overwrite=True)
+    (parked,) = [k for k in store.files if k not in ("s", "t")]
+    assert store.files[parked].data == b"T"
+    assert any(repr(parked) in r.getMessage() and "'t'" in r.getMessage() for r in caplog.records)
+
+
+@pytest.mark.spec("BE-018")
+@pytest.mark.spec("BE-019")
+@pytest.mark.parametrize(
+    ("member", "protocols"),
+    [("move", "atomic_move"), ("move", "copy"), ("move", "rename"), ("copy", "copy")],
+)
+def test_a_destination_refusal_names_the_destination(runtime: str, member: str, protocols: str) -> None:
+    store = FakeStore().add("s", data=b"S").add("t", data=b"T").add("dir/x")
+    caps = (Capability.READ, Capability.WRITE, Capability.COPY) if protocols == "copy" else ()
+    run = make_kernel(runtime, store, protocols=("remove_folder", protocols), caps=caps)
+    with pytest.raises(AlreadyExists) as exists:
+        getattr(run, member)("s", "t")
+    assert exists.value.path == "t"
+    with pytest.raises(InvalidPath) as folder:
+        getattr(run, member)("s", "dir", overwrite=True)
+    assert folder.value.path == "dir"
+    assert (store.files["s"].data, store.files["t"].data) == (b"S", b"T")
+    assert sorted(store.files) == ["dir/x", "s", "t"]
+
+
+@pytest.mark.spec("BE-018")
+@pytest.mark.spec("BE-011")
+def test_a_refused_move_or_atomic_write_creates_no_destination_parents(runtime: str) -> None:
+    store = FakeStore().add("src")
+    run = make_kernel(runtime, store, protocols=("remove_folder", "ensure_parents"))
+    with pytest.raises(CapabilityNotSupported):
+        run.move("src", "a/b/c")
+    with pytest.raises(CapabilityNotSupported):
+        run.write_atomic("x/y/z", b"data")
+    assert store.called("ensure_parents") == []
+    assert sorted(store.folders) == []
+
+
+@pytest.mark.spec("BE-018")
 def test_displace_and_restore_puts_the_old_file_back_when_the_move_fails(runtime: str) -> None:
     store = FakeStore().add("s", data=b"S").add("t", data=b"T")
     run = make_kernel(runtime, store, protocols=("remove_folder", "rename"), rename_replaces=False)
@@ -1021,10 +1124,24 @@ def test_a_driver_with_folder_objects_and_no_remove_folder_is_refused(runtime: s
         make_kernel(runtime, FakeStore(parents="implicit"), protocols=("delete_tree",))
 
 
+@pytest.mark.spec("BE-020")
+@pytest.mark.parametrize("terminal", [True, False])
+def test_the_class_close_posture_must_be_the_drivers(runtime: str, terminal: bool) -> None:
+    run = _kernel(runtime, close_is_terminal=terminal)
+    assert run.kernel.close_is_terminal is terminal  # what the conformance lanes read
+    base = type(run.kernel).__mro__[1]  # DriverBackend / AsyncDriverBackend, ClassVar False
+    if terminal:
+        with pytest.raises(ValueError, match="close_is_terminal"):
+            base(run.driver)
+    else:
+        assert base(run.driver).close_is_terminal is False
+
+
 @pytest.mark.spec("BE-003")
 @pytest.mark.parametrize(
     ("caps", "protocols", "message"),
     [
+        ((Capability.MOVE,), ("remove_folder",), "MOVE"),
         ((Capability.GLOB,), ("remove_folder",), "GLOB"),
         ((Capability.COPY,), ("remove_folder",), "COPY"),
         ((Capability.ATOMIC_MOVE,), ("remove_folder", "copy"), "ATOMIC_MOVE"),

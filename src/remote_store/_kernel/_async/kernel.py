@@ -45,7 +45,7 @@ from remote_store._kernel._async.driver import (
     AsyncSupportsRemoveFolder,
     AsyncSupportsRename,
 )
-from remote_store._kernel._model import Op
+from remote_store._kernel._model import Entry, Op
 from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult, _known_modified_at
 from remote_store._path import RemotePath
 
@@ -56,7 +56,7 @@ if TYPE_CHECKING:
 
     from remote_store._capabilities import CapabilitySet
     from remote_store._kernel._async.driver import AsyncDriver
-    from remote_store._kernel._model import Entry, Page, PutResult
+    from remote_store._kernel._model import Page, PutResult
     from remote_store._resolution import ResolutionPlan
 
     T = TypeVar("T")
@@ -93,6 +93,10 @@ def _check_construction(driver: AsyncDriver) -> None:
         raise ValueError(msg)
     if caps.supports(Capability.COPY) and not isinstance(driver, AsyncSupportsCopy):
         msg = f"driver {driver.name!r} declares COPY without copy"
+        raise ValueError(msg)
+    movers = (AsyncSupportsAtomicMove, AsyncSupportsRename, AsyncSupportsCopy)
+    if caps.supports(Capability.MOVE) and not isinstance(driver, movers):
+        msg = f"driver {driver.name!r} declares MOVE without a move, a rename or a copy"
         raise ValueError(msg)
 
 
@@ -192,6 +196,15 @@ class _AsyncKernelCore:
 
     def __init__(self, driver: AsyncDriver, *, reject_write_under_file_ancestor: bool = False) -> None:
         _check_construction(driver)
+        # The class's own close_is_terminal is what callers and the conformance
+        # lanes read; the guard reads the driver's. They must be one answer.
+        declared = getattr(type(self), "close_is_terminal", driver.close_is_terminal)
+        if declared != driver.close_is_terminal:
+            msg = (
+                f"{type(self).__name__}.close_is_terminal is {declared}, but driver {driver.name!r}"
+                f" declares close_is_terminal={driver.close_is_terminal}"
+            )
+            raise ValueError(msg)
         self._driver = driver
         self._reject_under_file = reject_write_under_file_ancestor
         self._closed = False
@@ -313,10 +326,24 @@ class _AsyncKernelCore:
         with self._choke(op, key):
             return await self._driver.stat(key, follow_links=follow_links)
 
+    async def _node_at(self, op: Op, key: str) -> Entry | None:
+        """What is at *key*: ``stat``, and on a flat driver one listing probe for a folder.
+
+        A flat wire's ``stat`` is a lookup of the key and cannot see a prefix,
+        so a miss there is followed by one ``list_page(limit=1)``, the probe
+        the flat classes issue today; a hierarchical ``stat`` answers alone.
+        """
+        entry = await self._stat(op, key)
+        if entry is not None or not key or self._driver.namespace != "flat":
+            return entry
+        with self._choke(op, key):
+            page = await self._driver.list_page(key, delimiter="/", limit=1)
+        return Entry(key, "folder") if page.entries or page.prefixes else None
+
     async def _stat_open(self, op: Op, key: str) -> Entry | None:
-        """An error-path ``stat``: fail-open, so a raising probe reads as no answer."""
+        """An error-path probe: fail-open, so a raising probe reads as no answer."""
         try:
-            return await self._stat(op, key)
+            return await self._node_at(op, key)
         except RemoteStoreError:
             return None
 
@@ -368,12 +395,13 @@ class _AsyncKernelCore:
 
     # region: probes (BE-004, BE-005, BE-029)
 
-    async def _node(self, op: Op, path: str) -> Entry | None:
+    async def _node(self, op: Op, path: str, *, folders: bool = True) -> Entry | None:
         # BE-021: the three probes return False on a traversal error rather than raise.
+        # `folders=False` (is_file) needs no listing probe: a stat sees every file.
         self._guard()
         key = self._key(path)
         try:
-            return await self._stat(op, key)
+            return await (self._node_at(op, key) if folders else self._stat(op, key))
         except (NotFound, InvalidPath):
             return None
 
@@ -389,7 +417,7 @@ class _AsyncKernelCore:
         self._guard()
         if not self._key(path):
             return False
-        entry = await self._node(Op.IS_FILE, path)
+        entry = await self._node(Op.IS_FILE, path, folders=False)
         return entry is not None and entry.kind == "file"
 
     async def is_folder(self, path: str) -> bool:
@@ -426,7 +454,7 @@ class _AsyncKernelCore:
         """The file's metadata; a folder is ``InvalidPath``, absence ``NotFound``."""
         self._guard()
         key = self._file_key(path)
-        entry = await self._stat(Op.GET_FILE_INFO, key)
+        entry = await self._node_at(Op.GET_FILE_INFO, key)
         if entry is None:
             raise NotFound(f"Not found: {key}", path=key, backend=self.name)
         if entry.kind != "file":
@@ -502,20 +530,22 @@ class _AsyncKernelCore:
         self._guard()
         key = self._write_key(path)
         target = RemotePath(key)
-        await self._prepare_write(Op.WRITE_ATOMIC, key)
-        if self._driver.put_is_atomic:
-            result = await self._put(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
-        elif self._open_write is not None:
-            result = await self._write_through_handle(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
-        elif self._rename is not None and self._rename.rename_replaces:
-            result = await self._write_temp_and_rename(key, content, overwrite, metadata)
-        else:
+        renames = self._rename is not None and self._rename.rename_replaces
+        if not (self._driver.put_is_atomic or self._open_write is not None or renames):
+            # Capability data: decided before the parents are created.
             raise CapabilityNotSupported(
                 f"Backend '{self.name}' cannot write atomically",
                 path=key,
                 backend=self.name,
                 capability=Capability.ATOMIC_WRITE.value,
             )
+        await self._prepare_write(Op.WRITE_ATOMIC, key)
+        if self._driver.put_is_atomic:
+            result = await self._put(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
+        elif self._open_write is not None:
+            result = await self._write_through_handle(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
+        else:
+            result = await self._write_temp_and_rename(key, content, overwrite, metadata)
         return _write_result(target, result)
 
     async def _write_through_handle(
@@ -539,7 +569,7 @@ class _AsyncKernelCore:
         assert self._rename is not None
         op = Op.WRITE_ATOMIC
         if not overwrite:
-            existing = await self._stat(op, key)
+            existing = await self._node_at(op, key)
             if existing is not None:
                 raise self._occupied(existing, key)
         temp = _temp_key(key)
@@ -574,7 +604,7 @@ class _AsyncKernelCore:
         await self._transfer(Op.COPY, src, dst, overwrite)
 
     async def _require_file(self, op: Op, key: str) -> None:
-        entry = await self._stat(op, key)
+        entry = await self._node_at(op, key)
         if entry is None:
             raise NotFound(f"Not found: {key}", path=key, backend=self.name)
         if entry.kind != "file":
@@ -590,9 +620,14 @@ class _AsyncKernelCore:
             # BK-301: a self-operation is decided on the canonical keys.
             await self._require_file(op, source)
             return
+        # The means is capability data: decided before anything reaches the wire.
         if op is Op.COPY and self._copier is None:
             raise CapabilityNotSupported(
                 f"Backend '{self.name}' cannot copy", path=source, backend=self.name, capability="copy"
+            )
+        if op is Op.MOVE and self._atomic_move is None and self._rename is None and self._copier is None:
+            raise CapabilityNotSupported(
+                f"Backend '{self.name}' cannot move", path=source, backend=self.name, capability="move"
             )
         # The source's NotFound outranks the destination's preconditions (BE-018), so
         # the source is confirmed before the ancestor walk or parent creation can
@@ -610,24 +645,31 @@ class _AsyncKernelCore:
             except NotFound as err:
                 await self._folder_is_wrong_type(err, op, source)
                 raise
-            except AlreadyExists as err:
-                await self._destination_is_wrong_type(err, op, target)
+            except (AlreadyExists, InvalidPath) as err:
+                await self._destination_refused(err, op, target)
                 raise
         elif self._rename is not None:
             await self._rename_into(source, target, overwrite, source_checked=source_checked)
-        elif self._copier is not None:
+        else:
             await self._copy(op, source, target, overwrite)
             with self._choke(op, source):
                 await self._driver.delete(source)
-        else:
-            raise CapabilityNotSupported(
-                f"Backend '{self.name}' cannot move", path=source, backend=self.name, capability="move"
-            )
 
     async def _destination_is_wrong_type(self, err: RemoteStoreError, op: Op, key: str) -> None:
         entry = await self._stat_open(op, key)
         if entry is not None and entry.kind == "folder":
             raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
+
+    async def _destination_refused(self, err: RemoteStoreError, op: Op, target: str) -> None:
+        """Name the destination in a refusal a two-key call raised under the source's key.
+
+        ``classify`` sees the source key, so the choke point filled it in. A
+        folder at the destination is ``InvalidPath`` naming it; an
+        ``AlreadyExists`` can only be about the destination.
+        """
+        await self._destination_is_wrong_type(err, op, target)
+        if isinstance(err, AlreadyExists):
+            err.path = target
 
     async def _copy(self, op: Op, source: str, target: str, overwrite: bool) -> None:
         assert self._copier is not None
@@ -637,8 +679,18 @@ class _AsyncKernelCore:
         except NotFound as err:
             await self._folder_is_wrong_type(err, op, source)
             raise
-        except AlreadyExists as err:
-            await self._destination_is_wrong_type(err, op, target)
+        except (AlreadyExists, InvalidPath) as err:
+            await self._destination_refused(err, op, target)
+            raise
+
+    async def _rename_source(self, source: str, target: str, *, replace: bool) -> None:
+        assert self._rename is not None
+        try:
+            with self._choke(Op.MOVE, source):
+                await self._rename.rename(source, target, replace=replace)
+        except (AlreadyExists, InvalidPath) as err:
+            # A file or folder that appeared at the destination after its check.
+            await self._destination_refused(err, Op.MOVE, target)
             raise
 
     async def _rename_into(self, source: str, target: str, overwrite: bool, *, source_checked: bool) -> None:
@@ -646,12 +698,11 @@ class _AsyncKernelCore:
         op = Op.MOVE
         if not source_checked:
             await self._require_file(op, source)
-        existing = await self._stat(op, target)
+        existing = await self._node_at(op, target)
         if existing is not None and (existing.kind == "folder" or not overwrite):
             raise self._occupied(existing, target)
         if existing is None or self._rename.rename_replaces:
-            with self._choke(op, source):
-                await self._rename.rename(source, target, replace=existing is not None)
+            await self._rename_source(source, target, replace=existing is not None)
             return
         # Displace and restore: a rename that cannot replace moves the old file
         # aside, and puts it back when the move itself fails.
@@ -659,11 +710,18 @@ class _AsyncKernelCore:
         with self._choke(op, target):
             await self._rename.rename(target, parked, replace=False)
         try:
-            with self._choke(op, source):
-                await self._rename.rename(source, target, replace=False)
+            await self._rename_source(source, target, replace=False)
         except BaseException:
-            with contextlib.suppress(Exception):
+            try:
                 await self._rename.rename(parked, target, replace=False)
+            except Exception as restore:  # noqa: BLE001 - the move's own error is the one raised
+                _log.warning(
+                    "%s: move to %r failed and the displaced file could not be put back; it lies at %r: %s",
+                    self.name,
+                    target,
+                    parked,
+                    restore,
+                )
             raise
         try:
             with self._choke(op, parked):
@@ -692,11 +750,14 @@ class _AsyncKernelCore:
         self._guard()
         key = self._key(path)
         omitted = _Omitted(self.name, key)
-        async for entry in self._listed_files(Op.LIST_FILES, key, recursive, omitted):
-            if recursive and not within_depth(key, entry.key, max_depth):
-                continue
-            yield self._file_info(entry)
-        omitted.log()
+        try:
+            async for entry in self._listed_files(Op.LIST_FILES, key, recursive, omitted):
+                if recursive and not within_depth(key, entry.key, max_depth):
+                    continue
+                yield self._file_info(entry)
+        finally:
+            # A caller that stops early, or an error, still gets the omission logged.
+            omitted.log()
 
     def _folders_of(self, page: Page, seen: set[str], omitted: _Omitted) -> list[FolderEntry]:
         keys = [*page.prefixes, *(e.key for e in page.entries if e.kind == "folder")]
@@ -717,10 +778,12 @@ class _AsyncKernelCore:
         key = self._key(path)
         omitted = _Omitted(self.name, key)
         seen: set[str] = set()
-        async for page in self._pages(Op.LIST_FOLDERS, key, "/"):
-            for folder in self._folders_of(page, seen, omitted):
-                yield folder
-        omitted.log()
+        try:
+            async for page in self._pages(Op.LIST_FOLDERS, key, "/"):
+                for folder in self._folders_of(page, seen, omitted):
+                    yield folder
+        finally:
+            omitted.log()
 
     async def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
         """Files and immediate subfolders of *path*, in one listing pass."""
@@ -728,17 +791,19 @@ class _AsyncKernelCore:
         key = self._key(path)
         omitted = _Omitted(self.name, key)
         seen: set[str] = set()
-        async for page in self._pages(Op.ITER_CHILDREN, key, "/"):
-            for entry in page.entries:
-                if entry.kind != "file":
-                    continue
-                if not _keys.listable(entry.key):
-                    omitted.note(entry.key)
-                    continue
-                yield self._file_info(entry)
-            for folder in self._folders_of(page, seen, omitted):
-                yield folder
-        omitted.log()
+        try:
+            async for page in self._pages(Op.ITER_CHILDREN, key, "/"):
+                for entry in page.entries:
+                    if entry.kind != "file":
+                        continue
+                    if not _keys.listable(entry.key):
+                        omitted.note(entry.key)
+                        continue
+                    yield self._file_info(entry)
+                for folder in self._folders_of(page, seen, omitted):
+                    yield folder
+        finally:
+            omitted.log()
 
     async def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
         """Files matching *pattern*, refused and normalised by the pattern rule."""
@@ -767,29 +832,31 @@ class _AsyncKernelCore:
         except NotFound:
             return  # the listing bound: nothing has been yielded yet
         seen = False
-        while True:
-            entry: Entry | None = None
-            try:
-                with self._choke(Op.GLOB, canon):
-                    try:
-                        entry = await matches.__anext__()
-                    except StopAsyncIteration:
-                        entry = None
-            except NotFound:
-                # The listing bound, at the granularity a glob iterator exposes.
-                if seen:
-                    raise
-                break
-            if entry is None:
-                break
-            seen = True
-            if entry.kind != "file":
-                continue
-            if not _keys.listable(entry.key):
-                omitted.note(entry.key)
-                continue
-            yield self._file_info(entry)
-        omitted.log()
+        try:
+            while True:
+                entry: Entry | None = None
+                try:
+                    with self._choke(Op.GLOB, canon):
+                        try:
+                            entry = await matches.__anext__()
+                        except StopAsyncIteration:
+                            entry = None
+                except NotFound:
+                    # The listing bound, at the granularity a glob iterator exposes.
+                    if seen:
+                        raise
+                    break
+                if entry is None:
+                    break
+                seen = True
+                if entry.kind != "file":
+                    continue
+                if not _keys.listable(entry.key):
+                    omitted.note(entry.key)
+                    continue
+                yield self._file_info(entry)
+        finally:
+            omitted.log()
 
     # endregion
 
@@ -810,9 +877,11 @@ class _AsyncKernelCore:
         else:
             tally = FolderTally()
             omitted = _Omitted(self.name, key)
-            async for entry in self._listed_files(op, key, True, omitted):
-                tally.add(entry)
-            omitted.log()
+            try:
+                async for entry in self._listed_files(op, key, True, omitted):
+                    tally.add(entry)
+            finally:
+                omitted.log()
             count, size, latest = tally.count, tally.size, tally.latest
         if count == 0 and key:
             # The error path: an empty aggregate is a folder, a file or nothing.
