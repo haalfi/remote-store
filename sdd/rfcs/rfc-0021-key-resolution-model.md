@@ -200,11 +200,8 @@ so it does not change.
 - **Tests:** two generated suites (A.10) replace
   `tests/_kernel/test_condition_space.py`'s hand-assembled axes.
 - **Formal model:** `Valid()` in `BackendContract.dfy` already is A.1's tree.
-  Before acceptance, a sketch under `sdd/formal/` adds a flat and a
-  hierarchical encoding, a `decode` for each, and two lemmas, verified with
-  `scripts/dafny_verify.sh`: every write the library makes keeps the encoding
-  decodable (D4), and each family's result agrees with the tree's (D5)
-  (Open question 2).
+  `sdd/formal/StoreTree.dfy` states the model in Dafny. Its state and what it
+  still owes before acceptance are in Open question 2.
 - **Local's and SFTP's links** decode by A.7's policy once each runs on the
   kernel. BUG-323, SFTP's recursive delete through a link at the key, is fixed
   independently of this RFC.
@@ -219,9 +216,23 @@ so it does not change.
    obligations that narrow them. They decide, among others, whether a
    `PermissionDenied` is probed (PR #1127's second open finding). Owned by
    BK-432 and drafted before this RFC is accepted.
-2. **The Dafny sketch.** The encodings, `decode` and the two lemmas named in
-   Impact, verified before acceptance. A lemma that does not verify is a
-   contradiction in the model, and the prose is fixed to match.
+2. **The Dafny sketch.** `sdd/formal/StoreTree.dfy` verifies with
+   `bash scripts/dafny_verify.sh StoreTree.dfy` (20 verified, 0 errors), and
+   CI's `verify-formal` job runs it. Two mutants each drop one of A.4's checks,
+   and each fails verification. Covered so far:
+    - the tree and its resolution;
+    - a flat encoding's partial `decode`, which yields a valid tree;
+    - a flat lookup, a `list_page(k, limit=1)` and an ancestor `stat` agree
+      with the tree's item, folder and through-an-item answers;
+    - A.4's checks pass exactly where the tree's write does not answer
+      `InvalidPath`, and a write they pass keeps the encoding decodable and
+      agrees with the tree's write;
+    - a flat encoding holds no empty folder (A.6).
+
+    Still to state before acceptance: the folder-read, delete-folder and
+    transfer families against the tree, and the hierarchical encoding's
+    refusals. Links (A.7), listings (A.3), observations (A.8) and changes
+    under an operation (A.9) stay outside the sketch.
 
 ### Decided while drafting (maintainer, 2026-10-12)
 
