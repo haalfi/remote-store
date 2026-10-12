@@ -1003,6 +1003,9 @@ def test_a_destination_refusal_names_the_destination(runtime: str, member: str, 
     with pytest.raises(InvalidPath) as folder:
         getattr(run, member)("s", "dir", overwrite=True)
     assert folder.value.path == "dir"
+    with pytest.raises(InvalidPath) as under_file:  # BE-018's third InvalidPath: a file ancestor
+        getattr(run, member)("s", "t/b", overwrite=True)
+    assert under_file.value.path == "t/b"
     assert (store.files["s"].data, store.files["t"].data) == (b"S", b"T")
     assert sorted(store.files) == ["dir/x", "s", "t"]
 

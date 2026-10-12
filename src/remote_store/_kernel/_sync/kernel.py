@@ -182,7 +182,8 @@ class _KernelCore:
 
     Raises:
         ValueError: If the driver's declarations are not backed by its
-            protocols, or it has folder objects and no ``remove_folder``.
+            protocols, it has folder objects and no ``remove_folder``, or
+            the class's own ``close_is_terminal`` differs from the driver's.
     """
 
     def __init__(self, driver: Driver, *, reject_write_under_file_ancestor: bool = False) -> None:
@@ -637,7 +638,7 @@ class _KernelCore:
                 self._folder_is_wrong_type(err, op, source)
                 raise
             except (AlreadyExists, InvalidPath) as err:
-                self._destination_refused(err, op, target)
+                self._destination_refused(err, op, source, target)
                 raise
         elif self._rename is not None:
             self._rename_into(source, target, overwrite, source_checked=source_checked)
@@ -651,16 +652,22 @@ class _KernelCore:
         if entry is not None and entry.kind == "folder":
             raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
 
-    def _destination_refused(self, err: RemoteStoreError, op: Op, target: str) -> None:
+    def _destination_refused(self, err: RemoteStoreError, op: Op, source: str, target: str) -> None:
         """Name the destination in a refusal a two-key call raised under the source's key.
 
         ``classify`` sees the source key, so the choke point filled it in. A
         folder at the destination is ``InvalidPath`` naming it; an
-        ``AlreadyExists`` can only be about the destination.
+        ``AlreadyExists`` can only be about the destination; any other
+        ``InvalidPath`` is the destination's (a file ancestor) when
+        the source is still a file, which one fail-open probe confirms.
         """
         self._destination_is_wrong_type(err, op, target)
         if isinstance(err, AlreadyExists):
             err.path = target
+        elif err.path == source:
+            entry = self._stat_open(op, source)
+            if entry is not None and entry.kind == "file":
+                err.path = target
 
     def _copy(self, op: Op, source: str, target: str, overwrite: bool) -> None:
         assert self._copier is not None
@@ -671,7 +678,7 @@ class _KernelCore:
             self._folder_is_wrong_type(err, op, source)
             raise
         except (AlreadyExists, InvalidPath) as err:
-            self._destination_refused(err, op, target)
+            self._destination_refused(err, op, source, target)
             raise
 
     def _rename_source(self, source: str, target: str, *, replace: bool) -> None:
@@ -681,7 +688,7 @@ class _KernelCore:
                 self._rename.rename(source, target, replace=replace)
         except (AlreadyExists, InvalidPath) as err:
             # A file or folder that appeared at the destination after its check.
-            self._destination_refused(err, Op.MOVE, target)
+            self._destination_refused(err, Op.MOVE, source, target)
             raise
 
     def _rename_into(self, source: str, target: str, overwrite: bool, *, source_checked: bool) -> None:

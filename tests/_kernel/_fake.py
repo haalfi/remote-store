@@ -341,6 +341,8 @@ class FakeStore:
         self._hit("move", src)
         if src not in self.files:
             raise FakeMissing(src)
+        if self._under_file(dst):
+            raise FakeParentIsFile(dst)
         if dst in self.files and not overwrite:
             raise FakeExists(dst)
         if self.kind(dst) == "folder":
@@ -351,6 +353,8 @@ class FakeStore:
         self._hit("rename", src)
         if src not in self.files:
             raise FakeMissing(src)
+        if self._under_file(dst):
+            raise FakeParentIsFile(dst)
         if self.kind(dst) == "folder":  # SupportsRename's obligation, as rename(2) and os.replace refuse
             raise FakeIsDir(dst)
         if dst in self.files and not replace:
@@ -361,6 +365,8 @@ class FakeStore:
         self._hit("copy", src)
         if src not in self.files:
             raise FakeMissing(src)
+        if self._under_file(dst):
+            raise FakeParentIsFile(dst)
         if self.kind(dst) == "folder":  # SupportsCopy's obligation
             raise FakeIsDir(dst)
         if dst in self.files and not overwrite:
