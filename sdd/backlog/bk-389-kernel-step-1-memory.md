@@ -716,7 +716,8 @@ Choices the decisions above left open, as built:
   under a missing folder then fail on its wire.
 - **Absent container.** The kernel reads it as `NotFound` for every `Op` but
   `write`, `write_atomic`, `open_atomic`, `probe`, the identity scopes and
-  `close`, which keep `classify`'s answer. On `parents == "none"`,
+  `close`, which keep `classify`'s answer; an error the driver raised
+  already typed is never re-typed by it (RFC-0017 D2). On `parents == "none"`,
   `delete_folder`'s determinant listing reads a `NotFound` as empty, where the
   model's flat drivers absorb the container's 404 themselves (BE-013).
 - **Move and copy** on a driver with `ensure_parents` stat the source first,
@@ -725,6 +726,15 @@ Choices the decisions above left open, as built:
   `read`; outside that set an error propagates unmapped in both, as
   `_ErrorMappingStream` does today (SIO-012). A first draft mapped every
   `Exception` on the async side only.
+- **Driver obligations the kernel relies on instead of probing:**
+  `SupportsRename.rename` refuses a folder at `dst` whatever `replace` is
+  (the temp-and-rename write promotes without a `stat` when `overwrite`),
+  and `connection_dead` is pure inspection, passed as the sync stream's
+  `is_fatal` (SIO-010).
+- **`delete_folder` departs from the formal model in one state:** a walk
+  over a stored key BE-030 omits answers `DirectoryNotEmpty`, where
+  `BackendContract.dfy`'s `DeleteFolder` requires a recursive call to
+  succeed; BE-031 says so, and BK-394 reconciles the model.
 - **`unasync` is pinned in the `dev` extra**, not in the hatch environment
   alone as the evidence above (2026-10-02) proposed: CI's test jobs install
   `.[dev]`, not the hatch env, and import the generator's tests, so an

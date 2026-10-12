@@ -104,6 +104,13 @@ labelled **(was … , absorbed here)**, which is the absorption form
      2026-10-11, BK-389's kernel PR: the rule itself landed there, scoped to a
      class on the kernel, because the kernel's cells trace to it; what is
      left here is the Graph note.]
+   - [Added 2026-10-12, BK-389's kernel PR, the maintainer's decision:]
+     `sdd/formal/BackendContract.dfy`'s `DeleteFolder` (lines 860 to 872,
+     tagged BE-013) requires a recursive delete of a present folder to succeed
+     and remove every child. A class on the kernel answers `DirectoryNotEmpty`
+     on a walk for a stored key BE-030 omits, a state inside that model, as
+     BE-031 states. Reconcile the model with the first class on the kernel: a
+     carve-out or precondition for non-canonical stored keys.
    - spec 029: the async surface and `AsyncDriver`.
    - specs 007 and 022, kernel half: `write_atomic` and temp-and-promote as
      kernel behaviour over `put_is_atomic`, `open_write` and `rename`.

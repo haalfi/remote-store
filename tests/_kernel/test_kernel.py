@@ -278,6 +278,18 @@ def test_glob_without_the_protocol_is_capability_not_supported_even_when_closed(
         run.glob("d/*.csv")
 
 
+@pytest.mark.spec("BE-021")
+def test_glob_maps_a_failure_raised_when_the_driver_is_called(runtime: str) -> None:
+    run = _glob_kernel(runtime)
+    run.store.fault("glob", FakeDenied("glob denied"))
+    with pytest.raises(PermissionDenied, match="glob denied") as caught:
+        run.glob("d/*.csv")
+    assert (caught.value.path, caught.value.backend) == ("d/*.csv", "fake")
+    run.store.faults.clear()
+    run.store.container = False
+    assert run.glob("d/*.csv") == []
+
+
 @pytest.mark.spec("BE-030")
 @pytest.mark.spec("BE-020")
 def test_glob_after_a_terminal_close_is_unavailable_before_the_pattern_rule(runtime: str) -> None:
@@ -426,6 +438,33 @@ def test_a_blank_typed_error_gets_a_message(runtime: str) -> None:
         run.read_bytes("f")
 
 
+@pytest.mark.spec("ERR-001")
+def test_an_iteration_end_raised_by_a_driver_call_is_mapped(runtime: str) -> None:
+    # Only glob's own iteration step may end on it; anywhere else it is a native error.
+    run = _kernel(runtime)
+    end = StopIteration if runtime == "sync" else StopAsyncIteration
+    run.store.fault("stat", end(), key="f")
+    with pytest.raises(RemoteStoreError) as caught:
+        run.get_file_info("f")
+    assert (type(caught.value), caught.value.path) == (RemoteStoreError, "f")
+    run.store.fault("list_page", end(), key="d")
+    with pytest.raises(RemoteStoreError) as caught:
+        run.list_files("d")
+    assert (type(caught.value), caught.value.path) == (RemoteStoreError, "d")
+
+
+@pytest.mark.spec("ERR-001")
+@pytest.mark.spec("BE-021")
+def test_a_typed_error_is_never_retyped_by_the_absent_container_predicate(runtime: str) -> None:
+    run = _kernel(runtime)
+    run.driver.container_absent = lambda exc, *, op: True
+    raised = PermissionDenied("denied")
+    run.store.fault("stat", raised, key="f")
+    with pytest.raises(PermissionDenied) as caught:
+        run.get_file_info("f")
+    assert caught.value is raised
+
+
 @pytest.mark.spec("BE-021")
 def test_a_classifier_that_raises_never_leaks_its_own_error(runtime: str) -> None:
     run = _kernel(runtime)
@@ -533,6 +572,7 @@ def test_an_absent_container_answers_each_operation_as_an_absent_path(runtime: s
     run.delete("d/f", missing_ok=True)
     run.delete_folder("d", recursive=True, missing_ok=True)
     run.delete_folder("d", missing_ok=True)
+    assert run.glob("d/*") == []
     for call in (
         lambda: run.delete("d/f"),
         lambda: run.delete_folder("d", recursive=True),
@@ -706,6 +746,16 @@ def test_write_creates_explicit_parents_and_returns_the_canonical_path(runtime: 
 
 
 @pytest.mark.spec("BE-008")
+@pytest.mark.parametrize("ensure_parents", [True, False])
+def test_a_write_under_a_file_is_invalid_path_on_a_hierarchical_driver(runtime: str, ensure_parents: bool) -> None:
+    protocols = ("remove_folder", "ensure_parents") if ensure_parents else ("remove_folder",)
+    run = make_kernel(runtime, _store(), protocols=protocols)
+    with pytest.raises(InvalidPath):
+        run.write("f/x", b"x")
+    assert "f/x" not in run.store.files
+
+
+@pytest.mark.spec("BE-008")
 def test_write_refuses_an_existing_file_without_overwrite(runtime: str) -> None:
     run = _kernel(runtime)
     with pytest.raises(AlreadyExists):
@@ -811,6 +861,16 @@ def test_write_atomic_by_rename_never_replaces_a_file_written_after_its_check(ru
         run.write_atomic("a", b"mine")
     assert store.files["a"].data == b"theirs"
     assert sorted(store.files) == ["a"]  # the temporary removed
+
+
+@pytest.mark.spec("BE-010")
+def test_write_atomic_by_rename_refuses_a_folder_target_and_removes_the_temporary(runtime: str) -> None:
+    store = FakeStore().add("d/x")
+    run = make_kernel(runtime, store, protocols=("remove_folder", "rename"))
+    with pytest.raises(InvalidPath):
+        run.write_atomic("d", b"new", overwrite=True)
+    assert sorted(store.files) == ["d/x"]
+    assert run.is_folder("d") is True
 
 
 @pytest.mark.spec("BE-018")

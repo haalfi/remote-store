@@ -51,6 +51,7 @@ class DriverBackend(_KernelCore, Backend):
                 raw,
                 mapper,
                 key,
+                is_fatal=driver.connection_dead,  # SIO-010: no second wait on a condemned connection
                 size_probe=getattr(driver, "size_probe", None),
                 also_catch=tuple(getattr(driver, "stream_catch", ())),
             ),

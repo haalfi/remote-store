@@ -102,7 +102,11 @@ class AsyncDriver(Protocol):
         ...
 
     def connection_dead(self, exc: BaseException) -> bool:
-        """Whether *exc* says the connection is dead."""
+        """Whether *exc* says the connection is dead.
+
+        Pure inspection of *exc*, no I/O: the sync ``read`` stream passes it as
+        ``is_fatal`` and skips the close of a stream it condemned.
+        """
         ...
 
     def unwrap(self, type_hint: type[T]) -> T:
@@ -179,7 +183,12 @@ class AsyncSupportsRename(Protocol):
     rename_replaces: bool
 
     async def rename(self, src: str, dst: str, *, replace: bool) -> None:
-        """Rename *src* to *dst*, replacing it only when *replace*."""
+        """Rename *src* to *dst*, replacing a file there only when *replace*.
+
+        Refuses a folder at *dst*, *replace* or not, without changing
+        anything, as ``rename(2)`` and ``os.replace`` do: the kernel's
+        temp-and-rename write relies on it rather than probing first.
+        """
         ...
 
 

@@ -53,7 +53,14 @@ class FakeMissing(FakeWireError):
 
 
 class FakeNotDir(FakeWireError):
-    """A path component, or the key itself, is a file (ENOTDIR): typed NotFound, as Local and SFTP do."""
+    """A path component, or the key itself, is a file (ENOTDIR) on a read, a delete or a listing.
+
+    Typed ``NotFound``, as Local and SFTP type it there.
+    """
+
+
+class FakeParentIsFile(FakeWireError):
+    """A write under a file: ENOTDIR on the write path, typed ``InvalidPath`` as Local and SFTP do."""
 
 
 class FakeIsDir(FakeWireError):
@@ -87,6 +94,7 @@ class FakeContainerGone(FakeWireError):
 _CLASSIFY: dict[type[FakeWireError], type[RemoteStoreError]] = {
     FakeMissing: NotFound,
     FakeNotDir: NotFound,
+    FakeParentIsFile: InvalidPath,
     FakeIsDir: InvalidPath,
     FakeExists: AlreadyExists,
     FakeNotEmpty: DirectoryNotEmpty,
@@ -254,7 +262,7 @@ class FakeStore:
     def put(self, key: str, data: bytes, *, overwrite: bool, metadata: Any) -> PutResult:
         self._hit("put", key)
         if self._under_file(key):
-            raise FakeNotDir(key)
+            raise FakeParentIsFile(key)
         if self.kind(key) == "folder":
             raise FakeIsDir(key)
         if self.parents == "explicit" and "/" in key and key.rsplit("/", 1)[0] not in self.folders:
@@ -341,6 +349,8 @@ class FakeStore:
         self._hit("rename", src)
         if src not in self.files:
             raise FakeMissing(src)
+        if self.kind(dst) == "folder":  # SupportsRename's obligation, as rename(2) and os.replace refuse
+            raise FakeIsDir(dst)
         if dst in self.files and not replace:
             raise FakeExists(dst)
         self.files[dst] = self.files.pop(src)
@@ -384,7 +394,7 @@ class FakeStore:
     def ensure_parents(self, key: str) -> None:
         self._hit("ensure_parents", key)
         if self._under_file(key):
-            raise FakeNotDir(key)
+            raise FakeParentIsFile(key)
         self._mkdirs(key)
 
     def folder_stats(self, prefix: str) -> tuple[int, int, datetime | None]:
@@ -534,6 +544,11 @@ class _FaultyStream(io.BytesIO):
     def readinto(self, buffer: Any) -> int:
         self._store._hit("stream.read", self._key)
         return super().readinto(buffer)
+
+    def close(self) -> None:
+        if not self.closed:
+            self._store.calls.append(("stream.close", self._key))
+        super().close()
 
 
 _SYNC_OPTIONAL: dict[str, dict[str, Callable[..., Any]]] = {

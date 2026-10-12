@@ -148,8 +148,10 @@ class _Choke:
     A ``RemoteStoreError`` keeps its type; anything else goes through the
     driver's ``classify``. ``path``, ``backend`` and a blank message are then
     filled, and an absent container reads as an absent path where the
-    kernel decides it. A ``BaseException``
-    that is not an ``Exception``, and the end of an iteration, pass untouched.
+    kernel decides it. A ``BaseException`` that is not an ``Exception``
+    passes untouched. The end of an iteration does not: raised by a driver
+    call it is a native error like any other, so the one iteration step
+    that may end on it (``glob``'s) catches it inside the block.
     """
 
     __slots__ = ("_core", "_key", "_op")
@@ -166,7 +168,7 @@ class _Choke:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> Literal[False]:
-        if exc is None or not isinstance(exc, Exception) or isinstance(exc, StopAsyncIteration):
+        if exc is None or not isinstance(exc, Exception):
             return False
         err = self._core._mapped(exc, self._op, self._key)
         if err is exc:
@@ -267,7 +269,9 @@ class _AsyncKernelCore:
                 )
             if not isinstance(err, RemoteStoreError):
                 err = RemoteStoreError(f"{type(exc).__name__} during {op.value}")
-        if op not in _CLASSIFY_DECIDES and not isinstance(err, NotFound) and self._absent(exc, op):
+        # A typed error is the driver's own answer and passes untouched (RFC-0017 D2).
+        typed = isinstance(exc, RemoteStoreError)
+        if not typed and op not in _CLASSIFY_DECIDES and not isinstance(err, NotFound) and self._absent(exc, op):
             err = NotFound(f"Not found (container absent): {key}", path=key, backend=self.name)
         if err.path is None:
             err.path = key
@@ -756,18 +760,27 @@ class _AsyncKernelCore:
         if not canon:
             return  # the root is a folder, and glob yields only files
         omitted = _Omitted(self.name, canon)
-        matches = globber.glob(canon).__aiter__()
+        try:
+            # A driver may fail on the call itself, before its iterator yields.
+            with self._choke(Op.GLOB, canon):
+                matches = globber.glob(canon).__aiter__()
+        except NotFound:
+            return  # the listing bound: nothing has been yielded yet
         seen = False
         while True:
+            entry: Entry | None = None
             try:
                 with self._choke(Op.GLOB, canon):
-                    entry = await matches.__anext__()
-            except StopAsyncIteration:
-                break
+                    try:
+                        entry = await matches.__anext__()
+                    except StopAsyncIteration:
+                        entry = None
             except NotFound:
                 # The listing bound, at the granularity a glob iterator exposes.
                 if seen:
                     raise
+                break
+            if entry is None:
                 break
             seen = True
             if entry.kind != "file":

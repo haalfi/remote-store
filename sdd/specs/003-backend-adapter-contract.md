@@ -1496,7 +1496,13 @@ says nothing about the key. A `delete_tree` refusal gets the `stat` probe only.
 
 **A recursive delete may answer `DirectoryNotEmpty`** on a walk (either
 `parents` case), when a writer adds under the tree mid-walk, or when an entry
-the listing omits (BE-030) stays behind. BE-013 lists the error for `recursive=False` and forbids it nowhere else.
+the listing omits (BE-030) stays behind. BE-013's prose lists the error for
+`recursive=False` only, but `BackendContract.dfy`'s `DeleteFolder` (tagged
+BE-013) requires a recursive delete of a present folder to succeed and remove
+every child. A concurrent writer lies outside that sequential model; a stored
+key BE-030 omits lies inside it, so in that state a class on the kernel departs
+from the postcondition. Reconciling the model is BK-394's, with the first class
+on the kernel.
 
 **The root.** `delete_folder` on any root spelling raises `InvalidPath` before
 the driver is called (BE-030's table), never reaching `remove_folder`,

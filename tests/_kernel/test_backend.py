@@ -11,8 +11,15 @@ import io
 import pytest
 
 from remote_store._capabilities import Capability
-from remote_store._errors import AlreadyExists, BackendUnavailable, CapabilityNotSupported, InvalidPath, NotFound
-from tests._kernel._fake import FakeDown, FakeStore, make_kernel
+from remote_store._errors import (
+    AlreadyExists,
+    BackendUnavailable,
+    CapabilityNotSupported,
+    InvalidPath,
+    NotFound,
+    PermissionDenied,
+)
+from tests._kernel._fake import FakeDenied, FakeDown, FakeStore, make_kernel
 
 
 def _store() -> FakeStore:
@@ -126,6 +133,36 @@ def test_open_atomic_refuses_the_root_before_anything(spelling: str) -> None:
     with pytest.raises(InvalidPath):
         run.kernel.open_atomic(spelling)
     assert run.store.calls == []
+
+
+@pytest.mark.spec("BE-010")
+@pytest.mark.parametrize(
+    ("protocols", "put_is_atomic"),
+    [(("remove_folder", "open_write"), False), (("remove_folder",), True), (("remove_folder", "rename"), False)],
+)
+def test_open_atomic_onto_a_folder_is_invalid_path_on_every_route(
+    protocols: tuple[str, ...], put_is_atomic: bool
+) -> None:
+    store = FakeStore().add("d/x")
+    run = make_kernel("sync", store, protocols=protocols, put_is_atomic=put_is_atomic)
+    with pytest.raises(InvalidPath), run.kernel.open_atomic("d", overwrite=True) as handle:
+        handle.write(b"new")
+    assert sorted(store.files) == ["d/x"]
+
+
+@pytest.mark.spec("SIO-010")
+def test_a_stream_whose_failure_condemned_the_connection_is_not_closed_again() -> None:
+    store = FakeStore().add("f", data=b"0123")
+    run = make_kernel("sync", store, protocols=("remove_folder",))
+    store.fault("stream.read", FakeDown("dead"), key="f")  # connection_dead says yes
+    with pytest.raises(BackendUnavailable):
+        run.read("f")
+    assert ("stream.close", "f") not in store.calls
+    store.faults.clear()
+    store.fault("stream.read", FakeDenied("denied"), key="f")  # a failure a close survives
+    with pytest.raises(PermissionDenied):
+        run.read("f")
+    assert ("stream.close", "f") in store.calls
 
 
 @pytest.mark.spec("BE-011")
