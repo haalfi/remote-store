@@ -351,19 +351,21 @@ class _KernelCore:
     def _state(self, op: Op, key: str, *, walk: bool, folders: bool = True) -> _Seen:
         """What is at *key*, the one answer every call that needs a file or a folder reads.
 
-        A ``stat`` that answers decides. A miss
-        (``None``, or a ``NotFound`` or ``InvalidPath``, as a POSIX ``stat``
-        under a file raises ENOTDIR) is followed on a flat driver by one
-        ``list_page(limit=1)``, since a flat ``stat`` cannot see a prefix
-        (unless *folders* is false: ``is_file`` and a write target need no
-        folder), and on a hierarchical one, when *walk*, by the ancestors'
-        ``stat`` calls. A ``stat`` that raises a refusal in the probe set gets
-        those ancestor calls on a hierarchical driver whether or not *walk*:
-        a file above makes the key's refusal the wrong type, and an absent
-        ancestor makes the key absent. Anything else is ``UNKNOWN``, carrying
-        the error, which a determinant raises and an error-path probe reads as
-        no answer. A flat namespace has nothing under a file: a key may sit
-        below one, or shadow a prefix, and is then its own key.
+        A ``stat`` that answers decides. A miss (``None``, or a ``NotFound`` or
+        ``InvalidPath``, as a POSIX ``stat`` under a file raises ENOTDIR) is
+        followed on a flat driver by one ``list_page(limit=1)``, since a flat
+        ``stat`` cannot see a prefix (unless *folders* is false: ``is_file``
+        and a write target need no folder); that listing's ``NotFound`` or
+        ``InvalidPath`` is an empty listing, so the key is absent. On a
+        hierarchical driver a miss is followed, when *walk*, by the ancestors'
+        ``stat`` calls, and so is, whether or not *walk*, a ``stat`` raising
+        any other refusal in the probe set: a file above makes the key's
+        refusal the wrong type, and an absent ancestor makes the key absent.
+        Anything else, a flat listing that cannot answer included, is
+        ``UNKNOWN``, carrying the error, which a determinant raises and an
+        error-path probe reads as no answer. A flat namespace has nothing
+        under a file: a key may sit below one, or shadow a prefix, and is then
+        its own key.
         """
         # BE-030's *What is at a key*; BE-021's fail-open for the error-path callers.
         hier = self._driver.namespace != "flat"
@@ -383,6 +385,9 @@ class _KernelCore:
             try:
                 with self._choke(op, key):
                     page = self._driver.list_page(key, delimiter="/", limit=1)
+            except (NotFound, InvalidPath):
+                # An empty listing, as on a listing's first page: nothing is there.
+                return _Seen(_State.ABSENT)
             except RemoteStoreError as err:
                 return _Seen(_State.UNKNOWN, error=err)
             return _Seen(_State.FOLDER if page.entries or page.prefixes else _State.ABSENT)
@@ -537,7 +542,8 @@ class _KernelCore:
 
     def _node(self, op: Op, path: str, *, folders: bool = True) -> _State:
         # BE-021: the three probes answer False on a traversal error rather than raise:
-        # absent and under a file are no node, and only a stat that cannot answer raises.
+        # absent and under a file are no node, and only a key nothing can answer raises
+        # (its stat, or on a flat driver its folder listing, refused in a shape that says nothing).
         # `folders=False` (is_file) needs no listing probe: a stat sees every file.
         seen = self._state(op, self._key(path), walk=False, folders=folders)
         if seen.error is not None:

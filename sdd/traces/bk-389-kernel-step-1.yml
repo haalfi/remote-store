@@ -597,7 +597,7 @@ phases:
         read_type: gate
         extract: "the divergence check fired on round 10's flat listing that hid files; the maintainer had the work re-planned before any fix"
       - file: src/remote_store/_kernel/_async/kernel.py
-        section: "every _choke site (25 here, 4 in backend.py)"
+        section: "every _choke site (30 here and 4 in backend.py, git grep -c 'self\\._choke(' at 72ae8f9)"
         read_type: verify
         extract: "six helpers each answered what is at a key with their own namespace and stat rules; that per-family re-derivation is the shape rounds 7 to 10 kept finding"
       - file: sdd/backlog/bk-389-kernel-step-1-memory.md

@@ -1405,14 +1405,17 @@ folder, under a file, or unknown. The `stat` of the key decides when it
 answers. A miss (`None`, or a `NotFound` or `InvalidPath`, as a POSIX `stat`
 under a file raises ENOTDIR) is followed on a flat driver by one
 `list_page(limit=1)`, since a flat `stat` cannot see a prefix, except where
-no folder can matter (`is_file`, a write target's determinant). On a
-hierarchical driver the ancestors' `stat` calls, shallowest first and each
-fail-open, follow a `stat` that raises a refusal in the probe set below,
-and a miss on the error path of a write target or a listing: a file among
-them puts the key under a file, an absent one makes the key absent, and
-otherwise the key's own `stat` answer stands. A flat namespace has nothing
-under a file, and a key shadowing a prefix answers as its file. A `stat`
-that cannot answer is unknown, which a **determinant** raises and an
+no folder can matter (`is_file`, a write target's determinant); a
+`NotFound` or `InvalidPath` from that listing is an empty listing, as on a
+listing's first page below, so the key is absent. On a hierarchical driver
+the ancestors' `stat` calls, shallowest first and each fail-open, follow a
+`stat` that raises any other refusal in the probe set below (a miss is not
+one), and a miss on the error path of a write target or a listing: a file
+among them puts the key under a file, an absent one makes the key absent,
+and otherwise the key's own `stat` answer stands. A flat namespace has
+nothing under a file, and a key shadowing a prefix answers as its file. A
+key whose `stat`, or whose flat folder listing, cannot answer is unknown,
+which a **determinant** raises and an
 **error-path probe** reads as no answer, leaving the refusal it was asked
 about standing (BE-021). The determinants, run whether or not the call
 fails: the probes `exists`, `is_file` and `is_folder`, where absent and
@@ -1531,12 +1534,13 @@ canonical `""` names the root, a folder, and yields nothing. Worked examples:
 `"d\\*.csv"` raise `InvalidPath`.
 
 **Conformance:** fake-driver kernel cells in `tests/_kernel/`, run against both
-runtimes; Memory's cells arrive with its migration. *What is at a key* and
-every rule reading it (the probes, the file-key, write-target, two-key and
-folder-key rules), the capability gates and construction are generated as
-cell products over one shared axis set in
+runtimes; Memory's cells arrive with its migration. In
 `tests/_kernel/test_condition_space.py`, with an oracle written from this
-clause.
+clause, *What is at a key* and every rule reading it (the probes, the
+file-key, write-target, two-key and folder-key rules) are generated as cell
+products over one shared axis set (driver, key state, refusal, what `stat`
+does); `glob`, the capability gates and construction are generated over
+axes of their own.
 
 ### BE-031: `delete_folder` on the Kernel
 

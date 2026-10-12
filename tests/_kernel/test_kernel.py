@@ -589,17 +589,25 @@ def test_a_listing_follows_the_cursor_across_pages(runtime: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _absent(runtime: str, parents: str = "explicit") -> Any:
+def _absent(runtime: str, parents: str = "explicit", namespace: str = "hierarchical") -> Any:
     store = FakeStore(parents=parents)
     store.add("d/f")
     store.container = False
-    return make_kernel(runtime, store)
+    return make_kernel(runtime, store, namespace=namespace)
 
 
+@pytest.mark.spec("BE-004")
+@pytest.mark.spec("BE-005")
 @pytest.mark.spec("BE-021")
-@pytest.mark.parametrize("parents", ["explicit", "none"])
-def test_an_absent_container_answers_each_operation_as_an_absent_path(runtime: str, parents: str) -> None:
-    run = _absent(runtime, parents)
+@pytest.mark.parametrize(
+    ("namespace", "parents"), [("hierarchical", "explicit"), ("hierarchical", "none"), ("flat", "none")]
+)
+def test_an_absent_container_answers_each_operation_as_an_absent_path(
+    runtime: str, namespace: str, parents: str
+) -> None:
+    # On a flat driver a stat miss is followed by a listing probe, which meets
+    # the same absent container: it too reads as an absent path.
+    run = _absent(runtime, parents, namespace)
     assert (run.exists("d/f"), run.is_file("d/f"), run.is_folder("d")) == (False, False, False)
     assert run.list_files("d") == []
     assert run.list_files("", recursive=True) == []

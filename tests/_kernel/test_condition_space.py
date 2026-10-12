@@ -3,8 +3,10 @@
 The kernel answers "what is at this key" for every call that needs a file
 or a folder there: the probes, the file-shaped reads, the write routes, the
 transfers, the listings, ``get_folder_info`` by push-down and by listing,
-and ``glob``. Each family below is a cell product over **one shared axis
-set**, defined once at the top of this module:
+and ``glob``. Each of those families but ``glob`` is a cell product over
+**one shared axis set**, defined once at the top of this module (``glob``
+names no key, so it crosses only the driver and an injected refusal; the
+capability gates and construction, at the bottom, have axes of their own):
 
 - the driver: ``namespace`` × ``parents``;
 - the key's state: absent, absent under an absent folder, a file, an empty
@@ -13,7 +15,9 @@ set**, defined once at the top of this module:
 - the refusal: the wire's own answer in each native shape where the state
   makes it refuse, or a refusal injected on the family's first primitive
   call whatever the state, so a real folder, a file and a shadowing key are
-  asked about too and never only the states where an empty answer is right;
+  asked about too and never only the states where an empty answer is right,
+  or on a flat driver a refusal of the folder probe ``list_page(limit=1)``
+  that follows a ``stat`` miss;
 - what ``stat`` does: answers truthfully; raises ENOTDIR (typed
   ``NotFound``), an unrecognised code, or a denial under a file
   (hierarchical only, the under-a-file states only); denies the one key the
@@ -24,9 +28,13 @@ reached. The wire's native shapes only where the state makes the wire
 refuse; the under-a-file ``stat`` values only for a key under a file on a
 hierarchical namespace; an injected refusal only for a family whose call
 reaches a refusable primitive besides ``stat`` (``get_file_info`` and the
-probes call only ``stat``, which the ``stat`` axis covers). Transfers take
-the native shapes and the ``stat`` axis, not the injection: a two-key
-primitive's injected refusal is answered by the same rule as its native one.
+probes reach none on a hierarchical driver, where the ``stat`` axis covers
+them); the folder probe's refusal only on a flat driver, for every family
+that probes a key's folder there (the probes but ``is_file``, the
+file-shaped reads, a transfer's source that is no file). Transfers take
+the native shapes, the ``stat`` axis and that folder probe, not the
+injection: a two-key primitive's injected refusal is answered by the same
+rule as its native one. Every family asserts it generated cells.
 
 ``delete_folder`` is not here: ``test_delete_folder.py`` runs it against the
 decided formal model over the model's own key states (a key under a file
@@ -183,12 +191,19 @@ def _may_be_a_folder(cls: type[RemoteStoreError]) -> bool:
     return cls in (NotFound, AlreadyExists, PermissionDenied, RemoteStoreError)
 
 
-def _stat_error(stat: str) -> type[RemoteStoreError]:
-    """What a ``stat`` that cannot answer raises, for the "key" and "down" values."""
-    return BackendUnavailable if stat == "down" else PermissionDenied
+def _stat_error(stat: str, probe: str | None = None) -> type[RemoteStoreError]:
+    """What a key that cannot be answered raises: its ``stat``'s error, else its folder listing's."""
+    if stat in ("key", "down"):
+        return BackendUnavailable if stat == "down" else PermissionDenied
+    assert probe is not None, "an unknown answer needs a stat or a folder listing that could not answer"
+    return TYPED[probe]
 
 
-def _known(state: str, stat: str, namespace: str, *, parents_made: bool = False) -> str:
+# The states whose flat ``stat`` misses, so a flat folder probe lists them.
+FLAT_MISSES = ("absent", "absent-deep", "folder", "under", "deeper")
+
+
+def _known(state: str, stat: str, namespace: str, *, parents_made: bool = False, probe: str | None = None) -> str:
     """What fail-open ``stat`` calls can learn of a key: absent, file, folder, under, or unknown.
 
     BE-030's *What is at a key*. On a hierarchical namespace a ``stat`` that
@@ -197,8 +212,13 @@ def _known(state: str, stat: str, namespace: str, *, parents_made: bool = False)
     prefix, so a miss is followed by one listing; nothing on a flat
     namespace is under a file, and a key shadowing a prefix is its file.
     ``parents_made``: ``ensure_parents`` has created the absent ancestor.
+    ``probe``: the shape that flat folder listing refuses in, if it does. A
+    ``NotFound`` or ``InvalidPath`` there is an empty listing, so the key is
+    absent, as on a listing's first page; any other refusal leaves it unknown.
     """
     hier = namespace != "flat"
+    if not hier and probe is not None and stat == "true" and state in FLAT_MISSES:
+        return "absent" if TYPED[probe] in (NotFound, InvalidPath) else "unknown"
     if stat == "down":
         return "unknown"
     if stat == "key":
@@ -235,13 +255,30 @@ def _determined(state: str, stat: str, namespace: str, *, parents_made: bool = F
     return known
 
 
-def _refusals(natural: bool, inject: bool) -> list[tuple[str, str | None]]:
-    """The refusal axis: ("none", None), the native shapes where met, the injections where reachable."""
+def _refusals(natural: bool, inject: bool, probe: bool = False) -> list[tuple[str, str | None]]:
+    """The refusal axis: ("none", None), the native shapes where met, the injections where reachable.
+
+    ``probe``: a flat driver's folder probe ``list_page(limit=1)`` is reachable,
+    so its refusal is crossed too, in each shape.
+    """
     values: list[tuple[str, str | None]] = []
     values += [("natural", s) for s in SHAPES] if natural else [("none", None)]
     if inject:
         values += [("inject", s) for s in SHAPES]
+    if probe:
+        values += [("probe", s) for s in SHAPES]
     return values
+
+
+def _injected(store: FakeStore, refusal: tuple[str, str | None], key: str, prim: str | None) -> None:
+    """Arm a cell's injected refusal: on the family's primitive, or on the flat folder probe's listing."""
+    kind, shape = refusal
+    if shape is None:
+        return
+    if kind == "inject" and prim is not None:
+        store.fault(prim, SHAPES[shape](key))
+    elif kind == "probe":
+        store.fault("list_page", SHAPES[shape](key))
 
 
 def _rid(refusal: tuple[str, str | None]) -> str:
@@ -259,6 +296,7 @@ def _disagreeing(cells: list[Cell]) -> list[str]:
     maintainer's decision (BK-389's dossier, § Re-plan after round 10,
     decision 13): every cell still runs, and a failure lists them all.
     """
+    assert cells, "a family generated no cells"
     failures = []
     for cell_id, check in cells:
         try:
@@ -284,27 +322,37 @@ PROBES: dict[str, Callable[[Any, str], Any]] = {
 }
 
 
-def _probe_expected(call: str, driver: str, state: str, stat: str) -> Expected | bool:
-    """A traversal answer is ``False``; a ``stat`` that cannot answer raises, so a denial stays visible.
+def _probe_expected(call: str, driver: str, state: str, refusal: tuple[str, str | None], stat: str) -> Expected | bool:
+    """A traversal answer is ``False``; a key that cannot be answered raises, so a denial stays visible.
 
-    A key shadowing a prefix answers as its file (the flat key wins, as S3 answers today).
+    A key shadowing a prefix answers as its file (the flat key wins, as S3
+    answers today). ``is_file`` needs no folder, so it never lists.
     """
-    known = _known(state, stat, DRIVERS[driver][0])
+    _, probe = refusal
+    known = _known(state, stat, DRIVERS[driver][0], probe=None if call == "is_file" else probe)
     if known == "unknown":
-        return _stat_error(stat)
+        return _stat_error(stat, probe)
     if call == "exists":
         return known in ("file", "folder")
     return known == ("file" if call == "is_file" else "folder")
 
 
 def _probe_cells(runtime: str) -> list[Cell]:
-    return [
-        (f"{call}-{driver}-{state}-stat_{stat}", functools.partial(_check_probe, runtime, call, driver, state, stat))
-        for call in PROBES
-        for driver in DRIVERS
-        for state in _states(driver)
-        for stat in _stats(driver, state)
-    ]
+    cells: list[Cell] = []
+    for call in PROBES:
+        for driver, (namespace, _) in DRIVERS.items():
+            for state in _states(driver):
+                # Only a flat folder probe calls anything besides `stat`: its listing.
+                lists = namespace == "flat" and call != "is_file"
+                for refusal in _refusals(False, False, probe=lists):
+                    for stat in _stats(driver, state):
+                        cells.append(
+                            (
+                                f"{call}-{driver}-{state}-{_rid(refusal)}-stat_{stat}",
+                                functools.partial(_check_probe, runtime, call, driver, state, refusal, stat),
+                            )
+                        )
+    return cells
 
 
 @pytest.mark.spec("BE-004")
@@ -318,11 +366,12 @@ def test_a_probe_on_each_state(runtime: str) -> None:
     assert not failures, _report(failures, cells)
 
 
-def _check_probe(runtime: str, call: str, driver: str, state: str, stat: str) -> None:
+def _check_probe(runtime: str, call: str, driver: str, state: str, refusal: tuple[str, str | None], stat: str) -> None:
     namespace, parents = DRIVERS[driver]
     store = _store(driver, stat, KEY[state])
+    _injected(store, refusal, KEY[state], None)
     run = make_kernel(runtime, store, namespace=namespace, protocols=_base(parents))
-    want = _probe_expected(call, driver, state, stat)
+    want = _probe_expected(call, driver, state, refusal, stat)
     got, err, value = _settle(lambda: PROBES[call](run, KEY[state]))
     if isinstance(want, bool):
         assert got == "ok", err
@@ -361,16 +410,18 @@ def _read_expected(call: str, driver: str, state: str, refusal: tuple[str, str |
     """BE-021: a folder is the wrong type on every backend and outranks ``missing_ok``.
 
     A determinant (``get_file_info``, a ranged ``read_seekable``) answers from
-    the key's state; a ``stat`` that cannot answer is its failure. Elsewhere
+    the key's state; a key that cannot be answered is its failure. Elsewhere
     the driver's refusal is typed by fail-open probes: a folder answers
-    ``InvalidPath``, and otherwise the refusal stands.
+    ``InvalidPath``, and otherwise the refusal stands. A refused flat folder
+    probe hides the folder: the key is then absent or unknown.
     """
     _, _, _, determinant, _ = READ_CALLS[call]
-    known = _known(state, stat, DRIVERS[driver][0])
     kind, shape = refusal
+    probe = shape if kind == "probe" else None
+    known = _known(state, stat, DRIVERS[driver][0], probe=probe)
     if determinant:
         if known == "unknown":
-            return _stat_error(stat)
+            return _stat_error(stat, probe)
         if known == "folder":
             return InvalidPath
         if known in ("absent", "under"):
@@ -381,7 +432,8 @@ def _read_expected(call: str, driver: str, state: str, refusal: tuple[str, str |
     elif state in ("file", "shadow"):
         return "ok"
     elif state in ("folder", "empty"):
-        err = TYPED[shape] if shape is not None else InvalidPath
+        # The wire's own shape where the cell sets one; unset, a read misses a folder (ENOENT).
+        err = TYPED[shape] if kind == "natural" and shape is not None else NotFound
     else:
         err = NotFound
     if _may_be_a_folder(err) and known == "folder":
@@ -396,10 +448,10 @@ def _read_cells(runtime: str) -> list[Cell]:
     for call, (_, _, sync_only, _, prim) in READ_CALLS.items():
         if sync_only and runtime != "sync":
             continue
-        for driver in DRIVERS:
+        for driver, (namespace, _) in DRIVERS.items():
             for state in _states(driver):
                 natural = state in ("folder", "empty") and prim is not None and prim != "get_range"
-                for refusal in _refusals(natural, prim is not None):
+                for refusal in _refusals(natural, prim is not None, probe=namespace == "flat"):
                     for stat in _stats(driver, state):
                         cells.append(
                             (
@@ -429,8 +481,7 @@ def _check_read(runtime: str, call: str, driver: str, state: str, refusal: tuple
     kind, shape = refusal
     key = KEY[state]
     store = _store(driver, stat, key, shape if kind == "natural" else None)
-    if kind == "inject" and shape is not None and prim is not None:
-        store.fault(prim, SHAPES[shape](key))
+    _injected(store, refusal, key, prim)
     run = make_kernel(runtime, store, namespace=namespace, protocols=_base(parents) + protocols)
     before = _contents(store)
     want = _read_expected(call, driver, state, refusal, stat)
@@ -604,7 +655,15 @@ TRANSFER_ROUTES: dict[str, tuple[str, tuple[str, ...], bool]] = {
 
 
 def _transfer_expected(
-    route: str, driver: str, src: str, dst: str, overwrite: bool, shape: str, dst_first: bool, stat: str
+    route: str,
+    driver: str,
+    src: str,
+    dst: str,
+    overwrite: bool,
+    shape: str,
+    dst_first: bool,
+    stat: str,
+    probe: str | None = None,
 ) -> tuple[Expected, str | None]:
     """BE-018's order: the source's state first, then the destination's, as BE-030 states it.
 
@@ -613,13 +672,20 @@ def _transfer_expected(
     target. Otherwise the wire answers, in its own key order and shape, and
     fail-open probes re-answer a refusal from the keys' states. A refusal
     the probes cannot type stands, naming the destination only when it can
-    only be the destination's.
+    only be the destination's. ``probe``: the shape a flat driver's folder
+    probe of the source refuses in, which leaves the source absent
+    (``NotFound``, ``InvalidPath``) or unknown.
     """
     namespace, parents = DRIVERS[driver]
     hier = namespace != "flat"
     renames = route in ("move-rename", "move-displace")
     dkey = KEY[dst]
-    src_known = "unknown" if stat == "down" else src
+    if stat == "down":
+        src_known = "unknown"
+    elif probe is not None and not hier and src != "file":
+        src_known = "absent" if TYPED[probe] in (NotFound, InvalidPath) else "unknown"
+    else:
+        src_known = src
     made = parents == "explicit" and "/" in dkey and dst == "absent-deep"
     dst_known = _known(dst, stat, namespace, parents_made=made)
     wire_cls = TYPED[shape]
@@ -629,10 +695,10 @@ def _transfer_expected(
 
     if renames or parents == "explicit":
         if src_known == "unknown":
-            return BackendUnavailable, None
-        if src == "absent":
-            return NotFound, "m"
-        if src == "folder":
+            return (BackendUnavailable, None) if stat == "down" else (_stat_error("true", probe), SRC_KEY[src])
+        if src_known == "absent":
+            return NotFound, SRC_KEY[src]
+        if src_known == "folder":
             return InvalidPath, "e"
     if parents == "explicit" and "/" in dkey and dst in UNDER:  # ensure_parents meets the file above
         if dst_typed(wire_cls):
@@ -670,7 +736,7 @@ def _transfer_expected(
     if not (_may_be_a_folder(err) or err is InvalidPath):
         return err, None
     if src_known == "absent":
-        return NotFound, "m"
+        return NotFound, SRC_KEY[src]
     if src_known == "folder":
         return InvalidPath, "e"
     if dst_typed(err):
@@ -698,27 +764,31 @@ def _transfer_cells(runtime: str) -> list[Cell]:
                                 dst in FOLDERISH + UNDER and namespace != "flat"
                             )
                             stats = ("true", "down") if answered_early else _stats(driver, dst)
+                            # A flat source whose stat misses is probed by one listing, refusable.
+                            probes = [None, *SHAPES] if namespace == "flat" and src != "file" else [None]
                             for shape in SHAPES if refused else ("is-dir",):
                                 for stat in stats:
-                                    order = "dst_first" if dst_first else "src_first"
-                                    cells.append(
-                                        (
-                                            f"{route}-{driver}-src_{src}-dst_{dst}-ow{int(overwrite)}-{order}"
-                                            f"-{shape}-stat_{stat}",
-                                            functools.partial(
-                                                _check_transfer,
-                                                runtime,
-                                                route,
-                                                driver,
-                                                src,
-                                                dst,
-                                                overwrite,
-                                                dst_first,
-                                                shape,
-                                                stat,
-                                            ),
+                                    for probe in probes:
+                                        order = "dst_first" if dst_first else "src_first"
+                                        cells.append(
+                                            (
+                                                f"{route}-{driver}-src_{src}-dst_{dst}-ow{int(overwrite)}-{order}"
+                                                f"-{shape}-stat_{stat}-probe_{probe}",
+                                                functools.partial(
+                                                    _check_transfer,
+                                                    runtime,
+                                                    route,
+                                                    driver,
+                                                    src,
+                                                    dst,
+                                                    overwrite,
+                                                    dst_first,
+                                                    shape,
+                                                    stat,
+                                                    probe,
+                                                ),
+                                            )
                                         )
-                                    )
     return cells
 
 
@@ -735,18 +805,28 @@ def test_a_transfer_between_each_pair_of_states_by_every_route(runtime: str) -> 
 
 
 def _check_transfer(
-    runtime: str, route: str, driver: str, src: str, dst: str, overwrite: bool, dst_first: bool, shape: str, stat: str
+    runtime: str,
+    route: str,
+    driver: str,
+    src: str,
+    dst: str,
+    overwrite: bool,
+    dst_first: bool,
+    shape: str,
+    stat: str,
+    probe: str | None,
 ) -> None:
     op, protocols, rename_replaces = TRANSFER_ROUTES[route]
     namespace, parents = DRIVERS[driver]
     src_key, dst_key = SRC_KEY[src], KEY[dst]
     store = _store(driver, stat, dst_key, shape)
     store.dst_first = dst_first
+    _injected(store, ("probe", probe), src_key, None)
     run = make_kernel(
         runtime, store, namespace=namespace, protocols=_base(parents) + protocols, rename_replaces=rename_replaces
     )
     before = _contents(store)
-    want, want_path = _transfer_expected(route, driver, src, dst, overwrite, shape, dst_first, stat)
+    want, want_path = _transfer_expected(route, driver, src, dst, overwrite, shape, dst_first, stat, probe)
     got, err, _ = _settle(lambda: getattr(run, op)(src_key, dst_key, overwrite=overwrite))
     assert got == want, err
     if err is None:

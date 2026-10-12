@@ -869,10 +869,13 @@ absent or non-file key; a listing of a file prefix or one under a file; and,
 on a hierarchical namespace, a write meeting a folder at the key or a file
 above it, and `ensure_parents` meeting a file above it. So the
 driver decides *that* a call fails, never *how* it is typed. The kernel's
-determinants, whose failure is the call's (the callers of `_file_entry`,
-`_write_target` and the opt-in walk in `_async/kernel.py`, enumerated
-2026-10-12): the probes `exists`, `is_file` and `is_folder`, whose `stat`
-is the answer; `get_file_info` and a ranged `read_seekable`; the source
+determinants, whose failure is the call's (the four sites that raise
+`_state`'s error, `grep -n "raise seen.error"` in `_async/kernel.py`:
+`_node`, `_file_entry`, `_write_target` and `get_folder_info`, with their
+callers, plus the opt-in walk's own `stat` loop in `_prepare_write`;
+enumerated 2026-10-12): the probes `exists`, `is_file` and `is_folder`,
+whose `stat`, or on a flat driver whose folder listing after a `stat`
+miss, is the answer; `get_file_info` and a ranged `read_seekable`; the source
 check of a self-operation, of a rename route, and of every transfer when
 the driver has explicit parents or the opt-in walk is on; the destination
 `stat` of `move` by rename, and of `write_atomic` by temp and rename without
@@ -984,7 +987,8 @@ one pruning rule): the driver (`namespace` × `parents`); eight key states
 holding a file, under a file, deeper under a file, a flat key shadowing a
 prefix); the refusal (the wire's own, in each native shape where the state
 makes it refuse, or one injected on the family's first primitive call
-whatever the state); and six `stat` behaviours (truthful; ENOTDIR, untyped
+whatever the state, or on a flat driver one of the folder probe's listing);
+and six `stat` behaviours (truthful; ENOTDIR, untyped
 or denied under a file; the cell's own key denied; every `stat` down).
 `delete_folder` stays in `test_delete_folder.py`, compared with the decided
 model over the model's key states and its enumerated probe space, both of
@@ -992,15 +996,17 @@ which already hold a key under a file and a raising `stat`.
 
 | Family | Cells, sync + async |
 |---|---|
-| Probes (`exists`, `is_file`, `is_folder`) | 297 + 297 |
-| File-shaped reads (`read`, `read_bytes`, `read_seekable` ranged and spooled, `delete` with and without `missing_ok`, `get_file_info`) | 4707 + 3231 |
+| Probes (`exists`, `is_file`, `is_folder`) | 549 + 549 |
+| File-shaped reads (`read`, `read_bytes`, `read_seekable` ranged and spooled, `delete` with and without `missing_ok`, `get_file_info`) | 5589 + 3861 |
 | Writes (six routes, sync-only `open_atomic` included) | 11376 + 7584 |
-| Transfers (five routes) | 11656 + 11656 |
+| Transfers (five routes) | 22336 + 22336 |
 | Folder-shaped calls (four listings, `get_folder_info` by listing and by push-down) | 4908 + 4908 |
-| `glob`, capability gates, construction (parametrized) | 56, 296, 24 |
+| `glob`, capability gates, construction | 56, 296, 24 |
 
-Counts from the denominators each family's assertion prints, and
-`pytest --collect-only` for the parametrized three: 60,996 in all.
+Counts from each family's generator called per runtime (and `_gate_cells()`),
+and `pytest --collect-only` for `glob` and construction: 84,372 in all, after
+the closing round over `936f7f0` added the flat folder probe's refusal
+(below); the product at `936f7f0` held 60,996.
 
 **What it found at `72ae8f9`** (the review's last head, the same run): 2405
 cells. Probes 126: a `stat` raising untyped or denied under a file, or
@@ -1027,3 +1033,18 @@ it failed 2 incidental cells at `72ae8f9`); the ancestor walk dropped
 unknown (213); the push-down routed around the listing rule (440); a write
 target under a file not typed by its determinant (72); and the race fix
 removed (killed by its targeted cell).
+
+**The closing round over `936f7f0`** found the axis this product had pruned
+by a false premise: its docstring said `get_file_info` and the probes call
+only `stat`, but on a flat driver `_state` follows a `stat` miss with
+`list_page(limit=1)`, and that listing was never refused. `_state` read its
+`NotFound` as unknown, so on a flat driver whose container is absent
+`exists` and `is_folder` raised `NotFound`, where 72ae8f9 answered `False`
+(BE-004, BE-021 § Reach); all three members found it. A `NotFound` or
+`InvalidPath` there is now an empty listing, as on a listing's first page.
+With that refusal crossed on flat drivers for the probes, the file-shaped
+reads and a transfer's source, the product failed at `936f7f0`'s kernel
+on exactly the `NotFound` and `InvalidPath` shapes: probes 20 + 20, reads
+10 + 5, transfers 1424 + 1424 (the error-path probe of a flat source). The
+absent-container test gained a flat arm, which failed in both runtimes,
+and every family now asserts that it generated cells.
