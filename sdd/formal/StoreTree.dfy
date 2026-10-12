@@ -17,9 +17,16 @@
 //       tree answers InvalidPath (D4).
 //   §7  A flat delete keeps the encoding decodable, and a flat encoding holds
 //       no empty folder (A.6).
+//   §8  After the stat that finds no item, a flat listing of k/ returns
+//       exactly the tree's children of k (A.3, A.5's folder-read column).
+//   §9  A recursive delete_folder by walking deletes the visible subtree, and
+//       an entry the listing omits keeps the folder non-empty (A.3).
+//   §10 A flat move or copy, its destination checked by A.4, keeps the
+//       encoding decodable and moves or copies exactly that item.
 //
-// Not modelled here: links (A.7), refusals as observations (A.8), listings and
-// their omissions (A.3), and changes under an operation (A.9).  A hierarchical
+// Not modelled here: links (A.7), refusals as observations (A.8), a listing's
+// omissions as observed page by page (A.3's order obligation), and changes
+// under an operation (A.9).  A hierarchical
 // encoding with folder objects is the tree itself, so §3 covers its writes.
 
 module StoreTree {
@@ -305,5 +312,127 @@ module StoreTree {
       assert j == b;
     }
     assert ProperPrefix(j, b);
+  }
+
+  // The items a tree holds.  On a flat encoding they are the raw keys.
+  ghost function Items(t: Tree): set<Key> {
+    set j | j in t && t[j] == Item
+  }
+
+  lemma FlatItems(r: Flat)
+    requires FlatDecodable(r)
+    ensures Items(FlatDecode(r)) == r
+  {
+    forall j | j in r
+      ensures j in Items(FlatDecode(r))
+    {
+      InFlatKeys(r, j, |j|);
+      assert j[..|j|] == j;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // §8  Folder-read on a flat encoding
+  // -------------------------------------------------------------------------
+
+  // The tree's children of a folder k: the nodes one segment below it.
+  ghost function Children(t: Tree, k: Key): set<Key> {
+    set j | j in t && |j| == |k| + 1 && ProperPrefix(k, j)
+  }
+
+  // A flat listing of k/ with a delimiter: one segment of every raw key
+  // below k.
+  ghost function FlatChildren(r: Flat, k: Key): set<Key> {
+    set b | b in r && ProperPrefix(k, b) :: b[..|k| + 1]
+  }
+
+  // A.3, A.5: after the stat that finds no item at k, a flat listing of k/
+  // returns exactly the tree's children of k.  When the stat finds an item,
+  // the tree's folder-read answers empty (§5), so the listing is not read.
+  lemma FlatListingIsTheTree(r: Flat, k: Key)
+    requires FlatDecodable(r) && k !in r
+    ensures FlatChildren(r, k) == Children(FlatDecode(r), k)
+  {
+    var t := FlatDecode(r);
+    forall c | c in FlatChildren(r, k)
+      ensures c in Children(t, k)
+    {
+      var b :| b in r && ProperPrefix(k, b) && c == b[..|k| + 1];
+      InFlatKeys(r, b, |k| + 1);
+      assert c[..|k|] == b[..|k|];
+    }
+    forall c | c in Children(t, k)
+      ensures c in FlatChildren(r, k)
+    {
+      var b, m :| b in r && 0 <= m <= |b| && c == b[..m];
+      assert m == |k| + 1;
+      assert b[..|k|] == c[..|k|];
+      assert ProperPrefix(k, b);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // §9  delete_folder on a flat encoding
+  // -------------------------------------------------------------------------
+
+  // A raw key is visible when no item lies above it.  A.3: a listing omits
+  // the rest, so a walk never deletes them.
+  ghost predicate Visible(r: Flat, b: Key) {
+    forall a :: a in r ==> !ProperPrefix(a, b)
+  }
+
+  // A recursive delete_folder by walking: it deletes every visible raw key
+  // below k, and nothing else.
+  ghost function FlatDeleteTree(r: Flat, k: Key): Flat {
+    set b | b in r && !(ProperPrefix(k, b) && Visible(r, b))
+  }
+
+  // On a decodable encoding every raw key is visible, so the walk removes
+  // the whole subtree and the tree's items below k.
+  lemma FlatDeleteTreeIsTheTree(r: Flat, k: Key)
+    requires FlatDecodable(r) && k !in r
+    ensures FlatDecodable(FlatDeleteTree(r, k))
+    ensures Items(FlatDecode(FlatDeleteTree(r, k))) ==
+      Items(FlatDecode(r)) - (set b | b in Items(FlatDecode(r)) && ProperPrefix(k, b))
+    ensures forall b :: b in FlatDeleteTree(r, k) ==> !ProperPrefix(k, b)
+  {
+    FlatItems(r);
+    FlatItems(FlatDeleteTree(r, k));
+  }
+
+  // A.3: an omitted raw key keeps the folder non-empty.  After the walk, a
+  // raw key remains below k exactly when one was hidden by an item above it,
+  // and the final remove then answers DirectoryNotEmpty.
+  lemma OmittedKeepsFolderNonEmpty(r: Flat, k: Key)
+    ensures (exists b :: b in FlatDeleteTree(r, k) && ProperPrefix(k, b)) <==>
+      (exists b :: b in r && ProperPrefix(k, b) && !Visible(r, b))
+  {}
+
+  // -------------------------------------------------------------------------
+  // §10  move and copy on a flat encoding
+  // -------------------------------------------------------------------------
+
+  // A move of item src to dst, the destination checked by A.4 before src is
+  // removed, keeps the encoding decodable and moves exactly that item.
+  lemma FlatMoveIsTheTree(r: Flat, src: Key, dst: Key)
+    requires FlatDecodable(r) && src in r && dst != [] && dst != src
+    requires FlatWriteChecks(r, dst)
+    ensures FlatDecodable((r - {src}) + {dst})
+    ensures Items(FlatDecode((r - {src}) + {dst})) == (Items(FlatDecode(r)) - {src}) + {dst}
+  {
+    FlatWriteKeepsDecodable(r - {src}, dst);
+    FlatItems(r);
+    FlatItems((r - {src}) + {dst});
+  }
+
+  // A copy is a write of the source's content to dst (§6).
+  lemma FlatCopyIsTheTree(r: Flat, src: Key, dst: Key)
+    requires FlatDecodable(r) && src in r && dst != []
+    requires FlatWriteChecks(r, dst)
+    ensures FlatDecodable(r + {dst})
+    ensures FlatDecode(r + {dst}) == TreeWrite(FlatDecode(r), dst)
+  {
+    FlatWriteKeepsDecodable(r, dst);
+    FlatWriteCommutes(r, dst);
   }
 }

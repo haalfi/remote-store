@@ -217,9 +217,9 @@ so it does not change.
    `PermissionDenied` is probed (PR #1127's second open finding). Owned by
    BK-432 and drafted before this RFC is accepted.
 2. **The Dafny sketch.** `sdd/formal/StoreTree.dfy` verifies with
-   `bash scripts/dafny_verify.sh StoreTree.dfy` (20 verified, 0 errors), and
-   CI's `verify-formal` job runs it. Two mutants each drop one of A.4's checks,
-   and each fails verification. Covered so far:
+   `bash scripts/dafny_verify.sh StoreTree.dfy` (28 verified, 0 errors), and
+   CI's `verify-formal` job runs it. Six mutants, each weakening one check or
+   rule, fail verification. Covered:
     - the tree and its resolution;
     - a flat encoding's partial `decode`, which yields a valid tree;
     - a flat lookup, a `list_page(k, limit=1)` and an ancestor `stat` agree
@@ -227,12 +227,16 @@ so it does not change.
     - A.4's checks pass exactly where the tree's write does not answer
       `InvalidPath`, and a write they pass keeps the encoding decodable and
       agrees with the tree's write;
+    - a flat listing of `k/` returns the tree's children of `k`;
+    - a recursive `delete_folder` deletes the visible subtree, and an omitted
+      entry keeps the folder non-empty;
+    - a flat `move` or `copy` keeps the encoding decodable and moves or
+      copies exactly its item;
     - a flat encoding holds no empty folder (A.6).
 
-    Still to state before acceptance: the folder-read, delete-folder and
-    transfer families against the tree, and the hierarchical encoding's
-    refusals. Links (A.7), listings (A.3), observations (A.8) and changes
-    under an operation (A.9) stay outside the sketch.
+    Still open: the hierarchical encoding's refusals, which belong with Open
+    question 1's tables. Links (A.7), observations (A.8) and changes under an
+    operation (A.9) stay outside the sketch.
 
 ### Decided while drafting (maintainer, 2026-10-12)
 
