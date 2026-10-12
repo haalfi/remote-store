@@ -720,8 +720,9 @@ Choices the decisions above left open, as built:
   of `ATOMIC_MOVE`, `ATOMIC_WRITE`, `GLOB`, `COPY` and `MOVE` (the checks in
   `_check_construction`); and a class whose own `close_is_terminal` differs
   from its driver's. A driver with `parents == "explicit"` and no
-  `ensure_parents` is not refused; writes under a missing folder then fail on
-  its wire. `move`, `copy` and `write_atomic` decide their means before
+  `ensure_parents` is refused too (§ Condition space, decision 8; until then
+  it was built and its writes under a missing folder answered `NotFound`,
+  against BE-009). `move`, `copy` and `write_atomic` decide their means before
   `ensure_parents` runs, so a refused call creates no folders.
 - **Capabilities.** `glob`, `write_atomic`, `open_atomic`, `move` and `copy`
   are refused by the declared capability (`GLOB`, `ATOMIC_WRITE`, `MOVE`,
@@ -738,9 +739,10 @@ Choices the decisions above left open, as built:
   `list_page(key, delimiter="/", limit=1)`, RFC-0017's "one `stat` or one
   `list_page(limit=1)`", for every probe that must see a folder (`exists`,
   `is_folder`, `get_file_info`, the file-key probes, `move`'s source
-  check); `is_file` stays one `stat`, and so does every write target, which
-  is probed only on a hierarchical namespace. Which refusals are probed, and
-  for which keys: § Condition space.
+  check); `is_file` stays one `stat`. A write target is probed only on a
+  hierarchical namespace, by a `stat` of the key and then of its ancestors
+  (decision 6). Which refusals are probed, and for which keys: § Condition
+  space.
 - **Absent container.** The kernel reads it as `NotFound` for every `Op` but
   `write`, `write_atomic`, `open_atomic`, `probe`, the identity scopes and
   `close`, which keep `classify`'s answer; an error the driver raised
@@ -832,6 +834,21 @@ each time):
    delete is idempotent (S3) checks first; how is step 2's to decide. A
    kernel `stat` before `delete` behind a new driver flag was the
    alternative.
+8. An explicit-parents driver without `ensure_parents` is refused at
+   construction, as one with folder objects and no `remove_folder` is
+   (decided after the second closing round, over `c6d01ea`). BE-009 says a
+   write creates its parents; such a driver could not, and its writes under
+   a missing folder answered `NotFound`. Recording a BE-009 departure was the
+   alternative.
+9. A listing's first-page refusal in the probe set is typed by the kernel
+   too, as the file-key refusal is: fail-open probes that find no folder
+   (nothing or a file at the prefix, or a file above it) make it an empty
+   listing, and `get_folder_info` then types the aggregate. A `list_page`
+   obligation to refuse only as `NotFound` or `InvalidPath` was the
+   alternative. The same round fixed two defects with no decision in them:
+   `move` by rename with `overwrite` answered `AlreadyExists` for a file its
+   destination check missed, and the write-target probes kept walking after
+   the answer was known.
 
 **Axes**, each a parameter of the product, which runs every cell in both
 runtimes and counts them from `pytest --collect-only -q` on the file:
@@ -842,12 +859,14 @@ runtimes and counts them from `pytest --collect-only -q` on the file:
 | A transfer between each pair of states | route (`move` by atomic move, replacing rename, displace and restore, copy then delete; `copy`) × driver × source (file, absent, folder) × destination (as above) × `overwrite` × the wire's key order (source or destination first) × the wire's refusal, where a folder or a file above is met × `stat` under a file, for that destination | 10000 |
 | A file-shaped read on each state | call (`read`, `read_bytes`, `read_seekable` ranged and spooled, `delete` with and without `missing_ok`, `get_file_info`) × driver × state × the wire's refusal at a folder × `stat` under a file | 480 |
 | Each capability gate | op (`glob`, `write_atomic`, `open_atomic`, `move`, `copy`, a `write` and a `write_atomic` carrying metadata) × declared × backed by protocols × posture (open, terminal-closed) × key (valid, root, refused, and self for `move`/`copy`) | 296 |
-| Construction | `namespace` × `parents` | 12 |
+| A folder-shaped listing on each state | call (`list_files`, recursive and not, `list_folders`, `iter_children`, `get_folder_info`) × driver × state × the wire's refusal to list a file or a key under one, where a driver with folder objects meets one × `stat` under a file | 500 |
+| Construction | `namespace` × `parents` × `ensure_parents` | 24 |
 
 **Who decides each answer.** The driver's obligations, each to refuse without
 changing anything and in any shape: a read, `delete` or two-key source on an
-absent or non-file key, and, on a hierarchical namespace, a write or
-`ensure_parents` meeting a folder at the key or a file above it. So the
+absent or non-file key; a listing of a file prefix or one under a file; and,
+on a hierarchical namespace, a write meeting a folder at the key or a file
+above it, and `ensure_parents` meeting a file above it. So the
 driver decides *that* a call fails, never *how* it is typed. The kernel's
 determinants, before the wire is reached: the source check where it runs
 first (a rename route, or `ensure_parents` present), the destination `stat`
@@ -894,3 +913,16 @@ and 208 each for transfers) or `NotFound` (144 and 368), and in which a
 `stat` raising under a file ended the rename routes with `NotFound` before
 the wire was reached: where a flat write should land (3 and 16), and where
 the wire's dead-service refusal should surface (6 and 32).
+
+**The folder-key product and the construction axis** (decisions 8 and 9),
+run at `c6d01ea`'s kernel (`pytest --junitxml`, grouped by assertion): the
+listing product failed 188 cells. In 180 a refusal to list a file, or a key
+under one, typed `AlreadyExists`, `PermissionDenied` or untyped, propagated:
+144 listings that should yield nothing, 12 `get_folder_info` calls that should
+answer `InvalidPath` and 24 that should answer `NotFound`, 60 per shape. The
+other 8 were the oracle's own error, asserting that `list_folders("d")` is
+non-empty for a folder holding only a file, and the oracle was corrected.
+Construction failed 2 cells (explicit without `ensure_parents` built). The
+two targeted cells failed in both runtimes: `move` with `overwrite` answered
+`AlreadyExists`, and an `AlreadyExists` on `a/b/c/d/e` spent five `stat`s
+where one answers.

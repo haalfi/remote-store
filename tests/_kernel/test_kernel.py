@@ -33,6 +33,7 @@ from tests._kernel._fake import (
     FakeContainerGone,
     FakeDenied,
     FakeDown,
+    FakeMissing,
     FakeOdd,
     FakeStore,
     keys_of,
@@ -837,10 +838,11 @@ def test_write_creates_explicit_parents_and_returns_the_canonical_path(runtime: 
 
 
 @pytest.mark.spec("BE-008")
-@pytest.mark.parametrize("ensure_parents", [True, False])
-def test_a_write_under_a_file_is_invalid_path_on_a_hierarchical_driver(runtime: str, ensure_parents: bool) -> None:
-    protocols = ("remove_folder", "ensure_parents") if ensure_parents else ("remove_folder",)
-    run = make_kernel(runtime, _store(), protocols=protocols)
+@pytest.mark.parametrize("parents", ["explicit", "implicit"])
+def test_a_write_under_a_file_is_invalid_path_on_a_hierarchical_driver(runtime: str, parents: str) -> None:
+    # explicit carries ensure_parents (construction requires it); implicit never calls it.
+    store = FakeStore(parents=parents).add("f", data=b"F").add("d/f", data=b"DF")
+    run = make_kernel(runtime, store, protocols=("remove_folder",))
     with pytest.raises(InvalidPath):
         run.write("f/x", b"x")
     assert "f/x" not in run.store.files
@@ -1111,6 +1113,42 @@ def test_displace_and_restore_puts_the_old_file_back_when_the_move_fails(runtime
         run.move("s", "t", overwrite=True)
     assert sorted(store.files) == ["s", "t"]
     assert (store.files["s"].data, store.files["t"].data) == (b"S", b"T")
+
+
+@pytest.mark.spec("BE-018")
+@pytest.mark.parametrize("rename_replaces", [True, False])
+def test_a_rename_move_with_overwrite_replaces_what_its_check_missed(runtime: str, rename_replaces: bool) -> None:
+    # overwrite=True never answers AlreadyExists: not for a file written after the
+    # destination check, nor for a check whose stat answered NotFound. A rename
+    # that cannot replace displaces the missed file as it would a seen one.
+    store = FakeStore(parents="implicit").add("s", data=b"S")
+    run = make_kernel(runtime, store, protocols=("remove_folder", "rename"), rename_replaces=rename_replaces)
+    store.fault("rename", hook=lambda: store.add("t", data=b"OTHER"), key="s")
+    run.move("s", "t", overwrite=True)
+    assert (store.files["t"].data, "s" in store.files) == (b"S", False)
+    store.add("s2", data=b"S2")
+    store.fault("stat", FakeMissing("lost"), key="t")
+    run.move("s2", "t", overwrite=True)
+    assert (store.files["t"].data, "s2" in store.files) == (b"S2", False)
+    assert sorted(store.files) == ["t"]  # nothing parked left behind
+
+
+@pytest.mark.spec("BE-021")
+@pytest.mark.spec("BE-030")
+def test_a_write_target_probe_stops_once_the_answer_is_known(runtime: str) -> None:
+    # A file at the key rules out a file above it; an absent ancestor rules out
+    # every deeper one. Either ends the ancestor probes (BE-021's error-path cost).
+    store = FakeStore(parents="implicit").add("a/b/c/d/e")
+    run = make_kernel(runtime, store, protocols=("remove_folder",))
+    store.calls.clear()
+    with pytest.raises(AlreadyExists):
+        run.write("a/b/c/d/e", b"N")
+    assert store.called("stat") == [("stat", "a/b/c/d/e")]
+    store.fault("put", FakeDenied("denied"), key="x/y/z")
+    store.calls.clear()
+    with pytest.raises(PermissionDenied):
+        run.write("x/y/z", b"N")
+    assert store.called("stat") == [("stat", "x/y/z"), ("stat", "x")]
 
 
 @pytest.mark.spec("BE-018")

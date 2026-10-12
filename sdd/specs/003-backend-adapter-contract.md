@@ -1344,7 +1344,9 @@ backend migrates) over a driver of wire primitives, per
 [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md). Each states, once,
 an answer the other clauses of this spec leave to the backend. A backend not on
 the kernel is unaffected by them. The decisions behind them, with their
-measurements, are recorded in BK-389's dossier, decisions 6 and 8.
+measurements, are recorded in BK-389's dossier: the key rule and
+`delete_folder` in its planning decisions 6 and 8, the wrong-type answers,
+gates and driver obligations in its § Condition space.
 
 ### BE-030: Key Rule on the Kernel
 
@@ -1393,8 +1395,10 @@ can hold: on `"flat"` a key may shadow a prefix or sit under a file and `stat`
 cannot see a prefix; on `"hierarchical"` neither can happen. On the kernel,
 BE-008's "no native directory concept" is the flat namespace, and the kernel
 refuses to construct over a flat driver with folder objects (`parents` other
-than `"none"`), whose `stat` could not see them. The answers, all on the error
-path, so a call that finds its file probes nothing (BE-021):
+than `"none"`), whose `stat` could not see them, and over an explicit-parents
+driver without `ensure_parents`, which could not create a write's parents
+(BE-009). The answers, all on the error path, so a call that finds its file
+probes nothing (BE-021):
 
 - *A file-shaped key* (`read`, `read_bytes`, `read_seekable`, `delete`,
   `get_file_info`): a driver refusal typed `NotFound`, `AlreadyExists`,
@@ -1406,27 +1410,44 @@ path, so a call that finds its file probes nothing (BE-021):
   in any shape; a wire whose delete succeeds for a missing key checks first.
 - *A write target* (`write`, `write_atomic`, `open_atomic`, the `move`/`copy`
   destination) on a hierarchical namespace: the driver's write primitives
-  (`put`, `open_write` and its commit, `rename`, `copy`, `move`) and
-  `ensure_parents` refuse a folder at the key, or a file above it, without
-  changing anything, in whatever shape the wire has (EISDIR, EEXIST from an
-  exclusive create or `os.makedirs`, a Windows access denial, ENOENT); a
-  refusal in the set above gets one fail-open `stat` of the target, where a
-  folder answers `InvalidPath`, and otherwise one per ancestor, where a file
-  answers `InvalidPath`, both naming the target. Where the kernel stats the
+  (`put`, `open_write` and its commit, `rename`, `copy`, `move`) refuse a
+  folder at the key, or a file above it, and `ensure_parents` a file above it,
+  without changing anything, in whatever shape the wire has (EISDIR, EEXIST
+  from an exclusive create or `os.makedirs`, a Windows access denial, ENOENT);
+  a refusal in the set above gets one fail-open `stat` of the target, where a
+  folder answers `InvalidPath` and a file ends the probes, and otherwise one
+  per ancestor, shallowest first, until a file answers `InvalidPath` or an
+  ancestor is confirmed absent; both answers name the target. Where the kernel stats the
   target first (`write_atomic` by temp and rename without `overwrite`, `move`
   by rename) that `stat` is the determinant, and a `NotFound` from it (a
-  `stat` under a file may raise ENOTDIR) is a miss. On a flat namespace
+  `stat` under a file may raise ENOTDIR) is a miss; with `overwrite`, a file
+  that check missed is replaced, or displaced and restored by a rename that
+  cannot replace, never answered `AlreadyExists`. On a flat namespace
   nothing is checked: a key that shadows a prefix or sits under a file is
-  written.
+  written. The opt-in file-ancestor walk (`reject_write_under_file_ancestor`)
+  counts only a confirmed miss as no ancestor and propagates any other probe
+  error, where BE-008 calls the walk fail-open for all backends; a class on
+  the kernel departs from that sentence, since a probe that cannot answer is
+  the walk's determinant (BUG-292's policy).
 - *Two keys* (`move`, `copy`), in BE-018's order: the driver's `move`,
   `rename` and `copy` refuse an absent source, or one that is no file,
-  without changing anything, in any shape, since without `ensure_parents` or
-  the ancestor walk the kernel does not check the source first. A refusal in
+  without changing anything, in any shape, since the kernel checks the source
+  first only on a rename route or when `ensure_parents` or the ancestor walk
+  runs. A refusal in
   the set above, or an `InvalidPath`, gets a fail-open probe of the source,
   whose absence answers `NotFound` and whose folder answers `InvalidPath`,
   both naming the source; then the destination as a write target. Otherwise
   the refusal stands, naming the destination when it is an `AlreadyExists`,
   or a `NotFound` or `InvalidPath` with the source confirmed a file.
+
+**A key a call needs to be a folder** (`list_files`, `list_folders`,
+`iter_children`, the `get_folder_info` aggregate): a refusal on the listing's
+first page is an empty listing when it is a `NotFound` or `InvalidPath`, or
+when it is in the set above (a wire's ENOTDIR or WinError 267 for a file
+prefix) and fail-open probes find no folder: nothing or a file at the prefix,
+or, when that probe cannot answer, a file above it. `get_folder_info` then
+types the empty aggregate (BE-017). The driver's `list_page` refuses a prefix
+that is a file, or lies under one, in any shape, or lists nothing.
 
 Any other refusal (`BackendUnavailable`, `ResourceLocked`, `DirectoryNotEmpty`)
 says nothing about the key and passes through unprobed.
@@ -1482,7 +1503,8 @@ canonical `""` names the root, a folder, and yields nothing. Worked examples:
 
 **Conformance:** fake-driver kernel cells in `tests/_kernel/`, run against both
 runtimes; Memory's cells arrive with its migration. The file-key, write-target,
-two-key and capability-gate rules are generated as cell products in
+two-key, folder-key, capability-gate and construction rules are generated as
+cell products in
 `tests/_kernel/test_condition_space.py`, with an oracle written from this
 clause.
 

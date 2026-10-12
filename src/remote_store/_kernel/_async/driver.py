@@ -42,7 +42,8 @@ class AsyncDriver(Protocol):
     changing anything, in whatever shape the wire has; the kernel types the
     refusal. ``parents`` says whether folders are objects. A flat driver with
     folder objects is refused at construction, since its ``stat`` could not
-    see them.
+    see them, and so is an explicit one without ``ensure_parents``, which
+    could not create a write's parents.
     """
 
     name: str
@@ -67,7 +68,11 @@ class AsyncDriver(Protocol):
         ...
 
     async def get(self, key: str) -> ReadStream:
-        """Open the file at *key* for reading."""
+        """Open the file at *key* for reading.
+
+        Refuses an absent key, or one that is no file, in whatever shape the
+        wire has; the kernel types the refusal.
+        """
         ...
 
     async def put(
@@ -104,6 +109,10 @@ class AsyncDriver(Protocol):
         With ``delimiter="/"`` the page holds the immediate files and the
         immediate subfolders as ``prefixes``; with ``None`` it holds every file
         under *prefix*, and the next page is reached through ``cursor``.
+
+        A *prefix* that is a file, or lies under one, is refused in whatever
+        shape the wire has, or lists nothing; the kernel reads a first-page
+        refusal its probes confirm as no folder as an empty listing.
 
         ``follow_links=False`` is ``delete_folder``'s view: a link is a
         non-folder entry, listed as one and never descended into, and a link
@@ -279,10 +288,15 @@ class AsyncSupportsRemoveFolder(Protocol):
 
 @runtime_checkable
 class AsyncSupportsEnsureParents(Protocol):
-    """Parent creation, called before a write when ``parents == "explicit"``."""
+    """Parent creation, called before a write; required when ``parents == "explicit"``."""
 
     async def ensure_parents(self, key: str) -> None:
-        """Create every missing folder above *key*."""
+        """Create every missing folder above *key*.
+
+        Refuses a file above *key* without creating anything past it, in
+        whatever shape the wire has (``os.makedirs`` raises EEXIST); the kernel
+        types the refusal. *key* itself is the write's to refuse.
+        """
         ...
 
 

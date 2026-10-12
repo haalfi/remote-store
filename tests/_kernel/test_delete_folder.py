@@ -98,6 +98,10 @@ class _Adapter:
     def remove_folder(self, key: str) -> None:
         self.model.remove_folder(key)
 
+    def ensure_parents(self, key: str) -> None:
+        # Construction requires it on an explicit driver; delete_folder never writes.
+        raise AssertionError(f"delete_folder created parents for {key!r}")
+
     def classify(self, exc: Exception, *, op: Op, key: str) -> RemoteStoreError:
         raise AssertionError(f"the model raises typed errors only, got {exc!r}")
 
@@ -112,7 +116,7 @@ class _TreeAdapter(_Adapter):
 
 def _async_face(sync_cls: type[_Adapter]) -> type:
     members: dict[str, Any] = {}
-    for name in ("stat", "list_page", "delete", "remove_folder", "delete_tree"):
+    for name in ("stat", "list_page", "delete", "remove_folder", "ensure_parents", "delete_tree"):
         if hasattr(sync_cls, name):
 
             def make(fn: Any) -> Any:

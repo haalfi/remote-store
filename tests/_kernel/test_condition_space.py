@@ -1,4 +1,4 @@
-"""Two conditions the kernel decides, generated as cell products in both runtimes.
+"""Three conditions the kernel decides, generated as cell products in both runtimes.
 
 **A key's type at a call that needs a file.** Every route a call can take
 (``write``; ``write_atomic`` by atomic put, wire temporary, temp and rename;
@@ -6,10 +6,15 @@
 replacing rename, displace and restore, copy then delete; ``copy``; the
 file-shaped reads), crossed with the driver's ``namespace`` and ``parents``,
 the state at each key, ``overwrite``, the native shape in which the wire
-refuses a folder, and for a two-key call the order in which the wire checks
-its keys. **Capability gates.** Each gated operation, crossed with whether the
-capability is declared, whether the driver's protocols back it, the close
-posture and the key class.
+refuses a folder at the key or a file above it, what ``stat`` does for a key
+under a file (answers ``None``, raises ENOTDIR), and for a two-key call the
+order in which the wire checks its keys. **A key's type at a call that needs
+a folder.** Each listing and ``get_folder_info``, crossed with the driver,
+the state, the shape in which the wire refuses to list a file or a key under
+one, and the same ``stat`` axis. **Capability gates and construction.** Each
+gated operation, crossed with whether the capability is declared, whether
+the driver's protocols back it, the close posture and the key class; and
+``namespace`` × ``parents`` × ``ensure_parents`` at construction.
 
 Each product's expected answer is an oracle written from the rule, not from
 the code, so a cell fails when the two disagree. The rule, its axes and who
@@ -584,25 +589,107 @@ def test_each_capability_gate_against_declaration_backing_posture_and_key(
 
 
 # ---------------------------------------------------------------------------
-# Construction: namespace against parents
+# Product E: the folder-shaped listings on each state
+# ---------------------------------------------------------------------------
+
+# call -> call; get_folder_info answers a type, the listings an empty result
+LIST_CALLS: dict[str, Callable[[Any, str], Any]] = {
+    "list_files": lambda r, k: r.list_files(k),
+    "list_files-recursive": lambda r, k: r.list_files(k, recursive=True),
+    "list_folders": lambda r, k: r.list_folders(k),
+    "iter_children": lambda r, k: r.iter_children(k),
+    "get_folder_info": lambda r, k: r.get_folder_info(k),
+}
+
+
+def _list_expected(call: str, state: str, shape: str, refused: bool) -> Expected:
+    """BE-014, BE-015, BE-026: a listing of a non-folder yields nothing; BE-017 types it.
+
+    A wire that refuses to list a file, or a key under one, does so in its own
+    shape; the kernel reads the refusal as a non-folder on its first page,
+    unless the shape says nothing about the key (a dead service).
+    """
+    if refused and shape == "down":
+        return BackendUnavailable
+    if call != "get_folder_info" or state == "folder":
+        return "ok"
+    return InvalidPath if state == "file" else NotFound
+
+
+def _list_cells() -> list[Any]:
+    cells = []
+    for runtime, call, driver, state in itertools.product(RUNTIMES, LIST_CALLS, DRIVERS, KEY):
+        # Only a wire with folder objects refuses to list a file, or a key under one.
+        refused = state in ("file", "under") and DRIVERS[driver][1] != "none"
+        stats = STATS if state == "under" else ("none",)
+        for shape, stat in itertools.product(SHAPES if refused else ("is-dir",), stats):
+            cells.append(
+                pytest.param(
+                    runtime,
+                    call,
+                    driver,
+                    state,
+                    shape,
+                    stat,
+                    refused,
+                    id=f"{runtime}-{call}-{driver}-{state}-{shape}-stat_{stat}",
+                )
+            )
+    return cells
+
+
+@pytest.mark.spec("BE-014")
+@pytest.mark.spec("BE-015")
+@pytest.mark.spec("BE-017")
+@pytest.mark.spec("BE-021")
+@pytest.mark.spec("BE-026")
+@pytest.mark.spec("BE-030")
+@pytest.mark.parametrize(("runtime", "call", "driver", "state", "shape", "stat", "refused"), _list_cells())
+def test_a_folder_shaped_listing_on_each_state(
+    runtime: str, call: str, driver: str, state: str, shape: str, stat: str, refused: bool
+) -> None:
+    namespace, parents = DRIVERS[driver]
+    store = _store(parents, "is-dir", stat)
+    store.listing_refusal = SHAPES[shape] if refused else None
+    run = make_kernel(runtime, store, namespace=namespace, protocols=_base(parents))
+    want = _list_expected(call, state, shape, refused)
+    got, err = _settle(lambda: LIST_CALLS[call](run, KEY[state]))
+    assert got == want
+    if want == "ok" and call != "get_folder_info" and state != "folder":
+        assert LIST_CALLS[call](run, KEY[state]) == []  # a non-folder lists nothing
+    if err is not None and want is not BackendUnavailable:
+        assert err.path == KEY[state]
+
+
+# ---------------------------------------------------------------------------
+# Construction: namespace against parents, and the protocols folder objects need
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.spec("BE-030")
+@pytest.mark.spec("BE-031")
+@pytest.mark.spec("BE-009")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 @pytest.mark.parametrize(
-    ("namespace", "parents"), list(itertools.product(("flat", "hierarchical"), ("none", "implicit", "explicit")))
+    ("namespace", "parents", "makes_parents"),
+    list(itertools.product(("flat", "hierarchical"), ("none", "implicit", "explicit"), (True, False))),
 )
-def test_a_flat_driver_with_folder_objects_is_refused(runtime: str, namespace: str, parents: str) -> None:
-    # A flat stat cannot see a folder object, so nothing could type one at a key.
+def test_a_driver_whose_declarations_its_protocols_cannot_back_is_refused(
+    runtime: str, namespace: str, parents: str, makes_parents: bool
+) -> None:
+    # A flat stat cannot see a folder object, so nothing could type one at a key;
+    # an explicit driver without ensure_parents could not create BE-009's parents.
     store = FakeStore(parents=parents)
-    protocols = ("remove_folder",) if parents != "none" else ()
+    protocols = (("remove_folder",) if parents != "none" else ()) + (("ensure_parents",) if makes_parents else ())
 
     def build() -> Any:
-        return make_kernel(runtime, store, namespace=namespace, protocols=protocols)
+        return make_kernel(runtime, store, namespace=namespace, protocols=protocols, exact=True)
 
     if namespace == "flat" and parents != "none":
         with pytest.raises(ValueError, match="flat"):
+            build()
+    elif parents == "explicit" and not makes_parents:
+        with pytest.raises(ValueError, match="ensure_parents"):
             build()
     else:
         build()

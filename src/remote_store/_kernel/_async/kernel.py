@@ -80,6 +80,10 @@ def _check_construction(driver: AsyncDriver) -> None:
         # A flat stat cannot see a folder object, so nothing could type one at a key (BE-030).
         msg = f"driver {driver.name!r} is flat but has folder objects (parents={driver.parents!r})"
         raise ValueError(msg)
+    if driver.parents == "explicit" and not isinstance(driver, AsyncSupportsEnsureParents):
+        # BE-009: a write creates its parents, and an explicit wire cannot without it.
+        msg = f"driver {driver.name!r} has explicit parents but no ensure_parents"
+        raise ValueError(msg)
     if driver.parents != "none" and not isinstance(driver, AsyncSupportsRemoveFolder):
         msg = f"driver {driver.name!r} has folder objects (parents={driver.parents!r}) but no remove_folder"
         raise ValueError(msg)
@@ -196,9 +200,10 @@ class _AsyncKernelCore:
 
     Raises:
         ValueError: If the driver's declarations are not backed by its
-            protocols, it is flat and has folder objects, it has folder
-            objects and no ``remove_folder``, or the class's own
-            ``close_is_terminal`` differs from the driver's.
+            protocols, it is flat and has folder objects, it has explicit
+            parents and no ``ensure_parents``, it has folder objects and no
+            ``remove_folder``, or the class's own ``close_is_terminal``
+            differs from the driver's.
     """
 
     def __init__(self, driver: AsyncDriver, *, reject_write_under_file_ancestor: bool = False) -> None:
@@ -387,22 +392,51 @@ class _AsyncKernelCore:
 
         A hierarchical driver's write primitives refuse both in whatever shape
         its wire has, and fail-open ``stat`` calls type the refusal: one of the
-        key, then, when no folder is there, one per ancestor until a file is
-        found. A flat namespace meets neither: it writes a key that shadows a
-        prefix or sits under a file, so nothing is probed.
+        key, then, when nothing is known there, one per ancestor, shallowest
+        first, until a file is found or an ancestor is confirmed absent. A file
+        at the key rules out a file above it, so the walk is skipped. A flat
+        namespace meets neither: it writes a key that shadows a prefix or sits
+        under a file, so nothing is probed.
         """
         # BE-008's order and flat exemption, as BE-030 states them for the kernel.
         if self._driver.namespace == "flat" or not self._may_be_a_folder(err):
             return
         known, entry = await self._probe(op, key)
-        if known and entry is not None and entry.kind == "folder":
-            raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
+        if known and entry is not None:
+            if entry.kind == "folder":
+                raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
+            return
         for ancestor in _keys.ancestors(key):
             known, entry = await self._probe(op, ancestor)
-            if known and entry is not None and entry.kind == "file":
+            if not known:
+                continue
+            if entry is None:
+                return
+            if entry.kind == "file":
                 raise InvalidPath(
                     f"An ancestor of the path is a file: {ancestor}", path=key, backend=self.name
                 ) from err
+
+    async def _holds_nothing(self, err: RemoteStoreError, op: Op, key: str) -> bool:
+        """Whether a listing's first-page refusal says the prefix holds nothing.
+
+        A ``NotFound`` or ``InvalidPath`` does. Another refusal in the probe set
+        does when fail-open probes find no folder: nothing or a file at the
+        prefix, or, when that probe cannot answer, a file above it.
+        """
+        # BE-014, BE-015, BE-026: a non-folder lists nothing; BE-021's error path.
+        if isinstance(err, (NotFound, InvalidPath)):
+            return True
+        if not key or not self._may_be_a_folder(err):
+            return False
+        known, entry = await self._probe(op, key)
+        if known:
+            return entry is None or entry.kind == "file"
+        for ancestor in _keys.ancestors(key):
+            known, entry = await self._probe(op, ancestor)
+            if known and (entry is None or entry.kind == "file"):
+                return True
+        return False
 
     async def _target_stat(self, op: Op, key: str) -> Entry | None:
         """A write target's determinant ``stat``: a ``NotFound`` is a miss.
@@ -433,8 +467,11 @@ class _AsyncKernelCore:
 
         A ``NotFound`` or ``InvalidPath`` before the operation's first page is
         an empty listing: an absent container, an absent prefix or a non-folder
-        holds nothing. After it, the same error reports a change under the
-        scan and propagates. The bound is keyed on the page, never on what the
+        holds nothing. Another refusal there that may be a wire's way of
+        meeting a file (ENOTDIR, WinError 267, an unrecognised code) is an
+        empty listing when ``_holds_nothing`` confirms the prefix is no folder.
+        After the first page, a refusal reports a change under the scan and
+        propagates. The bound is keyed on the page, never on what the
         operation yielded from it.
         """
         cursor: object | None = None
@@ -443,8 +480,8 @@ class _AsyncKernelCore:
             try:
                 with self._choke(op, key):
                     page = await self._driver.list_page(key, delimiter=delimiter, cursor=cursor)
-            except (NotFound, InvalidPath):
-                if seen:
+            except RemoteStoreError as err:
+                if seen or not await self._holds_nothing(err, op, key):
                     raise
                 return
             seen = True
@@ -801,9 +838,19 @@ class _AsyncKernelCore:
         existing = await self._target_stat(op, target)  # a write target: BE-008's flat exemption
         if existing is not None and (existing.kind == "folder" or not overwrite):
             raise self._occupied(existing, target)
-        if existing is None or self._rename.rename_replaces:
-            await self._rename_source(source, target, replace=existing is not None)
+        if self._rename.rename_replaces:
+            # replace=overwrite, not "a file was seen": with overwrite a file the
+            # check missed (a race, or a stat that answered NotFound) is replaced.
+            await self._rename_source(source, target, replace=overwrite)
             return
+        if existing is None:
+            try:
+                await self._rename_source(source, target, replace=False)
+                return
+            except AlreadyExists:
+                if not overwrite:
+                    raise
+            # A file the check missed, under overwrite: displaced like a seen one.
         # Displace and restore: a rename that cannot replace moves the old file
         # aside, and puts it back when the move itself fails.
         parked = _temp_key(target)

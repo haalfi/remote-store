@@ -579,3 +579,12 @@ phases:
         section: "Write (lines 689 to 718)"
         read_type: verify
         extract: "the WR-010 clause is guarded on !IsDir, !IsFile or overwrite, and AllAncestorsTraversable: three departing states, where my BE-030 text recorded one"
+      - file: tests/_kernel/test_condition_space.py
+        section: "the second closing round over c6d01ea"
+        read_type: verify
+        extract: "the products covered the call that needs a file but not the call that needs a folder, and the construction grid omitted ensure_parents; with a listing product and that axis added, 188 listing cells and 2 construction cells failed at c6d01ea, 8 of the 188 my own oracle's error (list_folders of a folder holding only a file)"
+        outcome: misleading
+      - file: tests/_kernel/test_delete_folder.py
+        section: "_Adapter"
+        read_type: verify
+        extract: "the model's explicit drivers carry no ensure_parents, so the construction refusal stopped the model comparison; the adapter now presents one that fails if delete_folder ever calls it"

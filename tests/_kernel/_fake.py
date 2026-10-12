@@ -146,8 +146,11 @@ class FakeStore:
     ``FakeParentIsFile`` under a file, and reads ``FakeMissing``.
     ``stat_under_file``, when set, is raised by ``stat`` for a key under a
     file, as POSIX ``stat`` raises ENOTDIR; unset, that ``stat`` answers
-    ``None``. ``dst_first`` makes the two-key primitives check the
-    destination before the source.
+    ``None``. ``listing_refusal``, when set, is the shape ``list_page`` raises
+    for a prefix that is a file or lies under one (POSIX ENOTDIR, Windows
+    WinError 267, an unrecognised code); unset, ``FakeNotDir`` for a file and
+    ``FakeMissing`` under one. ``dst_first`` makes the two-key primitives
+    check the destination before the source.
     """
 
     def __init__(self, *, parents: str = "explicit", page_size: int = 1000) -> None:
@@ -155,6 +158,7 @@ class FakeStore:
         self.namespace = "hierarchical"
         self.folder_refusal: type[FakeWireError] | None = None
         self.stat_under_file: type[FakeWireError] | None = None
+        self.listing_refusal: type[FakeWireError] | None = None
         self.dst_first = False
         self.files: dict[str, FileRec] = {}
         self.folders: set[str] = set()
@@ -343,8 +347,10 @@ class FakeStore:
         if prefix and self.parents != "none":
             kind = self.kind(prefix, follow_links)
             if kind == "file":
-                raise FakeNotDir(prefix)
+                raise (self.listing_refusal or FakeNotDir)(prefix)
             if kind is None:
+                if self.listing_refusal is not None and self._under_file(prefix):
+                    raise self.listing_refusal(prefix)
                 raise FakeMissing(prefix)
         if delimiter is None:
             base = prefix + "/" if prefix else ""
@@ -737,6 +743,7 @@ def make_kernel(
     close_is_terminal: bool = False,
     rename_replaces: bool = True,
     reject_write_under_file_ancestor: bool = False,
+    exact: bool = False,
 ) -> Runner:
     """A kernel of *runtime* over a fake driver presenting *protocols*.
 
@@ -744,13 +751,16 @@ def make_kernel(
     ``parents == "none"`` store (where the kernel never calls it); the
     store's ``parents``; and the capabilities those protocols back
     (``_backed``), as a well-formed driver declares them. *caps*, when
-    given, is declared exactly instead.
+    given, is declared exactly instead. An explicit-parents store always
+    gets ``ensure_parents``, which construction requires, unless *exact*.
     """
     store = store or FakeStore()
     store.handles = []  # type: ignore[attr-defined]
     store.namespace = namespace
     if protocols is None:
         protocols = tuple(p for p in ALL_PROTOCOLS if p != "remove_folder" or store.parents != "none")
+    if store.parents == "explicit" and "ensure_parents" not in protocols and not exact:
+        protocols = (*protocols, "ensure_parents")
     base: type[_SyncBase] = _SyncBase if runtime == "sync" else _AsyncBase
     members: dict[str, Any] = {}
     for proto in protocols:
