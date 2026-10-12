@@ -570,3 +570,12 @@ phases:
         section: "first run, at b9351b5's kernel"
         read_type: verify
         extract: "1600 of 7680 cells failed before the fix; the fix's first draft failed 168, an absent source overridden by a destination folder, against BE-018's order, corrected before the commit"
+      - file: tests/_kernel/test_condition_space.py
+        section: "the closing round over f454037"
+        read_type: verify
+        extract: "the product held the refusal shape fixed for a file above the key and its fake's stat never raised under a file, so all three closing members found the file-ancestor typing gap it could not; with both axes added, 1535 of 12088 cells failed at f454037's kernel"
+        outcome: misleading
+      - file: sdd/formal/BackendContract.dfy
+        section: "Write (lines 689 to 718)"
+        read_type: verify
+        extract: "the WR-010 clause is guarded on !IsDir, !IsFile or overwrite, and AllAncestorsTraversable: three departing states, where my BE-030 text recorded one"

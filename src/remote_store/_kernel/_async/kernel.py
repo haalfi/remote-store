@@ -196,8 +196,9 @@ class _AsyncKernelCore:
 
     Raises:
         ValueError: If the driver's declarations are not backed by its
-            protocols, it has folder objects and no ``remove_folder``, or
-            the class's own ``close_is_terminal`` differs from the driver's.
+            protocols, it is flat and has folder objects, it has folder
+            objects and no ``remove_folder``, or the class's own
+            ``close_is_terminal`` differs from the driver's.
     """
 
     def __init__(self, driver: AsyncDriver, *, reject_write_under_file_ancestor: bool = False) -> None:
@@ -382,12 +383,13 @@ class _AsyncKernelCore:
             raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
 
     async def _target_is_wrong_type(self, err: RemoteStoreError, op: Op, key: str) -> None:
-        """After a write's refusal at *key*: a folder there is ``InvalidPath``.
+        """After a write's refusal at *key*: a folder there, or a file above it, is ``InvalidPath``.
 
-        A hierarchical driver's write primitives refuse a folder at the key in
-        whatever shape its wire has, and one fail-open ``stat`` types it. A flat
-        namespace has no folder to meet: it writes a key that shadows a prefix,
-        and its ``stat`` could not see one, so nothing is probed.
+        A hierarchical driver's write primitives refuse both in whatever shape
+        its wire has, and fail-open ``stat`` calls type the refusal: one of the
+        key, then, when no folder is there, one per ancestor until a file is
+        found. A flat namespace meets neither: it writes a key that shadows a
+        prefix or sits under a file, so nothing is probed.
         """
         # BE-008's order and flat exemption, as BE-030 states them for the kernel.
         if self._driver.namespace == "flat" or not self._may_be_a_folder(err):
@@ -395,6 +397,23 @@ class _AsyncKernelCore:
         known, entry = await self._probe(op, key)
         if known and entry is not None and entry.kind == "folder":
             raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
+        for ancestor in _keys.ancestors(key):
+            known, entry = await self._probe(op, ancestor)
+            if known and entry is not None and entry.kind == "file":
+                raise InvalidPath(
+                    f"An ancestor of the path is a file: {ancestor}", path=key, backend=self.name
+                ) from err
+
+    async def _target_stat(self, op: Op, key: str) -> Entry | None:
+        """A write target's determinant ``stat``: a ``NotFound`` is a miss.
+
+        A ``stat`` under a file may raise ENOTDIR, typed ``NotFound``; the
+        write that follows then meets the file above and its refusal is typed.
+        """
+        try:
+            return await self._stat(op, key)
+        except NotFound:
+            return None
 
     def _file_info(self, entry: Entry) -> FileInfo:
         return FileInfo(
@@ -533,8 +552,13 @@ class _AsyncKernelCore:
                 if entry is not None and entry.kind == "file":
                     raise InvalidPath(f"An ancestor of the path is a file: {ancestor}", path=key, backend=self.name)
         if self._parents_maker is not None and "/" in key:
-            with self._choke(op, key):
-                await self._parents_maker.ensure_parents(key)
+            try:
+                with self._choke(op, key):
+                    await self._parents_maker.ensure_parents(key)
+            except RemoteStoreError as err:
+                # A file above the key, refused in the wire's shape (os.makedirs: EEXIST).
+                await self._target_is_wrong_type(err, op, key)
+                raise
 
     async def _put(
         self,
@@ -637,7 +661,7 @@ class _AsyncKernelCore:
         if not overwrite:
             # A write target: a stat alone, so on a flat namespace a key may
             # shadow a prefix (BE-008's flat exemption).
-            existing = await self._stat(op, key)
+            existing = await self._target_stat(op, key)
             if existing is not None:
                 raise self._occupied(existing, key)
         temp = _temp_key(key)
@@ -774,7 +798,7 @@ class _AsyncKernelCore:
         op = Op.MOVE
         if not source_checked:
             await self._require_file(op, source)
-        existing = await self._stat(op, target)  # a write target: BE-008's flat exemption
+        existing = await self._target_stat(op, target)  # a write target: BE-008's flat exemption
         if existing is not None and (existing.kind == "folder" or not overwrite):
             raise self._occupied(existing, target)
         if existing is None or self._rename.rename_replaces:

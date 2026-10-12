@@ -1378,13 +1378,15 @@ declaration, whatever protocols the driver presents. The kernel refuses to
 construct over a declaration its protocols cannot back. WR-010's metadata gate
 on `write` and `write_atomic` comes after step 4 and before step 5, so the root
 refusal stays BE-008's first precondition and the gate stays ahead of any I/O.
-That ranks it ahead of BE-008's type and overwrite checks, which on the kernel
-are answered by the driver's write itself, so `write(folder, metadata=…)` on a
-class without `USER_METADATA` answers `CapabilityNotSupported`, where
-`BackendContract.dfy`'s `Write` requires `InvalidPath` whatever the metadata.
-Matching the model would cost every write carrying metadata a `stat`, so a
-class on the kernel departs from it in that state; reconciling the model is
-BK-394's, with the first class on the kernel.
+That ranks it ahead of BE-008's type, ancestor and overwrite checks, which on
+the kernel are answered by the driver's write itself. So on a class without
+`USER_METADATA`, a write carrying metadata answers `CapabilityNotSupported` in
+three states where `BackendContract.dfy`'s `Write` guards its WR-010 clause
+and answers otherwise: a folder at the key (`InvalidPath`), a file above it
+(`InvalidPath`), and an existing file with `overwrite=False`
+(`AlreadyExists`). Matching the model would cost every write carrying
+metadata a `stat`, so a class on the kernel departs from it in those three
+states; reconciling the model is BK-394's, with the first class on the kernel.
 
 **A key a call needs to be a file.** `namespace` decides what a driver's wire
 can hold: on `"flat"` a key may shadow a prefix or sit under a file and `stat`
@@ -1399,23 +1401,32 @@ path, so a call that finds its file probes nothing (BE-021):
   `PermissionDenied` or untyped gets one fail-open probe of the key (`stat`,
   and on a flat driver after a miss one `list_page(limit=1)`); a folder there
   answers `InvalidPath`. `get_file_info` and a ranged `read_seekable` take
-  that probe as their determinant instead.
+  that probe as their determinant instead. The driver's `get` and `delete`
+  refuse an absent key, or one that is no file, without changing anything,
+  in any shape; a wire whose delete succeeds for a missing key checks first.
 - *A write target* (`write`, `write_atomic`, `open_atomic`, the `move`/`copy`
   destination) on a hierarchical namespace: the driver's write primitives
-  (`put`, `open_write` and its commit, `rename`, `copy`, `move`) refuse a
-  folder at the key, or a file above it, without changing anything, in
-  whatever shape the wire has (EISDIR, EEXIST from an exclusive create, a
-  Windows access denial, ENOENT); a refusal in the set above gets one
-  fail-open `stat`, and a folder answers `InvalidPath` naming the target. Where
-  the kernel stats the target first (`write_atomic` by temp and rename without
-  `overwrite`, `move` by rename) that `stat` is the determinant. On a flat
-  namespace nothing is checked: a key that shadows a prefix is written.
-- *Two keys* (`move`, `copy`), in BE-018's order: a refusal in the set above,
-  or an `InvalidPath`, gets a fail-open probe of the source, whose absence
-  answers `NotFound` and whose folder answers `InvalidPath`, both naming the
-  source; then the destination as a write target. Otherwise the refusal
-  stands, naming the destination when it is an `AlreadyExists`, or a
-  `NotFound` or `InvalidPath` with the source confirmed a file.
+  (`put`, `open_write` and its commit, `rename`, `copy`, `move`) and
+  `ensure_parents` refuse a folder at the key, or a file above it, without
+  changing anything, in whatever shape the wire has (EISDIR, EEXIST from an
+  exclusive create or `os.makedirs`, a Windows access denial, ENOENT); a
+  refusal in the set above gets one fail-open `stat` of the target, where a
+  folder answers `InvalidPath`, and otherwise one per ancestor, where a file
+  answers `InvalidPath`, both naming the target. Where the kernel stats the
+  target first (`write_atomic` by temp and rename without `overwrite`, `move`
+  by rename) that `stat` is the determinant, and a `NotFound` from it (a
+  `stat` under a file may raise ENOTDIR) is a miss. On a flat namespace
+  nothing is checked: a key that shadows a prefix or sits under a file is
+  written.
+- *Two keys* (`move`, `copy`), in BE-018's order: the driver's `move`,
+  `rename` and `copy` refuse an absent source, or one that is no file,
+  without changing anything, in any shape, since without `ensure_parents` or
+  the ancestor walk the kernel does not check the source first. A refusal in
+  the set above, or an `InvalidPath`, gets a fail-open probe of the source,
+  whose absence answers `NotFound` and whose folder answers `InvalidPath`,
+  both naming the source; then the destination as a write target. Otherwise
+  the refusal stands, naming the destination when it is an `AlreadyExists`,
+  or a `NotFound` or `InvalidPath` with the source confirmed a file.
 
 Any other refusal (`BackendUnavailable`, `ResourceLocked`, `DirectoryNotEmpty`)
 says nothing about the key and passes through unprobed.

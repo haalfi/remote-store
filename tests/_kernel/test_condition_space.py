@@ -40,6 +40,7 @@ from tests._kernel._fake import (
     FakeExists,
     FakeIsDir,
     FakeMissing,
+    FakeNotDir,
     FakeOdd,
     FakeStore,
     FakeWireError,
@@ -73,12 +74,17 @@ SHAPES: dict[str, type[FakeWireError]] = {
 KEY = {"absent": "n", "file": "f", "folder": "d", "under": "f/x"}
 SRC_KEY = {"file": "s", "absent": "m", "folder": "e"}
 
+# What `stat` does for a key under a file: answer None, or raise ENOTDIR as POSIX
+# stat does, which a driver types NotFound as Local and SFTP do.
+STATS: dict[str, type[FakeWireError] | None] = {"none": None, "raises": FakeNotDir}
+
 Expected = type[RemoteStoreError] | str  # an error class, or "ok"
 
 
-def _store(parents: str, shape: str) -> FakeStore:
+def _store(parents: str, shape: str, stat: str = "none") -> FakeStore:
     store = FakeStore(parents=parents).add("f", data=b"F").add("s", data=b"S").add("d/x", "e/z")
     store.folder_refusal = SHAPES[shape]
+    store.stat_under_file = STATS[stat]
     return store
 
 
@@ -126,14 +132,13 @@ def _write_expected(namespace: str, state: str, overwrite: bool, shape: str, pre
         return "ok"
     if state == "file":
         return "ok" if overwrite else AlreadyExists
-    if state == "under":
-        return "ok" if flat else InvalidPath
-    # A folder: a flat namespace writes a key that shadows a prefix. A hierarchical
-    # wire refuses it in its own shape and the kernel types it, unless the shape
-    # says nothing about the key (a dead service) and no stat came first.
+    # A folder at the key, or a file above it: a flat namespace writes either. A
+    # hierarchical wire refuses both in its own shape and the kernel types the
+    # refusal, unless the shape says nothing about the key (a dead service) and
+    # no stat came first. Only a folder is seen by a stat before the write.
     if flat:
         return "ok"
-    if prestat and not overwrite:
+    if state == "folder" and prestat and not overwrite:
         return InvalidPath
     return BackendUnavailable if shape == "down" else InvalidPath
 
@@ -145,8 +150,10 @@ def _write_cells() -> list[Any]:
     ):
         if WRITE_ROUTES[route][3] and runtime != "sync":
             continue
-        shapes = SHAPES if state == "folder" and DRIVERS[driver][0] != "flat" else ("is-dir",)
-        for shape in shapes:
+        refused = state in ("folder", "under") and DRIVERS[driver][0] != "flat"
+        for shape, stat in itertools.product(
+            SHAPES if refused else ("is-dir",), STATS if state == "under" else ("none",)
+        ):
             cells.append(
                 pytest.param(
                     runtime,
@@ -155,7 +162,8 @@ def _write_cells() -> list[Any]:
                     state,
                     overwrite,
                     shape,
-                    id="-".join((runtime, route, driver, state, f"ow{int(overwrite)}", shape)),
+                    stat,
+                    id="-".join((runtime, route, driver, state, f"ow{int(overwrite)}", shape, f"stat_{stat}")),
                 )
             )
     return cells
@@ -165,13 +173,13 @@ def _write_cells() -> list[Any]:
 @pytest.mark.spec("BE-010")
 @pytest.mark.spec("BE-021")
 @pytest.mark.spec("BE-030")
-@pytest.mark.parametrize(("runtime", "route", "driver", "state", "overwrite", "shape"), _write_cells())
+@pytest.mark.parametrize(("runtime", "route", "driver", "state", "overwrite", "shape", "stat"), _write_cells())
 def test_a_write_onto_each_state_by_every_route(
-    runtime: str, route: str, driver: str, state: str, overwrite: bool, shape: str
+    runtime: str, route: str, driver: str, state: str, overwrite: bool, shape: str, stat: str
 ) -> None:
     call, protocols, put_is_atomic, _, prestat = WRITE_ROUTES[route]
     namespace, parents = DRIVERS[driver]
-    store = _store(parents, shape)
+    store = _store(parents, shape, stat)
     run = make_kernel(
         runtime, store, namespace=namespace, protocols=_base(parents) + protocols, put_is_atomic=put_is_atomic
     )
@@ -208,10 +216,8 @@ def _wire_first_refusal(namespace: str, src: str, dst: str, overwrite: bool, sha
     """The native refusal a two-key primitive raises first, by the fake wire's rules."""
     src_ref = {"file": None, "absent": "missing", "folder": shape}[src]
     dst_ref = None
-    if namespace != "flat" and dst == "folder":
+    if namespace != "flat" and dst in ("folder", "under"):
         dst_ref = shape
-    elif namespace != "flat" and dst == "under":
-        dst_ref = "parent-is-file"
     elif dst == "file" and not overwrite:
         dst_ref = "exists"
     first, second = (dst_ref, src_ref) if dst_first else (src_ref, dst_ref)
@@ -234,8 +240,8 @@ def _transfer_expected(
         return NotFound, "m"
     if src_first and src == "folder":
         return InvalidPath, "e"
-    if parents == "explicit" and dst == "under":  # ensure_parents refuses first
-        return InvalidPath, "f/x"
+    if parents == "explicit" and dst == "under":  # ensure_parents refuses first, in the wire's shape
+        return (BackendUnavailable, None) if shape == "down" else (InvalidPath, "f/x")
     if renames and src == "file" and not flat and dst == "folder":
         return InvalidPath, "d"
     if renames and src == "file" and dst == "file" and not overwrite:
@@ -259,8 +265,9 @@ def _transfer_cells() -> list[Any]:
         RUNTIMES, TRANSFER_ROUTES, DRIVERS, SRC_KEY, KEY, (False, True), (False, True)
     ):
         namespace = DRIVERS[driver][0]
-        folder_hit = src == "folder" or (dst == "folder" and namespace != "flat")
-        for shape in SHAPES if folder_hit else ("is-dir",):
+        refused = src == "folder" or (dst in ("folder", "under") and namespace != "flat")
+        stats = STATS if dst == "under" else ("none",)
+        for shape, stat in itertools.product(SHAPES if refused else ("is-dir",), stats):
             cells.append(
                 pytest.param(
                     runtime,
@@ -271,6 +278,7 @@ def _transfer_cells() -> list[Any]:
                     overwrite,
                     dst_first,
                     shape,
+                    stat,
                     id="-".join(
                         (
                             runtime,
@@ -281,6 +289,7 @@ def _transfer_cells() -> list[Any]:
                             f"ow{int(overwrite)}",
                             "dst_first" if dst_first else "src_first",
                             shape,
+                            f"stat_{stat}",
                         )
                     ),
                 )
@@ -294,14 +303,14 @@ def _transfer_cells() -> list[Any]:
 @pytest.mark.spec("BE-021")
 @pytest.mark.spec("BE-030")
 @pytest.mark.parametrize(
-    ("runtime", "route", "driver", "src", "dst", "overwrite", "dst_first", "shape"), _transfer_cells()
+    ("runtime", "route", "driver", "src", "dst", "overwrite", "dst_first", "shape", "stat"), _transfer_cells()
 )
 def test_a_transfer_between_each_pair_of_states_by_every_route(
-    runtime: str, route: str, driver: str, src: str, dst: str, overwrite: bool, dst_first: bool, shape: str
+    runtime: str, route: str, driver: str, src: str, dst: str, overwrite: bool, dst_first: bool, shape: str, stat: str
 ) -> None:
     op, protocols, rename_replaces = TRANSFER_ROUTES[route]
     namespace, parents = DRIVERS[driver]
-    store = _store(parents, shape)
+    store = _store(parents, shape, stat)
     store.dst_first = dst_first
     run = make_kernel(
         runtime, store, namespace=namespace, protocols=_base(parents) + protocols, rename_replaces=rename_replaces
@@ -362,22 +371,35 @@ def _read_cells() -> list[Any]:
     for runtime, call, driver, state in itertools.product(RUNTIMES, READ_CALLS, DRIVERS, KEY):
         if READ_CALLS[call][2] and runtime != "sync":
             continue
-        for shape in SHAPES if state == "folder" else ("is-dir",):
+        stats = STATS if state == "under" else ("none",)
+        for shape, stat in itertools.product(SHAPES if state == "folder" else ("is-dir",), stats):
             cells.append(
-                pytest.param(runtime, call, driver, state, shape, id=f"{runtime}-{call}-{driver}-{state}-{shape}")
+                pytest.param(
+                    runtime,
+                    call,
+                    driver,
+                    state,
+                    shape,
+                    stat,
+                    id=f"{runtime}-{call}-{driver}-{state}-{shape}-stat_{stat}",
+                )
             )
     return cells
 
 
 @pytest.mark.spec("BE-006")
+@pytest.mark.spec("BE-007")
 @pytest.mark.spec("BE-012")
 @pytest.mark.spec("BE-016")
 @pytest.mark.spec("BE-021")
-@pytest.mark.parametrize(("runtime", "call", "driver", "state", "shape"), _read_cells())
-def test_a_file_shaped_read_on_each_state(runtime: str, call: str, driver: str, state: str, shape: str) -> None:
+@pytest.mark.spec("BE-030")
+@pytest.mark.parametrize(("runtime", "call", "driver", "state", "shape", "stat"), _read_cells())
+def test_a_file_shaped_read_on_each_state(
+    runtime: str, call: str, driver: str, state: str, shape: str, stat: str
+) -> None:
     fn, protocols, _, determinant = READ_CALLS[call]
     namespace, parents = DRIVERS[driver]
-    store = _store(parents, shape)
+    store = _store(parents, shape, stat)
     run = make_kernel(runtime, store, namespace=namespace, protocols=_base(parents) + protocols)
     key = KEY[state]
     before = _contents(store)

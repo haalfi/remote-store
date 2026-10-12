@@ -602,7 +602,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
      decision 8 states it (decided in BK-396), including a recursive
      `DirectoryNotEmpty` under a concurrent writer, and the rule that
      `delete_folder` never treats a link as a folder (with the
-     `follow_links` flag on `stat` and `list_page`).
+     `follow_links` flag on `stat` and `list_page`);
+   - BE-017's folder `modified_at` rule (item 3), moved here from BK-394 at
+     the maintainer's decision in the kernel PR, so its cells trace to a
+     clause [added 2026-10-12].
 
 **Depends on** BK-388, whose postconditions the kernel is written against.
 BK-395, which decided the key rule's remainder (decision 6), and BK-396,
@@ -755,18 +758,23 @@ Choices the decisions above left open, as built:
   it, since the kernel calls it with no probe before it (BE-031);
   `list_page(follow_links=False)` never lists a link's target, and `delete`
   removes a link itself, since the walk lists `key` with no `stat` first
-  (BE-031, added 2026-10-12); on a hierarchical namespace every write
-  primitive refuses a folder at its key, or a file above it, in any shape,
-  which the kernel types (§ Condition space); on a flat one they write a key
-  that shadows a prefix, BE-008's flat exemption; `connection_dead` is pure
-  inspection, passed as the sync stream's `is_fatal` (SIO-010).
+  (BE-031, added 2026-10-12); `delete`, `move`, `rename` and `copy` refuse
+  an absent or non-file key (the source, for the two-key ones), and on a
+  hierarchical namespace every write primitive and `ensure_parents` refuse a
+  folder at the key or a file above it, all without changing anything and in
+  any shape, which the kernel types (§ Condition space); on a flat namespace
+  writes land on a key that shadows a prefix, BE-008's flat exemption;
+  `connection_dead` is pure inspection, passed as the sync stream's
+  `is_fatal` (SIO-010).
 - **`delete_folder` departs from the formal model in one state:** a walk
   over a stored key BE-030 omits answers `DirectoryNotEmpty`, where
   `BackendContract.dfy`'s `DeleteFolder` requires a recursive call to
   succeed; BE-031 says so, and BK-394 reconciles the model. **`write` departs
-  in one more:** WR-010's gate outranks the type and overwrite checks the
-  driver's write answers, where `Write` requires `InvalidPath` and
-  `AlreadyExists` whatever the metadata; BE-030 says so (added 2026-10-12).
+  in three:** WR-010's gate outranks the checks the driver's write answers,
+  so a write carrying metadata on a class without `USER_METADATA` answers
+  `CapabilityNotSupported` where `Write` answers `InvalidPath` for a folder
+  at the key or a file above it, and `AlreadyExists` for an existing file
+  without `overwrite`; BE-030 says so (added 2026-10-12).
 - **`unasync` is pinned in the `dev` extra**, not in the hatch environment
   alone as the evidence above (2026-10-02) proposed: CI's test jobs install
   `.[dev]`, not the hatch env, and import the generator's tests, so an
@@ -812,30 +820,45 @@ each time):
 5. `move` and `copy` are gated on the declared `MOVE` and `COPY`, ahead of
    the closed guard, as `write_atomic` is (the maintainer's round-6 decision
    for that gate).
+6. A file above a write target is typed by the kernel too (decided after the
+   closing round over `f454037`, whose three members each found it untyped).
+   After a refusal in the probe set, when no folder is at the key, the kernel
+   stats each ancestor fail-open, and a file among them is `InvalidPath`;
+   `ensure_parents`' refusal gets the same probes, and the two determinant
+   stats read `NotFound` as a miss, since a POSIX `stat` under a file raises
+   ENOTDIR. Leaving it to each driver's `classify` was the alternative.
+7. `delete` refusing an absent or non-file key is a driver obligation, stated
+   with the source obligation of `move`, `rename` and `copy`. A wire whose
+   delete is idempotent (S3) checks first; how is step 2's to decide. A
+   kernel `stat` before `delete` behind a new driver flag was the
+   alternative.
 
 **Axes**, each a parameter of the product, which runs every cell in both
 runtimes and counts them from `pytest --collect-only -q` on the file:
 
 | Product | Axes | Cells |
 |---|---|---|
-| A write onto each state | route (`write`; `write_atomic` by atomic put, wire temporary, temp and rename; `open_atomic` by wire temporary, by spool, sync only) × driver (flat/`none`, hierarchical/`none`, `implicit`, `explicit`) × target (absent, file, folder, under a file) × `overwrite` × the wire's folder refusal (EISDIR, EEXIST, EACCES, ENOENT, untyped, a dead service), the last only where a hierarchical wire meets a folder | 620 |
-| A transfer between each pair of states | route (`move` by atomic move, replacing rename, displace and restore, copy then delete; `copy`) × driver × source (file, absent, folder) × destination (as above) × `overwrite` × the wire's key order (source or destination first) × folder refusal, where a folder is met | 6320 |
-| A file-shaped read on each state | call (`read`, `read_bytes`, `read_seekable` ranged and spooled, `delete` with and without `missing_ok`, `get_file_info`) × driver × state × folder refusal at a folder | 432 |
+| A write onto each state | route (`write`; `write_atomic` by atomic put, wire temporary, temp and rename; `open_atomic` by wire temporary, by spool, sync only) × driver (flat/`none`, hierarchical/`none`, `implicit`, `explicit`) × target (absent, file, folder, under a file) × `overwrite` × the wire's refusal (EISDIR, EEXIST, EACCES, ENOENT, untyped, a dead service), only where a hierarchical wire meets a folder or a file above the key × `stat` under a file (answers `None`, raises ENOTDIR), only for that target | 1300 |
+| A transfer between each pair of states | route (`move` by atomic move, replacing rename, displace and restore, copy then delete; `copy`) × driver × source (file, absent, folder) × destination (as above) × `overwrite` × the wire's key order (source or destination first) × the wire's refusal, where a folder or a file above is met × `stat` under a file, for that destination | 10000 |
+| A file-shaped read on each state | call (`read`, `read_bytes`, `read_seekable` ranged and spooled, `delete` with and without `missing_ok`, `get_file_info`) × driver × state × the wire's refusal at a folder × `stat` under a file | 480 |
 | Each capability gate | op (`glob`, `write_atomic`, `open_atomic`, `move`, `copy`, a `write` and a `write_atomic` carrying metadata) × declared × backed by protocols × posture (open, terminal-closed) × key (valid, root, refused, and self for `move`/`copy`) | 296 |
 | Construction | `namespace` × `parents` | 12 |
 
-**Who decides each answer.** The driver's obligations: refuse, in any shape,
-a folder or a file above a write's key on a hierarchical namespace, and
-change nothing. The kernel's determinants, before the wire is reached: the
-source check where it runs first (a rename route, or `ensure_parents`
-present), the destination `stat` of `move` by rename, and `write_atomic` by
-temp and rename without `overwrite`. The kernel's error-path probes decide
-every other answer. A dead service, a lock and a non-empty folder pass
-through, since they say nothing about the key.
+**Who decides each answer.** The driver's obligations, each to refuse without
+changing anything and in any shape: a read, `delete` or two-key source on an
+absent or non-file key, and, on a hierarchical namespace, a write or
+`ensure_parents` meeting a folder at the key or a file above it. So the
+driver decides *that* a call fails, never *how* it is typed. The kernel's
+determinants, before the wire is reached: the source check where it runs
+first (a rename route, or `ensure_parents` present), the destination `stat`
+of `move` by rename, and `write_atomic` by temp and rename without
+`overwrite`. The kernel's error-path probes type every refusal in the probe
+set. A dead service, a lock and a non-empty folder pass through, since they
+say nothing about the key.
 
 **What the product found against the kernel at `b9351b5`** (the review's
-last head; this section's fake, `pytest --junitxml` grouped by assertion).
-1600 of its 7680 cells failed:
+last head; this section's first fake, `pytest --junitxml` grouped by
+assertion). 1600 of its first 7680 cells failed:
 
 - writes, 180: a folder at the target answered in the wire's shape
   (`AlreadyExists`, `PermissionDenied`, untyped, 51 each) where it should be
@@ -858,3 +881,16 @@ last head; this section's fake, `pytest --junitxml` grouped by assertion).
 The fix's first draft failed 168 cells, all one shape: an absent source's
 `NotFound` overridden by a folder at the destination, against BE-018's order.
 It was corrected before the commit.
+
+**The axis the first product held fixed.** It varied the wire's refusal only
+for a folder, and its fake's `stat` answered `None` under a file, so a file
+above the key was always refused in a shape the fake typed itself. The
+closing round over `f454037` found that, all three members independently.
+With both axes added (decision 6), 1535 of the then 12088 cells failed at
+`f454037`'s kernel (`pytest --junitxml`, grouped by assertion): writes 495
+and transfers 1040, in which a file above the key answered in the wire's
+shape (`AlreadyExists`, `PermissionDenied` or untyped, 114 each for writes
+and 208 each for transfers) or `NotFound` (144 and 368), and in which a
+`stat` raising under a file ended the rename routes with `NotFound` before
+the wire was reached: where a flat write should land (3 and 16), and where
+the wire's dead-service refusal should surface (6 and 32).

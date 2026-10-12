@@ -141,8 +141,12 @@ class FakeStore:
     primitives refuse both; a flat one writes either (BE-008's exemption).
     ``folder_refusal``, when set, is the native shape every primitive raises
     at a folder where it needs a file (a wire's EEXIST, Windows EACCES, an
-    unrecognised code); unset, writes raise ``FakeIsDir`` and reads
-    ``FakeMissing``. ``dst_first`` makes the two-key primitives check the
+    unrecognised code), and the shape a write or ``ensure_parents`` raises
+    under a file; unset, writes raise ``FakeIsDir`` at a folder and
+    ``FakeParentIsFile`` under a file, and reads ``FakeMissing``.
+    ``stat_under_file``, when set, is raised by ``stat`` for a key under a
+    file, as POSIX ``stat`` raises ENOTDIR; unset, that ``stat`` answers
+    ``None``. ``dst_first`` makes the two-key primitives check the
     destination before the source.
     """
 
@@ -150,6 +154,7 @@ class FakeStore:
         self.parents = parents
         self.namespace = "hierarchical"
         self.folder_refusal: type[FakeWireError] | None = None
+        self.stat_under_file: type[FakeWireError] | None = None
         self.dst_first = False
         self.files: dict[str, FileRec] = {}
         self.folders: set[str] = set()
@@ -262,6 +267,8 @@ class FakeStore:
 
     def stat(self, key: str, *, follow_links: bool = True) -> Entry | None:
         self._hit("stat", key)
+        if self.stat_under_file is not None and self._under_file(key):
+            raise self.stat_under_file(key)
         if self._under_file(key) or self.kind(key, follow_links) is None:
             return None
         return self._entry(key, follow_links)
@@ -288,7 +295,7 @@ class FakeStore:
         if self.namespace == "flat":
             return None
         if self._under_file(key):
-            return FakeParentIsFile(key)
+            return (self.folder_refusal or FakeParentIsFile)(key)
         if self.kind(key) == "folder":
             return (self.folder_refusal or FakeIsDir)(key)
         return None
@@ -436,7 +443,7 @@ class FakeStore:
     def ensure_parents(self, key: str) -> None:
         self._hit("ensure_parents", key)
         if self._under_file(key):
-            raise FakeParentIsFile(key)
+            raise (self.folder_refusal or FakeParentIsFile)(key)
         self._mkdirs(key)
 
     def folder_stats(self, prefix: str) -> tuple[int, int, datetime | None]:

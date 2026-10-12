@@ -82,7 +82,12 @@ class AsyncDriver(Protocol):
         ...
 
     async def delete(self, key: str) -> None:
-        """Remove the file at *key*; a link there is removed itself, never its target."""
+        """Remove the file at *key*; a link there is removed itself, never its target.
+
+        Refuses an absent key, or one that is no file, without removing
+        anything, in whatever shape the wire has; the kernel types the
+        refusal. A wire whose delete succeeds for a missing key checks first.
+        """
         ...
 
     async def list_page(
@@ -197,6 +202,8 @@ class AsyncSupportsAtomicMove(Protocol):
     async def move(self, src: str, dst: str, *, overwrite: bool) -> None:
         """Move the file *src* to *dst*.
 
+        Refuses an absent *src*, or one that is no file, without changing
+        anything, in whatever shape the wire has; the kernel types the refusal.
         On a hierarchical namespace, refuses a folder at *dst*, *overwrite* or
         not, without changing anything. On a flat one a key that shadows a
         prefix is written: the flat namespace skips the type-conflict check.
@@ -213,6 +220,8 @@ class AsyncSupportsRename(Protocol):
     async def rename(self, src: str, dst: str, *, replace: bool) -> None:
         """Rename *src* to *dst*, replacing a file there only when *replace*.
 
+        Refuses an absent *src*, or one that is no file, without changing
+        anything, in whatever shape the wire has; the kernel types the refusal.
         On a hierarchical namespace, refuses a folder at *dst*, *replace* or
         not, without changing anything, as ``rename(2)`` and ``os.replace``
         do: the kernel's temp-and-rename write relies on it rather than
@@ -229,6 +238,8 @@ class AsyncSupportsCopy(Protocol):
     async def copy(self, src: str, dst: str, *, overwrite: bool) -> None:
         """Copy the file *src* to *dst*.
 
+        Refuses an absent *src*, or one that is no file, without changing
+        anything, in whatever shape the wire has; the kernel types the refusal.
         On a hierarchical namespace, refuses a folder at *dst*, *overwrite* or
         not, without changing anything. On a flat one a key that shadows a
         prefix is written: the flat namespace skips the type-conflict check.
