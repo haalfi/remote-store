@@ -261,12 +261,24 @@ class FakeStore:
             raise FakeMissing(key)
         return self.files[target].data
 
+    def _write_refusal(self, key: str) -> FakeWireError | None:
+        """What a wire with folder objects refuses at a write's target.
+
+        A flat wire (``parents == "none"``) refuses neither: BE-008's flat
+        exemption, so a key may shadow a prefix or sit under a file.
+        """
+        if self.parents == "none":
+            return None
+        if self._under_file(key):
+            return FakeParentIsFile(key)
+        if self.kind(key) == "folder":
+            return FakeIsDir(key)
+        return None
+
     def put(self, key: str, data: bytes, *, overwrite: bool, metadata: Any) -> PutResult:
         self._hit("put", key)
-        if self._under_file(key):
-            raise FakeParentIsFile(key)
-        if self.kind(key) == "folder":
-            raise FakeIsDir(key)
+        if (refusal := self._write_refusal(key)) is not None:
+            raise refusal
         if self.parents == "explicit" and "/" in key and key.rsplit("/", 1)[0] not in self.folders:
             raise FakeMissing(f"no parent: {key}")
         if key in self.files and not overwrite:
@@ -343,12 +355,10 @@ class FakeStore:
         self._hit("move", src)
         if src not in self.files:
             raise FakeMissing(src)
-        if self._under_file(dst):
-            raise FakeParentIsFile(dst)
+        if (refusal := self._write_refusal(dst)) is not None:  # SupportsAtomicMove's obligation
+            raise refusal
         if dst in self.files and not overwrite:
             raise FakeExists(dst)
-        if self.kind(dst) == "folder":
-            raise FakeIsDir(dst)
         self._implicit_parents(dst)
         self.files[dst] = self.files.pop(src)
 
@@ -360,10 +370,9 @@ class FakeStore:
         self._hit("rename", src)
         if src not in self.files:
             raise FakeMissing(src)
-        if self._under_file(dst):
-            raise FakeParentIsFile(dst)
-        if self.kind(dst) == "folder":  # SupportsRename's obligation, as rename(2) and os.replace refuse
-            raise FakeIsDir(dst)
+        # SupportsRename's obligation, as rename(2) and os.replace refuse a folder.
+        if (refusal := self._write_refusal(dst)) is not None:
+            raise refusal
         if dst in self.files and not replace:
             raise FakeExists(dst)
         self._implicit_parents(dst)
@@ -373,10 +382,8 @@ class FakeStore:
         self._hit("copy", src)
         if src not in self.files:
             raise FakeMissing(src)
-        if self._under_file(dst):
-            raise FakeParentIsFile(dst)
-        if self.kind(dst) == "folder":  # SupportsCopy's obligation
-            raise FakeIsDir(dst)
+        if (refusal := self._write_refusal(dst)) is not None:  # SupportsCopy's obligation
+            raise refusal
         if dst in self.files and not overwrite:
             raise FakeExists(dst)
         rec = self.files[src]
@@ -387,6 +394,7 @@ class FakeStore:
         self._hit("delete_tree", key)
         if self.parents == "none":  # a prefix delete: no folder objects, so nothing to refuse
             self.files = {k: v for k, v in self.files.items() if not k.startswith(key + "/")}
+            self.links = {k: v for k, v in self.links.items() if not k.startswith(key + "/")}
             return
         kind = self.kind(key, False)
         if kind is None or self._under_file(key):
@@ -677,7 +685,12 @@ def _async_optional(name: str) -> dict[str, Callable[..., Any]]:
 
 
 def _backed(protocols: tuple[str, ...], *, put_is_atomic: bool, rename_replaces: bool) -> set[Capability]:
-    """The capabilities a driver presenting *protocols* can back, beyond the four basic ones."""
+    """The capabilities a driver presenting *protocols* declares.
+
+    Always ``READ``, ``WRITE``, ``LIST``, ``DELETE`` and ``USER_METADATA``
+    (the fake stores metadata); then each capability a presented protocol, or
+    ``put_is_atomic``, backs.
+    """
     caps = {Capability.READ, Capability.WRITE, Capability.LIST, Capability.DELETE, Capability.USER_METADATA}
     replaces = "rename" in protocols and rename_replaces
     if put_is_atomic or "open_write" in protocols or replaces:
@@ -705,10 +718,11 @@ def make_kernel(
 ) -> Runner:
     """A kernel of *runtime* over a fake driver presenting *protocols*.
 
-    Defaults: every optional protocol but ``ensure_parents``' absence on a
-    store without explicit parents, the store's ``parents``, and the
-    capabilities those protocols back (``_backed``), as a well-formed driver
-    declares them; *caps*, when given, is declared exactly instead.
+    Defaults: every optional protocol, less ``remove_folder`` on a
+    ``parents == "none"`` store (where the kernel never calls it); the
+    store's ``parents``; and the capabilities those protocols back
+    (``_backed``), as a well-formed driver declares them. *caps*, when
+    given, is declared exactly instead.
     """
     store = store or FakeStore()
     store.handles = []  # type: ignore[attr-defined]

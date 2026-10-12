@@ -176,7 +176,12 @@ def test_a_stream_whose_failure_condemned_the_connection_is_not_closed_again() -
 
 
 @pytest.mark.spec("BE-011")
-def test_open_atomic_without_a_route_is_capability_not_supported() -> None:
+@pytest.mark.parametrize("key", ["a", "", "/x"])
+def test_open_atomic_without_a_route_is_capability_not_supported(key: str) -> None:
+    # Ranked ahead of the closed guard and the key rule (BE-030), as glob's gate is.
     run = make_kernel("sync", FakeStore(), protocols=("remove_folder",), caps=(Capability.WRITE,))
     with pytest.raises(CapabilityNotSupported, match="atomic"):
-        run.kernel.open_atomic("a")
+        run.kernel.open_atomic(key)
+    run.close()
+    with pytest.raises(CapabilityNotSupported, match="atomic"):
+        run.kernel.open_atomic(key)

@@ -1369,6 +1369,22 @@ total** below.
    from that key **before** the driver commits, so no key the kernel accepts can
    fail after the bytes land.
 
+**Gates around the pipeline.** A declared-capability gate comes before step 1,
+closed or not, since capability data is not a live operation: `GLOB` for
+`glob` (the pattern rule below), `ATOMIC_WRITE` for `write_atomic` and
+`open_atomic` (BE-010), each refused with `CapabilityNotSupported` by the
+declaration, whatever protocols the driver presents. WR-010's metadata gate on
+`write` and `write_atomic` comes after step 4 and before step 5, so the root
+refusal stays BE-008's first precondition and the gate stays ahead of any I/O.
+
+**A write target on a flat namespace is checked with `stat` alone.** Where a
+folder matters (the probes, a file-shaped source, the error-path wrong-type
+checks), a flat driver's `stat` miss is followed by one `list_page(limit=1)`,
+since a flat `stat` cannot see a prefix. The target of `write`, `write_atomic`,
+`open_atomic` and the `move`/`copy` destination is not: BE-008's flat-namespace
+exemption skips the type-conflict check there, so a key that shadows a prefix
+is written.
+
 For a key passing step 2, a canonical `""` is exactly BE-029's "addresses the
 root" predicate, so every operation gets the wide predicate: the write side and
 the `move`/`copy` destination as BE-029 requires, and the read side and the

@@ -40,7 +40,9 @@ class Driver(Protocol):
         """The node at *key*, file or folder, or ``None`` when absent.
 
         On a flat wire it may be a lookup of the key alone, blind to a prefix:
-        the kernel finds a folder there with one ``list_page(limit=1)``.
+        where a folder matters (a probe, a source, a wrong-type check) the
+        kernel finds one there with one ``list_page(limit=1)``; at a write
+        target it asks ``stat`` alone, since a flat key may shadow a prefix.
 
         ``follow_links=False`` is ``delete_folder``'s view: a link is then a
         non-folder entry, whatever it points to.
@@ -172,8 +174,9 @@ class SupportsAtomicMove(Protocol):
     def move(self, src: str, dst: str, *, overwrite: bool) -> None:
         """Move the file *src* to *dst*.
 
-        Refuses a folder at *dst*, *overwrite* or not, without changing
-        anything; on a flat wire a folder is a non-empty prefix.
+        With folder objects, refuses a folder at *dst*, *overwrite* or not,
+        without changing anything. On a flat wire a key that shadows a prefix
+        is written: the flat namespace skips the type-conflict check.
         """
         ...
 
@@ -187,9 +190,11 @@ class SupportsRename(Protocol):
     def rename(self, src: str, dst: str, *, replace: bool) -> None:
         """Rename *src* to *dst*, replacing a file there only when *replace*.
 
-        Refuses a folder at *dst*, *replace* or not, without changing
-        anything, as ``rename(2)`` and ``os.replace`` do: the kernel's
-        temp-and-rename write relies on it rather than probing first.
+        With folder objects, refuses a folder at *dst*, *replace* or not,
+        without changing anything, as ``rename(2)`` and ``os.replace`` do: the
+        kernel's temp-and-rename write relies on it rather than probing first.
+        On a flat wire a key that shadows a prefix is written: the flat
+        namespace skips the type-conflict check.
         """
         ...
 
@@ -201,8 +206,9 @@ class SupportsCopy(Protocol):
     def copy(self, src: str, dst: str, *, overwrite: bool) -> None:
         """Copy the file *src* to *dst*.
 
-        Refuses a folder at *dst*, *overwrite* or not, without changing
-        anything; on a flat wire a folder is a non-empty prefix.
+        With folder objects, refuses a folder at *dst*, *overwrite* or not,
+        without changing anything. On a flat wire a key that shadows a prefix
+        is written: the flat namespace skips the type-conflict check.
         """
         ...
 

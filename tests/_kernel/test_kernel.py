@@ -92,7 +92,15 @@ EVERY_MEMBER: dict[str, Any] = {
 
 
 def _kernel(runtime: str, **kwargs: Any) -> Any:
-    caps = (Capability.READ, Capability.WRITE, Capability.LIST, Capability.DELETE, Capability.MOVE, Capability.COPY)
+    caps = (
+        Capability.READ,
+        Capability.WRITE,
+        Capability.LIST,
+        Capability.DELETE,
+        Capability.MOVE,
+        Capability.COPY,
+        Capability.ATOMIC_WRITE,
+    )
     return make_kernel(runtime, _store(), caps=caps, **kwargs)
 
 
@@ -718,6 +726,35 @@ def test_a_flat_driver_finds_a_prefix_folder_by_one_listing_probe(runtime: str) 
     assert store.called("list_page") == []  # a hit spends no probe
 
 
+@pytest.mark.spec("BE-008")
+@pytest.mark.spec("BE-010")
+@pytest.mark.parametrize("protocols", [("rename",), ("copy",), ("atomic_move",)])
+def test_a_flat_destination_may_shadow_a_prefix(runtime: str, protocols: tuple[str, ...]) -> None:
+    # BE-008's flat exemption: a flat namespace skips the type-conflict check,
+    # so a write or move onto a key that shadows a prefix succeeds, on every route.
+    store = FakeStore(parents="none").add("s", data=b"S").add("k/x", "p/y", "w/z")
+    run = make_kernel(runtime, store, namespace="flat", protocols=protocols)
+    run.move("s", "k")
+    assert (store.files["k"].data, "k/x" in store.files) == (b"S", True)
+    run.write("w", b"W")
+    assert store.files["w"].data == b"W"
+    if protocols == ("rename",):  # the temp-and-rename write_atomic route
+        run.write_atomic("p", b"P")
+        assert store.files["p"].data == b"P"
+    assert sorted(k for k in store.files if "/" in k) == ["k/x", "p/y", "w/z"]
+
+
+@pytest.mark.spec("BE-018")
+@pytest.mark.spec("BE-010")
+def test_a_new_key_on_a_flat_driver_with_folder_objects_is_written(runtime: str) -> None:
+    # Its listing 404s an absent prefix; the destination check must not ask it.
+    store = FakeStore(parents="explicit").add("s", data=b"S")
+    run = make_kernel(runtime, store, namespace="flat", protocols=("remove_folder", "rename"))
+    run.write_atomic("new", b"N")
+    run.move("s", "moved")
+    assert sorted(store.files) == ["moved", "new"]
+
+
 @pytest.mark.spec("BE-021")
 def test_a_hit_spends_no_probe(runtime: str) -> None:
     run = _kernel(runtime)
@@ -887,6 +924,20 @@ def test_an_undeclared_capability_is_refused_though_the_driver_could(runtime: st
     with pytest.raises(CapabilityNotSupported, match="atomic"):
         run.write_atomic("b", b"x")
     assert run.store.calls == []
+
+
+@pytest.mark.spec("BE-030")
+@pytest.mark.spec("BE-010")
+@pytest.mark.parametrize("key", ["a", "", "/x", "d/../x"])
+def test_an_undeclared_atomic_write_outranks_the_closed_guard_and_the_key_rule(runtime: str, key: str) -> None:
+    # Capability data is not a live operation: refused first, as glob's is.
+    run = make_kernel(runtime, FakeStore(), protocols=("remove_folder",), close_is_terminal=True)
+    with pytest.raises(CapabilityNotSupported, match="atomic"):
+        run.write_atomic(key, b"x")
+    run.close()
+    with pytest.raises(CapabilityNotSupported, match="atomic"):
+        run.write_atomic(key, b"x")
+    assert [c for c in run.store.calls if c[0] != "close"] == []
 
 
 @pytest.mark.spec("WR-010")

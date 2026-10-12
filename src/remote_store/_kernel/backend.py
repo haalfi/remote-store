@@ -73,10 +73,11 @@ class DriverBackend(_KernelCore, Backend):
 
     def open_atomic(self, path: str, *, overwrite: bool = False) -> AbstractContextManager[BinaryIO]:
         """A temporary promoted to *path* on exit: on the wire, or spooled then written atomically."""
+        # The declared capability decides, ahead of the closed guard and the key
+        # rule (BE-030); construction guarantees a route behind it.
+        self._require(Capability.ATOMIC_WRITE, path, "cannot write atomically")
         self._guard()
         key = self._write_key(path)
-        # The declared capability decides; construction guarantees a route behind it.
-        self._require(Capability.ATOMIC_WRITE, key, "cannot write atomically")
         if self._open_write is not None:
             return _HandleWriter(self, key, overwrite)
         return _SpoolThenWrite(self, key, overwrite)

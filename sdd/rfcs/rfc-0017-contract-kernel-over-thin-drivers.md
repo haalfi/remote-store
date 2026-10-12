@@ -863,8 +863,8 @@ and its answer keeps `classify`.
   (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
   private and touches spec 003 only: it adds the clauses its kernel cells
   trace to, the key rule, the root `delete_folder` refusal and
-  `SupportsRemoveFolder`'s `delete_folder` sequence as BK-396 decided it, and BK-395's
-  answers; BK-389's dossier, item 8, is the authority for this split, and
+  `SupportsRemoveFolder`'s `delete_folder` sequence as BK-396 decided it,
+  BK-395's answers, and BE-017's folder `modified_at` rule; BK-389's dossier, item 8, is the authority for this split, and
   its decision 6, **Clauses checked, and who amends each**, for the clauses
   BK-395's answers touch outside it): specs 003, 005, 029 and 037 below,
   the clauses that paragraph assigns to BK-394, spec 013 (Memory's,

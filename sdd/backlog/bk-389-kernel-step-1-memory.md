@@ -721,8 +721,9 @@ Choices the decisions above left open, as built:
   `ensure_parents` runs, so a refused call creates no folders.
 - **Capabilities.** `glob`, `write_atomic` and `open_atomic` are refused by
   the declared capability (`GLOB`, `ATOMIC_WRITE`), not by the protocols
-  behind it, and a write with a non-empty `metadata` by `USER_METADATA`
-  (WR-010's strict gate), all before any I/O; `copy` and `move`, which spec
+  behind it, ahead of the closed guard and the key rule (BE-030), and a
+  write with a non-empty `metadata` by `USER_METADATA` (WR-010's strict
+  gate) after the root refusal, all before any I/O; `copy` and `move`, which spec
   003 gives no capability clause, go by their means.
 - **`get_folder_info` on an empty aggregate** stats the key: fail-open on
   `parents == "none"`, where it is the error path's type probe, and fail-closed
@@ -731,8 +732,10 @@ Choices the decisions above left open, as built:
   alone; on a flat driver a `stat` miss is followed by one
   `list_page(key, delimiter="/", limit=1)`, RFC-0017's "one `stat` or one
   `list_page(limit=1)`", for every probe that must see a folder (`exists`,
-  `is_folder`, `get_file_info`, the error-path probes, `move`'s source and
-  destination checks); `is_file` stays one `stat`.
+  `is_folder`, `get_file_info`, the error-path probes, `move`'s source
+  check); `is_file` stays one `stat`, and so does every write target (`write`,
+  `write_atomic`, `open_atomic`, the `move`/`copy` destination), where BE-008's
+  flat exemption lets a key shadow a prefix (BE-030).
 - **Absent container.** The kernel reads it as `NotFound` for every `Op` but
   `write`, `write_atomic`, `open_atomic`, `probe`, the identity scopes and
   `close`, which keep `classify`'s answer; an error the driver raised
@@ -748,11 +751,11 @@ Choices the decisions above left open, as built:
 - **Driver obligations the kernel relies on instead of probing:**
   `SupportsDeleteTree.delete_tree` refuses a link at `key` without traversing
   it, since the kernel calls it with no probe before it (BE-031);
-  `SupportsRename.rename`, `SupportsCopy.copy` and `SupportsAtomicMove.move`
-  refuse a folder at `dst` whatever `replace` or `overwrite` is (the
-  temp-and-rename write promotes without a `stat` when `overwrite`; on a flat
-  wire a folder is a non-empty prefix), and the kernel then names `dst` in
-  the error; `connection_dead` is pure inspection, passed as the sync
+  with folder objects, `SupportsRename.rename`, `SupportsCopy.copy` and
+  `SupportsAtomicMove.move` refuse a folder at `dst` whatever `replace` or
+  `overwrite` is (the temp-and-rename write promotes without a `stat` when
+  `overwrite`), and the kernel then names `dst` in the error; on a flat wire
+  they write a key that shadows a prefix, BE-008's flat exemption; `connection_dead` is pure inspection, passed as the sync
   stream's `is_fatal` (SIO-010).
 - **`delete_folder` departs from the formal model in one state:** a walk
   over a stored key BE-030 omits answers `DirectoryNotEmpty`, where

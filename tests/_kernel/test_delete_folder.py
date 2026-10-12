@@ -7,8 +7,13 @@ drivers, and requires the same answer and post-state in every cell,
 including the 88-cell ``enum`` product over refusal, ``stat`` outcome,
 listing outcome and ``missing_ok`` that enumerates the probe rule. So the
 port is checked against the model, not re-typed by hand. The second half
-covers what the model does not: ``parents == "none"``, links, concurrent
-writers and deleters, and refusals that pass unprobed, over the fake driver.
+covers, over the fake driver, the cases the model measures only through
+drivers that need a live wire or filesystem (its ``S3Driver``, ``SQLDriver``,
+``AzureFlatDriver`` and ``LocalDriver``): ``parents == "none"``, links,
+concurrent writers and deleters, and refusals that pass unprobed. Its
+``parents == "none"`` table departs from the model in one place on purpose:
+the model's ``_none`` lets a raising listing propagate, while the kernel
+reads a ``NotFound`` on the listing's first page as an empty listing (BE-031).
 """
 
 from __future__ import annotations

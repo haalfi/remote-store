@@ -332,10 +332,14 @@ class _KernelCore:
             page = self._driver.list_page(key, delimiter="/", limit=1)
         return Entry(key, "folder") if page.entries or page.prefixes else None
 
-    def _stat_open(self, op: Op, key: str) -> Entry | None:
-        """An error-path probe: fail-open, so a raising probe reads as no answer."""
+    def _stat_open(self, op: Op, key: str, *, folders: bool = True) -> Entry | None:
+        """An error-path probe: fail-open, so a raising probe reads as no answer.
+
+        ``folders=False`` is a write target's view: a ``stat`` alone, so a flat
+        driver never sees a prefix there (the flat namespace's exemption).
+        """
         try:
-            return self._node_at(op, key)
+            return self._node_at(op, key) if folders else self._stat(op, key)
         except RemoteStoreError:
             return None
 
@@ -541,10 +545,11 @@ class _KernelCore:
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
         """Write atomically: ``put`` where it is atomic, else a wire temporary, else temp and rename."""
+        # Capability data, not a live operation: ahead of the closed guard and
+        # the key rule, as glob's is (BE-030).
+        self._require(Capability.ATOMIC_WRITE, path, "cannot write atomically")
         self._guard()
         key = self._write_key(path)
-        # Capability data: decided before the parents are created.
-        self._require(Capability.ATOMIC_WRITE, key, "cannot write atomically")
         self._require_metadata(metadata, key)
         target = RemotePath(key)
         self._prepare_write(Op.WRITE_ATOMIC, key)
@@ -577,7 +582,9 @@ class _KernelCore:
         assert self._rename is not None
         op = Op.WRITE_ATOMIC
         if not overwrite:
-            existing = self._node_at(op, key)
+            # A write target: a stat alone, so on a flat namespace a key may
+            # shadow a prefix (BE-008's flat exemption).
+            existing = self._stat(op, key)
             if existing is not None:
                 raise self._occupied(existing, key)
         temp = _temp_key(key)
@@ -664,7 +671,7 @@ class _KernelCore:
                 self._driver.delete(source)
 
     def _destination_is_wrong_type(self, err: RemoteStoreError, op: Op, key: str) -> None:
-        entry = self._stat_open(op, key)
+        entry = self._stat_open(op, key, folders=False)
         if entry is not None and entry.kind == "folder":
             raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
 
@@ -712,7 +719,7 @@ class _KernelCore:
         op = Op.MOVE
         if not source_checked:
             self._require_file(op, source)
-        existing = self._node_at(op, target)
+        existing = self._stat(op, target)  # a write target: BE-008's flat exemption
         if existing is not None and (existing.kind == "folder" or not overwrite):
             raise self._occupied(existing, target)
         if existing is None or self._rename.rename_replaces:
