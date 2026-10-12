@@ -166,7 +166,7 @@ CHANGELOG entry and a migration note:
 |---|---|---|---|---|
 | write below an item (D4) | flat | written, unless `reject_write_under_file_ancestor` is on | `InvalidPath` | one `stat` per ancestor, per write |
 | write an item over a folder (D4) | flat | written, whether or not the opt-in is on | `InvalidPath` | one `list_page(limit=1)` per write |
-| listing an item `k` and a prefix `k/` together (D3) | flat | both listed | the prefix omitted and logged | none if an item lists before its prefix; otherwise per-listing buffering (Open question 1) |
+| listing an item `k` and a prefix `k/` together (D3) | flat | both listed | the prefix omitted and logged | none; flat drivers list in byte-lexicographic order (A.3) |
 | folder operation on a key that is an item with raw entries below it (D3) | flat | `list_files`, `get_folder_info` and `delete_folder` act on `k/` | empty, `InvalidPath` for `get_folder_info` and `delete_folder` | one `stat` per folder operation |
 | listing a link (D7) | SFTP | hidden | listed per the store's link policy; a link escaping the root, dangling or looping is omitted | none |
 
@@ -181,7 +181,7 @@ does not change.
   kernel, and spec 003 marks which clause binds which.
 - **PR #1127** resumes against this model. `delete_folder` reads the shared
   resolver, which answers its first open spec finding. Its second, whether a
-  `PermissionDenied` is probed, is decided by A.8's tables (Open question 2).
+  `PermissionDenied` is probed, is decided by A.8's tables (Open question 1).
   The five open text findings are fixed against the new text.
 - **Spec 003** gains Appendix A as one section. These texts are replaced by a
   pointer to it, for the backends on the kernel:
@@ -202,18 +202,11 @@ does not change.
 
 ## Open Questions
 
-1. **Listing order.** A.3's recursive omission needs an item `k` to be listed
-   before the entries below `k/`. That holds for a lexicographic listing,
-   because `k` sorts before `k/`. Is that order a driver obligation, or does
-   the kernel buffer?
-2. **A.8's observation tables.** One table per encoding property, giving
+1. **A.8's observation tables.** One table per encoding property, giving
    (call, refusal shape) → the A.5 rows it is compatible with, and the driver
    obligations that narrow them. They decide, among others, whether a
    `PermissionDenied` is probed (PR #1127's second open finding). Owned by
    BK-432 and drafted before this RFC is accepted.
-3. **A link as a transfer source.** Under `follow_within_root`, does `move`
-   move the link or the target's content, and does `copy` copy the link or the
-   content?
 
 ### Decided while drafting (maintainer, 2026-10-12)
 
@@ -233,6 +226,10 @@ does not change.
   later.
 - On a flat encoding, the probe, read-file and delete-file families trust the
   encoding, so `delete("k/a.txt")` below an item removes the raw entry.
+- A flat driver's `list_page` returns keys in byte-lexicographic order, a
+  driver obligation, so the kernel needs no buffer for the recursive omission.
+- A link as a transfer source: `move` moves the link, and `copy` copies the
+  target's content (`InvalidPath` under `no_follow`).
 - SFTP has links (`links="present"`), measured on the `atmoz/sftp` container
   with `SFTPBackend` as on master. Today it follows a link on keyed calls,
   hides it in listings, and lists or reads through it at its own key, which
@@ -289,8 +286,10 @@ These raw states decode to no tree:
 
 - **Listings.** A listing of `k`'s parent that returns `k` as an item and `k/`
   as a prefix omits the prefix. A recursive listing omits every entry below an
-  item it has listed. A link that does not decode is omitted too. Each
-  omission is logged. This extends BE-030's omission of a key the rule
+  item it has listed. For that, a flat driver's `list_page` returns keys in
+  byte-lexicographic order, so `k` arrives before every key below `k/`; that
+  is a driver obligation, and hierarchical drivers stay unordered. A link that
+  does not decode is omitted too. Each omission is logged. This extends BE-030's omission of a key the rule
   refuses, and the listing itself shows what to omit.
 - **Folder operations on an item.** `list_files(k)` is empty and
   `delete_folder(k)` answers `InvalidPath` when `k` is an item. On a flat
@@ -363,8 +362,10 @@ folder, so there it vanishes. With folder objects it stays.
   `no_follow` whatever the policy, since following a link would delete its
   target's contents.
 - `delete` on a link removes the link, never its target, under either policy
-  (BE-031's existing rule). A `move` or `copy` whose source is a link is Open
-  question 3.
+  (BE-031's existing rule). `move` with a link as its source moves the link
+  entry and leaves the target alone, as a rename does. `copy` reads through
+  the link and writes a regular item under `follow_within_root`. Under
+  `no_follow` it is `InvalidPath`, like a write to a link.
 - A write to a link goes to the target under `follow_within_root`. Under
   `no_follow` it is `InvalidPath`, since replacing a link the store did not
   make would destroy it without a signal.
@@ -376,7 +377,7 @@ item but not a folder, and a `list_page(limit=1)` sees whether a folder is
 empty. A refusal arrives as `NotFound`, `InvalidPath`, `AlreadyExists`,
 `PermissionDenied`, an untyped `RemoteStoreError`, or another type. For each
 encoding property one table gives **(call, shape) → the A.5 rows it is
-compatible with** (Open question 2). Then:
+compatible with** (Open question 1). Then:
 
 1. A call that succeeds runs only its *determinants*: the probes that run
    whether or not it fails. They are A.3's `stat` before a flat folder
