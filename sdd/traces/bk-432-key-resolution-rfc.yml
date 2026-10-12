@@ -10,6 +10,8 @@ audience:
   - contributor.process
 decisions:
   - sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl
+discovery_followups:
+  - BUG-323
 orient:
   - items: [BK-389, BK-394]
     verdict: constrains
@@ -106,3 +108,11 @@ phases:
         read_type: reference
         extract: "Maintainer rejected the first draft's geometry-parameterised outcome set (semantic model) for one tree plus a partial decode per encoding, then moved all mechanics out of Decisions into Appendix A (the draft spec section) per principle 8"
         outcome: misleading
+  - id: verify
+    name: Verify
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "stat call sites, listdir_attr listings, _rmtree, _collect_folder_stats"
+        read_type: verify
+        extract: "Measured on atmoz/sftp:alpine with paramiko-made links (scratch probe, not committed): keyed calls follow links, listings skip them (lrwxrwxrwx mode), list_files on a link lists the target, write through a link writes the target, a nested link is removed by a recursive delete, and delete_folder(link_to_folder, recursive) emptied the target and raised NotFound, filed as BUG-323. Closed RFC-0021 OQ1"
+        outcome: ok

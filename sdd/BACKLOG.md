@@ -125,6 +125,14 @@ the release.
 answers the same way on every backend, and the failure they catch says which
 failure it was.
 
+- [ ] **BUG-323 — `SFTPBackend.delete_folder` on a link to a folder deletes the target's files, then raises `NotFound`**
+  spec: BE-013, BE-021 · effort: S · audience: user.api
+  `delete_folder("ld", recursive=True)` with `ld -> realdir` emptied `realdir` and raised
+  `NotFound` (atmoz/sftp, `_sftp.py` as on master, 2026-10-12): `_rmtree` lists and removes
+  through the link (`listdir_attr` follows the key itself), and the final `rmdir` on the link
+  fails. A link nested below the key is removed as an entry. Open decision: none; refuse a
+  link at the key with `InvalidPath` (`lstat`) before `_rmtree`, as BE-031 rules for the kernel.
+
 - [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms**
   spec: ERR-009, AZ-025 · effort: M · audience: user.api
   Seven `RemoteStoreError(str(exc))` sites in five files; five of them, driven

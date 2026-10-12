@@ -183,14 +183,16 @@ BE-021's cost table records both costs when the clauses land.
 - **Formal model:** `Valid()` in `BackendContract.dfy` already is A.1's tree. A
   follow-up adds a `decode` function for each encoding, with refinement lemmas
   showing that each encoding's operations commute with `decode`.
+- **SFTP's links** decode by A.7's policy once SFTP runs on the kernel. Today
+  it follows a link on keyed calls and hides it in listings. BUG-323, its
+  recursive delete through a link at the key, is fixed independently of this
+  RFC.
 - **No public API change in this RFC.** The link option and a capability that
   exposes `links` are a follow-up item, filed when this RFC is accepted.
 
 ## Open Questions
 
-1. **SFTP's links.** Whether its driver declares `links="present"`, and how it
-   follows them today. Unverified.
-2. **Listing order.** A.3's recursive omission needs an item `k` to be listed
+1. **Listing order.** A.3's recursive omission needs an item `k` to be listed
    before the entries below `k/`. That holds for a lexicographic listing,
    because `k` sorts before `k/`. Is that order a driver obligation, or does
    the kernel buffer?
@@ -209,6 +211,12 @@ BE-021's cost table records both costs when the clauses land.
 - Links: a `links` property, a store-level policy, `no_follow` for destructive
   tree operations, and `InvalidPath` for a write to a link under `no_follow`.
   Only the model is in scope; the public option comes later.
+- SFTP has links (`links="present"`), measured on the `atmoz/sftp` container
+  with `SFTPBackend` as on master. Today it follows a link on keyed calls,
+  hides it in listings, and lists or reads through it at its own key, which
+  is the inconsistent decoding A.7's policy replaces. The same run found
+  BUG-323: a recursive `delete_folder` on a link to a folder deletes the
+  target's files.
 - Outcomes carry no depth.
 - `glob` is a folder-read over its pattern's literal prefix.
 - The model lives in one new section of spec 003. The RFC keeps decisions to
@@ -317,7 +325,8 @@ one.
 
 ### A.7 Links
 
-- `links` is `none` for object stores and `present` where the wire has links.
+- `links` is `none` for object stores and `present` where the wire has links:
+  Local and SFTP.
 - The store policy is `follow_within_root` (the default) or `no_follow`.
   Under `follow_within_root` a link decodes to its target's node, and a target
   outside the root does not decode. Under `no_follow` a link decodes to an
