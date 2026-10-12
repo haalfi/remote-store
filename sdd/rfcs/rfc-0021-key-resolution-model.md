@@ -136,7 +136,9 @@ first-page bound, applied once per operation. ([A.9](#a9-changes-under-an-operat
 ### D10. Where the model lives
 
 Spec 003 gains one section, drafted in Appendix A. The clauses it replaces
-point to it. The formal `decode` functions are a follow-up.
+point to it. The model is also stated in Dafny, which checks the prose: a
+`decode` per encoding and the lemmas that each operation keeps the encoding
+decodable and agrees with the tree, verified before this RFC is accepted.
 
 ## Alternatives
 
@@ -197,14 +199,18 @@ so it does not change.
     - BE-031's probe rule, and its "a file and a prefix both" row.
 - **Tests:** two generated suites (A.10) replace
   `tests/_kernel/test_condition_space.py`'s hand-assembled axes.
-- **Formal model:** `Valid()` in `BackendContract.dfy` already is A.1's tree. A
-  follow-up adds a `decode` function for each encoding, with refinement lemmas
-  showing that each encoding's operations commute with `decode`.
+- **Formal model:** `Valid()` in `BackendContract.dfy` already is A.1's tree.
+  Before acceptance, a sketch under `sdd/formal/` adds a flat and a
+  hierarchical encoding, a `decode` for each, and two lemmas, verified with
+  `scripts/dafny_verify.sh`: every write the library makes keeps the encoding
+  decodable (D4), and each family's result agrees with the tree's (D5)
+  (Open question 2).
 - **Local's and SFTP's links** decode by A.7's policy once each runs on the
   kernel. BUG-323, SFTP's recursive delete through a link at the key, is fixed
   independently of this RFC.
 - **Follow-ups**, filed when this RFC is accepted: the public link option and a
-  capability that exposes `links`, and the Dafny `decode` functions.
+  capability that exposes `links`, and wiring the Dafny encodings into
+  `BackendContract.dfy`'s operations.
 
 ## Open Questions
 
@@ -213,12 +219,18 @@ so it does not change.
    obligations that narrow them. They decide, among others, whether a
    `PermissionDenied` is probed (PR #1127's second open finding). Owned by
    BK-432 and drafted before this RFC is accepted.
+2. **The Dafny sketch.** The encodings, `decode` and the two lemmas named in
+   Impact, verified before acceptance. A lemma that does not verify is a
+   contradiction in the model, and the prose is fixed to match.
 
 ### Decided while drafting (maintainer, 2026-10-12)
 
 - Park PR #1127 and settle the model first. It is tracked as a new item with
-  this RFC as its record, in prose and tables, with no Dafny. The RFC's PR
-  stacks on `bk-389-kernel`.
+  this RFC as its record. The RFC's PR stacks on `bk-389-kernel`.
+- The model is also stated in Dafny, verified before acceptance. The first
+  draft had left Dafny out to keep its scope small, and the maintainer
+  reversed that once the model became a tree with a `decode` per encoding,
+  which is a refinement statement.
 - The model is one tree with a partial abstraction function per backend
   encoding, not a semantic model with geometry as its parameter.
 - A raw state that does not decode is not in the store. Listings omit it.
