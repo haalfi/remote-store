@@ -11773,6 +11773,10 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
 <li><strong>What it does:</strong> CodeQL static analysis. The weekly full sweep runs regardless
   of paths, catching what the path-filtered push/PR runs miss.</li>
 <li><strong>When:</strong> push / PR, plus Monday 06:00 UTC.</li>
+<li><strong>Filtered before upload:</strong> <code>py/ineffectual-statement</code> results in the
+  kernel's <code>driver.py</code> and <code>_io.py</code> whose flagged text is exactly <code>...</code>, the
+  Protocol method body. Other results of that rule in those files still
+  upload. The file globs and the reason live in the workflow's filter step.</li>
 <li><strong>Where the finding shows up:</strong> <strong>code-scanning alerts in the repository
   Security tab</strong> — GitHub's canonical surface for this class. By design it opens
   no rolling issue and has no triage skill; this is the one sanctioned exception
