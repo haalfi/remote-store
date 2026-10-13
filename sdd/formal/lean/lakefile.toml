@@ -1,0 +1,8 @@
+name = "store_axioms"
+defaultTargets = ["StoreAxioms"]
+
+# Lean core only, no Mathlib. A warning fails the build, so a `sorry` (which
+# Lean reports as a warning) cannot pass as a proof.
+[[lean_lib]]
+name = "StoreAxioms"
+leanOptions = { warningAsError = true }

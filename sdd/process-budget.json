@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 298097,
+  "total": 298264,
   "files": {
     "CLAUDE.md": 17528,
     ".claude/output-styles/interview.md": 2105,
@@ -30,7 +30,7 @@
     ".claude/agents/sdd-expert.md": 1726,
     ".claude/agents/store-backend-expert.md": 1820,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 63879,
+    "sdd/CLAUDE-REFERENCE.md": 64046,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [
@@ -81,6 +81,12 @@
       "from": 297938,
       "to": 298097,
       "reason": "Local toolchain gains an alloy row (sdd/formal/alloy/, scripts/alloy_check.sh); the setup steps themselves live in sdd/formal/README.md"
+    },
+    {
+      "item": "BK-435",
+      "from": 298097,
+      "to": 298264,
+      "reason": "Local toolchain gains a lean row (sdd/formal/lean/, scripts/lean_check.sh); the setup steps themselves live in sdd/formal/README.md"
     }
   ]
 }

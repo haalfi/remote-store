@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-13
 **Backlog items:** BK-435 (The store model's axioms have no independence or consistency check)
-**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); proofs over the unrestricted universe pending.
+**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 over the unrestricted universe (2026-10-13, § 10).
 
 ---
 
@@ -478,6 +478,37 @@ and L5. Each mutant was a copy of the model with that one conjunct deleted from
 its `Axioms` predicate, run once with `scripts/alloy_check.sh` and not
 committed; the failing commands are the ones Alloy reported as "satisfied
 against expectation".
+
+**Step 2 result (2026-10-13).** `sdd/formal/lean/StoreAxioms.lean`
+restates § 2 and § 3 clause by clause (one field of `Axioms` per clause)
+and proves, with `bash scripts/lean_check.sh` building it green under
+Lean 4.34.1, core library only:
+
+- **§ 4.** D1, and chain uniqueness as `chain_unique`.
+- **§ 7.** L1 to L5 as stated, for an arbitrary type as universe, so
+  with no finiteness and no scope. L5 takes any split of Key(x) into
+  names from N, not only the chain's. The auxiliary lemma of step 2
+  took the form of injectivity (`join_inj`): the `/`-join of a sequence
+  of names from N determines the sequence.
+- **L6.** Five parts: each model gives a pair (L, K) meeting L6's
+  conditions; each such pair gives a model (entities the sequences in L,
+  items K, root the empty sequence, p contains p followed by one name,
+  a sequence's name its last); pair to model to pair is the identity;
+  model to pair to model is the identity up to an isomorphism that
+  preserves F, I, r, C and name; and two models are isomorphic exactly
+  when they give the same pair. A leaf of L outside K is an empty folder
+  (`L6_empty_folder`). The isomorphism this fixes is the one the
+  statement left informal: it preserves the typing and the names.
+- **§ 3, no finiteness axiom.** The axioms have an infinite model (one
+  infinite downward branch). This also shows them satisfiable, so no
+  lemma holds vacuously.
+- **§ 9.7, infinite half.** An infinite upward chain with the root
+  elsewhere has every non-root contained, the root uncontained and no
+  cycle, and breaks AX-6.
+
+It found no disagreement with this document. The build fails on a
+`sorry` (seeded once and observed to fail, not committed), and a
+`#guard_msgs` block pins each result's axioms to Lean's standard ones.
 
 **Relation to existing formal work.** `sdd/formal/StoreTree.dfy` §1 models the
 store as `Tree = map<Key, Kind>` with `Key = seq<string>`, requiring the root

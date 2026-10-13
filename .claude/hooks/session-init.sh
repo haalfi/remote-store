@@ -123,6 +123,39 @@ if ! command -v alloy &>/dev/null && ls sdd/formal/alloy/*.als &>/dev/null; then
   fi
 fi
 
+# --- Install Lean if a Lean project exists in the repo ---
+# Bump together with the list in scripts/lean_check.sh. The release archive
+# is about 580 MB, hence the longer download limit.
+LEAN_VERSION="4.34.1"
+LEAN_SHA256="47bf4bbd78f70c2e9670598ab7124d92b6efb7330ff33e5fbb4030f6fd72e4e4"
+if ! command -v lean &>/dev/null && [ -f sdd/formal/lean/lean-toolchain ]; then
+  if _is_linux_container && command -v zstd &>/dev/null; then
+    echo "lean: not found — installing v${LEAN_VERSION}..."
+    _TMP=$(mktemp -d)
+    _TAR="lean-${LEAN_VERSION}-linux.tar.zst"
+    _URL="https://github.com/leanprover/lean4/releases/download/v${LEAN_VERSION}/${_TAR}"
+    if ! curl -fsSL --max-time 600 "$_URL" -o "$_TMP/$_TAR" 2>/dev/null; then
+      echo "lean: download failed — see sdd/formal/README.md § Running the verifier"
+    elif ! echo "${LEAN_SHA256}  $_TMP/$_TAR" | sha256sum --check --quiet 2>/dev/null; then
+      echo "lean: checksum mismatch — not installed"
+    else
+      mkdir -p /usr/local/lib/lean
+      tar --zstd -xf "$_TMP/$_TAR" -C /usr/local/lib/lean --strip-components=1
+      ln -sf /usr/local/lib/lean/bin/lean /usr/local/bin/lean
+      ln -sf /usr/local/lib/lean/bin/lake /usr/local/bin/lake
+      case "$(lean --version 2>/dev/null)" in
+        "Lean (version ${LEAN_VERSION},"*) echo "lean: installed v${LEAN_VERSION}" ;;
+        *) echo "lean: install failed — see sdd/formal/README.md § Running the verifier" ;;
+      esac
+    fi
+    rm -rf "$_TMP"
+  elif _is_linux_container; then
+    echo "lean: not installed (no zstd on PATH) — sdd/formal/lean/ cannot be checked in this session"
+  else
+    echo "lean: not found natively — bash scripts/lean_check.sh falls back to Docker; native setup in sdd/formal/README.md § Running the verifier"
+  fi
+fi
+
 # --- Install gh on Linux containers if needed ---
 if ! command -v gh &>/dev/null && _is_linux_container; then
   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \

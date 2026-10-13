@@ -1,0 +1,67 @@
+id: BK-435
+title: "The store model's axioms are stated only through RFC-0021's tree and `StoreTree.dfy`'s `Tree`, so their independence and consistency are unexamined"
+trigger: "Step 2 of the accepted research doc's formalization order (§ 10): after the Alloy check found no disagreement in bounded scope, prove D1 and the § 7 lemmas over the unrestricted universe in Lean 4; the maintainer put L6 in this step"
+source_items:
+  - BK-435
+audience:
+  - library.maintainer
+  - contributor.tooling
+expected_ripples:
+  - sdd/formal/README.md
+  - sdd/research/research-store-model-axioms.md
+  - sdd/BACKLOG.md
+  - sdd/CLAUDE-REFERENCE.md
+  - sdd/process-budget.json
+  - pyproject.toml
+  - .claude/hooks/session-init.sh
+  - .gitignore
+decisions:
+  - sdd/decisions/ef396977-f51e-463e-bfc3-d413be64ea17.jsonl
+orient:
+  - items: [BK-434]
+    verdict: unrelated
+    evidence: "BK-434 wires RFC-0021's encodings into BackendContract.dfy. This work adds a Lean project proving the research doc's lemmas and touches no .dfy file; L6 proves the trie view that StoreTree.dfy's Tree = map<Key, Kind> instantiates, but reconciling that file with AX-7 (its Key = seq<string> admits \"\" and \"a/b\") stays the doc's open question and BK-434's, unchanged."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-store-model-axioms.md
+        section: "(full)"
+        read_type: gate
+        extract: "§ 3 clauses to restate, § 4 D1 and chain, § 7 L1 to L6, § 9.7 infinite half, § 10 step 2 and the split-of-join auxiliary lemma"
+      - file: sdd/formal/README.md
+        section: "(full)"
+        read_type: gate
+        extract: "Alloy layer and its native-first runner as the pattern; layers table; authoring rule 3 on CI status"
+      - file: sdd/formal/alloy/StoreAxioms.als
+        section: "(full)"
+        read_type: reference
+        extract: "Clause-per-predicate restatement mirrored as one Axioms field per clause; L5's non-root ancestor reading"
+  - id: proofs
+    name: Write and check the Lean proofs
+    steps:
+      - file: scripts/alloy_check.sh
+        section: "(full)"
+        read_type: reference
+        extract: "Native-first with version check, Docker fallback, repo mounted read-only; lean_check.sh copies the project into the container because lake writes .lake/"
+      - file: scripts/alloy.Dockerfile
+        section: "(full)"
+        read_type: reference
+        extract: "ADD --checksum pin; the Lean archive's sha256 is the digest GitHub publishes for the release asset"
+  - id: toolchain
+    name: Local Lean setup like Alloy's
+    steps:
+      - file: .claude/hooks/session-init.sh
+        section: "Alloy install block"
+        read_type: reference
+        extract: "Container install with sha256 check; Lean's archive is .tar.zst, so the guard is zstd rather than java"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Local toolchain"
+        read_type: reference
+        extract: "One row per tool; the added row needed a recorded process-budget raise"
+      - file: scripts/check_process_budget.py
+        section: "module docstring"
+        read_type: gate
+        extract: "Growth of a budgeted file needs a recorded --raise"
+surprising_ripples:
+  - ".gitignore: a native lake build writes .lake/ inside sdd/formal/lean; Alloy and Dafny write nothing into the repo"

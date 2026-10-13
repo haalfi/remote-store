@@ -471,11 +471,11 @@ no clause of the contract ships unexercised.
 
 - [~] **BK-435 — The store model's axioms are stated only through RFC-0021's tree and `StoreTree.dfy`'s `Tree`, so their independence and consistency are unexamined**
   spec: — · effort: M · audience: library.maintainer
-  `StoreTree.dfy` §1 models the store as `Tree = map<Key, Kind>`; the axioms behind it
-  are stated in `research/research-store-model-axioms.md` (accepted 2026-10-13, AX-1 to
-  AX-8, a countermodel per clause). `formal/alloy/StoreAxioms.als` checks the countermodels,
-  witnesses and L1 to L5 in bounded scope; nothing is proved over the unrestricted universe
-  (Lean 4 next). Open decision: whether the axioms are promoted into a spec once proved.
+  `StoreTree.dfy` §1 models the store as `Tree = map<Key, Kind>`; its axioms are in
+  `research/research-store-model-axioms.md` (accepted 2026-10-13, a countermodel per clause).
+  `formal/alloy/StoreAxioms.als` checks countermodels, witnesses and L1 to L5 in bounded
+  scope; `formal/lean/StoreAxioms.lean` proves D1 and L1 to L6 over any universe. Open
+  decision: whether the axioms are promoted into a spec now that they are proved.
 
 ---
 
