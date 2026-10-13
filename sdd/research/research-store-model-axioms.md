@@ -369,9 +369,11 @@ AX-4 if `parent` is functional and AX-1 and AX-3 if only directories have
 contents; the summary does not say. Acyclicity is written as an invariant and
 reachability is not stated. Whether that matters depends on the universe:
 
-- **In a finite universe the two are equivalent.** A parent chain from any node
-  cannot repeat (no cycles) and cannot continue forever, so it ends, and only
-  the root has no parent. Reachability follows.
+- **In a finite universe acyclicity gives reachability.** A parent chain from
+  any node cannot repeat (no cycles) and cannot continue forever, so it ends,
+  and only the root has no parent. Reachability follows. The converse needs
+  `parent` to be functional (AX-4), which the summary does not settle: L2's
+  structure in § 4 is finite and reachable and has a cycle.
 - **In an infinite universe they are not.** An infinite upward chain
   ... → x₂ → x₁ → x₀, each node contained by the next, with the root elsewhere,
   satisfies "every non-root has a parent, the root has none, nothing is its own
@@ -469,7 +471,8 @@ which scope (entities, sequence length):
   at most 4 · 3 − 1 = 11 (depth at most 4, a name and a `/` per level, no
   trailing `/`), and a run shows that length is reached. L6 is not stated: it relates structures to one another,
   which Alloy cannot quantify over.
-- **§ 9.7.** The finite half holds (scope 6, 6). The infinite half is outside
+- **§ 9.7.** The finite half, acyclicity gives reachability, holds (scope 6, 6;
+  `finite_acyclic_gives_reach` checks that direction only). The infinite half is outside
   any bounded scope, as is everything this document says about infinite
   universes.
 
