@@ -110,3 +110,49 @@ phases:
         section: "(full, after tagging)"
         read_type: verify
         extract: "bash scripts/alloy_check.sh: all 30 commands matched expect; bash scripts/lean_check.sh: build completed. The edits are comments only"
+# Note: ship-report counts formal PR reviews only. The analyze-only /rvw-pr round
+# (one Bug finding, fixed in 1ce2bf0d4) was posted as a plain PR comment and is
+# not in the figures below; see the verify phase above.
+review:
+  # Derived by `hatch run ship-report 1135 --trace-block-only` at head c7fe392.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1135 --trace-block-only"
+  pr: 1135
+  review_rounds: 2
+  submissions: 2
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.27
+    - round: 2
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.1
+  by_file:
+    - path: "README.md"
+      findings: 2
+  untouched_files:
+    - "CHANGELOG.md"
+    - "pyproject.toml"
+    - "scripts/check_formal_trace.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/e9a3d98a-a1ac-43b5-82f4-24b8e7dc52fc.jsonl"
+    - "sdd/formal/README.md"
+    - "sdd/formal/alloy/StoreAxioms.als"
+    - "sdd/formal/lean/StoreAxioms.lean"
+    - "sdd/traces/bk-437-formal-restatement-tags.yml"
+    - "tests/scripts/test_check_formal_trace.py"
+  review_driven_commits:
+    - sha: "75f1cdd"
+      subject: "Update README.md"
+    - sha: "c7fe392"
+      subject: "Update README.md"
+  ci: {verdict: NO CHECKS, failed: 0, pending: 0}
