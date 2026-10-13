@@ -30,6 +30,13 @@ gives; RFC-0021 makes such a state undecodable and refuses the write that
 creates it (BK-432). Conformance of each backend's observed tree to this spec
 follows that work (BK-436).
 
+**Name equality.** Names compare exactly, with no case folding and no Unicode
+normalization; this spec fixes no normalization form, since one would make
+differently spelled names aliases of one entity. A backend whose own name
+equality is coarser, such as a case-insensitive or normalizing file system,
+represents only the stores whose sibling names stay distinct under that
+equality; which backends compare names how is measured under BK-436.
+
 **Terms.** Σ is an alphabet that contains `/` and at least one other symbol.
 Σ\* is the set of finite words over Σ, and ε the empty word. N, the names, are
 the non-empty words over Σ in which `/` does not occur; names compare as words,
