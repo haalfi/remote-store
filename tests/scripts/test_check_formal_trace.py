@@ -308,8 +308,8 @@ class TestExtractRestatements:
         assert extract_restatements(formal)["alloy/M.als"].tags == {}
 
     def test_dafny_and_other_files_are_not_restatements(self, tmp_path: Path) -> None:
-        # Top-level .dfy files are source D; a .lean file outside lean/ and
-        # lake metadata are not restatements.
+        # Top-level .dfy files are source D, and lake metadata beside the
+        # Lean sources is not a restatement.
         formal = _formal_tree(tmp_path)
         (formal / "Contract.dfy").write_text("// @spec BE-014\n", encoding="utf-8")
         (formal / "lean" / "lakefile.toml").write_text("# -- @spec TREE-001\n", encoding="utf-8")
