@@ -533,9 +533,10 @@ restriction on its segments, so `ValidTree` admits the segments `""` and
 open:
 
 - **Namespace.** The model stays shared-namespace; the typed-key variant of §6
-  remains a recorded alternative, not a second model. This matches RFC-0021,
-  where a key names an item or a folder and a flat store's `a` against `a/`
-  clash is a refusal.
+  remains a recorded alternative, not a second model. This matches RFC-0021:
+  a key names at most one node (A.1); a flat store holding both `a` and keys
+  below `a/` is an undecodable state, not in the store (A.3), and a write that
+  would create one is `InvalidPath` (A.4).
 - **Finiteness.** The axioms stay without a finiteness axiom when operations
   are added. An operations model over a finite map covers finite stores only,
   and states that limit where the operations are specified.
@@ -545,7 +546,10 @@ open:
   BK-434's, since it touches `StoreTree.dfy`.
 - **Spec.** The axioms are promoted into a new store-model spec under
   `sdd/specs/`, with this document as its rationale; each of its sections
-  needs a test mark, as every spec section does.
+  needs a test mark, as every spec section does. That spec is the one home of
+  the tree's structure: spec 003's § The store tree, drafted in RFC-0021
+  Appendix A, points to it for structure (A.1's nodes and keys) and keeps only
+  what concerns backends and encodings, so the tree is not stated twice.
 
 ---
 
