@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-437: Spec 051's sections are restated in Alloy and Lean with no traceability check between them
 - BK-399: A stored key holding a backslash has no kernel answer, so migration may strand it
 - BUG-320: Nested lists indented for GitHub render flattened on the docs site
 - BUG-280: `LocalBackend`'s three listing methods leak a raw `PermissionError`

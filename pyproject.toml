@@ -576,6 +576,11 @@ check-no-retrospective = "python scripts/check_no_retrospective.py"
 # styles, skills, agents). In `preflight` for `hatch run all`, and in `docs-gate` because those
 # paths reach CI only through DOCS_PAT; CODE_PAT never matches them.
 check-process-budget = "python scripts/check_process_budget.py {args}"
+# BK-437. In `lint` and CI's `verify-formal` already; in `docs-gate` too because
+# its restatement half reads `sdd/formal/alloy/` and `sdd/formal/lean/`, which
+# CODE_PAT never matches and the formal filter drops before FORMAL_PAT, so an
+# edit confined to an .als or .lean file reaches CI through DOCS_PAT alone.
+check-formal-trace = "python scripts/check_formal_trace.py"
 check-backlog-ids-vs-base = "python scripts/check_backlog_ids_vs_base.py {args}"
 ship-report = "python scripts/ship_report.py {args}"
 docs-check = "python scripts/check_docs_framework.py"
@@ -583,7 +588,7 @@ docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 # The full set of checks that validate a docs/spec change, as one entry point CI
 # invokes once. Composed by reference so each sub-target stays the single source.
-docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "gen-conda-feedstock-check", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-no-retrospective", "check-links", "drift-docs-check", "gen-python-support-check", "check-process-budget", "docs-build"]
+docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "gen-conda-feedstock-check", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-no-retrospective", "check-formal-trace", "check-links", "drift-docs-check", "gen-python-support-check", "check-process-budget", "docs-build"]
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"

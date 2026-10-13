@@ -7,7 +7,10 @@ Source of truth: `sdd/specs/051-store-tree.md` (TREE-001 to TREE-012). The
 file restates § 3 clause by clause, and § 2 as noted below, and proves § 4's D1 and § 7's L1 to
 L6 from them; it adds no claim of its own. Where this file and spec 051
 disagree, a statement here that misrestates the spec is fixed here; a spec
-claim that a faithful restatement disproves is fixed in the spec.
+claim that a faithful restatement disproves is fixed in the spec. Each
+restated section carries a `-- @spec TREE-n` line, which
+`scripts/check_formal_trace.py` holds to the spec (`sdd/formal/README.md`
+§ Traceability tags).
 
 Nothing here assumes finiteness: the universe `U` is an arbitrary type, and
 no lemma takes a `Fintype` or a bound. That is the difference from the Alloy
@@ -27,6 +30,7 @@ infinite_model, infinite_upward_chain); a new result is pinned only once a
 line is added for it.
 -/
 
+-- @restates sdd/specs/051-store-tree.md
 namespace StoreAxioms
 
 variable {α : Type}
@@ -57,26 +61,37 @@ def IsChain {U : Type} (S : Structure α U) (x : U) (n : Nat) (c : Nat → U) : 
 
 /-- AX-1 to AX-8, one field per clause. -/
 structure Axioms {U : Type} (sl : α) (S : Structure α U) : Prop where
+  -- @spec TREE-001
   /-- AX-1, disjoint: F ∩ I = ∅. -/
   ax1_disjoint : ∀ x, ¬ (S.F x ∧ S.I x)
+  -- @spec TREE-001
   /-- AX-1, covering: U = F ∪ I. -/
   ax1_covering : ∀ x, S.F x ∨ S.I x
+  -- @spec TREE-002
   /-- AX-2: r ∈ F. -/
   ax2 : S.F S.r
+  -- @spec TREE-003
   /-- AX-3: C ⊆ F × U. -/
   ax3 : ∀ p x, S.C p x → S.F p
+  -- @spec TREE-004
   /-- AX-4: at most one container. -/
   ax4 : ∀ x p q, S.C p x → S.C q x → p = q
+  -- @spec TREE-005
   /-- AX-5: the root has no container. -/
   ax5 : ∀ p, ¬ S.C p S.r
+  -- @spec TREE-006
   /-- AX-6: every entity has a chain from the root. -/
   ax6 : ∀ x, ∃ n c, IsChain S x n c
+  -- @spec TREE-007
   /-- AX-7, name(r) = ε. -/
   ax7_root : S.name S.r = []
+  -- @spec TREE-007
   /-- AX-7, non-empty: name(x) ≠ ε for x ≠ r. -/
   ax7_nonempty : ∀ x, x ≠ S.r → S.name x ≠ []
+  -- @spec TREE-007
   /-- AX-7, no `/`: `/` does not occur in name(x) for x ≠ r. -/
   ax7_noslash : ∀ x, x ≠ S.r → sl ∉ S.name x
+  -- @spec TREE-008
   /-- AX-8: two children of one container never share a name. -/
   ax8 : ∀ p x y, S.C p x → S.C p y → S.name x = S.name y → x = y
 
@@ -328,6 +343,7 @@ theorem D1 (x : U) (hx : x ≠ S.r) : ∃ p, S.C p x ∧ ∀ q, S.C q x → q = 
 /-- The sequence of names along the chain of x. -/
 noncomputable def seqOf (x : U) : List (List α) := seqAlong S (chain h x) (depth h x)
 
+-- @spec TREE-009
 /-- Key(x) = name(x₁) / … / name(xₙ), and Key(r) = ε. -/
 noncomputable def Key (x : U) : List α := join sl (seqOf h x)
 
@@ -408,10 +424,12 @@ theorem L2 (k : Nat) (y : Nat → U) (hk : 1 ≤ k)
   rw [heq] at this
   omega
 
+-- @spec TREE-010
 /-- L3, Key injectivity. -/
 theorem L3 (x y : U) (hxy : Key h x = Key h y) : x = y :=
   seqOf_inj h _ x y rfl (join_inj _ _ (seqOf_InN h x) (seqOf_InN h y) hxy)
 
+-- @spec TREE-011
 /-- L4, Key shape: Key(x) = ε iff x = r; otherwise Key(x) has no leading,
 trailing or doubled `/`. -/
 theorem L4 :
@@ -426,6 +444,7 @@ theorem L4 :
       rw [← length_seqOf, hs]; rfl))
     exact (join_shape _ hne (seqOf_InN h x)).2
 
+-- @spec TREE-012
 /-- L5, prefix closure: if Key(x) = s₁/…/sₙ then for each 0 < i < n the
 string s₁/…/sᵢ is the Key of a folder that is a proper ancestor of x; and an
 item occurs only at the final index of any chain. -/
