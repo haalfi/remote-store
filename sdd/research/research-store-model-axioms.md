@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-13
 **Backlog items:** BK-435 (The store model's axioms have no independence or consistency check)
-**Status:** In progress. Axioms drafted and independence-checked by hand; lemmas and machine checking pending.
+**Status:** Accepted (maintainer, 2026-10-13). Axioms drafted and independence-checked by hand; lemmas and machine checking pending.
 
 ---
 
