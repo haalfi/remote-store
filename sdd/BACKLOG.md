@@ -471,11 +471,11 @@ no clause of the contract ships unexercised.
 
 - [~] **BK-435 — The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them**
   spec: — · effort: M · audience: library.maintainer
-  `StoreTree.dfy` §1 models the store as `Tree = map<Key, Kind>`; its axioms are in
-  `research/research-store-model-axioms.md` (accepted 2026-10-13, a countermodel per clause).
-  `formal/alloy/StoreAxioms.als` checks countermodels, witnesses and L1 to L5 in bounded
-  scope; `formal/lean/StoreAxioms.lean` proves D1 and L1 to L6 over any universe. Open
-  decision: whether the axioms are promoted into a spec now that they are proved.
+  The store model's axioms are in `research/research-store-model-axioms.md` (accepted
+  2026-10-13, a countermodel per clause); `formal/alloy/StoreAxioms.als` checks them and L1 to L5
+  in bounded scope, `formal/lean/StoreAxioms.lean` proves D1 and L1 to L6 over any universe.
+  `StoreTree.dfy`'s `Tree` is not shown to satisfy them: its `Key` admits `""` and `"a/b"`,
+  against AX-7 (BK-434). Open decision: whether the axioms are promoted into a spec.
 
 ---
 

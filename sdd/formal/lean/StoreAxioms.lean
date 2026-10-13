@@ -3,8 +3,9 @@
 
 Source of truth: `sdd/research/research-store-model-axioms.md` (BK-435). This
 file restates § 3 clause by clause, and § 2 as noted below, and proves § 4's D1 and § 7's L1 to
-L6 from them; it adds no claim of its own. Where the two disagree, the
-document is corrected.
+L6 from them; it adds no claim of its own. Where the two disagree, a
+statement here that misrestates the document is fixed here; a document
+claim that a faithful restatement disproves is fixed in the document.
 
 Nothing here assumes finiteness: the universe `U` is an arbitrary type, and
 no lemma takes a `Fintype` or a bound. That is the difference from the Alloy
