@@ -2,7 +2,7 @@
  * The store model's axioms AX-1 to AX-8, checked in bounded scope.
  *
  * Source of truth: sdd/research/research-store-model-axioms.md (BK-435).
- * This module restates § 3 and runs § 4, § 5 and § 7 against it; it adds no
+ * This module restates § 3 and runs § 4, § 5, § 7 and § 9.7 against it; it adds no
  * claim of its own. Where the two disagree, the document is corrected.
  *
  * Every command carries `expect`: 1 for a run that must find an instance,

@@ -356,7 +356,9 @@ claude.ai/code container: the release archive is about 580 MB
 `curl -sIL` on the release URL in `scripts/lean.Dockerfile`), it unpacks
 to about 2.9 GB (`du -sh /opt/lean` in the image built from that
 Dockerfile), and a container starts fresh each session (maintainer
-decision, 2026-10-13). It only says how to run the check.
+decision, 2026-10-13). It prints a message instead: in such a container
+that the proofs cannot be checked in the session, elsewhere that
+`lean_check.sh` falls back to Docker.
 
 Native setup needs no root. [elan](https://github.com/leanprover/elan),
 Lean's version manager, reads the project's `lean-toolchain` file and

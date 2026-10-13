@@ -129,7 +129,11 @@ fi
 # it was measured: sdd/formal/README.md § Running the verifier (maintainer
 # decision, 2026-10-13).
 if ! command -v lean &>/dev/null && [ -f sdd/formal/lean/lean-toolchain ]; then
-  echo "lean: not found — bash scripts/lean_check.sh falls back to Docker; native setup in sdd/formal/README.md § Running the verifier"
+  if _is_linux_container; then
+    echo "lean: not installed — sdd/formal/lean/ cannot be checked in this session; native setup in sdd/formal/README.md § Running the verifier"
+  else
+    echo "lean: not found — bash scripts/lean_check.sh falls back to Docker; native setup in sdd/formal/README.md § Running the verifier"
+  fi
 fi
 
 # --- Install gh on Linux containers if needed ---
