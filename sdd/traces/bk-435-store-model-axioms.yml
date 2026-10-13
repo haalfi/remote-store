@@ -1,0 +1,44 @@
+id: BK-435
+title: "The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them"
+trigger: "A maintainer asked for a rock-solid mathematical model of the store (folders, items, names, keys) before any formalization; the tree was written as prose and as StoreTree.dfy's Tree, with no standalone axiom set, countermodels or witnesses"
+source_items:
+  - BK-435
+  - BK-434
+audience:
+  - library.maintainer
+decisions:
+  - sdd/decisions/a43a478b-6ba7-4978-89f5-773056c9d7c7.jsonl
+orient:
+  - items: [BK-434]
+    verdict: constrains
+    evidence: "BK-434 wires RFC-0021's encodings, verified in sdd/formal/StoreTree.dfy, into BackendContract.dfy. StoreTree.dfy §1 already models the store as Tree = map<Key, Kind> with ValidTree (root a folder, every proper key prefix a folder). The research doc's trie view (§ 4) and lemma L6 are the bridge to it; reconciling the two is deferred to the formalization step and recorded as an open question. The constraint on BK-434: the Tree its refinement lemmas target must agree with the axioms; the visible mismatch is AX-7, since StoreTree.dfy's Key = seq<string> does not restrict segments (research-store-model-axioms.md § 10), and BK-434 inherits that question."
+  - items: [BK-433]
+    verdict: unrelated
+    evidence: "BK-433 decides a link policy and a capability (BACKLOG.md § 4). The research doc is static axioms with no operations, links or encodings (research-store-model-axioms.md § 8)."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works, § 2 Answers are correct, BK-433, BK-434"
+        read_type: gate
+        extract: "Item shape, ID assignment, section fit, related open items"
+      - file: sdd/formal/StoreTree.dfy
+        section: "§1 The tree (header and ValidTree)"
+        read_type: reference
+        extract: "Existing tree model the axioms sit beneath"
+  - id: docs
+    name: Write the research doc
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go? / Directory defaults"
+        read_type: gate
+        extract: "research-*.md under sdd/research is dual by default, no marker"
+      - file: sdd/templates/research-template.md
+        section: "(full)"
+        read_type: gate
+        extract: "Header lines (Date, Backlog items, Status) the research index reads"
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: gate
+        extract: "Required trace keys, audience enum, orient shape"

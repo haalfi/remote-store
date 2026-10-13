@@ -89,6 +89,53 @@ if ! command -v dafny &>/dev/null && ls sdd/formal/*.dfy &>/dev/null; then
   fi
 fi
 
+# --- Install Alloy if .als files exist in the repo ---
+# Bump together with the list in scripts/alloy_check.sh.
+ALLOY_VERSION="6.2.0"
+ALLOY_SHA256="6037cbeee0e8423c1c468447ed10f5fcf2f2743a2ffc39cb1c81f2905c0fdb9d"
+if ! command -v alloy &>/dev/null && ls sdd/formal/alloy/*.als &>/dev/null; then
+  if _is_linux_container && command -v java &>/dev/null; then
+    echo "alloy: not found — installing v${ALLOY_VERSION}..."
+    _TMP=$(mktemp -d)
+    _JAR="org.alloytools.alloy.dist-${ALLOY_VERSION}.jar"
+    _URL="https://repo1.maven.org/maven2/org/alloytools/org.alloytools.alloy.dist/${ALLOY_VERSION}/${_JAR}"
+    if ! curl -fsSL --max-time 120 "$_URL" -o "$_TMP/$_JAR" 2>/dev/null; then
+      echo "alloy: download failed — see sdd/formal/README.md § Running the verifier"
+    elif ! echo "${ALLOY_SHA256}  $_TMP/$_JAR" | sha256sum --check --quiet 2>/dev/null; then
+      echo "alloy: checksum mismatch — not installed"
+    else
+      mkdir -p /usr/local/lib/alloy
+      cp "$_TMP/$_JAR" /usr/local/lib/alloy/alloy.jar
+      printf '#!/bin/bash\nexec java --enable-native-access=ALL-UNNAMED -jar /usr/local/lib/alloy/alloy.jar "$@"\n' \
+        > /usr/local/bin/alloy
+      chmod +x /usr/local/bin/alloy
+      if [ "$(alloy version 2>/dev/null | tail -n 1)" = "$ALLOY_VERSION" ]; then
+        echo "alloy: installed v${ALLOY_VERSION}"
+      else
+        echo "alloy: install failed — see sdd/formal/README.md § Running the verifier"
+      fi
+    fi
+    rm -rf "$_TMP"
+  elif _is_linux_container; then
+    echo "alloy: not installed (no java on PATH) — sdd/formal/alloy/ cannot be checked in this session"
+  else
+    echo "alloy: not found natively — bash scripts/alloy_check.sh falls back to Docker; native setup in sdd/formal/README.md § Running the verifier"
+  fi
+fi
+
+# --- Lean: report only, never install ---
+# A claude.ai/code container is fresh each session, so an install here would
+# download and unpack the toolchain at every session start; its size and how
+# it was measured: sdd/formal/README.md § Running the verifier (maintainer
+# decision, 2026-10-13).
+if ! command -v lean &>/dev/null && [ -f sdd/formal/lean/lean-toolchain ]; then
+  if _is_linux_container; then
+    echo "lean: not installed — sdd/formal/lean/ cannot be checked in this session; native setup in sdd/formal/README.md § Running the verifier"
+  else
+    echo "lean: not found — bash scripts/lean_check.sh falls back to Docker; native setup in sdd/formal/README.md § Running the verifier"
+  fi
+fi
+
 # --- Install gh on Linux containers if needed ---
 if ! command -v gh &>/dev/null && _is_linux_container; then
   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
