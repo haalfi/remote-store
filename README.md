@@ -291,7 +291,7 @@ Storage behavior must be predictable and correct. We verify this across multiple
 - **Property-based testing:** randomized input generation via [Hypothesis](https://hypothesis.readthedocs.io/) surfaces edge cases no hand-written test would find. *Finds blind spots.*
 - **Extensive unit tests:** high coverage across all backends, focused on behavior. *Catches integration issues early.*
 - **Mutation testing:** [gremlins](https://pypi.org/project/pytest-gremlins/) modify the code; if they survive the tests, the tests have gaps. *Exposes weak test coverage.*
-- **Examples and snippets:** runnable code in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) and [notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks); docs are tested against actual behavior. *Keeps examples real.*
+- **Examples and snippets:** runnable code in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) and [ˋnotebooks/ˋ](https://github.com/haalfi/remote-store/tree/master/examples/notebooks); docs are tested against actual behavior. *Keeps examples real.*
 - **Dependency drift guard:** scheduled CI re-resolves extras against latest versions to catch silent transitive upgrades. *Surfaces upstream breakage early.*
 - **Benchmarks:** performance tracked per operation and backend. *Provides baseline for optimization.*
 
