@@ -13,6 +13,12 @@ per axiom clause, written from the spec's sections. Two kinds of evidence:
   predicate holds, and their Keys are unique (TREE-010), well shaped
   (TREE-011) and closed under ancestors (TREE-012). Dropping a naming
   predicate lets a collision through, so these depend on the predicates.
+  Their Key is checked against a second computation, top-down from the
+  root, that shares no code with the chain walk the spec describes.
+
+The predicates follow the spec's text, which is unavoidable for a reference
+model; independent evidence comes from the hand-written rows, the top-down
+Key, and the Alloy and Lean restatements.
 
 Bounds: the model is finite, so TREE-006 is checked on finite structures only;
 the infinite cases are proved in ``sdd/formal/lean/StoreAxioms.lean``. No
@@ -25,7 +31,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import pytest
-from hypothesis import HealthCheck, assume, given, settings
+from hypothesis import HealthCheck, assume, event, given, settings
 from hypothesis import strategies as st
 
 if TYPE_CHECKING:
@@ -113,6 +119,23 @@ def chain(s: Store, x: str) -> list[str]:
 def key(s: Store, x: str) -> str:
     """Key(x): the names along x's chain, the root excluded, joined by ``/``."""
     return "/".join(s.name[y] for y in chain(s, x)[1:])
+
+
+def keys_top_down(s: Store) -> dict[str, str]:
+    """Every Key, computed the other way: down from the root, carrying the name sequence.
+
+    Independent of ``chain`` and ``key``: it never looks up an entity's
+    container, so a mistake in walking containers up is not repeated here.
+    """
+    sequences: dict[str, tuple[str, ...]] = {s.r: ()}
+    frontier = [s.r]
+    while frontier:
+        p = frontier.pop()
+        for q, c in s.C:
+            if q == p:
+                sequences[c] = (*sequences[p], s.name[c])
+                frontier.append(c)
+    return {x: "/".join(seq) for x, seq in sequences.items()}
 
 
 # --- Research § 5: one structure per clause, breaking that clause only ---
@@ -296,32 +319,55 @@ def test_key_collision_follows_from_each_naming_clause_broken(clause: str) -> No
 
 # --- Structures drawn by Hypothesis ---
 
-# Free names, the invalid ones included; "." and "\\" are ordinary names here (spec 004 governs input).
-_NAMES = st.sampled_from(["", "/", "a/b", "a", "b", "c", ".", "\\"])
-# The filter is the point: what is kept depends on the predicates, so heavy filtering is expected.
+# "." and "\\" are ordinary names here (spec 004 governs input); ε, "/" and "a/b" are not names.
+_VALID_NAMES = st.sampled_from(["a", "b", "c", "d", "e", "f", ".", "\\"])
+_INVALID_NAMES = st.sampled_from(["", "/", "a/b"])
+# Hypothesis favours simple and boundary draws, so a rare branch is keyed to a
+# mid-range value of 0..15 rather than to repeated one_of branches.
+_RARE = 9
+# The filter decides what is kept, so some filtering is expected.
 _FILTERED = settings(suppress_health_check=[HealthCheck.filter_too_much])
 
 
 @st.composite
 def _stores(draw: st.DrawFn) -> Store:
-    """Each entity under an earlier one, with a free kind and name; kept only if every predicate holds.
+    """Each entity under an earlier one, with a drawn kind and name; kept only if every predicate holds.
 
     Placing each entity under an earlier one gives TREE-004 to TREE-006 by
-    construction; the kinds and names are free, so TREE-003, TREE-007 and
-    TREE-008 decide what is kept.
+    construction. Kinds, names and parents are biased toward valid choices
+    (folders two in three; an invalid name, or a parent drawn from all
+    entities rather than folders, only on the rare draw) but every invalid
+    choice stays possible, and sibling names still collide, so TREE-003,
+    TREE-007 and TREE-008 still decide what is kept. The kept size is an event, so
+    ``--hypothesis-show-statistics`` shows it.
     """
     U, F, I, C, names = {ROOT}, {ROOT}, set(), set(), {ROOT: ""}  # noqa: E741
-    placed = [ROOT]
-    for i in range(draw(st.integers(0, 5))):
+    placed, folders = [ROOT], [ROOT]
+    for i in range(draw(st.integers(0, 8))):
         x = f"e{i}"
         U.add(x)
-        C.add((draw(st.sampled_from(placed)), x))
-        names[x] = draw(_NAMES)
-        (F if draw(st.booleans()) else I).add(x)
+        any_parent = draw(st.integers(0, 15)) == _RARE
+        C.add((draw(st.sampled_from(placed if any_parent else folders)), x))
+        names[x] = draw(_INVALID_NAMES if draw(st.integers(0, 15)) == _RARE else _VALID_NAMES)
+        if draw(st.sampled_from(["folder", "folder", "item"])) == "folder":
+            F.add(x)
+            folders.append(x)
+        else:
+            I.add(x)
         placed.append(x)
     s = _store(U, F, I, C, names)
     assume(broken(s) == set())
+    event(f"kept entities: {len(s.U)}")
     return s
+
+
+@pytest.mark.pbt
+@pytest.mark.spec("TREE-009")
+@_FILTERED
+@given(_stores())
+def test_key_agrees_with_a_top_down_computation(s: Store) -> None:
+    """Key walked up the chain equals Key built down from the root (TREE-009), two independent computations."""
+    assert {x: key(s, x) for x in s.U} == keys_top_down(s)
 
 
 @pytest.mark.pbt

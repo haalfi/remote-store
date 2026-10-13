@@ -68,6 +68,10 @@ phases:
         section: "KIND_ROWS, _stores, mutation-checked"
         read_type: reference
         extract: "Review measured six kind-restricted predicates passing all 55 tests, and property tests that held by construction. Added a breaking row per clause for the other entity kind and a free Hypothesis strategy filtered by broken(s) == set(). Mutants run on the new file (driver outside the repo, copies in gitignored tmp/): weak 003 items-cannot-contain-items, weak 004 items-only, weak 007 non-empty items-only, weak 007 no-slash folders-only, weak 008 items-only and weak 008 same-kind-only each fail their kind row; 008, 007 non-empty and 007 no-slash made always true each fail two of the three property tests. gen_backlogid --check --remote: no clash for BK-436 or BK-437, only the stale-branch BK-435 report"
+      - file: tests/test_store_tree.py
+        section: "_stores, keys_top_down (external review of the tests)"
+        read_type: reference
+        extract: "pytest --hypothesis-show-statistics measured 89 to 93% of drawn structures rejected by assume() and kept sizes of 1 to 6 entities. Odds biased through repeated one_of branches barely moved it; a diagnostic event showed invalid names drawn far above the intended rate, since Hypothesis favours simple and boundary draws. Keying the rare invalid branch to a mid-range integer (9 of 0..15) gave 38 to 63% rejected and kept sizes up to 9. Added keys_top_down, a Key built down from the root that shares no code with chain(), and test_key_agrees_with_a_top_down_computation (TREE-009). Mutants on the new file: every weakened predicate fails its kind row; 008, 007 non-empty and 007 no-slash made always true fail 2, 2 and 1 property tests; a Key with reversed name order fails the top-down test among 5"
       - file: sdd/specs/004-path-model.md
         section: "PATH-015"
         read_type: reference
