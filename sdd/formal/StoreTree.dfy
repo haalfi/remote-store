@@ -26,9 +26,10 @@
 //       encoding decodable and moves or copies exactly that item.
 //   §11 Refusals as observations (A.8): for every call, namespace and row,
 //       the kernel's answer after a refusal in the probe set is the refusal
-//       or the A.5 result of the row actually there, never a result for a row
-//       where the call would have succeeded; and every row where the call
-//       must refuse is typed.
+//       or the A.5 result of the row actually there, and only a result A.8
+//       rule 4 allows (a row where the call must refuse, or a listing's
+//       empty result on a row that holds nothing); and every such row is
+//       typed.
 //
 // Not modelled here: links (A.7), a listing's omissions as observed page by
 // page (A.3's order obligation), and changes under an operation (A.9).  A
@@ -605,7 +606,8 @@ module StoreTree {
       else Some(AtEmptyFolder)
     case ListFirstPage =>
       if ns == FlatNs then
-        // No probe can see a flat folder; the obligation reads the shape.
+        // The only call that sees a flat folder is the listing that just
+        // failed, so the obligation reads its shape.
         if sh == NotFoundOrInvalidPath then Some(AtNothing) else None
       else if s == SeesFolder then None
       else if s == SeesItem then Some(AtItem)
@@ -630,7 +632,8 @@ module StoreTree {
 
   // And the probe is not idle: wherever the call must refuse, or a listing's
   // row holds nothing, the kernel types the refusal.  The flat listing
-  // depends on its shape, since no probe can see a flat folder.
+  // depends on its shape, since the only call that sees a flat folder is
+  // the listing that failed.
   lemma RefusalsAreTyped(ns: Namespace, c: Call, row: Row, sh: Shape)
     requires Possible(ns, c, row) && MaySubstitute(c, row)
     requires (ns == FlatNs && c == ListFirstPage) ==> sh == NotFoundOrInvalidPath

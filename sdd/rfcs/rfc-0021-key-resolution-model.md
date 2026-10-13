@@ -126,7 +126,8 @@ option comes later. ([A.7](#a7-links))
 
 After a refusal, the kernel probes only until the result for the operation's
 family is decided, and replaces the refusal only with the result of a row
-where the call must refuse. A probe that runs whether or not the call fails
+where the call must refuse, or with a listing's empty result on a row that
+holds nothing. A probe that runs whether or not the call fails
 fails closed. A probe that runs only because the call refused fails open, so
 the refusal stands. Each driver obligation is stated once.
 ([A.8](#a8-observations))
@@ -178,6 +179,7 @@ CHANGELOG entry and a migration note:
 | listing a link (D7) | SFTP | hidden | listed per the store's link policy; a link that does not decode is omitted | none |
 | listing a link whose target is outside the root (D7) | Local | listed (read from `_local.py`: listings stat through links with no containment check; a dangling link and a loop are already skipped by `_listing_error`) | omitted and logged | none |
 | a refused `get` or `delete` below an item, the refusal typed `InvalidPath` (A.8) | hierarchical | `InvalidPath` (measured on the kernel's fake with `FakeParentIsFile`) | `NotFound`, A.5's last row | one `stat` on that error path |
+| a listing's first page refused with `NotFound` or `InvalidPath` on an existing folder (A.8 rule 4) | hierarchical | an empty listing (spec 003 BE-030's folder-key rule: a first-page `NotFound` or `InvalidPath` is empty) | the refusal stands, since `stat(k)` sees the folder | one `stat` on that error path |
 | `delete_folder` refused with `PermissionDenied`, `AlreadyExists` or `InvalidPath` on an item, a non-empty folder or nothing (A.8) | hierarchical, folder objects | the refusal stands (`_probe_wanted` probes only `NotFound` and untyped; measured on the fake for `PermissionDenied` on an item and on nothing) | `InvalidPath`, `DirectoryNotEmpty` or `NotFound` | one `stat`, and for a folder one `list_page(limit=1)`, on that error path |
 | recursive listing through a link to a folder in the root (D7) | Local | not descended (`os.walk(followlinks=False)`) | descended under `follow_within_root` | the linked subtree's listing |
 
@@ -195,7 +197,8 @@ stored key the key rule refuses (`a\b`) is already omitted and logged today
   kernel, and spec 003 marks which clause binds which.
 - **PR #1127** resumes against this model. `delete_folder` reads the shared
   resolver, which answers its first open spec finding. A.8 answers its second:
-  a `PermissionDenied` is in the probe set, and drivers owe no typing rule.
+  a `PermissionDenied` is in the probe set, and drivers owe no rule about how
+  a refusal is typed beyond A.8's two narrow ones (links, flat listings).
   The five open text findings are fixed against the new text.
 - **Spec 003** gains Appendix A as one section. These texts are replaced by a
   pointer to it, for the backends on the kernel:
@@ -225,10 +228,11 @@ stored key the key rule refuses (`a\b`) is already omitted and logged today
     - a flat `move` or `copy` keeps the encoding decodable and moves or
       copies exactly its item;
     - a flat encoding holds no empty folder (A.6);
-    - A.8's refusal rule, for every call, namespace and row: the answer is
-      the refusal or the A.5 result of the row actually there, and every row
-      where the call must refuse is typed. Enumerating it found a missing
-      flat `delete_tree` row, which A.8 now has.
+    - A.8's refusal rule, for every call it names, each namespace and each
+      row: the answer is the refusal or the A.5 result of the row actually
+      there, and only a result rule 4 allows. Every row where the call must
+      refuse, or where a listing holds nothing, is typed. Enumerating it
+      found a missing flat `delete_tree` row, which A.8 now has.
 
     Links (A.7) and changes under an operation (A.9) are outside the sketch.
 - **Local's and SFTP's links** decode by A.7's policy once each runs on the
@@ -270,12 +274,15 @@ argued in prose only, as D10 states.
   `delete_folder` that cannot remove it answers `DirectoryNotEmpty`.
 - One probe set (`NotFound`, `InvalidPath`, `AlreadyExists`,
   `PermissionDenied`, untyped) for every call, and no driver obligation on how
-  a refusal is typed (A.8). `delete_folder`'s narrower set goes.
+  a refusal is typed (A.8). `delete_folder`'s narrower set goes. Narrowed
+  later: two typing rules, for drivers with links and for flat listings
+  (below).
 - On a flat encoding, every operation on a key below an item trusts the
   encoding, folder operations included, so `delete("k/a.txt")` below an item
   removes the raw entry.
 - After the closing round: A.8 is enumerated in Dafny, a probe replaces a
-  refusal only on a row where the call must refuse (rule 4), and a driver
+  refusal only on a row where the call must refuse (rule 4, widened by the
+  next bullet for a listing's empty result), and a driver
   with links signals a link that does not decode with `InvalidPath`. A
   link that does not decode outranks the entry rule, so only `delete` removes
   it; a read of a link under `no_follow` is `InvalidPath`.
@@ -505,7 +512,7 @@ folder from nothing. Per call, after a refusal in the probe set:
 | `get`, `delete` | `stat(k)`, then on `None` `list_page(k, limit=1)` | an item: the refusal stands; a non-empty listing: `InvalidPath`; an empty one: `NotFound` |
 | `put`, `open_write`, commit | `stat(k)` (A.4's checks ran first, so the key is no folder and nothing above it is an item) | an item without `overwrite`: `AlreadyExists`; anything else: the refusal stands |
 | `delete_tree` (BE-031's flat order) | `list_page(k, limit=1)` first, then `stat(k)` after an empty listing | a non-empty listing: the refusal stands; then an item: `InvalidPath`; `None`: `NotFound` |
-| `list_page(k)`, first page | none: no probe can see a flat folder, and A.3's `stat` ran first and found no item | a `NotFound` or `InvalidPath` is an empty listing, by the flat listing obligation below; any other shape stands |
+| `list_page(k)`, first page | none: the only call that sees a flat folder is the listing that just failed, and A.3's `stat` ran first and found no item | a `NotFound` or `InvalidPath` is an empty listing, by the flat listing obligation below; any other shape stands |
 | `move`, `copy` | the source as `get`, the destination as `put` | as those |
 
 **Hierarchical namespace.** A `stat` sees an item or a folder. A miss is
@@ -514,7 +521,7 @@ raises ENOTDIR. Per call, after a refusal in the probe set:
 
 | Call | Probe | Concludes |
 |---|---|---|
-| `get`, `delete` | `stat(k)` | an item: the refusal stands; a folder: `InvalidPath`; a miss: `NotFound` |
+| `get`, `delete`, a `move` source | `stat(k)`, under `no_follow` for `delete` and a `move` source, which name the entry (A.7) | an item: the refusal stands; a folder: `InvalidPath`; a miss: `NotFound` |
 | write primitives (`put`, `open_write` and commit, `rename`, `copy`, `move` at the destination) | `stat(k)`, then on a miss the ancestors' `stat`s, shallowest first | a folder: `InvalidPath`; an item without `overwrite`: `AlreadyExists`; an item among the ancestors: `InvalidPath`; anything else: the refusal stands |
 | `ensure_parents` | the ancestors' `stat`s | an item among them: `InvalidPath`, naming it; otherwise the refusal stands |
 | `remove_folder` | `stat(k)` under `no_follow`, then for a folder `list_page(k, limit=1)` | an item: `InvalidPath`; a miss: `NotFound`; a non-empty folder: `DirectoryNotEmpty`; an empty folder: the refusal stands |
@@ -538,7 +545,8 @@ raises ENOTDIR. Per call, after a refusal in the probe set:
   links.
 - A flat driver's `list_page` answers `NotFound` or `InvalidPath` only when
   nothing lies under the prefix, an absent container included (BE-021).
-  Since no probe can see a flat folder, this is what lets a refused first
+  Since the only call that sees a flat folder is the listing that just
+  failed, this is what lets a refused first
   page read as empty without hiding entries. This typing rule binds only
   flat drivers' listings.
 
