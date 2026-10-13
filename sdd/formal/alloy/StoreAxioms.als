@@ -7,7 +7,9 @@
  * This module restates § 3 and runs § 4, § 5, § 7 and § 9.7 against it; it adds no
  * claim of its own. Where this module and spec 051 disagree, a predicate that
  * misrestates the spec is fixed here; a spec claim that a faithful restatement
- * falsifies is fixed in the spec.
+ * falsifies is fixed in the spec. Each restated section carries a
+ * `-- @spec TREE-n` line, which scripts/check_formal_trace.py holds to the
+ * spec (sdd/formal/README.md § Traceability tags).
  *
  * Every command carries `expect`: 1 for a run that must find an instance,
  * 0 for a check that must find no counterexample. scripts/alloy_check.sh
@@ -18,6 +20,7 @@
  * passes here holds for every structure up to the scope stated on it, no
  * further.
  */
+-- @restates sdd/specs/051-store-tree.md
 module StoreAxioms
 
 /* ---------------------------------------------------------------- § 2 --- */
@@ -54,16 +57,27 @@ pred InN[w: seq Char] { some w and Slash not in w.elems }
 /* ---------------------------------------------------------------- § 3 --- */
 
 -- One predicate per clause, so that § 5 can break each alone.
+-- @spec TREE-001
 pred AX1_disjoint  { no F & I }
+-- @spec TREE-001
 pred AX1_covering  { Entity = F + I }
+-- @spec TREE-002
 pred AX2           { Root in F }
+-- @spec TREE-003
 pred AX3           { C in F -> Entity }
+-- @spec TREE-004
 pred AX4           { all x: Entity | lone C.x }
+-- @spec TREE-005
 pred AX5           { no C.Root }
+-- @spec TREE-006
 pred AX6           { Entity in Root.*C }
+-- @spec TREE-007
 pred AX7_root      { no Root.name }
+-- @spec TREE-007
 pred AX7_nonempty  { all x: Entity - Root | some x.name }
+-- @spec TREE-007
 pred AX7_noslash   { all x: Entity - Root | Slash not in x.name.elems }
+-- @spec TREE-008
 pred AX8           { all p: Entity | all disj x, y: p.C | x.name != y.name }
 
 pred Axioms {
@@ -76,6 +90,7 @@ pred Axioms {
 -- Key(r) = ε; Key(x) = name(x) at depth one; otherwise Key(container) / name.
 -- Stated by index arithmetic rather than `append`, so that a key longer than
 -- the seq scope makes KeyDef unsatisfiable instead of being truncated.
+-- @spec TREE-009
 pred KeyDef {
   no Root.key
   all x: Entity - Root, p: C.x |
@@ -360,6 +375,7 @@ assert L2 { Axioms implies no x: Entity | x in x.^C }
 check L2 for 5 but 5 Int, 11 seq expect 0
 
 -- L3: Key is injective.
+-- @spec TREE-010
 assert L3 {
   (Axioms and KeyDef and NameLen[2]) implies
     all disj x, y: Entity | x.key != y.key
@@ -367,6 +383,7 @@ assert L3 {
 check L3 for 5 but 5 Int, 11 seq expect 0
 
 -- L4: Key(x) = ε iff x = r; otherwise no leading, trailing or doubled `/`.
+-- @spec TREE-011
 assert L4 {
   (Axioms and KeyDef and NameLen[2]) implies {
     all x: Entity | no x.key iff x = Root
@@ -379,6 +396,7 @@ check L4 for 5 but 5 Int, 11 seq expect 0
 
 -- L5: each `/`-prefix of a Key is the Key of a folder that is a proper,
 -- non-root ancestor; and an item contains nothing.
+-- @spec TREE-012
 assert L5 {
   (Axioms and KeyDef and NameLen[2]) implies {
     all x: Entity, k: x.key.inds | x.key[k] = Slash implies

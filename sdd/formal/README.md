@@ -381,6 +381,28 @@ lean --version    # Lean (version 4.34.1, ...)
 An editor with the Lean 4 extension (VS Code) shows each proof state
 interactively on the same toolchain.
 
+<a id="traceability-tags"></a>
+### Traceability tags
+
+A formal statement names the spec section it encodes in a line comment:
+
+- **Dafny:** `// @spec <ID>` above the `ensures` it tags.
+- **Alloy and Lean:** `-- @spec <ID>` above the predicate, structure field,
+  definition or theorem that restates the section, and one
+  `-- @restates sdd/specs/<file>.md` line per spec the file restates.
+  `StoreAxioms.als` and `StoreAxioms.lean` each restate spec 051.
+
+**The spec governs the tags.** A section with no tag in a file that
+restates its spec, or a tag citing an ID no spec declares, is fixed in the
+formal file. Disagreement about content follows each file's header rule
+and [`000-process.md` Rule 7](../000-process.md#intent-attribution).
+
+`scripts/check_formal_trace.py` enforces both directions in `lint`,
+`docs-gate` and CI's `verify-formal`, so an edit confined to an `.als` or
+`.lean` file is checked through `docs-gate`. It checks citation only. It
+does not check that a tagged statement says what its section says, and it
+does not run Alloy or Lean. Its docstring states the full bound.
+
 ### Verification practices
 
 The Dafny files follow a small set of conventions that keep proofs

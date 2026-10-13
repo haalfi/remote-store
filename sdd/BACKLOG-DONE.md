@@ -298,6 +298,16 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-437 — Spec 051's sections are restated in Alloy and Lean with no traceability check between them**
+  spec: TREE-001 -- TREE-012 · effort: S · audience: contributor.tooling, infra.ci, user.discoverability.human
+  `StoreAxioms.als` and `StoreAxioms.lean` carry `-- @spec TREE-n` tags and a
+  `-- @restates` line; `check_formal_trace.py` fails on a tag citing no section,
+  a restated section left untagged, or an unknown restated spec, and joins
+  `docs-gate` so an `.als`- or `.lean`-only diff reaches it. Running the solvers
+  in CI stays out (`formal/README.md` § Running the verifier). `README.md`'s
+  Quality & Testing now names the axioms and the Alloy and Lean checks. Trace:
+  [bk-437](traces/bk-437-formal-restatement-tags.yml).
+
 - [x] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
   spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, BE-030, BE-031, ERR-001, ERR-009, DEPTH-003, PING-002 · effort: L · audience: library.maintainer, infra.test
   The contract kernel, private under `src/remote_store/_kernel/`: the async

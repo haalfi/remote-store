@@ -1,0 +1,108 @@
+id: BK-437
+title: "Spec 051's sections are restated in Alloy and Lean with no traceability check between them"
+trigger: "Spec 051 (#1134) became the authority for the store tree, and StoreAxioms.als and StoreAxioms.lean restate its sections with no tag a check could read; check_formal_trace.py scanned sdd/formal/*.dfy only"
+source_items:
+  - BK-437
+audience:
+  - contributor.tooling
+  - infra.ci
+  - user.discoverability.human
+expected_ripples:
+  - sdd/GATE-INVENTORY.md
+  - sdd/formal/README.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - CHANGELOG.md
+surprising_ripples:
+  - "README.md § Quality & Testing: named only Dafny among the formal layers; the maintainer asked mid-work for the store-model axioms and the Alloy and Lean checks to appear there, which no ripple-check row ties to a new formal layer (sdd/formal/README.md § Layers at a glance was the only list of layers)"
+orient:
+  - items: [BK-435]
+    verdict: constrains
+    evidence: "Both formal files' headers name sdd/specs/051-store-tree.md as source of truth and say a misrestating predicate is fixed in the restatement; the research doc is frozen rationale (000-process § Document types). So tags go into the .als and .lean files only, and the spec governs a tag that disagrees."
+  - items: [BK-436]
+    verdict: constrains
+    evidence: "No conformance test cites TREE-* (tests/test_store_tree.py runs a reference model, outside tests/backends/conformance/), and BK-436 binds backends only after BK-432. Feeding restatement tags into check_formal_trace.py's Dafny source D would raise F1 for all twelve sections, so restatements are a separate source with their own failure kinds."
+  - items: [BK-333]
+    verdict: constrains
+    evidence: "ci.yml's setup step: CODE_PAT has no sdd/ path, and the formal filter drops ^sdd/formal/(tla|alloy|lean)/ before FORMAL_PAT, so a diff confined to the .als or .lean file runs neither lint nor verify-formal, only docs-gate (DOCS_PAT ^sdd/). The checker must join docs-gate, as check-no-retrospective and check-sdd-index already sit in both lint and docs-gate."
+  - items: [ID-207, ID-245]
+    verdict: unrelated
+    evidence: "ID-207 deepens the Dafny-tag/conformance-marker check past citation (dossier steps 3 and 4); ID-245's per-spec accountability record is a rendering of the matrix. Neither changes how a restatement is tagged or checked."
+  - items: [BK-434]
+    verdict: unrelated
+    evidence: "StoreTree.dfy carries no @spec tag (git grep '@spec' sdd/formal/StoreTree.dfy: no match), and its Key disagreeing with TREE-007 is BK-435's remaining work, not a tagging question."
+decisions:
+  - sdd/decisions/e9a3d98a-a1ac-43b5-82f4-24b8e7dc52fc.jsonl
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-437, BK-435, BK-436, BK-434"
+        read_type: gate
+        extract: "Open decision: tag syntax per language, and lint gate or advisory; TREE-* has no conformance binding until BK-436"
+      - file: scripts/check_formal_trace.py
+        section: "module docstring; extract_dafny_specs; compute_violations"
+        read_type: gate
+        extract: "D scans sdd/formal/*.dfy at top level only; a D-tagged declared ID with no conformance marker is F1, so restatements cannot join D"
+      - file: .github/workflows/ci.yml
+        section: "setup / Detect changed files (CODE_PAT, DOCS_PAT, FORMAL_PAT); verify-formal"
+        read_type: gate
+        extract: "An alloy- or lean-only diff reaches docs-gate alone; check_formal_trace runs in lint and verify-formal"
+      - file: pyproject.toml
+        section: "lint, docs-gate"
+        read_type: reference
+        extract: "Precedent for a checker in both lint and docs-gate"
+      - file: sdd/specs/051-store-tree.md
+        section: "TREE-001 to TREE-012"
+        read_type: reference
+        extract: "Twelve ## headings, the claim space a restatement must cover"
+      - file: sdd/formal/alloy/StoreAxioms.als
+        section: "§ 3 predicates, KeyDef, § 7 asserts"
+        read_type: reference
+        extract: "AX1_* to AX8, KeyDef, L3 to L5 map onto TREE-001 to TREE-012; Alloy has -- line comments"
+      - file: sdd/formal/lean/StoreAxioms.lean
+        section: "Axioms structure, Key, L3 to L5"
+        read_type: reference
+        extract: "One structure field per clause; Key def; theorems L3 to L5; Lean has -- line comments"
+  - id: design
+    name: Design the check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / New or changed cross-artifact check or drift report"
+        read_type: gate
+        extract: "Points to DRIFT-RULES"
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 3, 4, 5, 7"
+        read_type: gate
+        extract: "Localize per file and ID; derive the claim space from the spec's own headings; declare the authority in sdd/formal/README.md; gate by default; state the bound and the Drift-gate:: block in the docstring"
+      - file: sdd/formal/README.md
+        section: "Alloy, Lean 4, Running the verifier"
+        read_type: reference
+        extract: "Home for the tag convention and its authority rule"
+      - file: tests/scripts/test_check_formal_trace.py
+        section: "(full)"
+        read_type: reference
+        extract: "Synthetic-tree tests per source, per kind, and the baseline mechanics in main()"
+  - id: implement
+    name: Tests first, then the check and the tags
+    steps:
+      - file: tests/scripts/test_check_formal_trace.py
+        section: "TestExtractRestatements, TestComputeRestatementViolations, TestMain"
+        read_type: reference
+        extract: "Ran before the script changed: collection failed on extract_declared_by_file. After the check landed and before the tags, 53 passed and test_repo_restatements_cover_spec_051 failed (no @restates in either file). A first draft held a test asserting compute_violations returns [] with no Dafny input, which passed without any restatement code; dropped as vacuous"
+      - file: pyproject.toml
+        section: "check-formal-trace, docs-gate"
+        read_type: reference
+        extract: "Added the entry and docs-gate membership; regenerated sdd/GATE-INVENTORY.md, whose row now lists check-formal-trace and docs-gate"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_formal_trace.py
+        section: "Restatements; Scope (R is citation, not fidelity)"
+        read_type: verify
+        extract: "Seeded breaks on copies of sdd/formal and sdd/specs (driver outside the repo): dropped TREE-009 tag in Alloy, dropped TREE-012 tag in Lean, TREE-010 typed TREE-100, @restates renamed to 052, a new TREE-013 section in spec 051: 5 of 5 caught. Two bound seeds missed as the docstring states: @restates line dropped (caught by test_repo_restatements_cover_spec_051 instead), TREE-002's tag moved onto AX3. The first run reported the rename seed missed: it had replaced the header prose's 051 instead of the @restates line, a seed error, fixed and rerun"
+      - file: sdd/formal/alloy/StoreAxioms.als
+        section: "(full, after tagging)"
+        read_type: verify
+        extract: "bash scripts/alloy_check.sh: all 30 commands matched expect; bash scripts/lean_check.sh: build completed. The edits are comments only"

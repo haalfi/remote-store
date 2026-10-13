@@ -26,6 +26,33 @@ Three failure modes (per ID-206):
   F2  a conformance marker citing a spec ID absent from S.
   F3  an ``@spec`` tag citing a spec ID absent from S.
 
+Restatements (BK-437)
+---------------------
+A fourth source covers the Alloy and Lean files, which restate a spec's
+sections rather than an operation's contract:
+
+  R — per file under ``sdd/formal/alloy/*.als`` and
+      ``sdd/formal/lean/*.lean``: the IDs its ``-- @spec <ID>`` lines tag,
+      and the spec files its ``-- @restates sdd/specs/<file>.md`` lines
+      declare it restates. Both are line comments in both languages; a
+      Lean ``/--`` docstring opener is not one.
+
+R is kept out of D on purpose. F1 asks every D-tagged ID for a
+conformance marker, and a restated spec need not have backend
+conformance yet (spec 051 has none until BK-436). Three failure modes,
+each localized to the restating file:
+
+  R1  a restatement tag citing a spec ID absent from S.
+  R2  a section declared in a restated spec that the restating file
+      tags nowhere. The claim space is that spec file's own headings and
+      requirement-table rows, so a section added to the spec fails here
+      until a restatement carries it.
+  R3  a ``@restates`` line naming a spec file that does not exist, so a
+      renamed or removed spec cannot switch R2 off silently.
+
+Which side governs is declared in ``sdd/formal/README.md`` § Traceability
+tags: the spec does.
+
 Scope — what this check does and does not prove
 -----------------------------------------------
 The check certifies *traceability* at spec-ID granularity. It is not a
@@ -47,6 +74,13 @@ proof of test depth, and should be read with these limits in mind:
     ``MemoryBackend`` / ``MemoryBackendMinimal`` parity already
     documented in ``sdd/formal/README.md``; an untagged ``ensures`` is
     invisible to this check.
+  * **R is citation, not fidelity.** R2 proves each section of a
+    restated spec is tagged somewhere in the file; it does not prove the
+    tagged predicate or theorem says what the section says, that the tag
+    sits on the right declaration, or that the solver or proof checker
+    accepted the file (``alloy_check.sh`` and ``lean_check.sh`` run in no
+    CI job). A file with no ``@restates`` line gets R1 only, and an
+    ``.als`` or ``.lean`` file outside those two directories is not read.
 
 Closing these gaps fully would need per-clause sub-IDs and assertion-
 level analysis, deliberately out of ID-206's scope. What the check buys
@@ -78,7 +112,8 @@ Drift-gate::
 
     kind:       pair
     compares: spec IDs declared in sdd/specs/ ↔ Dafny @spec tags in sdd/formal/ and conformance
-        pytest.mark.spec markers
+        pytest.mark.spec markers, and ↔ Alloy and Lean @spec tags in sdd/formal/alloy/ and
+        sdd/formal/lean/ per restated spec
     domain:     intent ↔ intent-formalized ↔ verification
 """
 
@@ -87,6 +122,7 @@ from __future__ import annotations
 import ast
 import re
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -115,10 +151,21 @@ _ID_TABLE_HEADER_RE = re.compile(r"^\|[ \t]*ID[ \t]*\|", re.IGNORECASE)
 # IDs, comma- or space-separated) immediately above an ``ensures``.
 _SPEC_TAG_RE = re.compile(r"//[ \t]*@spec\b(.*)")
 
+# Restatement tags and declarations: ``--`` line comments, which Alloy and
+# Lean share. The lookbehind keeps a Lean ``/--`` docstring opener out.
+_RESTATEMENT_TAG_RE = re.compile(r"(?<!/)--[ \t]*@spec\b(.*)")
+_RESTATES_RE = re.compile(r"(?<!/)--[ \t]*@restates\b[ \t]*(\S+)")
+_RESTATEMENT_GLOBS = ("alloy/*.als", "lean/*.lean")
+
 # Violation kinds. Stable strings — they key the baseline below.
 KIND_UNTESTED = "dafny-clause-untested"
 KIND_TEST_BAD_ID = "conformance-cites-unknown-spec"
 KIND_TAG_BAD_ID = "dafny-tag-unknown-spec"
+# Restatement kinds key on "<file relative to sdd/formal/> <ID or spec file>",
+# since one ID can be tagged in one restatement and missing from another.
+KIND_RESTATEMENT_BAD_ID = "restatement-tag-unknown-spec"
+KIND_RESTATEMENT_UNTAGGED = "restated-section-untagged"
+KIND_RESTATES_UNKNOWN = "restates-unknown-spec"
 
 # ---------------------------------------------------------------------------
 # Baseline — known violations at gate-landing time (ID-206).
@@ -277,7 +324,16 @@ def extract_conformance_specs(conformance_dir: Path) -> dict[str, list[str]]:
 
 
 def extract_declared_specs(specs_dir: Path) -> set[str]:
-    """Return every spec ID declared as a section in ``sdd/specs/``.
+    """Return every spec ID declared in ``sdd/specs/``, across all files.
+
+    The union of ``extract_declared_by_file``; see it for what counts
+    as a declaration.
+    """
+    return set().union(*extract_declared_by_file(specs_dir).values())
+
+
+def extract_declared_by_file(specs_dir: Path) -> dict[str, set[str]]:
+    """Map each spec file's name to the spec IDs it declares as a section.
 
     A section is declared by either:
 
@@ -290,13 +346,14 @@ def extract_declared_specs(specs_dir: Path) -> set[str]:
     cross-reference or changelog table) does not declare a spec, so a
     stray ``| BE-099 | ... |`` row cannot legitimise a bogus citation.
     """
-    declared: set[str] = set()
+    by_file: dict[str, set[str]] = {}
     for path in sorted(specs_dir.glob("*.md")):
         try:
             text = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError) as exc:  # pragma: no cover - defensive
             sys.stderr.write(f"Skipping {path}: {type(exc).__name__}\n")
             continue
+        declared = by_file.setdefault(path.name, set())
         in_requirement_table = False
         for line in text.splitlines():
             heading = _HEADING_RE.match(line)
@@ -315,7 +372,51 @@ def extract_declared_specs(specs_dir: Path) -> set[str]:
                 row = _TABLE_ROW_RE.match(line)
                 if row is not None:
                     declared.add(row.group(1))
-    return declared
+    return by_file
+
+
+# ---------------------------------------------------------------------------
+# Source R — Alloy and Lean restatements
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Restatement:
+    """One restating file: the spec files it declares, and the IDs it tags.
+
+    Both map to ``path:line`` locations, so every violation can name a line.
+    """
+
+    restates: dict[str, list[str]] = field(default_factory=dict)
+    tags: dict[str, list[str]] = field(default_factory=dict)
+
+
+def extract_restatements(formal_dir: Path) -> dict[str, Restatement]:
+    """Map each Alloy and Lean file, relative to ``formal_dir``, to its tags.
+
+    A ``-- @restates sdd/specs/<file>.md`` line is keyed by the spec file's
+    name alone, which is how ``extract_declared_by_file`` keys it.
+    """
+    found: dict[str, Restatement] = {}
+    for pattern in _RESTATEMENT_GLOBS:
+        for path in sorted(formal_dir.glob(pattern)):
+            try:
+                text = path.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, OSError) as exc:  # pragma: no cover - defensive
+                sys.stderr.write(f"Skipping {path}: {type(exc).__name__}\n")
+                continue
+            entry = found.setdefault(path.relative_to(formal_dir).as_posix(), Restatement())
+            for lineno, line in enumerate(text.splitlines(), 1):
+                where = f"{path}:{lineno}"
+                restates = _RESTATES_RE.search(line)
+                if restates is not None:
+                    entry.restates.setdefault(Path(restates.group(1)).name, []).append(where)
+                    continue
+                tag = _RESTATEMENT_TAG_RE.search(line)
+                if tag is not None:
+                    for spec_id in _SPEC_ID_RE.findall(tag.group(1)):
+                        entry.tags.setdefault(spec_id, []).append(where)
+    return found
 
 
 # ---------------------------------------------------------------------------
@@ -348,6 +449,31 @@ def compute_violations(
     return sorted(violations)
 
 
+def compute_restatement_violations(
+    restatements: dict[str, Restatement],
+    declared_by_file: dict[str, set[str]],
+    declared: set[str],
+) -> list[tuple[str, str]]:
+    """Return the sorted ``(kind, "<file> <subject>")`` restatement violations.
+
+    R1 — a tag citing an ID with no spec section.
+    R2 — a section of a restated spec that the file tags nowhere.
+    R3 — a ``@restates`` line naming a spec file that does not exist.
+    """
+    violations: set[tuple[str, str]] = set()
+    for label, entry in restatements.items():
+        for spec_id in entry.tags:
+            if spec_id not in declared:
+                violations.add((KIND_RESTATEMENT_BAD_ID, f"{label} {spec_id}"))
+        for spec_file in entry.restates:
+            if spec_file not in declared_by_file:
+                violations.add((KIND_RESTATES_UNKNOWN, f"{label} {spec_file}"))
+                continue
+            for spec_id in declared_by_file[spec_file] - entry.tags.keys():
+                violations.add((KIND_RESTATEMENT_UNTAGGED, f"{label} {spec_id}"))
+    return sorted(violations)
+
+
 # ---------------------------------------------------------------------------
 # Reporting
 # ---------------------------------------------------------------------------
@@ -356,6 +482,9 @@ _KIND_LABEL = {
     KIND_UNTESTED: "Dafny-tagged spec ID with no conformance marker (F1)",
     KIND_TEST_BAD_ID: "conformance marker cites an unknown spec ID (F2)",
     KIND_TAG_BAD_ID: "@spec tag cites an unknown spec ID (F3)",
+    KIND_RESTATEMENT_BAD_ID: "restatement @spec tag cites an unknown spec ID (R1)",
+    KIND_RESTATEMENT_UNTAGGED: "section of a restated spec with no tag in the restatement (R2)",
+    KIND_RESTATES_UNKNOWN: "@restates names a spec file that does not exist (R3)",
 }
 
 
@@ -412,6 +541,36 @@ def _print_violations(
         print()
 
 
+def _print_restatements(
+    restatements: dict[str, Restatement],
+    declared_by_file: dict[str, set[str]],
+    violations: list[tuple[str, str]],
+) -> None:
+    """Print each restating file's coverage of the specs it restates, then its gaps.
+
+    R1 and R3 rows carry the offending line; an R2 row names the file and the
+    missing ID, because a missing tag has no line to point at.
+    """
+    print("spec <-> Alloy/Lean restatement tags (BK-437):")
+    for label, entry in sorted(restatements.items()):
+        for spec_file in sorted(entry.restates) or ["(no @restates)"]:
+            sections = declared_by_file.get(spec_file, set())
+            covered = len(sections & entry.tags.keys())
+            print(f"  {label:<26} restates {spec_file:<22} {covered}/{len(sections)} sections tagged")
+    print()
+    for kind in (KIND_RESTATEMENT_BAD_ID, KIND_RESTATEMENT_UNTAGGED, KIND_RESTATES_UNKNOWN):
+        rows = [subject for k, subject in violations if k == kind]
+        if not rows:
+            continue
+        print(f"{_KIND_LABEL[kind]}:")
+        for subject in rows:
+            label, item = subject.split(" ", 1)
+            entry = restatements.get(label, Restatement())
+            locations = entry.restates.get(item, []) if kind == KIND_RESTATES_UNKNOWN else entry.tags.get(item, [])
+            print(f"  {subject}" + (f": {', '.join(locations[:3])}" if locations else ""))
+        print()
+
+
 def main(
     formal_dir: Path | None = None,
     conformance_dir: Path | None = None,
@@ -426,11 +585,16 @@ def main(
 
     dafny = extract_dafny_specs(formal_dir)
     conformance = extract_conformance_specs(conformance_dir)
-    declared = extract_declared_specs(specs_dir)
-    violations = compute_violations(dafny, conformance, declared)
+    declared_by_file = extract_declared_by_file(specs_dir)
+    declared = set().union(*declared_by_file.values())
+    restatements = extract_restatements(formal_dir)
+    dafny_violations = compute_violations(dafny, conformance, declared)
+    restatement_violations = compute_restatement_violations(restatements, declared_by_file, declared)
+    violations = dafny_violations + restatement_violations
 
     _print_matrix(dafny, conformance, declared)
-    _print_violations(violations, dafny, conformance)
+    _print_violations(dafny_violations, dafny, conformance)
+    _print_restatements(restatements, declared_by_file, restatement_violations)
 
     violation_set = set(violations)
     new = sorted(violation_set - baseline)
@@ -454,7 +618,7 @@ def main(
     if violations:
         print(f"OK: {len(violations)} known traceability gap(s), all baselined (see _BASELINE).")
     else:
-        print("OK: spec <-> Dafny <-> test traceability is complete.")
+        print("OK: spec <-> Dafny <-> test and spec <-> restatement traceability is complete.")
     return 0
 
 

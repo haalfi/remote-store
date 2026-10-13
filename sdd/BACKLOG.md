@@ -484,13 +484,6 @@ no clause of the contract ships unexercised.
   section once measured). Open decision: which listings and probes observe a backend's tree, and
   how each backend's name equality is measured. After BK-432.
 
-- [ ] **BK-437 — Spec 051's sections are restated in Alloy and Lean with no traceability check between them**
-  spec: TREE-001 -- TREE-012 · effort: S · audience: contributor.tooling
-  `check_formal_trace.py` reads `// @spec` tags in `sdd/formal/*.dfy` only; `StoreAxioms.als` and
-  `StoreAxioms.lean` restate spec 051's clauses untagged, and neither check runs in CI, so a
-  section and its restatement can drift apart unnoticed. Open decision: tag syntax per language,
-  and whether the check is a lint gate or advisory.
-
 ---
 
 <a id="users-succeed-unaided"></a>
