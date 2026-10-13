@@ -8,20 +8,17 @@ of an entity, and states the consequences a caller relies on: one entity per
 Key, the shape of a Key, and closure of Keys under ancestors. It describes
 structure only, at one instant: no operation, backend or encoding.
 
-Rationale, the evidence that each axiom is needed (a countermodel per
-clause), and the machine checks live in
+This spec is the source of truth for TREE-001 to TREE-012. The rationale and
+evidence behind it are kept, as written when the model was accepted, in
 [`research/research-store-model-axioms.md`](../research/research-store-model-axioms.md):
-`formal/alloy/StoreAxioms.als` checks the axioms in bounded scope and
-`formal/lean/StoreAxioms.lean` proves the lemmas over any universe. Section
-TREE-*n* restates the research doc's clause of the same meaning; where the two
-disagree, a misstatement here is fixed here.
+a countermodel per clause, the bounded check in `formal/alloy/StoreAxioms.als`
+and the proofs in `formal/lean/StoreAxioms.lean`.
 
 **Layering.** This spec governs Keys and the tree over them. Spec 004 governs
-input strings: `RemotePath` normalizes an accepted input onto a Key
-(PATH-002 to PATH-006) and rejects the rest (PATH-003, PATH-007, PATH-008), so
-the library addresses a subset of the Keys this spec admits. Spec 003's
-§ The store tree (RFC-0021, BK-432) states how a backend encodes the tree; its
-statement of the tree's structure points here once both have landed.
+input strings: `RemotePath` maps an accepted input onto a Key or rejects it, so
+the library addresses a subset of the Keys this spec admits. RFC-0021
+Appendix A drafts spec 003's § The store tree, which BK-432 lands; that section
+will state how a backend encodes the tree and point here for its structure.
 
 **Not bound to backends yet.** The sections are tested against a reference
 model of the axioms (`tests/test_store_tree.py`). A flat backend can today hold
@@ -35,7 +32,7 @@ normalization; this spec fixes no normalization form, since one would make
 differently spelled names aliases of one entity. A backend whose own name
 equality is coarser, such as a case-insensitive or normalizing file system,
 represents only the stores whose sibling names stay distinct under that
-equality; which backends compare names how is measured under BK-436.
+equality; which backends compare names how is open under BK-436.
 
 **Terms.** Σ is an alphabet that contains `/` and at least one other symbol.
 Σ\* is the set of finite words over Σ, and ε the empty word. N, the names, are
@@ -76,8 +73,8 @@ TREE-006 (research § 4, D1); it is not a separate section.
 
 **Invariant:** Every entity is reached from the root in finitely many
 containment steps: for every x ∈ U there are n ≥ 0 and x₀, …, xₙ with x₀ = r,
-xₙ = x, and (xᵢ, xᵢ₊₁) ∈ C for every i < n. That sequence is the **chain** of
-x; by TREE-004 and TREE-005 it is unique.
+xₙ = x, and (xᵢ, xᵢ₊₁) ∈ C for every i < n. Such a sequence is a **chain** of
+x.
 
 ## TREE-007: Names
 
@@ -97,7 +94,9 @@ siblings.
 `/`, the root's excluded: for x with chain x₀ = r, …, xₙ = x,
 Key(x) = name(x₁)/name(x₂)/…/name(xₙ) when n ≥ 1, and Key(r) = ε. A string
 that is the Key of no entity, such as `a/` or `a//b`, denotes nothing; it is
-not a second spelling of a Key.
+not a second spelling of a Key. Key is a function because every entity has
+exactly one chain, which follows from TREE-004 to TREE-006 (research § 4, lemma
+L1, proved as `L1` and `chain_unique` in `formal/lean/StoreAxioms.lean`).
 
 ## TREE-010: One Entity per Key
 
@@ -111,10 +110,10 @@ and has no leading `/`, no trailing `/`, and no `//`.
 
 ## TREE-012: Prefix Closure
 
-**Invariant:** Every proper ancestor of an entity is a folder whose Key is a
-prefix of the entity's Key by whole names: if Key(x) = s₁/…/sₙ, then for each
-0 < i < n the string s₁/…/sᵢ is the Key of a folder on the chain of x. An item
-occurs only at the last index of any chain.
+**Invariant:** Every whole-name prefix of a Key is the Key of a folder above
+the entity: if Key(x) = s₁/…/sₙ, then for each 0 < i < n the string s₁/…/sᵢ
+is the Key of a folder on the chain of x other than x. An item occurs only at
+the last index of any chain.
 
 ---
 
@@ -124,4 +123,4 @@ Not normative. TREE-010 to TREE-012 are lemmas L3 to L5 of the research doc,
 proved in `formal/lean/StoreAxioms.lean`; they are sections because callers
 rely on them directly. Acyclicity (L2), chain uniqueness (L1) and the
 correspondence with prefix-closed sets of name sequences (L6) are proved there
-and not restated.
+and are not sections of their own.

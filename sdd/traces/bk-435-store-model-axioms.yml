@@ -1,5 +1,5 @@
 id: BK-435
-title: "Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations"
+title: "The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them"
 trigger: "A maintainer asked for a rock-solid mathematical model of the store (folders, items, names, keys) before any formalization; the tree was written as prose and as StoreTree.dfy's Tree, with no standalone axiom set, countermodels or witnesses"
 source_items:
   - BK-435

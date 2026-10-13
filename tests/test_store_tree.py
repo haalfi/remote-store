@@ -4,11 +4,15 @@ The model is a finite store tuple ``(U, F, I, r, C, name)`` and one predicate
 per axiom clause, written from the spec's sections. Two kinds of evidence:
 
 - **Each clause does work.** For every clause, the structure research § 5
-  gives for it breaks that clause and no other, and the witnesses W0 to W2
-  break none. A predicate that accepted too much or too little fails here.
-- **What the axioms give a caller.** Trees drawn by Hypothesis satisfy every
-  clause, and their Keys are unique (TREE-010), well shaped (TREE-011) and
-  closed under ancestors (TREE-012).
+  gives for it, and one more per entity kind the § 5 row leaves out, breaks
+  that clause and no other; the witnesses W0 to W2 break none. A predicate
+  that rejects a witness, or misses a breaking structure of either kind,
+  fails here; one wrong only on structures listed nowhere would not.
+- **What the axioms give a caller.** Structures drawn by Hypothesis with free
+  names (ε, `/` and `a/b` among them) and free kinds are kept only when every
+  predicate holds, and their Keys are unique (TREE-010), well shaped
+  (TREE-011) and closed under ancestors (TREE-012). Dropping a naming
+  predicate lets a collision through, so these depend on the predicates.
 
 Bounds: the model is finite, so TREE-006 is checked on finite structures only;
 the infinite cases are proved in ``sdd/formal/lean/StoreAxioms.lean``. No
@@ -18,10 +22,10 @@ backend is involved: conformance of each backend's observed tree is BK-436.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import pytest
-from hypothesis import given
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 if TYPE_CHECKING:
@@ -138,6 +142,41 @@ ROWS: dict[str, Store] = {
     "TREE-008": _store({ROOT, "x", "y"}, {ROOT}, {"x", "y"}, {(ROOT, "x"), (ROOT, "y")}, {"x": "n", "y": "n"}),
 }
 
+# The § 5 rows break each clause with one entity kind; these break it with the
+# other. Each entry: the one clause it breaks, and the structure.
+KIND_ROWS: dict[str, tuple[str, Store]] = {
+    "TREE-003 item holds a folder": (
+        "TREE-003",
+        _store({ROOT, "x", "y"}, {ROOT, "y"}, {"x"}, {(ROOT, "x"), ("x", "y")}),
+    ),
+    "TREE-004 folder with two containers": (
+        "TREE-004",
+        _store({ROOT, "a", "b", "x"}, {ROOT, "a", "b", "x"}, set(), {(ROOT, "a"), (ROOT, "b"), ("a", "x"), ("b", "x")}),
+    ),
+    "TREE-007 folder named empty": (
+        "TREE-007 non-empty",
+        _store({ROOT, "x"}, {ROOT, "x"}, set(), {(ROOT, "x")}, {"x": ""}),
+    ),
+    "TREE-007 item named with a slash": (
+        "TREE-007 no slash",
+        _store(
+            {ROOT, "w", "a", "b"},
+            {ROOT, "a"},
+            {"w", "b"},
+            {(ROOT, "w"), (ROOT, "a"), ("a", "b")},
+            {"w": "a/b", "a": "a", "b": "b"},
+        ),
+    ),
+    "TREE-008 folder and item share a name": (
+        "TREE-008",
+        _store({ROOT, "a", "b"}, {ROOT, "a"}, {"b"}, {(ROOT, "a"), (ROOT, "b")}, {"a": "n", "b": "n"}),
+    ),
+    "TREE-008 two folders share a name": (
+        "TREE-008",
+        _store({ROOT, "a", "b"}, {ROOT, "a", "b"}, set(), {(ROOT, "a"), (ROOT, "b")}, {"a": "n", "b": "n"}),
+    ),
+}
+
 WITNESSES: dict[str, Store] = {
     "W0": _store({ROOT}, {ROOT}, set(), set()),
     "W1": _store({ROOT, "d", "f"}, {ROOT, "d"}, {"f"}, {(ROOT, "d"), ("d", "f")}),
@@ -162,7 +201,7 @@ _CLAUSE_PARAMS = [
 
 
 def test_clause_params_cover_every_clause() -> None:
-    """The written-out parameters name every clause the model checks, and no other."""
+    """Meta-test, no spec section: the written-out parameters name every clause the model checks, and no other."""
     named = [p.values[0] for p in _CLAUSE_PARAMS]
     assert len(named) == len(set(named))
     assert set(named) == set(CLAUSES)
@@ -172,6 +211,43 @@ def test_clause_params_cover_every_clause() -> None:
 def test_each_clause_is_broken_alone_by_its_row(clause: str) -> None:
     """Research § 5's structure for a clause breaks that clause and no other."""
     assert broken(ROWS[clause]) == {clause}
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        pytest.param(
+            "TREE-003 item holds a folder", marks=pytest.mark.spec("TREE-003"), id="TREE-003 item holds a folder"
+        ),
+        pytest.param(
+            "TREE-004 folder with two containers",
+            marks=pytest.mark.spec("TREE-004"),
+            id="TREE-004 folder with two containers",
+        ),
+        pytest.param(
+            "TREE-007 folder named empty", marks=pytest.mark.spec("TREE-007"), id="TREE-007 folder named empty"
+        ),
+        pytest.param(
+            "TREE-007 item named with a slash",
+            marks=pytest.mark.spec("TREE-007"),
+            id="TREE-007 item named with a slash",
+        ),
+        pytest.param(
+            "TREE-008 folder and item share a name",
+            marks=pytest.mark.spec("TREE-008"),
+            id="TREE-008 folder and item share a name",
+        ),
+        pytest.param(
+            "TREE-008 two folders share a name",
+            marks=pytest.mark.spec("TREE-008"),
+            id="TREE-008 two folders share a name",
+        ),
+    ],
+)
+def test_each_clause_is_broken_by_the_other_entity_kind(row: str) -> None:
+    """A structure breaking the clause with the kind its § 5 row leaves out breaks that clause and no other."""
+    clause, s = KIND_ROWS[row]
+    assert broken(s) == {clause}
 
 
 @pytest.mark.parametrize("witness", list(WITNESSES))
@@ -203,63 +279,67 @@ def test_key_ignores_the_root_name() -> None:
     assert (key(s, ROOT), key(s, "d")) == ("", "d")
 
 
-@pytest.mark.spec("TREE-010")
-@pytest.mark.parametrize("clause", ["TREE-007 non-empty", "TREE-007 no slash", "TREE-008"])
+@pytest.mark.parametrize(
+    "clause",
+    [
+        pytest.param("TREE-007 non-empty", marks=pytest.mark.spec("TREE-007"), id="TREE-007 non-empty"),
+        pytest.param("TREE-007 no slash", marks=pytest.mark.spec("TREE-007"), id="TREE-007 no slash"),
+        pytest.param("TREE-008", marks=pytest.mark.spec("TREE-008"), id="TREE-008"),
+    ],
+)
 def test_key_collision_follows_from_each_naming_clause_broken(clause: str) -> None:
-    """Breaking TREE-007's name clauses or TREE-008 gives two entities one Key (research § 5)."""
+    """Breaking TREE-007's name clauses or TREE-008 gives two entities one Key: TREE-010 needs them (research § 5)."""
     s = ROWS[clause]
     keys = [key(s, x) for x in s.U]
     assert len(set(keys)) < len(keys)
 
 
-# --- Trees drawn by Hypothesis ---
+# --- Structures drawn by Hypothesis ---
 
-# Names may hold any symbol but "/"; "." and "\\" are ordinary here (spec 004 governs input).
-_NAMES = st.text(alphabet="ab.\\ z", min_size=1, max_size=3)
-Tree = dict[str, Union["Tree", None]]  # a folder's children; None marks an item
-_TREES: st.SearchStrategy[Tree] = st.recursive(
-    st.dictionaries(_NAMES, st.none(), max_size=3),
-    lambda kids: st.dictionaries(_NAMES, st.one_of(st.none(), kids), max_size=3),
-    max_leaves=12,
-)
+# Free names, the invalid ones included; "." and "\\" are ordinary names here (spec 004 governs input).
+_NAMES = st.sampled_from(["", "/", "a/b", "a", "b", "c", ".", "\\"])
+# The filter is the point: what is kept depends on the predicates, so heavy filtering is expected.
+_FILTERED = settings(suppress_health_check=[HealthCheck.filter_too_much])
 
 
-def _from_tree(tree: Tree) -> Store:
+@st.composite
+def _stores(draw: st.DrawFn) -> Store:
+    """Each entity under an earlier one, with a free kind and name; kept only if every predicate holds.
+
+    Placing each entity under an earlier one gives TREE-004 to TREE-006 by
+    construction; the kinds and names are free, so TREE-003, TREE-007 and
+    TREE-008 decide what is kept.
+    """
     U, F, I, C, names = {ROOT}, {ROOT}, set(), set(), {ROOT: ""}  # noqa: E741
-
-    def add(parent: str, kids: Tree) -> None:
-        for nm, sub in kids.items():
-            x = f"e{len(U)}"
-            U.add(x)
-            names[x] = nm
-            C.add((parent, x))
-            if sub is None:
-                I.add(x)
-            else:
-                F.add(x)
-                add(x, sub)
-
-    add(ROOT, tree)
-    return _store(U, F, I, C, names)
+    placed = [ROOT]
+    for i in range(draw(st.integers(0, 5))):
+        x = f"e{i}"
+        U.add(x)
+        C.add((draw(st.sampled_from(placed)), x))
+        names[x] = draw(_NAMES)
+        (F if draw(st.booleans()) else I).add(x)
+        placed.append(x)
+    s = _store(U, F, I, C, names)
+    assume(broken(s) == set())
+    return s
 
 
 @pytest.mark.pbt
 @pytest.mark.spec("TREE-010")
-@given(_TREES)
-def test_keys_are_unique(tree: Tree) -> None:
+@_FILTERED
+@given(_stores())
+def test_keys_are_unique(s: Store) -> None:
     """Two entities with one Key are one entity (TREE-010)."""
-    s = _from_tree(tree)
-    assert broken(s) == set()
     keys = [key(s, x) for x in s.U]
     assert len(set(keys)) == len(keys)
 
 
 @pytest.mark.pbt
 @pytest.mark.spec("TREE-011")
-@given(_TREES)
-def test_key_shape(tree: Tree) -> None:
+@_FILTERED
+@given(_stores())
+def test_key_shape(s: Store) -> None:
     """Key is ε only for the root; any other is non-empty with no leading, trailing or doubled ``/`` (TREE-011)."""
-    s = _from_tree(tree)
     for x in s.U:
         k = key(s, x)
         assert (k == "") == (x == s.r)
@@ -271,10 +351,10 @@ def test_key_shape(tree: Tree) -> None:
 
 @pytest.mark.pbt
 @pytest.mark.spec("TREE-012")
-@given(_TREES)
-def test_prefix_closure(tree: Tree) -> None:
-    """Every whole-name prefix of a Key is the Key of a folder on the chain; items sit last (TREE-012)."""
-    s = _from_tree(tree)
+@_FILTERED
+@given(_stores())
+def test_prefix_closure(s: Store) -> None:
+    """Every whole-name prefix of a Key is the Key of a folder on the chain other than x; items sit last (TREE-012)."""
     by_key = {key(s, x): x for x in s.U}
     for x in s.U - {s.r}:
         segments = key(s, x).split("/")

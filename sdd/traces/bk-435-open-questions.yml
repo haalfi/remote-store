@@ -1,5 +1,5 @@
 id: BK-435
-title: "Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations"
+title: "The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them"
 trigger: "After the Alloy and Lean steps landed in #1132 (squash commit eea3830b9 on store-model-axioms), the maintainer asked what BK-435 does next (Dafny?). The Dafny step would touch StoreTree.dfy on #1130, blocked by other work, so the four open questions of research § 10 were decided first"
 source_items:
   - BK-435

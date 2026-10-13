@@ -10,6 +10,11 @@ expected_ripples:
   - tests/test_store_tree.py
   - sdd/BACKLOG.md
   - sdd/research/research-store-model-axioms.md
+  - sdd/formal/lean/StoreAxioms.lean
+  - sdd/formal/alloy/StoreAxioms.als
+surprising_ripples:
+  - "sdd/formal/lean/StoreAxioms.lean and sdd/formal/alloy/StoreAxioms.als: both headers named the research doc as source of truth; with spec 051 the authority (maintainer, review round 1), they now name spec 051, the research doc as rationale. Comment-only; lean_check.sh built and alloy_check.sh matched all 30 commands after the edit"
+  - "sdd/specs/004-path-model.md PATH-015: RemotePath.ROOT and store folder methods accept '' and '.' as the root, so research § 10's 'root reached through the store rather than an empty path' (from #1133) was false; both it and spec 051 now point to spec 004 instead of enumerating it. Found by review round 1"
 discovery_followups:
   - BK-436
   - BK-437
@@ -56,3 +61,14 @@ phases:
         section: "(full, mutation-checked)"
         read_type: reference
         extract: "Mutant 1, TREE-004's predicate always true: test_each_clause_is_broken_alone_by_its_row[TREE-004] failed (set() == {'TREE-004'}). Mutant 2, Key joining the root's name: 5 tests failed, test_key_joins_names_along_the_chain[W1, W2], test_key_ignores_the_root_name, test_key_collision_follows_from_each_naming_clause_broken[TREE-007 non-empty] and the Hypothesis test_key_shape. Both reverted"
+  - id: review
+    name: Review round 1 fixes
+    steps:
+      - file: tests/test_store_tree.py
+        section: "KIND_ROWS, _stores, mutation-checked"
+        read_type: reference
+        extract: "Review measured six kind-restricted predicates passing all 55 tests, and property tests that held by construction. Added a breaking row per clause for the other entity kind and a free Hypothesis strategy filtered by broken(s) == set(). Mutants run on the new file (driver outside the repo, copies in gitignored tmp/): weak 003 items-cannot-contain-items, weak 004 items-only, weak 007 non-empty items-only, weak 007 no-slash folders-only, weak 008 items-only and weak 008 same-kind-only each fail their kind row; 008, 007 non-empty and 007 no-slash made always true each fail two of the three property tests. gen_backlogid --check --remote: no clash for BK-436 or BK-437, only the stale-branch BK-435 report"
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-015"
+        read_type: reference
+        extract: "The root sentinel: str(ROOT) is '.', and folder methods accept '' and '.' as the root"

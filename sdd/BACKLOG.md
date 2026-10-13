@@ -299,7 +299,7 @@ failure it was.
   shadowed prefix answers, and the kernel's two probe rules disagree on one `stat` answer.
   RFC-0021 (accepted 2026-10-13) sets one store tree, a partial abstraction function per encoding
   and one refusal table per namespace, checked by `StoreTree.dfy`. Remaining: its spec 003 section
-  (PR #1127's resume), whose A.1 later points to BK-435's spec (research § 10). Open decision: none.
+  (PR #1127's resume), whose A.1 later points to spec 051 (BK-435). Open decision: none.
 
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
@@ -480,9 +480,9 @@ no clause of the contract ships unexercised.
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
   Spec 051's sections are tested only against a reference model (`tests/test_store_tree.py`). A
   flat backend can hold an item with keys below it until RFC-0021's decoding lands (BK-432), and a
-  case-insensitive or normalizing one merges names spec 051 keeps apart (its Name equality). Open
-  decision: which listings and probes observe a backend's tree, and how each backend's name
-  equality is measured. After BK-432.
+  case-insensitive or normalizing one merges names spec 051 keeps apart (its Name equality, a TREE
+  section once measured). Open decision: which listings and probes observe a backend's tree, and
+  how each backend's name equality is measured. After BK-432.
 
 - [ ] **BK-437 — Spec 051's sections are restated in Alloy and Lean with no traceability check between them**
   spec: TREE-001 -- TREE-012 · effort: S · audience: contributor.tooling
