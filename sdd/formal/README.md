@@ -342,22 +342,29 @@ which is the quickest way to look at an instance a `run` found.
 
 Lean: `bash scripts/lean_check.sh` (or `hatch run verify-lean`) runs
 `lake build` on `sdd/formal/lean/` and exits non-zero on any error,
-a `sorry` or a changed axiom list included. It uses a native `lean` on
+a `sorry` or a changed axiom list included. It builds
+`StoreAxioms.lean` and what that file imports, so a new `.lean` file
+is checked only once it is imported there. It uses a native `lean` on
 `PATH` that reports the pinned version from inside the project, and
 otherwise a Docker image built from `scripts/lean.Dockerfile`, which
 checks the release archive against a pinned sha256;
 `LEAN_RUNNER=docker` forces Docker. No CI job runs it, as for Alloy.
-`session-init.sh` installs the same archive into `/usr/local` in a
-claude.ai/code container.
+Unlike Alloy, `session-init.sh` does not install Lean in a
+claude.ai/code container: the toolchain is about 3 GB unpacked and a
+container starts fresh each session (maintainer decision,
+2026-10-13). It only says how to run the check.
 
 Native setup needs no root. [elan](https://github.com/leanprover/elan),
 Lean's version manager, reads the project's `lean-toolchain` file and
 fetches that release on first use; it does not check the Dockerfile's
-sha256. `~/.elan/bin` must be on `PATH`:
+sha256, and the installer below is fetched unpinned. The installer adds
+`~/.elan/bin` to the shell profile; the `export` line puts it on `PATH`
+in the current shell:
 
 ```bash
 curl -fsSL -o elan-init.sh https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh
 sh elan-init.sh -y --default-toolchain none
+export PATH="$HOME/.elan/bin:$PATH"
 cd sdd/formal/lean
 lean --version    # Lean (version 4.34.1, ...)
 ```

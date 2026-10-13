@@ -1,8 +1,8 @@
 /-!
-# The store model's axioms, and the lemmas of § 7, over the unrestricted universe
+# The store model's axioms, and the lemmas of § 7, for every universe
 
 Source of truth: `sdd/research/research-store-model-axioms.md` (BK-435). This
-file restates § 2 and § 3 clause by clause and proves § 4's D1 and § 7's L1 to
+file restates § 3 clause by clause, and § 2 as noted below, and proves § 4's D1 and § 7's L1 to
 L6 from them; it adds no claim of its own. Where the two disagree, the
 document is corrected.
 
@@ -11,8 +11,8 @@ no lemma takes a `Fintype` or a bound. That is the difference from the Alloy
 model `sdd/formal/alloy/StoreAxioms.als`, which checks L1 to L5 up to a
 bounded scope and cannot state L6. Two claims no bounded scope reaches are
 proved at the end: that the axioms have an infinite model (§ 3, no finiteness
-axiom), which also shows the axioms are satisfiable, so no lemma here holds
-vacuously; and § 9.7's infinite upward chain.
+axiom), which also shows the axioms consistent, so no lemma here holds merely
+because nothing satisfies them; and § 9.7's infinite upward chain.
 
 The alphabet is any type with a chosen separator. The lemmas do not need a
 symbol besides `/`; only the infinite model takes one, as § 2 provides.

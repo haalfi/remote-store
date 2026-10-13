@@ -14,7 +14,6 @@ expected_ripples:
   - sdd/process-budget.json
   - pyproject.toml
   - .claude/hooks/session-init.sh
-  - .gitignore
 decisions:
   - sdd/decisions/ef396977-f51e-463e-bfc3-d413be64ea17.jsonl
 orient:
@@ -63,5 +62,11 @@ phases:
         section: "module docstring"
         read_type: gate
         extract: "Growth of a budgeted file needs a recorded --raise"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: gate
+        extract: "Read late, after the review flagged its absence: no row covers a new formal-layer toolchain; Local-machine reference and Test-outside-src rows checked and not owed. My miss to read it first; it was not the table's"
 surprising_ripples:
-  - ".gitignore: a native lake build writes .lake/ inside sdd/formal/lean; Alloy and Dafny write nothing into the repo"
+  - ".gitignore and sdd/formal/lean/lake-manifest.json: a native lake build writes .lake/ and the manifest inside the project; Alloy and Dafny write nothing into the repo. The manifest was found by review, because the Docker path builds a copy"
+  - "scripts/lean.Dockerfile platform pin: found by the tooling review (the pinned archive is x86_64-only)"
+  - ".claude/hooks/session-init.sh: the container auto-install copied from Alloy was dropped after review measured its cost (580 MB download, about 2.9 GB unpacked, every fresh container start); the hook now only prints how to run the check"

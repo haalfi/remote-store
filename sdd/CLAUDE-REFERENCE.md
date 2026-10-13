@@ -686,7 +686,7 @@ Hook events and their payloads are in the
 | hatch | always (if missing)        | latest  | `uv tool install hatch`          |
 | dafny | `sdd/formal/*.dfy` present | 4.11.0  | see `session-init.sh` for steps  |
 | alloy | `sdd/formal/alloy/*.als` present, `java` on PATH | 6.2.0 | [`sdd/formal/README.md` § Running the verifier](formal/README.md#running-the-verifier) |
-| lean | `sdd/formal/lean/lean-toolchain` present, `zstd` on PATH | 4.34.1 | [`sdd/formal/README.md` § Running the verifier](formal/README.md#running-the-verifier) |
+| lean | none (message only; about 3 GB per install) | 4.34.1 | [`sdd/formal/README.md` § Running the verifier](formal/README.md#running-the-verifier) |
 
 ---
 

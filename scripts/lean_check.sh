@@ -19,19 +19,28 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
 # Bump together with scripts/lean.Dockerfile, the project's lean-toolchain,
-# .claude/hooks/session-init.sh, the setup block in sdd/formal/README.md and
-# the Local toolchain row.
+# the setup block in sdd/formal/README.md and the Local toolchain row.
 LEAN_VERSION=4.34.1
 IMAGE="remote-store-lean:${LEAN_VERSION}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 PROJECT="${1:-sdd/formal/lean}"
 
+if [ ! -f "$REPO_ROOT/$PROJECT/lakefile.toml" ]; then
+  echo "==> No lakefile.toml in '$PROJECT' (a path relative to the repo root)" >&2
+  exit 2
+fi
+
 if [ "${LEAN_RUNNER:-}" != "docker" ] && command -v lean > /dev/null 2>&1; then
-  # A native lean that cannot start, or cannot fetch the pinned toolchain,
-  # must fall back, not exit.
+  # A native lean or lake that cannot start, or cannot fetch the pinned
+  # toolchain, must fall back, not exit. Both are probed: lake runs the build.
+  echo "==> Probing native lean (with elan, the first run downloads the toolchain)"
   NATIVE_VERSION="$(cd "$REPO_ROOT/$PROJECT" && lean --version 2> /dev/null)" || NATIVE_VERSION="(failed to start)"
+  if ! (cd "$REPO_ROOT/$PROJECT" && lake --version > /dev/null 2>&1); then
+    NATIVE_VERSION="${NATIVE_VERSION}, lake failed to start"
+  fi
   case "$NATIVE_VERSION" in
+    "Lean (version ${LEAN_VERSION},"*", lake failed to start") ;;
     "Lean (version ${LEAN_VERSION},"*)
       echo "==> Building $PROJECT with Lean ${LEAN_VERSION} (native)"
       cd "$REPO_ROOT/$PROJECT"

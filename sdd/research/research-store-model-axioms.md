@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-13
 **Backlog items:** BK-435 (The store model's axioms have no independence or consistency check)
-**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 over the unrestricted universe (2026-10-13, § 10).
+**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 for every universe, finite or not (2026-10-13, § 10).
 
 ---
 
@@ -23,7 +23,7 @@ infinite structures that are "a rooted tree whose nodes are folders or items,
 whose non-root nodes carry a name, with unique names among siblings". §5 gives,
 for each clause of each axiom, a structure that satisfies every other clause
 and breaks that one, which is the evidence the clause does work. §7 lists what
-should follow from the axioms, stated and not yet proved.
+should follow from the axioms; § 10 records their machine checks.
 
 ---
 
@@ -186,7 +186,8 @@ the lemma list in §7.
 
 ## 7. Lemmas to prove (statements only)
 
-Not proved here, except where §4 gives a derivation (D1, chain uniqueness, L2).
+Not proved here, except where §4 gives a derivation (D1, chain uniqueness, L2);
+all are proved in Lean 4 (§ 10, step 2 result).
 They are the claims a proof assistant must establish.
 
 - **L1, chain uniqueness.** Every x ∈ U has exactly one chain. (So Key is a
@@ -239,7 +240,7 @@ comparison is only as good as the reading behind it:
 | **This model** | at most one (AX-4); exactly one for a non-root (D1) | node, equivalently its one incoming edge | partition, items are leaves (AX-1, AX-3) | one `/`-joined word, unique (L3) | — |
 | Rooted directed tree (arborescence) | exactly one, root none | not modelled | not modelled | unique path from the root | this model is a tree plus typing and names |
 | Rooted DAG | one or more | edge | not modelled | a set of paths per node | AX-4 dropped (any number of containers), and acyclicity added as an axiom |
-| Trie / prefix-closed word set | exactly one, root none | edge label | word end marks an entry | the word | corresponds to this model if L6 holds; a trie marks word ends, this model marks items and forbids items having extensions |
+| Trie / prefix-closed word set | exactly one, root none | edge label | word end marks an entry | the word | corresponds to this model (L6, proved in § 10); a trie marks word ends, this model marks items and forbids items having extensions |
 | Path-keyed map (tree store) | implied by prefix closure | key segment | a kind per key | the key | a representation, not a rival axiomatization; L6 would connect the two |
 | Hierarchical key-value store (ZooKeeper) | one, root none | path segment | none: a node has data and may have children | absolute path | AX-1 and AX-3 do not hold |
 | Flat key-value store with a delimiter (pure convention) | none stored | not modelled | none | opaque string | AX-2 to AX-6 dropped; hierarchy is a reading of the keys |
@@ -293,7 +294,7 @@ a set of words closed under taking prefixes is the same thing viewed as data.
 AX-8 is the distinct-letters condition, and §4 reads a Key as the word along
 the path from the root.
 
-L6 states the correspondence as a claim to prove. **Delta:** a trie marks which
+L6 states the correspondence, proved in § 10. **Delta:** a trie marks which
 words are ends of entries. This model marks which words are items, and AX-3
 requires an item word to have no proper extension, while a folder word may or
 may not have one (an empty folder is a leaf that is not an item).
@@ -305,7 +306,7 @@ paths to node kinds, restricted so that the set of defined paths is closed
 under prefix and every proper prefix of a path maps to a folder. This avoids
 reachability: a path being present is its own witness that its prefixes are.
 
-**Delta.** It is a representation, not a competing set of axioms. If L6 holds,
+**Delta.** It is a representation, not a competing set of axioms. By L6 (§ 10),
 the two agree. A map with a finite domain, as Dafny's `map` has, describes
 finite stores only, so it covers a subset of this model's structures.
 `sdd/formal/StoreTree.dfy` §1 is an instance of the map style (`Tree =
@@ -480,14 +481,14 @@ committed; the failing commands are the ones Alloy reported as "satisfied
 against expectation".
 
 **Step 2 result (2026-10-13).** `sdd/formal/lean/StoreAxioms.lean`
-restates § 2 and § 3 clause by clause (one field of `Axioms` per clause)
-and proves, with `bash scripts/lean_check.sh` building it green under
+restates § 3 clause by clause (one field of `Axioms` per clause), and
+§ 2 with one generalization (the alphabet need not hold a symbol besides
+`/`; only the infinite model below takes one), and proves, with `bash scripts/lean_check.sh` building it green under
 Lean 4.34.1, core library only:
 
 - **§ 4.** D1, and chain uniqueness as `chain_unique`.
 - **§ 7.** L1 to L5 as stated, for an arbitrary type as universe, so
-  with no finiteness and no scope. L5 takes any split of Key(x) into
-  names from N, not only the chain's. The auxiliary lemma of step 2
+  with no finiteness and no scope. The auxiliary lemma of step 2
   took the form of injectivity (`join_inj`): the `/`-join of a sequence
   of names from N determines the sequence.
 - **L6.** Five parts: each model gives a pair (L, K) meeting L6's
@@ -500,15 +501,20 @@ Lean 4.34.1, core library only:
   (`L6_empty_folder`). The isomorphism this fixes is the one the
   statement left informal: it preserves the typing and the names.
 - **§ 3, no finiteness axiom.** The axioms have an infinite model (one
-  infinite downward branch). This also shows them satisfiable, so no
-  lemma holds vacuously.
+  infinite downward branch, no items). Like W0 it shows the axioms
+  consistent, so no lemma holds merely because nothing satisfies them.
+  Unlike step 1 there are no mutants: nothing here shows each lemma
+  needs the axioms it is meant to need.
 - **§ 9.7, infinite half.** An infinite upward chain with the root
   elsewhere has every non-root contained, the root uncontained and no
-  cycle, and breaks AX-6.
+  cycle, and breaks AX-6. Its names are all ε, so it also breaks AX-7
+  and is not an independence witness for AX-6.
 
 It found no disagreement with this document. The build fails on a
-`sorry` (seeded once and observed to fail, not committed), and a
-`#guard_msgs` block pins each result's axioms to Lean's standard ones.
+`sorry`: a scratch copy with `theorem bogus : False := sorry` added,
+run with `bash scripts/lean_check.sh <copy>`, failed with "declaration
+uses `sorry`" (not committed). A `#guard_msgs` block pins each headline
+result's axioms to Lean's standard ones.
 
 **Relation to existing formal work.** `sdd/formal/StoreTree.dfy` §1 models the
 store as `Tree = map<Key, Kind>` with `Key = seq<string>`, requiring the root
