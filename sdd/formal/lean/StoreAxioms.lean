@@ -1,11 +1,13 @@
 /-!
 # The store model's axioms, and the lemmas of § 7, for every universe
 
-Source of truth: `sdd/research/research-store-model-axioms.md` (BK-435). This
+Source of truth: `sdd/specs/051-store-tree.md` (TREE-001 to TREE-012). The
+§ numbers below are those of its rationale,
+`sdd/research/research-store-model-axioms.md` (BK-435). This
 file restates § 3 clause by clause, and § 2 as noted below, and proves § 4's D1 and § 7's L1 to
-L6 from them; it adds no claim of its own. Where the two disagree, a
-statement here that misrestates the document is fixed here; a document
-claim that a faithful restatement disproves is fixed in the document.
+L6 from them; it adds no claim of its own. Where this file and spec 051
+disagree, a statement here that misrestates the spec is fixed here; a spec
+claim that a faithful restatement disproves is fixed in the spec.
 
 Nothing here assumes finiteness: the universe `U` is an arbitrary type, and
 no lemma takes a `Fintype` or a bound. That is the difference from the Alloy

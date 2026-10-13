@@ -1,11 +1,13 @@
 /*
  * The store model's axioms AX-1 to AX-8, checked in bounded scope.
  *
- * Source of truth: sdd/research/research-store-model-axioms.md (BK-435).
+ * Source of truth: sdd/specs/051-store-tree.md (TREE-001 to TREE-012). The
+ * § numbers below are those of its rationale,
+ * sdd/research/research-store-model-axioms.md (BK-435).
  * This module restates § 3 and runs § 4, § 5, § 7 and § 9.7 against it; it adds no
- * claim of its own. Where the two disagree, a predicate that misrestates the
- * document is fixed here; a document claim that a faithful restatement
- * falsifies is fixed in the document.
+ * claim of its own. Where this module and spec 051 disagree, a predicate that
+ * misrestates the spec is fixed here; a spec claim that a faithful restatement
+ * falsifies is fixed in the spec.
  *
  * Every command carries `expect`: 1 for a run that must find an instance,
  * 0 for a check that must find no counterexample. scripts/alloy_check.sh
