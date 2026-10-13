@@ -587,6 +587,8 @@ docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-li
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
+# Native alloy at the pinned version, else Docker; not in 'all' or CI (sdd/formal/README.md)
+verify-alloy = "bash scripts/alloy_check.sh {args}"
 all = ["preflight", "lint", "format-check", "typecheck", "test-cov-s1", "examples", "notebooks", "check-links", "docs-check", "docs-build"]
 # The pre-commit gate (CLAUDE.md § Dev commands): the members of `all` that the
 # change since the last green run can affect, with tests selected by path

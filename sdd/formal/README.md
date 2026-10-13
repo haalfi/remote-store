@@ -294,12 +294,31 @@ configs still run via `bash scripts/tlc_check.sh sdd/research/tla-poc MC`
 model whenever files under `sdd/formal/tla/` or the TLC tooling
 change.
 
-Alloy: `bash scripts/alloy_check.sh` runs every command of
-`sdd/formal/alloy/StoreAxioms.als` via a pinned Docker image (Alloy
-6.2.0 from Maven Central, sha256-pinned in `scripts/alloy.Dockerfile`)
-and exits non-zero when any outcome differs from its `expect`. No CI
-job runs it (maintainer decision, 2026-10-13); one added later starts
-informational, as authoring rule 3 sets for TLA+.
+Alloy: `bash scripts/alloy_check.sh` (or `hatch run verify-alloy`) runs
+every command of `sdd/formal/alloy/StoreAxioms.als` and exits non-zero
+when any outcome differs from its `expect`. It uses a native `alloy` on
+`PATH` that reports the pinned version, and otherwise a Docker image
+built from `scripts/alloy.Dockerfile`; `ALLOY_RUNNER=docker` forces
+Docker. No CI job runs it (maintainer decision, 2026-10-13); one added
+later starts informational, as authoring rule 3 sets for TLA+.
+
+Native setup needs a Java runtime and no root (run so far on Java 21 in
+the image and Java 25 on a maintainer machine). `session-init.sh` does
+the same into `/usr/local` in a claude.ai/code container. The version and
+sha256 are the ones pinned in `scripts/alloy.Dockerfile`:
+
+```bash
+mkdir -p ~/.local/lib/alloy ~/.local/bin
+curl -fsSL -o ~/.local/lib/alloy/alloy.jar \
+  https://repo1.maven.org/maven2/org/alloytools/org.alloytools.alloy.dist/6.2.0/org.alloytools.alloy.dist-6.2.0.jar
+echo "6037cbeee0e8423c1c468447ed10f5fcf2f2743a2ffc39cb1c81f2905c0fdb9d  $HOME/.local/lib/alloy/alloy.jar" | sha256sum --check
+printf '#!/bin/bash\nexec java --enable-native-access=ALL-UNNAMED -jar "$HOME/.local/lib/alloy/alloy.jar" "$@"\n' > ~/.local/bin/alloy
+chmod +x ~/.local/bin/alloy
+alloy version    # 6.2.0
+```
+
+`alloy gui` opens the Analyzer's editor and visualizer on the same jar,
+which is the quickest way to look at an instance a `run` found.
 
 ### Verification practices
 

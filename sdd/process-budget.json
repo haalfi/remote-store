@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 297938,
+  "total": 298097,
   "files": {
     "CLAUDE.md": 17528,
     ".claude/output-styles/interview.md": 2105,
@@ -20,9 +20,9 @@
     ".claude/skills/pr/SKILL.md": 5425,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
+    ".claude/skills/rvw-pr/SKILL.md": 21827,
     ".claude/skills/rvw-pr/measuring.md": 5482,
     ".claude/skills/rvw-pr/posting.md": 5030,
-    ".claude/skills/rvw-pr/SKILL.md": 21827,
     ".claude/skills/ship/SKILL.md": 54143,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
@@ -30,7 +30,7 @@
     ".claude/agents/sdd-expert.md": 1726,
     ".claude/agents/store-backend-expert.md": 1820,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 63720,
+    "sdd/CLAUDE-REFERENCE.md": 63879,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [
@@ -75,6 +75,12 @@
       "from": 297831,
       "to": 297938,
       "reason": "CLAUDE.md: ADR-0046 joins the /ship records (seven to eight), as ADR-0045 did (+107)"
+    },
+    {
+      "item": "BK-435",
+      "from": 297938,
+      "to": 298097,
+      "reason": "Local toolchain gains an alloy row (sdd/formal/alloy/, scripts/alloy_check.sh); the setup steps themselves live in sdd/formal/README.md"
     }
   ]
 }

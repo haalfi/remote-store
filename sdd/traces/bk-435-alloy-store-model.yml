@@ -46,3 +46,18 @@ phases:
         section: "Ripple-check rows: Backlog item touched, CHANGELOG entry, Local-machine reference"
         read_type: gate
         extract: "Trace owed, no CHANGELOG for library.maintainer, no local paths in committed files"
+  - id: toolchain
+    name: Local Alloy setup like Dafny's (maintainer request)
+    steps:
+      - file: .claude/hooks/session-init.sh
+        section: "Dafny install block"
+        read_type: reference
+        extract: "Container auto-install, on-prem warn-only; copied for Alloy with a sha256 check and a java guard"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Local toolchain"
+        read_type: reference
+        extract: "One row per tool; the file is under the process budget, so the setup steps went to sdd/formal/README.md"
+      - file: scripts/check_process_budget.py
+        section: "module docstring"
+        read_type: gate
+        extract: "Growth of a budgeted file needs a recorded --raise"
