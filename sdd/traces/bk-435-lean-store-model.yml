@@ -16,6 +16,7 @@ expected_ripples:
   - .claude/hooks/session-init.sh
 decisions:
   - sdd/decisions/ef396977-f51e-463e-bfc3-d413be64ea17.jsonl
+  - sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl
 orient:
   - items: [BK-434]
     verdict: unrelated
@@ -70,4 +71,49 @@ surprising_ripples:
   - ".gitignore and sdd/formal/lean/lake-manifest.json: a native lake build writes .lake/ and the manifest inside the project; Alloy and Dafny write nothing into the repo. The manifest was found by review, because the Docker path builds a copy"
   - ".github/workflows/ci.yml FORMAL_PAT: it matches all of sdd/formal/ and excluded only tla/, so every Alloy or Lean change ran the Dafny job while the README said no CI job runs them; alloy/ and lean/ are now excluded like tla/. Found by review round 1; no ripple-check row covers a new sdd/formal/ subtree"
   - "scripts/lean.Dockerfile platform pin: found by the tooling review (the pinned archive is x86_64-only)"
-  - ".claude/hooks/session-init.sh: the container auto-install copied from Alloy was dropped after review measured its cost (580 MB download, about 2.9 GB unpacked, every fresh container start; commands in sdd/formal/README.md § Running the verifier); the hook now only prints how to run the check"
+  - ".claude/hooks/session-init.sh: the container auto-install copied from Alloy was dropped after review measured its cost (580 MB download, about 2.9 GB unpacked, every fresh container start; commands in sdd/formal/README.md § Running the verifier); the hook now only prints a message, which in such a container says the proofs cannot be checked there (review round 2)"
+# The review loop ran locally: each round was an unprimed analyze-only
+# /rvw-pr pass (no GitHub API in the session then), its findings posted on
+# #1132 as one plain PR comment per round (`gh pr view 1132 --json comments`).
+# ship-report counts PR reviews only, so the zeros below are that artifact,
+# not an absent review; the per-round findings live in those comments.
+review:
+  # Derived by `hatch run ship-report 1132 --trace-block-only` at head 4d3a607.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1132 --trace-block-only"
+  pr: 1132
+  review_rounds: 0
+  submissions: 0
+  findings: 0
+  by_round: []
+  by_file: []
+  untouched_files:
+    - ".claude/hooks/session-init.sh"
+    - ".github/workflows/ci.yml"
+    - ".gitignore"
+    - "pyproject.toml"
+    - "scripts/alloy.Dockerfile"
+    - "scripts/alloy_check.sh"
+    - "scripts/lean.Dockerfile"
+    - "scripts/lean_check.sh"
+    - "sdd/BACKLOG.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/decisions/a43a478b-6ba7-4978-89f5-773056c9d7c7.jsonl"
+    - "sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl"
+    - "sdd/decisions/ef396977-f51e-463e-bfc3-d413be64ea17.jsonl"
+    - "sdd/decisions/f9bf6c85-56f9-4b02-be3a-7d6217885009.jsonl"
+    - "sdd/formal/README.md"
+    - "sdd/formal/alloy/StoreAxioms.als"
+    - "sdd/formal/lean/StoreAxioms.lean"
+    - "sdd/formal/lean/lake-manifest.json"
+    - "sdd/formal/lean/lakefile.toml"
+    - "sdd/formal/lean/lean-toolchain"
+    - "sdd/process-budget.json"
+    - "sdd/research/research-store-model-axioms.md"
+    - "sdd/traces/bk-435-alloy-store-model.yml"
+    - "sdd/traces/bk-435-lean-store-model.yml"
+    - "sdd/traces/bk-435-store-model-axioms.yml"
+  review_driven_commits:
+    []
+  ci: {verdict: NO CHECKS, failed: 0, pending: 0}
