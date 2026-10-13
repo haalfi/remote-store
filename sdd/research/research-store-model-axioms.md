@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-13
 **Backlog items:** BK-435 (The store model's axioms have no independence or consistency check)
-**Status:** Accepted (maintainer, 2026-10-13). Axioms drafted and independence-checked by hand; lemmas and machine checking pending.
+**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); proofs over the unrestricted universe pending.
 
 ---
 
@@ -448,6 +448,32 @@ tool is best at:
 The prose is the source of truth: each formal artifact is traced to AX-n and
 has one job. Three parallel restatements of the axioms are the failure to
 avoid.
+
+**Step 1 result (2026-10-13).** `sdd/formal/alloy/StoreAxioms.als` restates
+§ 3 clause by clause and runs, via `bash scripts/alloy_check.sh`, 30 commands,
+each with an `expect`; all 30 matched (the script's summary table, exit 0). It
+found no disagreement with this document. What it established, and within
+which scope (entities, sequence length):
+
+- **§ 5 rows.** Each of the eleven structures exists with its named clause
+  false and every other clause true (scope 4, 6). The Key claims of the AX-7
+  non-empty, AX-7 no-`/` and AX-8 rows hold, and the AX-4 row admits two
+  chains to x.
+- **Witnesses.** W0, W1 and W2 are models of AX-1 to AX-8, with the Keys
+  listed (scope 4, 6).
+- **§ 4.** D1 holds (scope 6, 6), and the cycle example shows AX-5 and AX-6
+  without AX-4 admit a cycle.
+- **§ 7.** L1, L2, L3, L4 and L5 hold (scope 5, 11, names of at most two
+  symbols; a run shows a Key of length 11 is reached, so the bound excludes no
+  structure in scope). L6 is not stated: it relates structures to one another,
+  which Alloy cannot quantify over.
+- **§ 9.7.** The finite half holds (scope 6, 6). The infinite half is outside
+  any bounded scope, as is everything this document says about infinite
+  universes.
+
+The checks are not vacuous: with AX-4 removed from the axioms, D1, L1 and L2
+fail; without AX-8, L3; without AX-3, L5; without AX-7's no-`/` clause, L3, L4
+and L5 (seeded mutants, run once, not committed).
 
 **Relation to existing formal work.** `sdd/formal/StoreTree.dfy` §1 models the
 store as `Tree = map<Key, Kind>` with `Key = seq<string>`, requiring the root

@@ -1,0 +1,48 @@
+id: BK-435
+title: "The store model's axioms are stated only through RFC-0021's tree and `StoreTree.dfy`'s `Tree`, so their independence and consistency are unexamined"
+trigger: "Step 1 of the accepted research doc's formalization order (§ 10): machine-check the axioms, the § 5 countermodels and witnesses, and the § 7 lemmas in Alloy before any proof effort"
+source_items:
+  - BK-435
+audience:
+  - library.maintainer
+expected_ripples:
+  - sdd/formal/README.md
+  - sdd/research/research-store-model-axioms.md
+  - sdd/BACKLOG.md
+decisions:
+  - sdd/decisions/f9bf6c85-56f9-4b02-be3a-7d6217885009.jsonl
+orient:
+  - items: [BK-434]
+    verdict: unrelated
+    evidence: "BK-434 wires RFC-0021's encodings into BackendContract.dfy. This work adds an Alloy model of the research doc's axioms and touches no .dfy file; the AX-7 mismatch with StoreTree.dfy's Key = seq<string> (research-store-model-axioms.md § 10) stays BK-434's and the doc's open question, unchanged."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-store-model-axioms.md
+        section: "(full)"
+        read_type: gate
+        extract: "AX-1 to AX-8, § 5 rows and witnesses, § 7 lemmas, § 9.7 finite/infinite split: the statements the model must restate"
+      - file: sdd/formal/README.md
+        section: "(full)"
+        read_type: gate
+        extract: "Layer layout (tla/ beside the .dfy files), Docker-pinned runner pattern of tlc_check.sh, authoring rule 3 on CI status"
+      - file: sdd/traces/_schema.yml
+        section: "trace id reuse, audience derived rule"
+        read_type: gate
+        extract: "Several traces may share an id, keyed by filename; library.maintainer skips CHANGELOG"
+  - id: model
+    name: Write and run the Alloy model
+    steps:
+      - file: scripts/tlc_check.sh
+        section: "(full)"
+        read_type: reference
+        extract: "Image build on first run, repo mounted into the container; copied for alloy_check.sh"
+      - file: scripts/tlc.Dockerfile
+        section: "(full)"
+        read_type: reference
+        extract: "ADD --checksum pin pattern, reused with the Maven Central jar"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check rows: Backlog item touched, CHANGELOG entry, Local-machine reference"
+        read_type: gate
+        extract: "Trace owed, no CHANGELOG for library.maintainer, no local paths in committed files"

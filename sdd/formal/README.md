@@ -26,7 +26,9 @@ Three properties we want this layer to enforce:
    `WriteResult` unchanged."
 
 The first two are per-operation questions — **Dafny** territory. The
-third is composition — **TLA+** territory.
+third is composition — **TLA+** territory. Below all three sits the
+structure the operations act on; whether its axioms are consistent and
+independent is a question for a model finder — **Alloy** territory.
 
 ## Three shapes of Dafny-section work: (C), (T), (O)
 
@@ -87,6 +89,24 @@ proxy forwarding invariants, interleavings.
 TLC's boundary: it is finite-state. Guarantees hold for the bounded
 model only; scaling constants can change runtime from milliseconds to
 minutes.
+
+### Alloy
+
+Alloy (the Alloy Analyzer, SAT-backed) searches for instances of a
+relational model within a bounded scope. It is the fit for a static
+axiom set: a `run` that finds an instance shows a structure exists
+(consistency, a countermodel), and a `check` with no counterexample
+shows a consequence holds up to the scope. Here it checks the store
+model of
+[`research-store-model-axioms.md`](../research/research-store-model-axioms.md)
+(BK-435): each § 5 countermodel breaks exactly its clause, the
+witnesses are models, and lemmas L1 to L5 hold in scope.
+
+Alloy's boundary: bounded scope, so nothing about infinite structures,
+and a statement over all models (L6's correspondence up to
+isomorphism) is out of reach. Proofs over the unrestricted universe are
+the next layer's job. Every command carries `expect`, so a run is
+green only when each outcome matches.
 
 ### Decoupled, not coupled
 
@@ -214,6 +234,7 @@ age worse than the qualitative one.
 | Spec (`.md`) | Human-readable requirements | Review |
 | Dafny (`.dfy`) | Machine-checkable per-operation contract | Dafny verifier |
 | TLA+ (`.tla`, under `sdd/formal/tla/`) | Cross-layer protocol properties | TLC (bounded model) |
+| Alloy (`.als`, under `sdd/formal/alloy/`) | Static store-model axioms: consistency, independence, lemmas in scope | Alloy Analyzer (bounded scope) |
 | Python (`_backend.py`) | Runtime implementation | pytest + Hypothesis PBT |
 
 Dafny and TLA+ are parallel specifications — not auto-generated from
@@ -272,6 +293,13 @@ configs still run via `bash scripts/tlc_check.sh sdd/research/tla-poc MC`
 (or `MC2`). CI's informational `verify-tla` job runs the live MC3
 model whenever files under `sdd/formal/tla/` or the TLC tooling
 change.
+
+Alloy: `bash scripts/alloy_check.sh` runs every command of
+`sdd/formal/alloy/StoreAxioms.als` via a pinned Docker image (Alloy
+6.2.0 from Maven Central, sha256-pinned in `scripts/alloy.Dockerfile`)
+and exits non-zero when any outcome differs from its `expect`. No CI
+job runs it (maintainer decision, 2026-10-13); one added later starts
+informational, as authoring rule 3 sets for TLA+.
 
 ### Verification practices
 
