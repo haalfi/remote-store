@@ -461,6 +461,14 @@ no clause of the contract ships unexercised.
   139.7 min. Open decision: faster sftp test selections, a per-scope timeout in
   `mutate_scopes.py`, or splitting the scope.
 
+- [ ] **BK-434 — RFC-0021's encodings are verified in `StoreTree.dfy` alone, so the trait's operations are not refined against them**
+  spec: BE-008, BE-013, BE-014, BE-021 · effort: L · audience: library.maintainer
+  `StoreTree.dfy` proves a flat encoding's `decode` and RFC-0021's refusal rule
+  (A.8) on its own types; `BackendContract.dfy`'s operations still range over
+  `map<Path, Entry>` with `Valid()` and never see an encoding. RFC-0021 D10 names
+  the wiring as a follow-up. Open decision: refinement lemmas per encoding, or one
+  encoding-parametric trait. After BK-432.
+
 ---
 
 <a id="users-succeed-unaided"></a>
@@ -592,6 +600,14 @@ or paying for our shortcut.
   backend, have shipped. It owns `ResolutionPlan`-derived cache keys, the wide
   fix for BUG-251 (§ 2). Open decision: design it as its own spec, or decline.
   Detail: [dossier](backlog/id-121-composite-store.md)
+
+- [ ] **BK-433 — A store cannot choose how it reads links, and no capability says whether a backend has them**
+  spec: — · effort: M · audience: user.api, user.api_docs
+  RFC-0021 D7 decides a store-level link policy (`follow_within_root` by default, or
+  `no_follow`) and a driver-declared `links` property, and defers the public
+  surface. Today Local and SFTP follow links on keyed calls, and SFTP hides them in
+  listings (measured, RFC-0021). Open decision: the constructor option's name and
+  the capability's shape. After BK-432 lands on the kernel.
 
 ---
 
@@ -890,6 +906,14 @@ CHANGELOG the release body is built from — say what is actually true.
   there read `src/` other than by import (BK-403's scan,
   `bk-403-testmon-poc/srcreads.py`). A selector built on the comment would
   drop the directory. Open decision: none.
+
+- [ ] **BUG-324 — `ship-report` reports `ci: GREEN` for a PR on which no CI ran**
+  spec: — · effort: S · audience: contributor.tooling
+  On PR #1130, stacked on `bk-389-kernel`, `ci.yml` never triggers (it runs for
+  pull requests into master), and the only check is a skipped dependabot job. Yet
+  `hatch run ship-report 1130 --trace-block-only` printed `ci: {verdict: GREEN,
+  failed: 0, pending: 0}` (2026-10-13), and that block goes into the trace unedited.
+  Open decision: none; report no checks run as its own verdict.
 
 ---
 

@@ -96,6 +96,9 @@ decisions:
   - sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl
 discovery_followups:
   - BUG-323
+  - BK-433
+  - BK-434
+  - BUG-324
 orient:
   - items: [BK-389, BK-394]
     verdict: constrains

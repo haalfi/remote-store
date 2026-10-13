@@ -241,9 +241,9 @@ stored key the key rule refuses (`a\b`) is already omitted and logged today
 - **Local's and SFTP's links** decode by A.7's policy once each runs on the
   kernel. BUG-323, SFTP's recursive delete through a link at the key, is fixed
   independently of this RFC.
-- **Follow-ups**, filed when this RFC is accepted: the public link option and a
-  capability that exposes `links`, and wiring the Dafny encodings into
-  `BackendContract.dfy`'s operations.
+- **Follow-ups**, filed on acceptance: the public link option and a capability
+  that exposes `links` (BK-433), and wiring the Dafny encodings into
+  `BackendContract.dfy`'s operations (BK-434).
 
 ## Open Questions
 
