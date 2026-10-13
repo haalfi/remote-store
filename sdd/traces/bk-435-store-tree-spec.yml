@@ -72,6 +72,10 @@ phases:
         section: "_stores, keys_top_down (external review of the tests)"
         read_type: reference
         extract: "pytest --hypothesis-show-statistics measured 89 to 93% of drawn structures rejected by assume() and kept sizes of 1 to 6 entities. Odds biased through repeated one_of branches barely moved it; a diagnostic event showed invalid names drawn far above the intended rate, since Hypothesis favours simple and boundary draws. Keying the rare invalid branch to a mid-range integer (9 of 0..15) gave 38 to 63% rejected and kept sizes up to 9. Added keys_top_down, a Key built down from the root that shares no code with chain(), and test_key_agrees_with_a_top_down_computation (TREE-009). Mutants on the new file: every weakened predicate fails its kind row; 008, 007 non-empty and 007 no-slash made always true fail 2, 2 and 1 property tests; a Key with reversed name order fails the top-down test among 5"
+      - file: tests/test_store_tree.py
+        section: "KIND_ROWS TREE-006, test_names_compare_exactly (review round 2)"
+        read_type: reference
+        extract: "Review round 2 at eaac1d0cc: TREE-006 had no kind row, and exact name equality was asserted nowhere. Added an unreachable item (breaks only TREE-006, checked by running broken()) and a test with siblings a/A, precomposed and decomposed é, and ß/ss that must break nothing and give distinct Keys. Mutants: TREE-006 folders-only fails [TREE-006 unreachable item]; TREE-008 comparing casefold() or NFC-normalized names fails test_names_compare_exactly. The docstring now lists the clauses with a kind row; TREE-001, TREE-002 and TREE-007 root have no kind to vary, and TREE-005 has no single-clause structure of the other kind"
       - file: sdd/specs/004-path-model.md
         section: "PATH-015"
         read_type: reference

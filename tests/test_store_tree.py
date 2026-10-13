@@ -4,8 +4,12 @@ The model is a finite store tuple ``(U, F, I, r, C, name)`` and one predicate
 per axiom clause, written from the spec's sections. Two kinds of evidence:
 
 - **Each clause does work.** For every clause, the structure research § 5
-  gives for it, and one more per entity kind the § 5 row leaves out, breaks
-  that clause and no other; the witnesses W0 to W2 break none. A predicate
+  gives for it breaks that clause and no other, and so does one more of the
+  entity kind the § 5 row leaves out, for TREE-003, TREE-004, TREE-006,
+  TREE-007 (non-empty, no slash) and TREE-008. The other clauses have no kind
+  to vary (TREE-001, TREE-002, TREE-007 root) or no such structure (an item
+  containing the root breaks TREE-003 as well as TREE-005). The witnesses W0
+  to W2 break none. A predicate
   that rejects a witness, or misses a breaking structure of either kind,
   fails here; one wrong only on structures listed nowhere would not.
 - **What the axioms give a caller.** Structures drawn by Hypothesis with free
@@ -176,6 +180,10 @@ KIND_ROWS: dict[str, tuple[str, Store]] = {
         "TREE-004",
         _store({ROOT, "a", "b", "x"}, {ROOT, "a", "b", "x"}, set(), {(ROOT, "a"), (ROOT, "b"), ("a", "x"), ("b", "x")}),
     ),
+    "TREE-006 unreachable item": (
+        "TREE-006",
+        _store({ROOT, "x"}, {ROOT}, {"x"}, set()),
+    ),
     "TREE-007 folder named empty": (
         "TREE-007 non-empty",
         _store({ROOT, "x"}, {ROOT, "x"}, set(), {(ROOT, "x")}, {"x": ""}),
@@ -247,6 +255,7 @@ def test_each_clause_is_broken_alone_by_its_row(clause: str) -> None:
             marks=pytest.mark.spec("TREE-004"),
             id="TREE-004 folder with two containers",
         ),
+        pytest.param("TREE-006 unreachable item", marks=pytest.mark.spec("TREE-006"), id="TREE-006 unreachable item"),
         pytest.param(
             "TREE-007 folder named empty", marks=pytest.mark.spec("TREE-007"), id="TREE-007 folder named empty"
         ),
@@ -315,6 +324,20 @@ def test_key_collision_follows_from_each_naming_clause_broken(clause: str) -> No
     s = ROWS[clause]
     keys = [key(s, x) for x in s.U]
     assert len(set(keys)) < len(keys)
+
+
+@pytest.mark.spec("TREE-008")
+def test_names_compare_exactly() -> None:
+    """Names differing only by case, Unicode normal form or case folding are different names (spec 051 Terms).
+
+    Siblings ``a`` and ``A``, precomposed and decomposed ``é``, and ``ß`` and
+    ``ss`` break no clause and give six distinct Keys, so no clause folds case
+    or normalizes.
+    """
+    names = {"p1": "a", "p2": "A", "p3": "é", "p4": "é", "p5": "ß", "p6": "ss"}
+    s = _store({ROOT, *names}, {ROOT}, set(names), {(ROOT, x) for x in names}, names)
+    assert broken(s) == set()
+    assert len({key(s, x) for x in names}) == len(names)
 
 
 # --- Structures drawn by Hypothesis ---
