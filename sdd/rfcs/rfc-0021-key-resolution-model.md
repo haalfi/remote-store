@@ -2,8 +2,9 @@
 
 ## Status
 
-Draft, 2026-10-12. Tracked as **BK-432**. PR #1127 (BK-389) is parked until
-this is decided, and its open `delete_folder` findings are answered from it.
+Accepted, 2026-10-13, by the maintainer. Drafted 2026-10-12. Tracked as
+**BK-432**. PR #1127 (BK-389) was parked until this was decided, and resumes
+against it: its open `delete_folder` findings are answered from it.
 
 ## Summary
 

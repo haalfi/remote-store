@@ -296,10 +296,10 @@ failure it was.
 - [ ] **BK-432 — No logical model says what a key resolves to, so every operation re-derives it from driver refusals**
   spec: BE-004, BE-005, BE-008, BE-013, BE-014, BE-017, BE-021, BE-030, BE-031 · effort: L · audience: library.maintainer, user.api, contributor.process
   Spec 003 states per operation what an absent key, a file, a folder, a key under a file or a
-  shadowed prefix answers, and `BackendContract.dfy`'s `Valid()` models only explicit folders.
-  The kernel's two probe rules disagree on one `stat` answer (PR #1127, parked until this
-  lands). RFC-0021 proposes one store tree, a partial abstraction function per backend
-  encoding, and one refusal table per namespace. Open decision: its acceptance.
+  shadowed prefix answers, and the kernel's two probe rules disagree on one `stat` answer.
+  RFC-0021 (accepted 2026-10-13) sets one store tree, a partial abstraction function per
+  backend encoding and one refusal table per namespace, checked by `StoreTree.dfy`.
+  Remaining: its spec 003 section, landed with PR #1127's resume. Open decision: none.
 
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process

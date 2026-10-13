@@ -7,6 +7,91 @@ source_items:
 audience:
   - library.maintainer
   - contributor.process
+review:
+  # Derived by `hatch run ship-report 1130 --trace-block-only` at head 736e9fb.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1130 --trace-block-only"
+  pr: 1130
+  review_rounds: 11
+  submissions: 7
+  findings: 49
+  by_round:
+    - round: 1
+      findings: 13
+      origin: {original: 13}
+      triage: {must-fix: 13}
+      duration_hours: 0.35
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.17
+    - round: 3
+      findings: 1
+      origin: {original: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.01
+    - round: 4
+      findings: 16
+      origin: {loop-introduced: 14, original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 16}
+      duration_hours: 0.8
+    - round: 5
+      findings: 5
+      origin: {loop-introduced: 5}
+      triage: {must-fix: 5}
+      duration_hours: 0.25
+    - round: 6
+      findings: 6
+      origin: {loop-introduced: 6}
+      triage: {must-fix: 6}
+      duration_hours: 8.72
+    - round: 7
+      findings: 4
+      origin: {loop-introduced: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.13
+  by_file:
+    - path: "sdd/rfcs/rfc-0021-key-resolution-model.md"
+      findings: 40
+    - path: "sdd/formal/StoreTree.dfy"
+      findings: 5
+    - path: "sdd/traces/bk-432-key-resolution-rfc.yml"
+      findings: 2
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/formal/README.md"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "scripts/dafny_verify.sh"
+    - "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
+    - "sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl"
+  review_driven_commits:
+    - sha: "3955d7c"
+      subject: "BK-432: address review of RFC-0021: Impact split by case, A.8 determinants and timing rule, link and flat-lookup gaps"
+    - sha: "f6e27a5"
+      subject: "BK-432: decide RFC-0021's listing-order and link-transfer questions"
+    - sha: "815ec04"
+      subject: "BK-432: re-plan RFC-0021's links after the divergence check"
+    - sha: "2cc55a9"
+      subject: "BK-432: state RFC-0021's model in Dafny before acceptance"
+    - sha: "5d0086f"
+      subject: "BK-432: StoreTree.dfy, RFC-0021's model in Dafny (first part)"
+    - sha: "a8e89c4"
+      subject: "BK-432: StoreTree.dfy covers folder-read, delete_folder and transfers"
+    - sha: "67e9844"
+      subject: "BK-432: RFC-0021's A.8 observation tables, one probe set, no typing obligation"
+    - sha: "f6a4a07"
+      subject: "BK-432: closing-round fixes: A.8 enumerated in Dafny, rule 4, link signal, flat limits"
+    - sha: "ad88fb9"
+      subject: "BK-432: verification-pass fixes: listings in section 11, flat listing obligation"
+    - sha: "aec0ab3"
+      subject: "BK-432: round-5 fixes: rule 4 restated everywhere, hierarchical delete and move-source probe under no_follow"
+    - sha: "736e9fb"
+      subject: "BK-432: round-6 fixes: rule 4's typing exception stated, copy-source probe row"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
 decisions:
   - sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl
 discovery_followups:
