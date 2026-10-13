@@ -1,8 +1,8 @@
 # Research: A store model as axioms (BK-435)
 
 **Date:** 2026-10-13
-**Backlog items:** BK-435 (The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them)
-**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 for every universe, finite or not (2026-10-13, § 10). § 10's open questions decided, including promotion into a spec (2026-10-13).
+**Backlog items:** BK-435 (Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations)
+**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 for every universe, finite or not (2026-10-13, § 10). § 10's open questions decided, including promotion into a spec (2026-10-13); the axioms, Key and L3 to L5 are spec 051, [`specs/051-store-tree.md`](../specs/051-store-tree.md) (2026-10-13).
 
 ---
 
@@ -545,7 +545,8 @@ open:
   are non-empty and contain no `/`, so a valid tree satisfies AX-7 by
   construction rather than by a precondition on callers. The change is
   BK-434's, since it touches `StoreTree.dfy`.
-- **Spec.** The axioms are promoted into a new store-model spec under
+- **Spec.** The axioms are promoted into a new store-model spec, now
+  [spec 051](../specs/051-store-tree.md), under
   `sdd/specs/`, with this document as its rationale; each of its sections
   needs a test mark, as every spec section does. It is the home of the tree
   over Keys; two existing specs touch the same ground and keep their own

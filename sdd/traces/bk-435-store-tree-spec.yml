@@ -1,0 +1,57 @@
+id: BK-435
+title: "Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations"
+trigger: "Research § 10 (decided in #1133) promotes the axioms into a new store-model spec; the maintainer asked to start writing it"
+source_items:
+  - BK-435
+audience:
+  - library.maintainer
+expected_ripples:
+  - sdd/specs/051-store-tree.md
+  - tests/test_store_tree.py
+  - sdd/BACKLOG.md
+  - sdd/research/research-store-model-axioms.md
+discovery_followups:
+  - BK-436
+decisions:
+  - sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl
+orient:
+  - items: [BK-432]
+    verdict: constrains
+    evidence: "RFC-0021's table (rfc-0021-key-resolution-model.md, write-below-an-item rows) records that a flat backend today writes below an item unless an opt-in is on, so an observed store can break TREE-001 and TREE-003 until BK-432's decoding lands. The spec's sections are therefore tested against a reference model, and backend conformance is BK-436, after BK-432."
+  - items: [BK-434]
+    verdict: unrelated
+    evidence: "BK-434 changes StoreTree.dfy and BackendContract.dfy; spec 051 states the axioms in prose and touches no .dfy file."
+  - items: [BK-433]
+    verdict: unrelated
+    evidence: "Links are outside the axioms (research § 8)."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules 1, 2, 7; Spec format; Test traceability"
+        read_type: gate
+        extract: "Every spec section needs a test with @pytest.mark.spec(ID); an unenforced clause is decided, not defaulted"
+      - file: sdd/templates/spec-template.md
+        section: "(full)"
+        read_type: gate
+        extract: "Overview, then '## PREFIX-NNN: Title' sections with Invariant lines, Notes non-normative"
+      - file: scripts/check_test_placement.py
+        section: "module docstring (rules S, B, E)"
+        read_type: gate
+        extract: "A top-level tests/test_*.py may import no cloud backend; the reference model imports none"
+      - file: scripts/gen_backlogid.py
+        section: "module docstring, --check --remote"
+        read_type: gate
+        extract: "Parallel sessions mint from a reservation; --check --remote showed BK-436 free across pushed branches, and the only clash reported (BK-435 on bk-435-alloy-store-model) is the stale-branch bound its docstring names"
+  - id: write
+    name: Write the spec and its tests
+    steps:
+      - file: sdd/research/research-store-model-axioms.md
+        section: "§ 2 to § 5, § 7, § 10 decisions"
+        read_type: reference
+        extract: "Clauses, Key, the § 5 row per clause and witnesses W0 to W2, restated as TREE-001 to TREE-012 and as the test's ROWS and WITNESSES"
+      - file: tests/test_store_tree.py
+        section: "(full, mutation-checked)"
+        read_type: reference
+        extract: "Mutant 1, TREE-004's predicate always true: test_each_clause_is_broken_alone_by_its_row[TREE-004] failed (set() == {'TREE-004'}). Mutant 2, Key joining the root's name: 5 tests failed, test_key_joins_names_along_the_chain[W1, W2], test_key_ignores_the_root_name, test_key_collision_follows_from_each_naming_clause_broken[TREE-007 non-empty] and the Hypothesis test_key_shape. Both reverted"

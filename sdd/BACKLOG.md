@@ -469,13 +469,19 @@ no clause of the contract ships unexercised.
   `""` and `"a/b"`, against AX-7 (resolution: research-store-model-axioms.md § 10). Open
   decision: refinement lemmas per encoding, or one encoding-parametric trait. After BK-432.
 
-- [~] **BK-435 — The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them**
-  spec: — · effort: M · audience: library.maintainer
-  The store model's axioms are in `research/research-store-model-axioms.md` (accepted
-  2026-10-13); `formal/alloy/StoreAxioms.als` checks them in bounded scope and
-  `formal/lean/StoreAxioms.lean` proves D1 and L1 to L6 over any universe. Not done: the spec
-  that states them, with spec 003's A.1 then a pointer to it (layering in research § 10), checking
-  `StoreTree.dfy`'s `Tree` against them, and § 10 step 3's Dafny operations pass (after BK-434).
+- [~] **BK-435 — Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations**
+  spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
+  Spec 051 states the axioms of `research/research-store-model-axioms.md` (accepted 2026-10-13;
+  Alloy and Lean checks under `formal/`), tested against a reference model. Not done: spec 003's
+  A.1 as a pointer to it after BK-432, `StoreTree.dfy`'s `Tree` checked against it, and research
+  § 10 step 3's Dafny operations pass (after BK-434). Open decision: none.
+
+- [ ] **BK-436 — No backend's observed tree is checked against spec 051**
+  spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
+  Spec 051's sections are tested only against a reference model (`tests/test_store_tree.py`). A
+  flat backend can hold an item with keys below it, which no tree gives, until RFC-0021's
+  decoding lands (BK-432). Open decision: which listings and probes observe a backend's tree in
+  a conformance test. After BK-432.
 
 ---
 

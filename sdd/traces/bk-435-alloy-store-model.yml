@@ -1,5 +1,5 @@
 id: BK-435
-title: "The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them"
+title: "Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations"
 trigger: "Step 1 of the accepted research doc's formalization order (§ 10): machine-check the axioms, the § 5 countermodels and witnesses, and the § 7 lemmas in Alloy before any proof effort"
 source_items:
   - BK-435
