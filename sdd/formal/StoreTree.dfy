@@ -28,8 +28,9 @@
 //       the kernel's answer after a refusal in the probe set is the refusal
 //       or the A.5 result of the row actually there, and only a result A.8
 //       rule 4 allows (a row where the call must refuse, or a listing's
-//       empty result on a row that holds nothing); and every such row is
-//       typed.
+//       empty result on a row that holds nothing); and every row where the
+//       call must refuse is typed, and so is a listing's row that holds
+//       nothing, except a flat listing refused in another shape.
 //
 // Not modelled here: links (A.7), a listing's omissions as observed page by
 // page (A.3's order obligation), and changes under an operation (A.9).  A

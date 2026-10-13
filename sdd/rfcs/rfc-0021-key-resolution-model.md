@@ -231,7 +231,9 @@ stored key the key rule refuses (`a\b`) is already omitted and logged today
     - A.8's refusal rule, for every call it names, each namespace and each
       row: the answer is the refusal or the A.5 result of the row actually
       there, and only a result rule 4 allows. Every row where the call must
-      refuse, or where a listing holds nothing, is typed. Enumerating it
+      refuse is typed, and so is a listing's row that holds nothing, except a
+      flat listing refused in a shape other than `NotFound` or `InvalidPath`,
+      which stands. Enumerating it
       found a missing flat `delete_tree` row, which A.8 now has.
 
     Links (A.7) and changes under an operation (A.9) are outside the sketch.
@@ -502,7 +504,8 @@ sequence and so the flat `delete_tree` row, and it has no `remove_folder`.
 `delete`, `put`, `ensure_parents`, `remove_folder`, `delete_tree`, the first
 listing page; `move`, `copy` and `rename` as a source read and a destination
 write), each namespace and each row, and proves rule 4: the answer is the
-refusal or the A.5 result of the row actually there.
+refusal, or the A.5 result of the row actually there where that row is one
+on which the call must refuse or, for a listing, one that holds nothing.
 
 **Flat namespace.** A `stat` sees an item or answers `None`; it cannot tell a
 folder from nothing. Per call, after a refusal in the probe set:
@@ -521,7 +524,7 @@ raises ENOTDIR. Per call, after a refusal in the probe set:
 
 | Call | Probe | Concludes |
 |---|---|---|
-| `get`, `delete`, a `move` source | `stat(k)`, under `no_follow` for `delete` and a `move` source, which name the entry (A.7) | an item: the refusal stands; a folder: `InvalidPath`; a miss: `NotFound` |
+| `get`, `delete`, a `move` or `copy` source | `stat(k)`, under `no_follow` for `delete` and a `move` source, which name the entry (A.7), and under the store policy for `get` and a `copy` source | an item: the refusal stands; a folder: `InvalidPath`; a miss: `NotFound` |
 | write primitives (`put`, `open_write` and commit, `rename`, `copy`, `move` at the destination) | `stat(k)`, then on a miss the ancestors' `stat`s, shallowest first | a folder: `InvalidPath`; an item without `overwrite`: `AlreadyExists`; an item among the ancestors: `InvalidPath`; anything else: the refusal stands |
 | `ensure_parents` | the ancestors' `stat`s | an item among them: `InvalidPath`, naming it; otherwise the refusal stands |
 | `remove_folder` | `stat(k)` under `no_follow`, then for a folder `list_page(k, limit=1)` | an item: `InvalidPath`; a miss: `NotFound`; a non-empty folder: `DirectoryNotEmpty`; an empty folder: the refusal stands |
