@@ -109,9 +109,15 @@ if ! command -v alloy &>/dev/null && ls sdd/formal/alloy/*.als &>/dev/null; then
       printf '#!/bin/bash\nexec java --enable-native-access=ALL-UNNAMED -jar /usr/local/lib/alloy/alloy.jar "$@"\n' \
         > /usr/local/bin/alloy
       chmod +x /usr/local/bin/alloy
-      echo "alloy: installed v${ALLOY_VERSION}"
+      if [ "$(alloy version 2>/dev/null | tail -n 1)" = "$ALLOY_VERSION" ]; then
+        echo "alloy: installed v${ALLOY_VERSION}"
+      else
+        echo "alloy: install failed — see sdd/formal/README.md § Running the verifier"
+      fi
     fi
     rm -rf "$_TMP"
+  elif _is_linux_container; then
+    echo "alloy: not installed (no java on PATH) — sdd/formal/alloy/ cannot be checked in this session"
   else
     echo "alloy: not found natively — bash scripts/alloy_check.sh falls back to Docker; native setup in sdd/formal/README.md § Running the verifier"
   fi

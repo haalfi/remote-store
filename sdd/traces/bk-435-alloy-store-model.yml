@@ -5,10 +5,15 @@ source_items:
   - BK-435
 audience:
   - library.maintainer
+  - contributor.tooling
 expected_ripples:
   - sdd/formal/README.md
   - sdd/research/research-store-model-axioms.md
   - sdd/BACKLOG.md
+  - sdd/CLAUDE-REFERENCE.md
+  - sdd/process-budget.json
+  - pyproject.toml
+  - .claude/hooks/session-init.sh
 decisions:
   - sdd/decisions/f9bf6c85-56f9-4b02-be3a-7d6217885009.jsonl
 orient:

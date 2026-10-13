@@ -2,7 +2,9 @@
 # Run every command of an Alloy model, natively or via Docker.
 # Usage: bash scripts/alloy_check.sh [model.als]
 #
-# Default target is sdd/formal/alloy/StoreAxioms.als. Every command in the
+# Default target is sdd/formal/alloy/StoreAxioms.als. The model path is
+# resolved from the repo root and must lie inside the repo (Docker mounts only
+# the repo), as in tlc_check.sh. Every command in the
 # model carries an `expect`; Alloy exits non-zero when any outcome differs
 # from it, and this script passes that exit code through.
 #
@@ -24,7 +26,8 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MODEL="${1:-sdd/formal/alloy/StoreAxioms.als}"
 
 if [ "${ALLOY_RUNNER:-}" != "docker" ] && command -v alloy > /dev/null 2>&1; then
-  NATIVE_VERSION="$(alloy version 2> /dev/null | tail -n 1)"
+  # A native alloy that cannot start (no java, say) must fall back, not exit.
+  NATIVE_VERSION="$(alloy version 2> /dev/null | tail -n 1)" || NATIVE_VERSION="(failed to start)"
   if [ "$NATIVE_VERSION" = "$ALLOY_VERSION" ]; then
     echo "==> Running Alloy ${ALLOY_VERSION} (native) on $MODEL"
     OUT="$(mktemp -d)"

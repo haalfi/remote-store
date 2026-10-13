@@ -302,10 +302,13 @@ built from `scripts/alloy.Dockerfile`; `ALLOY_RUNNER=docker` forces
 Docker. No CI job runs it (maintainer decision, 2026-10-13); one added
 later starts informational, as authoring rule 3 sets for TLA+.
 
-Native setup needs a Java runtime and no root (run so far on Java 21 in
-the image and Java 25 on a maintainer machine). `session-init.sh` does
-the same into `/usr/local` in a claude.ai/code container. The version and
-sha256 are the ones pinned in `scripts/alloy.Dockerfile`:
+Native setup needs a Java runtime and no root. On 2026-10-13 the model
+ran green under the image's Java 21 (`eclipse-temurin:21-jre`) and,
+natively, under OpenJDK 25.0.1 (`java -version` on the machine that ran
+it); other versions are untried. `session-init.sh` does the same into
+`/usr/local` in a claude.ai/code container. The version and sha256 are
+the ones pinned in `scripts/alloy.Dockerfile`. `~/.local/bin` must be on
+`PATH` for the last line and for `alloy_check.sh` to find it:
 
 ```bash
 mkdir -p ~/.local/lib/alloy ~/.local/bin

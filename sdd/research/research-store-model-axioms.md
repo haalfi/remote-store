@@ -464,8 +464,9 @@ which scope (entities, sequence length):
 - **§ 4.** D1 holds (scope 6, 6), and the cycle example shows AX-5 and AX-6
   without AX-4 admit a cycle.
 - **§ 7.** L1, L2, L3, L4 and L5 hold (scope 5, 11, names of at most two
-  symbols; a run shows a Key of length 11 is reached, so the bound excludes no
-  structure in scope). L6 is not stated: it relates structures to one another,
+  symbols). The bound excludes no structure in scope: a Key there has length
+  at most 4 · 3 − 1 = 11 (depth at most 4, a name and a `/` per level, no
+  trailing `/`), and a run shows that length is reached. L6 is not stated: it relates structures to one another,
   which Alloy cannot quantify over.
 - **§ 9.7.** The finite half holds (scope 6, 6). The infinite half is outside
   any bounded scope, as is everything this document says about infinite
@@ -473,7 +474,10 @@ which scope (entities, sequence length):
 
 The checks are not vacuous: with AX-4 removed from the axioms, D1, L1 and L2
 fail; without AX-8, L3; without AX-3, L5; without AX-7's no-`/` clause, L3, L4
-and L5 (seeded mutants, run once, not committed).
+and L5. Each mutant was a copy of the model with that one conjunct deleted from
+its `Axioms` predicate, run once with `scripts/alloy_check.sh` and not
+committed; the failing commands are the ones Alloy reported as "satisfied
+against expectation".
 
 **Relation to existing formal work.** `sdd/formal/StoreTree.dfy` §1 models the
 store as `Tree = map<Key, Kind>` with `Key = seq<string>`, requiring the root

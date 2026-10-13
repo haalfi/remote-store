@@ -84,11 +84,12 @@ pred KeyDef {
     }
 }
 
--- A name-length bound for the commands that use KeyDef. With n entities the
--- deepest entity has depth n - 1, so its key has length at most
--- (n - 1) * (L + 1) - 1 for names of length at most L. Each such command
+-- A name-length bound for the § 7 commands that use KeyDef. With n entities
+-- the deepest entity has depth n - 1, so its key has length at most
+-- (n - 1) * (L + 1) - 1 for names of length at most L. Each § 7 command
 -- picks n, L and a seq scope that admit that length, so KeyDef excludes no
--- structure in its scope.
+-- structure in its scope. The other KeyDef commands (the § 5 key checks and
+-- the witness keys) pin every name instead, and their keys fit seq 6.
 pred NameLen[n: Int] { all e: Entity | #e.name <= n }
 
 -- A chain of § 4, as data, so that L1 can quantify over chains.
