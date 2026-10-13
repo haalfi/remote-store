@@ -34,8 +34,10 @@ sections rather than an operation's contract:
   R — per file under ``sdd/formal/alloy/*.als`` and
       ``sdd/formal/lean/*.lean``: the IDs its ``-- @spec <ID>`` lines tag,
       and the spec files its ``-- @restates sdd/specs/<file>.md`` lines
-      declare it restates. Both are line comments in both languages; a
-      Lean ``/--`` docstring opener is not one.
+      declare it restates. Each is a line comment on a line of its own;
+      the same text quoted mid-line in a block comment, or a Lean ``/--``
+      docstring opener, is not one. A line inside a block comment that
+      starts with ``--`` still reads as a tag.
 
 R is kept out of D on purpose. F1 asks every D-tagged ID for a
 conformance marker, and a restated spec need not have backend
@@ -152,9 +154,10 @@ _ID_TABLE_HEADER_RE = re.compile(r"^\|[ \t]*ID[ \t]*\|", re.IGNORECASE)
 _SPEC_TAG_RE = re.compile(r"//[ \t]*@spec\b(.*)")
 
 # Restatement tags and declarations: ``--`` line comments, which Alloy and
-# Lean share. The lookbehind keeps a Lean ``/--`` docstring opener out.
-_RESTATEMENT_TAG_RE = re.compile(r"(?<!/)--[ \t]*@spec\b(.*)")
-_RESTATES_RE = re.compile(r"(?<!/)--[ \t]*@restates\b[ \t]*(\S+)")
+# Lean share, on a line of their own. Anchoring keeps out the syntax quoted
+# inside a block comment and a Lean ``/--`` docstring opener.
+_RESTATEMENT_TAG_RE = re.compile(r"^[ \t]*--[ \t]*@spec\b(.*)")
+_RESTATES_RE = re.compile(r"^[ \t]*--[ \t]*@restates\b[ \t]*(\S+)")
 _RESTATEMENT_GLOBS = ("alloy/*.als", "lean/*.lean")
 
 # Violation kinds. Stable strings — they key the baseline below.

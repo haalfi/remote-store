@@ -102,6 +102,10 @@ phases:
         section: "Restatements; Scope (R is citation, not fidelity)"
         read_type: verify
         extract: "Seeded breaks on copies of sdd/formal and sdd/specs (driver outside the repo): dropped TREE-009 tag in Alloy, dropped TREE-012 tag in Lean, TREE-010 typed TREE-100, @restates renamed to 052, a new TREE-013 section in spec 051: 5 of 5 caught. Two bound seeds missed as the docstring states: @restates line dropped (caught by test_repo_restatements_cover_spec_051 instead), TREE-002's tag moved onto AX3. The first run reported the rename seed missed: it had replaced the header prose's 051 instead of the @restates line, a seed error, fixed and rerun"
+      - file: scripts/check_formal_trace.py
+        section: "_RESTATEMENT_TAG_RE, _RESTATES_RE (review round 1)"
+        read_type: verify
+        extract: "The analyze-only reviewer found the restatement regexes unanchored: a real ID quoted inside a block comment counted as a tag, and the new header sentences in both files quote the syntax. My own note during the work had seen the match and judged it harmless because TREE-n is not an ID; that held only for that text. Added test_tag_quoted_inside_a_block_comment_is_not_a_tag, saw it fail (TREE-009 from M.als:2), anchored both regexes at line start; 55 passed, seeded breaks still 5 of 5"
       - file: sdd/formal/alloy/StoreAxioms.als
         section: "(full, after tagging)"
         read_type: verify

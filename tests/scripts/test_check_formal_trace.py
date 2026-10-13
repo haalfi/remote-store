@@ -298,6 +298,19 @@ class TestExtractRestatements:
         formal = _formal_tree(tmp_path, lean="/-! Source of truth: spec 051 (TREE-001 to TREE-012). -/\n")
         assert extract_restatements(formal)["lean/M.lean"].tags == {}
 
+    def test_tag_quoted_inside_a_block_comment_is_not_a_tag(self, tmp_path: Path) -> None:
+        # Both files' headers quote the tag syntax in a block comment. A quote
+        # naming a real ID must not count as tagging that section (#1135 review).
+        formal = _formal_tree(
+            tmp_path,
+            als="/*\n * e.g. `-- @spec TREE-009` on KeyDef\n */\n",
+            lean="/-! e.g. `-- @spec TREE-009` on Key\n`-- @restates sdd/specs/051-store-tree.md` -/\n",
+        )
+        r = extract_restatements(formal)
+        assert r["alloy/M.als"].tags == {}
+        assert r["lean/M.lean"].tags == {}
+        assert r["lean/M.lean"].restates == {}
+
     def test_lean_docstring_opener_is_not_a_line_comment(self, tmp_path: Path) -> None:
         # `/--` opens a Lean docstring; its `--` must not read as a tag line.
         formal = _formal_tree(tmp_path, lean="/-- @spec TREE-003 -/\ntheorem t : True := trivial\n")
