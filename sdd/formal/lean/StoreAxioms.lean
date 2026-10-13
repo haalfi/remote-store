@@ -18,8 +18,10 @@ The alphabet is any type with a chosen separator. The lemmas do not need a
 symbol besides `/`; only the infinite model takes one, as § 2 provides.
 
 Lean core only, no Mathlib. The lakefile turns warnings into errors, so a
-`sorry` fails the build, and the `#guard_msgs` block at the end pins the
-axioms each result depends on.
+`sorry` fails the build, and the `#guard_msgs` lines at the end pin the
+axioms each headline result depends on (D1, L1 to L6, L6_empty_folder,
+infinite_model, infinite_upward_chain); a new result is pinned only once a
+line is added for it.
 -/
 
 namespace StoreAxioms

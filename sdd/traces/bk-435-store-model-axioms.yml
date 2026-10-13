@@ -6,8 +6,6 @@ source_items:
   - BK-434
 audience:
   - library.maintainer
-expected_ripples:
-  - sdd/backlogid.json
 decisions:
   - sdd/decisions/a43a478b-6ba7-4978-89f5-773056c9d7c7.jsonl
 orient:

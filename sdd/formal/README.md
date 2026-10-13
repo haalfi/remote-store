@@ -121,8 +121,9 @@ upward chain. Lean core only, no Mathlib.
 
 Lean's boundary: it proves what the file states, so fidelity to the
 doc is a review question, as for every layer here. The build fails on a
-`sorry`, and a `#guard_msgs` block pins the axioms each result rests
-on.
+`sorry`, and `#guard_msgs` lines pin the axioms each headline result
+rests on (the 10 at the end of `StoreAxioms.lean`); a new result is
+pinned only once a line is added for it.
 
 ### Decoupled, not coupled
 
