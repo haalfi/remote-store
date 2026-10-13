@@ -357,7 +357,9 @@ container starts fresh each session (maintainer decision,
 Native setup needs no root. [elan](https://github.com/leanprover/elan),
 Lean's version manager, reads the project's `lean-toolchain` file and
 fetches that release on first use; it does not check the Dockerfile's
-sha256, and the installer below is fetched unpinned. The installer adds
+sha256, and the installer below is fetched unpinned. These steps are
+untested: on 2026-10-13 the proofs were built only through the Docker
+image (maintainer decision to leave the native path untested). The installer adds
 `~/.elan/bin` to the shell profile; the `export` line puts it on `PATH`
 in the current shell:
 
