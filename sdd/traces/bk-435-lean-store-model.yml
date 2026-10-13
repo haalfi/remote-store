@@ -1,5 +1,5 @@
 id: BK-435
-title: "The store model's axioms are stated only through RFC-0021's tree and `StoreTree.dfy`'s `Tree`, so their independence and consistency are unexamined"
+title: "The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them"
 trigger: "Step 2 of the accepted research doc's formalization order (§ 10): after the Alloy check found no disagreement in bounded scope, prove D1 and the § 7 lemmas over the unrestricted universe in Lean 4; the maintainer put L6 in this step"
 source_items:
   - BK-435
@@ -68,5 +68,6 @@ phases:
         extract: "Read late, after the review flagged its absence: no row covers a new formal-layer toolchain; Local-machine reference and Test-outside-src rows checked and not owed. My miss to read it first; it was not the table's"
 surprising_ripples:
   - ".gitignore and sdd/formal/lean/lake-manifest.json: a native lake build writes .lake/ and the manifest inside the project; Alloy and Dafny write nothing into the repo. The manifest was found by review, because the Docker path builds a copy"
+  - ".github/workflows/ci.yml FORMAL_PAT: it matches all of sdd/formal/ and excluded only tla/, so every Alloy or Lean change ran the Dafny job while the README said no CI job runs them; alloy/ and lean/ are now excluded like tla/. Found by review round 1; no ripple-check row covers a new sdd/formal/ subtree"
   - "scripts/lean.Dockerfile platform pin: found by the tooling review (the pinned archive is x86_64-only)"
-  - ".claude/hooks/session-init.sh: the container auto-install copied from Alloy was dropped after review measured its cost (580 MB download, about 2.9 GB unpacked, every fresh container start); the hook now only prints how to run the check"
+  - ".claude/hooks/session-init.sh: the container auto-install copied from Alloy was dropped after review measured its cost (580 MB download, about 2.9 GB unpacked, every fresh container start; commands in sdd/formal/README.md § Running the verifier); the hook now only prints how to run the check"

@@ -124,9 +124,10 @@ if ! command -v alloy &>/dev/null && ls sdd/formal/alloy/*.als &>/dev/null; then
 fi
 
 # --- Lean: report only, never install ---
-# The release archive is about 580 MB and unpacks to about 2.9 GB, and a
-# claude.ai/code container is fresh each session, so an install here would
-# block every session start (maintainer decision, 2026-10-13).
+# A claude.ai/code container is fresh each session, so an install here would
+# download and unpack the toolchain at every session start; its size and how
+# it was measured: sdd/formal/README.md § Running the verifier (maintainer
+# decision, 2026-10-13).
 if ! command -v lean &>/dev/null && [ -f sdd/formal/lean/lean-toolchain ]; then
   echo "lean: not found — bash scripts/lean_check.sh falls back to Docker; native setup in sdd/formal/README.md § Running the verifier"
 fi

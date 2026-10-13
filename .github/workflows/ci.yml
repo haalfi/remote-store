@@ -86,13 +86,13 @@ jobs:
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
           if echo "$FILES" | grep -qE "$DOCS_PAT"; then echo "docs=true" >> "$GITHUB_OUTPUT"
           else echo "docs=false" >> "$GITHUB_OUTPUT"; fi
-          # FORMAL_PAT gates the Dafny job. Exclude the TLA subtree so
-          # TLA-only changes do not trigger Dafny — verify-formal and
-          # verify-tla are independent filters. The three scripts produce or
+          # FORMAL_PAT gates the Dafny job. Exclude the TLA, Alloy and Lean
+          # subtrees so changes confined to them do not trigger Dafny: none is
+          # a Dafny input, and verify-tla has its own filter. The three scripts produce or
           # check the compiled oracle (ID-263): an edit to any of them changes
           # what MemoryBackend-py/ must be, so it reaches verify-formal too.
           FORMAL_PAT='^sdd/(formal|specs)/|^scripts/(check_dafny_oracle_fresh\.py|_dafny_classorder\.py|dafny_translate\.sh)$|^\.github/workflows/ci\.yml$'
-          if echo "$FILES" | grep -v '^sdd/formal/tla/' | grep -qE "$FORMAL_PAT"; then echo "formal=true" >> "$GITHUB_OUTPUT"
+          if echo "$FILES" | grep -vE '^sdd/formal/(tla|alloy|lean)/' | grep -qE "$FORMAL_PAT"; then echo "formal=true" >> "$GITHUB_OUTPUT"
           else echo "formal=false" >> "$GITHUB_OUTPUT"; fi
           TLA_PAT='^sdd/formal/tla/|^scripts/tlc(_check\.sh|\.Dockerfile)$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$TLA_PAT"; then echo "tla=true" >> "$GITHUB_OUTPUT"

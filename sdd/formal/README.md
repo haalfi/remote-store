@@ -298,7 +298,8 @@ pinned version (see
 then `dafny verify sdd/formal/<file>.dfy`.
 
 CI runs the `verify-formal` job automatically when a changed path outside
-`sdd/formal/tla/` (which the filter step drops first) matches `FORMAL_PAT` in
+`sdd/formal/tla/`, `alloy/` and `lean/` (which the filter step drops first)
+matches `FORMAL_PAT` in
 `.github/workflows/ci.yml`; it also checks the compiled oracle
 against its sources and runs the oracle's tests (see § Compiled oracle as
 conformance gate).
@@ -350,9 +351,12 @@ otherwise a Docker image built from `scripts/lean.Dockerfile`, which
 checks the release archive against a pinned sha256;
 `LEAN_RUNNER=docker` forces Docker. No CI job runs it, as for Alloy.
 Unlike Alloy, `session-init.sh` does not install Lean in a
-claude.ai/code container: the toolchain is about 3 GB unpacked and a
-container starts fresh each session (maintainer decision,
-2026-10-13). It only says how to run the check.
+claude.ai/code container: the release archive is about 580 MB
+(`content-length: 580432872` for `lean-4.34.1-linux.tar.zst` from
+`curl -sIL` on the release URL in `scripts/lean.Dockerfile`), it unpacks
+to about 2.9 GB (`du -sh /opt/lean` in the image built from that
+Dockerfile), and a container starts fresh each session (maintainer
+decision, 2026-10-13). It only says how to run the check.
 
 Native setup needs no root. [elan](https://github.com/leanprover/elan),
 Lean's version manager, reads the project's `lean-toolchain` file and

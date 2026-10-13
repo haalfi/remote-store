@@ -1,7 +1,7 @@
 # Research: A store model as axioms (BK-435)
 
 **Date:** 2026-10-13
-**Backlog items:** BK-435 (The store model's axioms have no independence or consistency check)
+**Backlog items:** BK-435 (The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them)
 **Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 for every universe, finite or not (2026-10-13, § 10).
 
 ---
