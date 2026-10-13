@@ -297,9 +297,9 @@ failure it was.
   spec: BE-004, BE-005, BE-008, BE-013, BE-014, BE-017, BE-021, BE-030, BE-031 · effort: L · audience: library.maintainer, user.api, contributor.process
   Spec 003 states per operation what an absent key, a file, a folder, a key under a file or a
   shadowed prefix answers, and the kernel's two probe rules disagree on one `stat` answer.
-  RFC-0021 (accepted 2026-10-13) sets one store tree, a partial abstraction function per
-  backend encoding and one refusal table per namespace, checked by `StoreTree.dfy`.
-  Remaining: its spec 003 section, landed with PR #1127's resume. Open decision: none.
+  RFC-0021 (accepted 2026-10-13) sets one store tree, a partial abstraction function per encoding
+  and one refusal table per namespace, checked by `StoreTree.dfy`. Remaining: its spec 003 section
+  (PR #1127's resume), whose A.1 later points to BK-435's spec (research § 10). Open decision: none.
 
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
@@ -474,8 +474,8 @@ no clause of the contract ships unexercised.
   The store model's axioms are in `research/research-store-model-axioms.md` (accepted
   2026-10-13); `formal/alloy/StoreAxioms.als` checks them in bounded scope and
   `formal/lean/StoreAxioms.lean` proves D1 and L1 to L6 over any universe. Not done: the spec
-  that states them (its home decided in research § 10), checking `StoreTree.dfy`'s `Tree`
-  against them, and § 10 step 3's Dafny operations pass (after BK-434). No open decision.
+  that states them, with spec 003's A.1 then a pointer to it (layering in research § 10), checking
+  `StoreTree.dfy`'s `Tree` against them, and § 10 step 3's Dafny operations pass (after BK-434).
 
 ---
 

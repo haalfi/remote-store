@@ -405,7 +405,8 @@ general facts about Unix file systems, are:
 **Delta.** This model is the tree part of that picture, stripped of links,
 `.` and `..` and resolution: Key is the canonical identifier of an entity, not
 a string to be resolved, and a string that is not a Key (such as `a/` or
-`a//b`) names nothing instead of being normalized.
+`a//b`) names nothing instead of being normalized. Normalizing an input
+string onto a Key is the library's input layer, spec 004 (§ 10, Spec).
 
 ### 9.8 Where this model differs from the models compared
 
@@ -546,10 +547,18 @@ open:
   BK-434's, since it touches `StoreTree.dfy`.
 - **Spec.** The axioms are promoted into a new store-model spec under
   `sdd/specs/`, with this document as its rationale; each of its sections
-  needs a test mark, as every spec section does. That spec is the one home of
-  the tree's structure: spec 003's § The store tree, drafted in RFC-0021
-  Appendix A, points to it for structure (A.1's nodes and keys) and keeps only
-  what concerns backends and encodings, so the tree is not stated twice.
+  needs a test mark, as every spec section does. It is the home of the tree
+  over Keys; two existing specs touch the same ground and keep their own
+  layers. Spec 004 governs input strings: `RemotePath` normalizes an accepted
+  input onto a Key (PATH-002 to PATH-006) and rejects the rest (PATH-003,
+  PATH-007, PATH-008), so the library addresses a subset of the Keys this
+  model admits, with no name equal to `.` or `..`, none containing `\`, and the
+  root reached through the store rather than an empty path; PATH-009 to
+  PATH-011 are string operations on such a Key. Spec 003's § The store tree,
+  drafted in RFC-0021 Appendix A, lands first with A.1 as accepted (BK-432);
+  when the store-model spec lands, A.1's statement of the tree becomes a
+  pointer to it and the section keeps what concerns backends and encodings
+  (BK-435).
 
 ---
 
