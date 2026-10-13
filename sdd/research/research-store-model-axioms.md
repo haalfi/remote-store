@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-13
 **Backlog items:** BK-435 (The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them)
-**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 for every universe, finite or not (2026-10-13, § 10).
+**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 for every universe, finite or not (2026-10-13, § 10). § 10's open questions decided, including promotion into a spec (2026-10-13).
 
 ---
 
@@ -529,14 +529,23 @@ depends on it. One mismatch is already visible: `Key = seq<string>` places no
 restriction on its segments, so `ValidTree` admits the segments `""` and
 `"a/b"`, which AX-7 excludes. AX-8 is automatic in a map keyed by sequences.
 
-**Open questions.**
+**Decided (maintainer, 2026-10-13).** The four questions this section left
+open:
 
-- Does the model stay shared-namespace, or is the typed-key variant of §6
-  wanted as a second model for stores that distinguish `a` from `a/`?
-- Is finiteness imposed when the operations are added?
-- Does `StoreTree.dfy`'s `Key` gain AX-7's name restriction, or does the model
-  state it as a precondition on callers?
-- Are the axioms promoted into a spec once machine-checked, and which one?
+- **Namespace.** The model stays shared-namespace; the typed-key variant of §6
+  remains a recorded alternative, not a second model. This matches RFC-0021,
+  where a key names an item or a folder and a flat store's `a` against `a/`
+  clash is a refusal.
+- **Finiteness.** The axioms stay without a finiteness axiom when operations
+  are added. An operations model over a finite map covers finite stores only,
+  and states that limit where the operations are specified.
+- **`StoreTree.dfy`'s `Key`.** It gains AX-7's restriction as a type: segments
+  are non-empty and contain no `/`, so a valid tree satisfies AX-7 by
+  construction rather than by a precondition on callers. The change is
+  BK-434's, since it touches `StoreTree.dfy`.
+- **Spec.** The axioms are promoted into a new store-model spec under
+  `sdd/specs/`, with this document as its rationale; each of its sections
+  needs a test mark, as every spec section does.
 
 ---
 

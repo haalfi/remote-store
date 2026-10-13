@@ -1,0 +1,46 @@
+id: BK-435
+title: "The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them"
+trigger: "After the Alloy and Lean steps landed in #1131, the maintainer asked what BK-435 does next (Dafny?). The Dafny step would touch StoreTree.dfy on #1130, blocked by other work, so the four open questions of research § 10 were decided first"
+source_items:
+  - BK-435
+  - BK-434
+audience:
+  - library.maintainer
+expected_ripples:
+  - sdd/research/research-store-model-axioms.md
+  - sdd/BACKLOG.md
+decisions:
+  - sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl
+orient:
+  - items: [BK-434]
+    verdict: constrains
+    evidence: "BK-434 refines BackendContract.dfy's operations against StoreTree.dfy's encodings, which is most of what research § 10 step 3 (Dafny operations pass) names, and StoreTree.dfy sits on #1130 (BK-432), blocked until other work resumes. So the Dafny step waits for it; the AX-7 Key decision is recorded in BK-434's entry because the change is in StoreTree.dfy."
+  - items: [BK-432]
+    verdict: constrains
+    evidence: "RFC-0021 (rfc-0021-key-resolution-model.md, namespace rows and A.8) treats a key as naming an item or a folder, with a flat store's a against a/ clash as a refusal; the shared-namespace decision follows it."
+  - items: [BK-433]
+    verdict: unrelated
+    evidence: "BK-433 is the public link policy and capability (BACKLOG.md § 4); the axioms have no links (research § 8)."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-433, BK-434, BK-435 (hatch run backlog-show)"
+        read_type: gate
+        extract: "BK-434 is after BK-432 and owns StoreTree.dfy's refinement; BK-433 is links only"
+      - file: sdd/research/research-store-model-axioms.md
+        section: "§ 6 Decisions taken, § 9.5 Path-keyed maps, § 10 Recommendation and Open questions"
+        read_type: gate
+        extract: "Formalization order (Dafny kept for operations); the four open questions; a finite map covers finite stores only"
+      - file: sdd/rfcs/rfc-0021-key-resolution-model.md
+        section: "namespace rows, Flat and Hierarchical namespace"
+        read_type: reference
+        extract: "A key names an item or a folder; a flat a against a/ clash is refused, not typed"
+  - id: decide
+    name: Record the decisions
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works (Item scope, Item authority)"
+        read_type: gate
+        extract: "Diagnosis at most five lines, corrected in the index in the same commit"
