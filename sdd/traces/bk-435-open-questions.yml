@@ -1,0 +1,53 @@
+id: BK-435
+title: "The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them"
+trigger: "After the Alloy and Lean steps landed in #1132 (squash commit eea3830b9 on store-model-axioms), the maintainer asked what BK-435 does next (Dafny?). The Dafny step would touch StoreTree.dfy on #1130, blocked by other work, so the four open questions of research § 10 were decided first"
+source_items:
+  - BK-435
+  - BK-434
+audience:
+  - library.maintainer
+expected_ripples:
+  - sdd/research/research-store-model-axioms.md
+  - sdd/BACKLOG.md
+decisions:
+  - sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl
+orient:
+  - items: [BK-434]
+    verdict: constrains
+    evidence: "BK-434 refines BackendContract.dfy's operations against StoreTree.dfy's encodings; research § 10 step 3 (preservation of AX-1 to AX-8 by each operation, executable code) is different work in the same files, and StoreTree.dfy sits on #1130 (BK-432), blocked until other work resumes. So step 3 stays on BK-435's line and runs after BK-434; the AX-7 Key mismatch is noted in BK-434's entry because the change is in StoreTree.dfy."
+  - items: [BK-432]
+    verdict: constrains
+    evidence: "RFC-0021 (rfc-0021-key-resolution-model.md A.1, A.3, A.4): a key names at most one node, a flat store holding both a and keys below a/ is undecodable and not in the store, and a write creating that state is InvalidPath; the shared-namespace decision follows it. Its Appendix A drafts spec 003 § The store tree; by the maintainer's order, BK-432 lands it with A.1 as accepted and BK-435's store-model spec later turns A.1's tree into a pointer, which both entries now name."
+  - items: [BK-433]
+    verdict: unrelated
+    evidence: "BK-433 is the public link policy and capability (BACKLOG.md § 4); the axioms have no links (research § 8)."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-433, BK-434, BK-435 (hatch run backlog-show)"
+        read_type: gate
+        extract: "BK-434 is after BK-432 and owns StoreTree.dfy's refinement; BK-433 is links only"
+      - file: sdd/research/research-store-model-axioms.md
+        section: "§ 6 Decisions taken, § 9.5 Path-keyed maps, § 10 Recommendation and Open questions"
+        read_type: gate
+        extract: "Formalization order (Dafny kept for operations); the four open questions; a finite map covers finite stores only"
+      - file: sdd/rfcs/rfc-0021-key-resolution-model.md
+        section: "namespace rows, Flat and Hierarchical namespace; re-read after review: A.1, A.3, A.4, Appendix A header"
+        read_type: reference
+        extract: "A key names at most one node (A.1); a flat a plus a/... state is undecodable (A.3) and a write creating it is InvalidPath (A.4). My first reading called it a refusal, a term RFC-0021 reserves for driver and wire answers (A.8); the review caught it. Appendix A drafts spec 003 § The store tree, which the spec decision has to place"
+  - id: decide
+    name: Record the decisions
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works (Item scope, Item authority)"
+        read_type: gate
+        extract: "Diagnosis at most five lines, corrected in the index in the same commit; a fix shape is a prescription and belongs in a dossier or behind a pointer, which the first draft missed and review round 1 flagged"
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-001 to PATH-011"
+        read_type: reference
+        extract: "Read only after review round 2 flagged it: RemotePath normalizes input (PATH-002, 004, 005, 006) and rejects .., null bytes and the empty path (PATH-003, 007, 008). Layered as input strings onto Keys; the library addresses a subset of the Keys the axioms admit. My orient missed spec 004; it was not the spec's fault"
+surprising_ripples:
+  - "sdd/specs/004-path-model.md: it states the shape of a key too, and several clauses differ from the axioms (., .., trailing and doubled /, backslash, empty path). Recorded as input-to-Key layering in research § 10, found by review round 2"
+  - "sdd/BACKLOG.md BK-432: the spec decision changes how BK-432's spec 003 section lands, which only the trace recorded; BK-432's entry now names the later pointer. Found by review round 2"

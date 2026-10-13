@@ -297,9 +297,9 @@ failure it was.
   spec: BE-004, BE-005, BE-008, BE-013, BE-014, BE-017, BE-021, BE-030, BE-031 · effort: L · audience: library.maintainer, user.api, contributor.process
   Spec 003 states per operation what an absent key, a file, a folder, a key under a file or a
   shadowed prefix answers, and the kernel's two probe rules disagree on one `stat` answer.
-  RFC-0021 (accepted 2026-10-13) sets one store tree, a partial abstraction function per
-  backend encoding and one refusal table per namespace, checked by `StoreTree.dfy`.
-  Remaining: its spec 003 section, landed with PR #1127's resume. Open decision: none.
+  RFC-0021 (accepted 2026-10-13) sets one store tree, a partial abstraction function per encoding
+  and one refusal table per namespace, checked by `StoreTree.dfy`. Remaining: its spec 003 section
+  (PR #1127's resume), whose A.1 later points to BK-435's spec (research § 10). Open decision: none.
 
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
@@ -463,19 +463,19 @@ no clause of the contract ships unexercised.
 
 - [ ] **BK-434 — RFC-0021's encodings are verified in `StoreTree.dfy` alone, so the trait's operations are not refined against them**
   spec: BE-008, BE-013, BE-014, BE-021 · effort: L · audience: library.maintainer
-  `StoreTree.dfy` proves a flat encoding's `decode` and RFC-0021's refusal rule
-  (A.8) on its own types; `BackendContract.dfy`'s operations still range over
-  `map<Path, Entry>` with `Valid()` and never see an encoding. RFC-0021 D10 names
-  the wiring as a follow-up. Open decision: refinement lemmas per encoding, or one
-  encoding-parametric trait. After BK-432.
+  `StoreTree.dfy` proves a flat encoding's `decode` and RFC-0021's refusal rule (A.8) on its
+  own types; `BackendContract.dfy`'s operations still range over `map<Path, Entry>` and never
+  see an encoding (RFC-0021 D10 names the wiring as a follow-up). `StoreTree.dfy`'s `Key` admits
+  `""` and `"a/b"`, against AX-7 (resolution: research-store-model-axioms.md § 10). Open
+  decision: refinement lemmas per encoding, or one encoding-parametric trait. After BK-432.
 
 - [~] **BK-435 — The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them**
   spec: — · effort: M · audience: library.maintainer
   The store model's axioms are in `research/research-store-model-axioms.md` (accepted
-  2026-10-13, a countermodel per clause); `formal/alloy/StoreAxioms.als` checks them and L1 to L5
-  in bounded scope, `formal/lean/StoreAxioms.lean` proves D1 and L1 to L6 over any universe.
-  `StoreTree.dfy`'s `Tree` is not shown to satisfy them: its `Key` admits `""` and `"a/b"`,
-  against AX-7 (BK-434). Open decision: whether the axioms are promoted into a spec.
+  2026-10-13); `formal/alloy/StoreAxioms.als` checks them in bounded scope and
+  `formal/lean/StoreAxioms.lean` proves D1 and L1 to L6 over any universe. Not done: the spec
+  that states them, with spec 003's A.1 then a pointer to it (layering in research § 10), checking
+  `StoreTree.dfy`'s `Tree` against them, and § 10 step 3's Dafny operations pass (after BK-434).
 
 ---
 

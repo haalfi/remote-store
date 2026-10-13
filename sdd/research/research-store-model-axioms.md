@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-13
 **Backlog items:** BK-435 (The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them)
-**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 for every universe, finite or not (2026-10-13, § 10).
+**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 for every universe, finite or not (2026-10-13, § 10). § 10's open questions decided, including promotion into a spec (2026-10-13).
 
 ---
 
@@ -405,7 +405,8 @@ general facts about Unix file systems, are:
 **Delta.** This model is the tree part of that picture, stripped of links,
 `.` and `..` and resolution: Key is the canonical identifier of an entity, not
 a string to be resolved, and a string that is not a Key (such as `a/` or
-`a//b`) names nothing instead of being normalized.
+`a//b`) names nothing instead of being normalized. Normalizing an input
+string onto a Key is the library's input layer, spec 004 (§ 10, Spec).
 
 ### 9.8 Where this model differs from the models compared
 
@@ -529,14 +530,35 @@ depends on it. One mismatch is already visible: `Key = seq<string>` places no
 restriction on its segments, so `ValidTree` admits the segments `""` and
 `"a/b"`, which AX-7 excludes. AX-8 is automatic in a map keyed by sequences.
 
-**Open questions.**
+**Decided (maintainer, 2026-10-13).** The four questions this section left
+open:
 
-- Does the model stay shared-namespace, or is the typed-key variant of §6
-  wanted as a second model for stores that distinguish `a` from `a/`?
-- Is finiteness imposed when the operations are added?
-- Does `StoreTree.dfy`'s `Key` gain AX-7's name restriction, or does the model
-  state it as a precondition on callers?
-- Are the axioms promoted into a spec once machine-checked, and which one?
+- **Namespace.** The model stays shared-namespace; the typed-key variant of §6
+  remains a recorded alternative, not a second model. This matches RFC-0021:
+  a key names at most one node (A.1); a flat store holding both `a` and keys
+  below `a/` is an undecodable state, not in the store (A.3), and a write that
+  would create one is `InvalidPath` (A.4).
+- **Finiteness.** The axioms stay without a finiteness axiom when operations
+  are added. An operations model over a finite map covers finite stores only,
+  and states that limit where the operations are specified.
+- **`StoreTree.dfy`'s `Key`.** It gains AX-7's restriction as a type: segments
+  are non-empty and contain no `/`, so a valid tree satisfies AX-7 by
+  construction rather than by a precondition on callers. The change is
+  BK-434's, since it touches `StoreTree.dfy`.
+- **Spec.** The axioms are promoted into a new store-model spec under
+  `sdd/specs/`, with this document as its rationale; each of its sections
+  needs a test mark, as every spec section does. It is the home of the tree
+  over Keys; two existing specs touch the same ground and keep their own
+  layers. Spec 004 governs input strings: `RemotePath` normalizes an accepted
+  input onto a Key (PATH-002 to PATH-006) and rejects the rest (PATH-003,
+  PATH-007, PATH-008), so the library addresses a subset of the Keys this
+  model admits, with no name equal to `.` or `..`, none containing `\`, and the
+  root reached through the store rather than an empty path; PATH-009 to
+  PATH-011 are string operations on such a Key. Spec 003's § The store tree,
+  drafted in RFC-0021 Appendix A, lands first with A.1 as accepted (BK-432);
+  when the store-model spec lands, A.1's statement of the tree becomes a
+  pointer to it and the section keeps what concerns backends and encodings
+  (BK-435).
 
 ---
 
