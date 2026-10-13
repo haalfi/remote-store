@@ -469,6 +469,14 @@ no clause of the contract ships unexercised.
   the wiring as a follow-up. Open decision: refinement lemmas per encoding, or one
   encoding-parametric trait. After BK-432.
 
+- [ ] **BK-435 — The store model's axioms are stated only through RFC-0021's tree and `StoreTree.dfy`'s `Tree`, so their independence and consistency are unexamined**
+  spec: — · effort: M · audience: library.maintainer
+  `StoreTree.dfy` §1 models the store as `Tree = map<Key, Kind>` with a prefix-closure
+  predicate; the axioms behind it have no independence or consistency check.
+  `research/research-store-model-axioms.md` drafts them (AX-1 to AX-8) with a
+  countermodel per clause. Open decision: the proof layer after the prose (Alloy, then Lean 4;
+  Dafny kept for operations), and whether the axioms are promoted into a spec.
+
 ---
 
 <a id="users-succeed-unaided"></a>
