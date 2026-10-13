@@ -21,7 +21,7 @@ module StoreAxioms
 -- Σ: the separator and at least one other symbol.
 abstract sig Char {}
 one sig Slash extends Char {}
-sig Letter extends Char {}
+some sig Letter extends Char {}
 
 -- U is the set of Entity atoms. name maps U to Σ*; words are compared as
 -- sequences, exactly.

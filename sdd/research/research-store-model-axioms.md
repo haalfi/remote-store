@@ -244,7 +244,7 @@ comparison is only as good as the reading behind it:
 | Path-keyed map (tree store) | implied by prefix closure | key segment | a kind per key | the key | a representation, not a rival axiomatization; L6 would connect the two |
 | Hierarchical key-value store (ZooKeeper) | one, root none | path segment | none: a node has data and may have children | absolute path | AX-1 and AX-3 do not hold |
 | Flat key-value store with a delimiter (pure convention) | none stored | not modelled | none | opaque string | AX-2 to AX-6 dropped; hierarchy is a reading of the keys |
-| Alloy file system (course slides) | one, root none | not modelled in the part summarized | Dir and File | not modelled in the part summarized | acyclicity as an invariant, reachability not stated in the part summarized; no names |
+| Alloy file system (course slides) | a parent for every non-root, root none; whether `parent` is functional not stated in the part summarized (§ 9.7) | not modelled in the part summarized | Dir and File | not modelled in the part summarized | acyclicity as an invariant, reachability not stated in the part summarized; no names |
 | Unix and POSIX file system | one for a directory, several for a file | directory entry (edge) | distinct kinds | path resolved by walking entries | links, `.` and `..` and resolution added; this model keeps the tree part only |
 
 ### 9.2 Rooted directed trees (graph theory)
