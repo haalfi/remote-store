@@ -392,7 +392,11 @@ A formal statement names the spec section it encodes in a line comment:
 - **Dafny:** `// @spec <ID>` above the `ensures` it tags.
 - **Alloy and Lean:** `-- @spec <ID>` above the predicate, structure field,
   definition or theorem that restates the section, and one
-  `-- @restates sdd/specs/<file>.md` line per spec the file restates.
+  `-- @restates sdd/specs/<file>.md` line per spec the file restates. A
+  file at the top level of `alloy/` or `lean/` with none fails the check,
+  so a module that restates no spec sits in a subdirectory, which the
+  check does not read: Alloy opens it as `open sub/Helper`, and Lean
+  imports `lean/StoreAxioms/Helper.lean` as `StoreAxioms.Helper`.
   `StoreAxioms.als` and `StoreAxioms.lean` each restate spec 051.
 
 **The spec governs the tags.** A section with no tag in a file that

@@ -7,8 +7,8 @@ T — conformance ``@pytest.mark.spec`` marker extraction (AST).
 S — spec-section declaration extraction (headings + requirement tables).
 R — Alloy and Lean ``-- @spec`` tags and ``-- @restates`` declarations.
 The three failure modes (F1 untested clause, F2 bad test marker, F3 bad
-tag), the three restatement kinds (R1 bad tag, R2 untagged section, R3
-unknown restated spec) and the shrink-only baseline mechanism in
+tag), the four restatement kinds (R1 bad tag, R2 untagged section, R3
+unknown restated spec, R4 no @restates) and the shrink-only baseline mechanism in
 ``main()``.
 """
 
@@ -46,6 +46,7 @@ KIND_TAG_BAD_ID = _mod.KIND_TAG_BAD_ID
 KIND_RESTATEMENT_BAD_ID = _mod.KIND_RESTATEMENT_BAD_ID
 KIND_RESTATEMENT_UNTAGGED = _mod.KIND_RESTATEMENT_UNTAGGED
 KIND_RESTATES_UNKNOWN = _mod.KIND_RESTATES_UNKNOWN
+KIND_RESTATES_MISSING = _mod.KIND_RESTATES_MISSING
 
 
 # ---------------------------------------------------------------------------
@@ -328,6 +329,16 @@ class TestExtractRestatements:
         (formal / "lean" / "lakefile.toml").write_text("# -- @spec TREE-001\n", encoding="utf-8")
         assert extract_restatements(formal) == {}
 
+    def test_subdirectory_modules_are_not_read(self, tmp_path: Path) -> None:
+        # sdd/formal/README.md sends a module that restates no spec into a
+        # subdirectory, where R4 would otherwise demand a @restates line.
+        formal = _formal_tree(tmp_path)
+        (formal / "alloy" / "sub").mkdir()
+        (formal / "alloy" / "sub" / "Helper.als").write_text("module sub/Helper\n", encoding="utf-8")
+        (formal / "lean" / "StoreAxioms").mkdir()
+        (formal / "lean" / "StoreAxioms" / "Helper.lean").write_text("-- @spec TREE-001\n", encoding="utf-8")
+        assert extract_restatements(formal) == {}
+
     def test_restatement_tags_do_not_enter_source_d(self, tmp_path: Path) -> None:
         # F1 keys on D. A TREE-* tag in D would demand a conformance marker
         # that BK-436 has not written yet.
@@ -348,7 +359,8 @@ class TestComputeRestatementViolations:
         assert self._violations(tmp_path, als) == []
 
     def test_r1_tag_cites_unknown_spec(self, tmp_path: Path) -> None:
-        assert self._violations(tmp_path, "-- @spec TREE-099\n") == [
+        als = "-- @restates sdd/specs/051-store-tree.md\n-- @spec TREE-001\n-- @spec TREE-002\n-- @spec TREE-099\n"
+        assert self._violations(tmp_path, als) == [
             (KIND_RESTATEMENT_BAD_ID, "alloy/M.als TREE-099"),
         ]
 
@@ -386,8 +398,12 @@ class TestComputeRestatementViolations:
         als = "-- @restates sdd/specs/051-store-tree.md\n-- @spec TREE-001, TREE-002\n-- @spec BE-014\n"
         assert self._violations(tmp_path, als) == []
 
-    def test_no_restates_means_no_completeness_demand(self, tmp_path: Path) -> None:
-        assert self._violations(tmp_path, "-- @spec TREE-001\n") == []
+    def test_r4_file_without_restates(self, tmp_path: Path) -> None:
+        # Otherwise deleting a file's only @restates line would switch R2 off,
+        # and an .als- or .lean-only diff reaches docs-gate alone (#1131 review).
+        assert self._violations(tmp_path, "-- @spec TREE-001\n") == [
+            (KIND_RESTATES_MISSING, "alloy/M.als (no @restates)"),
+        ]
 
 
 # ---------------------------------------------------------------------------
@@ -535,14 +551,27 @@ class TestMain:
         )
         assert main(**dirs, baseline=frozenset()) == 0
 
+    def test_restatement_stripped_of_every_tag_fails(self, tmp_path: Path) -> None:
+        # The edit test_repo_restatements_cover_spec_051 guards against, made
+        # where docs-gate sees it: no @restates line and no tag left.
+        dirs = _make_repo(
+            tmp_path,
+            dafny="",
+            conformance="import pytest\n",
+            specs="## TREE-001: Partition\n## TREE-002: Root\n",
+        )
+        (dirs["formal_dir"] / "alloy").mkdir()
+        (dirs["formal_dir"] / "alloy" / "M.als").write_text("module M\npred AX1 { }\n", encoding="utf-8")
+        assert main(**dirs, baseline=frozenset()) == 1
+
     def test_repo_invocation_is_green(self) -> None:
         # The real repo must pass against the checked-in _BASELINE — the
         # gate is wired into `hatch run all` and may not fail on master.
         assert main() == 0
 
     def test_repo_restatements_cover_spec_051(self) -> None:
-        # Without this, the repo test above would also pass if both files
-        # dropped their @restates line: no declaration, no completeness check.
+        # R4 demands a @restates line, not one naming spec 051: without this,
+        # the repo test above would also pass if both files restated another spec.
         root = _SCRIPT.parents[1]
         restatements = extract_restatements(root / "sdd" / "formal")
         tree = extract_declared_by_file(root / "sdd" / "specs")["051-store-tree.md"]

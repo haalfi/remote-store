@@ -41,7 +41,7 @@ sections rather than an operation's contract:
 
 R is kept out of D on purpose. F1 asks every D-tagged ID for a
 conformance marker, and a restated spec need not have backend
-conformance yet (spec 051 has none until BK-436). Three failure modes,
+conformance yet (spec 051 has none until BK-436). Four failure modes,
 each localized to the restating file:
 
   R1  a restatement tag citing a spec ID absent from S.
@@ -53,6 +53,9 @@ each localized to the restating file:
       level of ``sdd/specs/``, so a renamed or removed spec, or a path
       under another directory, cannot switch R2 off or borrow another
       spec's R2 silently.
+  R4  a file with no ``@restates`` line, so deleting a file's only
+      ``@restates`` line cannot switch R2 off either. A module that
+      restates no spec sits in a subdirectory, which R does not read.
 
 Which side governs is declared in ``sdd/formal/README.md`` § Traceability
 tags: the spec does.
@@ -83,8 +86,12 @@ proof of test depth, and should be read with these limits in mind:
     tagged predicate or theorem says what the section says, that the tag
     sits on the right declaration, or that the solver or proof checker
     accepted the file (``alloy_check.sh`` and ``lean_check.sh`` run in no
-    CI job). A file with no ``@restates`` line gets R1 only, and an
-    ``.als`` or ``.lean`` file outside those two directories is not read.
+    CI job). Which spec a file restates is its author's choice: R4
+    demands a ``@restates`` line, not one naming spec 051, so dropping
+    one of a file's several ``@restates`` lines, or deleting a restating
+    file, passes here; ``test_repo_restatements_cover_spec_051`` catches
+    both for spec 051. An ``.als`` or ``.lean`` file outside the top level
+    of those two directories is not read.
 
 Closing these gaps fully would need per-clause sub-IDs and assertion-
 level analysis, deliberately out of ID-206's scope. What the check buys
@@ -173,6 +180,7 @@ KIND_TAG_BAD_ID = "dafny-tag-unknown-spec"
 KIND_RESTATEMENT_BAD_ID = "restatement-tag-unknown-spec"
 KIND_RESTATEMENT_UNTAGGED = "restated-section-untagged"
 KIND_RESTATES_UNKNOWN = "restates-unknown-spec"
+KIND_RESTATES_MISSING = "restates-missing"
 
 # ---------------------------------------------------------------------------
 # Baseline — known violations at gate-landing time (ID-206).
@@ -470,9 +478,12 @@ def compute_restatement_violations(
     R1 — a tag citing an ID with no spec section.
     R2 — a section of a restated spec that the file tags nowhere.
     R3 — a ``@restates`` line naming no spec file at the top level of ``sdd/specs/``.
+    R4 — a file with no ``@restates`` line.
     """
     violations: set[tuple[str, str]] = set()
     for label, entry in restatements.items():
+        if not entry.restates:
+            violations.add((KIND_RESTATES_MISSING, f"{label} (no @restates)"))
         for spec_id in entry.tags:
             if spec_id not in declared:
                 violations.add((KIND_RESTATEMENT_BAD_ID, f"{label} {spec_id}"))
@@ -496,6 +507,7 @@ _KIND_LABEL = {
     KIND_RESTATEMENT_BAD_ID: "restatement @spec tag cites an unknown spec ID (R1)",
     KIND_RESTATEMENT_UNTAGGED: "section of a restated spec with no tag in the restatement (R2)",
     KIND_RESTATES_UNKNOWN: "@restates names no spec file in sdd/specs/ (R3)",
+    KIND_RESTATES_MISSING: "Alloy or Lean file with no @restates line (R4)",
 }
 
 
@@ -569,7 +581,7 @@ def _print_restatements(
             covered = len(sections & entry.tags.keys())
             print(f"  {label:<26} restates {spec_file:<22} {covered}/{len(sections)} sections tagged")
     print()
-    for kind in (KIND_RESTATEMENT_BAD_ID, KIND_RESTATEMENT_UNTAGGED, KIND_RESTATES_UNKNOWN):
+    for kind in (KIND_RESTATEMENT_BAD_ID, KIND_RESTATEMENT_UNTAGGED, KIND_RESTATES_UNKNOWN, KIND_RESTATES_MISSING):
         rows = [subject for k, subject in violations if k == kind]
         if not rows:
             continue

@@ -302,7 +302,8 @@ if evidence changes; these are retired.
   spec: TREE-001 -- TREE-012 · effort: S · audience: contributor.tooling, infra.ci, user.discoverability.human
   `StoreAxioms.als` and `StoreAxioms.lean` carry `-- @spec TREE-n` tags and a
   `-- @restates` line; `check_formal_trace.py` fails on a tag citing no section,
-  a restated section left untagged, or an unknown restated spec, and joins
+  a restated section left untagged, an unknown restated spec, or a file with
+  no `@restates` line, and joins
   `docs-gate` so an `.als`- or `.lean`-only diff reaches it. Running the solvers
   in CI stays out (`formal/README.md` § Running the verifier). `README.md`'s
   Quality & Testing now names the axioms and the Alloy and Lean checks. Trace:
