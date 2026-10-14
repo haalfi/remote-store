@@ -392,7 +392,8 @@ A formal statement names the spec section it encodes in a line comment:
 - **Dafny:** `// @spec <ID>` above the `ensures` it tags.
 - **Alloy and Lean:** `-- @spec <ID>` above the predicate, structure field,
   definition or theorem that restates the section, and one
-  `-- @restates sdd/specs/<file>.md` line per spec the file restates.
+  `-- @restates sdd/specs/<file>.md` line per spec the file restates. A
+  file with none fails the check.
   `StoreAxioms.als` and `StoreAxioms.lean` each restate spec 051.
 
 **The spec governs the tags.** A section with no tag in a file that
