@@ -62,6 +62,6 @@ phases:
     name: Prove the tie
     steps:
       - file: sdd/formal/StoreTree.dfy
-        section: "§12 TrieWF, TreeIsTrie, TrieTree, TrieIsTree"
+        section: "§12 TrieWF, TreeIsTrie, TrieTree, TrieIsTree, TreeIsTrieTree"
         read_type: reference
-        extract: "bash scripts/dafny_verify.sh StoreTree.dfy: 36 verified, 0 errors (two hints added after two failed runs: the root's kind, and s[..|s|] == s). Mutants on scratch copies, deleted after: K_ne removed fails TreeIsTrie's postcondition; K_leaf removed fails its forall's Folder postcondition"
+        extract: "bash scripts/dafny_verify.sh StoreTree.dfy: 36 verified, 0 errors (two hints added after two failed runs: the root's kind, and s[..|s|] == s). Mutants on scratch copies, deleted after: K_ne removed fails TreeIsTrie's postcondition; K_leaf removed fails its forall's Folder postcondition. Review round 3 of #1141 found tree to pair to tree unproved, so 'exactly' and 'two spellings' overclaimed; TreeIsTrieTree added: 37 verified, 0 errors, and TrieTree mapping every key to Folder fails its u[j] == t[j]"

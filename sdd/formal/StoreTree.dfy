@@ -714,8 +714,7 @@ module StoreTree {
   }
 
   // L6's second and third parts: each such pair gives a valid tree, and that
-  // tree gives the pair back.  With TreeIsTrie, a finite pair (L, K) and a
-  // Tree are two spellings of one valid store, names aside.
+  // tree gives the pair back.
   lemma TrieIsTree(l: set<Key>, k: set<Key>)
     requires TrieWF(l, k)
     ensures ValidTree(TrieTree(l, k))
@@ -725,5 +724,22 @@ module StoreTree {
     assert t.Keys == l;
     assert Items(t) == k;
     TreeIsTrie(t);
+  }
+
+  // The other round trip: a tree gives its pair, and that pair gives the
+  // tree back.  With TreeIsTrie and TrieIsTree, a finite pair (L, K) and a
+  // Tree are two spellings of one valid store, names aside.
+  lemma TreeIsTrieTree(t: Tree)
+    ensures TrieTree(t.Keys, Items(t)) == t
+  {
+    var u := TrieTree(t.Keys, Items(t));
+    assert u.Keys == t.Keys;
+    forall j | j in t
+      ensures u[j] == t[j]
+    {
+      if t[j] == Item {
+        assert j in Items(t);
+      }
+    }
   }
 }
