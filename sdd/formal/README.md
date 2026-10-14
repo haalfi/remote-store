@@ -128,6 +128,10 @@ Lean's boundary: it proves what the file states, so fidelity to spec
 rests on (the 10 at the end of `StoreAxioms.lean`); a new result is
 pinned only once a line is added for it.
 
+[`tex/`](tex/README.md) retells these proofs, and what the Alloy model
+adds, in prose for human readers. Its proofs are not machine-checked; its
+README says how to redo it when the Lean file changes.
+
 ### Decoupled, not coupled
 
 IronFleet and `tla-dafny` embed TLA+ operators inside Dafny so

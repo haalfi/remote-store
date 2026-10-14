@@ -524,6 +524,12 @@ run with `bash scripts/lean_check.sh <copy>`, failed with "declaration
 uses `sorry`" (not committed). A `#guard_msgs` block pins each headline
 result's axioms to Lean's standard ones.
 
+For a reader who would rather follow the proofs on paper,
+[`sdd/formal/tex/`](../formal/tex/README.md) retells the Lean proofs in
+ordinary mathematical prose ([PDF](../formal/tex/store-axioms.pdf)), with a
+section on what the Alloy checks add. It is an exposition, not
+machine-checked: the Lean file stays the authority for the proofs.
+
 **Relation to existing formal work.** [`sdd/formal/StoreTree.dfy`](../formal/StoreTree.dfy) §1 models the
 store as `Tree = map<Key, Kind>` with `Key = seq<string>`, requiring the root
 to be a folder and every proper prefix of a node's key to be a folder. That
