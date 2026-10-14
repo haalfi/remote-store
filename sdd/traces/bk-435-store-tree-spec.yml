@@ -21,6 +21,7 @@ discovery_followups:
 decisions:
   - sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl
   - sdd/decisions/ee95990a-1fef-4e4e-b42e-faa515b89ff0.jsonl
+  - sdd/decisions/df48024d-396f-4f91-92d7-1d6657c34286.jsonl
 orient:
   - items: [BK-432]
     verdict: constrains
