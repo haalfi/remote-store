@@ -12,6 +12,8 @@ expected_ripples:
   - sdd/research/research-store-model-axioms.md
 surprising_ripples:
   - "scripts/check_formal_trace.py F1: a `// @spec TREE-002` tag in StoreTree.dfy fails the gate ([dafny-clause-untested] TREE-002, run once and reverted), since D asks every tagged ID for a conformance marker and spec 051 has none until BK-436. §12 cites spec 051 in prose, and BK-435's entry lists the tags as not done until BK-436 (BK-436's own entry is at its R2 diagnosis cap)"
+discovery_followups:
+  - BUG-325
 decisions:
   - sdd/decisions/76a5c608-6e68-4795-9152-690035aed9eb.jsonl
 orient:
@@ -51,7 +53,7 @@ phases:
       - file: sdd/formal/lean/StoreAxioms.lean
         section: "§ 7, L6 (Trie, Trie.WF, theorem L6)"
         read_type: reference
-        extract: "Trie.WF has six conditions: names, nil, closed, K_L, K_ne, K_leaf. All but names state over a Dafny Tree"
+        extract: "Trie.WF has six conditions: names, nil, closed, K_L, K_ne, K_leaf. All but names state over a Dafny Tree, for finite pairs only: Trie.L and Trie.K are predicates of any extent, and infinite_model is one such pair (review of #1141)"
       - file: scripts/check_formal_trace.py
         section: "module docstring; extract_dafny_specs; _BASELINE"
         read_type: gate

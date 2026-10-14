@@ -472,7 +472,7 @@ no clause of the contract ships unexercised.
 - [~] **BK-435 — Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
   Spec 051 states the axioms of `research/research-store-model-axioms.md`, checked in Alloy, Lean
-  and, as L6's pair, `StoreTree.dfy` §12. Not done: spec 003's A.1 as a pointer to it (after
+  and, as L6's finite pair, `StoreTree.dfy` §12. Not done: spec 003's A.1 as a pointer to it (after
   BK-432); §12's names condition (BK-434's `Key`) and `@spec` tags (F1 needs BK-436); research
   § 10 step 3's Dafny operations (after BK-434). Open decision: none.
 
@@ -929,6 +929,14 @@ CHANGELOG the release body is built from — say what is actually true.
   `hatch run ship-report 1130 --trace-block-only` printed `ci: {verdict: GREEN,
   failed: 0, pending: 0}` (2026-10-13), and that block goes into the trace unedited.
   Open decision: none; report no checks run as its own verdict.
+
+- [ ] **BUG-325 — `backlog-find --spec` misses every item whose `spec:` line names a range**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  `_spec_ids` in `scripts/sdd_lookup.py` splits the attribute value on `,` only, so
+  `spec: TREE-001 -- TREE-012` is one token and `--spec TREE-00n` matches nothing:
+  `hatch run backlog-find --spec TREE-001 ... --spec TREE-012` printed no match while BK-435
+  and BK-436 carry that range (2026-10-14). `/ship` § Orient finds related work this way.
+  Open decision: expand ranges, or reject range syntax on attribute lines.
 
 ---
 

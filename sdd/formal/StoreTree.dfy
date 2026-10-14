@@ -33,7 +33,7 @@
 //       nothing, except a flat listing refused in another shape.
 //   §12 The tree against spec 051: a valid Tree is exactly a pair (L, K)
 //       meeting the conditions of lemma L6 in lean/StoreAxioms.lean, except
-//       its condition on names.
+//       its condition on names, for finite pairs only.
 //
 // Not modelled here: links (A.7), a listing's omissions as observed page by
 // page (A.3's order obligation), and changes under an operation (A.9).  A
@@ -654,10 +654,14 @@ module StoreTree {
   // names, closed under prefixes and holding the empty sequence, and K the
   // non-empty sequences of L with no proper extension in L.  A Tree is such a
   // pair, L its keys and K its items, so the lemmas below tie §1 to spec 051
-  // through L6.  Trie.WF's condition that every segment is a name (TREE-007)
-  // is not stated: Key admits "" and "a/b" until BK-434 restricts it.
+  // through L6, with two exceptions.  Trie.WF's condition that every segment
+  // is a name (TREE-007) is not stated: Key admits "" and "a/b" until BK-434
+  // restricts it.  And a Dafny set or map is finite, while L6 also covers
+  // infinite pairs (infinite_model in the Lean file), so the tie reaches
+  // finite stores only, the limit research § 10 sets for a finite map.
 
-  // Trie.WF without its names condition: nil, closed, K_L, K_ne, K_leaf.
+  // Trie.WF without its names condition, over finite sets: nil, closed, K_L,
+  // K_ne, K_leaf.
   ghost predicate TrieWF(l: set<Key>, k: set<Key>) {
     && [] in l
     && (forall s, i :: s in l && 0 <= i <= |s| ==> s[..i] in l)
@@ -709,8 +713,8 @@ module StoreTree {
   }
 
   // L6's second and third parts: each such pair gives a valid tree, and that
-  // tree gives the pair back.  With TreeIsTrie, (L, K) and Tree are two
-  // spellings of one valid store.
+  // tree gives the pair back.  With TreeIsTrie, a finite pair (L, K) and a
+  // Tree are two spellings of one valid store, names aside.
   lemma TrieIsTree(l: set<Key>, k: set<Key>)
     requires TrieWF(l, k)
     ensures ValidTree(TrieTree(l, k))
