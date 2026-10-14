@@ -471,10 +471,10 @@ no clause of the contract ships unexercised.
 
 - [~] **BK-435 — Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
-  Spec 051 states the axioms of `research/research-store-model-axioms.md` (accepted 2026-10-13;
-  Alloy and Lean checks under `formal/`), tested against a reference model. Not done: spec 003's
-  A.1 as a pointer to it after BK-432, `StoreTree.dfy`'s `Tree` checked against it, and research
-  § 10 step 3's Dafny operations pass (after BK-434). Open decision: none.
+  Spec 051 states the axioms of `research/research-store-model-axioms.md`, checked in Alloy, Lean
+  and, as L6's pair, `StoreTree.dfy` §12. Not done: spec 003's A.1 as a pointer to it (after
+  BK-432); §12's names condition (BK-434's `Key`) and `@spec` tags (F1 needs BK-436); research
+  § 10 step 3's Dafny operations (after BK-434). Open decision: none.
 
 - [ ] **BK-436 — No backend's observed tree is checked against spec 051**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer

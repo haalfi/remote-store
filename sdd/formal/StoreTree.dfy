@@ -31,6 +31,9 @@
 //       empty result on a row that holds nothing); and every row where the
 //       call must refuse is typed, and so is a listing's row that holds
 //       nothing, except a flat listing refused in another shape.
+//   §12 The tree against spec 051: a valid Tree is exactly a pair (L, K)
+//       meeting the conditions of lemma L6 in lean/StoreAxioms.lean, except
+//       its condition on names.
 //
 // Not modelled here: links (A.7), a listing's omissions as observed page by
 // page (A.3's order obligation), and changes under an operation (A.9).  A
@@ -640,4 +643,82 @@ module StoreTree {
     requires (ns == FlatNs && c == ListFirstPage) ==> sh == NotFoundOrInvalidPath
     ensures KernelAnswer(ns, c, row, sh) == Some(A5(c, row))
   {}
+
+  // -------------------------------------------------------------------------
+  // §12  The tree against spec 051
+  // -------------------------------------------------------------------------
+  //
+  // Spec 051 states the tree as axioms over entities (TREE-001 to TREE-008).
+  // Lemma L6 of lean/StoreAxioms.lean proves that its models are, up to
+  // isomorphism, the pairs (L, K) meeting Trie.WF: L a set of sequences of
+  // names, closed under prefixes and holding the empty sequence, and K the
+  // non-empty sequences of L with no proper extension in L.  A Tree is such a
+  // pair, L its keys and K its items, so the lemmas below tie §1 to spec 051
+  // through L6.  Trie.WF's condition that every segment is a name (TREE-007)
+  // is not stated: Key admits "" and "a/b" until BK-434 restricts it.
+
+  // Trie.WF without its names condition: nil, closed, K_L, K_ne, K_leaf.
+  ghost predicate TrieWF(l: set<Key>, k: set<Key>) {
+    && [] in l
+    && (forall s, i :: s in l && 0 <= i <= |s| ==> s[..i] in l)
+    && k <= l
+    && [] !in k
+    && (forall s, u :: s in k && u in l ==> !ProperPrefix(s, u))
+  }
+
+  // L6's first part: a valid tree gives such a pair, and only a valid tree
+  // does.
+  lemma TreeIsTrie(t: Tree)
+    ensures ValidTree(t) <==> TrieWF(t.Keys, Items(t))
+  {
+    if ValidTree(t) {
+      forall s, i | s in t && 0 <= i <= |s|
+        ensures s[..i] in t
+      {
+        if i == |s| {
+          assert s[..i] == s;
+        }
+      }
+      forall s, u | s in Items(t) && u in t
+        ensures !ProperPrefix(s, u)
+      {
+        if ProperPrefix(s, u) {
+          assert u[..|s|] == s;
+        }
+      }
+    }
+    if TrieWF(t.Keys, Items(t)) {
+      if t[[]] == Item {
+        assert [] in Items(t);
+      }
+      forall j, i | j in t && 0 <= i < |j|
+        ensures j[..i] in t && t[j[..i]] == Folder
+      {
+        assert j[..i] in t.Keys;
+        if t[j[..i]] == Item {
+          assert j[..i] in Items(t);
+          assert ProperPrefix(j[..i], j);
+        }
+      }
+    }
+  }
+
+  // The tree a pair describes: K's sequences are items, L's others folders.
+  ghost function TrieTree(l: set<Key>, k: set<Key>): Tree {
+    map j | j in l :: if j in k then Item else Folder
+  }
+
+  // L6's second and third parts: each such pair gives a valid tree, and that
+  // tree gives the pair back.  With TreeIsTrie, (L, K) and Tree are two
+  // spellings of one valid store.
+  lemma TrieIsTree(l: set<Key>, k: set<Key>)
+    requires TrieWF(l, k)
+    ensures ValidTree(TrieTree(l, k))
+    ensures TrieTree(l, k).Keys == l && Items(TrieTree(l, k)) == k
+  {
+    var t := TrieTree(l, k);
+    assert t.Keys == l;
+    assert Items(t) == k;
+    TreeIsTrie(t);
+  }
 }
