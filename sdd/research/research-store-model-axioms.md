@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-13
 **Backlog items:** BK-435 (The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them)
-**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 for every universe, finite or not (2026-10-13, § 10). § 10's open questions decided, including promotion into a spec (2026-10-13). Superseded as the authority by [spec 051](../specs/051-store-tree.md) (2026-10-13); kept as written as its rationale.
+**Status:** Accepted (maintainer, 2026-10-13). Independence, consistency and L1 to L5 machine-checked in Alloy in bounded scope (2026-10-13, § 10); D1 and L1 to L6 proved in Lean 4 for every universe, finite or not (2026-10-13, § 10). § 10's open questions decided, including promotion into a spec (2026-10-13). Superseded as the authority by [spec 051](../specs/051-store-tree.md) (2026-10-13); § 1 to § 9 kept as written as its rationale, and § 10 links where each result now lives.
 
 ---
 
@@ -449,11 +449,15 @@ tool is best at:
 3. **Dafny.** Kept for the operations pass: pre- and postconditions,
    preservation of the axioms by each operation, and executable code.
 
-The prose is the source of truth: each formal artifact is traced to AX-n and
-has one job. Three parallel restatements of the axioms are the failure to
-avoid.
+Each formal artifact has one job and is traced to one source of truth. Three
+parallel restatements of the axioms are the failure to avoid. That source was
+this document until [spec 051](../specs/051-store-tree.md) took it over: AX-1
+to AX-8 are its TREE-001 to TREE-008, Key (§ 4) is TREE-009, and L3 to L5 are
+TREE-010 to TREE-012. Both formal files now cite TREE-n in `-- @spec` tags, and
+`scripts/check_formal_trace.py` fails on a section either file leaves untagged
+(BK-437).
 
-**Step 1 result (2026-10-13).** `sdd/formal/alloy/StoreAxioms.als` restates
+**Step 1 result (2026-10-13).** [`sdd/formal/alloy/StoreAxioms.als`](../formal/alloy/StoreAxioms.als) restates
 § 3 clause by clause and runs, via `bash scripts/alloy_check.sh`, 30 commands,
 each with an `expect`; all 30 matched (the script's summary table, exit 0). It
 found no disagreement with this document. What it established, and within
@@ -484,7 +488,7 @@ its `Axioms` predicate, run once with `scripts/alloy_check.sh` and not
 committed; the failing commands are the ones Alloy reported as "satisfied
 against expectation".
 
-**Step 2 result (2026-10-13).** `sdd/formal/lean/StoreAxioms.lean`
+**Step 2 result (2026-10-13).** [`sdd/formal/lean/StoreAxioms.lean`](../formal/lean/StoreAxioms.lean)
 restates § 3 clause by clause (one field of `Axioms` per clause), and
 § 2 with one generalization (the alphabet need not hold a symbol besides
 `/`; only the infinite model below takes one), and proves, with `bash scripts/lean_check.sh` building it green under
@@ -520,7 +524,7 @@ run with `bash scripts/lean_check.sh <copy>`, failed with "declaration
 uses `sorry`" (not committed). A `#guard_msgs` block pins each headline
 result's axioms to Lean's standard ones.
 
-**Relation to existing formal work.** `sdd/formal/StoreTree.dfy` §1 models the
+**Relation to existing formal work.** [`sdd/formal/StoreTree.dfy`](../formal/StoreTree.dfy) §1 models the
 store as `Tree = map<Key, Kind>` with `Key = seq<string>`, requiring the root
 to be a folder and every proper prefix of a node's key to be a folder. That
 reads as the keys-as-words presentation of §4's trie view, with L6 as the
@@ -545,17 +549,19 @@ open:
   are non-empty and contain no `/`, so a valid tree satisfies AX-7 by
   construction rather than by a precondition on callers. The change is
   BK-434's, since it touches `StoreTree.dfy`.
-- **Spec.** The axioms are promoted into a new store-model spec under
-  `sdd/specs/`, with this document as its rationale; each of its sections
-  needs a test mark, as every spec section does. It is the home of the tree
+- **Spec.** The axioms are promoted into a store-model spec, with this
+  document as its rationale. Done:
+  [spec 051, the store tree](../specs/051-store-tree.md), TREE-001 to
+  TREE-012, each section marked by a test against a reference model in
+  [`tests/test_store_tree.py`](../../tests/test_store_tree.py); checking each
+  backend's observed tree against it is BK-436. It is the home of the tree
   over Keys; two existing specs touch the same ground and keep their own
   layers. Spec 004 governs input strings: `RemotePath` maps an accepted input
   onto a Key or rejects it, so the library addresses a subset of the Keys this
-  model admits. Spec 003's § The store tree,
-  drafted in RFC-0021 Appendix A, lands first with A.1 as accepted (BK-432);
-  when the store-model spec lands, A.1's statement of the tree becomes a
-  pointer to it and the section keeps what concerns backends and encodings
-  (BK-435).
+  model admits. Spec 003's § The store tree, drafted in RFC-0021 Appendix A,
+  lands with A.1 as accepted (BK-432); A.1's statement of the tree then
+  becomes a pointer to spec 051 and the section keeps what concerns backends
+  and encodings (BK-435).
 
 ---
 

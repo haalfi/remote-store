@@ -9,10 +9,11 @@ Key, the shape of a Key, and closure of Keys under ancestors. It describes
 structure only, at one instant: no operation, backend or encoding.
 
 This spec is the source of truth for TREE-001 to TREE-012. The rationale and
-evidence behind it are kept, as written when the model was accepted, in
-[`research/research-store-model-axioms.md`](../research/research-store-model-axioms.md):
-a countermodel per clause, the bounded check in `formal/alloy/StoreAxioms.als`
-and the proofs in `formal/lean/StoreAxioms.lean`.
+evidence behind it are kept in
+[`research/research-store-model-axioms.md`](../research/research-store-model-axioms.md),
+§ 1 to § 9 as written when the model was accepted: a countermodel per clause,
+the bounded check in [`formal/alloy/StoreAxioms.als`](../formal/alloy/StoreAxioms.als)
+and the proofs in [`formal/lean/StoreAxioms.lean`](../formal/lean/StoreAxioms.lean).
 
 **Layering.** This spec governs Keys and the tree over them. Spec 004 governs
 input strings: `RemotePath` maps an accepted input onto a Key or rejects it, so

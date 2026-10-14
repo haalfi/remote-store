@@ -8,6 +8,9 @@ audience:
   - library.maintainer
 decisions:
   - sdd/decisions/a43a478b-6ba7-4978-89f5-773056c9d7c7.jsonl
+  - sdd/decisions/f92d302b-65de-499e-a0e5-c20c79ca2391.jsonl
+surprising_ripples:
+  - "sdd/specs/051-store-tree.md Overview: it said the research doc is kept 'as written when the model was accepted'. #1131's review asked § 10 to show the spec as settled and link the Alloy, Lean and spec artifacts, which made that false for § 10; both it and the research doc's Status line now scope 'as written' to § 1 to § 9"
 orient:
   - items: [BK-434]
     verdict: constrains
