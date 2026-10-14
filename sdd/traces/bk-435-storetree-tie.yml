@@ -65,3 +65,47 @@ phases:
         section: "§12 TrieWF, TreeIsTrie, TrieTree, TrieIsTree, TreeIsTrieTree"
         read_type: reference
         extract: "bash scripts/dafny_verify.sh StoreTree.dfy: 36 verified, 0 errors (two hints added after two failed runs: the root's kind, and s[..|s|] == s). Mutants on scratch copies, deleted after: K_ne removed fails TreeIsTrie's postcondition; K_leaf removed fails its forall's Folder postcondition. Review round 3 of #1141 found tree to pair to tree unproved, so 'exactly' and 'two spellings' overclaimed; TreeIsTrieTree added: 37 verified, 0 errors, and TrieTree mapping every key to Folder fails its u[j] == t[j]"
+review:
+  # Derived by `hatch run ship-report 1141 --trace-block-only` at head 0ce5910.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1141 --trace-block-only"
+  pr: 1141
+  review_rounds: 3
+  submissions: 3
+  findings: 6
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.22
+    - round: 2
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.35
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 1.03
+  by_file:
+    - path: "sdd/formal/StoreTree.dfy"
+      findings: 3
+    - path: "sdd/traces/bk-435-storetree-tie.yml"
+      findings: 2
+    - path: "sdd/research/research-store-model-axioms.md"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/76a5c608-6e68-4795-9152-690035aed9eb.jsonl"
+    - "sdd/formal/README.md"
+  review_driven_commits:
+    - sha: "1ef3de6"
+      subject: "fix: address PR #1141 review"
+    - sha: "cfb751f"
+      subject: "fix: address PR #1141 review"
+    - sha: "0ce5910"
+      subject: "fix: address PR #1141 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
