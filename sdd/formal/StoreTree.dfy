@@ -651,8 +651,9 @@ module StoreTree {
   // Spec 051 states the tree as axioms over entities (TREE-001 to TREE-008).
   // Lemma L6 of lean/StoreAxioms.lean proves that its models are, up to
   // isomorphism, the pairs (L, K) meeting Trie.WF: L a set of sequences of
-  // names, closed under prefixes and holding the empty sequence, and K the
-  // non-empty sequences of L with no proper extension in L.  A Tree is such a
+  // names, closed under prefixes and holding the empty sequence, and K a set
+  // of non-empty sequences of L, each with no proper extension in L (a leaf
+  // of L outside K is an empty folder).  A Tree is such a
   // pair, L its keys and K its items, so the lemmas below tie §1 to spec 051
   // through L6, with two exceptions.  Trie.WF's condition that every segment
   // is a name (TREE-007) is not stated: Key admits "" and "a/b" until BK-434

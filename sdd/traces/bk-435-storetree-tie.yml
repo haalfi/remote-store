@@ -19,7 +19,7 @@ decisions:
 orient:
   - items: [BK-434]
     verdict: constrains
-    evidence: "Research § 10, 'Decided (maintainer, 2026-10-13)': StoreTree.dfy's Key 'gains AX-7's restriction as a type ... The change is BK-434's'. BK-434's entry records the same divergence. So §12 leaves Trie.WF's names condition out and does not touch line 46's Key."
+    evidence: "Research § 10, 'Decided (maintainer, 2026-10-13)': StoreTree.dfy's Key 'gains AX-7's restriction as a type ... The change is BK-434's'. BK-434's entry records the same divergence. So §12 leaves Trie.WF's names condition out and does not touch §1's Key."
   - items: [BK-432]
     verdict: constrains
     evidence: "Research § 10: spec 003's § The store tree 'lands with A.1 as accepted (BK-432)'; A.1 becomes a pointer to spec 051 afterwards (BK-435). RFC-0021 is Accepted 2026-10-13. So the A.1 pointer stays out of this PR, and #1130 is not asked to change A.1."
