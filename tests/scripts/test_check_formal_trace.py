@@ -367,6 +367,19 @@ class TestComputeRestatementViolations:
             (KIND_RESTATES_UNKNOWN, "alloy/M.als 099-gone.md"),
         ]
 
+    def test_r3_a_real_spec_name_under_the_wrong_directory(self, tmp_path: Path) -> None:
+        # Specs are read from sdd/specs/ alone, so a path elsewhere names no
+        # file there even when its basename does (#1131 review).
+        als = (
+            "-- @restates sdd/spec/051-store-tree.md\n"
+            "-- @restates sdd/specs/archive/051-store-tree.md\n"
+            "-- @spec TREE-001\n"
+        )
+        assert self._violations(tmp_path, als) == [
+            (KIND_RESTATES_UNKNOWN, "alloy/M.als sdd/spec/051-store-tree.md"),
+            (KIND_RESTATES_UNKNOWN, "alloy/M.als sdd/specs/archive/051-store-tree.md"),
+        ]
+
     def test_tag_outside_the_restated_spec_is_allowed(self, tmp_path: Path) -> None:
         # Only an undeclared ID is an error; citing a declared section of
         # another spec is a cross-reference.

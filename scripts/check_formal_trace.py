@@ -49,8 +49,10 @@ each localized to the restating file:
       tags nowhere. The claim space is that spec file's own headings and
       requirement-table rows, so a section added to the spec fails here
       until a restatement carries it.
-  R3  a ``@restates`` line naming a spec file that does not exist, so a
-      renamed or removed spec cannot switch R2 off silently.
+  R3  a ``@restates`` line naming a path that is not a spec file at the top
+      level of ``sdd/specs/``, so a renamed or removed spec, or a path
+      under another directory, cannot switch R2 off or borrow another
+      spec's R2 silently.
 
 Which side governs is declared in ``sdd/formal/README.md`` § Traceability
 tags: the spec does.
@@ -125,7 +127,7 @@ import ast
 import re
 import sys
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -159,6 +161,8 @@ _SPEC_TAG_RE = re.compile(r"//[ \t]*@spec\b(.*)")
 _RESTATEMENT_TAG_RE = re.compile(r"^[ \t]*--[ \t]*@spec\b(.*)")
 _RESTATES_RE = re.compile(r"^[ \t]*--[ \t]*@restates\b[ \t]*(\S+)")
 _RESTATEMENT_GLOBS = ("alloy/*.als", "lean/*.lean")
+# The one directory a @restates path may name: main() reads specs from it, top level only.
+_SPECS_DIR = PurePosixPath("sdd/specs")
 
 # Violation kinds. Stable strings — they key the baseline below.
 KIND_UNTESTED = "dafny-clause-untested"
@@ -398,7 +402,9 @@ def extract_restatements(formal_dir: Path) -> dict[str, Restatement]:
     """Map each Alloy and Lean file, relative to ``formal_dir``, to its tags.
 
     A ``-- @restates sdd/specs/<file>.md`` line is keyed by the spec file's
-    name alone, which is how ``extract_declared_by_file`` keys it.
+    name alone, which is how ``extract_declared_by_file`` keys it. Any other
+    path, a real spec's name under another directory included, is keyed as
+    written, so it matches no spec and raises R3.
     """
     found: dict[str, Restatement] = {}
     for pattern in _RESTATEMENT_GLOBS:
@@ -413,7 +419,9 @@ def extract_restatements(formal_dir: Path) -> dict[str, Restatement]:
                 where = f"{path}:{lineno}"
                 restates = _RESTATES_RE.search(line)
                 if restates is not None:
-                    entry.restates.setdefault(Path(restates.group(1)).name, []).append(where)
+                    written = PurePosixPath(restates.group(1))
+                    spec_file = written.name if written.parent == _SPECS_DIR else str(written)
+                    entry.restates.setdefault(spec_file, []).append(where)
                     continue
                 tag = _RESTATEMENT_TAG_RE.search(line)
                 if tag is not None:
@@ -461,7 +469,7 @@ def compute_restatement_violations(
 
     R1 — a tag citing an ID with no spec section.
     R2 — a section of a restated spec that the file tags nowhere.
-    R3 — a ``@restates`` line naming a spec file that does not exist.
+    R3 — a ``@restates`` line naming no spec file at the top level of ``sdd/specs/``.
     """
     violations: set[tuple[str, str]] = set()
     for label, entry in restatements.items():
@@ -487,7 +495,7 @@ _KIND_LABEL = {
     KIND_TAG_BAD_ID: "@spec tag cites an unknown spec ID (F3)",
     KIND_RESTATEMENT_BAD_ID: "restatement @spec tag cites an unknown spec ID (R1)",
     KIND_RESTATEMENT_UNTAGGED: "section of a restated spec with no tag in the restatement (R2)",
-    KIND_RESTATES_UNKNOWN: "@restates names a spec file that does not exist (R3)",
+    KIND_RESTATES_UNKNOWN: "@restates names no spec file in sdd/specs/ (R3)",
 }
 
 

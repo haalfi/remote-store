@@ -107,8 +107,12 @@ pred KeyDef {
 -- the deepest entity has depth n - 1, so its key has length at most
 -- (n - 1) * (L + 1) - 1 for names of length at most L. Each § 7 command
 -- picks n, L and a seq scope that admit that length, so KeyDef excludes no
--- structure in its scope. The other KeyDef commands (the § 5 key checks and
--- the witness keys) pin every name instead, and their keys fit seq 6.
+-- structure in its scope. The other KeyDef commands keep every key within
+-- seq 6 by their structure: the witness keys and row_AX7_noslash_shares_key
+-- pin every name, row_AX7_nonempty_shares_key's only non-root name is empty,
+-- and row_AX8_shares_key's entities sit at depth one, where KeyDef makes a
+-- key the name itself, a seq the scope already bounds. A row made deeper
+-- would need a name bound or a larger seq scope, as § 7's commands have.
 pred NameLen[n: Int] { all e: Entity | #e.name <= n }
 
 -- A chain of § 4, as data, so that L1 can quantify over chains.

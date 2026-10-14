@@ -15,8 +15,10 @@ per axiom clause, written from the spec's sections. Two kinds of evidence:
 - **What the axioms give a caller.** Structures drawn by Hypothesis with free
   names (ε, `/` and `a/b` among them) and free kinds are kept only when every
   predicate holds, and their Keys are unique (TREE-010), well shaped
-  (TREE-011) and closed under ancestors (TREE-012). Dropping a naming
-  predicate lets a collision through, so these depend on the predicates.
+  (TREE-011) and closed under ancestors (TREE-012). These depend on the
+  predicates: with TREE-003, TREE-007 (non-empty, no slash) or TREE-008
+  dropped from the filter, the same strategy draws a structure those tests
+  reject (``test_lemma_tests_fail_without_each_clause``).
   Their Key is checked against a second computation, top-down from the
   root, that shares no code with the chain walk the spec describes.
 
@@ -35,7 +37,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import pytest
-from hypothesis import HealthCheck, assume, event, given, settings
+from hypothesis import HealthCheck, assume, event, find, given, settings
 from hypothesis import strategies as st
 
 if TYPE_CHECKING:
@@ -102,9 +104,9 @@ CLAUSES: dict[str, Callable[[Store], bool]] = {
 }
 
 
-def broken(s: Store) -> set[str]:
-    """The clauses ``s`` breaks."""
-    return {clause for clause, holds in CLAUSES.items() if not holds(s)}
+def broken(s: Store, clauses: Mapping[str, Callable[[Store], bool]] = CLAUSES) -> set[str]:
+    """The clauses ``s`` breaks, among ``clauses``."""
+    return {clause for clause, holds in clauses.items() if not holds(s)}
 
 
 # --- Key (TREE-009), defined where TREE-004 to TREE-006 hold ---
@@ -353,15 +355,16 @@ _FILTERED = settings(suppress_health_check=[HealthCheck.filter_too_much])
 
 
 @st.composite
-def _stores(draw: st.DrawFn) -> Store:
-    """Each entity under an earlier one, with a drawn kind and name; kept only if every predicate holds.
+def _stores(draw: st.DrawFn, clauses: Mapping[str, Callable[[Store], bool]] = CLAUSES) -> Store:
+    """Each entity under an earlier one, with a drawn kind and name; kept only if every predicate in ``clauses`` holds.
 
     Placing each entity under an earlier one gives TREE-004 to TREE-006 by
     construction. Kinds, names and parents are biased toward valid choices
     (folders two in three; an invalid name, or a parent drawn from all
     entities rather than folders, only on the rare draw) but every invalid
     choice stays possible, and sibling names still collide, so TREE-003,
-    TREE-007 and TREE-008 still decide what is kept. The kept size is an event, so
+    TREE-007 and TREE-008 still decide what is kept
+    (``test_lemma_tests_fail_without_each_clause``). The kept size is an event, so
     ``--hypothesis-show-statistics`` shows it.
     """
     U, F, I, C, names = {ROOT}, {ROOT}, set(), set(), {ROOT: ""}  # noqa: E741
@@ -379,7 +382,7 @@ def _stores(draw: st.DrawFn) -> Store:
             I.add(x)
         placed.append(x)
     s = _store(U, F, I, C, names)
-    assume(broken(s) == set())
+    assume(broken(s, clauses) == set())
     event(f"kept entities: {len(s.U)}")
     return s
 
@@ -433,3 +436,46 @@ def test_prefix_closure(s: Store) -> None:
             assert ancestor in s.F
             assert ancestor in on_chain
         assert all(y in s.F for y in on_chain[:-1])
+
+
+# --- Positive control: the filter in _stores decides what the lemma tests see ---
+
+_LEMMA_TESTS = (test_keys_are_unique, test_key_shape, test_prefix_closure)
+
+
+def _fails_a_lemma_test(s: Store) -> bool:
+    """Whether the body of a TREE-010 to TREE-012 test rejects ``s``; a KeyError is a missing ancestor Key."""
+    for lemma_test in _LEMMA_TESTS:
+        try:
+            lemma_test.hypothesis.inner_test(s)
+        except (AssertionError, KeyError):
+            return True
+    return False
+
+
+@pytest.mark.pbt
+@pytest.mark.parametrize(
+    "clause",
+    [
+        pytest.param("TREE-003", marks=pytest.mark.spec("TREE-003"), id="TREE-003"),
+        pytest.param("TREE-007 non-empty", marks=pytest.mark.spec("TREE-007"), id="TREE-007 non-empty"),
+        pytest.param("TREE-007 no slash", marks=pytest.mark.spec("TREE-007"), id="TREE-007 no slash"),
+        pytest.param("TREE-008", marks=pytest.mark.spec("TREE-008"), id="TREE-008"),
+    ],
+)
+def test_lemma_tests_fail_without_each_clause(clause: str) -> None:
+    """With one clause dropped from the filter, ``_stores`` draws a structure the lemma tests reject.
+
+    So the strategy reaches the structures that clause excludes, and the
+    TREE-010 to TREE-012 tests pass because the clause excludes them, not
+    because they are never drawn.
+    """
+    weakened = {name: holds for name, holds in CLAUSES.items() if name != clause}
+    found = find(
+        _stores(weakened),
+        _fails_a_lemma_test,
+        settings=settings(
+            database=None, derandomize=True, max_examples=2000, suppress_health_check=[HealthCheck.filter_too_much]
+        ),
+    )
+    assert broken(found) == {clause}
