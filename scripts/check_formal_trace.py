@@ -53,8 +53,9 @@ each localized to the restating file:
       level of ``sdd/specs/``, so a renamed or removed spec, or a path
       under another directory, cannot switch R2 off or borrow another
       spec's R2 silently.
-  R4  a file with no ``@restates`` line, so deleting the line cannot
-      switch R2 off either.
+  R4  a file with no ``@restates`` line, so deleting a file's only
+      ``@restates`` line cannot switch R2 off either. A module that
+      restates no spec sits in a subdirectory, which R does not read.
 
 Which side governs is declared in ``sdd/formal/README.md`` § Traceability
 tags: the spec does.
@@ -86,8 +87,11 @@ proof of test depth, and should be read with these limits in mind:
     sits on the right declaration, or that the solver or proof checker
     accepted the file (``alloy_check.sh`` and ``lean_check.sh`` run in no
     CI job). Which spec a file restates is its author's choice: R4
-    demands a ``@restates`` line, not one naming spec 051. An ``.als``
-    or ``.lean`` file outside those two directories is not read.
+    demands a ``@restates`` line, not one naming spec 051, so dropping
+    one of a file's several ``@restates`` lines, or deleting a restating
+    file, passes here; ``test_repo_restatements_cover_spec_051`` catches
+    both for spec 051. An ``.als`` or ``.lean`` file outside the top level
+    of those two directories is not read.
 
 Closing these gaps fully would need per-clause sub-IDs and assertion-
 level analysis, deliberately out of ID-206's scope. What the check buys

@@ -329,6 +329,16 @@ class TestExtractRestatements:
         (formal / "lean" / "lakefile.toml").write_text("# -- @spec TREE-001\n", encoding="utf-8")
         assert extract_restatements(formal) == {}
 
+    def test_subdirectory_modules_are_not_read(self, tmp_path: Path) -> None:
+        # sdd/formal/README.md sends a module that restates no spec into a
+        # subdirectory, where R4 would otherwise demand a @restates line.
+        formal = _formal_tree(tmp_path)
+        (formal / "alloy" / "sub").mkdir()
+        (formal / "alloy" / "sub" / "Helper.als").write_text("module sub/Helper\n", encoding="utf-8")
+        (formal / "lean" / "StoreAxioms").mkdir()
+        (formal / "lean" / "StoreAxioms" / "Helper.lean").write_text("-- @spec TREE-001\n", encoding="utf-8")
+        assert extract_restatements(formal) == {}
+
     def test_restatement_tags_do_not_enter_source_d(self, tmp_path: Path) -> None:
         # F1 keys on D. A TREE-* tag in D would demand a conformance marker
         # that BK-436 has not written yet.
@@ -389,8 +399,8 @@ class TestComputeRestatementViolations:
         assert self._violations(tmp_path, als) == []
 
     def test_r4_file_without_restates(self, tmp_path: Path) -> None:
-        # Otherwise deleting the @restates line would switch R2 off, and an
-        # .als- or .lean-only diff reaches docs-gate alone (#1131 review).
+        # Otherwise deleting a file's only @restates line would switch R2 off,
+        # and an .als- or .lean-only diff reaches docs-gate alone (#1131 review).
         assert self._violations(tmp_path, "-- @spec TREE-001\n") == [
             (KIND_RESTATES_MISSING, "alloy/M.als (no @restates)"),
         ]

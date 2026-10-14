@@ -119,6 +119,10 @@ phases:
         section: "CODE_PAT, HOOKS_PAT, the formal filter, tooling-tests' if (#1131 second review)"
         read_type: verify
         extract: "The review found test_repo_restatements_cover_spec_051 the only guard against deleting @restates, in a job an .als- or .lean-only diff never starts: tooling-tests runs on code or hooks, neither pattern matches sdd/formal/, and the formal filter drops alloy and lean. Reproduced on a copy of sdd/formal with every @restates and @spec line stripped: main() exit 0. Added R4 (a file with no @restates line) to the checker that docs-gate runs; test_r4_file_without_restates and test_restatement_stripped_of_every_tag_fails seen failing first, the copy now exits 1. Mutant: R4 only when the file also has no tags; test_r4_file_without_restates failed. 57 passed"
+      - file: scripts/check_formal_trace.py
+        section: "R4, Scope bullet R; sdd/formal/README.md Traceability tags (#1139 review)"
+        read_type: verify
+        extract: "The review found R4's 'deleting the line cannot switch R2 off' true only of a file's only @restates line, and no compliant route for a module restating no spec: a borrowed @restates makes R2 demand every section of it. R4 narrowed; the Scope bullet now names both gaps R leaves (one of several @restates lines dropped, a restating file deleted) and the repo test that catches them for spec 051. Non-restating modules go in a subdirectory, which the non-recursive globs skip: bash scripts/alloy_check.sh on a scratch model opening sub/Helper matched its expect, and lean_check.sh built a copy of the project importing StoreAxioms.Helper. test_subdirectory_modules_are_not_read pins the skip; mutant with recursive globs failed it. 58 passed"
 # Note: ship-report counts formal PR reviews only. The analyze-only /rvw-pr round
 # (one Bug finding, fixed in 1ce2bf0d4) was posted as a plain PR comment and is
 # not in the figures below; see the verify phase above.
