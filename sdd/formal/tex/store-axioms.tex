@@ -1,0 +1,867 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumerate}
+\usepackage[margin=2.6cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+
+% ---------------------------------------------------------------- notation
+\newcommand{\sep}{\mathord{/}}              % the separator symbol
+\newcommand{\eps}{\varepsilon}
+\newcommand{\N}{\mathsf{N}}                 % the names
+\newcommand{\Nat}{\mathbb{N}}
+\newcommand{\U}{U}
+\newcommand{\F}{F}
+\newcommand{\I}{I}
+\newcommand{\C}{\mathrel{C}}
+\newcommand{\nm}{\operatorname{name}}
+\newcommand{\Key}{\operatorname{Key}}
+\newcommand{\seqof}{\operatorname{seq}}
+\newcommand{\depth}{\operatorname{depth}}
+\newcommand{\join}{\operatorname{join}}
+\newcommand{\cat}{\mathbin{{}^\frown}}      % concatenation of sequences
+\newcommand{\sq}[1]{\langle #1\rangle}      % a finite sequence
+\newcommand{\pre}[2]{#1{\restriction}#2}     % prefix of length
+\newcommand{\lean}[1]{\texttt{\small #1}}
+\newcommand{\leanref}[1]{{\footnotesize\textup{[Lean:~\lean{#1}]}}\hskip 0.5em plus 0.2em\relax\ignorespaces}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{axiom}{Axiom}
+\renewcommand{\theaxiom}{AX-\arabic{axiom}}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{The Store Model as a Set of Axioms\\[0.3em]
+\large A human-readable account of the Lean~4 proofs and the Alloy checks}
+\author{remote-store, BK-435 (exposition)}
+\date{Written 2026-10-14 against branch \texttt{store-model-axioms} at \texttt{21a0e534b}\\
+(Lean file and spec~051 unchanged at \texttt{bffcee464})}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A store is a rooted tree of folders and items, each addressed by one Key.
+Spec~051 states that tree as eight axioms, and states the consequences a
+caller relies on: one entity per Key, the shape of a Key, and closure of Keys
+under ancestors. This note proves these in ordinary mathematical prose,
+following the Lean~4 formalization. It also proves the formalization's
+further result: up to isomorphism, the models are the non-empty prefix-closed sets of
+name sequences in which the items are marked, every item a non-empty leaf.
+No result proved in Lean assumes the store is finite.
+A last section explains what the bounded Alloy checks add.
+\end{abstract}
+
+\paragraph{Status of this document.}
+This is an \emph{exposition}, not a source of truth. The authority for the
+statements is spec~051, and the machine-checked authority for the proofs is
+the Lean file. Each result proved in Lean names, after its heading, the Lean
+declaration it restates. One result, Proposition~\ref{prop:finitehalf}, is
+checked only in Alloy and says so. Where this text and the Lean file disagree, the Lean file is right
+and this text is wrong. The proofs follow the Lean proofs step by step, with
+the bookkeeping that a proof assistant needs (index arithmetic, coercions,
+choice of representatives) told in words.
+
+\tableofcontents
+
+% =======================================================================
+\section{Notation and the axioms}
+\label{sec:axioms}
+
+\paragraph{Words.}
+Fix an alphabet $\Sigma$ and a distinguished symbol $\sep\in\Sigma$, the
+\emph{separator}. $\Sigma^*$ is the set of finite words over $\Sigma$, and
+$\eps$ is the empty word. Words are compared exactly, symbol by symbol.
+Juxtaposition $uv$ denotes the concatenation of words.
+The \emph{names} are
+\[
+  \N \;=\; \{\, w\in\Sigma^* : w\neq\eps \text{ and } \sep \text{ does not occur in } w \,\}.
+\]
+Spec~051 asks $\Sigma$ to contain at least one symbol besides $\sep$. The proofs
+below need that only in Theorem~\ref{thm:infinite}; elsewhere $\Sigma$ may be
+$\{\sep\}$, in which case $\N$ is empty.
+
+\paragraph{Sequences.}
+A finite sequence of names is written $\sq{w_1,\dots,w_n}$, the empty
+sequence is $\sq{}$, $s\cat t$ is the concatenation of sequences, $|s|$ is the
+length, and $\pre{s}{i}$ is the prefix of $s$ of length $i$ (for $i\le|s|$).
+Sequences of names and words are different things: a sequence of names is a
+list of words, and the bridge between them is the join of
+Definition~\ref{def:join}.
+
+\paragraph{Structures.}
+A \emph{structure} is a tuple $(\U,\F,\I,r,C,\nm)$ where $\U$ is any set (the
+universe of \emph{entities}), $\F,\I\subseteq\U$ (\emph{folders} and
+\emph{items}), $r\in\U$ (the \emph{root}), $C\subseteq\U\times\U$ is a binary
+relation (\emph{containment}; $p\C x$ reads ``$p$ contains $x$''), and
+$\nm\colon\U\to\Sigma^*$. Nothing is assumed about the size of $\U$.
+\leanref{Structure}
+
+\begin{definition}[Chain]\label{def:chain}
+\leanref{IsChain}
+For $x\in\U$ and $n\in\Nat$, a \emph{chain to $x$ of length $n$} is a
+sequence $x_0,x_1,\dots,x_n$ of entities with $x_0=r$, $x_n=x$, and
+$x_i\C x_{i+1}$ for every $i<n$.
+\end{definition}
+
+\paragraph{The axioms.}
+A \emph{model} is a structure that satisfies the following. The axiom
+numbers are spec~051's; TREE-00$k$ is AX-$k$.
+\leanref{Axioms}
+
+\begin{axiom}[partition]\label{ax:1} $\U=\F\cup\I$ and $\F\cap\I=\emptyset$.\end{axiom}
+\begin{axiom}[root]\label{ax:2} $r\in\F$.\end{axiom}
+\begin{axiom}[items are leaves]\label{ax:3} $C\subseteq\F\times\U$: if $p\C x$ then $p\in\F$.\end{axiom}
+\begin{axiom}[at most one container]\label{ax:4} If $p\C x$ and $q\C x$ then $p=q$.\end{axiom}
+\begin{axiom}[root is topmost]\label{ax:5} There is no $p$ with $p\C r$.\end{axiom}
+\begin{axiom}[reachability]\label{ax:6} Every $x\in\U$ has a chain (of some length $n\ge0$).\end{axiom}
+\begin{axiom}[names]\label{ax:7} $\nm(r)=\eps$, and $\nm(x)\in\N$ for every $x\neq r$.\end{axiom}
+\begin{axiom}[sibling names]\label{ax:8} If $p\C x$, $p\C y$ and $\nm(x)=\nm(y)$, then $x=y$.\end{axiom}
+
+AX-1 and AX-7 are conjunctions. The Lean file has one field per clause:
+AX-1 \emph{disjoint} and \emph{covering}, and AX-7 \emph{root},
+\emph{non-empty} and \emph{no~$\sep$}. Section~\ref{sec:alloy} refutes each clause
+separately. AX-4 asserts only uniqueness. That every non-root \emph{has} a
+container is a theorem (D1). No finiteness axiom is included.
+
+% =======================================================================
+\section{Words: the join of a sequence of names}
+\label{sec:words}
+
+\begin{definition}[Join]\label{def:join}
+\leanref{join}
+For a sequence of words, $\join\sq{}=\eps$, $\join\sq{w}=w$, and
+\[
+  \join\sq{w,v,\dots} \;=\; w\sep\join\sq{v,\dots}.
+\]
+So $\join\sq{w_1,\dots,w_n}=w_1\sep w_2\sep\cdots\sep w_n$.
+\end{definition}
+
+Everything about Keys that is not about trees is a fact about this
+function. The central fact is that $\join$ loses no information on sequences
+of names (Lemma~\ref{lem:joininj}). Its engine is the following
+observation about where the first separator is.
+
+\begin{lemma}[First separator]\label{lem:splitfirst}
+\leanref{split\_first}
+Let $w,a,\rho,J\in\Sigma^*$ with $\sep$ not occurring in $w$, and suppose
+$a\sep\rho = w\sep J$. Then either $a=w$ and $\rho=J$, or there is $a'$ with
+$a=w\sep a'$ and $a'\sep\rho=J$.
+\end{lemma}
+
+\begin{proof}
+Induction on the length of $w$.
+If $w=\eps$, the equation reads $a\sep\rho=\sep J$. If $a=\eps$, then
+$\rho=J$ and the first alternative holds. If $a=b\,a''$ for a symbol $b$, then
+comparing first symbols gives $b=\sep$ and $a''\sep\rho=J$, so the second
+alternative holds with $a'=a''$.
+
+If $w=c\,w'$ for a symbol $c$, then $c\neq\sep$ and $\sep\notin w'$. If
+$a=\eps$, the equation reads $\sep\rho=c\,w'\sep J$, which forces $c=\sep$,
+a contradiction. So $a=b\,a''$, and comparing first symbols gives $b=c$ and
+$a''\sep\rho=w'\sep J$. By induction, either $a''=w'$ and $\rho=J$, giving
+$a=c\,w'=w$, or $a''=w'\sep a'$ with $a'\sep\rho=J$, giving
+$a=c\,w'\sep a'=w\sep a'$.
+\end{proof}
+
+\begin{lemma}\label{lem:joinnil}
+\leanref{join\_eq\_nil}
+If every entry of $s$ is in $\N$ and $\join s=\eps$, then $s=\sq{}$.
+\end{lemma}
+\begin{proof}
+If $s=\sq{w,\dots}$ is non-empty, $\join s$ begins with $w$ (it is $w$, or
+$w\sep\cdots$), and $w\neq\eps$, so $\join s\neq\eps$.
+\end{proof}
+
+\begin{lemma}[Join is injective on names]\label{lem:joininj}
+\leanref{join\_inj}
+If every entry of $s$ and of $t$ is in $\N$ and $\join s=\join t$, then
+$s=t$.
+\end{lemma}
+
+\begin{proof}
+Induction on $s$, by cases on the shapes of $s$ and $t$.
+\begin{itemize}
+\item If $s=\sq{}$ then $\join t=\eps$, so $t=\sq{}$ by
+  Lemma~\ref{lem:joinnil}. Symmetrically if $t=\sq{}$.
+\item If $s=\sq{w}$ and $t=\sq{v}$ then $w=v$.
+\item If $s=\sq{w}$ and $t=\sq{v,v',\dots}$, then $w=v\sep\join\sq{v',\dots}$
+  contains $\sep$, contradicting $w\in\N$. Symmetrically if $s$ is the longer one.
+\item If $s=\sq{w,w',\dots}$ and $t=\sq{v,v',\dots}$, then
+  $v\sep\join\sq{v',\dots}=w\sep\join\sq{w',\dots}$. Since $\sep\notin w$,
+  Lemma~\ref{lem:splitfirst} gives either $v=w$ and
+  $\join\sq{v',\dots}=\join\sq{w',\dots}$, in which case the induction
+  hypothesis gives $\sq{w',\dots}=\sq{v',\dots}$ and so $s=t$; or
+  $v=w\sep a'$, which contains $\sep$, contradicting $v\in\N$. \qedhere
+\end{itemize}
+\end{proof}
+
+\begin{definition}[Good shape]\label{def:shape}
+\leanref{GoodShape}
+A word $k$ has \emph{good shape} if it does not begin with $\sep$, does not
+end with $\sep$, and does not contain $\sep\sep$.
+\end{definition}
+
+\begin{lemma}\label{lem:joinshape}
+\leanref{join\_shape}
+If $s\neq\sq{}$ and every entry of $s$ is in $\N$, then $\join s\neq\eps$ and
+$\join s$ has good shape.
+\end{lemma}
+
+\begin{proof}
+Induction on $s$. If $s=\sq{w}$, then $\join s=w$ is non-empty and contains no
+$\sep$ at all, so it has good shape trivially.
+
+If $s=\sq{w,v,\dots}$, let $J=\join\sq{v,\dots}$. By induction $J\neq\eps$
+and $J$ has good shape. The word $w\sep J$ is non-empty because $w$ is.
+We use Lemma~\ref{lem:splitfirst} with $\sep\notin w$ three times.
+\begin{itemize}
+\item \emph{No leading $\sep$.} If $w\sep J=\sep b$, that is
+  $\eps\sep b=w\sep J$, then either $\eps=w$, which is false, or
+  $\eps=w\sep a'$, which is impossible.
+\item \emph{No trailing $\sep$.} If $w\sep J=a\sep$, that is
+  $a\sep\eps=w\sep J$, then either $J=\eps$, which is false, or
+  $J=a'\sep$ for some $a'$, which contradicts the good shape of $J$.
+\item \emph{No $\sep\sep$.} If $w\sep J=a\sep\sep b$, that is
+  $a\sep(\sep b)=w\sep J$, then either $J=\sep b$, so $J$ begins with $\sep$, or
+  $J=a'\sep\sep b$. Both contradict the good shape of $J$. \qedhere
+\end{itemize}
+\end{proof}
+
+% =======================================================================
+\section{Chains, depth and the Key}
+\label{sec:chains}
+
+From here to the end of Section~\ref{sec:lemmas}, fix a model
+$(\U,\F,\I,r,C,\nm)$.
+
+\begin{lemma}[Chain uniqueness]\label{lem:chainunique}
+\leanref{chain\_unique}
+If $x_0,\dots,x_n$ and $y_0,\dots,y_m$ are chains to the same entity $x$, then
+$m=n$ and $y_i=x_i$ for all $i\le n$.
+\end{lemma}
+
+\begin{proof}
+Induction on $n$, for all $x$, $m$ and $y$ at once.
+
+\emph{$n=0$.} Then $x=x_0=r$. If $m\ge1$, then $y_{m-1}\C y_m=x=r$,
+contradicting AX-5. So $m=0$ and $y_0=r=x_0$.
+
+\emph{$n=k+1$.} Then $x_k\C x$. If $m=0$, then $x=y_0=r$ and $x_k\C r$,
+contradicting AX-5. So $m=j+1$ and $y_j\C x$. By AX-4, $y_j=x_k$. Now
+$x_0,\dots,x_k$ and $y_0,\dots,y_j$ are both chains to $x_k$, so the induction
+hypothesis gives $j=k$ and $y_i=x_i$ for $i\le k$. Hence $m=n$, and also
+$y_n=x=x_n$.
+\end{proof}
+
+\begin{definition}[Depth and the chain of $x$]
+\leanref{depth, chain}
+By AX-6 every $x$ has a chain. By Lemma~\ref{lem:chainunique} its length and
+entries do not depend on which chain is chosen. Call the length the
+\emph{depth} of $x$, $\depth(x)$, and the chain \emph{the chain of $x$},
+written $x_0,\dots,x_{\depth(x)}$.
+\end{definition}
+
+The Lean file picks a chain with the axiom of choice and then shows that any
+other chain agrees with it (\lean{chain\_eq}). The following facts are
+immediate:
+\begin{itemize}
+\item A prefix $x_0,\dots,x_i$ of a chain is a chain to $x_i$
+  (\lean{chain\_prefix}).
+\item $\depth(r)=0$, since $r$ alone is a chain to $r$, and conversely
+  $\depth(x)=0$ implies $x=x_0=r$ (\lean{depth\_root},
+  \lean{eq\_root\_of\_depth}).
+\item No entry $x_i$ with $i\ge1$ of a chain is $r$, since $x_{i-1}\C x_i$
+  and AX-5 (\lean{chain\_ne\_root}).
+\end{itemize}
+
+\begin{lemma}[One step]\label{lem:step}
+\leanref{chain\_step}
+If $p\C x$, then $\depth(x)=\depth(p)+1$, the chain of $x$ agrees with the
+chain of $p$ at every index $i\le\depth(p)$, and its last entry is $x$.
+\end{lemma}
+\begin{proof}
+Append $x$ to the chain of $p$. Since $p\C x$, the result is a chain to $x$
+of length $\depth(p)+1$. By Lemma~\ref{lem:chainunique} it is the chain of $x$.
+\end{proof}
+
+\begin{theorem}[D1: every non-root has exactly one container]\label{thm:D1}
+\leanref{D1}
+If $x\neq r$, there is a $p$ with $p\C x$, and every $q$ with $q\C x$ equals $p$.
+\end{theorem}
+\begin{proof}
+Since $x\neq r$, $\depth(x)=k+1$ for some $k$. In the chain of $x$,
+$x_k\C x_{k+1}=x$, so $p=x_k$ contains $x$. Uniqueness is AX-4.
+\end{proof}
+
+\begin{definition}[Names along a chain; Key]\label{def:key}
+\leanref{seqOf, Key}
+For $x$ with chain $x_0,\dots,x_n$, let
+\[
+  \seqof(x)=\sq{\nm(x_1),\dots,\nm(x_n)},
+  \qquad
+  \Key(x)=\join\seqof(x) = \nm(x_1)\sep\cdots\sep\nm(x_n).
+\]
+The root's name is not used, and $\Key(r)=\join\sq{}=\eps$. This is
+TREE-009.
+\end{definition}
+
+By construction $|\seqof(x)|=\depth(x)$ and $\seqof(r)=\sq{}$
+(\lean{length\_seqOf}, \lean{seqOf\_root}). The entries of $\seqof(x)$ are names:
+each $x_i$ with $i\ge1$ is not $r$, so $\nm(x_i)\in\N$ by AX-7
+(\lean{seqOf\_InN}).
+
+\begin{lemma}\label{lem:seqstep}
+\leanref{seqOf\_step}
+If $p\C x$, then $\seqof(x)=\seqof(p)\cat\sq{\nm(x)}$.
+\end{lemma}
+\begin{proof}
+By Lemma~\ref{lem:step}, the chain of $x$ is the chain of $p$ followed by $x$.
+\end{proof}
+
+\begin{lemma}\label{lem:seqprefix}
+\leanref{seqOf\_chain, seqOf\_take}
+For the chain $x_0,\dots,x_n$ of $x$ and every $i\le n$,
+$\seqof(x_i)=\pre{\seqof(x)}{i}$.
+\end{lemma}
+\begin{proof}
+$x_0,\dots,x_i$ is a chain to $x_i$, hence by Lemma~\ref{lem:chainunique} the
+chain of $x_i$. Its names are the first $i$ entries of $\seqof(x)$.
+\end{proof}
+
+\begin{lemma}[$\seqof$ is injective]\label{lem:seqinj}
+\leanref{seqOf\_inj}
+If $\seqof(x)=\seqof(y)$, then $x=y$.
+\end{lemma}
+
+\begin{proof}
+Induction on $n=\depth(x)$. Equal sequences have equal lengths, so
+$\depth(y)=n$ as well.
+
+If $n=0$, both $x$ and $y$ are $r$.
+
+If $n=k+1$, neither is $r$. By D1 they have containers $p\C x$ and $q\C y$,
+and by Lemma~\ref{lem:seqstep}
+\[
+  \seqof(p)\cat\sq{\nm(x)}=\seqof(q)\cat\sq{\nm(y)}.
+\]
+Cancelling the last entry gives $\seqof(p)=\seqof(q)$ and $\nm(x)=\nm(y)$. Since
+$\depth(p)=k$ by Lemma~\ref{lem:step}, the induction hypothesis gives $p=q$.
+Then $p$ contains both $x$ and $y$, and they have one name, so $x=y$ by AX-8.
+\end{proof}
+
+This lemma is where AX-8 does its work. Every injectivity statement below
+reduces to it.
+
+% =======================================================================
+\section{The lemmas L1 to L5}
+\label{sec:lemmas}
+
+\begin{theorem}[L1, chain uniqueness]
+\leanref{L1}
+Every $x$ has exactly one chain: a chain exists, and any two agree in length
+and in every entry.
+\end{theorem}
+\begin{proof}
+Existence is AX-6. Uniqueness is Lemma~\ref{lem:chainunique}.
+\end{proof}
+
+\begin{theorem}[L2, acyclicity]
+\leanref{L2}
+There are no $k\ge1$ and $y_0,\dots,y_k$ with $y_i\C y_{i+1}$ for all $i<k$
+and $y_k=y_0$.
+\end{theorem}
+
+\begin{proof}
+By Lemma~\ref{lem:step}, each step of $C$ raises the depth by exactly one. By
+induction on $i$, $\depth(y_i)=\depth(y_0)+i$ for every $i\le k$. If $y_k=y_0$,
+then $\depth(y_0)=\depth(y_0)+k$, so $k=0$, a contradiction.
+\end{proof}
+
+\begin{remark}
+The research document derives L2 differently. It walks backwards from $y_0$
+around the cycle by AX-4, and that walk must be the chain of $y_0$ and so
+reach $r$, which then has a container. The depth argument above is
+the one the Lean file uses. Both use AX-4, through
+Lemma~\ref{lem:chainunique}. AX-5 and AX-6 alone do not suffice: the
+structure $C=\{(r,g_1),(g_1,g_2),(g_2,g_1)\}$ satisfies both and has a cycle.
+\end{remark}
+
+\begin{theorem}[L3, Key injectivity; TREE-010]\label{thm:L3}
+\leanref{L3}
+If $\Key(x)=\Key(y)$, then $x=y$.
+\end{theorem}
+\begin{proof}
+$\join\seqof(x)=\join\seqof(y)$, and all entries are names, so
+$\seqof(x)=\seqof(y)$ by Lemma~\ref{lem:joininj}, and $x=y$ by
+Lemma~\ref{lem:seqinj}.
+\end{proof}
+
+\begin{theorem}[L4, Key shape; TREE-011]
+\leanref{L4}
+$\Key(x)=\eps$ if and only if $x=r$. For $x\neq r$, $\Key(x)$ has good shape:
+no leading $\sep$, no trailing $\sep$, and no $\sep\sep$.
+\end{theorem}
+\begin{proof}
+If $x=r$, $\Key(x)=\join\sq{}=\eps$. If $\Key(x)=\eps$, then $\seqof(x)=\sq{}$
+by Lemma~\ref{lem:joinnil}, so $\depth(x)=0$ and $x=r$. If $x\neq r$, then
+$\seqof(x)\neq\sq{}$ (as just shown) and its entries are names, so
+Lemma~\ref{lem:joinshape} applies.
+\end{proof}
+
+\begin{definition}[Proper ancestor]
+\leanref{ProperAncestor}
+$a$ is a \emph{proper ancestor} of $x$ if there are $k\ge1$ and
+$a=z_0,z_1,\dots,z_k=x$ with $z_j\C z_{j+1}$ for every $j<k$.
+\end{definition}
+
+\begin{theorem}[L5, prefix closure; TREE-012]\label{thm:L5}
+\leanref{L5}
+\begin{enumerate}[(a)]
+\item Let $s_1,\dots,s_n\in\N$ with $\Key(x)=s_1\sep\cdots\sep s_n$. For each
+  $0<i<n$ there is a folder $a$ that is a proper ancestor of $x$ with
+  $\Key(a)=s_1\sep\cdots\sep s_i$.
+\item In any chain $x_0,\dots,x_n$, no $x_i$ with $i<n$ is an item.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(a) Let $s=\sq{s_1,\dots,s_n}$. By Lemma~\ref{lem:joininj},
+$\seqof(x)=s$, so $\depth(x)=n$. Let $x_0,\dots,x_n$ be the chain of $x$
+and take $a=x_i$. It is a folder by AX-3, since $x_i\C x_{i+1}$. It is a proper
+ancestor of $x$, witnessed by $x_i,x_{i+1},\dots,x_n$ with $n-i\ge1$ steps. And
+by Lemma~\ref{lem:seqprefix},
+$\Key(x_i)=\join\pre{\seqof(x)}{i}=\join\sq{s_1,\dots,s_i}$.
+
+(b) If $i<n$ then $x_i\C x_{i+1}$, so $x_i\in\F$ by AX-3, hence $x_i\notin\I$
+by AX-1 (disjoint).
+\end{proof}
+
+\begin{remark}
+The hypothesis $s_j\in\N$ in (a) matters. It is what makes ``the split of
+$\Key(x)$ at its separators'' well defined. Without it, $\Key(x)$ could be
+written as a join of other words, for example ones containing $\sep$, whose
+prefixes are not Keys.
+\end{remark}
+
+% =======================================================================
+\section{L6: the trie correspondence}
+\label{sec:L6}
+
+L6 says that a model is, up to renaming its entities, nothing more than the
+set of its name sequences together with a marking of which are items. For
+example, the model with Keys $\eps$, \texttt{d}, \texttt{d/e} and \texttt{d/f},
+where \texttt{d/f} is an item, is captured by the four sequences $\sq{}$,
+$\sq{\texttt{d}}$, $\sq{\texttt{d},\texttt{e}}$ and
+$\sq{\texttt{d},\texttt{f}}$, with the last one marked. To state L6 we
+need to say what ``the same model'' means, and which sets of sequences are
+allowed.
+
+\begin{definition}[Isomorphism]
+\leanref{Iso}
+An \emph{isomorphism} between structures
+\[
+  S=(\U,\F,\I,r,C,\nm) \quad\text{and}\quad S'=(\U',\F',\I',r',C',\nm')
+\]
+is a bijection $f\colon\U\to\U'$ with
+$x\in\F\iff f(x)\in\F'$, $x\in\I\iff f(x)\in\I'$, $f(r)=r'$,
+$p\C x\iff f(p)\C' f(x)$, and $\nm'(f(x))=\nm(x)$.
+\end{definition}
+
+Isomorphisms compose and have inverses, and the identity is one.
+
+\begin{definition}[Tries]
+\leanref{Trie, Trie.WF}
+A \emph{trie} is a pair $(L,K)$ of sets of finite sequences of words. It is
+\emph{well formed} when $L$ is a tree of name sequences and $K$ marks some of
+its leaves. Precisely: every entry of every sequence in $L$ is a name;
+$L$ contains $\sq{}$ and is \emph{prefix closed} ($s\cat t\in L$ implies
+$s\in L$); and $K$ consists of non-empty sequences in $L$, none of which has
+a proper extension in $L$ (if $s\in K$ and $s\cat t\in L$, then $t=\sq{}$).
+\end{definition}
+
+Prefix closure is under dropping whole trailing \emph{names}, not trailing
+characters. That is why this is a statement about sequences and not about
+Key strings: in the model with Keys $\eps$, \texttt{d}, \texttt{d/f}, the
+string \texttt{d/} is a character prefix of a Key and is not a Key.
+
+\subsection{From a trie to a model}
+
+\begin{definition}\label{def:ofTrie}
+\leanref{ofTrie}
+For a well-formed trie $T=(L,K)$, let $S_T$ be the structure with universe
+$L$, items $K$, folders $L\setminus K$, root $\sq{}$, containment
+$p\C x\iff x=p\cat\sq{w}$ for some $w$, and $\nm(s)$ the last entry of $s$
+(and $\nm(\sq{})=\eps$).
+\end{definition}
+
+\begin{proposition}\label{prop:ofTrieAx}
+\leanref{ofTrie\_axioms}
+$S_T$ is a model of AX-1 to AX-8.
+\end{proposition}
+
+\begin{proof}
+The entities are split into $K$ and $L\setminus K$, so each is exactly one
+of item or folder. The root $\sq{}$ is not in $K$, since $K$ holds only
+non-empty sequences, so it is a folder.
+
+Containment appends one name. So the only possible container of $x$ is $x$
+with its last entry removed, and the empty sequence has no container at
+all. Every $x=\sq{w_1,\dots,w_n}$ in $L$ is reached from the root through
+its prefixes $\sq{},\sq{w_1},\dots,x$. Each prefix lies in $L$ because $L$
+is prefix closed, and each one contains the next.
+
+The root's name is $\eps$, and every other sequence is named by its last
+entry, which is a name. Two children $p\cat\sq{w}$ and $p\cat\sq{w'}$ of
+the same $p$ with the same name have $w=w'$, so they are equal.
+
+Finally, only folders contain anything. If $p$ contains $p\cat\sq{w}\in L$,
+then $p$ has a proper extension in $L$, so $p$ is not in $K$.
+\end{proof}
+
+\begin{lemma}\label{lem:seqofTrie}
+\leanref{seqOf\_ofTrie}
+In $S_T$, $\seqof(s)=s$ for every $s\in L$.
+\end{lemma}
+\begin{proof}
+The prefixes $\pre{s}{0},\dots,\pre{s}{|s|}$ form a chain to $s$, so by L1
+they are the chain of $s$. The last entry of $\pre{s}{i}$ is the $i$-th
+entry of $s$. So by induction on $i$, the names along the first $i$ steps are
+$\pre{s}{i}$. Take $i=|s|$.
+\end{proof}
+
+\subsection{From a model to a trie}
+
+\begin{definition}
+\leanref{toTrie}
+For a model $S$, let $T_S=(L_S,K_S)$ with
+$L_S=\{\seqof(x):x\in\U\}$ and $K_S=\{\seqof(x):x\in\I\}$.
+\end{definition}
+
+\begin{proposition}\label{prop:toTrieWF}
+\leanref{toTrie\_wf}
+$T_S$ is well formed.
+\end{proposition}
+
+\begin{proof}
+Every sequence in $L_S$ is the name sequence of some entity, so its entries
+are names, and the root contributes $\sq{}$. Prefix closure is
+Lemma~\ref{lem:seqprefix}: the prefix of length $i$ of $\seqof(x)$ is the
+name sequence of $x_i$, the entity at depth $i$ on the chain of $x$. Item
+sequences lie in $L_S$ by definition. They are non-empty: the root is a
+folder, and no entity is both a folder and an item, so no item is the root.
+Only the root has the empty sequence (L4).
+
+The one real step is that an item's sequence has no proper extension in
+$L_S$. Let $x$ be an item, and suppose $\seqof(y)$ properly extends
+$\seqof(x)$. On the chain of $y$, the entity at depth $|\seqof(x)|$ has the
+same name sequence as $x$, so it \emph{is} $x$ (Lemma~\ref{lem:seqinj}). It is
+not the last entity of that chain, so it contains the next one, and only
+folders contain anything. But $x$ is an item, and no entity is both.
+\end{proof}
+
+\begin{proposition}\label{prop:isoToTrie}
+\leanref{isoToTrie}
+$x\mapsto\seqof(x)$ is an isomorphism from $S$ to $S_{T_S}$.
+\end{proposition}
+
+\begin{proof}
+The map is onto $L_S$ by definition, and one-to-one by
+Lemma~\ref{lem:seqinj}. Its inverse picks, for each $s\in L_S$, the entity
+whose sequence is $s$. It remains to see that it respects each part of the
+structure.
+
+It sends $r$ to $\sq{}$. An entity is an item exactly when its sequence is
+in $K_S$, because an entity with the same sequence as an item is that item.
+Folders are the remaining entities on both sides, so they correspond too.
+The name of $\seqof(x)$ in $S_{T_S}$ is its last entry. That entry is
+$\nm(x)$ by Lemma~\ref{lem:seqstep}, and for the root both names are $\eps$.
+
+If $p$ contains $x$, then $\seqof(x)=\seqof(p)\cat\sq{\nm(x)}$
+(Lemma~\ref{lem:seqstep}), so the images are related by containment as well.
+Conversely, suppose $\seqof(x)=\seqof(p)\cat\sq{w}$. Then $x$ is not the
+root, so it has a container $q$ (D1), and
+$\seqof(q)\cat\sq{\nm(x)}=\seqof(p)\cat\sq{w}$. Dropping the last entry gives
+$\seqof(q)=\seqof(p)$, so $q=p$ and $p$ contains $x$.
+\end{proof}
+
+\begin{lemma}\label{lem:seqiso}
+\leanref{seqOf\_iso}
+If $f\colon S\to S'$ is an isomorphism of models, then
+$\seqof'(f(x))=\seqof(x)$ for every $x$.
+\end{lemma}
+\begin{proof}
+Induction on $\depth(x)$. For $x=r$, $f(r)=r'$ and both sequences are
+$\sq{}$. For $x\neq r$ with container $p$ of smaller depth, $f(p)\C' f(x)$,
+so
+$\seqof'(f(x))=\seqof'(f(p))\cat\sq{\nm'(f(x))}=\seqof(p)\cat\sq{\nm(x)}=\seqof(x)$.
+\end{proof}
+
+\subsection{The theorem}
+
+\begin{theorem}[L6, trie correspondence]\label{thm:L6}
+\leanref{L6}
+\begin{enumerate}[(a)]
+\item For every model $S$, $T_S$ is a well-formed trie.
+\item For every well-formed trie $T$, $S_T$ is a model.
+\item For every well-formed trie $T$, $T_{S_T}=T$.
+\item For every model $S$, $S$ is isomorphic to $S_{T_S}$.
+\item Two models $S,S'$ are isomorphic if and only if $T_S=T_{S'}$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(a) is Proposition~\ref{prop:toTrieWF}, (b) Proposition~\ref{prop:ofTrieAx}, and
+(d) Proposition~\ref{prop:isoToTrie}.
+
+(c) By Lemma~\ref{lem:seqofTrie}, $L_{S_T}=\{\seqof(s):s\in L\}=L$ and
+$K_{S_T}=\{\seqof(s):s\in K\}=K$.
+
+(e) If $f\colon S\to S'$ is an isomorphism, then by Lemma~\ref{lem:seqiso}
+$f$ carries each $\seqof(x)$ to the same sequence, and items to items, so
+$L_S=L_{S'}$ and $K_S=K_{S'}$ (the reverse inclusions use $f^{-1}$).
+Conversely, if $T_S=T_{S'}$, compose the isomorphisms
+$S\to S_{T_S}=S_{T_{S'}}\to S'$ from (d) (\lean{isoOfToTrieEq}).
+\end{proof}
+
+So the map $S\mapsto T_S$ is a bijection between isomorphism classes of models
+and well-formed tries, with inverse $T\mapsto S_T$. The isomorphism preserves
+the typing (F, I) and the names, not only the containment graph. The prose
+statement of L6 leaves that open, and the Lean statement fixes it.
+
+\begin{corollary}[Empty folders]
+\leanref{L6\_empty\_folder}
+In $S_T$, a leaf of $L$ that is not in $K$ is a folder that contains nothing.
+\end{corollary}
+\begin{proof}
+It is not in $K$, so it is a folder. If it contained $x=s\cat\sq{w}\in L$,
+being a leaf would force $\sq{w}=\sq{}$.
+\end{proof}
+
+% =======================================================================
+\section{Infinite universes}
+\label{sec:infinite}
+
+Spec~051 adds no finiteness axiom on purpose. This section shows that this
+choice has content in both directions: the axioms admit infinite models, and
+with infinitely many entities, acyclicity no longer implies reachability.
+
+\begin{theorem}[An infinite model]\label{thm:infinite}
+\leanref{infinite\_model}
+If $\Sigma$ has a symbol $a\neq\sep$, there is a model of AX-1 to AX-8 with
+an infinite universe.
+\end{theorem}
+
+\begin{proof}
+Let $L$ be the set of all finite sequences whose every entry is the one-letter
+word $a$, and $K=\emptyset$. This trie is well formed. Its entries are the
+name $a$, it contains $\sq{}$, and it is prefix closed. The conditions on $K$
+hold because $K$ is empty. By
+Proposition~\ref{prop:ofTrieAx}, $S_{(L,K)}$ is a model. The map
+$n\mapsto\sq{a,\dots,a}$ ($n$ copies) is injective into its universe, since
+distinct $n$ give distinct lengths.
+\end{proof}
+
+The model is a single infinite downward branch with no items, in which every
+entity has finite depth. Like the one-point model $W_0$, it also witnesses
+that the axioms are \emph{consistent}, so no theorem above holds merely
+because nothing satisfies the hypotheses.
+
+\begin{theorem}[Acyclic but not reachable]
+\label{thm:upchain}
+\leanref{infinite\_upward\_chain}
+Let $\U=\{r\}\cup\Nat$, with containment $(n+1)\C n$ for every $n\in\Nat$ and
+nothing else, every entity a folder, no items, and every name $\eps$. Then
+every non-root has a container, $r$ has none, $C$ has no cycle, and AX-6 fails.
+\end{theorem}
+
+\begin{proof}
+$n$ is contained by $n+1$, and nothing contains $r$. Along any $C$-path
+$y_0,\dots,y_k$ with $k\ge1$, every $y_i$ is a number and $y_0=y_i+i$ (by
+induction on $i$, as each step goes from $m+1$ to $m$). So $y_k=y_0$ forces
+$k=0$. Finally, $0$ has no chain. A chain of length $0$ would make $0=r$, and
+a chain of length $\ge1$ would start with $r\C x_1$, but $r$ contains nothing.
+\end{proof}
+
+All names here are $\eps$, so this structure also violates AX-7. It shows
+why AX-6 cannot be replaced by acyclicity; it is not an independence witness
+for AX-6 (that is row AX-6 of Table~\ref{tab:rows}).
+
+\begin{proposition}[The finite half]\label{prop:finitehalf}
+If $\U$ is finite, every non-root has a container, $r$ has none, and $C$ has
+no cycle, then AX-6 holds.
+\end{proposition}
+
+\begin{proof}
+Given $x$, choose a container of $x$ (if $x\neq r$), then a container of
+that, and so on, as long as the current entity is not $r$. Two equal entities
+in this walk would give a cycle, so its entries are distinct, and as $\U$ is
+finite the walk stops. It can stop only at an entity without a container,
+that is at $r$. Reversed, the walk is a chain to $x$.
+\end{proof}
+
+This proposition is \emph{not} in the Lean file. It is checked in Alloy for
+universes of up to six entities (\lean{finite\_acyclic\_gives\_reach}). It
+explains why, in a finite universe, acyclicity (with every non-root
+contained and $r$ uncontained) already implies AX-6, so a bounded model finder
+cannot separate the two. The reason the axioms keep AX-6 is
+Theorem~\ref{thm:upchain}: without finiteness, acyclicity is not enough. The
+other direction needs AX-4: the structure in the remark after L2 is finite,
+satisfies AX-6, and has a cycle.
+
+% =======================================================================
+\section{What the bounded Alloy model adds}
+\label{sec:alloy}
+
+The Lean file proves consequences \emph{of} the axioms for every universe.
+It does not show that each axiom clause is needed. That is a question about
+structures that \emph{violate} the axioms, and a model finder answers it
+cheaply. The Alloy model restates the eleven clauses as eleven predicates
+and runs 30 commands, each with an expected outcome (a \texttt{run} must find
+an instance; a \texttt{check} must find no counterexample).
+\lean{scripts/alloy\_check.sh} fails if any outcome differs.
+
+\subsection{Independence}
+
+For each clause, Table~\ref{tab:rows} gives a finite structure that satisfies
+every other clause and violates that one. Unless a row says otherwise,
+$\nm(r)=\eps$ and the other entities have distinct names in $\N$. Each row is
+a finite object, so checking it by hand is direct inspection. Alloy confirms
+each one with a \texttt{run} at scope~4 (entities) and sequence length~6. For
+the rows whose damage is a claim about Keys (AX-7 non-empty, AX-7 no-$\sep$,
+AX-8), a \texttt{check} confirms that two entities get the same Key. For AX-4,
+a \texttt{run} exhibits two different chains to $x$.
+
+\begin{table}[ht]
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+Clause broken & Structure & What goes wrong \\
+\midrule
+AX-1 disjoint & $\U=\{r,x\}$, $\F=\{r,x\}$, $\I=\{x\}$, $C=\{(r,x)\}$ & $x$ is both folder and item. \\
+AX-1 covering & $\U=\{r,x\}$, $\F=\{r\}$, $\I=\emptyset$, $C=\{(r,x)\}$ & $x$ has no kind. \\
+AX-2 & $\U=\{r\}$, $\F=\emptyset$, $\I=\{r\}$, $C=\emptyset$ & The root is an item. \\
+AX-3 & $\U=\{r,x,y\}$, $\F=\{r\}$, $\I=\{x,y\}$, $C=\{(r,x),(x,y)\}$ & An item contains something. \\
+AX-4 & $\U=\{r,a,b,x\}$, $\F=\{r,a,b\}$, $\I=\{x\}$, $C=\{(r,a),(r,b),(a,x),(b,x)\}$ & Two chains, so two Keys, for $x$. \\
+AX-5 & $\U=\F=\{r,p\}$, $C=\{(r,p),(p,r)\}$ & A cycle through $r$. \\
+AX-6 & $\U=\F=\{r,g_1,g_2\}$, $C=\{(g_1,g_2),(g_2,g_1)\}$ & A detached cycle. \\
+AX-7 root & $\U=\F=\{r\}$, $C=\emptyset$, $\nm(r)=\texttt{z}$ & Only a normalization breaks. No Key changes. \\
+AX-7 non-empty & $\U=\{r,x\}$, $\I=\{x\}$, $C=\{(r,x)\}$, $\nm(x)=\eps$ & $\Key(x)=\eps=\Key(r)$. \\
+AX-7 no $\sep$ & $\U=\F=\{r,w,a,b\}$, $C=\{(r,w),(r,a),(a,b)\}$, $\nm(w)=\texttt{a/b}$, $\nm(a)=\texttt{a}$, $\nm(b)=\texttt{b}$ & $\Key(w)=\Key(b)=\texttt{a/b}$. \\
+AX-8 & $\U=\{r,x,y\}$, $\I=\{x,y\}$, $C=\{(r,x),(r,y)\}$, $\nm(x)=\nm(y)$ & $\Key(x)=\Key(y)$. \\
+\bottomrule
+\end{tabularx}
+\caption{One countermodel per axiom clause (spec~051's rationale, \S5).
+Where $\I$ is omitted, $\I=\emptyset$; where $\F$ is omitted,
+$\F=\U\setminus\I$.}
+\label{tab:rows}
+\end{table}
+
+The AX-7 \emph{root} row deserves a word. Nothing in the definition of $\Key$
+reads $\nm(r)$, so no lemma fails without this clause. It is a normalization,
+and it matters only for L6, where $\nm(r)$ would otherwise be free data that
+the trie does not record.
+
+\subsection{Consistency and witnesses}
+The witness models $W_0$ (the root alone), $W_1$ (Keys $\eps$, \texttt{d},
+\texttt{d/f}) and $W_2$ (Keys $\eps$, \texttt{d}, \texttt{d/e},
+\texttt{d/f}, with \texttt{e} an empty folder) satisfy all eight axioms, and
+their Keys are the ones listed. Together with Theorem~\ref{thm:infinite}, they
+show that the axioms are consistent, in finite and in infinite universes.
+
+\subsection{The lemmas, in bounded scope}
+D1 is checked at scope~6. L1 to L5 are checked at scope~5. The Key lemmas L3 to
+L5 are checked with names of at most two symbols, while L1 and L2 have no
+separate bound on name length. The sequence scope is chosen so that no structure in scope is
+excluded by the encoding of Keys. With at most five entities the depth is at
+most~4, and a Key has at most one name and one $\sep$ per level and no
+trailing $\sep$, so its length is at most $4\cdot3-1=11$. A separate
+\texttt{run} shows that length~11 is actually reached.
+
+Alloy cannot state L6. L6 quantifies over pairs of structures and over
+isomorphisms between them, and an Alloy instance is a single structure. It
+also cannot reach Theorems~\ref{thm:infinite} and~\ref{thm:upchain}. The checks are
+therefore evidence for finite universes up to the stated scope, and the Lean
+proofs are what extend them to all universes.
+
+\subsection{The checks are not vacuous}
+A check that passes because the axioms are too strong proves nothing. The
+model was mutated by deleting one conjunct at a time from the axioms
+(mutants run once and not committed). Without AX-4, D1, L1 and L2 fail.
+Without AX-8, L3 fails. Without AX-3, L5 fails. Without AX-7 (no~$\sep$),
+L3, L4 and L5 fail. This matches the proofs above. AX-4 enters directly in D1 and through
+Lemma~\ref{lem:chainunique}, AX-8 through Lemma~\ref{lem:seqinj}, AX-3 through
+Theorem~\ref{thm:L5}, and the no-$\sep$ clause through
+Lemma~\ref{lem:joininj} (L3, L5) and Lemma~\ref{lem:joinshape} (L4).
+
+\subsection{Division of labour}
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Question & Alloy (bounded) & Lean (all universes) \\
+\midrule
+Each clause independent & yes, 11 rows & --- \\
+Axioms consistent & $W_0$, $W_1$, $W_2$ & infinite model, Thm.~\ref{thm:infinite} \\
+D1, L1 to L5 & up to scope 5--6 & proved \\
+L6 & cannot be stated & proved \\
+Finite half of \S\ref{sec:infinite} & up to scope 6 & --- \\
+Infinite upward chain & out of reach & proved \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% =======================================================================
+\appendix
+\section{Concordance with the sources}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Here & Spec 051 & Lean declaration \\
+\midrule
+AX-1 to AX-8 & TREE-001 to TREE-008 & \lean{Axioms} (fields \lean{ax1\_disjoint} \dots\ \lean{ax8}) \\
+Lemma~\ref{lem:splitfirst} & --- & \lean{split\_first} \\
+Lemma~\ref{lem:joininj} & --- & \lean{join\_inj} \\
+Lemma~\ref{lem:joinshape} & --- & \lean{join\_shape} \\
+Lemma~\ref{lem:chainunique} & --- & \lean{chain\_unique} \\
+Lemma~\ref{lem:step} & --- & \lean{chain\_step} \\
+Theorem~\ref{thm:D1} (D1) & --- & \lean{D1} \\
+Definition~\ref{def:key} ($\Key$) & TREE-009 & \lean{Key} \\
+Lemma~\ref{lem:seqinj} & --- & \lean{seqOf\_inj} \\
+L1, L2 & --- & \lean{L1}, \lean{L2} \\
+L3 & TREE-010 & \lean{L3} \\
+L4 & TREE-011 & \lean{L4} \\
+L5 & TREE-012 & \lean{L5} \\
+Theorem~\ref{thm:L6} (L6) & --- & \lean{L6}, \lean{L6\_empty\_folder} \\
+Theorem~\ref{thm:infinite} & --- & \lean{infinite\_model} \\
+Theorem~\ref{thm:upchain} & --- & \lean{infinite\_upward\_chain} \\
+Proposition~\ref{prop:finitehalf} & --- & (Alloy only) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The Lean file uses only Lean's core library and its standard axioms
+(propositional extensionality, choice, quotient soundness), never
+\lean{sorry}. A \lean{\#guard\_msgs} block pins the axioms each headline result
+depends on. Choice enters where this text says ``the chain of $x$'' and
+``the entity whose sequence is $s$'', and in the excluded middle used for
+AX-1 (covering) of $S_T$ (Proposition~\ref{prop:ofTrieAx}). The last is why
+Theorem~\ref{thm:infinite} depends on choice although it uses no chain.
+
+\end{document}
