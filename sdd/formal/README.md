@@ -284,7 +284,7 @@ that must move — see [`000-process.md` Rule
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
 | `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
-| `StoreTree.dfy` | RFC-0021's model, a sketch not yet wired into the trait. Its header lists §1 to §11: the store as a tree; a flat encoding's partial `decode`; agreement between a flat driver's lookups, listings, recursive `delete_folder` walk and `move`/`copy` and the tree; D4's write checks; that a flat encoding holds no empty folder; and A.8's refusal rule for every call, namespace and row |
+| `StoreTree.dfy` | RFC-0021's model, a sketch not yet wired into the trait. Its header lists §1 to §12: the store as a tree; a flat encoding's partial `decode`; agreement between a flat driver's lookups, listings, recursive `delete_folder` walk and `move`/`copy` and the tree; D4's write checks; that a flat encoding holds no empty folder; A.8's refusal rule for every call, namespace and row; and that a valid tree is the pair of spec 051's lemma L6, except its condition on names and for finite stores only |
 
 Live TLA+ modules live in `sdd/formal/tla/`. The frozen PoC modules
 remain in `sdd/research/tla-poc/` as the historical record of the

@@ -539,6 +539,11 @@ reconciling the two is left to the formalization step, and nothing here
 depends on it. One mismatch is already visible: `Key = seq<string>` places no
 restriction on its segments, so `ValidTree` admits the segments `""` and
 `"a/b"`, which AX-7 excludes. AX-8 is automatic in a map keyed by sequences.
+`StoreTree.dfy` §12 has since checked the reading for finite stores:
+`ValidTree` holds exactly when the tree's keys and items meet L6's conditions
+other than the names condition, and every such finite pair is the keys and
+items of one valid tree. An infinite pair, which L6 admits, is the keys of no
+Dafny `map`.
 
 **Decided (maintainer, 2026-10-13).** The four questions this section left
 open:
