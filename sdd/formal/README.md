@@ -99,7 +99,9 @@ relational model within a bounded scope. It is the fit for a static
 axiom set: a `run` that finds an instance shows a structure exists
 (consistency, a countermodel), and a `check` with no counterexample
 shows a consequence holds up to the scope. Here it checks the store
-model of
+tree of [spec 051](../specs/051-store-tree.md), which it restates
+(§ Traceability tags). The rows, witnesses and lemma numbers are those
+of its rationale,
 [`research-store-model-axioms.md`](../research/research-store-model-axioms.md)
 (BK-435): each § 5 countermodel breaks exactly its clause, the
 witnesses are models, and lemmas L1 to L5 hold in scope.
@@ -113,14 +115,15 @@ green only when each outcome matches.
 ### Lean 4
 
 Lean 4 is a proof assistant: a statement it accepts holds for every
-structure its types admit, with no scope. Here it proves the lemmas of
-the same research doc over an arbitrary universe: D1, L1 to L6
+structure its types admit, with no scope. Here it restates spec 051
+too, and proves the research doc's lemmas over an arbitrary universe:
+D1, L1 to L6
 (including L6's correspondence up to isomorphism, which Alloy cannot
 state), that the axioms have an infinite model, and § 9.7's infinite
 upward chain. Lean core only, no Mathlib.
 
-Lean's boundary: it proves what the file states, so fidelity to the
-doc is a review question, as for every layer here. The build fails on a
+Lean's boundary: it proves what the file states, so fidelity to spec
+051 is a review question, as for every layer here. The build fails on a
 `sorry`, and `#guard_msgs` lines pin the axioms each headline result
 rests on (the 10 at the end of `StoreAxioms.lean`); a new result is
 pinned only once a line is added for it.

@@ -51,3 +51,36 @@ phases:
 surprising_ripples:
   - "sdd/specs/004-path-model.md: it states the shape of a key too, and several clauses differ from the axioms (., .., trailing and doubled /, backslash, empty path). Recorded as input-to-Key layering in research § 10, found by review round 2"
   - "sdd/BACKLOG.md BK-432: the spec decision changes how BK-432's spec 003 section lands, which only the trace recorded; BK-432's entry now names the later pointer. Found by review round 2"
+review:
+  # Derived by `hatch run ship-report 1133 --trace-block-only` at head 0ddd267.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1133 --trace-block-only"
+  pr: 1133
+  review_rounds: 2
+  submissions: 2
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.37
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+  by_file:
+    - path: "sdd/research/research-store-model-axioms.md"
+      findings: 2
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl"
+    - "sdd/traces/bk-435-open-questions.yml"
+  review_driven_commits:
+    - sha: "9319523"
+      subject: "BK-435: decision log"
+    - sha: "0ddd267"
+      subject: "fix: address PR #1133 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
