@@ -230,8 +230,9 @@ which may change both.
     - Dafny's `Key`, a sequence of spec 051's names (TREE-007) whose `Join`
       is TREE-009's Key, no two distinct sequences joining to the same
       string (TREE-010);
-    - a valid tree is exactly a finite pair meeting the conditions of lemma
-      L6 in `lean/StoreAxioms.lean`, which spec 051's axioms satisfy (§12);
+    - a valid tree is exactly a finite pair (L, K) meeting `Trie.WF`, the
+      pairs that lemma L6 in `lean/StoreAxioms.lean` proves are, up to
+      isomorphism, the models of spec 051's axioms (§12);
     - the tree and its resolution;
     - a flat encoding's partial `decode`, which yields a valid tree, for A.2's
       item-above-item state; a raw key with an empty segment is excluded by
@@ -433,8 +434,9 @@ A flat raw key with an empty segment, such as a folder marker `a/` or `a//b`,
 would give an empty name (TREE-007); how it decodes is Open question 1.
 
 A stored key such as `a\b`, `..` or one holding NUL is not in that list. Spec
-051's names forbid only `/`, so it decodes to a Key in the tree, but that Key
-lies outside the library's addressable subset: no input maps onto it, so no
+051's names forbid only `/`, so where its characters are in the spec's
+alphabet Σ, which that spec leaves open, it decodes to a Key in the tree. That
+Key lies outside the library's addressable subset: no input maps onto it, so no
 keyed operation reaches it. Spec 004 refuses `..` (PATH-003) and NUL
 (PATH-007), and folds `\` to `/` (PATH-002), so `a\b` as an input addresses
 the Key `a/b` instead; BE-030's key rule refuses a stored `a\b`. Listings omit it and

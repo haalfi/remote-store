@@ -4,9 +4,10 @@
 //
 //   §1  The tree: Dafny's Key is a sequence of spec 051's names (TREE-007)
 //       whose Join is TREE-009's Key, two distinct sequences never join to
-//       the same string (TREE-010), and a Key names at most one node.  Valid() in BackendContract.dfy states the
-//       prefix condition over its string paths but not TREE-007's names,
-//       which hold only for the paths its methods take (WellFormedPath).
+//       the same string (TREE-010), and a Key names at most one node.
+//       Valid() in BackendContract.dfy states the prefix condition over its
+//       string paths but not TREE-007's names, which hold only for the paths
+//       its methods take (WellFormedPath).
 //   §2  Resolution: what a key resolves to (A.1).
 //   §3  A write at the tree level, and that it keeps the tree valid when the
 //       key resolves to an item or to nothing (A.4, A.5's write column).
@@ -40,11 +41,9 @@
 //
 // Not modelled here: links (A.7), a flat raw key with an empty segment such
 // as a folder marker (RFC-0021's open question 1; no Key, so Flat's type
-// excludes it), a
-// listing's omissions as observed page by page (A.3's order obligation), and
-// changes under an operation (A.9).  A
-// hierarchical encoding with folder objects is the tree itself, so §3 covers
-// its writes.
+// excludes it), a listing's omissions as observed page by page (A.3's order
+// obligation), and changes under an operation (A.9).  A hierarchical encoding
+// with folder objects is the tree itself, so §3 covers its writes.
 
 module StoreTree {
 
