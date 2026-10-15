@@ -979,6 +979,14 @@ coverage floor.
   BUG-315, `CODE_PAT` covers `infra/*.py` only. Not in BUG-306's list, which is
   files `tests/scripts/` reads. Open decision: which class, at what CI cost.
 
+- [ ] **BUG-327 — `lint` and `format-check` skip the tracked `.py` files under `sdd/`, which only the pre-commit hook checks**
+  spec: — · effort: S · audience: contributor.tooling
+  Both run ruff on `src/ tests/ examples/ scripts/`; `git ls-files "sdd/*.py"` lists 67 files
+  (59 `sdd/research/`, 4 `sdd/rfcs/`, 4 Dafny-generated `sdd/formal/*-py`). The only stated
+  rationale is pyproject's `[tool.ruff]` comment excluding the Dafny output. The pre-commit hook
+  checks any staged one, so the next edit inherits old violations (PR #1142). Open decision:
+  widen the gate's paths, or exclude `sdd/` from the hook on purpose.
+
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round
