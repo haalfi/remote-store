@@ -734,22 +734,29 @@ Choices the decisions above left open, as built:
 - **`get_folder_info` on an empty aggregate** stats the key: fail-open on
   `parents == "none"`, where it is the error path's type probe, and fail-closed
   with folder objects, where an empty folder exists and the stat decides.
-- **Wrong-type probes by namespace.** Every call that asks what is at a key
-  asks one method, `_state` (§ Re-plan after round 10). On a flat driver
-  its `stat` miss is followed by one `list_page(key, delimiter="/",
-  limit=1)`, RFC-0017's "one `stat` or one `list_page(limit=1)`", except
-  where no folder can matter: `is_file` and a write target's determinant
-  stay one `stat`. On a hierarchical driver the ancestors' `stat` calls
-  follow a `stat` that raises, and a miss on the error path of a write
-  target or a listing.
+- **Wrong-type probes by namespace.** Superseded on 2026-10-15 by spec 003's
+  BE-032 (RFC-0021), which is the authority; § Resumed against RFC-0021
+  below says what changed. As it stands: every probe of what a key resolves
+  to reads `_state`, the error-path probes of a refused call follow A.8's
+  per-call rows (`_read_refused`, `_write_refused`, `_parents_refused`,
+  `_holds_nothing`, `delete_folder`'s `_df_refused` and `_df_prefix_refused`),
+  and A.4's flat write checks and A.3's flat folder-operation `stat` call
+  `_stat` directly, since they are determinants. On a flat driver `_state`'s
+  `stat` miss is followed by one `list_page(key, delimiter="/", limit=1)`
+  except where no folder can matter (`is_file`, a write target). On a
+  hierarchical driver the ancestors' `stat` calls follow a miss when the
+  caller asks for the walk (a write target's error path), and follow a `stat`
+  that raises a non-miss refusal in the probe set whether or not it asks; a
+  `stat` raising outside the probe set is the unknown answer, with no walk.
 - **Absent container.** The kernel reads it as `NotFound` for every `Op` but
   `write`, `write_atomic`, `open_atomic`, `probe`, the identity scopes and
   `close`, which keep `classify`'s answer; an error the driver raised
   already typed is never re-typed by it (RFC-0017 D2). On `parents == "none"`,
   `delete_folder`'s determinant listing reads a `NotFound` as empty, where the
   model's flat drivers absorb the container's 404 themselves (BE-013).
-- **Move and copy** on a driver with `ensure_parents` stat the source first,
-  so a missing source creates no destination folders (BE-018's order).
+- **Move and copy** on a driver with `ensure_parents`, and since 2026-10-15
+  on every flat driver, stat the source first, so a missing source creates no
+  destination folders and outranks A.4's destination checks (BE-018's order).
 - **Streams.** Both runtimes catch `(OSError, EOFError, *stream_catch)` in
   `read`; outside that set an error propagates unmapped in both, as
   `_ErrorMappingStream` does today (SIO-012). A first draft mapped every
@@ -765,7 +772,10 @@ Choices the decisions above left open, as built:
   hierarchical namespace every write primitive and `ensure_parents` refuse a
   folder at the key or a file above it, all without changing anything and in
   any shape, which the kernel types (§ Condition space); on a flat namespace
-  writes land on a key that shadows a prefix, BE-008's flat exemption;
+  the kernel's own checks refuse those writes since 2026-10-15 (BE-032 A.4),
+  where they had landed under BE-008's flat exemption, and a flat driver owes
+  byte-ordered listings and a `NotFound`/`InvalidPath` listing refusal only
+  for an empty prefix (BE-032 A.8);
   `connection_dead` is pure inspection, passed as the sync stream's
   `is_fatal` (SIO-010).
 - **`delete_folder` departs from the formal model in one state:** a walk
@@ -1048,3 +1058,47 @@ on exactly the `NotFound` and `InvalidPath` shapes: probes 20 + 20, reads
 10 + 5, transfers 1424 + 1424 (the error-path probe of a flat source). The
 absent-container test gained a flat arm, which failed in both runtimes,
 and every family now asserts that it generated cells.
+
+## Resumed against RFC-0021 (2026-10-15, the kernel PR)
+
+The closing round over `a630ef5` left seven threads open, two of them one
+cluster: `delete_folder`'s own probe rule disagreed with `_state` on one
+`stat` answer, and passed a `PermissionDenied` unprobed on a driver
+obligation the protocol never stated. The maintainer parked the PR and had the
+model settled first (BK-432, RFC-0021, accepted 2026-10-13). The resume lands
+its Appendix A as spec 003's BE-032 and re-derives the kernel from it, in
+scope "all of Appendix A but links" (decision log
+`sdd/decisions/3288309c-08e5-4f79-a209-8f9d7fca793f.jsonl`).
+
+What changed in the kernel, each against BE-032:
+
+- **One probe set** (`_in_probe_set`): `NotFound`, `InvalidPath`,
+  `AlreadyExists`, `PermissionDenied`, untyped. `_may_be_a_folder` (which
+  left out `InvalidPath`) and `delete_folder`'s `_probe_wanted` (only
+  `NotFound` and untyped) are gone, and with them decision 8's obligation that
+  `classify` type ENOENT/ENOTDIR as `NotFound` (A.8: drivers owe no rule
+  about a refusal's shape but the two typing rules).
+- **Per-call rows replace the wrong-type helpers** (A.8, rule 4): a refused
+  `get`/`delete` now also answers `NotFound` on a miss (it answered only a
+  folder before); a refused write answers `AlreadyExists` for an item without
+  `overwrite`; `ensure_parents` probes only the ancestors; a hierarchical
+  listing's first page refused on an existing folder now stands (it read as
+  empty for `NotFound`/`InvalidPath`).
+- **`delete_folder` reads `_state`** (threads 1 and 2): a raising
+  `NotFound`/`InvalidPath` `stat` is a miss, and the rows are `remove_folder`'s
+  and `delete_tree`'s. On the walk's way a refusal now propagates unprobed,
+  only a `NotFound` tolerated (A.9); the on-way probes are gone.
+- **A.4 always, on a flat namespace**: one `stat` per ancestor and one
+  `list_page(k, limit=1)` before every write and transfer destination, failing
+  closed; `reject_write_under_file_ancestor` is gone from the kernel, and a
+  flat transfer checks its source first.
+- **A.3 on a flat namespace**: a folder operation `stat`s its key first (an
+  item is empty, or `InvalidPath` for `get_folder_info` and `delete_folder`),
+  and listings omit what lies below a listed item through `_Shadows`, a stack
+  over the byte-ordered listing.
+- **The fake** lists a flat item and a prefix of one name together, in byte
+  order, and its flat `stat` looks the key up alone.
+
+Left open, each stated in BE-032: links (A.7) are not on the kernel, since no
+driver declares `links` until Local or SFTP moves; `glob` applies neither
+A.3's `stat` nor its omission (BK-439).

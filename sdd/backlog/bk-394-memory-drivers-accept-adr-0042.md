@@ -164,7 +164,9 @@ labelled **(was … , absorbed here)**, which is the absorption form
      error mapping for `LAZY_READ` (now the kernel's stream wrapper, so the
      guide states what the driver's `stream_catch` must name); the
      `strict_only` file-ancestor fixtures (`reject_write_under_file_ancestor`
-     is a kernel option under RFC-0017 D2); and the three small fixes. The
+     has no effect on the kernel, whose flat write check is unconditional,
+     spec 003 BE-032 A.4, so a class retires it as it migrates); and the three
+     small fixes. The
      list and its 2026-09-27 correction are in BK-325's
      [dossier](bk-325-custom-backend-guide-gaps.md).
    - [BK-332's rehearsal runs after this item: it rehearses the guide this

@@ -121,13 +121,23 @@ def _write_result(target: RemotePath, result: PutResult) -> WriteResult:
     )
 
 
-class _State(enum.Enum):
-    """What ``_state`` finds at a key."""
+def _in_probe_set(err: RemoteStoreError) -> bool:
+    """Whether a refusal may say something about the key: the probe set.
 
-    ABSENT = "absent"
-    FILE = "file"
-    FOLDER = "folder"
-    UNDER_FILE = "under a file"  # hierarchical only: an ancestor is a file
+    ``NotFound``, ``InvalidPath``, ``AlreadyExists``, ``PermissionDenied`` and
+    an untyped refusal: a wire's ENOTDIR, EISDIR or Windows denial may arrive as
+    any of them. A dead service, a lock or a non-empty folder says nothing.
+    """
+    return type(err) is RemoteStoreError or isinstance(err, (NotFound, InvalidPath, AlreadyExists, PermissionDenied))
+
+
+class _State(enum.Enum):
+    """What ``_state`` finds at a key: the tree's ``Item``, ``Folder`` or ``Nothing``."""
+
+    ABSENT = "absent"  # Nothing
+    FILE = "file"  # Item
+    FOLDER = "folder"  # Folder
+    UNDER_FILE = "under a file"  # Nothing, the path through an item; hierarchical only
     UNKNOWN = "unknown"  # a stat that could not answer; its error rides along
 
 
@@ -140,7 +150,14 @@ class _Seen:
 
 
 class _Omitted:
-    """Counts listed keys the key rule omits, and logs them once per listing."""
+    """Counts listed keys a listing omits, and logs them once per listing.
+
+    Two kinds: a key the key rule refuses or rewrites, and on a flat
+    namespace a key below an item the listing returned, which decodes to no
+    tree.
+    """
+
+    # BE-030's omission, and A.3 of spec 003 § The store tree.
 
     __slots__ = ("_count", "_first", "_name", "_where")
 
@@ -157,12 +174,49 @@ class _Omitted:
     def log(self) -> None:
         if self._count:
             _log.warning(
-                "%s: omitted %d listed key(s) under %r that the key rule refuses or rewrites, e.g. %r",
+                "%s: omitted %d listed key(s) under %r that the key rule refuses or rewrites,"
+                " or that lie below a listed file, e.g. %r",
                 self._name,
                 self._count,
                 self._where,
                 self._first,
             )
+
+
+class _Shadows:
+    """A flat listing's keys below an item it returned, which A.3 omits.
+
+    A flat driver lists in byte-lexicographic order, so an item ``k`` arrives
+    before every key below ``k/``, and every key between the two starts with
+    ``k`` and a byte that sorts before ``/``. So the items whose keys may still
+    be followed by keys below them form a stack, and that stack is all the
+    state needed: no buffer of the listing. A prefix ``p`` orders as ``p/``.
+    Inactive on a hierarchical namespace, which cannot hold the state.
+    """
+
+    __slots__ = ("_active", "_open")
+
+    def __init__(self, active: bool) -> None:
+        self._active = active
+        self._open: list[str] = []
+
+    def below(self, files: list[str], prefixes: list[str]) -> set[str]:
+        """The keys of one page to omit: files by key, prefixes by key with a trailing ``/``."""
+        if not self._active:
+            return set()
+        order = sorted([(f, True) for f in files] + [(p + "/", False) for p in prefixes])
+        out: set[str] = set()
+        for key, item in order:
+            while self._open:
+                top = self._open[-1]
+                if key.startswith(top) and len(key) > len(top) and key[len(top)] <= "/":
+                    break
+                self._open.pop()
+            if self._open and key.startswith(self._open[-1] + "/"):
+                out.add(key)
+            elif item:
+                self._open.append(key)
+        return out
 
 
 class _Choke:
@@ -204,9 +258,6 @@ class _KernelCore:
 
     Args:
         driver: A built driver; each public class builds its own.
-        reject_write_under_file_ancestor: Opt in to the file-ancestor walk
-            before a write or a ``move``/``copy`` destination; off by
-            default, as on every flat-namespace class today.
 
     Raises:
         ValueError: If the driver's declarations are not backed by its
@@ -216,7 +267,7 @@ class _KernelCore:
             differs from the driver's.
     """
 
-    def __init__(self, driver: Driver, *, reject_write_under_file_ancestor: bool = False) -> None:
+    def __init__(self, driver: Driver) -> None:
         _check_construction(driver)
         # The class's own close_is_terminal is what callers and the conformance
         # lanes read; the guard reads the driver's. They must be one answer.
@@ -228,7 +279,7 @@ class _KernelCore:
             )
             raise ValueError(msg)
         self._driver = driver
-        self._reject_under_file = reject_write_under_file_ancestor
+        self._flat = driver.namespace == "flat"
         self._closed = False
         d = driver
         self._range: SupportsRangeRead | None = d if isinstance(d, SupportsRangeRead) else None
@@ -348,33 +399,33 @@ class _KernelCore:
         with self._choke(op, key):
             return self._driver.stat(key, follow_links=follow_links)
 
-    def _state(self, op: Op, key: str, *, walk: bool, folders: bool = True) -> _Seen:
-        """What is at *key*, the one answer every call that needs a file or a folder reads.
+    def _state(self, op: Op, key: str, *, walk: bool, folders: bool = True, follow_links: bool = True) -> _Seen:
+        """What *key* resolves to: the one answer every probe of a key reads.
 
         A ``stat`` that answers decides. A miss (``None``, or a ``NotFound`` or
         ``InvalidPath``, as a POSIX ``stat`` under a file raises ENOTDIR) is
         followed on a flat driver by one ``list_page(limit=1)``, since a flat
-        ``stat`` cannot see a prefix (unless *folders* is false: ``is_file``
+        ``stat`` cannot see a folder (unless *folders* is false: ``is_file``
         and a write target need no folder); that listing's ``NotFound`` or
-        ``InvalidPath`` is an empty listing, so the key is absent. On a
-        hierarchical driver a miss is followed, when *walk*, by the ancestors'
-        ``stat`` calls, and so is, whether or not *walk*, a ``stat`` raising
-        any other refusal in the probe set: a file above makes the key's
-        refusal the wrong type, and an absent ancestor makes the key absent.
-        Anything else, a flat listing that cannot answer included, is
-        ``UNKNOWN``, carrying the error, which a determinant raises and an
-        error-path probe reads as no answer. A flat namespace has nothing
-        under a file: a key may sit below one, or shadow a prefix, and is then
-        its own key.
+        ``InvalidPath`` is an empty listing, by the flat listing obligation,
+        so nothing is there. On a hierarchical driver a miss is followed, when
+        *walk*, by the ancestors' ``stat`` calls, and so is, whether or not
+        *walk*, a ``stat`` raising another refusal in the probe set: an item
+        above makes the key's path pass through an item, and an absent
+        ancestor makes the key absent. Anything else, a flat listing that
+        cannot answer included, is ``UNKNOWN``, carrying the error, which a
+        determinant raises and an error-path probe reads as no answer. A flat
+        namespace never walks: a key below an item is its own key (A.3's
+        stated limit). *follow_links* is the key's own ``stat``: ``False``
+        for the calls that name the entry at the key (A.7).
         """
-        # BE-030's *What is at a key*; BE-021's fail-open for the error-path callers.
-        hier = self._driver.namespace != "flat"
+        hier = not self._flat
         try:
-            entry = self._stat(op, key)
+            entry = self._stat(op, key, follow_links=follow_links)
         except (NotFound, InvalidPath):
             entry = None
         except RemoteStoreError as err:
-            if hier and self._may_be_a_folder(err):
+            if hier and _in_probe_set(err):
                 return self._above(op, key, err)
             return _Seen(_State.UNKNOWN, error=err)
         if entry is not None:
@@ -415,9 +466,13 @@ class _KernelCore:
                 return _Seen(_State.UNDER_FILE, above=ancestor)
         return _Seen(_State.ABSENT) if err is None else _Seen(_State.UNKNOWN, error=err)
 
-    def _file_entry(self, op: Op, key: str) -> Entry:
-        """A determinant file key: the file's entry, or the error its state answers."""
-        seen = self._state(op, key, walk=False)
+    def _file_entry(self, op: Op, key: str, *, follow_links: bool = True) -> Entry:
+        """A determinant file key: the file's entry, or the error its state answers.
+
+        *follow_links* is false for a ``move`` source, which names the entry at
+        the key, so a link there is the item moved (A.7).
+        """
+        seen = self._state(op, key, walk=False, follow_links=follow_links)
         if seen.error is not None:
             raise seen.error
         if seen.state is _State.FOLDER:
@@ -429,56 +484,80 @@ class _KernelCore:
     def _under_file(self, seen: _Seen, key: str) -> InvalidPath:
         return InvalidPath(f"An ancestor of the path is a file: {seen.above}", path=key, backend=self.name)
 
-    @staticmethod
-    def _may_be_a_folder(err: RemoteStoreError) -> bool:
-        """Whether a refusal may be the wire's way of meeting a folder where it needs a file.
+    # The error-path probes below are A.8's per-call tables (spec 003 § The store
+    # tree). Each runs only after a refusal in the probe set, fails open (a probe
+    # that cannot answer leaves the refusal standing), and replaces the refusal
+    # only on a row where the call must refuse: rule 4.
 
-        Wires say it as EISDIR, as EEXIST from an exclusive create, as a Windows
-        EACCES, as ENOENT, or in a code nobody classified. A dead service, a
-        lock or a non-empty folder says nothing about the key's type.
+    def _read_refused(self, err: RemoteStoreError, op: Op, key: str, *, entry: bool = False) -> None:
+        """After a ``get`` or ``delete`` refusal: an item stands, a folder is ``InvalidPath``, nothing ``NotFound``.
+
+        *entry*: the call names the entry at the key (``delete``, a ``move``
+        source), so its ``stat`` does not follow a link (A.7).
         """
-        return type(err) is RemoteStoreError or isinstance(err, (NotFound, AlreadyExists, PermissionDenied))
-
-    def _folder_is_wrong_type(self, err: RemoteStoreError, op: Op, key: str) -> None:
-        """After a file-shaped call's refusal: a folder there is ``InvalidPath``."""
-        # BE-021: the type-mismatch row binds every backend, on the error path.
-        if not self._may_be_a_folder(err):
+        if not _in_probe_set(err):
             return
-        if (self._state(op, key, walk=False)).state is _State.FOLDER:
+        seen = self._state(op, key, walk=False, follow_links=not entry)
+        if seen.state is _State.FOLDER:
             raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
+        if seen.state in (_State.ABSENT, _State.UNDER_FILE) and not isinstance(err, NotFound):
+            raise NotFound(f"Not found: {key}", path=key, backend=self.name) from err
 
-    def _target_is_wrong_type(self, err: RemoteStoreError, op: Op, key: str) -> None:
-        """After a write's refusal at *key*: a folder there, or a file above it, is ``InvalidPath``.
+    def _write_refused(self, err: RemoteStoreError, op: Op, key: str, overwrite: bool) -> None:
+        """After a write primitive's refusal at *key*: the row there answers, or the refusal stands.
 
-        A hierarchical driver's write primitives refuse both in whatever shape
-        its wire has, and ``_state``'s fail-open probes type the refusal. A
-        flat namespace meets neither: it writes a key that shadows a prefix
-        or sits under a file, so nothing is probed.
+        Hierarchical: ``stat(k)``, then on a miss the ancestors'; a folder or an
+        item above is ``InvalidPath``, an item without *overwrite*
+        ``AlreadyExists``. Flat: A.4's checks ran first, so only an item
+        without *overwrite* is left to find.
         """
-        # BE-008's order and flat exemption, as BE-030 states them for the kernel.
-        if self._driver.namespace == "flat" or not self._may_be_a_folder(err):
+        if not _in_probe_set(err):
             return
-        seen = self._state(op, key, walk=True)
+        seen = self._state(op, key, walk=not self._flat, folders=not self._flat)
         if seen.state is _State.FOLDER:
             raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name) from err
         if seen.state is _State.UNDER_FILE:
             raise self._under_file(seen, key) from err
+        if seen.state is _State.FILE and not overwrite and not isinstance(err, AlreadyExists):
+            raise AlreadyExists(f"Already exists: {key}", path=key, backend=self.name) from err
 
-    def _holds_nothing(self, err: RemoteStoreError, op: Op, key: str) -> bool:
-        """Whether a listing's or an aggregate's first refusal says the prefix holds nothing.
+    def _parents_refused(self, err: RemoteStoreError, op: Op, key: str) -> None:
+        """After ``ensure_parents`` refused: an item among the ancestors is ``InvalidPath``, naming it."""
+        if not _in_probe_set(err):
+            return
+        seen = self._above(op, key, None)
+        if seen.state is _State.UNDER_FILE:
+            raise self._under_file(seen, key) from err
 
-        A ``NotFound`` or ``InvalidPath`` does. On a hierarchical namespace
-        another refusal in the probe set does when ``_state`` finds no folder:
-        nothing at the prefix, a file there, or a file above it. On a flat one
-        it never does: a file at the prefix rules out nothing below it.
+    def _holds_nothing(self, err: RemoteStoreError, op: Op, key: str, *, follow_links: bool = True) -> bool:
+        """Whether a listing's or an aggregate's first refusal reads as an empty listing.
+
+        The root is a folder, so only a ``NotFound`` or ``InvalidPath`` there,
+        an absent container's, holds nothing. Flat: a ``NotFound`` or
+        ``InvalidPath`` does, by the flat listing obligation, and nothing else.
+        Hierarchical: a refusal in the probe set does unless ``stat(k)`` sees a
+        folder, since a listing of a folder must not read as empty (rule 4).
         """
-        # BE-014, BE-015, BE-017, BE-026: a non-folder holds nothing; BE-021's error path.
-        if isinstance(err, (NotFound, InvalidPath)):
-            return True
-        if not key or self._driver.namespace == "flat" or not self._may_be_a_folder(err):
+        if not key or self._flat:
+            return isinstance(err, (NotFound, InvalidPath))
+        if not _in_probe_set(err):
             return False
-        seen = self._state(op, key, walk=True)
+        seen = self._state(op, key, walk=False, follow_links=follow_links)
         return seen.state in (_State.ABSENT, _State.FILE, _State.UNDER_FILE)
+
+    def _flat_item(self, op: Op, key: str) -> bool:
+        """A.3's determinant before a flat folder operation: whether *key* is an item.
+
+        A flat listing of ``k/`` cannot see an item ``k``, so the folder
+        operation calls ``stat`` on it first, success included, and fails closed.
+        """
+        if not self._flat or not key:
+            return False
+        try:
+            entry = self._stat(op, key)
+        except (NotFound, InvalidPath):
+            return False
+        return entry is not None and entry.kind == "file"
 
     def _write_target(self, op: Op, key: str) -> Entry | None:
         """A write target's determinant: the entry there, ``None`` for a miss.
@@ -511,14 +590,11 @@ class _KernelCore:
     def _pages(self, op: Op, key: str, delimiter: str | None) -> Iterator[Page]:
         """Every page of a listing, with the first-page bound.
 
-        A ``NotFound`` or ``InvalidPath`` before the operation's first page is
-        an empty listing: an absent container, an absent prefix or a non-folder
-        holds nothing. Another refusal there that may be a wire's way of
-        meeting a file (ENOTDIR, WinError 267, an unrecognised code) is an
-        empty listing when ``_holds_nothing`` confirms the prefix is no folder.
-        After the first page, a refusal reports a change under the scan and
-        propagates. The bound is keyed on the page, never on what the
-        operation yielded from it.
+        A refusal before the operation's first page is an empty listing when
+        ``_holds_nothing`` reads it so (A.8's first-page rows), and otherwise
+        stands. After the first page, a refusal reports a change under the
+        scan and propagates (A.9). The bound is keyed on the page, never on
+        what the operation yielded from it.
         """
         cursor: object | None = None
         seen = False
@@ -541,9 +617,10 @@ class _KernelCore:
     # region: probes (BE-004, BE-005, BE-029)
 
     def _node(self, op: Op, path: str, *, folders: bool = True) -> _State:
-        # BE-021: the three probes answer False on a traversal error rather than raise:
-        # absent and under a file are no node, and only a key nothing can answer raises
-        # (its stat, or on a flat driver its folder listing, refused in a shape that says nothing).
+        # The probes are determinants (A.8 rule 1): absent and under a file answer False,
+        # and a key whose stat, or on a flat driver whose folder listing, could not
+        # answer raises that error, a denial in the probe set included, unless a
+        # hierarchical ancestor walk resolves it (`_state`).
         # `folders=False` (is_file) needs no listing probe: a stat sees every file.
         seen = self._state(op, self._key(path), walk=False, folders=folders)
         if seen.error is not None:
@@ -583,7 +660,7 @@ class _KernelCore:
             with self._choke(op, key):
                 stream = self._driver.get(key)
         except RemoteStoreError as err:
-            self._folder_is_wrong_type(err, op, key)
+            self._read_refused(err, op, key)
             raise
         return key, stream
 
@@ -607,7 +684,12 @@ class _KernelCore:
             with self._choke(Op.DELETE, key):
                 self._driver.delete(key)
         except RemoteStoreError as err:
-            self._folder_is_wrong_type(err, Op.DELETE, key)
+            try:
+                self._read_refused(err, Op.DELETE, key, entry=True)
+            except NotFound:
+                if missing_ok:
+                    return
+                raise
             if missing_ok and isinstance(err, NotFound):
                 return
             raise
@@ -617,23 +699,39 @@ class _KernelCore:
     # region: writes
 
     def _prepare_write(self, op: Op, key: str) -> None:
-        """The opt-in file-ancestor walk, then the parents an explicit driver needs."""
-        if self._reject_under_file:
+        """A.4's checks on a flat namespace, then the parents an explicit driver needs.
+
+        A flat wire writes below an item, or an item over a folder, so the
+        kernel refuses both first: one ``stat`` per ancestor and one
+        ``list_page(k, limit=1)``. They decide the result, so they fail
+        closed: only a ``None``, ``NotFound`` or
+        ``InvalidPath`` is a miss, and an empty listing no folder. Neither is
+        race-free. A hierarchical wire refuses both itself, and the kernel
+        types its refusal.
+        """
+        if self._flat:
             for ancestor in _keys.ancestors(key):
-                # BUG-292's policy: only a confirmed miss is "no ancestor".
                 try:
                     entry = self._stat(op, ancestor)
-                except NotFound:
+                except (NotFound, InvalidPath):
                     entry = None
                 if entry is not None and entry.kind == "file":
                     raise InvalidPath(f"An ancestor of the path is a file: {ancestor}", path=key, backend=self.name)
+            try:
+                with self._choke(op, key):
+                    page = self._driver.list_page(key, delimiter="/", limit=1)
+            except (NotFound, InvalidPath):
+                return  # the flat listing obligation: nothing lies under the prefix
+            if page.entries or page.prefixes:
+                raise InvalidPath(f"Is a folder, not a file: {key}", path=key, backend=self.name)
+            return
         if self._parents_maker is not None and "/" in key:
             try:
                 with self._choke(op, key):
                     self._parents_maker.ensure_parents(key)
             except RemoteStoreError as err:
-                # A file above the key, refused in the wire's shape (os.makedirs: EEXIST).
-                self._target_is_wrong_type(err, op, key)
+                # An item above the key, refused in the wire's shape (os.makedirs: EEXIST).
+                self._parents_refused(err, op, key)
                 raise
 
     def _put(
@@ -651,7 +749,7 @@ class _KernelCore:
             with self._choke(op, key):
                 return self._driver.put(at or key, content, overwrite=overwrite, metadata=metadata)
         except RemoteStoreError as err:
-            self._target_is_wrong_type(err, op, key)
+            self._write_refused(err, op, key, overwrite)
             raise
 
     def _require(self, capability: Capability, key: str, what: str) -> None:
@@ -716,7 +814,7 @@ class _KernelCore:
             with self._choke(op, key):
                 handle = self._open_write.open_write(key, overwrite=overwrite, metadata=metadata)
         except RemoteStoreError as err:
-            self._target_is_wrong_type(err, op, key)
+            self._write_refused(err, op, key, overwrite)
             raise
         try:
             with self._choke(op, key):
@@ -726,7 +824,7 @@ class _KernelCore:
             with contextlib.suppress(Exception):
                 handle.abort()
             if isinstance(err, RemoteStoreError):
-                self._target_is_wrong_type(err, op, key)
+                self._write_refused(err, op, key, overwrite)
             raise
 
     def _write_temp_and_rename(
@@ -747,7 +845,7 @@ class _KernelCore:
                 with self._choke(op, key):
                     self._rename.rename(temp, key, replace=overwrite)
             except RemoteStoreError as err:
-                self._target_is_wrong_type(err, op, key)
+                self._write_refused(err, op, key, overwrite)
                 raise
         except BaseException:
             # A failed put can leave a partial temporary on some wires.
@@ -774,7 +872,7 @@ class _KernelCore:
         self._transfer(Op.COPY, src, dst, overwrite)
 
     def _require_file(self, op: Op, key: str) -> None:
-        self._file_entry(op, key)
+        self._file_entry(op, key, follow_links=op is not Op.MOVE)
 
     def _transfer(self, op: Op, src: str, dst: str, overwrite: bool) -> None:
         # The declared capability decides, ahead of the closed guard and the key
@@ -793,9 +891,9 @@ class _KernelCore:
             self._require_file(op, source)
             return
         # The source's NotFound outranks the destination's preconditions (BE-018), so
-        # the source is confirmed before the ancestor walk or parent creation can
+        # the source is confirmed before A.4's flat checks or parent creation can
         # answer or act for the destination.
-        source_checked = self._reject_under_file or self._parents_maker is not None
+        source_checked = self._flat or self._parents_maker is not None
         if source_checked:
             self._require_file(op, source)
         self._prepare_write(op, target)
@@ -806,7 +904,7 @@ class _KernelCore:
                 with self._choke(op, source):
                     self._atomic_move.move(source, target, overwrite=overwrite)
             except RemoteStoreError as err:
-                self._transfer_refused(err, op, source, target)
+                self._transfer_refused(err, op, source, target, overwrite)
                 raise
         elif self._rename is not None:
             self._rename_into(source, target, overwrite, source_checked=source_checked)
@@ -815,23 +913,22 @@ class _KernelCore:
             with self._choke(op, source):
                 self._driver.delete(source)
 
-    def _transfer_refused(self, err: RemoteStoreError, op: Op, source: str, target: str) -> None:
-        """Answer a two-key call's refusal from the keys' states, the source's first.
+    def _transfer_refused(self, err: RemoteStoreError, op: Op, source: str, target: str, overwrite: bool) -> None:
+        """Answer a two-key call's refusal from the keys' rows, the source's first (A.8).
 
         The wire may check either key first, and ``classify`` saw only the
-        source, so the choke point named it. When the refusal may be about a
-        key's state, fail-open probes re-answer it: an absent source is
-        ``NotFound`` and a folder there ``InvalidPath``, both naming the source;
-        then a folder at the destination is ``InvalidPath`` naming it (a write
-        target, so only on a hierarchical namespace). Otherwise the refusal
-        stands, naming the destination when it can only be the destination's:
-        an ``AlreadyExists``, or a ``NotFound`` or ``InvalidPath`` with the
-        source confirmed a file.
+        source, so the choke point named it. The source is probed as a ``get``
+        (a ``move`` source names the entry, so without following a link): an
+        absent source is ``NotFound`` and a folder there ``InvalidPath``, both
+        naming the source. Then the destination as a write primitive's
+        target. Otherwise the refusal stands, naming the destination when it
+        can only be the destination's: an ``AlreadyExists``, or a ``NotFound``
+        or ``InvalidPath`` with the source confirmed a file.
         """
         # BE-018: the source's NotFound outranks the destination's preconditions.
-        if not (self._may_be_a_folder(err) or isinstance(err, InvalidPath)):
+        if not _in_probe_set(err):
             return
-        seen = (self._state(op, source, walk=False)).state
+        seen = (self._state(op, source, walk=False, follow_links=op is not Op.MOVE)).state
         if seen in (_State.ABSENT, _State.UNDER_FILE):
             if isinstance(err, NotFound):
                 err.path = source
@@ -839,7 +936,7 @@ class _KernelCore:
             raise NotFound(f"Not found: {source}", path=source, backend=self.name) from err
         if seen is _State.FOLDER:
             raise InvalidPath(f"Is a folder, not a file: {source}", path=source, backend=self.name) from err
-        self._target_is_wrong_type(err, op, target)
+        self._write_refused(err, op, target, overwrite)
         source_is_file = seen is _State.FILE
         if isinstance(err, AlreadyExists) or (source_is_file and isinstance(err, (NotFound, InvalidPath))):
             err.path = target
@@ -850,7 +947,7 @@ class _KernelCore:
             with self._choke(op, source):
                 self._copier.copy(source, target, overwrite=overwrite)
         except RemoteStoreError as err:
-            self._transfer_refused(err, op, source, target)
+            self._transfer_refused(err, op, source, target, overwrite)
             raise
 
     def _rename_source(self, source: str, target: str, *, replace: bool) -> None:
@@ -860,7 +957,7 @@ class _KernelCore:
                 self._rename.rename(source, target, replace=replace)
         except RemoteStoreError as err:
             # A key that changed under the move after its checks.
-            self._transfer_refused(err, Op.MOVE, source, target)
+            self._transfer_refused(err, Op.MOVE, source, target, replace)
             raise
 
     def _rename_into(self, source: str, target: str, overwrite: bool, *, source_checked: bool) -> None:
@@ -918,20 +1015,63 @@ class _KernelCore:
 
     # region: listings (BE-014, BE-015, BE-026, BE-024)
 
+    @staticmethod
+    def _below(page: Page, shadows: _Shadows) -> set[str]:
+        """A page's keys below an item the listing returned (A.3), a prefix as ``p/``.
+
+        The shadows read every key of the page, a kind the listing does not
+        yield included, since the order they track spans both.
+        """
+        files = [e.key for e in page.entries if e.kind == "file"]
+        return shadows.below(files, list(page.prefixes))
+
+    @staticmethod
+    def _files_of(page: Page, below: set[str], omitted: _Omitted) -> list[Entry]:
+        """A page's files as the tree has them; each omitted one is noted for the log.
+
+        Omitted: a key the key rule refuses or rewrites, and on a flat
+        namespace a key below an item this listing returned.
+        """
+        out: list[Entry] = []
+        for entry in page.entries:
+            if entry.kind != "file":
+                continue
+            if entry.key in below or not _keys.listable(entry.key):
+                omitted.note(entry.key)
+            else:
+                out.append(entry)
+        return out
+
+    @staticmethod
+    def _folders_of(page: Page, below: set[str], seen: set[str], omitted: _Omitted) -> list[FolderEntry]:
+        """A page's folders not yet yielded, as the tree has them; omissions noted as for files.
+
+        A listed folder entry is a folder key like a prefix, and a prefix
+        shadowed by an item of its name lies below that item.
+        """
+        out = []
+        for folder in [*page.prefixes, *(e.key for e in page.entries if e.kind == "folder")]:
+            if folder + "/" in below or not _keys.listable(folder):
+                omitted.note(folder)
+                continue
+            if folder in seen:
+                continue
+            seen.add(folder)
+            out.append(FolderEntry(path=RemotePath(folder), name=_keys.name(folder)))
+        return out
+
     def _listed_files(self, op: Op, key: str, recursive: bool, omitted: _Omitted) -> Iterator[Entry]:
+        shadows = _Shadows(self._flat)
         for page in self._pages(op, key, None if recursive else "/"):
-            for entry in page.entries:
-                if entry.kind != "file":
-                    continue
-                if not _keys.listable(entry.key):
-                    omitted.note(entry.key)
-                    continue
+            for entry in self._files_of(page, self._below(page, shadows), omitted):
                 yield entry
 
     def list_files(self, path: str, *, recursive: bool = False, max_depth: int | None = None) -> Iterator[FileInfo]:
         """Files under *path*; recursive is one ``delimiter=None`` walk (decision 7)."""
         self._guard()
         key = self._key(path)
+        if self._flat_item(Op.LIST_FILES, key):
+            return  # an item holds nothing (A.3, A.5)
         omitted = _Omitted(self.name, key)
         try:
             for entry in self._listed_files(Op.LIST_FILES, key, recursive, omitted):
@@ -942,28 +1082,18 @@ class _KernelCore:
             # A caller that stops early, or an error, still gets the omission logged.
             omitted.log()
 
-    def _folders_of(self, page: Page, seen: set[str], omitted: _Omitted) -> list[FolderEntry]:
-        keys = [*page.prefixes, *(e.key for e in page.entries if e.kind == "folder")]
-        out = []
-        for folder in keys:
-            if not _keys.listable(folder):
-                omitted.note(folder)
-                continue
-            if folder in seen:
-                continue
-            seen.add(folder)
-            out.append(FolderEntry(path=RemotePath(folder), name=_keys.name(folder)))
-        return out
-
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         """Immediate subfolders of *path*."""
         self._guard()
         key = self._key(path)
+        if self._flat_item(Op.LIST_FOLDERS, key):
+            return
         omitted = _Omitted(self.name, key)
+        shadows = _Shadows(self._flat)
         seen: set[str] = set()
         try:
             for page in self._pages(Op.LIST_FOLDERS, key, "/"):
-                for folder in self._folders_of(page, seen, omitted):
+                for folder in self._folders_of(page, self._below(page, shadows), seen, omitted):
                     yield folder
         finally:
             omitted.log()
@@ -972,18 +1102,17 @@ class _KernelCore:
         """Files and immediate subfolders of *path*, in one listing pass."""
         self._guard()
         key = self._key(path)
+        if self._flat_item(Op.ITER_CHILDREN, key):
+            return
         omitted = _Omitted(self.name, key)
+        shadows = _Shadows(self._flat)
         seen: set[str] = set()
         try:
             for page in self._pages(Op.ITER_CHILDREN, key, "/"):
-                for entry in page.entries:
-                    if entry.kind != "file":
-                        continue
-                    if not _keys.listable(entry.key):
-                        omitted.note(entry.key)
-                        continue
+                below = self._below(page, shadows)
+                for entry in self._files_of(page, below, omitted):
                     yield self._file_info(entry)
-                for folder in self._folders_of(page, seen, omitted):
+                for folder in self._folders_of(page, below, seen, omitted):
                     yield folder
         finally:
             omitted.log()
@@ -1051,6 +1180,9 @@ class _KernelCore:
         self._guard()
         key = self._key(path)
         op = Op.GET_FOLDER_INFO
+        if self._flat_item(op, key):
+            # A.3: an item is no folder, whatever raw entries lie below it.
+            raise InvalidPath(f"Is a file, not a folder: {key}", path=key, backend=self.name)
         if self._stats is not None:
             try:
                 with self._choke(op, key):
@@ -1086,7 +1218,7 @@ class _KernelCore:
 
     # endregion
 
-    # region: delete_folder (BE-031)
+    # region: delete_folder (BE-031; spec 003 § The store tree, A.5's delete-folder column)
 
     def _df_error(self, cls: type[RemoteStoreError], key: str) -> RemoteStoreError:
         messages = {
@@ -1096,35 +1228,31 @@ class _KernelCore:
         }
         return cls(f"{messages.get(cls, 'Refused')}: {key}", path=key, backend=self.name)
 
-    def _df_kind(self, key: str) -> str | None:
-        entry = self._stat(Op.DELETE_FOLDER, key, follow_links=False)
-        return None if entry is None else entry.kind
-
     def _df_list(
-        self, key: str, delimiter: str | None, limit: int | None, *, absent_is_empty: bool = False
+        self, key: str, delimiter: str | None, limit: int | None, *, first: bool = False
     ) -> tuple[list[str], list[str]]:
-        """Raw keys under *key*: files (and links), and folders. Unfiltered on purpose.
+        """Raw keys under *key*, in listing order: files (and links), and folders. Unfiltered on purpose.
 
-        A probe must see every entry, the omitted ones included, or it
-        would call a folder holding only those empty. ``absent_is_empty``
-        reads a ``NotFound`` on the first page as an empty listing; on a later
-        page it reports a change under the scan and propagates.
+        A probe must see every entry, the omitted ones included, or it would
+        call a folder holding only those empty. With *first*, a refusal of the
+        first page is read as A.8's first-page rows (``_holds_nothing``); on a
+        later page it reports a change under the scan and propagates (A.9).
         """
         files: list[str] = []
         folders: list[str] = []
         cursor: object | None = None
-        first = True
+        page_one = True
         while True:
             try:
                 with self._choke(Op.DELETE_FOLDER, key):
                     page = self._driver.list_page(
                         key, delimiter=delimiter, cursor=cursor, limit=limit, follow_links=False
                     )
-            except NotFound:
-                if absent_is_empty and first:
+            except RemoteStoreError as err:
+                if first and page_one and self._holds_nothing(err, Op.DELETE_FOLDER, key, follow_links=False):
                     return [], []
                 raise
-            first = False
+            page_one = False
             files += [e.key for e in page.entries if e.kind == "file"]
             folders += [e.key for e in page.entries if e.kind == "folder"]
             folders += list(page.prefixes)
@@ -1132,63 +1260,59 @@ class _KernelCore:
             if cursor is None or limit is not None:
                 return files, folders
 
-    @staticmethod
-    def _probe_wanted(err: RemoteStoreError) -> bool:
-        # Only a typed NotFound or an untyped refusal says something about the key.
-        return type(err) is NotFound or type(err) is RemoteStoreError
-
-    def _df_error_path(
-        self,
-        err: RemoteStoreError,
-        key: str,
-        missing_ok: bool,
-        *,
-        listing_arm: bool,
-        on_way: bool = False,
-        file_op: bool = False,
-    ) -> None:
-        """The probe rule for a refusal *err* on *key*.
-
-        ``on_way``: a call inside the walk on an entry under the deleted key.
-        ``file_op``: the refused call was the walk's ``delete``, for which a
-        file is the right type.
-        """
-        if not self._probe_wanted(err):
-            raise err
-        try:
-            kind = self._df_kind(key)
-        except RemoteStoreError as probe_err:
-            return self._df_stands(err, missing_ok, probe_err)
-        if kind is None:
-            if missing_ok or on_way:
-                return None
-            raise self._df_error(NotFound, key) from err
-        if kind == "file":
-            if file_op:
-                return self._df_stands(err, missing_ok, None)
-            raise self._df_error(InvalidPath, key) from err
-        if listing_arm:
-            try:
-                files, folders = self._df_list(key, "/", 1)
-            except RemoteStoreError as probe_err:
-                return self._df_stands(err, missing_ok, probe_err)
-            if files or folders:
-                raise self._df_error(DirectoryNotEmpty, key) from err
-        return self._df_stands(err, missing_ok, None)
-
-    @staticmethod
-    def _df_stands(err: RemoteStoreError, missing_ok: bool, probe_err: RemoteStoreError | None) -> None:
-        """The probes did not replace the refusal: it stands, ``missing_ok`` applying to a NotFound.
-
-        A ``NotFound`` on the walk's way never gets here, since the walk tolerates
-        it before the probe rule, so only the caller's ``missing_ok``
-        applies. ``missing_ok`` is ``False`` for every call on the way.
-        """
-        if type(err) is NotFound and missing_ok:
+    def _df_answer(self, err: RemoteStoreError, answer: RemoteStoreError, missing_ok: bool) -> None:
+        """Raise *answer* (*err* itself when the refusal stands), unless ``missing_ok`` absorbs a ``NotFound``."""
+        if missing_ok and isinstance(answer, NotFound):
             return
-        if probe_err is not None:
-            raise err from probe_err
-        raise err
+        if answer is err:
+            raise err
+        raise answer from err
+
+    def _df_refused(self, err: RemoteStoreError, key: str, missing_ok: bool, *, remove: bool) -> None:
+        """A refusal of *key*'s ``remove_folder`` (*remove*), its ``delete_tree``, or the walk's first listing.
+
+        A.8's hierarchical rows: ``stat(k)`` not following a link (the call
+        names the entry, A.7); an item is ``InvalidPath`` and a miss
+        ``NotFound``. For ``remove_folder`` a folder gets one
+        ``list_page(k, limit=1)``, and a non-empty one is
+        ``DirectoryNotEmpty``. An empty folder, a folder for the other calls,
+        or a probe that cannot answer leaves the refusal standing (rule 4).
+        """
+        answer = err
+        if _in_probe_set(err):
+            seen = self._state(Op.DELETE_FOLDER, key, walk=False, follow_links=False)
+            if seen.state is _State.FILE:
+                answer = self._df_error(InvalidPath, key)
+            elif seen.state in (_State.ABSENT, _State.UNDER_FILE):
+                answer = self._df_error(NotFound, key)
+            elif seen.state is _State.FOLDER and remove:
+                with contextlib.suppress(RemoteStoreError):
+                    files, folders = self._df_list(key, "/", 1)
+                    if files or folders:
+                        answer = self._df_error(DirectoryNotEmpty, key)
+        self._df_answer(err, answer, missing_ok)
+
+    def _df_prefix_refused(self, err: RemoteStoreError, key: str, missing_ok: bool) -> None:
+        """A ``delete_tree`` refusal without folder objects: A.8's flat ``delete_tree`` row.
+
+        ``list_page(k, limit=1)`` first: anything listed leaves the refusal
+        standing. After an empty listing, ``stat(k)``: an item is
+        ``InvalidPath`` and a miss ``NotFound``. A probe that cannot answer
+        leaves the refusal standing.
+        """
+        answer = err
+        if _in_probe_set(err):
+            with contextlib.suppress(RemoteStoreError):
+                # On a flat namespace a miss of the probe's listing is an empty listing, by the
+                # flat listing obligation; elsewhere it is a probe that cannot answer.
+                files, folders = self._df_list(key, None, 1, first=self._flat)
+                if not files and not folders:
+                    seen = self._state(Op.DELETE_FOLDER, key, walk=False, folders=False, follow_links=False)
+                    if seen.state is _State.FILE:
+                        answer = self._df_error(InvalidPath, key)
+                    elif seen.state in (_State.ABSENT, _State.UNDER_FILE):
+                        answer = self._df_error(NotFound, key)
+        self._df_answer(err, answer, missing_ok)
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         """Remove the folder at *path* by the kernel's sequence; the root is refused first."""
@@ -1205,14 +1329,14 @@ class _KernelCore:
                 with self._choke(Op.DELETE_FOLDER, key):
                     remover.remove_folder(key)
             except RemoteStoreError as err:
-                self._df_error_path(err, key, missing_ok, listing_arm=True)
+                self._df_refused(err, key, missing_ok, remove=True)
             return None
         if self._tree is not None:
             try:
                 with self._choke(Op.DELETE_FOLDER, key):
                     self._tree.delete_tree(key)
             except RemoteStoreError as err:
-                self._df_error_path(err, key, missing_ok, listing_arm=False)
+                self._df_refused(err, key, missing_ok, remove=False)
             return None
         return self._df_walk(key, missing_ok, remover)
 
@@ -1226,13 +1350,15 @@ class _KernelCore:
                 found_files, found_folders = self._df_list(current, "/", None)
             except RemoteStoreError as err:
                 if current == key:
-                    return self._df_error_path(err, key, missing_ok, listing_arm=True)
-                if type(err) is NotFound:
-                    continue
-                self._df_error_path(err, current, False, listing_arm=True, on_way=True)
-                continue
-            # A key the rule refuses is never handed to the driver (BE-030); it
-            # stays, and the final remove_folder answers DirectoryNotEmpty for it.
+                    # The operation's first page, read through A.5 (A.9).
+                    return self._df_refused(err, key, missing_ok, remove=False)
+                if isinstance(err, NotFound):
+                    continue  # the subfolder is gone already
+                raise  # after the first page a refusal propagates (A.9)
+            # A key BE-030 omits is never handed to the driver. It stays, so the
+            # remove_folder of the folder holding it refuses with DirectoryNotEmpty:
+            # below key that refusal propagates, and at key it answers through
+            # remove_folder's row.
             files += [f for f in found_files if _keys.listable(f)]
             listable = [f for f in found_folders if _keys.listable(f)]
             folders += listable
@@ -1241,51 +1367,54 @@ class _KernelCore:
             try:
                 with self._choke(Op.DELETE_FOLDER, file):
                     self._driver.delete(file)
-            except RemoteStoreError as err:
-                if type(err) is NotFound:
-                    continue
-                self._df_error_path(err, file, False, listing_arm=True, on_way=True, file_op=True)
+            except NotFound:
+                continue  # gone already
         for folder in sorted(folders, key=lambda f: -f.count("/")):
             try:
                 with self._choke(Op.DELETE_FOLDER, folder):
                     remover.remove_folder(folder)
-            except RemoteStoreError as err:
-                if type(err) is NotFound:
-                    continue
-                self._df_error_path(err, folder, False, listing_arm=True, on_way=True)
+            except NotFound:
+                continue
         try:
             with self._choke(Op.DELETE_FOLDER, key):
                 remover.remove_folder(key)
         except RemoteStoreError as err:
-            self._df_error_path(err, key, missing_ok, listing_arm=True)
+            self._df_refused(err, key, missing_ok, remove=True)
         return None
 
-    def _df_listing(self, key: str, delimiter: str | None, limit: int | None) -> tuple[list[str], list[str]]:
-        # The determinant fails closed, but a NotFound on its first page is an
-        # empty listing: an absent prefix or an absent container holds nothing
-        # (BE-013); a later page's NotFound propagates (BE-021's bound).
-        return self._df_list(key, delimiter, limit, absent_is_empty=True)
-
     def _df_none(self, key: str, recursive: bool, missing_ok: bool) -> None:
+        """Without folder objects: list first, ``stat`` only after an empty listing.
+
+        On a flat namespace A.3's ``stat`` comes first instead, since a listing
+        of ``k/`` cannot see an item ``k``: an item is ``InvalidPath`` and
+        nothing is removed, whatever raw entries lie below it.
+        """
+        if self._flat_item(Op.DELETE_FOLDER, key):
+            raise self._df_error(InvalidPath, key)
         if not recursive:
-            files, folders = self._df_listing(key, "/", 1)
+            files, folders = self._df_list(key, "/", 1, first=True)
             if files or folders:
                 raise self._df_error(DirectoryNotEmpty, key)
             return self._df_empty(key, missing_ok)
         if self._tree is not None:
-            files, _ = self._df_listing(key, None, 1)
+            files, _ = self._df_list(key, None, 1, first=True)
             if not files:
                 return self._df_empty(key, missing_ok)
-            with self._choke(Op.DELETE_FOLDER, key):
-                self._tree.delete_tree(key)
+            try:
+                with self._choke(Op.DELETE_FOLDER, key):
+                    self._tree.delete_tree(key)
+            except RemoteStoreError as err:
+                self._df_prefix_refused(err, key, missing_ok)
             return None
-        files, _ = self._df_listing(key, None, None)
+        files, _ = self._df_list(key, None, None, first=True)
         if not files:
             return self._df_empty(key, missing_ok)
+        # A listing never hands the driver a key it omits: one BE-030 refuses, or
+        # one below a listed item (A.3). It stays, and keeps the folder non-empty.
+        below = _Shadows(self._flat).below(files, [])
         left = False
         for file in files:
-            if not _keys.listable(file):
-                # Never handed to the driver (BE-030); it keeps the prefix alive.
+            if file in below or not _keys.listable(file):
                 left = True
                 continue
             try:
@@ -1298,13 +1427,15 @@ class _KernelCore:
         return None
 
     def _df_empty(self, key: str, missing_ok: bool) -> None:
-        # After an empty listing the stat fails open: a raising stat leaves NotFound.
-        try:
-            kind = self._df_kind(key)
-        except RemoteStoreError:
-            kind = None
-        if kind == "file":
-            raise self._df_error(InvalidPath, key)
+        """After an empty listing: an item is ``InvalidPath``, anything else ``NotFound``.
+
+        On a flat namespace A.3's ``stat`` already ruled an item out. The
+        ``stat`` fails open: one that cannot answer leaves ``NotFound``.
+        """
+        if not self._flat:
+            seen = self._state(Op.DELETE_FOLDER, key, walk=False, follow_links=False)
+            if seen.state is _State.FILE:
+                raise self._df_error(InvalidPath, key)
         if missing_ok:
             return
         raise self._df_error(NotFound, key)

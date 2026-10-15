@@ -310,15 +310,28 @@ if evidence changes; these are retired.
   [bk-437](traces/bk-437-formal-restatement-tags.yml).
 
 - [x] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
-  spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, BE-030, BE-031, ERR-001, ERR-009, DEPTH-003, PING-002 · effort: L · audience: library.maintainer, infra.test
+  spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, BE-030, BE-031, BE-032, ERR-001, ERR-009, DEPTH-003, PING-002 · effort: L · audience: library.maintainer, infra.test
   The contract kernel, private under `src/remote_store/_kernel/`: the async
   core and driver protocols, the sync twin `scripts/gen_sync_kernel.py`
   generates with `unasync` (`--check` in `preflight`), and each runtime's own
-  layer. Spec 003 gains BE-030 (key rule), BE-031 (`delete_folder`) and
-  BE-017's aggregation rule. Tests: `tests/_kernel/`, both runtimes, the
-  `delete_folder` cells checked against BK-396's decided model. Remainder:
-  BK-394. Trace: [bk-389](traces/bk-389-kernel-step-1.yml). Detail:
+  layer. Spec 003 gains BE-030 (key rule), BE-031 (`delete_folder`), BE-032
+  (the store tree, RFC-0021's Appendix A, which the kernel's probes follow)
+  and BE-017's aggregation rule. Tests: `tests/_kernel/`, both runtimes, the
+  `delete_folder` cells checked against BK-396's decided model and BE-032's
+  two generated suites. Remainder: BK-394. Trace:
+  [bk-389](traces/bk-389-kernel-step-1.yml). Detail:
   [dossier](backlog/bk-389-kernel-step-1-memory.md).
+
+- [x] **BK-432 — No logical model says what a key resolves to, so every operation re-derives it from driver refusals**
+  spec: BE-004, BE-005, BE-008, BE-013, BE-014, BE-017, BE-021, BE-030, BE-031, BE-032 · effort: L · audience: library.maintainer, user.api, contributor.process
+  RFC-0021 (accepted 2026-10-13, `StoreTree.dfy` verifying it) landed as spec
+  003's BE-032 with BK-389's kernel PR: one tree (spec 051), a partial
+  `decode` per encoding, one result table and one refusal table per
+  namespace, which BE-030's *What is at a key* and BE-031's probe rule now
+  point to. Links (A.7) are stated but wait for the first driver with links;
+  follow-ups BK-433, BK-434, BK-436, BK-438. Traces:
+  [bk-432](traces/bk-432-key-resolution-rfc.yml),
+  [bk-389](traces/bk-389-kernel-step-1.yml).
 
 - [x] **BK-399 — A stored key holding a backslash has no kernel answer, so migration may strand it**
   spec: BE-025, BE-029, BE-030 · effort: S · audience: library.maintainer, user.api

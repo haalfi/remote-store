@@ -29,11 +29,12 @@ class Driver(Protocol):
     ``EOFError``, and ``size_probe``, a ``SEEK_END`` resolver for that stream.
 
     ``namespace`` says what the wire can hold and ``stat`` can see: on
-    ``"flat"`` a key may shadow a prefix or sit under a file, and ``stat`` is
-    blind to a prefix; on ``"hierarchical"`` neither can happen, so every
-    write primitive refuses a folder at its key, or a file above it, without
-    changing anything, in whatever shape the wire has; the kernel types the
-    refusal. ``parents`` says whether folders are objects. A flat driver with
+    ``"flat"`` the wire would let a key shadow a prefix or sit under a file,
+    so the kernel checks before every write that it does neither, and
+    ``stat`` is blind to a prefix; on ``"hierarchical"`` neither can happen,
+    so every write primitive refuses a folder at its key, or a file above it,
+    without changing anything, in whatever shape the wire has; the kernel
+    types the refusal. ``parents`` says whether folders are objects. A flat driver with
     folder objects is refused at construction, since its ``stat`` could not
     see them, and so is an explicit one without ``ensure_parents``, which
     could not create a write's parents.
@@ -49,11 +50,12 @@ class Driver(Protocol):
     def stat(self, key: str, *, follow_links: bool = True) -> Entry | None:
         """The node at *key*, file or folder, or ``None`` when absent.
 
-        On a flat wire it may be a lookup of the key alone, blind to a prefix:
-        where a folder matters (a probe, a file-shaped key, a source) the
-        kernel finds one there with one ``list_page(limit=1)``; at a write
-        target it asks ``stat`` alone, since a flat key may shadow a prefix.
-        With folder objects it returns the folder object at *key*.
+        On a flat wire it may be a lookup of the key alone, blind to a prefix
+        and to whatever lies above the key: where a folder matters the kernel
+        finds one there with one ``list_page(limit=1)``. With folder objects
+        it returns the folder object at *key*. A miss may also be raised, as
+        ``NotFound`` or ``InvalidPath`` (a POSIX ``stat`` below a file raises
+        ENOTDIR).
 
         ``follow_links=False`` is ``delete_folder``'s view: a link is then a
         non-folder entry, whatever it points to.
@@ -105,7 +107,12 @@ class Driver(Protocol):
 
         A *prefix* that is a file, or lies under one, is refused in whatever
         shape the wire has, or lists nothing; the kernel reads a first-page
-        refusal its probes confirm as no folder as an empty listing.
+        refusal its probes confirm as no folder as an empty listing. A flat
+        driver owes two more: its keys come in byte-lexicographic order, a
+        prefix ``p`` ordered as ``p/``, so an item arrives before every key
+        below it; and it answers ``NotFound`` or ``InvalidPath`` only when
+        nothing lies under *prefix*, an absent container included, since no
+        other call can tell a flat folder from nothing.
 
         ``follow_links=False`` is ``delete_folder``'s view: a link is a
         non-folder entry, listed as one and never descended into, and a link
@@ -207,8 +214,8 @@ class SupportsAtomicMove(Protocol):
         Refuses an absent *src*, or one that is no file, without changing
         anything, in whatever shape the wire has; the kernel types the refusal.
         On a hierarchical namespace, refuses a folder at *dst*, *overwrite* or
-        not, without changing anything. On a flat one a key that shadows a
-        prefix is written: the flat namespace skips the type-conflict check.
+        not, without changing anything. On a flat one the kernel has already
+        checked that *dst* is no folder and lies below no file.
         """
         ...
 
@@ -227,8 +234,8 @@ class SupportsRename(Protocol):
         On a hierarchical namespace, refuses a folder at *dst*, *replace* or
         not, without changing anything, as ``rename(2)`` and ``os.replace``
         do: the kernel's temp-and-rename write relies on it rather than
-        probing first. On a flat one a key that shadows a prefix is written:
-        the flat namespace skips the type-conflict check.
+        probing first. On a flat one the kernel has already checked that
+        *dst* is no folder and lies below no file.
         """
         ...
 
@@ -243,8 +250,8 @@ class SupportsCopy(Protocol):
         Refuses an absent *src*, or one that is no file, without changing
         anything, in whatever shape the wire has; the kernel types the refusal.
         On a hierarchical namespace, refuses a folder at *dst*, *overwrite* or
-        not, without changing anything. On a flat one a key that shadows a
-        prefix is written: the flat namespace skips the type-conflict check.
+        not, without changing anything. On a flat one the kernel has already
+        checked that *dst* is no folder and lies below no file.
         """
         ...
 

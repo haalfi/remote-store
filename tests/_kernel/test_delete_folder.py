@@ -27,11 +27,26 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._errors import DirectoryNotEmpty, InvalidPath, NotFound, PermissionDenied, RemoteStoreError
+from remote_store._errors import (
+    BackendUnavailable,
+    DirectoryNotEmpty,
+    InvalidPath,
+    NotFound,
+    PermissionDenied,
+    RemoteStoreError,
+)
 from remote_store._kernel._model import Entry, Op, Page
 from remote_store._kernel.aio_backend import AsyncDriverBackend
 from remote_store._kernel.backend import DriverBackend
-from tests._kernel._fake import RUNTIMES, FakeContainerGone, FakeDenied, FakeOdd, FakeStore, make_kernel
+from tests._kernel._fake import (
+    RUNTIMES,
+    FakeContainerGone,
+    FakeDenied,
+    FakeDown,
+    FakeOdd,
+    FakeStore,
+    make_kernel,
+)
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -218,6 +233,11 @@ def test_the_probe_rule_matches_the_model_over_its_enumerated_space(
 ) -> None:
     recursive = ctx != "remove_folder"
     expected = _model(MODEL.ScriptedDriver(ctx, refusal, stat_out, list_out), "d", recursive, missing_ok)
+    if ctx.startswith("walk") and refusal is RemoteStoreError:
+        # Spec 003 § The store tree, A.9, supersedes the model on the walk's way: a
+        # refusal of an entry after the operation's first page propagates unprobed.
+        # Only a NotFound, an entry already gone, is still tolerated.
+        expected = str(MODEL.answer(RemoteStoreError("refused on the way")))
     actual = _real(runtime, MODEL.ScriptedDriver(ctx, refusal, stat_out, list_out), "d", recursive, missing_ok)
     assert actual == expected
 
@@ -230,14 +250,16 @@ FLAT_TABLE = [
     ("d", ["d/a", "d/s/c"], True, False, None, []),
     ("f", ["f"], False, False, InvalidPath, ["f"]),
     ("f", ["f"], True, True, InvalidPath, ["f"]),
-    ("b", ["b", "b/x"], False, False, DirectoryNotEmpty, ["b", "b/x"]),
-    ("b", ["b", "b/x"], True, False, None, ["b"]),
+    # An item with raw entries below it, which no tree gives: A.3's stat answers for the item.
+    ("b", ["b", "b/x"], False, False, InvalidPath, ["b", "b/x"]),
+    ("b", ["b", "b/x"], True, True, InvalidPath, ["b", "b/x"]),
     ("z", [], False, False, NotFound, []),
     ("z", [], True, True, None, []),
     ("f/x", ["f"], True, False, NotFound, ["f"]),
 ]
 
 
+@pytest.mark.spec("BE-032")
 @pytest.mark.parametrize("with_tree", [True, False])
 @pytest.mark.parametrize(("key", "files", "recursive", "missing_ok", "answer", "left"), FLAT_TABLE)
 def test_parents_none_answers_by_its_table(
@@ -251,7 +273,7 @@ def test_parents_none_answers_by_its_table(
     left: list[str],
 ) -> None:
     store = FakeStore(parents="none").add(*files)
-    run = make_kernel(runtime, store, protocols=("delete_tree",) if with_tree else ())
+    run = make_kernel(runtime, store, namespace="flat", protocols=("delete_tree",) if with_tree else ())
     if answer is None:
         run.delete_folder(key, recursive=recursive, missing_ok=missing_ok)
     else:
@@ -259,6 +281,24 @@ def test_parents_none_answers_by_its_table(
             run.delete_folder(key, recursive=recursive, missing_ok=missing_ok)
     assert sorted(store.files) == left
     assert store.called("remove_folder") == []
+
+
+@pytest.mark.spec("BE-032")
+@pytest.mark.parametrize("with_tree", [True, False])
+def test_a_flat_walk_leaves_what_lies_below_an_item_it_removed(runtime: str, with_tree: bool) -> None:
+    # A.3: a walk of k's parent removes the item k and omits k/a, which it cannot
+    # reach through the tree, so the folder stays non-empty. A tree delete removes
+    # the whole prefix.
+    store = FakeStore(parents="none").add("p/k", "p/k/a", "p/m")
+    run = make_kernel(runtime, store, namespace="flat", protocols=("delete_tree",) if with_tree else ())
+    if with_tree:
+        run.delete_folder("p", recursive=True)
+        assert store.files == {}
+        return
+    with pytest.raises(DirectoryNotEmpty):
+        run.delete_folder("p", recursive=True)
+    assert sorted(store.files) == ["p/k/a"]
+    assert ("delete", "p/k/a") not in store.calls
 
 
 def test_parents_none_reads_an_absent_container_as_an_empty_listing(runtime: str) -> None:
@@ -363,12 +403,31 @@ def test_a_concurrent_deleter_mid_walk_is_tolerated(runtime: str) -> None:
 def test_a_refusal_that_says_nothing_about_the_key_passes_unprobed(runtime: str, recursive: bool) -> None:
     store = FakeStore().add("d/")
     run = make_kernel(runtime, store, protocols=("remove_folder", "delete_tree"))
-    store.fault("remove_folder", FakeDenied("denied"))
-    store.fault("delete_tree", FakeDenied("denied"))
-    with pytest.raises(PermissionDenied, match="denied"):
+    store.fault("remove_folder", FakeDown("unreachable"))
+    store.fault("delete_tree", FakeDown("unreachable"))
+    with pytest.raises(BackendUnavailable, match="unreachable"):
         run.delete_folder("d", recursive=recursive, missing_ok=True)
     assert store.called("stat") == []
     assert store.called("list_page") == []
+
+
+@pytest.mark.spec("BE-032")
+@pytest.mark.parametrize("recursive", [False, True])
+def test_a_denial_is_in_the_probe_set(runtime: str, recursive: bool) -> None:
+    # A.8: a PermissionDenied may be a wire's ENOTDIR, so it is probed like any
+    # refusal in the probe set; drivers owe no rule about how a refusal is typed.
+    store = FakeStore().add("f", "e/")
+    run = make_kernel(runtime, store, protocols=("remove_folder", "delete_tree"))
+    for key in ("f", "e"):
+        store.fault("remove_folder", FakeDenied("denied"), key=key)
+        store.fault("delete_tree", FakeDenied("denied"), key=key)
+    with pytest.raises(InvalidPath, match="f") as caught:
+        run.delete_folder("f", recursive=recursive)
+    assert type(caught.value.__cause__) is PermissionDenied
+    # On an empty folder the call must succeed (A.5), so the denial stands (rule 4).
+    with pytest.raises(PermissionDenied, match="denied"):
+        run.delete_folder("e", recursive=recursive)
+    assert "e" in store.folders
 
 
 def test_an_untyped_refusal_on_a_non_empty_folder_is_typed_by_the_probes(runtime: str) -> None:

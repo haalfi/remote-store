@@ -676,7 +676,8 @@ def test_the_first_page_bound_holds_across_the_operations_pages(runtime: str) ->
     with pytest.raises(NotFound):
         run.list_files("d", recursive=True)
     store.faults.clear()
-    store.fault("list_page", FakeContainerGone("gone at the start"), key="d", nth=1)
+    # Gone at the start: every call sees it, so the first page's probe finds no folder (A.8).
+    store.container = False
     assert run.list_files("d", recursive=True) == []
 
 
@@ -738,19 +739,22 @@ def test_a_flat_driver_finds_a_prefix_folder_by_one_listing_probe(runtime: str) 
 @pytest.mark.spec("BE-008")
 @pytest.mark.spec("BE-010")
 @pytest.mark.parametrize("protocols", [("rename",), ("copy",), ("atomic_move",)])
-def test_a_flat_destination_may_shadow_a_prefix(runtime: str, protocols: tuple[str, ...]) -> None:
-    # BE-008's flat exemption: a flat namespace skips the type-conflict check,
-    # so a write or move onto a key that shadows a prefix succeeds, on every route.
+@pytest.mark.spec("BE-032")
+def test_a_flat_item_over_a_folder_is_invalid_path(runtime: str, protocols: tuple[str, ...]) -> None:
+    # Spec 003 § The store tree, A.4: the library never writes a state that does not
+    # decode, so a write or move onto a key that is a flat folder is refused on every
+    # route, before the wire is asked.
     store = FakeStore(parents="none").add("s", data=b"S").add("k/x", "p/y", "w/z")
     run = make_kernel(runtime, store, namespace="flat", protocols=protocols)
-    run.move("s", "k")
-    assert (store.files["k"].data, "k/x" in store.files) == (b"S", True)
-    run.write("w", b"W")
-    assert store.files["w"].data == b"W"
+    with pytest.raises(InvalidPath, match="k"):
+        run.move("s", "k")
+    with pytest.raises(InvalidPath, match="w"):
+        run.write("w", b"W")
     if protocols == ("rename",):  # the temp-and-rename write_atomic route
-        run.write_atomic("p", b"P")
-        assert store.files["p"].data == b"P"
-    assert sorted(k for k in store.files if "/" in k) == ["k/x", "p/y", "w/z"]
+        with pytest.raises(InvalidPath, match="p"):
+            run.write_atomic("p", b"P")
+    assert sorted(store.files) == ["k/x", "p/y", "s", "w/z"]
+    assert store.called("put") == store.called("rename") == store.called("copy") == store.called("move") == []
 
 
 @pytest.mark.spec("BE-021")
@@ -865,22 +869,32 @@ def test_write_refuses_an_existing_file_without_overwrite(runtime: str) -> None:
 
 
 @pytest.mark.spec("BE-008")
-def test_the_ancestor_walk_refuses_a_write_under_a_file(runtime: str) -> None:
+@pytest.mark.spec("BE-032")
+def test_a_flat_write_below_an_item_is_invalid_path(runtime: str) -> None:
+    # A.4: one stat per ancestor, always, so a flat write never lands below an item.
     store = FakeStore(parents="none").add("a/b")
-    run = make_kernel(runtime, store, reject_write_under_file_ancestor=True)
+    run = make_kernel(runtime, store, namespace="flat")
     with pytest.raises(InvalidPath, match="a/b"):
         run.write("a/b/c", b"x")
     assert store.called("put") == []
     run.write("a/z/c", b"x")
     assert "a/z/c" in store.files
+    assert [k for _, k in store.called("stat")] == ["a", "a/b", "a", "a/z"]
 
 
 @pytest.mark.spec("BE-008")
-def test_the_ancestor_walk_propagates_a_probe_error_other_than_a_miss(runtime: str) -> None:
+@pytest.mark.spec("BE-032")
+def test_the_flat_write_checks_fail_closed(runtime: str) -> None:
+    # A.4's checks decide the result, so a probe that cannot answer fails the write
+    # (BUG-292's decided policy); only a miss counts as no item above.
     store = FakeStore(parents="none").add("a/x")
-    run = make_kernel(runtime, store, reject_write_under_file_ancestor=True)
+    run = make_kernel(runtime, store, namespace="flat")
     store.fault("stat", FakeDenied("denied probe"), key="a")
     with pytest.raises(PermissionDenied, match="denied probe"):
+        run.write("a/b", b"x")
+    store.faults.clear()
+    store.fault("list_page", FakeDenied("denied listing"), key="a/b")
+    with pytest.raises(PermissionDenied, match="denied listing"):
         run.write("a/b", b"x")
     assert store.called("put") == []
 

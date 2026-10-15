@@ -293,14 +293,6 @@ failure it was.
   BK-395's addressing rule adds both Memory classes at BK-394. Open decision:
   none; amend all three to BE-025's non-canonical exception.
 
-- [ ] **BK-432 — No logical model says what a key resolves to, so every operation re-derives it from driver refusals**
-  spec: BE-004, BE-005, BE-008, BE-013, BE-014, BE-017, BE-021, BE-030, BE-031 · effort: L · audience: library.maintainer, user.api, contributor.process
-  Spec 003 states per operation what an absent key, a file, a folder, a key under a file or a
-  shadowed prefix answers, and the kernel's two probe rules disagree on one `stat` answer.
-  RFC-0021 (accepted 2026-10-13) sets one store tree, a partial abstraction function per encoding
-  and one refusal table per namespace, checked by `StoreTree.dfy`. Remaining: its spec 003 section
-  (PR #1127's resume), whose A.1 points to spec 051. Open decision: none.
-
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: the two
@@ -308,6 +300,14 @@ failure it was.
   the dossier's item 4), and the guide as a driver. After BK-389, BK-432, BK-398, the v0.33.0 tag and ID-244's decision (§ 2). Open
   decision: none; Memory's identity and spec 013's placement are in the dossier.
   Detail: [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md)
+
+- [ ] **BK-439 — `glob` on the kernel skips the store tree's flat rules, so a flat glob can match below an item**
+  spec: BE-024, BE-032 · effort: S · audience: library.maintainer, user.api
+  BE-032 A.5 makes `glob` a folder-read over its literal prefix, but the
+  kernel's flat `glob` neither `stat`s that prefix (A.3) nor omits a match below
+  a matched item: a driver's glob iterator owes no byte order to track it with.
+  Due before the first flat driver with `GLOB` moves onto the kernel. Open
+  decision: an ordering obligation for `glob`, or a buffered omission.
 
 - [ ] **BUG-300 — `SQLBlobBackend.write("\\")` stores the row, then raises `InvalidPath`**
   spec: BE-008, WR-001 · effort: S · audience: user.api

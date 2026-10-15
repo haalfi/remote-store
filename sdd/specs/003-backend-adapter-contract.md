@@ -498,6 +498,12 @@ non-HNS opt-in path through `_acheck_no_file_ancestor` and the SDK
 `get_blob_properties` closure). For default-off flat-NS backends the
 effective order is: existence check (non-existent target treated as
 writable) → overwrite conflict → I/O.
+**On the kernel no backend takes this exemption.** A class on the kernel
+refuses a write below a file and a write of a file over a folder on every
+namespace, unconditionally ([BE-032](#be-032-the-store-tree-on-the-kernel)'s
+A.4), so the opt-in walk and its fail-open sentence below bind only the
+classes not yet on the kernel, and each retires
+`reject_write_under_file_ancestor` when it moves there.
 **Azure HNS caveat.** On Azure HNS accounts the kwarg short-circuits the
 walk because `hdi_isfolder` rejects the operation in the native write
 path. The backend detects the file ancestor on that native rejection and
@@ -727,7 +733,9 @@ operations that can *fail* on a wrong-typed path: `read`, `read_bytes`,
 `write`, `write_atomic`, `open_atomic`, and the `move`/`copy` **destination** —
 binds hierarchical backends only. On a flat namespace a write to a key that
 shadows a prefix succeeds, so there is no error to reclassify; BE-008's
-flat-namespace exemption governs there instead, unchanged. This is the single
+flat-namespace exemption governs there instead, unchanged. On the kernel the
+write half binds every namespace too
+([BE-032](#be-032-the-store-tree-on-the-kernel), A.4). This is the single
 roster for both halves; the clauses below explain the mechanism behind the
 split and what it costs, and do not restate it.
 
@@ -762,7 +770,10 @@ needs:
 
 In both the probe runs and the call then returns cleanly, because `missing_ok`
 tolerates the miss; in a delete loop that is one extra round trip per absent
-path. Neither is avoidable by testing `missing_ok` first: `delete(folder,
+path. A class on the kernel departs from the first row: its flat `delete`
+error path asks `stat` before the listing, two round trips, since a refusal
+may meet an existing file as well as a missing one; its costs are in
+[BE-032](#be-032-the-store-tree-on-the-kernel)'s cost table. Neither is avoidable by testing `missing_ok` first: `delete(folder,
 missing_ok=True)` and `delete_folder(file, missing_ok=True)` must still raise
 `InvalidPath` (see "Type mismatch outranks `missing_ok`" below), and after a
 miss the probe is the only thing separating *this is the wrong type* from *this
@@ -1344,10 +1355,10 @@ backend migrates) over a driver of wire primitives, per
 [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md). Each states, once,
 an answer the other clauses of this spec leave to the backend. A backend not on
 the kernel is unaffected by them. The decisions behind them, with their
-measurements, are recorded in BK-389's dossier: the key rule and
-`delete_folder` in its planning decisions 6 and 8, the wrong-type answers,
-gates and driver obligations in its § Condition space and § Re-plan after
-round 10.
+measurements, are recorded in BK-389's dossier (the key rule and
+`delete_folder` in its planning decisions 6 and 8, the gates in its
+§ Condition space) and, for what a key resolves to and how a refusal is typed,
+in [RFC-0021](../rfcs/rfc-0021-key-resolution-model.md), which BE-032 lands.
 
 ### BE-030: Key Rule on the Kernel
 
@@ -1391,98 +1402,34 @@ and answers otherwise: a folder at the key (`InvalidPath`), a file above it
 metadata a `stat`, so a class on the kernel departs from it in those three
 states; reconciling the model is BK-394's, with the first class on the kernel.
 
-**A key a call needs to be a file.** `namespace` decides what a driver's wire
-can hold: on `"flat"` a key may shadow a prefix or sit under a file and `stat`
-cannot see a prefix; on `"hierarchical"` neither can happen. On the kernel,
-BE-008's "no native directory concept" is the flat namespace, and the kernel
-refuses to construct over a flat driver with folder objects (`parents` other
-than `"none"`), whose `stat` could not see them, and over an explicit-parents
-driver without `ensure_parents`, which could not create a write's parents
-(BE-009).
+**What a key resolves to** is [BE-032](#be-032-the-store-tree-on-the-kernel)'s
+answer, for every call below: the tree's `Item`, `Folder` or `Nothing` (A.1),
+each family's result (A.5), the determinants a call runs whether or not it
+fails, and the error-path probes that type a driver refusal (A.8). On the
+kernel, BE-008's "no native directory concept" is the flat namespace, and the
+kernel refuses to construct over a flat driver with folder objects (`parents`
+other than `"none"`), whose `stat` could not see them, and over an
+explicit-parents driver without `ensure_parents`, which could not create a
+write's parents (BE-009). What stays here is what is specific to one call:
 
-*What is at a key* is one answer every call below reads: absent, a file, a
-folder, under a file, or unknown. The `stat` of the key decides when it
-answers. A miss (`None`, or a `NotFound` or `InvalidPath`, as a POSIX `stat`
-under a file raises ENOTDIR) is followed on a flat driver by one
-`list_page(limit=1)`, since a flat `stat` cannot see a prefix, except where
-no folder can matter (`is_file`, a write target's determinant); a
-`NotFound` or `InvalidPath` from that listing is an empty listing, as on a
-listing's first page below, so the key is absent. On a hierarchical driver
-the ancestors' `stat` calls, shallowest first and each fail-open, follow a
-`stat` that raises any other refusal in the probe set below (a miss is not
-one), and a miss on the error path of a write target or a listing: a file
-among them puts the key under a file, an absent one makes the key absent,
-and otherwise the key's own `stat` answer stands. A flat namespace has
-nothing under a file, and a key shadowing a prefix answers as its file. A
-key whose `stat`, or whose flat folder listing, cannot answer is unknown,
-which a **determinant** raises and an
-**error-path probe** reads as no answer, leaving the refusal it was asked
-about standing (BE-021). The determinants, run whether or not the call
-fails: the probes `exists`, `is_file` and `is_folder`, where absent and
-under a file answer `False`; `get_file_info` and a ranged `read_seekable`;
-the source check below; the destination `stat` where the kernel stats a
-write target first; the opt-in file-ancestor walk; and the empty-aggregate
-`stat` of `get_folder_info` with folder objects. Every other probe is on
-the error path, so a call that succeeds without a determinant probes
-nothing. The answers:
-
-- *A file-shaped key* (`read`, `read_bytes`, `read_seekable`, `delete`,
-  `get_file_info`): a driver refusal typed `NotFound`, `AlreadyExists`,
-  `PermissionDenied` or untyped (the probe set) gets the key's state; a
-  folder there answers `InvalidPath`, and otherwise the refusal stands.
-  `get_file_info` and a ranged `read_seekable` take the state as their
-  determinant instead: a folder is `InvalidPath`, absent or under a file
-  `NotFound`. The driver's `get` and `delete`
-  refuse an absent key, or one that is no file, without changing anything,
-  in any shape; a wire whose delete succeeds for a missing key checks first.
 - *A write target* (`write`, `write_atomic`, `open_atomic`, the `move`/`copy`
-  destination) on a hierarchical namespace: the driver's write primitives
-  (`put`, `open_write` and its commit, `rename`, `copy`, `move`) refuse a
-  folder at the key, or a file above it, and `ensure_parents` a file above it,
-  without changing anything, in whatever shape the wire has (EISDIR, EEXIST
-  from an exclusive create or `os.makedirs`, a Windows access denial, ENOENT);
-  a refusal in the probe set gets the target's state, where a folder or a
-  file above answers `InvalidPath` naming the target, and otherwise the
-  refusal stands. Where the kernel stats the target first (`write_atomic` by
-  temp and rename without `overwrite`, `move` by rename) that `stat` is the
+  destination). Where the kernel stats the target first (`write_atomic` by temp
+  and rename without `overwrite`, `move` by rename) that `stat` is a
   determinant: a file is `AlreadyExists` without `overwrite`, a folder or a
-  file above `InvalidPath`, and a miss goes on to the wire; with `overwrite`, a file
-  that check missed is replaced, or displaced and restored by a rename that
-  cannot replace, never answered `AlreadyExists`, and one gone before it is
-  displaced leaves the destination free for the move. On a flat namespace
-  nothing is checked: a key that shadows a prefix or sits under a file is
-  written. The opt-in file-ancestor walk (`reject_write_under_file_ancestor`)
-  counts only a confirmed miss as no ancestor and propagates any other probe
-  error, where BE-008 calls the walk fail-open for all backends; a class on
-  the kernel departs from that sentence, since a probe that cannot answer is
-  the walk's determinant (BUG-292's policy).
-- *Two keys* (`move`, `copy`), in BE-018's order: the driver's `move`,
-  `rename` and `copy` refuse an absent source, or one that is no file,
-  without changing anything, in any shape, since the kernel checks the source
-  first only on a rename route, for a self-operation, and on every transfer
-  when the driver has explicit parents or the opt-in walk is on. A refusal in
-  the probe set, or an `InvalidPath`, gets the source's state on the error
-  path: absent or under a file answers `NotFound` and a folder `InvalidPath`,
-  both naming the source; then the destination as a write target. Otherwise
-  the refusal stands, naming the destination when it is an `AlreadyExists`,
-  or a `NotFound` or `InvalidPath` with the source confirmed a file.
-
-**A key a call needs to be a folder** (`list_files`, `list_folders`,
-`iter_children`, the `get_folder_info` aggregate, by listing or by the
-driver's `folder_stats`): a refusal on the listing's first page, or of
-`folder_stats`, is an empty listing when it is a `NotFound` or `InvalidPath`.
-On a hierarchical namespace it is one too when it is in the probe set (a
-wire's ENOTDIR or WinError 267 for a file prefix) and the prefix's state is
-absent, a file or under a file. On a flat namespace such a refusal
-propagates, since a file at a flat prefix rules out nothing below it, as it
-does for a folder or an unknown state. `get_folder_info` then types the
-empty aggregate (BE-017): a file is `InvalidPath`, absent or under a file
-`NotFound`, by a determinant `stat` with folder objects and fail-open
-without them. The driver's `list_page` refuses a prefix that is a file, or
-lies under one, in any shape, or lists nothing.
-
-Any other refusal (`BackendUnavailable`, `ResourceLocked`, `DirectoryNotEmpty`)
-says nothing about the key and passes through unprobed.
+  file above `InvalidPath`, and a miss goes on to the wire. With `overwrite`, a
+  file that check missed is replaced, or displaced and restored by a rename
+  that cannot replace, never answered `AlreadyExists`, and one gone before it
+  is displaced leaves the destination free for the move.
+- *Two keys* (`move`, `copy`), in BE-018's order. The kernel checks the source
+  first on a flat namespace, with explicit parents, on a rename route and for
+  a self-operation, so the source's `NotFound` outranks BE-032 A.4's checks and
+  parent creation for the destination. A refusal is answered for the source
+  first, then the destination, by A.8's rows; when it stands, it names the
+  destination if it is an `AlreadyExists`, or a `NotFound` or `InvalidPath`
+  with the source confirmed a file.
+- *An empty aggregate* (`get_folder_info`): typed as BE-017 states, by a
+  determinant `stat` with folder objects and fail-open without them; on a flat
+  namespace A.3's `stat` has already answered for an item.
 
 For a key passing step 2, a canonical `""` is exactly BE-029's "addresses the
 root" predicate, so every operation gets the wide predicate: the write side and
@@ -1534,13 +1481,9 @@ canonical `""` names the root, a folder, and yields nothing. Worked examples:
 `"d\\*.csv"` raise `InvalidPath`.
 
 **Conformance:** fake-driver kernel cells in `tests/_kernel/`, run against both
-runtimes; Memory's cells arrive with its migration. In
-`tests/_kernel/test_condition_space.py`, with an oracle written from this
-clause, *What is at a key* and every rule reading it (the probes, the
-file-key, write-target, two-key and folder-key rules) are generated as cell
-products over one shared axis set (driver, key state, refusal, what `stat`
-does); `glob`, the capability gates and construction are generated over
-axes of their own.
+runtimes; Memory's cells arrive with its migration. What a key resolves to is
+BE-032's two generated suites (its A.10); `glob`, the capability gates and
+construction are generated over axes of their own.
 
 ### BE-031: `delete_folder` on the Kernel
 
@@ -1575,17 +1518,13 @@ The walk lists `key` with no `stat` first, so the view is a driver obligation:
 nothing, never its target's entries, and `delete` on a link removes the link,
 never its target.
 
-**The probe rule.** A refusal that is a typed `NotFound` or an untyped
-`RemoteStoreError` gets the error-path probes: one `stat`, then, for a folder
-still present and where the call can answer `DirectoryNotEmpty`, one
-`list_page(key, delimiter="/", limit=1)`. They replace the refusal with the key's
-state: absent → `NotFound` (to which `missing_ok` applies), a file or link →
-`InvalidPath`, a non-empty folder → `DirectoryNotEmpty`. When they do not
-replace it, because a probe raised (its exception chained) or they found a
-folder they cannot type further, the refusal stands, and `missing_ok` applies to
-it when it is a `NotFound`: BE-021's fail-open rule. Every other typed refusal
-(`PermissionDenied`, `BackendUnavailable`, ...) passes through unprobed, since it
-says nothing about the key. A `delete_tree` refusal gets the `stat` probe only.
+**The probe rule** is BE-032's A.8: a refusal in the probe set (`NotFound`,
+`InvalidPath`, `AlreadyExists`, `PermissionDenied`, untyped) gets the rows of
+the call that refused, `remove_folder`, `delete_tree` (hierarchical with folder
+objects, or the flat row without them) or the walk's first listing of `key`,
+and every other type passes through unprobed. A probe that cannot answer leaves
+the refusal standing (fail-open), and `missing_ok` applies to the answer,
+replaced or standing, when it is a `NotFound`.
 
 **The sequence.**
 
@@ -1594,26 +1533,27 @@ says nothing about the key. A `delete_tree` refusal gets the `stat` probe only.
 - *Folder objects, `recursive=True`, with `delete_tree`:* `delete_tree(key)`.
 - *Folder objects, `recursive=True`, without it (the walk):* `list_page(prefix,
   delimiter="/")` down the tree, then every file deleted, then `remove_folder`
-  deepest first and `key` last. On the way, a typed `NotFound` from any call
-  (a subfolder's listing, a file's `delete`, a subfolder's `remove_folder`) is
-  tolerated without a probe: the entry is already gone. Any other refusal on the
-  way goes through the probe rule for its own entry with two differences: an
-  absent outcome is tolerated, and a file `delete` whose probe finds a file keeps
-  its own refusal. A refusal of `key`'s own listing goes through the probe rule
-  for `key`. Only the calls on `key` itself apply `missing_ok`.
-- *`parents == "none"`:* list first, `stat` only after an empty listing. A
-  non-recursive call lists `limit=1` with `delimiter="/"`; a recursive one lists
-  with `delimiter=None`, `limit=1` before `delete_tree`, or paged without
-  `delete_tree`, deleting each listed file and tolerating a `NotFound` on one;
-  a listed key BE-030 omits is left, and the call then answers
-  `DirectoryNotEmpty`.
-  The listing is the determinant and fails closed, except that a `NotFound`
-  on its first page is an empty listing: an absent prefix, or an absent
-  container, holds nothing (BE-013). On a later page a `NotFound` reports a
-  change under the scan and propagates, BE-021's first-page bound. After an empty listing, `stat`: a file → `InvalidPath`,
-  anything else → `NotFound`, to which `missing_ok` applies; a raising `stat`
-  leaves the empty listing's `NotFound` (fail-open). After a non-empty listing a
-  refusal passes through unprobed.
+  deepest first and `key` last. A refusal of `key`'s own listing is the
+  operation's first page and gets A.8's rows; on the way, a typed `NotFound`
+  from any call (a subfolder's listing, a file's `delete`, a subfolder's
+  `remove_folder`) is tolerated, the entry being already gone, and any other
+  refusal propagates unprobed (A.9). Only the calls on `key` itself apply
+  `missing_ok`.
+- *`parents == "none"`:* on a flat namespace one `stat(key)` first, since a
+  listing of `key/` cannot see an item `key` (A.3): an item answers
+  `InvalidPath` and nothing is removed. Then list first, `stat` only after an
+  empty listing on a hierarchical namespace. A non-recursive call lists
+  `limit=1` with `delimiter="/"`; a recursive one lists with `delimiter=None`,
+  `limit=1` before `delete_tree`, or paged without `delete_tree`, deleting each
+  listed file and tolerating a `NotFound` on one; a listed key the listing
+  omits (one BE-030 refuses, or one below a listed item, A.3) is left, and the
+  call then answers `DirectoryNotEmpty`. The listing is the determinant and
+  fails closed, except that a refusal of its first page is an empty listing
+  where A.8's first-page row reads it so; on a later page a refusal propagates
+  (A.9). After an empty listing: an item → `InvalidPath`, anything else →
+  `NotFound`, to which `missing_ok` applies; a `stat` that cannot answer leaves
+  `NotFound` (fail-open). A `delete_tree` refusal after a non-empty listing
+  gets A.8's flat `delete_tree` row.
 
 | Key state, folder objects | `recursive=False` | `recursive=True` |
 |---|---|---|
@@ -1626,12 +1566,12 @@ says nothing about the key. A `delete_tree` refusal gets the `stat` probe only.
 |---|---|---|
 | files under the prefix | `DirectoryNotEmpty` | removed |
 | file `f`, nothing under it | `InvalidPath` | `InvalidPath` |
-| a file and a prefix both | `DirectoryNotEmpty` | the files under it removed, the file kept |
+| a file and a prefix both (flat; decodes to no tree, A.3) | `InvalidPath`, nothing removed | `InvalidPath`, nothing removed |
 | absent, or under a file (`f/x`) | `NotFound` | `NotFound` |
 
 **A recursive delete may answer `DirectoryNotEmpty`** on a walk (either
 `parents` case), when a writer adds under the tree mid-walk, or when an entry
-the listing omits (BE-030) stays behind. BE-013's prose lists the error for
+the listing omits (BE-030, BE-032 A.3) stays behind. BE-013's prose lists the error for
 `recursive=False` only, but `BackendContract.dfy`'s `DeleteFolder` (tagged
 BE-013) requires a recursive delete of a present folder to succeed and remove
 every child. A concurrent writer lies outside that sequential model; a stored
@@ -1647,3 +1587,325 @@ backends in general; for a class on the kernel this clause defines it.
 **Conformance:** fake-driver kernel cells in `tests/_kernel/`, which enumerate the
 probe rule's condition space (refusal × `stat` outcome × listing outcome ×
 `missing_ok`, per context).
+
+### BE-032: The Store Tree on the Kernel
+
+**Invariant:** a class on the kernel answers every keyed operation as the store
+tree would. The tree is [spec 051](051-store-tree.md)'s. A backend holds an
+*encoding* of it, which a partial `decode` maps onto the tree; a raw state that
+decodes to no tree is not in the store. The kernel's job is to give the tree's
+answer from what the driver can observe of the encoding, and how much that
+costs depends on the encoding, never on the answer. The decision and its
+alternatives are [RFC-0021](../rfcs/rfc-0021-key-resolution-model.md);
+`sdd/formal/StoreTree.dfy` states the model and verifies the flat encoding's
+`decode`, its operations and the refusal rule (A.8).
+
+The parts below are labelled A.1 to A.10, as in the RFC's Appendix A, which
+this section lands; code and tests cite them by those labels.
+
+**A.1 Nodes and keys.**
+
+- **The tree** is spec 051's: TREE-001 to TREE-012 state its folders and
+  items, its names (TREE-007), its Keys (TREE-009) and that a Key names at most
+  one entity (TREE-010). This section states none of them again. An item also
+  has content and metadata, which that structure does not model. By TREE-001
+  and TREE-010, `is_file(k)` and `is_folder(k)` are never both true.
+- **A Key is not a caller's input.** Spec 004's `RemotePath` maps an accepted
+  input onto a Key or rejects it (spec 051 § Layering). BE-030's non-canonical
+  rows (`d//f`, `d/./f`, `d/`) and root spellings (`./`) are inputs of that
+  layer: each is mapped onto a Key, or refused, before the tree is consulted. A
+  backend stores a *raw key*, its encoding's own spelling, which A.2 decodes.
+  Below, "key" means a Key unless it says otherwise.
+- A Key resolves to exactly one of `Item`, `Folder` or `Nothing`. Where an
+  operation cares why there is nothing, the reason travels with the answer: a
+  key whose path passes through an item makes a write `InvalidPath` (A.5).
+- **Resolution assumes exact name equality**, as spec 051's names compare
+  (§ Name equality), so A.4's checks and every column of A.5 hold where the
+  encoding compares names exactly too. On a case-insensitive or normalizing
+  encoding a Key can find an entry of another name (`read("A")` finds `a`);
+  which backends compare names how, and how they then answer, is open under
+  BK-436.
+- Resolutions carry no depth. `ensure_parents(key)` creates every missing
+  folder from the key alone, so no result depends on where absence starts.
+  The item a path passes through travels with the answer only for the error
+  message.
+
+**A.2 Encodings.** Each driver declares its encoding's properties:
+
+| Property | Meaning for the encoding | Declaration |
+|---|---|---|
+| refuses non-tree writes | the wire refuses a write below an item, or of an item over a folder | `namespace="hierarchical"` |
+| folder objects | a folder is a raw entry, so it can exist with no children | `parents` other than `"none"` |
+| one lookup sees a folder | a single `stat` answers for a folder too | `namespace="hierarchical"` |
+| links | a raw entry can be a link | `links`, not yet declared by any driver (A.7) |
+
+The kernel refuses to construct over a flat driver with folder objects.
+
+These raw states decode to no tree:
+
+- an item at `k` together with entries below `k/`, on a flat encoding;
+- under `follow_within_root`, a link whose target is outside the root, a
+  dangling link, and a loop of links (A.7).
+
+A flat raw key with an empty segment, such as a folder marker `a/` or `a//b`,
+would give an empty name (TREE-007); how it decodes is open (BK-438), and
+until it is decided A.3 keeps BE-030's omission of such a key.
+
+A stored key such as `a\b`, `..` or one holding NUL is not in that list. Spec
+051's names forbid only `/`, so where its characters are in the spec's alphabet
+Σ, it decodes to a Key in the tree. That Key lies outside the library's
+addressable subset: no input maps onto it, so no keyed operation reaches it.
+Spec 004 refuses `..` (PATH-003) and NUL (PATH-007), and folds `\` to `/`
+(PATH-002), so `a\b` as an input addresses the Key `a/b` instead. Listings omit
+such a key and log it, as BE-030 rules, because no keyed operation could act on
+what they returned. Addressing and `unwrap()` still reach it (BE-030, BE-025).
+
+**A.3 Undecodable states.**
+
+- **Listings.** A listing of `k`'s parent that returns `k` as an item and `k/`
+  as a prefix omits the prefix. A recursive listing omits every entry below an
+  item it has listed. For that, a flat driver's `list_page` returns keys in
+  byte-lexicographic order, a prefix `p` ordered as `p/`, so `k` arrives before
+  every key below `k/`; that is a driver obligation, and it lets the kernel
+  track the omission with a stack of open items rather than a buffer of the
+  listing. Hierarchical drivers stay unordered. A link that does not decode is
+  omitted too (A.7). Each omission is logged, in the one record per listing
+  BE-030 already writes. `glob` applies neither omission yet, nor the `stat`
+  below: it omits only the keys BE-030 refuses (BK-439).
+- **Folder operations on an item.** `list_files(k)`, `list_folders(k)` and
+  `iter_children(k)` are empty, and `get_folder_info(k)` and `delete_folder(k)`
+  answer `InvalidPath`, when `k` is an item. On a flat encoding a listing of
+  `k/` cannot see an item `k`, so a flat folder operation `stat`s `k` first,
+  success included, whatever raw entries lie below it.
+- **Keys below an item, on a flat encoding.** The probe, read-file and
+  delete-file families do not walk their key's ancestors, and neither do the
+  folder families: they `stat` the key alone. So `read("k/a.txt")` finds a raw
+  entry another tool wrote below an item `k`, `delete("k/a.txt")` removes it,
+  which is how such an entry is cleaned up, and `list_files("k/d")` lists `k/d/`
+  as it stands. This is a stated limit, where the tree would answer as A.5's
+  last row. A.4 keeps the library's own writes from producing it.
+- **A link that does not decode** is refused like an input the key rule
+  refuses: every keyed operation answers `InvalidPath`, a `move` from it
+  included, except `delete`, which removes the link (A.7).
+- **Omitted entries and `delete_folder`.** A recursive `delete_folder` that
+  walks removes only what its listings return, so an omitted entry below the
+  folder remains and the call answers `DirectoryNotEmpty`. One that runs the
+  driver's `delete_tree` removes the omitted entry with the rest (BE-031). On a
+  flat encoding, a recursive `delete_folder` of an item `k` answers
+  `InvalidPath` and removes nothing, and a walk of `k`'s parent removes `k`,
+  leaves `k/a.txt` and answers `DirectoryNotEmpty`.
+- **`unwrap()`** reaches any raw entry.
+
+**A.4 Writes.** These writes are `InvalidPath` on every class on the kernel,
+within A.1's scope on name equality:
+
+- writing below an item (`k/a.txt` while `k` is an item);
+- writing an item over a folder (`k` while `k` is a folder, including a flat
+  `k/` that holds entries).
+
+A write is `write`, `write_atomic`, `open_atomic` and the `move`/`copy`
+destination. An encoding that refuses non-tree writes needs no check, because
+the kernel types the wire's refusal (A.8). A flat encoding checks with one
+`stat` per ancestor, shallowest first, and one `list_page(k, limit=1)`, before
+the write and after the transfer source check. These checks decide the result,
+so they fail closed (BUG-292's decided policy): a `stat` miss (`None`,
+`NotFound`, `InvalidPath`) is no item, a listing's `NotFound` or `InvalidPath`
+is an empty listing by the flat listing obligation (A.8), and any other failure
+is the write's. Neither check is race-free on a flat wire: another writer can
+act between the check and the write.
+
+**A.5 Families and results.**
+
+| Family | Operations |
+|---|---|
+| probe | `exists`, `is_file`, `is_folder` |
+| read-file | `read`, `read_bytes`, `read_seekable`, `get_file_info` |
+| write-file | `write`, `write_atomic`, `open_atomic` |
+| delete-file | `delete` |
+| folder-read | `list_files`, `list_folders`, `iter_children`, `get_folder_info`, and `glob` over its pattern's literal prefix |
+| delete-folder | `delete_folder` |
+| transfer | `move`, `copy`: the source as read-file, except that a `move` source names the entry at the key (A.7); the destination as write-file; in BE-018's order |
+
+| Resolves to | probe `exists`/`is_file`/`is_folder` | read-file | write-file | delete-file | folder-read | delete-folder |
+|---|---|---|---|---|---|---|
+| `Item` | T / T / F | the item; a link under `no_follow` is `InvalidPath` (A.7) | replaced, or `AlreadyExists` without `overwrite`; a link under `no_follow` is `InvalidPath` (A.7) | removed | empty | `InvalidPath` |
+| `Folder` | T / F / T | `InvalidPath` | `InvalidPath` | `InvalidPath` | its children | removed, or `DirectoryNotEmpty` |
+| `Nothing` | F / F / F | `NotFound` | written, parents created | `NotFound` | empty | `NotFound` |
+| `Nothing`, path through an item | F / F / F | `NotFound` | `InvalidPath` | `NotFound` | empty | `NotFound` |
+
+The last row is what the tree answers. On a flat encoding the keyed families
+and the folder families trust the encoding instead (A.3). For `delete`,
+`delete_folder` and a `move` source, a link at the key that decodes resolves to
+`Item` (A.7). A link that does not decode never reaches this table (A.3). Every
+column holds where names compare exactly (A.1). `missing_ok` turns a delete's
+`NotFound` into success. `get_folder_info` types an empty aggregate as BE-017
+states. The per-operation clauses keep what is specific to them, such as
+`overwrite`, cursors, `max_depth` and the synthesised write routes, and cite
+this table for the rest.
+
+**A.6 Empty folders.** The tree allows an empty folder. A folder becomes empty
+when its last child is deleted or moved out. An encoding without folder objects
+cannot hold an empty folder, so there it vanishes. With folder objects it stays
+until `remove_folder` or `delete_tree` removes it (BE-031). Whether a flat raw
+key with an empty segment, such as a folder marker another tool wrote, holds an
+empty folder is open (BK-438).
+
+**A.7 Links.** Not yet on the kernel: no driver declares `links`, and the
+kernel has no link policy. The rule below binds the first driver that declares
+`links="present"` (Local and SFTP, as each moves onto the kernel), and the
+public option and its capability are BK-433. What the kernel already does for
+links: `delete` and a `move` source probe their key without following a link,
+and `delete_folder` keeps BE-031's `follow_links=False` view.
+
+- `links` is `none` for object stores and `present` where the wire has links:
+  Local and SFTP.
+- The store policy is `follow_within_root` (the default) or `no_follow`. Under
+  `follow_within_root` a link decodes to its target's node, and a target
+  outside the root does not decode. Under `no_follow` a link decodes to an
+  item.
+- **Entry operations.** `delete`, `delete_folder` and a `move` source name the
+  entry at the key itself, so for them the last segment decodes under
+  `no_follow` whatever the policy, and a link that decodes is an `Item` there.
+  A.5's `Item` row then gives their answers: `delete` removes the link, never
+  its target (BE-031's existing rule); `delete_folder` answers `InvalidPath`;
+  `move` moves the link entry and leaves the target alone, as a rename does.
+- **Every other operation** reads through a link under the store policy. Under
+  `follow_within_root` a read or a `copy` from a link reads the target's
+  content, and a write to a link goes to its target. Under `no_follow` a link
+  has no content of its own, so read-file, a `copy` from it and a write to it
+  are `InvalidPath`; replacing a link the store did not make would destroy it
+  without a signal.
+- **A link that does not decode** (its target outside the root, dangling, or in
+  a loop) is refused like an input the key rule refuses (A.3). That outranks
+  the entry rule: `move` of such a link is `InvalidPath`, and only `delete`
+  removes it. The driver signals it (A.8's typing rule for drivers with links).
+
+**A.8 Observations.** A driver call observes the encoding, often only partly: a
+flat `stat` sees an item but not a folder, and a `list_page(limit=1)` sees
+whether a folder is empty. A refusal arrives as `NotFound`, `InvalidPath`,
+`AlreadyExists`, `PermissionDenied`, an untyped `RemoteStoreError`, or another
+type.
+
+**The probe set** is those first five shapes. Drivers owe no rule about which
+of them a refusal takes, except the two typing rules at the end of this part: a
+wire's ENOTDIR may arrive as any of them. Any other type (`BackendUnavailable`,
+`ResourceLocked`, `DirectoryNotEmpty`, ...) says nothing about the key and
+passes through unprobed. Then:
+
+1. A call that succeeds runs only its *determinants*: the probes that run
+   whether or not it fails. They are A.3's `stat` before a flat folder
+   operation; A.4's write checks; the probes `exists`, `is_file` and
+   `is_folder`; `get_file_info` and a ranged `read_seekable`; the transfer
+   source check, which runs on a flat namespace, with explicit parents, on a
+   rename route and for a self-operation; the destination `stat` where the
+   kernel stats a write target first (`write_atomic` by temp and rename without
+   `overwrite`, `move` by rename); `get_folder_info`'s empty-aggregate `stat`
+   with folder objects; and, without folder objects, `delete_folder`'s listing.
+   A call that succeeds without a determinant probes nothing.
+2. On a refusal whose compatible rows give more than one result for the family,
+   the kernel probes, cheapest call first. For example, delete-folder answers
+   `NotFound` in both `Nothing` rows, so it never tells them apart.
+3. A determinant fails closed: its failure is the operation's failure. A probe
+   that runs only because the call refused fails open: if it cannot answer,
+   the refusal stands (BE-021).
+4. **A probe replaces the refusal only on a row where the call must refuse,
+   or, for a listing, on a row that holds nothing.** A refusal in the probe set
+   can meet any row, since a denial or a dead connection meets an existing item
+   as well as a missing one. So when the probe concludes a row where A.5 gives
+   the call success (an item for `get`, an empty folder for `remove_folder`,
+   nothing for a write, a folder for a listing), the refusal stands. Otherwise
+   that row's A.5 result replaces it, chaining the refusal as its cause.
+
+What a `stat` says. A miss is `None`, or a raised `NotFound` or `InvalidPath`,
+since a POSIX `stat` below an item raises ENOTDIR. On a hierarchical namespace a
+key's `stat` that raises another refusal in the probe set is followed by its
+ancestors' `stat`s, shallowest first: an item among them puts the key's path
+through an item, an absent one makes the key absent, and an ancestor that
+cannot answer is skipped; if none decides, the `stat`'s own error is the
+answer, which a determinant raises and an error-path probe reads as no answer.
+A flat namespace never walks ancestors (A.3's stated limit).
+
+The tables split by `namespace`, which decides what one `stat` sees; a
+`parents="none"` driver on a hierarchical namespace takes the hierarchical
+table, except that its `delete_folder` follows BE-031's `parents="none"`
+sequence and so the flat `delete_tree` row, and it has no `remove_folder`.
+`StoreTree.dfy` §11 enumerates every call these tables name (`get`, `delete`,
+`put`, `ensure_parents`, `remove_folder`, `delete_tree`, the first listing
+page; `move`, `copy` and `rename` as a source read and a destination write),
+each namespace and each row, and proves rule 4.
+
+**Flat namespace.** A `stat` sees an item or answers a miss; it cannot tell a
+folder from nothing. Per call, after a refusal in the probe set:
+
+| Call | Probe | Concludes |
+|---|---|---|
+| `get`, `delete` | `stat(k)`, then on a miss `list_page(k, limit=1)` | an item: the refusal stands; a non-empty listing: `InvalidPath`; an empty one: `NotFound` |
+| `put`, `open_write`, commit, `rename` (A.4's checks ran first, so the key is no folder and nothing above it is an item) | `stat(k)` | an item without `overwrite`: `AlreadyExists`; anything else: the refusal stands |
+| `delete_tree` (BE-031's `parents="none"` order) | `list_page(k, limit=1)` first, then `stat(k)` after an empty listing | a non-empty listing: the refusal stands; then an item: `InvalidPath`; a miss: `NotFound` |
+| `list_page(k)`, first page | none: the only call that sees a flat folder is the listing that just failed, and A.3's `stat` ran first and found no item | a `NotFound` or `InvalidPath` is an empty listing, by the flat listing obligation below; any other shape stands |
+| `move`, `copy` | the source as `get`, the destination as `put` | as those |
+
+**Hierarchical namespace.** A `stat` sees an item or a folder. Per call, after
+a refusal in the probe set:
+
+| Call | Probe | Concludes |
+|---|---|---|
+| `get`, `delete`, a `move` or `copy` source | `stat(k)`, without following a link for `delete` and a `move` source, which name the entry (A.7) | an item: the refusal stands; a folder: `InvalidPath`; a miss or a path through an item: `NotFound` |
+| write primitives (`put`, `open_write` and commit, `rename`, `copy`, `move` at the destination) | `stat(k)`, then on a miss the ancestors' `stat`s, shallowest first | a folder: `InvalidPath`; an item without `overwrite`: `AlreadyExists`; an item among the ancestors: `InvalidPath`; anything else: the refusal stands |
+| `ensure_parents` | the ancestors' `stat`s | an item among them: `InvalidPath`, naming it; otherwise the refusal stands |
+| `remove_folder` | `stat(k)` without following a link, then for a folder `list_page(k, limit=1)` | an item: `InvalidPath`; a miss: `NotFound`; a non-empty folder: `DirectoryNotEmpty`; an empty folder: the refusal stands |
+| `delete_tree`, with folder objects, and the walk's first listing of `k` | `stat(k)` without following a link | an item: `InvalidPath`; a miss: `NotFound`; a folder: the refusal stands |
+| `list_page(k)`, first page | `stat(k)` | a folder: the refusal stands; anything else: an empty listing |
+
+A listing's first page and a `folder_stats` push-down answer alike, and on the
+root `""`, always a folder, only a `NotFound` or `InvalidPath`, an absent
+container's, is an empty listing (BE-021); no `stat` is asked. A two-key
+refusal is answered for the source first, both keys being probed only when the
+source is an item; the refusal then names the destination when only the
+destination's state can explain it (BE-030).
+
+**What drivers owe instead**, each stated once here:
+
+- A refusal changes nothing.
+- `get` and `delete` refuse a key that is not an item, and every write
+  primitive refuses a folder at its key or an item above it (hierarchical).
+  `remove_folder` refuses anything but an empty folder, and `delete_tree`
+  refuses an item, a link or nothing.
+- A flat driver's `list_page` returns keys in byte-lexicographic order (A.3).
+- `list_page` with `follow_links=False` never lists a link's target, and
+  `delete` on a link removes the link (A.7).
+- A driver declaring `links="present"` refuses a key whose link does not decode
+  with `InvalidPath`, from `stat` and from every call, and types its own
+  ENOTDIR as `NotFound`. So an `InvalidPath` from such a driver's `stat` means
+  "does not decode", never a miss. This typing rule binds only drivers with
+  links.
+- A flat driver's `list_page` answers `NotFound` or `InvalidPath` only when
+  nothing lies under the prefix, an absent container included (BE-021). Since
+  the only call that sees a flat folder is the listing that just failed, this
+  is what lets a refused first page read as empty without hiding entries. This
+  typing rule binds only flat drivers' listings.
+
+**A.9 Changes under an operation.** A refusal before the operation's first page
+is read through A.5. A refusal after it propagates. The bound is kept once per
+operation, not per request. In `delete_folder`'s walk, a refusal of an entry
+below the key propagates unprobed, except a `NotFound`, an entry already gone,
+which is tolerated; `DirectoryNotEmpty` when a writer adds under the tree
+mid-walk is the same rule.
+
+**A.10 Conformance:** two generated suites in `tests/_kernel/`, run against both
+runtimes. `test_tree_results.py` crosses tree state with key, for the results
+in A.5. `test_encoding_observations.py` crosses encoding property, raw state,
+refusal shape and what the error-path probes do, for A.3, A.4, A.8 and A.9.
+Its fake driver returns an item and a prefix of the same name on one flat
+listing page, in byte-lexicographic order, as a real flat wire does.
+
+**Costs**, on the kernel, against a class not on it (BE-021's cost table
+measures the error-path probes; these are the determinants this section adds):
+
+| Call | Encoding | Added on every call | Added on the error path |
+|---|---|---|---|
+| a write or a `move`/`copy` destination (A.4) | flat | one `stat` per ancestor and one `list_page(limit=1)`; on a transfer, also the source check | one `stat` |
+| a folder operation on a non-root key (A.3) | flat | one `stat` | — |
+| `get`, `delete`, a source, refused | flat | — | one `stat`, then on a miss one `list_page(limit=1)` |
+| `delete(path, missing_ok=True)` on an absent key | flat | — | one `stat` and one `list_page(limit=1)`, where a class not on the kernel spends the listing alone (BE-021) |
+| a listing's first page refused in the probe set | hierarchical | — | one `stat` |

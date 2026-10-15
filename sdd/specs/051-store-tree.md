@@ -17,16 +17,17 @@ and the proofs in [`formal/lean/StoreAxioms.lean`](../formal/lean/StoreAxioms.le
 
 **Layering.** This spec governs Keys and the tree over them. Spec 004 governs
 input strings: `RemotePath` maps an accepted input onto a Key or rejects it, so
-the library addresses a subset of the Keys this spec admits. RFC-0021
-Appendix A drafts spec 003's § The store tree, which BK-432 lands; that section
-will state how a backend encodes the tree and point here for its structure.
+the library addresses a subset of the Keys this spec admits. Spec 003's
+BE-032 (The Store Tree on the Kernel) states how a backend encodes the tree and
+points here for its structure.
 
 **Not bound to backends yet.** The sections are tested against a reference
-model of the axioms (`tests/test_store_tree.py`). A flat backend can today hold
-a raw state in which a key is an item and has keys below it, which no tree
-gives; RFC-0021 makes such a state undecodable and refuses the write that
-creates it (BK-432). Conformance of each backend's observed tree to this spec
-follows that work (BK-436).
+model of the axioms (`tests/test_store_tree.py`). A flat backend can hold a raw
+state in which a key is an item and has keys below it, which no tree gives;
+spec 003's BE-032 makes such a state undecodable and has a class on the kernel
+refuse the write that creates it, and no backend runs on the kernel yet.
+Conformance of each backend's observed tree to this spec follows that work
+(BK-436).
 
 **Name equality.** Names compare exactly, with no case folding and no Unicode
 normalization; this spec fixes no normalization form, since one would make

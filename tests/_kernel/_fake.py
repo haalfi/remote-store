@@ -270,7 +270,11 @@ class FakeStore:
         return Entry(key, "folder" if kind == "folder" else "file")
 
     def _children(self, prefix: str) -> tuple[list[str], list[str]]:
-        """Immediate file and folder keys under *prefix* (links counted as files)."""
+        """Immediate file and folder keys under *prefix* (links counted as files).
+
+        On a flat wire an item ``k`` and a prefix ``k/`` are both listed, as a
+        real flat wire lists them: the raw state that decodes to no tree.
+        """
         base = prefix + "/" if prefix else ""
         names: set[str] = set()
         folders: set[str] = set()
@@ -283,7 +287,7 @@ class FakeStore:
                 folders.add(base + head)
             else:
                 names.add(key)
-        return sorted(names - folders), sorted(folders)
+        return sorted(names if self.namespace == "flat" else names - folders), sorted(folders)
 
     # primitives (sync; the async face awaits nothing)
 
@@ -291,7 +295,9 @@ class FakeStore:
         self._hit("stat", key)
         if self.stat_fault is not None and (raised := self.stat_fault(key)) is not None:
             raise raised(key)
-        if self._under_file(key) or self.kind(key, follow_links) is None:
+        # A flat stat is a lookup of the key alone: it finds a raw entry below an item.
+        hidden = self.namespace != "flat" and self._under_file(key)
+        if hidden or self.kind(key, follow_links) is None:
             return None
         return self._entry(key, follow_links)
 
@@ -383,7 +389,10 @@ class FakeStore:
                 folders = [prefix + f[len(target) :] for f in folders]
             entries = [self._entry(k, follow_links) for k in names]
             prefixes = folders
-        items: list[Entry | str] = [*entries, *prefixes]
+        # Byte-lexicographic order, a prefix ``p`` as ``p/``: the flat listing obligation.
+        items: list[Entry | str] = sorted(
+            [*entries, *prefixes], key=lambda e: e.key if isinstance(e, Entry) else e + "/"
+        )
         start = int(cursor or 0)
         size = min(limit or self.page_size, self.page_size)
         chunk = items[start : start + size]
@@ -760,7 +769,6 @@ def make_kernel(
     put_is_atomic: bool = False,
     close_is_terminal: bool = False,
     rename_replaces: bool = True,
-    reject_write_under_file_ancestor: bool = False,
     exact: bool = False,
 ) -> Runner:
     """A kernel of *runtime* over a fake driver presenting *protocols*.
@@ -800,7 +808,7 @@ def make_kernel(
     base_cls = DriverBackend if runtime == "sync" else AsyncDriverBackend
     # A class on the kernel declares the driver's close posture as its own ClassVar.
     kernel_cls = type(f"Fake{runtime.title()}Kernel", (base_cls,), {"close_is_terminal": close_is_terminal})
-    kernel = kernel_cls(driver, reject_write_under_file_ancestor=reject_write_under_file_ancestor)
+    kernel = kernel_cls(driver)
     return Runner(runtime, kernel, store, driver)
 
 

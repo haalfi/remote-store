@@ -166,7 +166,7 @@ class _HandleWriter:
             with core._choke(Op.OPEN_ATOMIC, self._key):
                 self._handle = core._open_write.open_write(self._key, overwrite=self._overwrite, metadata=None)
         except RemoteStoreError as err:
-            core._target_is_wrong_type(err, Op.OPEN_ATOMIC, self._key)
+            core._write_refused(err, Op.OPEN_ATOMIC, self._key, self._overwrite)
             raise
         return cast("BinaryIO", _HandleStream(core, self._handle, self._key))
 
@@ -189,7 +189,7 @@ class _HandleWriter:
             with contextlib.suppress(Exception):
                 handle.abort()
             if isinstance(err, RemoteStoreError):
-                self._core._target_is_wrong_type(err, Op.OPEN_ATOMIC, self._key)
+                self._core._write_refused(err, Op.OPEN_ATOMIC, self._key, self._overwrite)
             raise
 
 

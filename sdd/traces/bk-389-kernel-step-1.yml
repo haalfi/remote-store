@@ -20,19 +20,24 @@ discovery_followups:
   - BUG-299
   - BK-395
   - BK-396
+  - BK-439
 expected_ripples:
   - sdd/BACKLOG-DONE.md
 surprising_ripples:
   - sdd/specs/003-backend-adapter-contract.md
   - sdd/backlog/bk-390-rfc-0017-spec-amendments.md
   - sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md
+  - sdd/specs/051-store-tree.md
+  - sdd/rfcs/rfc-0021-key-resolution-model.md
 co_shipped_items:
   - BK-399
+  - BK-432
 decisions:
   - sdd/decisions/928fc3d9-dfbb-4d87-b779-7281d8006272.jsonl
   - sdd/decisions/161fd42b-6d1f-4889-be67-61ba9eea371b.jsonl
   - sdd/decisions/e400c054-34a8-4b6a-9223-19ba7df58e5c.jsonl
   - sdd/decisions/7246c534-758c-483d-bc50-654ef7f109db.jsonl
+  - sdd/decisions/3288309c-08e5-4f79-a209-8f9d7fca793f.jsonl
 # The kernel PR's orient (2026-10-11); the planning PRs predate the key.
 orient:
   - items: [BK-399]
@@ -70,6 +75,25 @@ orient:
       decision 1 at step 7, BUG-245 by OQ5 at step 3), and a fake-driver
       kernel changes no cell of theirs. BUG-298 is pattern_to_regex's
       anchoring, which the kernel does not call.
+  # The resume against RFC-0021 (2026-10-15).
+  - items: [BK-432]
+    verdict: subsumes
+    evidence: >-
+      BK-432's entry: "Remaining: its spec 003 section (PR #1127's resume)".
+      This PR lands RFC-0021's Appendix A as BE-032 and closes it.
+  - items: [BK-433, BK-434, BK-436, BK-438]
+    verdict: constrains
+    evidence: >-
+      RFC-0021 Impact: BK-433 is the public link option, so A.7 is stated in
+      BE-032 but not put on the kernel; BK-434 wires StoreTree.dfy into
+      BackendContract.dfy, unchanged here; BK-436 owns name equality (A.1's
+      scope) and BK-438 flat raw keys with an empty segment, which A.3 keeps
+      under BE-030's omission.
+  - items: [BUG-323]
+    verdict: unrelated
+    evidence: >-
+      RFC-0021 Impact: SFTP's recursive delete through a link is fixed
+      independently of the RFC, on today's SFTPBackend, not on the kernel.
 # PR #1055's block (the planning PR, merged as c4466b05c) is in master's history:
 # git show c4466b05c:sdd/traces/bk-389-kernel-step-1.yml
 review:
@@ -597,7 +621,7 @@ phases:
         read_type: gate
         extract: "the divergence check fired on round 10's flat listing that hid files; the maintainer had the work re-planned before any fix"
       - file: src/remote_store/_kernel/_async/kernel.py
-        section: "every _choke site (30 here and 4 in backend.py, git grep -c 'self\\._choke(' at 72ae8f9)"
+        section: "every _choke site (30 here by git grep -c 'self\\._choke(' at 72ae8f9; 4 in backend.py by git grep -c '_choke(' there, spelled self._core._choke( and core._choke()"
         read_type: verify
         extract: "six helpers each answered what is at a key with their own namespace and stat rules; that per-family re-derivation is the shape rounds 7 to 10 kept finding"
       - file: sdd/backlog/bk-389-kernel-step-1-memory.md
@@ -626,3 +650,44 @@ phases:
         section: "mutation check after the refactor"
         read_type: verify
         extract: "ten mutations of the classifier and its callers, all killed; round 10's 'anything but BackendUnavailable holds nothing' now fails 2256 cells, where it failed 2 incidental ones"
+  - id: resume_rfc_0021
+    name: Resumed against RFC-0021, Appendix A landed as BE-032 and the kernel re-derived from it (kernel PR)
+    steps:
+      - file: tmp/ship-handoff-1127.md
+        section: "PARKED (2026-10-12, fourth session): model first"
+        read_type: gate
+        extract: "next steps: spec 003 section from Appendix A, delete_folder and the classifier from A.8, the 7 threads, A.10's two suites, a closing round; written before #1130 added spec 051, so the section now points there for structure"
+      - file: sdd/rfcs/rfc-0021-key-resolution-model.md
+        section: "Impact; Appendix A (A.1 to A.10)"
+        read_type: gate
+        extract: "Impact lists kernel behaviour changes beyond the handoff's list (A.3's flat stat and omission, A.4 unconditional, A.7 links); the maintainer scoped the resume to all of Appendix A but links"
+      - file: sdd/specs/051-store-tree.md
+        section: "Overview, Layering"
+        read_type: gate
+        extract: "TREE-001 to TREE-012 are the tree's structure; BE-032 points here and its Layering paragraph forward-referenced the section this PR lands"
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "_state, _may_be_a_folder, _folder_is_wrong_type, _target_is_wrong_type, _holds_nothing, _df_kind, _probe_wanted"
+        read_type: verify
+        extract: "two probe sets (the classifier's without InvalidPath, delete_folder's of NotFound and untyped only) and two miss readings of one stat, the cluster threads 1 and 2 found"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-031 § The probe rule"
+        read_type: gate
+        extract: "passed a PermissionDenied unprobed on a driver obligation stated only in the dossier; replaced by BE-032 A.8's rows"
+        outcome: misleading
+      - file: tests/_kernel/_fake.py
+        section: "FakeStore._children, FakeStore.stat"
+        read_type: verify
+        extract: "names - folders dropped a flat item that shares its name with a prefix, and a flat stat answered None below an item, so the fake could not hold A.3's undecodable state; A.10 says as much"
+        outcome: misleading
+      - file: tests/_kernel/test_kernel.py
+        section: "first run after the re-derivation"
+        read_type: verify
+        extract: "19 sync failures: 15 cells encoding the old rules (flat writes landing, the opt-in walk, on-way probes, an unprobed denial) and 2 of my own (_decoded noted kinds a listing never yields, so the omission count changed)"
+      - file: tests/_kernel/test_condition_space.py
+        section: "first run after the re-derivation"
+        read_type: verify
+        extract: "1082 of 4908 cells of the first product disagreed, each one an intended change (A.4, A.3's stat, A.8's rows); A.10 replaces the file's axes"
+      - file: tests/_kernel/test_encoding_observations.py
+        section: "A.10's second suite, first run against the re-derived kernel"
+        read_type: verify
+        extract: "two kernel disagreements with Appendix A, both fixed: a flat delete_tree probe listing's miss let the refusal stand (120 cells per runtime), and a move source's check followed a link (2599); the first fix over-reached to hierarchical parents=none (48 cells) and was narrowed; tests/_kernel then passed 2144 by hatch run python -m pytest tests/_kernel -q -n 12 --no-cov -p no:randomly"
