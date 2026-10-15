@@ -13,7 +13,6 @@ discovery_followups: []
 expected_ripples:
   - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
-  - CHANGELOG.md
 surprising_ripples:
   - scripts/ship_report.py
 orient:
@@ -59,8 +58,10 @@ phases:
         extract: >-
           BACKLOG item, CHANGELOG stub under [Unreleased], failing test before
           the fix. The stub is not required for a contributor.tooling item by
-          _schema.yml's derived rule (BUG-295 and BUG-314 shipped without one);
-          it is added because the maintainer's chosen option named it.
+          _schema.yml's derived rule, and BUG-295 and BUG-314 shipped without
+          one. A stub added at first, because the maintainer's chosen option
+          named it, was dropped at the maintainer's call to follow that
+          precedent.
         outcome: ok
   - id: reproduce
     name: Reproduce
