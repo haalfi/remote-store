@@ -230,6 +230,10 @@ dev = [
   "pytest-randomly>=3.15",  # BK-277: randomised test order in the `test-isolation` proof lane
   "pytest-timeout>=2.3",  # BK-419: per-test bound that `scripts/run_tests.py` passes as `--timeout`; inert without one
   "markdown",  # BUG-320: G-08's tests check their fixtures against Python-Markdown's real output
+  # BK-389: scripts/gen_sync_kernel.py derives the sync contract kernel from the
+  # async one (RFC-0017 D6); its `--check` runs in `preflight`, and CI's
+  # tooling-tests import it. Pinned: its token pass is what the committed twin is.
+  "unasync==0.6.0",
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
   # vcrpy is a transitive of pytest-recording (which floors it at only >=2.0.1),
@@ -318,7 +322,7 @@ features = ["dev", "docs", "bench", "mutate"]
 # preflight` in the `lint` job (BK-269), so the script list is the single source.
 # Every entry is offline by construction; `check-support-windows` below is the
 # one support-window mechanism that reaches PyPI and so is deliberately absent.
-preflight = ["python scripts/check_hatch_python.py", "python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check", "python scripts/gen_python_support.py --check", "python scripts/check_process_budget.py"]
+preflight = ["python scripts/check_hatch_python.py", "python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check", "python scripts/gen_python_support.py --check", "python scripts/check_process_budget.py", "python scripts/gen_sync_kernel.py --check"]
 lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_conda_recipe_pins.py", "python scripts/gen_conda_feedstock.py --check", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check", "python scripts/check_no_retrospective.py"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
@@ -417,6 +421,8 @@ gen-graph-viz = "python scripts/gen_graph_viz.py {args}"
 gen-graph-viz-check = "python scripts/gen_graph_viz.py --check"
 gen-backlogid = "python scripts/gen_backlogid.py {args}"
 gen-backlogid-check = "python scripts/gen_backlogid.py --check"
+gen-sync-kernel = "python scripts/gen_sync_kernel.py {args}"
+gen-sync-kernel-check = "python scripts/gen_sync_kernel.py --check"
 gen-adr-digest = "python scripts/gen_adr_digest.py {args}"
 gen-adr-digest-check = "python scripts/gen_adr_digest.py --check"
 gen-api-check = "python scripts/check_api_docs.py"
@@ -570,6 +576,11 @@ check-no-retrospective = "python scripts/check_no_retrospective.py"
 # styles, skills, agents). In `preflight` for `hatch run all`, and in `docs-gate` because those
 # paths reach CI only through DOCS_PAT; CODE_PAT never matches them.
 check-process-budget = "python scripts/check_process_budget.py {args}"
+# BK-437. In `lint` and CI's `verify-formal` already; in `docs-gate` too because
+# its restatement half reads `sdd/formal/alloy/` and `sdd/formal/lean/`, which
+# CODE_PAT never matches and the formal filter drops before FORMAL_PAT, so an
+# edit confined to an .als or .lean file reaches CI through DOCS_PAT alone.
+check-formal-trace = "python scripts/check_formal_trace.py"
 check-backlog-ids-vs-base = "python scripts/check_backlog_ids_vs_base.py {args}"
 ship-report = "python scripts/ship_report.py {args}"
 docs-check = "python scripts/check_docs_framework.py"
@@ -577,10 +588,14 @@ docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 # The full set of checks that validate a docs/spec change, as one entry point CI
 # invokes once. Composed by reference so each sub-target stays the single source.
-docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "gen-conda-feedstock-check", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-no-retrospective", "check-links", "drift-docs-check", "gen-python-support-check", "check-process-budget", "docs-build"]
+docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "gen-conda-feedstock-check", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-no-retrospective", "check-formal-trace", "check-links", "drift-docs-check", "gen-python-support-check", "check-process-budget", "docs-build"]
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
+# Native alloy at the pinned version, else Docker; not in 'all' or CI (sdd/formal/README.md)
+verify-alloy = "bash scripts/alloy_check.sh {args}"
+# Native lean at the pinned version, else Docker; not in 'all' or CI (sdd/formal/README.md)
+verify-lean = "bash scripts/lean_check.sh {args}"
 all = ["preflight", "lint", "format-check", "typecheck", "test-cov-s1", "examples", "notebooks", "check-links", "docs-check", "docs-build"]
 # The pre-commit gate (CLAUDE.md § Dev commands): the members of `all` that the
 # change since the last green run can affect, with tests selected by path
@@ -805,6 +820,12 @@ extend-exclude = ["sdd/formal/*-py"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "BLE", "SIM", "TCH", "PT"]
 ignore = ["UP045"]
+
+[tool.ruff.lint.per-file-ignores]
+# Generated from `_async/` by scripts/gen_sync_kernel.py. The async source cannot
+# use `yield from` (not allowed in an async generator), so its sync twin keeps the
+# explicit loop; rewriting it here would make the generated file a hand edit.
+"src/remote_store/_kernel/_sync/{driver,kernel}.py" = ["UP028"]
 
 [tool.ruff.lint.flake8-pytest-style]
 # Note: ruff PT011 only resolves builtin/stdlib names; custom exception names

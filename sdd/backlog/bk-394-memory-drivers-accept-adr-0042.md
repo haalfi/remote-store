@@ -13,7 +13,7 @@ two PRs: BK-389 lands the kernel, private, under the Proposed
 [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md); this item lands
 the two Memory drivers on it and is **the PR that accepts ADR-0042 and
 RFC-0017**, the first backend on the new design. **It merges only after the
-v0.33.0 tag, and after BK-389 and BK-398.** The decisions both halves rest on are in
+v0.33.0 tag, and after BK-389, BK-432 and BK-398.** The decisions both halves rest on are in
 [BK-389's dossier](bk-389-kernel-step-1-memory.md) § Decisions; read them
 first.
 
@@ -100,13 +100,38 @@ labelled **(was … , absorbed here)**, which is the absorption form
    - spec 003 BE-017: the folder `modified_at` rule above [BK-389's item 3,
      and RFC-0017 D3; nothing above in this file states it], sentinel and
      `None` included, with a note that `GraphBackend` answers its folder
-     item's own time until step 7 migrates it (BK-390).
+     item's own time until step 7 migrates it (BK-390). [Corrected
+     2026-10-11, BK-389's kernel PR: the rule itself landed there, scoped to a
+     class on the kernel, because the kernel's cells trace to it; what is
+     left here is the Graph note.]
+   - [Added 2026-10-12, BK-389's kernel PR, the maintainer's decision:]
+     `sdd/formal/BackendContract.dfy`'s `DeleteFolder` (lines 860 to 872,
+     tagged BE-013) requires a recursive delete of a present folder to succeed
+     and remove every child. A class on the kernel answers `DirectoryNotEmpty`
+     on a walk for a stored key BE-030 omits, a state inside that model, as
+     BE-031 states. Reconcile the model with the first class on the kernel: a
+     carve-out or precondition for non-canonical stored keys.
    - spec 029: the async surface and `AsyncDriver`.
    - specs 007 and 022, kernel half: `write_atomic` and temp-and-promote as
      kernel behaviour over `put_is_atomic`, `open_write` and `rename`.
    - spec 026: PING-002, because the kernel's `check_health()` runs the
      driver's required `probe()` where the default was a no-op; and PING-008,
-     Memory's no-op row.
+     Memory's no-op row. With them, `TESTING.md` Rule 13 and
+     `tests/backends/conformance/test_health_probe_declared.py`: its
+     `_has_own_probe` finds the kernel core's `check_health` for every class
+     on the kernel, so it passes whether or not the driver's `probe()` acts
+     (a driver omitting `probe` inherits the Protocol's no-op body), and
+     Memory's `_NO_PROBE` exemption reads as stale once `MemoryBackend` is on
+     the kernel. Restate the rule over the driver's `probe` for kernel
+     classes (found in PR #1127's second closing round).
+   - A narrow ADR for RFC-0021's design stances, accepted with ADR-0042 in
+     this item's PR once Memory runs on the kernel: D1 and D2 (one store
+     tree, a partial `decode` per encoding, so a backend's quirks belong to
+     its encoding), D8 (refusals are observations: the kernel probes, and
+     drivers owe no rule about how a refusal is typed beyond A.8's two), and
+     possibly D3 and D4, each with the alternatives RFC-0021 rejected. It
+     points to spec 003's BE-032 for the contract rather than restating it.
+     (Maintainer's decision, 2026-10-15, in PR #1127.)
    - the Memory drivers' own rows under 007 and 022. Every later driver's rows
      are BK-390's, at that driver's step.
    - [spec 013, by the table above. MEM-DS-005's validation rows and
@@ -154,7 +179,9 @@ labelled **(was … , absorbed here)**, which is the absorption form
      error mapping for `LAZY_READ` (now the kernel's stream wrapper, so the
      guide states what the driver's `stream_catch` must name); the
      `strict_only` file-ancestor fixtures (`reject_write_under_file_ancestor`
-     is a kernel option under RFC-0017 D2); and the three small fixes. The
+     has no effect on the kernel, whose flat write check is unconditional,
+     spec 003 BE-032 A.4, so a class retires it as it migrates); and the three
+     small fixes. The
      list and its 2026-09-27 correction are in BK-325's
      [dossier](bk-325-custom-backend-guide-gaps.md).
    - [BK-332's rehearsal runs after this item: it rehearses the guide this

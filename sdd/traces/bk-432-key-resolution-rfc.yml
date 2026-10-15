@@ -1,0 +1,353 @@
+id: BK-432
+title: "No logical model says what a key resolves to, so every operation re-derives it from driver refusals"
+trigger: "PR #1127's review had run twelve rounds without converging. Each fix typed one more combination of refusal shape and key state, and the closing round found delete_folder's own probe rule disagreeing with the shared classifier. The maintainer observed that the spec has no model of the key as a chain location/.../item, so every clause re-states what happens on the way to the key"
+source_items:
+  - BK-432
+  - BK-389
+audience:
+  - library.maintainer
+  - contributor.process
+review:
+  # Derived by `hatch run ship-report 1130 --trace-block-only` at head 41a9465.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1130 --trace-block-only"
+  pr: 1130
+  review_rounds: 21
+  submissions: 13
+  findings: 78
+  by_round:
+    - round: 1
+      findings: 13
+      origin: {original: 13}
+      triage: {must-fix: 13}
+      duration_hours: 0.35
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.17
+    - round: 3
+      findings: 1
+      origin: {original: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.01
+    - round: 4
+      findings: 16
+      origin: {loop-introduced: 14, original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 16}
+      duration_hours: 0.8
+    - round: 5
+      findings: 5
+      origin: {loop-introduced: 5}
+      triage: {must-fix: 5}
+      duration_hours: 0.25
+    - round: 6
+      findings: 6
+      origin: {loop-introduced: 6}
+      triage: {must-fix: 6}
+      duration_hours: 8.72
+    - round: 7
+      findings: 4
+      origin: {loop-introduced: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.13
+    - round: 8
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {unknown: 2}
+      duration_hours: 31.22
+    - round: 9
+      findings: 8
+      origin: {loop-introduced: 5, unclassifiable-file: 3}
+      triage: {must-fix: 8}
+      duration_hours: 18.97
+    - round: 10
+      findings: 9
+      origin: {loop-introduced: 9}
+      triage: {must-fix: 9}
+      duration_hours: 0.68
+    - round: 11
+      findings: 6
+      origin: {loop-introduced: 6}
+      triage: {must-fix: 6}
+      duration_hours: 0.3
+    - round: 12
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.13
+    - round: 13
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.12
+  by_file:
+    - path: "sdd/rfcs/rfc-0021-key-resolution-model.md"
+      findings: 62
+    - path: "sdd/formal/StoreTree.dfy"
+      findings: 7
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "sdd/formal/README.md"
+      findings: 2
+    - path: "sdd/research/research-store-model-axioms.md"
+      findings: 2
+    - path: "sdd/traces/bk-432-key-resolution-rfc.yml"
+      findings: 2
+  untouched_files:
+    - ".claude/hooks/session-init.sh"
+    - ".github/workflows/ci.yml"
+    - ".gitignore"
+    - "CHANGELOG.md"
+    - "README.md"
+    - "pyproject.toml"
+    - "scripts/alloy.Dockerfile"
+    - "scripts/alloy_check.sh"
+    - "scripts/check_formal_trace.py"
+    - "scripts/dafny_verify.sh"
+    - "scripts/lean.Dockerfile"
+    - "scripts/lean_check.sh"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/752328a5-d7ca-4f46-80e1-ed02fa74508b.jsonl"
+    - "sdd/decisions/76a5c608-6e68-4795-9152-690035aed9eb.jsonl"
+    - "sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl"
+    - "sdd/decisions/a43a478b-6ba7-4978-89f5-773056c9d7c7.jsonl"
+    - "sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl"
+    - "sdd/decisions/df48024d-396f-4f91-92d7-1d6657c34286.jsonl"
+    - "sdd/decisions/df94f14f-fa1a-431e-8206-f5ff691f68c7.jsonl"
+    - "sdd/decisions/e9a3d98a-a1ac-43b5-82f4-24b8e7dc52fc.jsonl"
+    - "sdd/decisions/ee95990a-1fef-4e4e-b42e-faa515b89ff0.jsonl"
+    - "sdd/decisions/ef396977-f51e-463e-bfc3-d413be64ea17.jsonl"
+    - "sdd/decisions/f92d302b-65de-499e-a0e5-c20c79ca2391.jsonl"
+    - "sdd/decisions/f9bf6c85-56f9-4b02-be3a-7d6217885009.jsonl"
+    - "sdd/formal/alloy/StoreAxioms.als"
+    - "sdd/formal/lean/StoreAxioms.lean"
+    - "sdd/formal/lean/lake-manifest.json"
+    - "sdd/formal/lean/lakefile.toml"
+    - "sdd/formal/lean/lean-toolchain"
+    - "sdd/formal/tex/.gitignore"
+    - "sdd/formal/tex/README.md"
+    - "sdd/formal/tex/store-axioms.pdf"
+    - "sdd/formal/tex/store-axioms.tex"
+    - "sdd/process-budget.json"
+    - "sdd/specs/051-store-tree.md"
+    - "sdd/traces/bk-435-alloy-store-model.yml"
+    - "sdd/traces/bk-435-lean-store-model.yml"
+    - "sdd/traces/bk-435-open-questions.yml"
+    - "sdd/traces/bk-435-store-model-axioms.yml"
+    - "sdd/traces/bk-435-store-tree-spec.yml"
+    - "sdd/traces/bk-435-storetree-tie.yml"
+    - "sdd/traces/bk-435-tex-exposition.yml"
+    - "sdd/traces/bk-437-formal-restatement-tags.yml"
+    - "tests/scripts/test_check_formal_trace.py"
+    - "tests/test_store_tree.py"
+  review_driven_commits:
+    - sha: "3955d7c"
+      subject: "BK-432: address review of RFC-0021: Impact split by case, A.8 determinants and timing rule, link and flat-lookup gaps"
+    - sha: "f6e27a5"
+      subject: "BK-432: decide RFC-0021's listing-order and link-transfer questions"
+    - sha: "815ec04"
+      subject: "BK-432: re-plan RFC-0021's links after the divergence check"
+    - sha: "2cc55a9"
+      subject: "BK-432: state RFC-0021's model in Dafny before acceptance"
+    - sha: "5d0086f"
+      subject: "BK-432: StoreTree.dfy, RFC-0021's model in Dafny (first part)"
+    - sha: "a8e89c4"
+      subject: "BK-432: StoreTree.dfy covers folder-read, delete_folder and transfers"
+    - sha: "67e9844"
+      subject: "BK-432: RFC-0021's A.8 observation tables, one probe set, no typing obligation"
+    - sha: "f6a4a07"
+      subject: "BK-432: closing-round fixes: A.8 enumerated in Dafny, rule 4, link signal, flat limits"
+    - sha: "ad88fb9"
+      subject: "BK-432: verification-pass fixes: listings in section 11, flat listing obligation"
+    - sha: "aec0ab3"
+      subject: "BK-432: round-5 fixes: rule 4 restated everywhere, hierarchical delete and move-source probe under no_follow"
+    - sha: "736e9fb"
+      subject: "BK-432: round-6 fixes: rule 4's typing exception stated, copy-source probe row"
+    - sha: "0b22d5f"
+      subject: "BK-432: accept RFC-0021 (maintainer, 2026-10-13)"
+    - sha: "02cc6ca"
+      subject: "BK-432: file RFC-0021's follow-ups (BK-433, BK-434) and BUG-324"
+    - sha: "8308dc6"
+      subject: "BK-435: store model axioms, checked in Alloy and proved in Lean 4 (#1131)"
+    - sha: "29ff98a"
+      subject: "BK-432: align RFC-0021 and StoreTree.dfy with spec 051"
+    - sha: "a566196"
+      subject: "BK-432: drop a housekeeping dialog from decision log 85069900"
+    - sha: "f802a19"
+      subject: "BK-432: fix the spec-051 alignment round's findings on RFC-0021 and StoreTree.dfy"
+    - sha: "b91529a"
+      subject: "BK-432: fix round 2 of the spec-051 alignment; file BK-438"
+    - sha: "9aa4589"
+      subject: "BK-432: fix round 3: Open question 1 states today's per-shape observations"
+    - sha: "9eb5983"
+      subject: "BK-432: fix round 4: moto harness named exactly, A.3's interim omission stated in Open question 1"
+    - sha: "41a9465"
+      subject: "BK-432: cite TREE-001 with TREE-010 for A.1's item-or-folder consequence"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
+decisions:
+  - sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl
+  - sdd/decisions/752328a5-d7ca-4f46-80e1-ed02fa74508b.jsonl
+discovery_followups:
+  - BUG-323
+  - BK-433
+  - BK-434
+  - BUG-324
+  - BK-438
+orient:
+  - items: [BK-389, BK-394]
+    verdict: constrains
+    evidence: "Decision log 85069900 (dialog 'PR 1127'): the maintainer parked #1127 with its 7 threads open until this model exists, so BK-389 resumes by re-deriving delete_folder and spec 003's cut from it. BK-394 (index entry: 'After BK-389') is where a backend first runs on the kernel, so the breaking flat change (a shadowed key is a file for every operation) first lands there"
+  - items: [BUG-292, BK-382, BUG-253]
+    verdict: constrains
+    evidence: "BUG-292 dossier § Decision (2026-09-29, BK-387): 'Only a confirmed miss, a not-found answer from the probe, reads as no ancestor. Any other probe error propagates'. That is the model's rule for write checks, which decide the result and so fail closed. Spec 003 BE-008 gives flat backends the opt-in reject_write_under_file_ancestor, which the model makes unconditional. The three remain backend fixes"
+  - items: [BUG-257, BUG-255, BUG-318]
+    verdict: constrains
+    evidence: "BUG-257 dossier: Graph keys the first-page bound per HTTP request, not per walk, and its index entry says RFC-0017 Open Question 2 is decided (BK-389 dossier, decision 1) in agreement. The model's 'changed under the walk' takes BE-021's first-page bound once per operation"
+  - items: [BUG-299, BUG-300, BK-398]
+    verdict: unrelated
+    evidence: "Index entries: a '..' key written then refused, a backslash key stored then refused, and the native round-trip identity. All three concern how a key is spelled (layer 0, BE-030's key rule), not what it resolves to"
+  - items: [BUG-319, BUG-293, BUG-245, BK-345]
+    verdict: unrelated
+    evidence: "Index entries: a raw PermissionError leak, Azure arms re-typing a typed error, a constructor's NoSuchTableError, and the absent-container gate. They map wire errors into types at the choke point or at construction; the model consumes typed refusal shapes and does not change that mapping"
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "Re-plan after round 10"
+        read_type: gate
+        extract: "Rounds 7 to 10 had one shape (each fix probed one more call family); the re-plan merged six helpers into _state. PR #1127's open review threads at a630ef5 show the same condition in delete_folder's own probe rule (_df_kind, _probe_wanted), which the session-local /ship handoff flagged as a design decision"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "_state, _above, _may_be_a_folder, _df_kind, _probe_wanted, _df_error_path"
+        read_type: reference
+        extract: "_state treats a raising NotFound/InvalidPath stat as a miss and probes untyped, NotFound, AlreadyExists and PermissionDenied; delete_folder's _probe_wanted probes only NotFound and untyped, and _df_kind has no miss tolerance. Two rules for one stat answer"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "§4 Filesystem model; §5 IsChildOf, AllAncestorsTraversable; Valid() (line 536)"
+        read_type: reference
+        extract: "Filesystem = map<Path, Entry>; Valid() requires every ancestor of an entry to be a directory, so the formal model holds the explicit-folder geometry only. Flat, implicit and under-a-file have no representation"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/driver.py
+        section: "Driver protocol docstring (namespace, parents)"
+        read_type: reference
+        extract: "Geometry is already namespace x parents; a flat driver with folder objects is refused at construction"
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "_is_link, _resolve symlink-escape rejection"
+        read_type: reference
+        extract: "Local follows links implicitly and rejects a target escaping the root; no capability or public option declares links. SFTP not checked"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 flat file-ancestor opt-in (lines 471-499)"
+        read_type: reference
+        extract: "reject_write_under_file_ancestor is a per-instance opt-in on flat backends, so 'f/x is just another key' holds only with it off. Corrected the outline's flat invariant"
+        outcome: ok
+      - file: sdd/backlog/bug-292-ancestor-gate-fails-open.md
+        section: "(full)"
+        read_type: reference
+        extract: "Decided fail-closed for the file-ancestor probe: only a confirmed miss reads as no ancestor"
+        outcome: ok
+      - file: sdd/backlog/bug-257-graph-walk-first-page-bound.md
+        section: "(full)"
+        read_type: reference
+        extract: "The first-page bound is per operation, not per request"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works; 1. Failures are predictable (BK-389, BK-394)"
+        read_type: gate
+        extract: "On this stacked branch BK-389 is already in BACKLOG-DONE, so BK-432 sits directly above BK-394, which now waits on it; ID from gen-backlogid --check --remote (BK=432)"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-030 What is at a key, the four key-shape rules and the folder-key rule (lines 1403-1485)"
+        read_type: reference
+        extract: "BE-030 already distinguishes determinants from error-path probes and states one answer for each key; what it lacks is outcomes as the primary abstraction, a probe set per (call, shape) rather than one per family, delete_folder's rule (BE-031 is separate), and links. A flat prefix read as a file is InvalidPath (BE-021's type-mismatch row), which corrected the draft's first Prefix row"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Status; Summary"
+        read_type: reference
+        extract: "RFC shape: Status, Summary, Motivation, Decisions, Alternatives, Impact, Open Questions with a decided-while-drafting list"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "_prepare_write"
+        read_type: reference
+        extract: "ensure_parents(key) takes the key alone, so no result needs the depth of absence; the opt-in walk counts only NotFound as a miss (determinant, fail-closed)"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "public async methods; _kernel/backend.py read, read_seekable, open_atomic"
+        read_type: reference
+        extract: "19 keyed operations grouped into the RFC's seven families: git grep -n -E '^    async def [a-z]' over _async/kernel.py gives 18, minus check_health and aclose; git grep -n -E '^    (async )?def (read|read_seekable|open_atomic)\\(' over _kernel adds 3 in backend.py (aio_backend.py's read is the async twin of the same operation)"
+        outcome: ok
+  - id: revise
+    name: Revise
+    steps:
+      - file: sdd/rfcs/rfc-0021-key-resolution-model.md
+        section: "(full)"
+        read_type: reference
+        extract: "Maintainer rejected the first draft's geometry-parameterised outcome set (semantic model) for one tree plus a partial decode per encoding, then moved all mechanics out of Decisions into Appendix A (the draft spec section) per principle 8"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "stat call sites, listdir_attr listings, _rmtree, _collect_folder_stats"
+        read_type: verify
+        extract: "Measured on atmoz/sftp:alpine with paramiko-made links (scratch probe, not committed): keyed calls follow links, listings skip them (lrwxrwxrwx mode), list_files on a link lists the target, write through a link writes the target, a nested link is removed by a recursive delete, and delete_folder(link_to_folder, recursive) emptied the target and raised NotFound, filed as BUG-323. Closed the RFC question on SFTP links"
+        outcome: ok
+      - file: sdd/formal/StoreTree.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "bash scripts/dafny_verify.sh StoreTree.dfy: 33 verified, 0 errors. Eleven mutants, each a copy of the file under sdd/formal/ verified the same way and then deleted, each failed verification (7 to 9 re-run against the final section 11 as well, plus 10: RefusalAnswersAreTrue without the flat listing obligation; 11: the hierarchical listing probe without its stat seeing a folder): (1) FlatWriteChecks without the below-k conjunct; (2) without the ancestor conjunct; (3) Children at depth |k|+2; (4) FlatDeleteTree deleting every key below k, hidden or not; (5) FlatMoveIsTheTree without FlatWriteChecks; (6) FlatChildren returning full keys; (7) the flat get/delete probe without its stat (the closing round's false-success finding); (8) KernelAnswer replacing a refusal on any concluded row; (9) the hierarchical write probe without its ancestor stats. The first run of section 11 failed RefusalAnswersAreTrue on a flat delete_tree probed stat-first, which found the missing flat delete_tree row in A.8"
+        outcome: ok
+  - id: align
+    name: Align with spec 051
+    steps:
+      - file: sdd/specs/051-store-tree.md
+        section: "(full): Layering, Name equality, TREE-001 to TREE-012"
+        read_type: gate
+        extract: "Authority for the tree's structure after #1131 merged into this branch (8308dc62e). Disagreements from the maintainer's handoff: Key = seq<string> admits non-names (TREE-007, TREE-010); A.1 defined no name and did not separate a Key from an input; A.2 listed a\\b as undecodable though names forbid only '/'; A.2 lacked empty-segment raw keys; no name-equality scope; D1, the Summary and A.1 restated the structure"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "WellFormedPath (line 320); Valid() (line 536)"
+        read_type: verify
+        extract: "Valid() quantifies over every p in fs with no shape condition, so it admits an entry 'a/' or '/a'; WellFormedPath is only a requires on method paths. My own Impact claim 'Valid() already is A.1's tree' was false against TREE-007; reworded to the prefix closure (TREE-012)"
+        outcome: ok
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "get_folder_info marker skip (line 675); put_object (line 481)"
+        read_type: verify
+        extract: "Keys ending in '/' are skipped as files and the only write is put_object(Key=path) with a well-formed path, so the library writes no marker; a foreign marker shows as an empty folder, which A.6 now admits on S3 (maintainer's choice)"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-030 listing omission (line 1511); key-shape rows (lines 1494, 1499)"
+        read_type: reference
+        extract: "BE-030 already omits a listed key the rule would refuse or rewrite, so omitting empty-segment raw keys is no behaviour change; d//f, d/./f, d/ and ./ are input rows mapped onto a Key"
+        outcome: ok
+      - file: sdd/formal/StoreTree.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "bash scripts/dafny_verify.sh StoreTree.dfy: 37 verified at 8308dc62e; 38 verified, 0 errors with type Name = s: string | |s| > 0 && '/' !in s witness \"a\" and Key = seq<Name> (the extra one is the subset type's witness). No proof changed, and §12's TrieWF needs no names conjunct since the type holds it"
+        outcome: ok
+      - file: sdd/formal/StoreTree.dfy
+        section: "§1 Join, JoinShape, JoinInjective (after the align review round)"
+        read_type: verify
+        extract: "The round's measuring pass found all three Name mutants still verified (no lemma used the restriction). Added Join and JoinInjective (TREE-010's string form): bash scripts/dafny_verify.sh StoreTree.dfy gives 42 verified, 0 errors. Mutants, each a scratch copy under sdd/formal/ verified the same way and deleted: (a) Name without the '/' condition: 41 verified, 1 error (x == y in JoinInjective); (b) Name without non-empty: 41 verified, 1 error (the |b| > 0 branch's postcondition, [\"\"] vs []); (c) Name = string: 40 verified, 2 errors"
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "listing of a marker-only folder (measured by the round's measuring pass on moto)"
+        read_type: verify
+        extract: "With only 'a/' stored, s3fs and pyarrow list the marker as an item 'a' in list_files('a') and count it in get_folder_info; boto3 skips it (_s3_boto3.py:675/741/786); all three answer DirectoryNotEmpty for a non-recursive delete_folder('a'). My earlier step read only _s3_boto3.py and generalised to S3. The maintainer moved markers to an open question for the S3 drivers' move onto the kernel, leaning to an empty folder if AWS holds a prefix with no object behind it"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-030 listing omission and reachability (lines 1511-1518); BE-025 addressing (line 1507)"
+        read_type: reference
+        extract: "Round 2 found that a//b on a flat encoding would, under BE-030's kernel omission, look like the marker a/ (is_folder true, listings empty; round 3 measured today's S3 backends differently: a phantom list_folders('a') == ['a'] for a//b and a//, and list_folders('') raising InvalidPath for /a, now in Open question 1's table), and that BE-030 keeps an omitted entry reachable through addressing and unwrap(). The maintainer widened Open question 1 to every flat raw key with an empty segment on every flat encoding, filed as BK-438, and widened BK-436 to how a coarser-equality backend answers. Round 2's measuring pass reran 42 verified and five mutants (d: Join separator \"\" 41/1, e: false ensures 41/1); its moto rerun showed s3fs and pyarrow return the folder's own key a as a file named \"\""
+        outcome: ok

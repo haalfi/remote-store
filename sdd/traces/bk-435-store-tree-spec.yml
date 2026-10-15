@@ -1,0 +1,133 @@
+id: BK-435
+title: "Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations"
+trigger: "Research § 10 (decided in #1133) promotes the axioms into a new store-model spec; the maintainer asked to start writing it"
+source_items:
+  - BK-435
+audience:
+  - library.maintainer
+expected_ripples:
+  - sdd/specs/051-store-tree.md
+  - tests/test_store_tree.py
+  - sdd/BACKLOG.md
+  - sdd/research/research-store-model-axioms.md
+  - sdd/formal/lean/StoreAxioms.lean
+  - sdd/formal/alloy/StoreAxioms.als
+surprising_ripples:
+  - "sdd/formal/lean/StoreAxioms.lean and sdd/formal/alloy/StoreAxioms.als: both headers named the research doc as source of truth; with spec 051 the authority (maintainer, review round 1), they now name spec 051, the research doc as rationale. Comment-only; lean_check.sh built and alloy_check.sh matched all 30 commands after the edit"
+  - "sdd/specs/004-path-model.md PATH-015: RemotePath.ROOT and store folder methods accept '' and '.' as the root, so research § 10's 'root reached through the store rather than an empty path' (from #1133) was false; both it and spec 051 now point to spec 004 instead of enumerating it. Found by review round 1"
+discovery_followups:
+  - BK-436
+  - BK-437
+decisions:
+  - sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl
+  - sdd/decisions/ee95990a-1fef-4e4e-b42e-faa515b89ff0.jsonl
+  - sdd/decisions/df48024d-396f-4f91-92d7-1d6657c34286.jsonl
+orient:
+  - items: [BK-432]
+    verdict: constrains
+    evidence: "RFC-0021's table (rfc-0021-key-resolution-model.md, write-below-an-item rows) records that a flat backend today writes below an item unless an opt-in is on, so an observed store can break TREE-001 and TREE-003 until BK-432's decoding lands. The spec's sections are therefore tested against a reference model, and backend conformance is BK-436, after BK-432."
+  - items: [BK-434]
+    verdict: unrelated
+    evidence: "BK-434 changes StoreTree.dfy and BackendContract.dfy; spec 051 states the axioms in prose and touches no .dfy file."
+  - items: [BK-433]
+    verdict: unrelated
+    evidence: "Links are outside the axioms (research § 8)."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules 1, 2, 7; Spec format; Test traceability"
+        read_type: gate
+        extract: "Every spec section needs a test with @pytest.mark.spec(ID); an unenforced clause is decided, not defaulted"
+      - file: sdd/templates/spec-template.md
+        section: "(full)"
+        read_type: gate
+        extract: "Overview, then '## PREFIX-NNN: Title' sections with Invariant lines, Notes non-normative"
+      - file: scripts/check_test_placement.py
+        section: "module docstring (rules S, B, E)"
+        read_type: gate
+        extract: "A top-level tests/test_*.py may import no cloud backend; the reference model imports none"
+      - file: scripts/gen_backlogid.py
+        section: "module docstring, --check --remote"
+        read_type: gate
+        extract: "Parallel sessions mint from a reservation; --check --remote showed BK-436 free across pushed branches, and the only clash reported (BK-435 on bk-435-alloy-store-model) is the stale-branch bound its docstring names"
+  - id: write
+    name: Write the spec and its tests
+    steps:
+      - file: sdd/research/research-store-model-axioms.md
+        section: "§ 2 to § 5, § 7, § 10 decisions"
+        read_type: reference
+        extract: "Clauses, Key, the § 5 row per clause and witnesses W0 to W2, restated as TREE-001 to TREE-012 and as the test's ROWS and WITNESSES"
+      - file: tests/test_store_tree.py
+        section: "(full, mutation-checked)"
+        read_type: reference
+        extract: "Mutant 1, TREE-004's predicate always true: test_each_clause_is_broken_alone_by_its_row[TREE-004] failed (set() == {'TREE-004'}). Mutant 2, Key joining the root's name: 5 tests failed, test_key_joins_names_along_the_chain[W1, W2], test_key_ignores_the_root_name, test_key_collision_follows_from_each_naming_clause_broken[TREE-007 non-empty] and the Hypothesis test_key_shape. Both reverted"
+  - id: review
+    name: Review round 1 fixes
+    steps:
+      - file: tests/test_store_tree.py
+        section: "KIND_ROWS, _stores, mutation-checked"
+        read_type: reference
+        extract: "Review measured six kind-restricted predicates passing all 55 tests, and property tests that held by construction. Added a breaking row per clause for the other entity kind and a free Hypothesis strategy filtered by broken(s) == set(). Mutants run on the new file (driver outside the repo, copies in gitignored tmp/): weak 003 items-cannot-contain-items, weak 004 items-only, weak 007 non-empty items-only, weak 007 no-slash folders-only, weak 008 items-only and weak 008 same-kind-only each fail their kind row; 008, 007 non-empty and 007 no-slash made always true each fail two of the three property tests. gen_backlogid --check --remote: no clash for BK-436 or BK-437, only the stale-branch BK-435 report"
+      - file: tests/test_store_tree.py
+        section: "_stores, keys_top_down (external review of the tests)"
+        read_type: reference
+        extract: "pytest --hypothesis-show-statistics measured 89 to 93% of drawn structures rejected by assume() and kept sizes of 1 to 6 entities. Odds biased through repeated one_of branches barely moved it; a diagnostic event showed invalid names drawn far above the intended rate, since Hypothesis favours simple and boundary draws. Keying the rare invalid branch to a mid-range integer (9 of 0..15) gave 38 to 63% rejected and kept sizes up to 9. Added keys_top_down, a Key built down from the root that shares no code with chain(), and test_key_agrees_with_a_top_down_computation (TREE-009). Mutants on the new file: every weakened predicate fails its kind row; 008, 007 non-empty and 007 no-slash made always true fail 2, 2 and 1 property tests; a Key with reversed name order fails the top-down test among 5"
+      - file: tests/test_store_tree.py
+        section: "KIND_ROWS TREE-006, test_names_compare_exactly (review round 2)"
+        read_type: reference
+        extract: "Review round 2 at eaac1d0cc: TREE-006 had no kind row, and exact name equality was asserted nowhere. Added an unreachable item (breaks only TREE-006, checked by running broken()) and a test with siblings a/A, precomposed and decomposed é, and ß/ss that must break nothing and give distinct Keys. Mutants: TREE-006 folders-only fails [TREE-006 unreachable item]; TREE-008 comparing casefold() or NFC-normalized names fails test_names_compare_exactly. The docstring now lists the clauses with a kind row; TREE-001, TREE-002 and TREE-007 root have no kind to vary, and TREE-005 has no single-clause structure of the other kind"
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-015"
+        read_type: reference
+        extract: "The root sentinel: str(ROOT) is '.', and folder methods accept '' and '.' as the root"
+      - file: tests/test_store_tree.py
+        section: "_stores, test_lemma_tests_fail_without_each_clause (#1131 combined-stack review)"
+        read_type: reference
+        extract: "The review found the TREE-010 to TREE-012 property tests had no positive control: the module docstring claimed dropping a naming predicate lets a collision through, and no test showed it. Added one test per clause the filter decides (TREE-003, TREE-007 non-empty, TREE-007 no slash, TREE-008): hypothesis.find on _stores with that clause dropped must draw a structure the three lemma test bodies reject. Mutants, each reverted: _RARE = 99 failed the TREE-003, 007 non-empty and 007 no-slash controls with NoSuchExample while the three property tests stayed green; parents always from folders failed TREE-003; _INVALID_NAMES = ['a'] failed both TREE-007 controls"
+review:
+  # Derived by `hatch run ship-report 1134 --trace-block-only` at head 943997a.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1134 --trace-block-only"
+  pr: 1134
+  review_rounds: 4
+  submissions: 2
+  findings: 15
+  by_round:
+    - round: 1
+      findings: 12
+      origin: {original: 12}
+      triage: {must-fix: 12}
+      duration_hours: 0.46
+    - round: 2
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.53
+  by_file:
+    - path: "sdd/specs/051-store-tree.md"
+      findings: 6
+    - path: "tests/test_store_tree.py"
+      findings: 6
+    - path: "sdd/research/research-store-model-axioms.md"
+      findings: 2
+    - path: "sdd/traces/bk-435-store-model-axioms.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl"
+    - "sdd/formal/alloy/StoreAxioms.als"
+    - "sdd/formal/lean/StoreAxioms.lean"
+    - "sdd/traces/bk-435-store-tree-spec.yml"
+  review_driven_commits:
+    - sha: "f6da322"
+      subject: "fix: address PR #1134 review"
+    - sha: "997082f"
+      subject: "BK-435: decision log"
+    - sha: "eaac1d0"
+      subject: "BK-435: address external review of the spec 051 tests"
+    - sha: "943997a"
+      subject: "fix: address PR #1134 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

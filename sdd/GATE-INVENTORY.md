@@ -27,7 +27,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/check_dafny_oracle_fresh.py` | sdd/formal/*.dfy (built by the pinned Dafny) ↔ sdd/formal/MemoryBackend-py/ | intent-formalized | `check-dafny-oracle-fresh`, `ci.yml:verify-formal` | gating |
 | `scripts/check_dafny_twin_parity.py` | the MemoryBackend and MemoryBackendMinimal twin classes in sdd/formal/ | intent-formalized | `all`, `check-dafny-twin-parity`, `ci.yml:verify-formal`, `lint` | gating |
 | `scripts/check_docstring_parity.py` | the sync API docstrings in src/remote_store/ ↔ their hand-mirrored twins in src/remote_store/aio/ | realization | `all`, `check-docstring-parity`, `preflight` | gating |
-| `scripts/check_formal_trace.py` | spec IDs declared in sdd/specs/ ↔ Dafny @spec tags in sdd/formal/ and conformance pytest.mark.spec markers | intent ↔ intent-formalized ↔ verification | `all`, `ci.yml:verify-formal`, `lint` | gating |
+| `scripts/check_formal_trace.py` | spec IDs declared in sdd/specs/ ↔ Dafny @spec tags in sdd/formal/ and conformance pytest.mark.spec markers, and ↔ Alloy and Lean @spec tags in sdd/formal/alloy/ and sdd/formal/lean/ per restated spec | intent ↔ intent-formalized ↔ verification | `all`, `check-formal-trace`, `ci.yml:verify-formal`, `docs-gate`, `lint` | gating |
 | `scripts/check_hatch_python.py` | .python-version ↔ pyproject.toml [tool.hatch.envs.default] python, and ↔ the running interpreter | process | `all`, `preflight` | gating |
 | `scripts/check_infra_settings.py` | infra/.env ↔ infra/_settings.py, the compose file and the port and credential references in CI workflows | process | `all`, `lint` | gating |
 | `scripts/check_readthedocs_python.py` | .python-version ↔ .readthedocs.yaml's build.tools.python | process | `all`, `lint` | gating |
@@ -52,6 +52,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/gen_graph.py` | the source tree under src/remote_store/, plus the version and optional-dependency tables in pyproject.toml ↔ docs-src/_data/graph/graph.json | realization | `all`, `gen-graph`, `gen-graph-check`, `preflight` | gating |
 | `scripts/gen_graph_viz.py` | docs-src/_data/graph/graph.json, plus the Repository URL in pyproject.toml that the page's source links are built from ↔ docs-src/explanation/graph_viz.html | realization ↔ explanation | `all`, `gen-graph-viz`, `gen-graph-viz-check`, `preflight` | gating |
 | `scripts/gen_python_support.py` | the Programming Language :: Python classifiers in pyproject.toml and the release dates in scripts/python_support.py ↔ the committed Mermaid gantt body in docs-src/_data/python-support-window.mmd that the dependency-policy page includes | process ↔ explanation | `all`, `docs-gate`, `gen-python-support`, `gen-python-support-check`, `preflight` | gating |
+| `scripts/gen_sync_kernel.py` | src/remote_store/_kernel/_async/{driver,kernel}.py ↔ the generated src/remote_store/_kernel/_sync/{driver,kernel}.py | realization | `all`, `gen-sync-kernel`, `gen-sync-kernel-check`, `preflight` | gating |
 
 ## Rule checks, no pair
 

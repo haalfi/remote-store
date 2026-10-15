@@ -273,10 +273,11 @@ was a 28th match above it). It owns, once:
   decided in BK-396, is BK-389's dossier, decision 8), the
   absent-container tolerance, and the first-page listing bound (BE-021),
   including its page-not-item rule;
-- the file-ancestor pre-check as a kernel option with today's default: the
-  opt-in `reject_write_under_file_ancestor` moves from each flat-namespace
-  class to the kernel's constructor, default off, and the walk runs in the
-  kernel before any `put` when set. Its probe-error policy is BUG-292's,
+- the file-ancestor pre-check in the kernel. Planned here as a kernel option
+  with today's default (the opt-in `reject_write_under_file_ancestor` moving
+  to the kernel's constructor, default off); RFC-0021 D4 made it
+  unconditional on a flat namespace, so the kernel takes no option and spec
+  003's BE-032 (A.4) states the check. Its probe-error policy is BUG-292's,
   decided at BK-387: only a confirmed miss reads as "no ancestor", and any
   other probe error, a transient one included, propagates mapped;
 - the `max_depth` reference algorithm, decided once (Open Question 4 names
@@ -863,15 +864,19 @@ and its answer keeps `classify`.
   (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
   private and touches spec 003 only: it adds the clauses its kernel cells
   trace to, the key rule, the root `delete_folder` refusal and
-  `SupportsRemoveFolder`'s `delete_folder` sequence as BK-396 decided it, and BK-395's
-  answers; BK-389's dossier, item 8, is the authority for this split, and
+  `SupportsRemoveFolder`'s `delete_folder` sequence as BK-396 decided it,
+  BK-395's answers, BE-017's folder `modified_at` rule, and BE-032, the store
+  tree on the kernel, which lands RFC-0021's Appendix A and which the kernel's
+  probes follow; BK-389's dossier, item 8, is the authority for this split, and
   its decision 6, **Clauses checked, and who amends each**, for the clauses
   BK-395's answers touch outside it): specs 003, 005, 029 and 037 below,
   the clauses that paragraph assigns to BK-394, spec 013 (Memory's,
   as a kernel/driver placement per clause, which the list at filing omitted),
   the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002
-  and PING-008, spec 003's BE-017 folder `modified_at` rule, the
+  and PING-008, spec 003's BE-017 note that `GraphBackend` answers its folder
+  item's own time until step 7 (the rule itself landed with BK-389's kernel
+  PR, whose cells trace to it), the
   custom-backend guide with its `partial-capabilities`
   region, `check_custom_backend_guide.py`, and the landing page's snippet.
   With the later D3 step that makes each true (BK-390): the rest of the specs
@@ -975,8 +980,9 @@ and its answer keeps `classify`.
    errors stay per driver and BUG-245 is fixed there. **Deferred (BK-389
    planning) to D3 step 3**, where BUG-245's driver migrates. The shape step 1
    keeps open: the kernel's constructor takes a built driver,
-   `DriverBackend(driver, *, reject_write_under_file_ancestor=False)` and its
-   async twin, and each public class builds its driver in its own `__init__`.
+   `DriverBackend(driver)` and its async twin (the planned
+   `reject_write_under_file_ancestor` keyword went with RFC-0021 D4), and each
+   public class builds its driver in its own `__init__`.
    Step 3 may add a wrapped-build form beside it, never instead of it.
 6. **`classify` or a wire signal?** Eight of the 35 cluster-A items stay in
    the driver under D1. The wire-signal alternative reaches four of them at
