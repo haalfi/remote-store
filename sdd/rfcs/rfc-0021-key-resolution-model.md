@@ -148,8 +148,8 @@ Spec 003 gains one section, drafted in Appendix A. The clauses it replaces
 point to it. The model is also stated in Dafny, which checks the prose,
 verified before this RFC is accepted: the tree, the flat encoding's `decode`
 and its operations, and the refusal rule for both namespaces. Links and
-changes under an operation are argued in prose only, and S3's folder markers
-are an open question.
+changes under an operation are argued in prose only, and flat raw keys with
+an empty segment are an open question.
 
 ## Alternatives
 
@@ -226,12 +226,15 @@ that does not change.
   it. Mutants, each weakening one check or rule, fail verification; the
   trace's verify and align phases list each edit, the command and its count.
   It covers:
-    - a Key as a sequence of spec 051's names, which join to one string and
-      never two Keys to the same one (TREE-007, TREE-010);
+    - Dafny's `Key`, a sequence of spec 051's names (TREE-007) whose `Join`
+      is TREE-009's Key, no two distinct sequences joining to the same
+      string (TREE-010);
+    - a valid tree is exactly a finite pair meeting the conditions of lemma
+      L6 in `lean/StoreAxioms.lean`, which spec 051's axioms satisfy (§12);
     - the tree and its resolution;
     - a flat encoding's partial `decode`, which yields a valid tree, for A.2's
       item-above-item state; a raw key with an empty segment is excluded by
-      `Key`'s type rather than decided by `decode`;
+      `Key`'s type and is Open question 1;
     - a flat lookup, a `list_page(k, limit=1)` and an ancestor `stat` agree
       with the tree's item, folder and through-an-item answers;
     - A.4's checks pass exactly where the tree's write does not answer
@@ -243,7 +246,8 @@ that does not change.
       the key hides nothing (A.3's limit);
     - a flat `move` or `copy` keeps the encoding decodable and moves or
       copies exactly its item;
-    - a flat encoding holds no empty folder (A.6), S3's folder markers aside;
+    - a flat encoding holds no empty folder (A.6), raw keys with an empty
+      segment aside;
     - A.8's refusal rule, for every call it names, each namespace and each
       row: the answer is the refusal or the A.5 result of the row actually
       there, and only a result rule 4 allows. Every row where the call must
@@ -252,14 +256,15 @@ that does not change.
       which stands. Enumerating it
       found a missing flat `delete_tree` row, which A.8 now has.
 
-    Links (A.7), changes under an operation (A.9) and S3's folder markers
-    (open question below) are outside the sketch.
+    Links (A.7), changes under an operation (A.9) and raw keys with an empty
+    segment (open question below) are outside the sketch.
 - **Local's and SFTP's links** decode by A.7's policy once each runs on the
   kernel. BUG-323, SFTP's recursive delete through a link at the key, is fixed
   independently of this RFC.
 - **Follow-ups**, filed on acceptance: the public link option and a capability
   that exposes `links` (BK-433), and wiring the Dafny encodings into
-  `BackendContract.dfy`'s operations (BK-434).
+  `BackendContract.dfy`'s operations (BK-434). Filed later: Open question 1
+  (BK-438).
 
 ## Open Questions
 
@@ -267,18 +272,24 @@ A.8's tables and the Dafny sketch, owed before acceptance, are in. The sketch
 covers what D10 names, and links and changes under an operation are argued in
 prose only, as D10 states. One question is open:
 
-1. **S3's folder markers.** A marker is a raw key `n/`, where `n` has no
-   empty segment, that another tool wrote; the library writes none. Measured
-   on moto (2026-10-15) with only `a/` stored, all three S3 backends answer
+1. **Flat raw keys with an empty segment** (BK-438), on any flat encoding:
+   a folder marker `a/` such as S3's or Azure's without HNS, and `a//b`,
+   `/a` or `a//`, all written by another tool; the library writes none. A
+   caller sees each the same way: the prefix `a/` makes `is_folder("a")`
+   True, while listings of `a` omit the key (BE-030), so `a` looks like an
+   empty folder, which A.6 rules out on a flat encoding. Measured on moto
+   (2026-10-15) with only `a/` stored, all three S3 backends answer
    `exists`, `is_folder` and `is_file("a")` with T / T / F, and list `a` in
-   `list_folders("")`. `S3Backend` (s3fs) and `S3PyArrowBackend` also list
-   the marker as an item `a` in `list_files("a")`, while `S3Boto3Backend`
-   skips it. All three answer `DirectoryNotEmpty` for a non-recursive
-   `delete_folder("a")`, and only a recursive one removes the marker. How a
-   marker decodes is decided when the S3 drivers move onto the kernel (after
-   BK-394), checked against AWS S3 itself. The maintainer's leaning: if AWS
-   holds a prefix with no object behind it, that prefix is an empty folder.
-   Until then A.2, A.3 and A.6 leave markers out.
+   `list_folders("")`. `S3Backend` (s3fs) and `S3PyArrowBackend` also return
+   the folder's own key `a` from `list_files("a")`, as a file with the empty
+   name `""`, and count it in `get_folder_info("a")`; `S3Boto3Backend` skips
+   it. All three answer `DirectoryNotEmpty` for a non-recursive
+   `delete_folder("a")`, and only a recursive one removes the marker. How
+   such keys decode is decided before the S3 and Azure drivers move onto the
+   kernel, checked against the services themselves. The maintainer's
+   leaning: if the service holds a prefix with no object behind it, that
+   prefix is an empty folder. Until then A.2, A.3 and A.6 leave these keys
+   out.
 
 ### Decided while drafting (maintainer, 2026-10-12)
 
@@ -344,11 +355,11 @@ prose only, as D10 states. One question is open:
 Spec 051 (TREE-001 to TREE-012) is the authority for the tree's structure,
 and this RFC and `StoreTree.dfy` agree with it. A.1 points to it and separates
 a Key from a caller's input (spec 004). `StoreTree.dfy`'s `Key` is a sequence
-of names, taken from BK-434, with a lemma that two Keys never join to one
-string. A flat raw key with an empty segment does not decode. S3's folder
-markers are left to the S3 drivers' move onto the kernel (Open question 1),
-after a review round measured that the three S3 backends treat them
-differently. A stored `a\b` is a Key outside the addressable subset, not an
+of names, taken from BK-434, with a lemma that two distinct Keys never join to
+the same string. Flat raw keys with an empty segment, S3's folder markers
+among them, are Open question 1 (BK-438), after two review rounds measured
+that the three S3 backends treat a marker differently and that `a//b` looks
+the same to a caller. A stored `a\b` is a Key outside the addressable subset, not an
 undecodable state. Resolution, and with it A.4 and every column of A.5,
 holds where names compare exactly (A.1), and other equalities are left to
 BK-436.
@@ -405,18 +416,19 @@ The kernel refuses to construct over a flat driver with folder objects.
 These raw states decode to no tree:
 
 - an item at `k` together with entries below `k/`, on a flat encoding;
-- on a flat encoding, a raw key with an empty segment, such as `/a`, `a//b`
-  or `a//`, since that segment would be an empty name (TREE-007). S3's
-  folder marker `n/`, where `n` has no empty segment, is left open (Open
-  question 1);
 - under `follow_within_root`, a link whose target is outside the root, a
   dangling link, and a loop of links.
+
+A flat raw key with an empty segment, such as a folder marker `a/` or `a//b`,
+would give an empty name (TREE-007); how it decodes is Open question 1.
 
 A stored key such as `a\b`, `..` or one holding NUL is not in that list. Spec
 051's names forbid only `/`, so it decodes to a Key in the tree, but that Key
 lies outside the library's addressable subset: spec 004 refuses every input
-that would address it. Listings omit it and log it, as BE-030 already does
-(BK-399's case), because no call could address what they returned.
+that would address it, so no keyed operation reaches it. Listings omit it and
+log it, as BE-030 already does (BK-399's case), because no keyed operation
+could act on what they returned. Addressing and `unwrap()` still reach it
+(BE-030, BE-025).
 
 ### A.3 Undecodable states
 
@@ -424,9 +436,10 @@ that would address it. Listings omit it and log it, as BE-030 already does
   as a prefix omits the prefix. A recursive listing omits every entry below an
   item it has listed. For that, a flat driver's `list_page` returns keys in
   byte-lexicographic order, so `k` arrives before every key below `k/`; that
-  is a driver obligation, and hierarchical drivers stay unordered. A raw key
-  with an empty segment and a link that does not decode are omitted too
-  (S3's folder marker is open, A.2). Each omission is logged. This extends BE-030's omission of a stored key outside
+  is a driver obligation, and hierarchical drivers stay unordered. A link
+  that does not decode is omitted too, and so is a raw key with an empty
+  segment, as BE-030 already rules (how it decodes is Open question 1). Each
+  omission is logged. This extends BE-030's omission of a stored key outside
   the addressable subset (A.2), and the listing itself shows what to omit.
 - **Folder operations on an item.** `list_files(k)` is empty and
   `delete_folder(k)` answers `InvalidPath` when `k` is an item. On a flat
@@ -503,9 +516,9 @@ synthesised write routes, and cite this table for the rest.
 
 The tree allows an empty folder. A folder becomes empty when its last child is
 deleted or moved out. An encoding without folder objects cannot hold an empty
-folder, so there it vanishes. With folder objects it stays. Whether an S3
-folder marker another tool wrote holds an empty folder is open (Open
-question 1).
+folder, so there it vanishes. With folder objects it stays. Whether a flat
+raw key with an empty segment, such as a folder marker another tool wrote,
+holds an empty folder is open (Open question 1).
 
 ### A.7 Links
 

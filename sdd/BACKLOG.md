@@ -480,8 +480,15 @@ no clause of the contract ships unexercised.
   Spec 051's sections are tested only against a reference model (`tests/test_store_tree.py`). A
   flat backend can hold an item with keys below it until RFC-0021's decoding lands (BK-432), and a
   case-insensitive or normalizing one merges names spec 051 keeps apart (its Name equality, a TREE
-  section once measured). Open decision: which listings and probes observe a backend's tree, and
-  how each backend's name equality is measured. After BK-432.
+  section once measured). Open decision: which listings and probes observe a backend's tree, how
+  each backend's name equality is measured, and how a coarser one answers (RFC-0021 A.1). After BK-432.
+
+- [ ] **BK-438 — A flat raw key with an empty segment, such as an S3 folder marker `a/`, has no decoding**
+  spec: BE-017, BE-030, BE-031 · effort: M · audience: library.maintainer, user.api
+  RFC-0021 Open question 1: a foreign `a/` or `a//b` on a flat encoding makes `is_folder("a")` True
+  while listings of `a` omit it. On moto, s3fs and pyarrow list a marker `a/` as a file named `""`
+  and boto3 hides it. Open decision: how such keys decode (leaning: an empty folder, if the service
+  holds a prefix with no object behind it). Before S3 and Azure move onto the kernel; after BK-394.
 
 ---
 

@@ -100,6 +100,7 @@ discovery_followups:
   - BK-433
   - BK-434
   - BUG-324
+  - BK-438
 orient:
   - items: [BK-389, BK-394]
     verdict: constrains
@@ -246,4 +247,9 @@ phases:
         section: "listing of a marker-only folder (measured by the round's measuring pass on moto)"
         read_type: verify
         extract: "With only 'a/' stored, s3fs and pyarrow list the marker as an item 'a' in list_files('a') and count it in get_folder_info; boto3 skips it (_s3_boto3.py:675/741/786); all three answer DirectoryNotEmpty for a non-recursive delete_folder('a'). My earlier step read only _s3_boto3.py and generalised to S3. The maintainer moved markers to an open question for the S3 drivers' move onto the kernel, leaning to an empty folder if AWS holds a prefix with no object behind it"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-030 listing omission and reachability (lines 1511-1518); BE-025 addressing (line 1507)"
+        read_type: reference
+        extract: "Round 2 found that a//b on a flat encoding is observed like the marker a/ (is_folder true, listings empty), and that BE-030 keeps an omitted entry reachable through addressing and unwrap(). The maintainer widened Open question 1 to every flat raw key with an empty segment on every flat encoding, filed as BK-438, and widened BK-436 to how a coarser-equality backend answers. Round 2's measuring pass reran 42 verified and five mutants (d: Join separator \"\" 41/1, e: false ensures 41/1); its moto rerun showed s3fs and pyarrow return the folder's own key a as a file named \"\""
         outcome: ok

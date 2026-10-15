@@ -310,9 +310,9 @@ reachability: a path being present is its own witness that its prefixes are.
 the two agree. A map with a finite domain, as Dafny's `map` has, describes
 finite stores only, so it covers a subset of this model's structures.
 `sdd/formal/StoreTree.dfy` §1 is an instance of the map style (`Tree =
-map<Key, Kind>`, root a folder, every proper prefix a folder), and §10 records
-that checking this against the axioms is not done. (Since done for finite
-stores: § 10, Relation to existing formal work.)
+map<Key, Kind>`, root a folder, every proper prefix a folder), and § 10
+records that StoreTree.dfy §12 checks it against the axioms for finite
+stores.
 
 Ordered document trees (XML) differ on two further points: children are
 ordered, and an element may carry attributes and children together. This model

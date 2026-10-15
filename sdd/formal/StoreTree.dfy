@@ -2,9 +2,9 @@
 // encodes it (BK-432).  A sketch verified before the RFC's acceptance; it
 // checks the RFC's prose and is not yet wired into BackendContract.dfy.
 //
-//   §1  The tree: a Key is a sequence of spec 051's names (TREE-007), two
-//       Keys never join to one string (TREE-010), and a Key names at most one
-//       node.  Valid() in BackendContract.dfy states the
+//   §1  The tree: Dafny's Key is a sequence of spec 051's names (TREE-007)
+//       whose Join is TREE-009's Key, two distinct sequences never join to
+//       the same string (TREE-010), and a Key names at most one node.  Valid() in BackendContract.dfy states the
 //       prefix condition over its string paths but not TREE-007's names,
 //       which hold only for the paths its methods take (WellFormedPath).
 //   §2  Resolution: what a key resolves to (A.1).
@@ -38,9 +38,9 @@
 //       meeting the conditions of lemma L6 in lean/StoreAxioms.lean, its
 //       condition on names held by Key's type, for finite pairs only.
 //
-// Not modelled here: links (A.7), S3's folder markers (RFC-0021's open
-// question 1), a raw key with an empty segment (no Key, so Flat's type
-// excludes it rather than FlatDecodable deciding it), a
+// Not modelled here: links (A.7), a flat raw key with an empty segment such
+// as a folder marker (RFC-0021's open question 1; no Key, so Flat's type
+// excludes it), a
 // listing's omissions as observed page by page (A.3's order obligation), and
 // changes under an operation (A.9).  A
 // hierarchical encoding with folder objects is the tree itself, so §3 covers
@@ -194,8 +194,8 @@ module StoreTree {
   // objects; a folder is any proper prefix of an item's key.
   type Flat = set<Key>
 
-  // A.2's first state: the raw state decodes when no item lies below another
-  // item's key.  Its empty-segment state is excluded by Key's type.
+  // A.2: the raw state decodes when no item lies below another item's key.
+  // A raw key with an empty segment is excluded by Key's type.
   ghost predicate FlatDecodable(r: Flat) {
     && [] !in r
     && forall a, b :: a in r && b in r ==> !ProperPrefix(a, b)
