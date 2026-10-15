@@ -151,7 +151,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false
       # actionlint: static lint for GitHub Actions workflows. Catches
@@ -197,7 +197,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
@@ -291,7 +291,7 @@ jobs:
       # writes the runner image's patch version (3.13.15 vs 3.13.16), or
       # `unknown`, so a saver and its readers on different images miss each
       # other (BUG-308).
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           python-version: ${{ matrix.python-version }}
           cache-suffix: uv-dev-${{ matrix.python-version }}
@@ -346,7 +346,7 @@ jobs:
         with:
           python-version: ${{ needs.setup.outputs.primary }}
       # The primary key's one saver (see the uv-cache note in `test`).
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           python-version: ${{ needs.setup.outputs.primary }}
           cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
@@ -395,7 +395,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           python-version: ${{ needs.setup.outputs.primary }}
           cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
@@ -432,7 +432,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           python-version: ${{ needs.setup.outputs.primary }}
           cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
@@ -463,7 +463,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false
       - run: uv pip install coverage
@@ -509,7 +509,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false
       # The [mutate] extra carries pytest-gremlins (not in [dev]). Install it so
@@ -551,7 +551,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
@@ -577,7 +577,7 @@ jobs:
         with:
           python-version: ${{ needs.setup.outputs.primary }}
       # The OS axis separates the key; master pushes save it (see `test`).
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           python-version: ${{ needs.setup.outputs.primary }}
           cache-dependency-glob: pyproject.toml
@@ -595,7 +595,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
@@ -610,7 +610,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev,arrow]"
@@ -644,7 +644,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           python-version: ${{ needs.setup.outputs.primary }}
           cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
@@ -665,7 +665,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false
       # A docs-only PR skips the lint job (code==false), so the gate that validates
@@ -683,7 +683,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false
       - run: uv pip install build twine
@@ -753,7 +753,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
