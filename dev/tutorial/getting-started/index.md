@@ -219,12 +219,13 @@ Storage behavior must be predictable and correct. We verify this across multiple
 
 - **Spec-driven development:** behavior specifications are the source of truth; tests link directly to them. *Prevents feature drift.*
 - **Design by Contract:** pre/post conditions and invariants catch incorrect usage early. *Fails fast on misuse.*
-- **Examples and snippets:** runnable code in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) and [notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks); docs are tested against actual behavior. *Keeps examples real.*
-- **Extensive unit tests:** high coverage across all backends, focused on behavior. *Catches integration issues early.*
-- **Dependency drift guard:** scheduled CI re-resolves extras against latest versions to catch silent transitive upgrades. *Surfaces upstream breakage early.*
-- **Property-based testing:** randomized input generation via [Hypothesis](https://hypothesis.readthedocs.io/) surfaces edge cases no hand-written test would find. *Finds blind spots.*
 - **Formal verification:** critical paths are proven correct in [Dafny](https://dafny.org/) before implementation. *Eliminates logic errors.*
+- **Store-model axioms:** the store's tree is stated as [axioms](https://github.com/haalfi/remote-store/blob/master/sdd/specs/051-store-tree.md), checked in [Alloy](https://alloytools.org/) and proven in [Lean 4](https://lean-lang.org/). *Defines what a key means, independent of any backend.*
+- **Property-based testing:** randomized input generation via [Hypothesis](https://hypothesis.readthedocs.io/) surfaces edge cases no hand-written test would find. *Finds blind spots.*
+- **Extensive unit tests:** high coverage across all backends, focused on behavior. *Catches integration issues early.*
 - **Mutation testing:** [gremlins](https://pypi.org/project/pytest-gremlins/) modify the code; if they survive the tests, the tests have gaps. *Exposes weak test coverage.*
+- **Examples and snippets:** runnable code in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) and [`notebooks/`](https://github.com/haalfi/remote-store/tree/master/examples/notebooks); docs are tested against actual behavior. *Keeps examples real.*
+- **Dependency drift guard:** scheduled CI re-resolves extras against latest versions to catch silent transitive upgrades. *Surfaces upstream breakage early.*
 - **Benchmarks:** performance tracked per operation and backend. *Provides baseline for optimization.*
 
 ## Learn more

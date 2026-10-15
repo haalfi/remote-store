@@ -10142,6 +10142,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/rfcs/rfc-0021-key-resolution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0021: RFC-0021: The store is a tree, and each backend encodes it
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11698,6 +11726,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../explanation/design/research/research-store-model-axioms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A store model as axioms (BK-435)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../explanation/design/research/research-testing-best-practices/" class="md-nav__link">
         
   
@@ -13227,6 +13283,34 @@
     
   
     050: Spec 050 — Documentation Graph Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/specs/051-store-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    051: Store Tree Specification
   
 
     
@@ -15424,6 +15508,9 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-432: No logical model says what a key resolves to, so every operation re-derives it from driver refusals</li>
+<li>BK-437: Spec 051's sections are restated in Alloy and Lean with no traceability check between them</li>
+<li>BK-399: A stored key holding a backslash has no kernel answer, so migration may strand it</li>
 <li>BUG-320: Nested lists indented for GitHub render flattened on the docs site</li>
 <li>BUG-280: <code>LocalBackend</code>'s three listing methods leak a raw <code>PermissionError</code></li>
 <li>BUG-317: pymdown-extensions 12.2 breaks the docs build, so every docs job fails</li>

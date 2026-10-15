@@ -577,6 +577,10 @@
          <lastmod>2026-10-15</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/research/research-store-model-axioms/</loc>
+         <lastmod>2026-10-15</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/research/research-testing-best-practices/</loc>
          <lastmod>2026-10-15</lastmod>
     </url>
@@ -670,6 +674,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/rfcs/rfc-0020-ship-token-interventions/</loc>
+         <lastmod>2026-10-15</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/rfcs/rfc-0021-key-resolution-model/</loc>
          <lastmod>2026-10-15</lastmod>
     </url>
     <url>
@@ -874,6 +882,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/specs/050-doc-graph-model/</loc>
+         <lastmod>2026-10-15</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/specs/051-store-tree/</loc>
          <lastmod>2026-10-15</lastmod>
     </url>
     <url>
