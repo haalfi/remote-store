@@ -237,3 +237,13 @@ phases:
         read_type: verify
         extract: "bash scripts/dafny_verify.sh StoreTree.dfy: 37 verified at 8308dc62e; 38 verified, 0 errors with type Name = s: string | |s| > 0 && '/' !in s witness \"a\" and Key = seq<Name> (the extra one is the subset type's witness). No proof changed, and §12's TrieWF needs no names conjunct since the type holds it"
         outcome: ok
+      - file: sdd/formal/StoreTree.dfy
+        section: "§1 Join, JoinShape, JoinInjective (after the align review round)"
+        read_type: verify
+        extract: "The round's measuring pass found all three Name mutants still verified (no lemma used the restriction). Added Join and JoinInjective (TREE-010's string form): bash scripts/dafny_verify.sh StoreTree.dfy gives 42 verified, 0 errors. Mutants, each a scratch copy under sdd/formal/ verified the same way and deleted: (a) Name without the '/' condition: 41 verified, 1 error (x == y in JoinInjective); (b) Name without non-empty: 41 verified, 1 error (the |b| > 0 branch's postcondition, [\"\"] vs []); (c) Name = string: 40 verified, 2 errors"
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "listing of a marker-only folder (measured by the round's measuring pass on moto)"
+        read_type: verify
+        extract: "With only 'a/' stored, s3fs and pyarrow list the marker as an item 'a' in list_files('a') and count it in get_folder_info; boto3 skips it (_s3_boto3.py:675/741/786); all three answer DirectoryNotEmpty for a non-recursive delete_folder('a'). My earlier step read only _s3_boto3.py and generalised to S3. The maintainer moved markers to an open question for the S3 drivers' move onto the kernel, leaning to an empty folder if AWS holds a prefix with no object behind it"
+        outcome: ok

@@ -311,7 +311,8 @@ the two agree. A map with a finite domain, as Dafny's `map` has, describes
 finite stores only, so it covers a subset of this model's structures.
 `sdd/formal/StoreTree.dfy` §1 is an instance of the map style (`Tree =
 map<Key, Kind>`, root a folder, every proper prefix a folder), and §10 records
-that checking this against the axioms is not done.
+that checking this against the axioms is not done. (Since done for finite
+stores: § 10, Relation to existing formal work.)
 
 Ordered document trees (XML) differ on two further points: children are
 ordered, and an element may carry attributes and children together. This model
@@ -548,8 +549,9 @@ open:
 
 - **Namespace.** The model stays shared-namespace; the typed-key variant of §6
   remains a recorded alternative, not a second model. This matches RFC-0021:
-  a key names at most one node (A.1); a flat store holding both `a` and keys
-  below `a/` is an undecodable state, not in the store (A.3), and a write that
+  a key names at most one node (TREE-010, which A.1 points to); a flat store
+  holding both `a` and keys below `a/` is an undecodable state, not in the
+  store (A.2, A.3), and a write that
   would create one is `InvalidPath` (A.4).
 - **Finiteness.** The axioms stay without a finiteness axiom when operations
   are added. An operations model over a finite map covers finite stores only,

@@ -468,7 +468,7 @@ no clause of the contract ships unexercised.
   see an encoding (RFC-0021 D10 names the wiring as a follow-up). Open decision: refinement
   lemmas per encoding, or one encoding-parametric trait. After BK-432.
 
-- [~] **BK-435 — Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations**
+- [~] **BK-435 — Spec 051's store tree is not yet tied to spec 003's tree or the store's operations, and `StoreTree.dfy` §12 carries no `@spec` tags**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
   Spec 051 states the axioms of `research/research-store-model-axioms.md`, checked in Alloy, Lean
   and, as L6's finite pair, `StoreTree.dfy` §12. Not done: spec 003's section, whose A.1 points to

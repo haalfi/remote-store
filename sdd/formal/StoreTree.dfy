@@ -2,8 +2,9 @@
 // encodes it (BK-432).  A sketch verified before the RFC's acceptance; it
 // checks the RFC's prose and is not yet wired into BackendContract.dfy.
 //
-//   §1  The tree: a Key is a sequence of spec 051's names (TREE-007), and
-//       names at most one node.  Valid() in BackendContract.dfy states the
+//   §1  The tree: a Key is a sequence of spec 051's names (TREE-007), two
+//       Keys never join to one string (TREE-010), and a Key names at most one
+//       node.  Valid() in BackendContract.dfy states the
 //       prefix condition over its string paths but not TREE-007's names,
 //       which hold only for the paths its methods take (WellFormedPath).
 //   §2  Resolution: what a key resolves to (A.1).
@@ -37,7 +38,9 @@
 //       meeting the conditions of lemma L6 in lean/StoreAxioms.lean, its
 //       condition on names held by Key's type, for finite pairs only.
 //
-// Not modelled here: links (A.7), S3's folder markers (A.2, A.6), a
+// Not modelled here: links (A.7), S3's folder markers (RFC-0021's open
+// question 1), a raw key with an empty segment (no Key, so Flat's type
+// excludes it rather than FlatDecodable deciding it), a
 // listing's omissions as observed page by page (A.3's order obligation), and
 // changes under an operation (A.9).  A
 // hierarchical encoding with folder objects is the tree itself, so §3 covers
@@ -49,11 +52,60 @@ module StoreTree {
   // §1  The tree
   // -------------------------------------------------------------------------
 
-  // A name is non-empty and contains no '/' (spec 051 TREE-007), so a Key
-  // joins to one string and two Keys never join to the same one (TREE-010).
+  // A name is non-empty and contains no '/' (spec 051 TREE-007).
   type Name = s: string | |s| > 0 && '/' !in s witness "a"
 
   type Key = seq<Name>
+
+  // The string a Key spells: its names joined by '/', the root's the empty
+  // string (TREE-009).
+  function Join(k: Key): string
+    decreases |k|
+  {
+    if |k| == 0 then "" else if |k| == 1 then k[0] else k[0] + "/" + Join(k[1..])
+  }
+
+  lemma JoinShape(k: Key)
+    requires |k| > 0
+    ensures |Join(k)| >= |k[0]| && Join(k)[..|k[0]|] == k[0]
+    ensures |k| == 1 ==> Join(k) == k[0]
+    ensures |k| > 1 ==> (|Join(k)| > |k[0]| && Join(k)[|k[0]|] == '/'
+                         && Join(k)[|k[0]| + 1..] == Join(k[1..]))
+  {}
+
+  // Two Keys that spell one string are one Key, so a tree over Keys has one
+  // entity per string (TREE-010).  Both halves of Name are needed: an empty
+  // name makes [""] and [] both spell "", and a '/' in a name makes ["a/b"]
+  // and ["a", "b"] both spell "a/b".
+  lemma JoinInjective(a: Key, b: Key)
+    ensures Join(a) == Join(b) ==> a == b
+    decreases |a|
+  {
+    if Join(a) == Join(b) && |a| > 0 && |b| > 0 {
+      JoinShape(a);
+      JoinShape(b);
+      var x, y, s := a[0], b[0], Join(a);
+      if |x| < |y| {
+        assert s[..|y|] == y;
+        assert s[|x|] == y[|x|];
+        assert y[|x|] in y;
+      } else if |y| < |x| {
+        assert s[..|x|] == x;
+        assert s[|y|] == x[|y|];
+        assert x[|y|] in x;
+      }
+      assert x == s[..|x|] == y;
+      if |a| > 1 && |b| > 1 {
+        JoinInjective(a[1..], b[1..]);
+        assert a == [x] + a[1..];
+        assert b == [y] + b[1..];
+      }
+    } else if Join(a) == Join(b) && |a| > 0 {
+      JoinShape(a);
+    } else if Join(a) == Join(b) && |b| > 0 {
+      JoinShape(b);
+    }
+  }
 
   predicate ProperPrefix(p: Key, k: Key) {
     |p| < |k| && k[..|p|] == p
@@ -142,7 +194,8 @@ module StoreTree {
   // objects; a folder is any proper prefix of an item's key.
   type Flat = set<Key>
 
-  // A.2: the raw state decodes when no item lies below another item's key.
+  // A.2's first state: the raw state decodes when no item lies below another
+  // item's key.  Its empty-segment state is excluded by Key's type.
   ghost predicate FlatDecodable(r: Flat) {
     && [] !in r
     && forall a, b :: a in r && b in r ==> !ProperPrefix(a, b)

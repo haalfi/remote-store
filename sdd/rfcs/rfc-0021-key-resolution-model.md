@@ -104,9 +104,8 @@ limit of the model. ([A.3](#a3-undecodable-states))
 ### D4. The library never writes a state that does not decode
 
 Writing below an item, or writing an item over a folder, is `InvalidPath` on
-every backend whose names compare exactly, as spec 051's do. Which backends
-compare names coarser is open under BK-436. The first replaces BE-008's opt-in
-check. The second has no check today. Neither can stop another writer.
+every backend, within A.1's scope on name equality. The first replaces BE-008's
+opt-in check. The second has no check today. Neither can stop another writer.
 ([A.4](#a4-writes))
 
 ### D5. One result table
@@ -149,7 +148,8 @@ Spec 003 gains one section, drafted in Appendix A. The clauses it replaces
 point to it. The model is also stated in Dafny, which checks the prose,
 verified before this RFC is accepted: the tree, the flat encoding's `decode`
 and its operations, and the refusal rule for both namespaces. Links and
-changes under an operation are argued in prose only.
+changes under an operation are argued in prose only, and S3's folder markers
+are an open question.
 
 ## Alternatives
 
@@ -221,15 +221,17 @@ that does not change.
   admits an entry `a/` or `/a`, whose empty segment is no name. Only the
   paths its methods take are constrained, by the `WellFormedPath`
   precondition, which also excludes the names spec 004 refuses.
-  `sdd/formal/StoreTree.dfy` states the model in Dafny, its `Key` a sequence
-  of spec 051's names, and verifies with
-  `bash scripts/dafny_verify.sh StoreTree.dfy` (38 verified, 0 errors on
-  2026-10-15). CI's
-  `verify-formal` job runs it. Eleven mutants, each weakening one check or rule,
-  fail verification; the trace's verify phase lists each edit and the
-  command. It covers:
+  `sdd/formal/StoreTree.dfy` states the model in Dafny and verifies with
+  `bash scripts/dafny_verify.sh StoreTree.dfy`. CI's `verify-formal` job runs
+  it. Mutants, each weakening one check or rule, fail verification; the
+  trace's verify and align phases list each edit, the command and its count.
+  It covers:
+    - a Key as a sequence of spec 051's names, which join to one string and
+      never two Keys to the same one (TREE-007, TREE-010);
     - the tree and its resolution;
-    - a flat encoding's partial `decode`, which yields a valid tree;
+    - a flat encoding's partial `decode`, which yields a valid tree, for A.2's
+      item-above-item state; a raw key with an empty segment is excluded by
+      `Key`'s type rather than decided by `decode`;
     - a flat lookup, a `list_page(k, limit=1)` and an ancestor `stat` agree
       with the tree's item, folder and through-an-item answers;
     - A.4's checks pass exactly where the tree's write does not answer
@@ -241,7 +243,7 @@ that does not change.
       the key hides nothing (A.3's limit);
     - a flat `move` or `copy` keeps the encoding decodable and moves or
       copies exactly its item;
-    - a flat encoding holds no empty folder (A.6);
+    - a flat encoding holds no empty folder (A.6), S3's folder markers aside;
     - A.8's refusal rule, for every call it names, each namespace and each
       row: the answer is the refusal or the A.5 result of the row actually
       there, and only a result rule 4 allows. Every row where the call must
@@ -250,7 +252,8 @@ that does not change.
       which stands. Enumerating it
       found a missing flat `delete_tree` row, which A.8 now has.
 
-    Links (A.7) and changes under an operation (A.9) are outside the sketch.
+    Links (A.7), changes under an operation (A.9) and S3's folder markers
+    (open question below) are outside the sketch.
 - **Local's and SFTP's links** decode by A.7's policy once each runs on the
   kernel. BUG-323, SFTP's recursive delete through a link at the key, is fixed
   independently of this RFC.
@@ -260,9 +263,22 @@ that does not change.
 
 ## Open Questions
 
-None. A.8's tables and the Dafny sketch, owed before acceptance, are in. The
-sketch covers what D10 names, and links and changes under an operation are
-argued in prose only, as D10 states.
+A.8's tables and the Dafny sketch, owed before acceptance, are in. The sketch
+covers what D10 names, and links and changes under an operation are argued in
+prose only, as D10 states. One question is open:
+
+1. **S3's folder markers.** A marker is a raw key `n/`, where `n` has no
+   empty segment, that another tool wrote; the library writes none. Measured
+   on moto (2026-10-15) with only `a/` stored, all three S3 backends answer
+   `exists`, `is_folder` and `is_file("a")` with T / T / F, and list `a` in
+   `list_folders("")`. `S3Backend` (s3fs) and `S3PyArrowBackend` also list
+   the marker as an item `a` in `list_files("a")`, while `S3Boto3Backend`
+   skips it. All three answer `DirectoryNotEmpty` for a non-recursive
+   `delete_folder("a")`, and only a recursive one removes the marker. How a
+   marker decodes is decided when the S3 drivers move onto the kernel (after
+   BK-394), checked against AWS S3 itself. The maintainer's leaning: if AWS
+   holds a prefix with no object behind it, that prefix is an empty folder.
+   Until then A.2, A.3 and A.6 leave markers out.
 
 ### Decided while drafting (maintainer, 2026-10-12)
 
@@ -328,11 +344,14 @@ argued in prose only, as D10 states.
 Spec 051 (TREE-001 to TREE-012) is the authority for the tree's structure,
 and this RFC and `StoreTree.dfy` agree with it. A.1 points to it and separates
 a Key from a caller's input (spec 004). `StoreTree.dfy`'s `Key` is a sequence
-of names, taken from BK-434. A flat raw key with an empty segment does not
-decode, except S3's folder marker, which the driver maps to a folder and which
-A.6 admits as an empty folder. A stored `a\b` is a Key outside the addressable
-subset, not an undecodable state. D4 and A.5's write column are scoped to
-exact name equality, and other equalities are left to BK-436.
+of names, taken from BK-434, with a lemma that two Keys never join to one
+string. A flat raw key with an empty segment does not decode. S3's folder
+markers are left to the S3 drivers' move onto the kernel (Open question 1),
+after a review round measured that the three S3 backends treat them
+differently. A stored `a\b` is a Key outside the addressable subset, not an
+undecodable state. Resolution, and with it A.4 and every column of A.5,
+holds where names compare exactly (A.1), and other equalities are left to
+BK-436.
 
 <a id="appendix-a"></a>
 ## Appendix A: draft of spec 003 § The store tree
@@ -359,6 +378,12 @@ proposal's detail, and the decisions above are what is being decided.
   operation cares why there is nothing, the reason travels with the answer.
   The case that matters is a key whose path passes through an item, which
   makes a write `InvalidPath` (A.5).
+- **Resolution assumes exact name equality**, as spec 051's names compare
+  (§ Name equality), so A.4's checks and every column of A.5 hold where the
+  encoding compares names exactly too. On a case-insensitive or normalizing
+  encoding a Key can find an entry of another name (`read("A")` finds `a`);
+  which backends compare names how, and how they then answer, is open under
+  BK-436.
 - Resolutions carry no depth. `ensure_parents(key)` creates every missing
   folder from the key alone, so no result depends on where absence starts.
   The item a path passes through travels with the answer only for the error
@@ -377,18 +402,13 @@ Each driver declares its encoding's properties:
 
 The kernel refuses to construct over a flat driver with folder objects.
 
-Names compare exactly (spec 051 § Name equality). A.4's checks and A.5's
-write column assume an encoding that compares them exactly too. On a
-case-insensitive or normalizing encoding two raw keys can spell one name,
-and which backends compare names how is open under BK-436.
-
 These raw states decode to no tree:
 
 - an item at `k` together with entries below `k/`, on a flat encoding;
 - on a flat encoding, a raw key with an empty segment, such as `/a`, `a//b`
-  or `a/`, since that segment would be an empty name (TREE-007). One
-  exception: S3's folder marker, a raw key ending in `/` such as `a/`, which
-  the S3 driver maps to the folder `a` and never reports as an item (A.6);
+  or `a//`, since that segment would be an empty name (TREE-007). S3's
+  folder marker `n/`, where `n` has no empty segment, is left open (Open
+  question 1);
 - under `follow_within_root`, a link whose target is outside the root, a
   dangling link, and a loop of links.
 
@@ -405,9 +425,8 @@ that would address it. Listings omit it and log it, as BE-030 already does
   item it has listed. For that, a flat driver's `list_page` returns keys in
   byte-lexicographic order, so `k` arrives before every key below `k/`; that
   is a driver obligation, and hierarchical drivers stay unordered. A raw key
-  with an empty segment, other than S3's folder marker (A.2), and a link that
-  does not decode are omitted too. Each
-  omission is logged. This extends BE-030's omission of a stored key outside
+  with an empty segment and a link that does not decode are omitted too
+  (S3's folder marker is open, A.2). Each omission is logged. This extends BE-030's omission of a stored key outside
   the addressable subset (A.2), and the listing itself shows what to omit.
 - **Folder operations on an item.** `list_files(k)` is empty and
   `delete_folder(k)` answers `InvalidPath` when `k` is an item. On a flat
@@ -438,7 +457,8 @@ that would address it. Listings omit it and log it, as BE-030 already does
 
 ### A.4 Writes
 
-These writes are `InvalidPath` on every backend:
+These writes are `InvalidPath` on every backend, within A.1's scope on name
+equality:
 
 - writing below an item (`k/a.txt` while `k` is an item);
 - writing an item over a folder (`k` while `k` is a folder, including a flat
@@ -473,7 +493,7 @@ The last row is what the tree answers. On a flat encoding the keyed families
 and the folder families trust the encoding instead (A.3). For `delete`,
 `delete_folder` and a `move` source, a link at the key that decodes resolves
 to `Item` (A.7). A link that does not decode never reaches this table (A.3).
-The write-file column holds where names compare exactly (A.2, BK-436).
+Every column holds where names compare exactly (A.1).
 `missing_ok` turns a delete's `NotFound` into success. `get_folder_info`
 types an empty aggregate as BE-017 states. The per-operation clauses keep what
 is specific to them, such as `overwrite`, cursors, `max_depth` and the
@@ -483,10 +503,9 @@ synthesised write routes, and cite this table for the rest.
 
 The tree allows an empty folder. A folder becomes empty when its last child is
 deleted or moved out. An encoding without folder objects cannot hold an empty
-folder, so there it vanishes. With folder objects it stays. One exception: on
-S3, a folder marker another tool wrote (A.2) holds an empty folder until it is
-deleted, since a listing of the parent and `list_page(k, limit=1)` both see
-it. The library never writes one.
+folder, so there it vanishes. With folder objects it stays. Whether an S3
+folder marker another tool wrote holds an empty folder is open (Open
+question 1).
 
 ### A.7 Links
 
