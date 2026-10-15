@@ -976,6 +976,12 @@ sessions work is measured before it becomes process.
   #1099 merges, by [BK-414's dossier](backlog/bk-414-sdd-lookup.md) § Acceptance
   measure. Open decision: keep, change or remove the pointers, by that result.
 
+- [ ] **BUG-326 — `ship-report` crashes on Windows when a PR comment holds a character cp1252 cannot decode**
+  spec: — · effort: S · audience: contributor.tooling
+  `_gh` in `sdd/rfcs/rfc-0015-findings.py` runs `subprocess.run(..., text=True)` with no `encoding`, so on
+  Windows it decodes `gh` output as cp1252: on PR #1130 (2026-10-15) a byte 0x81 made `.stdout` `None` and
+  `json.loads` raised `TypeError`. `PYTHONUTF8=1` works around it; `_git` has the same call. Open decision: none.
+
 - [~] **BK-431 — Review subagents pay the session prefix again, and no smaller reviewer input is tested**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
   Run B's 11 review subagents (34.6% of its units) carried the prefix as 39% of their context, `rvw-pr/SKILL.md` 11.6%
