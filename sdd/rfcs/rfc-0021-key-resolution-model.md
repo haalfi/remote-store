@@ -280,8 +280,8 @@ prose only, as D10 states. One question is open:
     `a/`, `a//b` or `a//` stored the prefix `a/` makes `is_folder("a")` True
     while listings of `a` are empty: an empty folder, which A.6 rules out on
     a flat encoding. No flat driver runs on the kernel yet. Today's S3
-    backends, measured on moto on 2026-10-15 (ThreadedMotoServer from
-    `infra._moto.start_moto_server`, one bucket per backend seeded with the
+    backends, measured on moto on 2026-10-15 (the server
+    `infra._moto.start_moto_server` starts, one bucket per backend seeded with the
     one key by boto3 `put_object`, each call through the backend), answer
     as follows; all three agree unless a cell says otherwise:
 
@@ -297,8 +297,9 @@ prose only, as D10 states. One question is open:
     Azure was not measured. How such keys decode is decided before any flat
     driver moves onto the kernel, checked against the services themselves.
     The maintainer's leaning: if the service holds a prefix with no object
-    behind it, that prefix is an empty folder. Until then A.2, A.3 and A.6
-    leave these keys out, and Impact claims no behaviour for them.
+    behind it, that prefix is an empty folder. Until then A.2 and A.6
+    leave these keys out, A.3 keeps BE-030's omission on the kernel as the
+    interim rule, and Impact claims no lasting behaviour for them.
 
 ### Decided while drafting (maintainer, 2026-10-12)
 
@@ -367,8 +368,8 @@ a Key from a caller's input (spec 004). `StoreTree.dfy`'s `Key` is a sequence
 of names, taken from BK-434, with a lemma that two distinct Keys never join to
 the same string. Flat raw keys with an empty segment, S3's folder markers
 among them, are Open question 1 (BK-438), after two review rounds measured
-that the three S3 backends treat a marker differently and that `a//b` looks
-the same to a caller. A stored `a\b` is a Key outside the addressable subset, not an
+that the three S3 backends treat a marker differently and that `a//b`, under
+BE-030's omission on the kernel, would look the same to a caller. A stored `a\b` is a Key outside the addressable subset, not an
 undecodable state. Resolution, and with it A.4 and every column of A.5,
 holds where names compare exactly (A.1), and other equalities are left to
 BK-436.
