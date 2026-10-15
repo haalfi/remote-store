@@ -21,7 +21,8 @@ refusal shape × what the error-path probe does.
   answer; raise a miss (``NotFound``, ``InvalidPath``); raise a non-miss in
   the probe set (``PermissionDenied``, untyped); raise ``BackendUnavailable``;
   or deny only the ``stat`` of the cell's own key(s), ancestors answering;
-  or, where a probe listing can run (a flat driver, ``delete_folder``), let
+  or, in a transfer, deny only the source's ``stat``; or, where a probe
+  listing can run (a flat driver, ``delete_folder``), let
   ``stat`` answer and have the listing raise a miss, a denial or
   ``BackendUnavailable``, or come back empty as if the prefix was emptied
   under the call. With an injected refusal the probes misbehave only after
@@ -167,7 +168,8 @@ NO_LINK = ("root", "link")
 # ---------------------------------------------------------------------------
 
 # mode -> (what every stat does, what every list_page(limit=1) does): raise that native class,
-# "key" (only the cell's own keys' stat is denied), "empty" (an empty page, as after the prefix
+# "key" (only the cell's own keys' stat is denied), "first" (only the first subject's stat, a
+# transfer's source, is denied), "empty" (an empty page, as after the prefix
 # was emptied under the call), or None (answer as the raw state is).
 MODE_EFFECTS: dict[str, tuple[type[FakeWireError] | str | None, type[FakeWireError] | str | None]] = {
     "answers": (None, None),
@@ -1063,7 +1065,8 @@ def _transfer_oracle(
     # destination must not outrank a source that may be absent (BE-018).
     node = _node(sim, src, follow=not entry)
     if _err(node):
-        return refused, None
+        # Only the destination can be taken, so a standing AlreadyExists names it.
+        return refused, (dst if refused is AlreadyExists else None)
     if node != ITEM:
         return (InvalidPath if node == FOLDER else NotFound), src
     row = _put_row(sim, dst, overwrite)

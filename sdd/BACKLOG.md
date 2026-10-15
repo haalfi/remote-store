@@ -478,10 +478,10 @@ no clause of the contract ships unexercised.
 - [ ] **BK-436 — No backend's observed tree is checked against spec 051**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
   Spec 051's sections are tested only against a reference model (`tests/test_store_tree.py`). A
-  flat backend can hold an item with keys below it until it runs on the kernel (BE-032, BK-394 on), and a
-  case-insensitive or normalizing one merges names spec 051 keeps apart (its Name equality, a TREE
-  section once measured). Open decision: which listings and probes observe a backend's tree, how
-  each backend's name equality is measured, and how a coarser one answers (RFC-0021 A.1). After BK-432.
+  flat backend can hold an item with keys below it (on the kernel listings omit them, keyed probes
+  still find them: BE-032 A.3), and a case-insensitive or normalizing one merges names spec 051
+  keeps apart (its Name equality). Open decision: which listings and probes observe a backend's
+  tree, how each backend's name equality is measured, and how a coarser one answers (BE-032 A.1).
 
 - [ ] **BK-438 — A flat raw key with an empty segment, such as an S3 folder marker `a/`, has no decoding**
   spec: BE-017, BE-030, BE-031 · effort: M · audience: library.maintainer, user.api

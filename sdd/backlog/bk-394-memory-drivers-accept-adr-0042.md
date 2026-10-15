@@ -116,7 +116,14 @@ labelled **(was … , absorbed here)**, which is the absorption form
      kernel behaviour over `put_is_atomic`, `open_write` and `rename`.
    - spec 026: PING-002, because the kernel's `check_health()` runs the
      driver's required `probe()` where the default was a no-op; and PING-008,
-     Memory's no-op row.
+     Memory's no-op row. With them, `TESTING.md` Rule 13 and
+     `tests/backends/conformance/test_health_probe_declared.py`: its
+     `_has_own_probe` finds the kernel core's `check_health` for every class
+     on the kernel, so it passes whether or not the driver's `probe()` acts
+     (a driver omitting `probe` inherits the Protocol's no-op body), and
+     Memory's `_NO_PROBE` exemption reads as stale once `MemoryBackend` is on
+     the kernel. Restate the rule over the driver's `probe` for kernel
+     classes (found in PR #1127's second closing round).
    - the Memory drivers' own rows under 007 and 022. Every later driver's rows
      are BK-390's, at that driver's step.
    - [spec 013, by the table above. MEM-DS-005's validation rows and

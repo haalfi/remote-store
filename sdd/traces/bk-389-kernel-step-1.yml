@@ -696,3 +696,8 @@ phases:
         read_type: verify
         extract: "the closing round over 626b052 found the oracle shared the kernel's blind spot: it probed the destination when the source probe could not answer, and no mode denied only the source's stat; a src_denied mode and the corrected oracle now cross it, and the walk's later-page refusal and the flat aggregate's second stat each got a targeted cell seen failing first"
         outcome: misleading
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "planning decision 8; As landed; Condition space; Re-plan after round 10"
+        read_type: gate
+        extract: "the second closing round over a0db936 found no kernel defect; its findings were prose my fix pass left stale or overstated (BE-018/019 kernel lines, the folder_stats bullet, a displaced spec marker, dated dossier sections read as present state) and one unpinned rename in the transfer oracle, now killed"
+        outcome: misleading

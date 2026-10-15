@@ -757,7 +757,6 @@ def test_a_flat_item_over_a_folder_is_invalid_path(runtime: str, protocols: tupl
     assert store.called("put") == store.called("rename") == store.called("copy") == store.called("move") == []
 
 
-@pytest.mark.spec("BE-021")
 @pytest.mark.spec("BE-018")
 @pytest.mark.spec("BE-032")
 @pytest.mark.parametrize("protocols", [("copy", "remove_folder"), ("atomic_move", "remove_folder")])
@@ -787,6 +786,7 @@ def test_a_flat_empty_aggregate_asks_stat_once(runtime: str) -> None:
     assert [prim for prim, key in store.calls if key == "n"] == ["stat", "list_page", "list_page"]
 
 
+@pytest.mark.spec("BE-021")
 def test_a_hit_spends_no_probe(runtime: str) -> None:
     run = _kernel(runtime)
     assert run.read_bytes("f") == b"F"

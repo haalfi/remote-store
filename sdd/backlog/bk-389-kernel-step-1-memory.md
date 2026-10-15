@@ -361,11 +361,15 @@ every case. RFC-0017 carries the same answers at the question each settles.
      [dossier](bk-396-kernel-delete-folder-sequence.md) holds the candidate
      this replaces and the options the interview weighed.
      - **Superseded on 2026-10-15** in its probe rule, the walk's on-the-way
-       probes, the driver obligation below and the `parents == "none"` table's
-       "a file and a prefix both" row, by spec 003's BE-031 and BE-032 (§ Resumed
-       against RFC-0021 below): every refusal in BE-032's probe set is probed, a
-       refusal on the walk's way propagates, and drivers owe no rule about how a
-       refusal is typed. The history and measurements below stand as recorded.
+       probes, the probe of a refused listing of `key` (now only its first page
+       gets A.8's rows; a later page propagates), the claim that only
+       `delete_folder` calls `stat` without following links (`delete` and a
+       `move` source do too), the driver obligation below and the
+       `parents == "none"` table's "a file and a prefix both" row, by spec 003's
+       BE-031 and BE-032 (§ Resumed against RFC-0021 below): every refusal in
+       BE-032's probe set is probed, a refusal on the walk's way propagates, and
+       drivers owe no rule about how a refusal is typed. The history and
+       measurements below stand as recorded.
      - *Which refusals are probed.* Only a typed `NotFound` and an untyped
        `RemoteStoreError` get the error-path probes: one `stat`, then, for
        a folder still present, one `list_page(key, delimiter="/",
@@ -737,9 +741,11 @@ Choices the decisions above left open, as built:
   `USER_METADATA` (WR-010's strict gate) after the root refusal, all before
   any I/O. `move` and `copy` went by their means until 2026-10-12
   (§ Condition space).
-- **`get_folder_info` on an empty aggregate** stats the key: fail-open on
-  `parents == "none"`, where it is the error path's type probe, and fail-closed
-  with folder objects, where an empty folder exists and the stat decides.
+- **`get_folder_info` on an empty aggregate**, on a hierarchical namespace,
+  stats the key: fail-open on `parents == "none"`, where it is the error path's
+  type probe, and fail-closed with folder objects, where an empty folder exists
+  and the stat decides. On a flat namespace, since 2026-10-15, A.3's `stat` has
+  already run, so only the probe listing `list_page(limit=1)` types it.
 - **Wrong-type probes by namespace.** Superseded on 2026-10-15 by spec 003's
   BE-032 (RFC-0021), which is the authority; § Resumed against RFC-0021
   below says what changed. As it stands: every probe of what a key resolves
@@ -804,6 +810,13 @@ Choices the decisions above left open, as built:
   backends will subclass the kernel.
 
 ## Condition space (2026-10-12, the kernel PR's review)
+
+*Superseded on 2026-10-15 for what a key resolves to:* the BE-030 paragraphs this
+section names (**A key a call needs to be a file**, *What is at a key*) are now
+BE-030's **What a key resolves to**, a pointer to BE-032, and the key-resolution
+product moved from `tests/_kernel/test_condition_space.py` to A.10's two suites,
+`test_tree_results.py` and `test_encoding_observations.py` (§ Resumed against
+RFC-0021). The measurements below stand as recorded.
 
 **Why it is enumerated.** The kernel PR's review refuted one condition four
 times, in rounds 3, 5, 6 and 7: how a folder at a key a call needs to be a file
@@ -955,6 +968,13 @@ two targeted cells failed in both runtimes: `move` with `overwrite` answered
 where one answers.
 
 ## Re-plan after round 10 (2026-10-12, the kernel PR's review)
+
+*Superseded on 2026-10-15 in its classifier anchor and its test layout:* the
+classifier follows BE-032 (BE-030's *What is at a key* is now **What a key
+resolves to**), and the shared axis set described below no longer lives in
+`test_condition_space.py`, which keeps only `glob`, the capability gates and
+construction; key resolution is crossed by A.10's two suites (§ Resumed against
+RFC-0021). The history, counts and mutation list stand as recorded.
 
 **Why.** The third closing round over `7e20b25` found a flat listing whose
 denied or untyped first page answered empty while the prefix held files: a
