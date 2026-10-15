@@ -191,12 +191,13 @@ CHANGELOG entry and a migration note:
 
 Keyed calls on a link that does not decode keep today's Local answer,
 `InvalidPath`. BE-021's cost table records the costs when the clauses land. A
-stored key outside the addressable subset (`a\b`, A.2), and one with an empty
-segment (`a//b`), are already omitted and logged today, since BE-030 omits a
-listed key the rule would refuse or rewrite. A recursive `delete_folder` over
-such a key already answers `DirectoryNotEmpty` when it walks and removes the
-key when it runs `delete_tree` (BE-030, BE-031), and A.3 keeps both routes, so
-that does not change.
+stored key outside the addressable subset (`a\b`, A.2) is already omitted and
+logged on the kernel, since BE-030 omits a listed key the rule would refuse or
+rewrite. A recursive `delete_folder` over such a key already answers
+`DirectoryNotEmpty` when it walks and removes the key when it runs
+`delete_tree` (BE-030, BE-031), and A.3 keeps both routes, so that does not
+change. A flat raw key with an empty segment is Open question 1 (BK-438),
+which may change both.
 
 - **Public API.** `reject_write_under_file_ancestor`, a constructor keyword on
   five flat backends (BE-008), loses its effect, since the check it enabled
@@ -272,24 +273,32 @@ A.8's tables and the Dafny sketch, owed before acceptance, are in. The sketch
 covers what D10 names, and links and changes under an operation are argued in
 prose only, as D10 states. One question is open:
 
-1. **Flat raw keys with an empty segment** (BK-438), on any flat encoding:
-   a folder marker `a/` such as S3's or Azure's without HNS, and `a//b`,
-   `/a` or `a//`, all written by another tool; the library writes none. A
-   caller sees each the same way: the prefix `a/` makes `is_folder("a")`
-   True, while listings of `a` omit the key (BE-030), so `a` looks like an
-   empty folder, which A.6 rules out on a flat encoding. Measured on moto
-   (2026-10-15) with only `a/` stored, all three S3 backends answer
-   `exists`, `is_folder` and `is_file("a")` with T / T / F, and list `a` in
-   `list_folders("")`. `S3Backend` (s3fs) and `S3PyArrowBackend` also return
-   the folder's own key `a` from `list_files("a")`, as a file with the empty
-   name `""`, and count it in `get_folder_info("a")`; `S3Boto3Backend` skips
-   it. All three answer `DirectoryNotEmpty` for a non-recursive
-   `delete_folder("a")`, and only a recursive one removes the marker. How
-   such keys decode is decided before the S3 and Azure drivers move onto the
-   kernel, checked against the services themselves. The maintainer's
-   leaning: if the service holds a prefix with no object behind it, that
-   prefix is an empty folder. Until then A.2, A.3 and A.6 leave these keys
-   out.
+1.  **Flat raw keys with an empty segment** (BK-438), on any flat encoding
+    (S3, Azure without HNS, SQLAlchemy): a folder marker `a/`, and `a//b`,
+    `a//` or `/a`, all written by another tool; the library writes none.
+    On the kernel, BE-030 omits such a key from listings, so with only
+    `a/`, `a//b` or `a//` stored the prefix `a/` makes `is_folder("a")` True
+    while listings of `a` are empty: an empty folder, which A.6 rules out on
+    a flat encoding. No flat driver runs on the kernel yet. Today's S3
+    backends, measured on moto on 2026-10-15 (ThreadedMotoServer from
+    `infra._moto.start_moto_server`, one bucket per backend seeded with the
+    one key by boto3 `put_object`, each call through the backend), answer
+    as follows; all three agree unless a cell says otherwise:
+
+    | Stored | `exists` / `is_folder` / `is_file("a")` | `list_folders("")` | `list_folders("a")` | `list_files("a")` |
+    |---|---|---|---|---|
+    | `a/` | T / T / F | `['a']` | `[]` | one file, name `""`, path `a` (s3fs, pyarrow); `[]` (boto3) |
+    | `a//b`, `a//` | T / T / F | `['a']` | `['a']`, a phantom: `exists("a/a")` is F | `[]` |
+    | `/a` | F / F / F | raises `InvalidPath` (empty after normalization) | `[]` | `[]` |
+
+    With `a/` alone, s3fs and pyarrow also count the marker in
+    `get_folder_info("a")`, and all three answer `DirectoryNotEmpty` for a
+    non-recursive `delete_folder("a")`; only a recursive one removes it.
+    Azure was not measured. How such keys decode is decided before any flat
+    driver moves onto the kernel, checked against the services themselves.
+    The maintainer's leaning: if the service holds a prefix with no object
+    behind it, that prefix is an empty folder. Until then A.2, A.3 and A.6
+    leave these keys out, and Impact claims no behaviour for them.
 
 ### Decided while drafting (maintainer, 2026-10-12)
 
@@ -424,8 +433,10 @@ would give an empty name (TREE-007); how it decodes is Open question 1.
 
 A stored key such as `a\b`, `..` or one holding NUL is not in that list. Spec
 051's names forbid only `/`, so it decodes to a Key in the tree, but that Key
-lies outside the library's addressable subset: spec 004 refuses every input
-that would address it, so no keyed operation reaches it. Listings omit it and
+lies outside the library's addressable subset: no input maps onto it, so no
+keyed operation reaches it. Spec 004 refuses `..` (PATH-003) and NUL
+(PATH-007), and folds `\` to `/` (PATH-002), so `a\b` as an input addresses
+the Key `a/b` instead; BE-030's key rule refuses a stored `a\b`. Listings omit it and
 log it, as BE-030 already does (BK-399's case), because no keyed operation
 could act on what they returned. Addressing and `unwrap()` still reach it
 (BE-030, BE-025).
@@ -437,8 +448,9 @@ could act on what they returned. Addressing and `unwrap()` still reach it
   item it has listed. For that, a flat driver's `list_page` returns keys in
   byte-lexicographic order, so `k` arrives before every key below `k/`; that
   is a driver obligation, and hierarchical drivers stay unordered. A link
-  that does not decode is omitted too, and so is a raw key with an empty
-  segment, as BE-030 already rules (how it decodes is Open question 1). Each
+  that does not decode is omitted too. A raw key with an empty segment is
+  omitted by BE-030's rule on the kernel until Open question 1 decides how it
+  decodes. Each
   omission is logged. This extends BE-030's omission of a stored key outside
   the addressable subset (A.2), and the listing itself shows what to omit.
 - **Folder operations on an item.** `list_files(k)` is empty and

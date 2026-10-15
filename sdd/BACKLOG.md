@@ -485,10 +485,11 @@ no clause of the contract ships unexercised.
 
 - [ ] **BK-438 — A flat raw key with an empty segment, such as an S3 folder marker `a/`, has no decoding**
   spec: BE-017, BE-030, BE-031 · effort: M · audience: library.maintainer, user.api
-  RFC-0021 Open question 1: a foreign `a/` or `a//b` on a flat encoding makes `is_folder("a")` True
-  while listings of `a` omit it. On moto, s3fs and pyarrow list a marker `a/` as a file named `""`
-  and boto3 hides it. Open decision: how such keys decode (leaning: an empty folder, if the service
-  holds a prefix with no object behind it). Before S3 and Azure move onto the kernel; after BK-394.
+  RFC-0021 Open question 1: on the kernel, BE-030's omission makes a foreign `a/` or `a//b` an
+  empty folder `a`, which A.6 rules out; today's S3 backends differ per shape (a file named `""`,
+  a phantom `a/a`, an unlistable root; its table). Open decision: how such keys decode (leaning: an
+  empty folder, if the service holds a prefix with no object behind it). Before any flat driver
+  (S3, Azure, SQLAlchemy) moves onto the kernel; after BK-394.
 
 ---
 
