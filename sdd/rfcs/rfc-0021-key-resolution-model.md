@@ -386,7 +386,7 @@ proposal's detail, and the decisions above are what is being decided.
   TREE-012 state its folders and items, its names (TREE-007), its Keys
   (TREE-009) and that a Key names at most one entity (TREE-010). This section
   states none of them again. An item also has content and metadata, which
-  that structure does not model. By TREE-010, `is_file(k)` and `is_folder(k)`
+  that structure does not model. By TREE-001 and TREE-010, `is_file(k)` and `is_folder(k)`
   are never both true.
 - **A Key is not a caller's input.** A caller passes an input string, and
   spec 004's `RemotePath` maps an accepted one onto a Key or rejects it (spec
