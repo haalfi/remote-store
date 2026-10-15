@@ -52,6 +52,18 @@ model past ``stat``). A ``get_folder_info`` push-down over a state whose
 listing omits a key is not crossed: BE-032 A.8 obliges the driver's
 ``folder_stats`` to omit what the listing omits, which the fake's does not,
 so such a cell would test the fake.
+
+**No Memory column.** The Memory drivers, the first real ones on the kernel,
+run in ``test_tree_results.py`` and not here, because none of this suite's
+axes reaches them past what that suite already asserts. They raise only typed
+errors and never fault, so no refusal shape can be injected and no probe can
+misbehave: the refusal axis is ``none`` and the probe axis ``answers`` only.
+They are hierarchical with implicit parents and hold only what is written
+through the kernel, whose key rule refuses a backslash, so the states with a
+key BE-030 omits, the flat states that decode to no tree and the link do not
+apply. What is left, an item, a folder, an empty folder, nothing and a key
+through an item, is A.5's rows, which ``test_tree_results.py`` asserts against
+both Memory drivers; repeating them here would add cells that test nothing new.
 """
 
 from __future__ import annotations

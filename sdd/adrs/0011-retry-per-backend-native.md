@@ -44,6 +44,10 @@ maps to each backend's own retry mechanism.
   because it is meaningless for local I/O. *Reverse if* a cross-cutting retry
   concern emerges that no single backend can own (e.g. mid-operation reconnect
   spanning backends).
+  *Amended by [ADR-0042](0042-contract-kernel-over-thin-drivers.md):* for every
+  remote driver whose wire separates connect from operation, the **connect**
+  budget moves to its `Session` (RFC-0017 D5); per-operation retry stays each
+  driver's native mechanism.
 - **The policy replaces SDK defaults rather than stacking on them,** so retries
   do not multiply. That was the flaw in Option A (a Store-level tenacity wrapper)
   and Option C (an `ext/` retry proxy), both of which compose on top of SDK

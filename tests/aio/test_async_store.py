@@ -423,7 +423,7 @@ class TestAsyncStoreMetadata:
 
     @pytest.mark.spec("ASYNC-046")
     async def test_get_file_info_not_found(self, async_store: AsyncStore) -> None:
-        with pytest.raises(NotFound, match="not found"):
+        with pytest.raises(NotFound, match="Not found"):
             await async_store.get_file_info("missing.txt")
 
     @pytest.mark.spec("ASYNC-046")
@@ -884,7 +884,7 @@ class TestAsyncStoreHead:
         assert result.size == 3
 
     async def test_head_raises_not_found(self, async_store: AsyncStore) -> None:
-        with pytest.raises(NotFound, match="not found"):
+        with pytest.raises(NotFound, match="Not found"):
             await async_store.head("missing.txt")
 
     async def test_head_requires_metadata_capability(self) -> None:

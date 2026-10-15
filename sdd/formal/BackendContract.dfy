@@ -332,6 +332,77 @@ ghost predicate WellFormedPath(s: string)
   )
 }
 
+// BE-030: `p` is a key the kernel may list, i.e. `listable(p)` in
+// src/remote_store/_kernel/_keys.py: non-empty, `refusal(p)` is None (no
+// leading '/', no null byte, no backslash, no ".." segment) and
+// `canonical(p) == p` (no empty segment, so no trailing or doubled slash
+// either, and no "." segment).  That is exactly the non-root disjunct of
+// WellFormedPath above, stated separately because the two answer different
+// questions: WellFormedPath bounds what a caller passes, Canonical what a
+// store may hold and still show.  Not modelled: Python compares code points
+// and Dafny chars, which agree on the five ASCII characters tested here;
+// entries a listing omits for a reason other than the key rule (BE-032
+// A.3's key below a listed item on a flat namespace) and keys a concurrent
+// writer adds mid-walk, which lie outside this sequential model.
+// Cited in prose, not as an @spec tag: no conformance cell cites BE-030 or
+// BE-031, which scripts/check_formal_trace.py requires of a tag.
+ghost predicate Canonical(p: Path)
+{
+  '\0' !in p
+  && '\\' !in p
+  && p[0] != '/'
+  && p[|p| - 1] != '/'
+  && !ContainsSub(p, "//")
+  && !HasSegment(p, ".")
+  && !HasSegment(p, "..")
+}
+
+// BE-031: every key `fs` holds under `path` is one BE-030 lists.  When it
+// fails, a recursive walk on the kernel leaves the omitted key behind and
+// answers DirectoryNotEmpty (spec 003 BE-031, "A recursive delete may answer
+// DirectoryNotEmpty"), so DeleteFolder's recursive-success and emptiness
+// clauses hold under this guard only.  IsChildOf is the model's descendant
+// relation: any depth below `path`, not only direct children.
+ghost predicate CanonicalUnder(fs: Filesystem, path: Path)
+{
+  forall k: Path | k in fs && IsChildOf(k, path) :: Canonical(k)
+}
+
+// The guard is not vacuous: a canonical key passes, and each of BE-030's
+// rewritten shapes BE-031 names (an empty segment, a "." segment) fails,
+// so a folder over either fails CanonicalUnder.
+lemma CanonicalWitnesses()
+  ensures Canonical("a/b")
+  ensures !Canonical("a//b")
+  ensures !Canonical("a/./b")
+  ensures !CanonicalUnder(map["a" := DirEntry, "a//b" := DirEntry], "a")
+{
+  var s := "a/b";
+  // Every window of "a/b" holds a non-'/' at a slash position of the
+  // pattern, so none of "//", "/./", "/../" occurs.
+  forall i {:trigger s[i..i + 2]} | 0 <= i <= |s| - 2 ensures s[i..i + 2] != "//" {
+    assert s[i..i + 2][0] == s[i] && s[i..i + 2][1] == s[i + 1];
+  }
+  var dot := "/" + "." + "/";
+  assert |dot| == 3 && dot[0] == '/';
+  assert !ContainsSub(s, dot) by {
+    forall i {:trigger s[i..i + |dot|]} | 0 <= i <= |s| - |dot|
+      ensures s[i..i + |dot|] != dot
+    {
+      assert i == 0 && s[i..i + |dot|][0] == 'a';
+    }
+  }
+  assert s[..2] == "a/" && "." + "/" == "./";
+  assert s[|s| - 2..] == "/b" && "/" + "." == "/.";
+  assert !HasSegment(s, ".");
+  assert !HasSegment(s, "..");
+  assert "a//b"[1..3] == "//";
+  var t := "a/./b";
+  assert t[1..1 + |dot|] == dot;
+  assert ContainsSub(t, dot);
+  assert IsChildOf("a//b", "a");
+}
+
 // to_key / native_path model the bidirectional conversion between a
 // backend-native path and a backend-relative key (spec 010; BE-023 /
 // BE-025).  `root` is the backend's native prefix — a filesystem root,
@@ -857,18 +928,29 @@ trait Backend {
     ensures old(Live()) && path != Root &&
             IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
-    // BE-013 happy path: empty dir or recursive → must succeed.
+    // BE-013 happy path: empty dir, or recursive over a subtree whose every
+    // key BE-030 lists → must succeed.
     // @spec BE-013
     ensures old(Live()) && path != Root && old(containerPresent) &&
-            IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
+            IsDir(old(fs), path) &&
+            ((recursive && CanonicalUnder(old(fs), path)) || !HasChildren(old(fs), path))
       ==> r.Ok?
-    // On success, directory entry is removed.
+    // BE-031: a recursive delete over a key BE-030 omits may leave it behind
+    // and answer DirectoryNotEmpty; success stays permitted.
     // @spec BE-013
-    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && r.Ok?
+    ensures old(Live()) && path != Root && old(containerPresent) &&
+            IsDir(old(fs), path) && recursive && !CanonicalUnder(old(fs), path)
+      ==> r.Ok? || r == Err(DirectoryNotEmpty(path, name))
+    // On success, directory entry is removed.  The BE-031 guard is vacuous
+    // for an empty folder, so it narrows the recursive case only.
+    // @spec BE-013
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) &&
+            CanonicalUnder(old(fs), path) && r.Ok?
       ==> !IsDir(fs, path)
-    // Recursive delete removes all children too.
+    // Recursive delete removes all children too, under the same guard.
     // @spec BE-013
-    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && recursive &&
+            CanonicalUnder(old(fs), path) && r.Ok? ==>
       forall p: Path | IsChildOf(p, path) :: !PathExists(fs, p)
 
   // ====================================================================

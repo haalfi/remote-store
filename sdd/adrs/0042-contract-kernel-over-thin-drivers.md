@@ -4,17 +4,19 @@
 
 | Field         | Value                                  |
 | ------------- | -------------------------------------- |
-| Status        | Proposed                               |
+| Status        | Accepted                               |
 | Supersedes    | —                                      |
 | Superseded by | —                                      |
 | Amends        | ADR-0001, ADR-0011, ADR-0012, ADR-0025 |
 
 Proposed by BK-387 with RFC-0017's Open Questions 1, 4, 6 and 7 answered by
-the maintainer. **Accepted in the PR that lands the first backend on this
-design** (RFC-0017 D3 step 1, the kernel over the Memory drivers), not before:
-the design is decided now and proven by its first migration. The amendments
-below take effect on acceptance; until then the four amended records stand
-unchanged.
+the maintainer. **Accepted in BK-394's PR**, which lands the first backend on
+this design (RFC-0017 D3 step 1): `MemoryBackend` and `AsyncMemoryBackend` are
+the first classes on the kernel. RFC-0017 and
+[ADR-0047](0047-store-tree-key-resolution.md) were accepted in the same PR. The
+acceptance waited on that migration, so the design was proven by its first use
+before the amendments below took effect; each amended record carries an inline
+note at the clause it changes.
 
 ## Context
 

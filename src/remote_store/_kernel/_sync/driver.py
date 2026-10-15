@@ -124,8 +124,13 @@ class Driver(Protocol):
         ...
 
     def probe(self) -> None:
-        """Health check; must touch the container."""
-        ...
+        """Health check; must touch the container.
+
+        The protocol's own body does nothing, and a driver that subclasses the
+        protocol without declaring ``probe`` inherits it: that is an exemption
+        from probing, which only a store that is always healthy may take.
+        """
+        return None
 
     def close(self) -> None:
         """Release the driver's resources."""

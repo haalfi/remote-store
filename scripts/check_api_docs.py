@@ -27,8 +27,9 @@ Phase 4 is a *different IR* from the method-caps check above -- a
 extractor trio and compare, run as a second pass in ``main()``:
 
   exports extractor   -> {symbol_name: kind} over the public ``__all__`` of
-                         ``remote_store``, ``remote_store.backends`` and
-                         ``remote_store.aio`` (three co-equal sources; symbols
+                         ``remote_store``, ``remote_store.backends``,
+                         ``remote_store.aio`` and ``remote_store.drivers``
+                         (four co-equal sources; symbols
                          re-exported from ``remote_store.ext.*`` are excluded --
                          they are documented as module rows, not per symbol).
   index extractor     -> the set of symbol names linked as ``[Name](page.md)``
@@ -331,11 +332,13 @@ def compare(
 
 # Public namespaces whose ``__all__`` defines the documented surface.  Treated
 # symmetrically: ``remote_store`` (primary), ``remote_store.backends`` (backend
-# classes + per-backend helpers), ``remote_store.aio`` (async surface).
+# classes + per-backend helpers), ``remote_store.aio`` (async surface),
+# ``remote_store.drivers`` (the contract kernel and the driver protocols).
 _PUBLIC_NAMESPACES: tuple[str, ...] = (
     "remote_store",
     "remote_store.backends",
     "remote_store.aio",
+    "remote_store.drivers",
 )
 
 # Backend-companion symbols intentionally documented on another class's page

@@ -6,6 +6,7 @@
 - Capabilities: capabilities.md
 - Errors: errors.md
 - Backend: backend.md
+- Drivers: drivers.md
 - Async: aio/
 - Info: info.md
 - SFTPUtils: sftp-utils.md

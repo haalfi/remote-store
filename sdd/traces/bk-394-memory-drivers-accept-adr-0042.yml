@@ -1,0 +1,142 @@
+id: BK-394
+title: "RFC-0017 D3 step 1, Memory half: both Memory classes on the contract kernel, ADR-0042 accepted"
+trigger: >-
+  PR #1127 merged the private kernel (BK-389) with spec 003's BE-030, BE-031
+  and BE-032. ADR-0042 and RFC-0017 stay Proposed until a backend runs on it;
+  BK-394 is the item that moves the two Memory classes and accepts both, and
+  #1127 added two obligations to its item 4 (Rule 13 restated over the
+  driver's probe, a narrow ADR for RFC-0021's stances).
+source_items:
+  - BK-394
+audience:
+  - library.maintainer
+  - user.api_docs
+  - contributor.process
+expected_ripples:
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/specs/013-memory-backend.md
+  - sdd/adrs/0042-contract-kernel-over-thin-drivers.md
+  - docs-src/guides/custom-backend-guide.md
+  - scripts/check_custom_backend_guide.py
+surprising_ripples:
+  - src/remote_store/_kernel/_async/_io.py
+  - src/remote_store/aio/__init__.py
+  - src/remote_store/aio/backends/__init__.py
+  - tests/backends/fixtures/memory.py
+  - tests/aio/test_async_store.py
+  - sdd/specs/022-streaming-atomic-writes.md
+co_shipped_items:
+  - BK-398
+decisions:
+  - sdd/decisions/115d97a6-e0fa-4bf2-81a9-dccb220e7c86.jsonl
+orient:
+  - items: [BK-398]
+    verdict: constrains
+    evidence: >-
+      BK-394's dossier: "It merges only after the v0.33.0 tag, and after
+      BK-389, BK-432 and BK-398." BK-398 (open, S, no dossier, "Open
+      decision: none; amend all three to BE-025's non-canonical exception")
+      states that BK-395's addressing rule "adds both Memory classes at
+      BK-394": once Memory folds `native_path("d//f")`, NPR-005, NPR-020 and
+      BE-029's verbatim round-trip claims become false for Memory too. The
+      prerequisite is unmet; landing it in this PR is the only way to keep
+      the repo true at every commit without a separate PR first.
+  - items: [ID-244, BK-345]
+    verdict: constrains
+    evidence: >-
+      BK-394's dossier: "Before it changes the conformance registry to
+      register drivers beside Backend instances (RFC-0017 D3), ID-244's open
+      decision ... is taken." ID-244 is open with its decision unmade.
+      `DriverBackend(_KernelCore, Backend)` (`src/remote_store/_kernel/backend.py`
+      line 32) keeps the Memory classes `Backend` instances, so the registry
+      can keep constructing `MemoryBackend()` unchanged and ID-244 is not
+      triggered. BK-345 depends on BK-394 and ID-244 and adds per-driver
+      cells from D3 step 2: later work, nothing here.
+  - items: [BK-434]
+    verdict: constrains
+    evidence: >-
+      BK-394 item 4 owes reconciling `BackendContract.dfy`'s `DeleteFolder`
+      with BE-031's walk over a stored key BE-030 omits ("a carve-out or
+      precondition for non-canonical stored keys"). BK-434 (open, L) owns
+      refining the trait's operations against RFC-0021's encodings, whose
+      decode is exactly what makes such a key omitted. A carve-out here is
+      a precondition BK-434 later replaces; the dossier asks only for the
+      carve-out, so do that and leave the encoding wiring to BK-434.
+  - items: [BK-332, BK-339]
+    verdict: unrelated
+    evidence: >-
+      BK-332 "Runs after BK-394 rewrites the guide as a driver": downstream,
+      nothing it plans shapes the rewrite. BK-339 cites `_memory.py` only as
+      evidence for a `store.md` matrix row (Memory copy keeps metadata),
+      which the migration leaves unchanged (MEM-016b stays driver-side).
+  - items: [BK-439, BK-438]
+    verdict: unrelated
+    evidence: >-
+      Both concern flat drivers: BK-439 is the kernel's flat `glob`, and
+      Memory declares no `GLOB` (`_ALL_CAPABILITIES` excludes it,
+      `backends/_memory.py` line 26); BK-438 is "Before any flat driver (S3,
+      Azure, SQLAlchemy) moves onto the kernel; after BK-394". Memory is
+      hierarchical.
+  - items: [BK-390, BUG-276]
+    verdict: unrelated
+    evidence: >-
+      BK-390 owns RFC-0017's amendments true only after later D3 steps
+      (PING-003..011, SIO-008, SEEK-*), none of which BK-394 item 4 lists;
+      PING-002 and PING-008 are BK-394's. BUG-276's five base-class arms are
+      in other backends (S3 `_errors.py`, Azure); the kernel's ERR-009 floor
+      already landed with BK-389, and Memory raises nothing native.
+  - items: [BUG-323, BUG-293, BUG-255, BUG-257, BUG-245, BUG-318, BUG-319, BUG-260, ID-247, ID-260, ID-262]
+    verdict: unrelated
+    evidence: >-
+      Found by shared spec IDs (BE-021, BE-029, DEPTH-003); each is a defect
+      or gap in one non-Memory backend (SFTP, Azure, s3fs, Graph, SQLBlob,
+      Local) or its replay lane, per each index entry's title. Memory's move
+      changes none of them.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md
+        section: "whole"
+        read_type: gate
+        extract: "Decisions 1-3 (identity kept, kernel made public, spec 013 placement table); items 2, 4-7; prerequisites BK-398 and ID-244"
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "As landed; Resumed against RFC-0021"
+        read_type: reference
+        extract: "Kernel layout, driver records, construction refusals, probe set, A.3/A.4 on flat namespaces only"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Triggered: Spec section, Store or Backend ABC, Public API (__all__), API reference page, ADR, Backlog item touched, CHANGELOG entry"
+      - file: sdd/backlog/id-244-write-gated-conformance-cells.md
+        section: "whole"
+        read_type: reference
+        extract: "Seeding-hook decision open; binds only if the registry changes"
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/_kernel/_async/driver.py
+        section: "AsyncDriver and the Supports* protocols"
+        read_type: gate
+        extract: "Driver obligations a hierarchical implicit-parents driver must meet; probe's protocol body"
+        outcome: unclear
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "_Choke, _state, write paths, delete_folder"
+        read_type: reference
+        extract: "Every caller-content error was mapped by the choke point, against ASYNC-091; fixed with _io.guard_content"
+        outcome: misleading
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-091"
+        read_type: verify
+        extract: "A caller's BinaryIO failure surfaces verbatim; the kernel broke it for the first real driver"
+      - file: tests/backends/conformance/test_health_probe_declared.py
+        section: "_has_own_probe, _NO_PROBE"
+        read_type: gate
+        extract: "Kernel core owns check_health, so Rule 13 judged every kernel class probing; restated over the driver"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: verify
+        extract: "Public API (__all__), API reference page, ADR, CHANGELOG entry rows discharged"

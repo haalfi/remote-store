@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-394: No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed
+- BK-398: Three round-trip clauses promise `to_key(native_path(k)) == k` verbatim, which `GraphBackend` already breaks
 - BK-432: No logical model says what a key resolves to, so every operation re-derives it from driver refusals
 - BK-437: Spec 051's sections are restated in Alloy and Lean with no traceability check between them
 - BK-399: A stored key holding a backslash has no kernel answer, so migration may strand it

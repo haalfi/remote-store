@@ -3,53 +3,82 @@
 Write file storage code once. Run it against local files, S3, SFTP, Azure,
 OneDrive — or your own custom storage system.
 
-This guide walks you through implementing a custom [`Backend`](../reference/api/backend.md) for remote-store.
-By the end, you'll have a working backend that plugs into [`Store`](../reference/api/store.md),
-[`Registry`](../reference/api/registry.md), and every extension in the ecosystem.
+This guide walks you through writing a **driver** for remote-store and turning
+it into a backend. By the end, you'll have a working backend that plugs into
+[`Store`](../reference/api/store.md), [`Registry`](../reference/api/registry.md),
+and every extension in the ecosystem.
 
 ---
 
 ## What you'll build
 
-A **Redis backend** that stores files as Redis keys. It's simple enough to fit
-in one module, yet exercises every part of the Backend contract: reads, writes,
-listing, metadata, error mapping, and capability declarations.
+A **Redis driver** that stores each file as a Redis hash. It's small enough to
+fit in one module, yet exercises every part of the driver contract: reads,
+writes, listing, metadata, error classification, capability declarations and
+two optional protocols.
 
 **Prerequisites:** `pip install remote-store redis`
 
 ---
 
-## The Backend contract
+## How a driver fits
 
-Every backend is a subclass of [`Backend`](../reference/api/backend.md). The contract is
-straightforward:
+A backend is two pieces:
 
-1. **Declare capabilities** — which operations does your backend support?
-2. **Implement abstract members** — methods and properties covering CRUD, listing, and metadata. See [Abstract methods](#abstract-methods-must-implement) for the full list.
-3. **Map all exceptions** — native errors must become `remote_store` errors. No leaks.
+- **The driver** is yours. It maps one-to-one onto your storage system's own
+  calls: look up a key, read it, write it, delete it, list a prefix. It carries
+  no path, root, closed-state or error-typing logic.
+- **The contract kernel** is ours. [`DriverBackend`](../reference/api/drivers.md#remote_store.drivers.DriverBackend)
+  is a complete [`Backend`](../reference/api/backend.md) built over a driver.
+  It decides once, for every driver, what the backend contract says: which keys
+  are valid and how they normalise, that the store root is a folder, what a
+  closed backend answers, which error a refusal becomes, how deep a listing
+  goes, how a folder's totals add up, and how a move, a copy or a recursive
+  folder delete is sequenced.
 
-The [`Store`](../reference/api/store.md) class wraps your backend, adds path validation, capability gating,
-and scoping. You implement the raw operations; `Store` handles the policy.
+The contract asks three things of a driver:
+
+1. **Declare what the storage is:** a name, its namespace, whether it has folder
+   objects, its capabilities and two posture flags.
+2. **Implement the required primitives:** fourteen methods, listed in
+   [Required driver members](#required-driver-members).
+3. **Classify native errors:** `classify()` turns an exception from your client
+   library into a `remote_store` error. The kernel calls it; you never wrap a
+   call yourself.
+
+Optional protocols (copy, rename, ranged reads, and so on) back further
+capabilities. [`Store`](../reference/api/store.md) wraps the backend as it
+wraps any other, adding capability gating and scoping.
+
+!!! info "Subclassing `Backend` directly"
+    A class that subclasses [`Backend`](../reference/api/backend.md) and
+    implements every abstract method still works. It then owns everything the
+    kernel decides: path rules, root and closed guards, error typing, listing
+    depth. A driver is the documented route because the kernel gets those right
+    once for every backend.
 
 ---
 
-## Step 1: Scaffold the class
+## Step 1: Imports
 
 ```python
 --8<-- "examples/snippets/custom_backend_guide.py:step1-imports"
 ```
 
-Every backend starts with these imports. The key types:
-
 | Import | Purpose |
 |---|---|
-| [`Backend`](../reference/api/backend.md) | Abstract base class you subclass |
+| [`Driver`](../reference/api/drivers.md#remote_store.drivers.Driver) | The protocol your driver class implements |
+| [`DriverBackend`](../reference/api/drivers.md#remote_store.drivers.DriverBackend) | The kernel: the `Backend` your class subclasses to wrap the driver |
+| [`Entry`](../reference/api/drivers.md#remote_store.drivers.Entry), [`Page`](../reference/api/drivers.md#remote_store.drivers.Page), [`PutResult`](../reference/api/drivers.md#remote_store.drivers.PutResult) | Records a driver hands the kernel |
+| [`Op`](../reference/api/drivers.md#remote_store.drivers.Op) | The operation a `classify` call is asked about |
 | [`Capability`](../reference/api/capabilities.md), [`CapabilitySet`](../reference/api/capabilities.md) | Declare supported operations |
-| [`NotFound`](../reference/api/errors.md), [`AlreadyExists`](../reference/api/errors.md), ... | Normalized error types |
-| [`FileInfo`](../reference/api/models.md), [`FolderEntry`](../reference/api/models.md), [`FolderInfo`](../reference/api/models.md) | Return types for listing and metadata |
-| [`RemotePath`](../reference/api/models.md) | Immutable, validated path type |
-| [`WriteResult`](../reference/api/models.md) | Return type for `write()` and `write_atomic()`; carries the written path, size, and optional backend-native digest/etag |
-| `WritableContent` | Type alias: `bytes \| BinaryIO` |
+| [`NotFound`](../reference/api/errors.md), [`AlreadyExists`](../reference/api/errors.md), ... | Typed errors a driver may raise or return |
+| [`Secret`](../reference/api/config.md#remote_store.Secret), [`RetryPolicy`](../reference/api/config.md#remote_store.RetryPolicy) | What config loading hands your constructor |
+| [`ResolutionPlan`](../reference/api/models.md#remote_store.ResolutionPlan) | Return type of `resolve()` |
+
+Subclassing `Driver` explicitly is optional, since the kernel only calls the
+members, but it gives you a type checker's help and the protocol's no-op
+`probe()` for a store that is always healthy.
 
 ---
 
@@ -59,317 +88,303 @@ Every backend starts with these imports. The key types:
 --8<-- "examples/snippets/custom_backend_guide.py:step2-capabilities"
 ```
 
-**Capabilities gate Store methods.** If you don't declare `ATOMIC_WRITE`, calls
-to `store.write_atomic()` raise `CapabilityNotSupported` automatically — you
-don't need to handle it.
+**Capabilities gate Store methods.** If you don't declare `GLOB`, calls to
+`store.glob()` raise `CapabilityNotSupported` automatically; your driver is
+never asked.
 
-`_REDIS_CAPABILITIES` is assigned to the class-level `CAPABILITIES` attribute in Step 3.
-Tooling and conformance tests read `YourBackend.CAPABILITIES` without instantiating the class,
-so the constant must be a class attribute — not computed in `__init__`.
+**A declaration needs something behind it.** Constructing the backend raises
+`ValueError` when a declared capability has no protocol to back it:
+
+| Capability | Backed by |
+|---|---|
+| `COPY` | [`SupportsCopy`](#optional-protocols) |
+| `MOVE` | `SupportsAtomicMove`, `SupportsRename` or `SupportsCopy` (the kernel copies, then deletes) |
+| `ATOMIC_MOVE` | `SupportsAtomicMove`, or `SupportsRename` with `rename_replaces = True` |
+| `ATOMIC_WRITE` | `put_is_atomic = True`, `SupportsOpenWrite`, or `SupportsRename` with `rename_replaces = True` |
+| `GLOB` | `SupportsGlob` |
+
+The other capabilities need only the required primitives. The Redis driver
+declares `ATOMIC_WRITE` because one `HSET` is atomic, so a reader never sees half
+a file, and `ATOMIC_MOVE` because `RENAME` is.
 
 Three further capabilities are worth declaring when they apply:
 
-- **`USER_METADATA`** — declare this when your backend stores the `metadata=` mapping passed to `write()` and `write_atomic()`. Without it, `Store` raises `CapabilityNotSupported` if the caller passes non-empty metadata.
-- **`WRITE_RESULT_NATIVE`** — declare this when your `write*()` methods fill the rich `WriteResult` fields directly from the backend's own write response (`source == "native"`). The criterion is provenance, not field count — which fields land depends on what the response carries, and a native backend may fill none (SFTP declares the flag yet its write response has no metadata). Without the flag, results carry `path`, `size`, and `source == "basic"`. See the [WriteResult reference](../reference/api/models.md) for the full field list.
-- **`LAZY_READ`** — declare this when `read()` fetches data lazily from the remote source. A `BytesIO` return does not qualify — data is already materialized.
+- **`USER_METADATA`**: your `put()` stores the `metadata=` mapping. Without it,
+  the caller's non-empty metadata is refused before your driver runs.
+- **`WRITE_RESULT_NATIVE`**: your `put()` fills the rich
+  [`PutResult`](../reference/api/drivers.md#remote_store.drivers.PutResult)
+  fields from the storage system's own write response, with `source="native"`.
+  The criterion is provenance, not field count. Without the flag, results carry
+  `path`, `size` and `source == "basic"`.
+- **`LAZY_READ`**: the stream `get()` returns fetches data on demand. A
+  `BytesIO` does not qualify; its data is already in memory.
 
-The Redis example declares neither `USER_METADATA` nor `WRITE_RESULT_NATIVE` (it stores raw bytes without a metadata column and returns only `path` and `size` at write time).
-
-Each capability gates specific Store methods. See the
-[Capability reference](../reference/api/capabilities.md) for the full list.
-
----
-
-## Step 3: Constructor and properties
-
-```python
---8<-- "examples/snippets/custom_backend_guide.py:step3-constructor"
-```
-
-**Rules:**
-
-- `name` must be a unique string. Used in error messages and the registry.
-- `CAPABILITIES: ClassVar[CapabilitySet]` exposes the capability set at class level — no instantiation required. The `capabilities` property delegates to `self.CAPABILITIES` so both the class view and the instance view always agree.
-- Constructor parameters become `options:` in YAML config (more on this later).
+The Redis driver declares neither `USER_METADATA` nor `WRITE_RESULT_NATIVE`. See
+the [Capability reference](../reference/api/capabilities.md) for the full list.
 
 ---
 
-## Step 4: Internal helpers
-
-Before implementing the abstract methods, add helpers for key management
-and error mapping.
+## Step 3: The driver class and its declarations
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step4-helpers"
+--8<-- "examples/snippets/custom_backend_guide.py:step3-driver"
 ```
 
-Redis has no concept of folders, so we use key prefixes to simulate a
-hierarchical namespace. Files live under `rs:file:<path>`, and folder markers
-(optional) under `rs:dir:<path>`.
+The six declared attributes tell the kernel what it is working with:
 
-```python
---8<-- "examples/snippets/custom_backend_guide.py:step4-error-mapping"
-```
+- **`name`**: a unique string, carried as `backend` on every error.
+- **`namespace`**: `"flat"` when a key can sit beside a prefix of the same name
+  and under another key (object stores, Redis); `"hierarchical"` when the
+  storage system refuses both itself (a filesystem). On a flat namespace the
+  kernel checks before every write that the key is no folder and lies under no
+  file. On a hierarchical one your write primitives refuse those cases, in
+  whatever shape the storage system has, and the kernel types the refusal.
+- **`parents`**: `"none"` when folders are only prefixes, `"implicit"` when a
+  write creates them, `"explicit"` when they must be created first. A flat
+  driver must say `"none"`. With `"explicit"` you implement
+  `SupportsEnsureParents`, and with any value other than `"none"`,
+  `SupportsRemoveFolder`; construction refuses the driver otherwise.
+- **`capabilities`**: the set from Step 2.
+- **`put_is_atomic`**: whether `put()` alone never exposes partial content.
+- **`close_is_terminal`**: whether the backend must refuse use after
+  `close()`. The kernel's closed guard reads it; you write no closed check.
 
-**The cardinal rule:** backend-native exceptions must never leak. Every Redis
-error becomes a `remote_store` error. The `from exc` preserves the original
-traceback for debugging.
+The constructor takes `password` as `str | Secret` and a `retry` keyword. Config
+loading passes both to your backend class, which forwards them here
+([Step 11](#step-11-wrap-the-driver)); [Step 12](#via-registry-yaml-config)
+explains when they arrive.
+Don't keep the revealed credential on the driver: pass it to the client, so it
+cannot surface in a `repr`.
 
 ---
 
-## Step 5: Existence checks
+## Step 4: Addressing
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step5-existence"
+--8<-- "examples/snippets/custom_backend_guide.py:step4-addressing"
 ```
 
-**Key invariants:**
+**The kernel hands your primitives canonical keys.** It refuses a leading `/`,
+a `..` segment, a null byte and a backslash with `InvalidPath`, and drops empty
+and `.` segments, so the root in every spelling arrives as `""`. Your primitives
+never see `./a`, `a//b` or the root as a file. You need no root guard and no
+alias handling.
 
-- `exists()` **never raises `NotFound`** — always returns `bool`.
-- `""` and `"."` are root aliases. Root always exists and is always a folder.
-- `is_file("")` is always `False`. `is_folder("")` is always `True`.
-
-A layer note on the alias rules: `Store` normalizes `"."` to `""` before
-your backend runs, so through `Store` your backend only ever sees `""` (or,
-for a scoped store, its `root_path` prefix). Handling `"."` is nonetheless
-**required**, not optional defense: the backend surface has callers of its own
-— adapters, `unwrap()` consumers, anything that feeds a `FolderInfo.path` back
-into a query, since that renders the root as `"."` — and the conformance suite
-exercises both spellings. Answer both from one predicate rather than testing
-`if path`: on a flat namespace `"./"` is a real and permanently empty key
-prefix, so a backend that treats `"."` as an ordinary key answers for nothing
-and reports it as success. The precise backend-layer obligations live in the
-[Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md).
+`native_path`, `to_key` and `resolve` are the exceptions: they answer for a key
+the key rule refuses too, passed raw, so each must be **total**, never raising.
+`to_key(native_path(key))` must return `key`; the conformance suite checks the
+round trip. `resolve` does no I/O.
 
 ---
 
-## Step 6: Reading
+## Step 5: `stat` and `get`
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step6-reading"
+--8<-- "examples/snippets/custom_backend_guide.py:step5-stat-get"
 ```
 
-**Notes:**
+- **`stat()`** returns an [`Entry`](../reference/api/drivers.md#remote_store.drivers.Entry)
+  for the node at the key, or `None`. On a flat namespace it may look up the key
+  alone and be blind to a prefix: where a folder matters, the kernel finds one
+  with a one-item listing. A miss may also be raised, as `NotFound` or
+  `InvalidPath`.
+- **`get()`** returns a binary stream. It refuses an absent key, or one that is
+  no file, in whatever shape your storage system has. Here that is `NotFound`
+  for both; the kernel probes and raises `InvalidPath` when a folder is there.
+- `follow_links=False` matters only to storage with symbolic links: it is the
+  view of `delete`, a `move` source and `delete_folder`, which name the link
+  itself.
 
-- `read()` returns a `BinaryIO`. Since we return `BytesIO`, streams are
-  seekable — that's why we declared `SEEKABLE_READ`.
-- `read_bytes()` can be more efficient than `read().read()` because it avoids
-  wrapping in a stream object.
-- Both raise `NotFound` for missing files.
-
-Since our `read()` returns seekable streams, we don't need to override
-`read_seekable()` — the default implementation detects seekability and
-returns the stream as-is.
+`modified_at` is optional on an `Entry`. Leave it out when the storage system
+does not record one; the kernel reports it as unknown.
 
 ---
 
-## Step 7: Writing
+## Step 6: `put` and `delete`
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step7-writing"
+--8<-- "examples/snippets/custom_backend_guide.py:step6-put-delete"
 ```
 
-**Key patterns:**
-
-- `content` is `bytes | BinaryIO`. Normalize with `content if isinstance(content, bytes) else content.read()`.
-- **Both `write()` and `write_atomic()` accept `metadata: Mapping[str, str] | None = None`.** If your backend declares `USER_METADATA`, persist the mapping alongside the file. If it doesn't, ignore the argument — `Store` rejects non-empty metadata before reaching your implementation.
-- **Both methods must return [`WriteResult`](../reference/api/models.md).** Construct it with at minimum `path=RemotePath(path)` and `size=len(raw)`. If your backend can populate richer fields, declare `WRITE_RESULT_NATIVE` and include them. The Redis example constructs just the two required fields.
-- **Write creates parent folders implicitly** — in Redis, there's nothing to create, but filesystem-based backends must `mkdir -p`.
-- Re-raise your own errors (`AlreadyExists`, `InvalidPath`) before the catch-all `RedisError` handler.
-- Even though Store gates `write_atomic()` via capabilities, implement the methods anyway (they're abstract). Raise `CapabilityNotSupported` as a safety net.
+- `content` is `bytes` or a binary stream. Read it in full, as here, or stream
+  it to your storage system.
+- `put()` refuses an existing file unless `overwrite`. Return a
+  [`PutResult`](../reference/api/drivers.md#remote_store.drivers.PutResult) with
+  at least `size`; the kernel builds the result's path from the key before your
+  driver writes, so a path that cannot be built never costs a write.
+- `delete()` refuses an absent key without removing anything. A storage system
+  whose delete succeeds for a missing key, unlike Redis `DEL`, checks first.
+- Parent folders, the root, a write over a folder and a write under a file are
+  the kernel's to handle, before or after your call.
 
 ---
 
-## Step 8: Deletion
+## Step 7: Listing
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step8-deletion"
+--8<-- "examples/snippets/custom_backend_guide.py:step7-list-page"
 ```
 
-**Invariants:**
+`list_page()` returns one [`Page`](../reference/api/drivers.md#remote_store.drivers.Page)
+of what lies under a folder (`""` is the root):
 
-- `delete()` targets files. `delete_folder()` targets folders.
-- `missing_ok=True` suppresses `NotFound`.
-- `missing_ok=True` also covers an absent *container* — the bucket, container or
-  table holding the path. Both deletes return cleanly against one, and both raise
-  `NotFound` without `missing_ok`. No exemptions: if your backend's native error
-  for an absent container is not already a not-found, reclassify it, subject to
-  two constraints. Keep the reclassification narrow to that one case: a denial
-  stays `PermissionDenied`, a timeout stays `BackendUnavailable`. And put any
-  probe you need on the failure path, never on the miss path — an ordinary miss
-  must not spend a round trip distinguishing an absent container from an absent
-  path. The reasoning behind both is in the error-mapping section of the
-  [Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md).
-- `delete_folder(recursive=False)` raises `DirectoryNotEmpty` if the folder has contents.
-- You cannot delete root (`""` or `"."`) — `Store` rejects it before your
-  backend runs, so users never reach you with a root delete; the tutorial
-  backend also guards it locally, which is the safer shape.
+- With `delimiter="/"`, the immediate files as `entries` and the immediate
+  subfolders as `prefixes`, folder keys without a trailing `/`.
+- With `delimiter=None`, every file below the folder, at any depth.
+- Return a `cursor` to hand out further pages, `None` on the last one.
+- `limit` asks for at most that many items; the kernel passes `limit=1` when
+  it only needs to know whether anything is there. Returning more is safe, as
+  the Redis driver does.
+
+The kernel builds `list_files`, `list_folders`, `iter_children` and
+`get_folder_info` from these pages. It applies `max_depth` itself, so your
+driver never sees it. It also omits any listed key that is not canonical, such
+as one another tool stored with a backslash, and logs the omission.
+
+**A flat driver owes two more things:**
+
+- **Byte order.** Keys come in byte-lexicographic order, a prefix `p` ordered
+  as `p/`, so an item arrives before every key below it. Redis `SCAN` returns
+  keys in no order, which is why this driver collects and sorts.
+- **`NotFound` or `InvalidPath` only for nothing.** A listing may raise either
+  only when nothing lies under the prefix, an absent container included. No
+  other call can tell a flat folder from nothing, so the kernel reads those two
+  as an empty folder.
+
+Escape your storage system's wildcard characters when a key becomes a pattern:
+the `_glob_escape` helper above keeps a folder named `w[1]` from matching `w1`.
 
 ---
 
-## Step 9: Listing
+## Step 8: Error classification
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step9-listing"
+--8<-- "examples/snippets/custom_backend_guide.py:step8-errors"
 ```
 
-**Key rules:**
+**Raise whatever your client library raises.** Every driver call runs inside
+the kernel's error boundary. A native exception leaving it goes to
+`classify()`, which **returns** the matching `remote_store` error; the kernel
+raises it chained to the original (`raise ... from exc`), so the traceback keeps
+the cause. It fills in `path` and `backend` when your error leaves them out. A
+`remote_store` error your driver raises itself passes through unchanged.
 
-- `list_files(path="")` lists from root.
-- `recursive=False` (default) yields only immediate children.
-- **Honor `max_depth`.** `Store` always passes it, and the conformance
-  suite calls your backend directly and asserts the depth boundary on what
-  *you* return — a backend that ignores the value fails those tests, even
-  though `Store` additionally applies client-side depth filtering for its
-  own callers. Treat `recursive` and `max_depth` as independent filters,
-  exactly as the code above does: at the backend layer `recursive=False`
-  wins (immediate children only, whatever `max_depth` says), and
-  `max_depth` prunes recursive listings to the requested depth. `Store`
-  never sends you a *conflicting* combination — when callers set
-  `max_depth`, its facade derives `recursive` from it, and `max_depth=0`
-  arrives as `recursive=False`, where both rules agree — so the
-  backend-layer precedence is observable only in direct calls, which is
-  how the conformance suite calls you. The tutorial follows the formal
-  backend contract here; where older spec prose differs, the
-  [Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md)
-  and the conformance suite are the operative authorities.
-- `list_folders()` is always non-recursive — only immediate subfolders.
-- Non-existent paths yield nothing (no exception).
-- [`FileInfo`](../reference/api/models.md)`.path` must be a [`RemotePath`](../reference/api/models.md).
+**A refusal about the key may be re-typed.** After a `NotFound`, `InvalidPath`,
+`AlreadyExists`, `PermissionDenied` or a base `RemoteStoreError`, the kernel
+probes the keys involved to find what is really there: a folder where a file
+belongs makes it `InvalidPath`, nothing makes it `NotFound`, and a file at a
+destination written without `overwrite` makes it `AlreadyExists`. A probe that
+cannot answer leaves your error standing. So a driver can say "refused" without
+knowing why, as `copy()` does in [Step 10](#step-10-optional-protocols). An
+error about the service, such as `BackendUnavailable`, is never probed.
+
+`classify()` returns one of these; a primitive may also raise one directly, as
+`get()` and `put()` do above.
+
+| `remote_store` error | Use it for |
+|---|---|
+| [`NotFound`](../reference/api/errors.md#remote_store.NotFound) | The key is absent |
+| [`AlreadyExists`](../reference/api/errors.md#remote_store.AlreadyExists) | The target exists and `overwrite` is false |
+| [`PermissionDenied`](../reference/api/errors.md#remote_store.PermissionDenied) | Authentication failed, or access was refused |
+| [`InvalidPath`](../reference/api/errors.md#remote_store.InvalidPath) | The storage system rejected the key, or found the wrong kind of node |
+| [`DirectoryNotEmpty`](../reference/api/errors.md#remote_store.DirectoryNotEmpty) | `remove_folder()` on a folder that still holds something |
+| [`BackendUnavailable`](../reference/api/errors.md#remote_store.BackendUnavailable) | Network error, timeout, service down |
+| [`CapabilityNotSupported`](../reference/api/errors.md#remote_store.CapabilityNotSupported) | A primitive a read-only driver cannot perform, or `unwrap()` of a type it lacks |
+| [`RemoteStoreError`](../reference/api/errors.md#remote_store.RemoteStoreError) | Anything else: the fallback, so nothing native ever leaks |
+
+**`op`** names the operation that asked, so the same native error can be typed
+by scope. **`container_absent()`** says whether an exception means the bucket,
+container or table is gone; the kernel then answers as for an absent path,
+except on writes, `check_health()` and `close()`, which keep `classify()`'s
+answer. A storage system with no container, like Redis, returns `False`.
+
+**Errors while a stream is read** arrive after `get()` has returned. The kernel
+wraps the stream and classifies an `OSError` or `EOFError` it raises, with
+`op=Op.READ`. If your stream raises anything else mid-read, as a lazy network
+stream may, list those types in a `stream_catch` attribute (a tuple of
+exception types), or they reach the caller unmapped. This holds for the async
+twin's chunk iterator too.
+**`connection_dead()`** says whether an exception means the connection is gone,
+from the exception alone and without I/O; the sync kernel then skips closing
+the stream it condemned rather than wait on a dead connection a second time.
 
 ---
 
-## Step 10: Metadata
+## Step 9: Lifecycle
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step10-metadata"
+--8<-- "examples/snippets/custom_backend_guide.py:step9-lifecycle"
 ```
 
-**Contrast with existence checks:**
+`probe()` backs `check_health()`. Make it the **cheapest possible read-only
+call that touches the storage**: Redis `PING`, a `HEAD` on an S3 bucket,
+`SELECT 1` on a database. Its errors go through `classify()` like any other.
+Only a store that is always healthy, like the in-memory one, may skip it and
+inherit the protocol's no-op.
 
-- `get_file_info()` raises `NotFound` if missing.
-- `get_folder_info()` raises `NotFound` if the folder doesn't exist — **except at
-  the store root**, which is a folder that always exists, so it aggregates to
-  zero rather than raising for a container that was already gone when the call
-  began. **Bound that tolerance to the first page**: a container that vanishes
-  *mid*-listing must still raise, or you report a store the user still has as
-  empty.
-- `exists()` never raises — returns `bool`.
+`close()` releases resources. The kernel marks the backend closed first; with
+`close_is_terminal = True` it then refuses every later operation on storage
+with `BackendUnavailable`, before any key check reaches your driver.
+
+`unwrap()` hands out the native client when the caller asks for its type, and
+raises `CapabilityNotSupported` otherwise.
 
 ---
 
-## Step 11: Move and copy
+## Step 10: Optional protocols
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step11-move-copy"
+--8<-- "examples/snippets/custom_backend_guide.py:step10-optional"
 ```
 
-**Rules the code above implements:**
+Each optional protocol is detected on the driver instance when the backend is
+constructed: define the method, and the kernel uses it. The kernel has already
+checked a move or copy's source and, on a flat namespace, that the destination
+is no folder and lies under no file. A move or copy onto itself never reaches
+your driver.
 
-- **`src == dst` is a data-preserving no-op** — never a delete-after-write on
-  the same key. Place the no-op return *after* the source check so a missing
-  source still raises `NotFound`. (Contract rule.)
-- **The store root is refused at both ends, from the key, before any request.**
-  A source that names the root is a file-shaped operation on a folder; a
-  destination that names it is a write to the root. Both raise `InvalidPath`.
-  (Contract rule — this is the first precondition, ahead of the source-existence
-  check below.) It used to be a `Store`-enforced convention that backends also
-  guarded defensively; it is now a requirement, and the conformance suite holds
-  you to it, so a backend that leaves the root to the layer above will fail.
-- **On the write end, decide "is this the root" on the key's addressable
-  segments, not on `is_root`.** Drop empty and `"."` segments and refuse when
-  nothing is left. `is_root` recognises only `""` and `"."`, so a guard written
-  against it lets `"./"` through, and `"./"` addresses the same node. That is not
-  a hypothetical: it is how a shipped backend came to leave its own container as
-  a regular file. The conformance suite's write and destination cells run
-  `""`, `"."`, `"./"`, `".//"`, `"./."` and `"/"`, and the error must name the
-  root under any of those spellings. **They catch a guard written against
-  `is_root` only where nothing behind your guard refuses the key.** A
-  hierarchical store whose root directory exists refuses `"./"` by its own
-  is-a-directory check, so only the root destination with a missing source
-  fails; a flat store may or may not refuse it, depending on how its SDK treats
-  the key. The damaging case, a write while the root directory or container is
-  absent, is one no conformance fixture sets up. It is a rule you have to hold
-  yourself to.
-  The write end is the three writers plus the `move`/`copy` **destination**.
-- **The `move`/`copy` source is held to the narrower predicate, and that is
-  deliberate.** The contract requires only `""` and `"."` there. The tutorial
-  above keeps `not src or src == "."` on the source for exactly that reason,
-  which is why the two ends of the same `move` do not look alike. The asymmetry
-  follows the damage: on the write side an unrecognised root spelling cost a
-  backend its container, and on the read side it costs an error class or an
-  empty listing. Refusing the source under the wider predicate is permitted and
-  four shipped backends do it; none is required to.
-- **Do not fold backslashes into that predicate** to match `RemotePath`,
-  tempting as the symmetry looks. If your backend also builds its native paths
-  from it, the fold makes two distinct keys collide onto one address — `a\b` and
-  `a/b` become the same node, and `a\b` stops being addressable as itself. That
-  has been tried and measured. (It is not a round-trip-identity breach: a
-  backslash key is not well-formed to begin with. The cost is the collision.)
-- **Use that one predicate everywhere the key is split, addressing included.**
-  A backend that guards with the tolerant predicate and addresses with a
-  stricter one accepts `"./x"` at the guard and then names a folder literally
-  called `.` on the wire, while its own `write("./x")` goes to the root. Whether
-  a key names a node and *which* node it names have to be decided the same way.
-  That has been measured on a shipped backend three separate times, in three
-  functions that each split a key their own way — so audit every one of yours,
-  not only the guard.
-- **Precondition order matters:** after the root check, a missing source raises
-  `NotFound` before the destination is checked for `AlreadyExists`. (Contract
-  rule.) Note the root check outranks both — a root *destination* is refused even
-  when the source does not exist, so the caller hears about the destination
-  rather than about a source they may not have expected to find.
+- **`copy()`** turns Redis `COPY`'s ambiguous `0` into a bare `RemoteStoreError`.
+  The kernel probes both keys and raises `NotFound` for a missing source or
+  `AlreadyExists` for a taken destination.
+- **`rename()`** with `rename_replaces = True` backs `MOVE` and `ATOMIC_MOVE`.
+  Without `rename_replaces`, the kernel moves an existing destination aside
+  first and puts it back if the rename fails.
 
-The conformance suite verifies the no-op rule for backends that declare
-`self_op_supported` (a registration fact covered later in this guide).
+The full set is in [Optional protocols](#optional-protocols). Without any of
+them a driver still gets a recursive `delete_folder` (the kernel lists and
+deletes each file), `get_folder_info` (the kernel adds up a listing) and
+`read_seekable` (the kernel spools the stream to a temporary file).
 
 ---
 
-## Step 12: Lifecycle methods
+## Step 11: Wrap the driver
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step12-lifecycle"
+--8<-- "examples/snippets/custom_backend_guide.py:step11-backend"
 ```
 
-`check_health()` should be the **cheapest possible read-only operation**.
-Redis `PING` is ideal. For S3 it's a `HEAD` on the bucket. For a database
-it's `SELECT 1`.
+The backend class builds its driver and hands it to `DriverBackend`. Two class
+attributes keep it consistent with the driver:
 
-One declarative flag rides along with `close()`: the
-`close_is_terminal: ClassVar[bool]` class attribute (default `False`,
-meaning the backend stays usable after `close()`). Declare `True` when
-use-after-close must fail — the close-posture conformance lane tests
-whichever posture you declare, so an undeclared terminal backend fails it.
+- **`CAPABILITIES: ClassVar[CapabilitySet]`**: tooling, the registry and the
+  conformance suite read it without instantiating the class. Assign the same
+  constant the driver declares: nothing checks that the two agree, and the
+  instance's `capabilities`, which `Store` gates on, come from the driver.
+- **`close_is_terminal: ClassVar[bool]`**: the class default is `False`. If
+  your driver declares `True`, declare it here too; construction refuses a
+  class and driver that disagree.
 
-**If you declare `True`, the closed check must run ahead of every root answer.**
-A closed backend raises `BackendUnavailable` even when the path is also invalid,
-and even where the root's answer is one you decide from the key without asking
-the storage system — the closed state is the more fundamental error, and a cheap
-string test is exactly the kind of guard that naturally gets written first.
-
-**Three root pre-checks are affected, and each needs separate attention**,
-because a backend can order one correctly and still get another wrong:
-
-| Shape | Where it sits | Conformance cell |
-|---|---|---|
-| File-shaped | your root rejection on `read`, `get_file_info`, `delete`, `move`/`copy` source | `test_close_posture_outranks_root_rejection` |
-| Write-shaped | the separate, differently-worded guard on `write`, `write_atomic`, `open_atomic` and the `move`/`copy` destination | `test_close_posture_outranks_root_write_rejection` |
-| Probe and aggregate | the key-decided root answers: `exists("")`, `is_file("")` and `is_folder("")` from Step 5, and `get_folder_info("")` from Step 10 | `test_close_posture_outranks_the_root_probes` |
-
-The third row is the one to watch if you took Steps 5 and 10's advice to answer
-the root yourself before the call. That answer returns before your lazy client
-accessor is ever touched, so the guard that normally rides on it never runs —
-which is how five backends in this repo came to answer a closed store instead of
-refusing it. Put the closed check ahead of the root test, not after it.
+Construction runs the checks from Steps 2 and 3, so a mis-declared driver fails
+at `RedisBackend(...)`, not at its first call.
 
 ---
 
-## Step 13: Register and use
+## Step 12: Register and use
 
 ### Direct instantiation
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step13-direct"
+--8<-- "examples/snippets/custom_backend_guide.py:step12-direct"
 ```
 
 ### Via Registry (YAML config)
@@ -379,7 +394,7 @@ YAML loading lives in the `remote_store.ext.yaml` extension and requires the
 `yaml` extra (`pip install "remote-store[yaml]"`):
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step13-registry"
+--8<-- "examples/snippets/custom_backend_guide.py:step12-registry"
 ```
 
 ```yaml
@@ -390,6 +405,9 @@ backends:
     options:
       url: "redis://localhost:6379/0"
       prefix: "app:"
+      password: "${REDIS_PASSWORD}"
+    retry:
+      max_attempts: 5
 
 stores:
   cache:
@@ -397,68 +415,87 @@ stores:
     root_path: "cache/v2"
 ```
 
-The `options` dict is unpacked as `**kwargs` to your constructor. Parameter
-names in YAML must match your `__init__` signature exactly.
+The `options` mapping is unpacked as keyword arguments to your backend's
+constructor, so parameter names must match its `__init__` exactly. Two keys
+arrive changed:
+
+- **Credentials arrive wrapped in [`Secret`](../reference/api/config.md#remote_store.Secret).**
+  A string option named `key`, `secret`, `password`, `account_key`,
+  `sas_token`, `connection_string`, `client_secret` or `client_certificate` is
+  wrapped when config is loaded, so its `repr` stays masked. Type such a
+  parameter `str | Secret` and call `.reveal()` where the client needs the
+  value, as Step 3 does. A caller constructing the backend directly may pass a
+  plain `str`.
+- **A `retry:` block becomes a `retry=` keyword**, a [`RetryPolicy`](../reference/api/config.md#remote_store.RetryPolicy).
+  It is passed only when the block is present, but then it is always passed:
+  a constructor without a `retry` parameter makes the registry raise
+  `ValueError`. Map the policy onto your client's own retry mechanism, and
+  ignore what it cannot express, as `RetryPolicy` documents.
 
 One ownership note: stores from `registry.get_store()` do not own their
-backend, so `store.close()` is a no-op on them — the registry closes the
-backends it instantiated. Call `registry.close()` when done, or use
-`Registry` as a context manager (`with Registry(config) as registry:`).
+backend, so `store.close()` is a no-op on them; the registry closes the backends
+it instantiated. Call `registry.close()` when done, or use `Registry` as a
+context manager (`with Registry(config) as registry:`).
 
 ---
 
-## Step 14: Extensions work automatically
+## Step 13: Extensions work automatically
 
-Because your backend implements the `Backend` contract, every remote-store
+Because the kernel makes your driver a complete `Backend`, every remote-store
 extension works out of the box:
 
 ```python
---8<-- "examples/snippets/custom_backend_guide.py:step14-extensions"
+--8<-- "examples/snippets/custom_backend_guide.py:step13-extensions"
 ```
 
-Extensions that require specific capabilities will check at runtime. For
-example, `ext.glob.glob_files()` works with any `LIST`-capable backend —
-it doesn't need the `GLOB` capability.
+Extensions that require specific capabilities check at runtime. For example,
+`ext.glob.glob_files()` works with any `LIST`-capable backend; it doesn't need
+the `GLOB` capability.
+
+---
+
+## The async twin
+
+For an async client library, write an [`AsyncDriver`](../reference/api/drivers.md#remote_store.drivers.AsyncDriver)
+and subclass [`AsyncDriverBackend`](../reference/api/drivers.md#remote_store.drivers.AsyncDriverBackend).
+The members are the same, with three differences:
+
+- The I/O primitives (`stat`, `get`, `put`, `delete`, `list_page`, `probe`)
+  are coroutines, and so is every optional protocol's method except `glob`,
+  which returns an async iterator.
+- `aclose()` replaces `close()`.
+- `get()` returns an async iterator of `bytes` chunks, and `put()` accepts
+  `bytes` or one.
+
+`classify`, `container_absent`, `connection_dead`, `unwrap`, `native_path`,
+`to_key` and `resolve` stay synchronous. The optional protocols are the
+`AsyncSupports*` mirrors. The shipped [`AsyncMemoryBackend`](../reference/api/aio/backends/memory.md)
+is a complete example of this route, and [`MemoryBackend`](../reference/api/backends/memory.md)
+of the sync one.
 
 ---
 
 ## Partial-capability backends
 
-Not every backend supports every operation. The HTTP backend, for example,
-is read-only — this is the shipped `ReadOnlyHttpBackend`'s actual capability
+Not every backend supports every operation. A read-only HTTP driver declares
+only what it can do; this is the shipped `ReadOnlyHttpBackend`'s capability
 set (note there is no `LIST`: plain HTTP has no directory listing):
 
 ```python
 --8<-- "examples/snippets/custom_backend_guide.py:partial-capabilities"
 ```
 
-When a user calls `store.write()` on an HTTP-backed store, the `Store` layer
-raises `CapabilityNotSupported` before your backend code runs. You still need
-to implement the abstract methods (Python requires it), but they can raise
-`CapabilityNotSupported`:
+When a user calls `store.write()` on such a store, `Store` raises
+`CapabilityNotSupported` before your driver runs. `put()` and `delete()` are
+still required primitives, so implement them to refuse:
 
 ```python
 --8<-- "examples/snippets/custom_backend_guide.py:partial-write"
 ```
 
----
-
-## Error mapping checklist
-
-Every backend-native exception must map to one of these:
-
-| remote-store error | When to raise |
-|---|---|
-| [`NotFound`](../reference/api/errors.md) | File/folder doesn't exist (for operations that require it) |
-| [`AlreadyExists`](../reference/api/errors.md) | Target exists and `overwrite=False` |
-| [`PermissionDenied`](../reference/api/errors.md) | Auth failure, insufficient permissions |
-| [`InvalidPath`](../reference/api/errors.md) | Malformed path, null bytes, `..` traversal |
-| [`DirectoryNotEmpty`](../reference/api/errors.md) | Non-empty folder and `recursive=False` |
-| [`BackendUnavailable`](../reference/api/errors.md) | Network error, service down |
-| [`CapabilityNotSupported`](../reference/api/errors.md) | Operation not supported by this backend |
-
-**Pattern:** catch the SDK's base exception class, classify by error
-code/type, and raise the appropriate remote-store error with `from exc`.
+Declaring more than the driver backs is caught early: a driver that adds
+`COPY` to that set without a `copy()` method makes construction raise
+`ValueError: driver 'http-readonly' declares COPY without copy`.
 
 ---
 
@@ -466,8 +503,8 @@ code/type, and raise the appropriate remote-store error with `from exc`.
 
 remote-store ships a per-topic conformance suite under
 `tests/backends/conformance/` that validates any backend against the formal
-`BackendContract` specification. Backends contributed to the repo plug into
-this infrastructure and run through the full suite automatically. Standalone
+backend contract. Backends contributed to the repo plug into this
+infrastructure and run through the full suite automatically. Standalone
 backends can either reuse this suite or write focused tests against the same
 categories.
 
@@ -478,32 +515,32 @@ categories.
 The suite lives in
 [`tests/backends/conformance/`](https://github.com/haalfi/remote-store/tree/master/tests/backends/conformance),
 split into per-topic files that share the same parameterized `backend`
-fixture — every registered backend runs the full suite automatically.
+fixture: every registered backend runs the full suite automatically.
 
 | Topic file | Coverage | Run with |
 |---|---|---|
 | [`test_identity.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_identity.py) | Identity, capabilities, lifecycle, `resolve`, native path round-trip | `pytest tests/backends/conformance/test_identity.py` |
 | [`test_io.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_io.py) | `exists`, `is_file`/`is_folder`, read, write, delete, `to_key` round-trip | `pytest tests/backends/conformance/test_io.py` |
 | [`test_listing.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_listing.py) | `list_files`/`list_folders`, `iter_children`, glob, completeness | `pytest tests/backends/conformance/test_listing.py` |
-| [`test_atomic.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_atomic.py) | `write_atomic`, `open_atomic` (SAW-*), `WriteResult` (WR-*), move/copy semantics | `pytest tests/backends/conformance/test_atomic.py` |
+| [`test_atomic.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_atomic.py) | `write_atomic`, `open_atomic`, `WriteResult`, move/copy semantics | `pytest tests/backends/conformance/test_atomic.py` |
 | [`test_metadata.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_metadata.py) | `get_file_info`/`get_folder_info`, `size`, `modified_at`, aggregates | `pytest tests/backends/conformance/test_metadata.py` |
-| [`test_streaming.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_streaming.py) | Streaming reads, `LAZY_READ` laziness, resource cleanup | `pytest tests/backends/conformance/test_streaming.py` |
+| [`test_streaming.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_streaming.py) | Streaming reads, `LAZY_READ` laziness, no native error escaping a stream, resource cleanup | `pytest tests/backends/conformance/test_streaming.py` |
 | [`test_errors.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_errors.py) | Typed-error fidelity across read/write/delete/move/copy paths | `pytest tests/backends/conformance/test_errors.py` |
-| [`test_check_health.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_check_health.py) | `check_health()` contract — error mapping never leaks native SDK exceptions | `pytest tests/backends/conformance/test_check_health.py` |
-| [`test_health_probe_declared.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_health_probe_declared.py) | Structural: every backend overrides `check_health()` or declares an exemption (presence only; probe behavior is verified per-backend) | `pytest tests/backends/conformance/test_health_probe_declared.py` |
-| [`test_concurrency.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_concurrency.py) | Posture-gated concurrency lane — each fixture tested against its declared `concurrency` posture | `pytest tests/backends/conformance/test_concurrency.py` |
-| [`test_close_posture.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_close_posture.py) | Posture-gated `close()` lane — reusable vs. terminal after close | `pytest tests/backends/conformance/test_close_posture.py` |
+| [`test_check_health.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_check_health.py) | `check_health()` contract: error mapping never leaks native exceptions | `pytest tests/backends/conformance/test_check_health.py` |
+| [`test_health_probe_declared.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_health_probe_declared.py) | Structural: every backend probes or declares an exemption; for a class on the kernel, its driver's `probe()` decides (presence only; probe behavior is verified per-backend) | `pytest tests/backends/conformance/test_health_probe_declared.py` |
+| [`test_concurrency.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_concurrency.py) | Posture-gated concurrency lane: each fixture tested against its declared `concurrency` posture | `pytest tests/backends/conformance/test_concurrency.py` |
+| [`test_close_posture.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_close_posture.py) | Posture-gated `close()` lane: reusable vs. terminal after close | `pytest tests/backends/conformance/test_close_posture.py` |
 
 The directory also carries infrastructure lanes (sync-adapter conformance,
 large-payload guard, xfail guard, replayed examples) and the async suite
-under `aio/` — browse
+under `aio/`; browse
 [the directory](https://github.com/haalfi/remote-store/tree/master/tests/backends/conformance)
 for the full inventory.
 
 Run the whole suite at once with `pytest tests/backends/conformance/`.
 
-**Extended (Dafny-derived) cases** — error fidelity, precondition ordering,
-depth filtering, move/copy edge semantics, resource cleanup — are not a
+**Extended (Dafny-derived) cases** (error fidelity, precondition ordering,
+depth filtering, move/copy edge semantics, resource cleanup) are not a
 separate file. They are individual tests marked
 [`@pytest.mark.extended_conformance`](https://github.com/haalfi/remote-store/tree/master/tests/backends/conformance)
 spread across the topic files above, so they run with the rest of the suite
@@ -515,14 +552,14 @@ pytest -m extended_conformance
 
 Async backends have their own extended sibling,
 [`test_async_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_async_extended.py),
-which exercises the `AsyncBackend` contract (ASYNC-* mirroring BE-*).
+which exercises the `AsyncBackend` contract.
 
 The conformance suite itself is validated by running it against a
 mathematically verified oracle compiled from the formal Dafny specification
-(`sdd/formal/MemoryBackend.dfy`).  If the oracle passes a test, the test
-is known-correct.  This means passing the
-conformance suite is a strong guarantee of correctness — not just "matches
-what existing backends happen to do."  See [`sdd/formal/README.md`](https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md)
+(`sdd/formal/MemoryBackend.dfy`). If the oracle passes a test, the test
+is known-correct. Passing the conformance suite is therefore a strong
+guarantee of correctness, not just "matches what existing backends happen to
+do." See [`sdd/formal/README.md`](https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md)
 § Compiled Oracle for details.
 
 ---
@@ -536,7 +573,7 @@ two TOML files, add one small factory module under
 [`tests/backends/fixtures/`](https://github.com/haalfi/remote-store/tree/master/tests/backends/fixtures),
 and classify your family in the by-name conformance lanes (step 4). The
 conformance suite then parametrizes every test over your fixture
-automatically — registration itself needs no conftest edits, though a
+automatically. Registration itself needs no conftest edits, though a
 backend that needs an external service still adds a server fixture (see
 the end of this section).
 
@@ -552,21 +589,30 @@ drift gate validates the TOML values against the fixture loader instead).
 sources           = ["src/remote_store/backends/_redis.py"]
 transport         = "fs"
 concurrency       = "thread_safe"
-flat_namespace    = true          # true when the backend has no real directory entries
+flat_namespace    = true          # the driver's namespace is "flat"
 self_op_supported = true          # move(p, p) / copy(p, p) is a safe no-op
+rejects_write_under_file_ancestor = true  # the kernel always refuses it
 ```
 
 `transport`, `concurrency`, and the fixture's `stage` / `kind` /
 `container` fields below are closed vocabularies; their members and
 semantics are documented authoritatively in the two TOML files' header
-comments, and the loader rejects unknown values. Three things to know
-here: `concurrency` is deliberately defaultless — a new family must state
-its thread-safety posture or the loader refuses to start; the values are
-declarations of fact, so establish them (is your client library actually
-thread-safe?) rather than copying the example's; and some backends have
-no exact member — Redis fits neither `transport` nor `container`
-precisely, so pick the nearest transport (`fs` here is that
-approximation, not a statement that Redis is a filesystem).
+comments, and the loader rejects unknown values. Things to know here:
+
+- `concurrency` is deliberately defaultless: a new family must state its
+  thread-safety posture or the loader refuses to start.
+- The values are declarations of fact, so establish them (is your client
+  library actually thread-safe?) rather than copying the example's.
+- Some backends have no exact member. Redis fits neither `transport` nor
+  `container` precisely, so pick the nearest transport (`fs` here is that
+  approximation, not a statement that Redis is a filesystem).
+- **`flat_namespace` follows the driver's `namespace` declaration.**
+- **`rejects_write_under_file_ancestor = true` on a flat driver.** A flat
+  namespace defaults it to `false`, which skips the conformance cells for a
+  write under a file. The kernel refuses that write on every flat driver,
+  unconditionally, so turn the cells on. The `strict_only` fixture variants
+  some flat backends register exist to run those cells against an opt-in
+  check; a driver on the kernel has nothing to opt into and needs none.
 
 **2. Declare the fixture in `tests/backends/fixtures/fixtures.toml`:**
 
@@ -581,10 +627,10 @@ is_async  = false
 ```
 
 Per-fixture overrides of `flat_namespace` / `self_op_supported` merge on top
-of the family defaults — that is how the Azurite emulator (flat) and live
-ADLS Gen2 (HNS) share one `azure` family yet disagree.
+of the family defaults; that is how the Azurite emulator (flat) and live
+ADLS Gen2 (hierarchical) share one `azure` family yet disagree.
 
-Three of these fields deserve extra care — `stage` and `kind` drive
+Three of these fields deserve extra care. `stage` and `kind` drive
 collection, `container` is about CI provisioning:
 
 - **`stage` decides when your fixture participates.** Stage 1 fixtures run
@@ -594,27 +640,27 @@ collection, `container` is about CI provisioning:
   forced with `--stage=N` or the `RS_TEST_STAGE` env var. A service-backed
   fixture like this one belongs in stage 2.
 - **`kind = "real-live"`** (live cloud) fixtures must also carry
-  `pytest.mark.live` via the registration's `marks=` — the registry
+  `pytest.mark.live` via the registration's `marks=`; the registry
   rejects a live fixture without it.
 - If CI cannot start your service via `container` (the enum has no member
   for it, as with Redis here), provision the service yourself and have the
-  factory skip when it is absent — that is step 3's first obligation.
+  factory skip when it is absent; that is step 3's first obligation.
 
 **3. Add a factory module `tests/backends/fixtures/redis.py`:**
 
 The module name matches the fixture name by default (that is how it gets
 imported); a differently-named or shared module needs a `_MODULE_FOR`
-entry — see below. The factory is called fresh for **every test**, and
+entry (see below). The factory is called fresh for **every test**, and
 the suite runs no cleanup unless you provide one. That gives it four
 obligations beyond constructing the backend:
 
-- **Skip when infrastructure is absent** — the optional dependency AND the
+- **Skip when infrastructure is absent**: the optional dependency AND the
   service itself. Factories run at test setup, so `pytest.skip` there is
   how a fixture self-excludes; a missing reachability check turns every
   test into a `BackendUnavailable` failure on machines without the daemon.
-- **Provision the namespace it hands out** — create the bucket/database/
+- **Provision the namespace it hands out**: create the bucket/database/
   container the backend points at; the suite assumes writable storage.
-- **Isolate per call** — a unique prefix or bucket per invocation, or
+- **Isolate per call**: a unique prefix or bucket per invocation, or
   earlier tests' leftovers show up as baffling `AlreadyExists` /
   orphan-artifact failures that look like backend bugs.
 - **Provide `cleanup=`** to close the backend after each test.
@@ -675,7 +721,7 @@ register(
 ```
 
 `_load_all()` walks `fixtures.toml` and imports the factory module with
-the same name as each fixture — so a fixture whose module is named
+the same name as each fixture, so a fixture whose module is named
 differently (or a second fixture sharing one module) needs an entry in the
 `_MODULE_FOR` map in `tests/backends/fixtures/__init__.py`, or collection
 dies with `ModuleNotFoundError`. The conformance conftest's
@@ -692,10 +738,11 @@ classification lanes until step 4 below is done.
 
 **4. Classify your family in the by-name conformance lanes.** Two
 `test_identity.py` declaration sets (atomic-move and seekable) fail loudly
-for any unclassified family — the failure message names the exact edit.
-One lane does NOT prompt: `test_health_probe_declared.py` discovers
-backends from a hardcoded module import list, and a module missing from it
-is silently not checked — add your backend module there yourself.
+for any unclassified family; the failure message names the exact edit.
+`test_health_probe_declared.py` needs two edits of its own: add your backend
+module to its import list, since a module missing there is silently not
+checked, and map your backend class to its driver class in `_DRIVERS`, where
+an unmapped class on the kernel fails.
 
 If your backend requires an external service (like S3, SFTP, or Azurite),
 add a session-scoped server fixture in `tests/conftest.py` (where
@@ -709,7 +756,7 @@ your factory at call time.
 ### Capability gating
 
 Backends may declare a subset of capabilities, and the suite skips what a
-backend cannot do — a read-only backend cleanly skips all write, move, copy,
+backend cannot do: a read-only backend cleanly skips all write, move, copy,
 and delete tests without failures. Two mechanisms, in order of preference:
 
 **Class-level filtering** is the primary mechanism: test classes parametrize
@@ -740,67 +787,36 @@ def test_move_preserves_content(backend):
 ```
 
 A backend declaring only `READ` and `LIST` never enters the `WRITE`,
-`MOVE`, `COPY`, and `DELETE` lanes at all — class-filtered tests are not
-generated for it — and any stricter test inside a coarser class
+`MOVE`, `COPY`, and `DELETE` lanes at all (class-filtered tests are not
+generated for it), and any stricter test inside a coarser class
 self-skips. The suite still passes: absences and skips are not failures.
 
 ---
 
-### Flat-namespace vs. hierarchical backends
+### Flat-namespace vs. hierarchical drivers
 
-Backends fall into two models that affect a handful of conformance tests.
+The `namespace` declaration decides who checks a key's shape, not what the
+caller sees. On a driver, both namespaces give the same answers:
 
-**Hierarchical** backends (Local, SFTP, Memory) have real directory objects.
-Writing a file creates its parent directories; a path can be either a file
-*or* a directory, never both.
-
-**Flat-namespace** backends (S3, Azure, HTTP) have no real directory entries.
-Folders are virtual — inferred from key prefixes. A path `a/b/c` implies a
-prefix `a/b/` but no actual directory object exists.
-
-The conformance suite reads this from the per-backend `flat_namespace` flag
-declared in `tests/backends/fixtures/backends.toml`, with per-fixture
-overrides in `fixtures.toml` taking precedence (see the registration
-steps above for both files and the Azurite-vs-ADLS example).
-Tests that rely on real directory semantics call `_skip_flat_namespace()`,
-which reads the resolved flag from the per-fixture record attached by the
-conformance indirect fixture; no identity-set lookup is needed.
-
-Key behavioral differences that the conformance tests check:
-
-| Behavior | Hierarchical (Local, SFTP, Memory) | Flat-namespace (S3, Azure, SQL) |
+| Call | Flat (`"flat"`) | Hierarchical (`"hierarchical"`) |
 |---|---|---|
-| Write to a path that is an existing directory | Raises `InvalidPath` | Allowed — the write has no error to reclassify |
-| Read / delete / stat / move-source on a path that is a folder | Raises `InvalidPath` | Raises `InvalidPath` — derived on the error path |
-| `delete_folder` / `get_folder_info` on a path that is a file | Raises `InvalidPath` | Raises `InvalidPath` — derived on the error path |
-| `delete_folder(recursive=False)` on non-empty folder | Raises `DirectoryNotEmpty` | Raises `DirectoryNotEmpty` |
-| Explicit directory creation | Required (mkdir semantics) | Not needed; folders emerge from key prefixes |
+| Write to a key that is a folder | `InvalidPath`: the kernel checks before the write | `InvalidPath`: the storage system refuses, the kernel types it |
+| Write under a key that is a file | `InvalidPath`: the kernel checks before the write | `InvalidPath`: the storage system refuses, the kernel types it |
+| Read, delete or move a folder | `InvalidPath`: the kernel probes after the refusal | `InvalidPath`: the kernel probes after the refusal |
+| `delete_folder` / `get_folder_info` on a file | `InvalidPath` | `InvalidPath` |
+| `delete_folder(recursive=False)` on a non-empty folder | `DirectoryNotEmpty` | `DirectoryNotEmpty` |
 | `is_folder(path)` for a prefix with no keys | `False` | `False` |
 
-**Wrong-type errors are not a variation.** Rows two and three hold on every
-backend. A flat namespace cannot answer "is this a directory?" directly, so it
-derives the answer *after* the operation has already failed — one bounded
-prefix listing, or one HEAD — and converts the miss into `InvalidPath`. Do the
-same in your backend rather than letting a `NotFound` stand: the probe costs
-nothing on the success path, because a successful call never reaches it.
+What differs is the cost. A flat write pays one `stat` per ancestor and a
+one-item listing before it runs; a hierarchical write pays no extra check on
+success. Declare what your storage system really does: a hierarchical
+declaration on a storage system that lets a key shadow a prefix lets that
+write through.
 
-**Fail-open belongs to that call site, not to the probe.** On the error path a
-probe that cannot answer may return "no", because the operation's own error is
-still there to stand. Do not build that swallow into the probe itself: the same
-HEAD or listing usually also serves as the plain existence check at the head of
-`delete`, `delete_folder` and the `move`/`copy` source, and there it is the
-*determinant* with no prior error to fall back on — swallowing invents a
-verdict, and a denied HEAD reaches the caller as "the object is absent". Keep
-the probe strict and wrap it at the error-path call site; the
-[Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md)
-states the rule and the reasoning behind it.
-
-What flat-namespace backends *are* exempt from is the write side — a write to
-a key that shadows a prefix succeeds, so there is no error to reclassify, and
-the same applies to a move/copy destination.
-
-If your backend is hierarchical (the common case), no action is needed — the
-full extended suite applies.
+The conformance suite reads the shape from the `flat_namespace` flag in
+`tests/backends/fixtures/backends.toml` (per-fixture overrides in
+`fixtures.toml` take precedence), and skips the few tests that rely on real
+directory entries for a flat fixture.
 
 ---
 
@@ -812,24 +828,24 @@ Before a backend is considered conformant, verify:
 |---|---|---|
 | **Conformance** | All `tests/backends/conformance/` tests pass or self-skip (declared capability missing) | `pytest tests/backends/conformance/ -k <fixture-name>` |
 | **Extended** | All `@pytest.mark.extended_conformance` cases pass or self-skip | `pytest -m extended_conformance -k <fixture-name>` |
-| **Error mapping** | Every native exception maps to a `remote_store` error — nothing leaks | Error mapping checklist above |
+| **Error mapping** | Every native exception is classified, mid-stream ones included; nothing leaks | [Step 8](#step-8-error-classification) |
 | **Repr safety** | `repr(backend)` does not expose secrets | `pytest tests/backends/conformance/test_identity.py -k test_repr_masks_secrets` |
 
 Three pitfalls in reading these results:
 
 - **Check stage participation first.** A stage-2/3 fixture is silently
-  dropped from parametrization when the session's stage is lower — and the
+  dropped from parametrization when the session's stage is lower, and the
   default stage is 1 on machines without a reachable Docker daemon. Pass
   `--stage=2` (or set `RS_TEST_STAGE`) before suspecting your registration.
 - **The `-k` token is the fixture/family name** (underscores, e.g.
-  `s3_boto3`), not the backend's `name` property — a hyphenated `name` like
+  `s3_boto3`), not the backend's `name`. A hyphenated `name` like
   `"s3-boto3"` never matches any test id, so `-k` with it silently selects
   nothing.
 - **Green is only meaningful if your fixture actually ran.** Confirm your
   fixture id appears in the parametrized test ids (`pytest --collect-only -q
   ... | grep <fixture-name>`). A handful of passes with thousands
   deselected, or exit code 5 ("no tests ran"), means the fixture never
-  participated — stage gating or a failed registration, not universal
+  participated: stage gating or a failed registration, not universal
   self-skipping.
 
 Skips are expected and acceptable when a backend doesn't declare the relevant
@@ -844,13 +860,16 @@ capability. Failures (not skips) in either suite are blocking.
 > conformance suite verifies.
 
 If you are building a backend outside the remote-store repository, write
-focused tests covering the same categories the conformance suite verifies:
+focused tests covering the same categories the conformance suite verifies.
+The kernel already holds the path rules and the root, so concentrate on what
+your driver decides:
 
 #### Happy paths
 
 - Read/write round-trip
 - Overwrite behavior (`overwrite=True` and `overwrite=False`)
-- List files and folders (recursive and non-recursive)
+- List files and folders (recursive and non-recursive), including a folder
+  large enough to span pages if your driver pages
 - Move and copy
 - Metadata accuracy (`size`, `modified_at`)
 
@@ -862,16 +881,16 @@ focused tests covering the same categories the conformance suite verifies:
 - `delete_folder(recursive=False)` on non-empty folder raises `DirectoryNotEmpty`
 - Path naming a wrong type (file path to `get_folder_info`, directory path to
   `read`) raises `InvalidPath`
-- Backend unavailable raises `BackendUnavailable`
+- Each native exception your client raises maps to the error you intend, at
+  call time and while a stream is read; an unreachable service raises
+  `BackendUnavailable`
 
 #### Edge cases
 
-- Empty path (`""`) and root alias (`"."`) — root always exists and is always
-  a folder, under both spellings, and on a store nothing has been written to yet
-- `is_file("")` always returns `False`; `exists("")` never raises — including
-  when the SDK rejects a zero-length key (answer it yourself, before the call)
+- Keys holding your storage system's special characters (wildcards,
+  separators, percent signs) list and read as themselves
+- `to_key(native_path(key)) == key`
 - Deeply nested paths (`"a/b/c/d/e/file.txt"`)
-- Non-existent paths to `list_files` / `list_folders` yield nothing (no exception)
 - `repr(backend)` does not expose credentials or secrets
 - Concurrent access (if thread-safety matters)
 
@@ -887,77 +906,93 @@ focused tests covering the same categories the conformance suite verifies:
 
 ### When to declare `SEEKABLE_READ`
 
-Declare it only if `read()` **always** returns a seekable stream with zero
+Declare it only if `get()` **always** returns a seekable stream with zero
 overhead. `BytesIO` qualifies. Streams backed by network iterators don't.
 
-If your `read()` returns a non-seekable stream, don't worry — `Store` handles
-it. `read_seekable()` will spool to a temp file automatically. You can also
-override `read_seekable()` for an optimized path (like Azure's HTTP Range
-reader).
+`SEEKABLE_READ` is about `read()`, not `read_seekable()`. Every backend's
+`read_seekable()` returns a seekable stream: with `SupportsRangeRead` the
+kernel serves it with ranged requests, and without it the kernel passes a
+seekable stream through or spools a non-seekable one to a temporary file. A
+driver with ranged reads over a non-seekable `get()` stream implements
+`SupportsRangeRead` and does not declare `SEEKABLE_READ`.
 
 ### When to support `ATOMIC_WRITE`
 
-Support it if your backend can guarantee that readers never see partial content.
-Filesystem backends use temp-file-and-rename. Databases can use transactions.
-If your backend's writes are inherently atomic (single Redis `HSET`), you could
-declare it — but be honest about the guarantee. "Atomic at the key level"
-isn't the same as "atomic rename of a visible path."
+Support it if your backend can guarantee that readers never see partial
+content. A single write call that replaces the whole value qualifies
+(`put_is_atomic = True`), as does a storage-side temporary promoted on commit
+(`SupportsOpenWrite`) or a rename that replaces atomically (the kernel writes a
+temporary and renames it). Be honest about the guarantee: the Redis driver's
+`HSET` is atomic for readers, but its no-overwrite check is a separate call, so
+two concurrent writers without `overwrite` can both succeed.
 
 ### Thread safety
 
 Backends may be called from multiple threads (e.g., `batch_copy` with
-concurrency). Use locking if your internal state is mutable. Redis clients
-are generally thread-safe, so our example doesn't need explicit locking.
+concurrency). The kernel's only mutable state is the closed flag, so thread
+safety is your driver's: use locking if its internal state is mutable,
+as the in-memory driver does. Redis clients are generally thread-safe, so the
+example needs no explicit locking.
 
 ---
 
 ## Quick reference
 
-### Abstract methods (must implement)
+### Required driver members
 
-| Member | Type | Raises on error |
+| Member | Returns | Notes |
 |---|---|---|
-| `CAPABILITIES` (class attribute) | [`ClassVar[CapabilitySet]`](../reference/api/capabilities.md) | — |
-| `name` (property) | `str` | — |
-| `capabilities` (property) | [`CapabilitySet`](../reference/api/capabilities.md) | — |
-| `exists(path)` | `bool` | Never raises [`NotFound`](../reference/api/errors.md) |
-| `is_file(path)` | `bool` | — |
-| `is_folder(path)` | `bool` | — |
-| `read(path)` | `BinaryIO` | [`NotFound`](../reference/api/errors.md) |
-| `read_bytes(path)` | `bytes` | [`NotFound`](../reference/api/errors.md) |
-| `write(path, content, overwrite, metadata=None)` | [`WriteResult`](../reference/api/models.md) | [`AlreadyExists`](../reference/api/errors.md) |
-| `write_atomic(path, content, overwrite, metadata=None)` | [`WriteResult`](../reference/api/models.md) | [`AlreadyExists`](../reference/api/errors.md), [`CapabilityNotSupported`](../reference/api/errors.md) |
-| `open_atomic(path, overwrite)` | `ContextManager[BinaryIO]` | [`AlreadyExists`](../reference/api/errors.md), [`CapabilityNotSupported`](../reference/api/errors.md) |
-| `delete(path, missing_ok)` | `None` | [`NotFound`](../reference/api/errors.md) |
-| `delete_folder(path, recursive, missing_ok)` | `None` | [`NotFound`](../reference/api/errors.md), [`DirectoryNotEmpty`](../reference/api/errors.md) |
-| `list_files(path, recursive, max_depth)` | `Iterator[`[`FileInfo`](../reference/api/models.md)`]` | — |
-| `list_folders(path)` | `Iterator[`[`FolderEntry`](../reference/api/models.md)`]` | — |
-| `get_file_info(path)` | [`FileInfo`](../reference/api/models.md) | [`NotFound`](../reference/api/errors.md) |
-| `get_folder_info(path)` | [`FolderInfo`](../reference/api/models.md) | [`NotFound`](../reference/api/errors.md) |
-| `move(src, dst, overwrite)` | `None` | [`NotFound`](../reference/api/errors.md), [`AlreadyExists`](../reference/api/errors.md) |
-| `copy(src, dst, overwrite)` | `None` | [`NotFound`](../reference/api/errors.md), [`AlreadyExists`](../reference/api/errors.md) |
+| `stat(key, follow_links)` | [`Entry`](../reference/api/drivers.md#remote_store.drivers.Entry) or `None` | `None`, `NotFound` or `InvalidPath` for a miss; flat may be blind to a prefix |
+| `get(key)` | `BinaryIO` | Refuses an absent key or a non-file in any shape |
+| `put(key, content, overwrite, metadata)` | [`PutResult`](../reference/api/drivers.md#remote_store.drivers.PutResult) | Refuses an existing file unless `overwrite` |
+| `delete(key)` | `None` | Refuses an absent key without removing anything |
+| `list_page(prefix, delimiter, cursor, limit, follow_links)` | [`Page`](../reference/api/drivers.md#remote_store.drivers.Page) | Flat: byte order; `NotFound`/`InvalidPath` only for nothing |
+| `probe()` | `None` | Cheapest call that touches the storage |
+| `close()` | `None` | Release resources (`aclose()` on the async twin) |
+| `classify(exc, op, key)` | [`RemoteStoreError`](../reference/api/errors.md#remote_store.RemoteStoreError) | Returns, never raises |
+| `container_absent(exc, op)` | `bool` | Whether the bucket, container or table is gone |
+| `connection_dead(exc)` | `bool` | Inspection only, no I/O |
+| `unwrap(type_hint)` | the native handle | `CapabilityNotSupported` for another type |
+| `native_path(key)` | `str` | Total |
+| `to_key(native_path)` | `str` | Total; inverts `native_path` |
+| `resolve(key)` | [`ResolutionPlan`](../reference/api/models.md#remote_store.ResolutionPlan) | Total; no I/O |
 
-### Optional overrides
+### Declared attributes
 
-| Method | Default behavior |
-|---|---|
-| `read_seekable(path)` | Spools non-seekable streams to temp file |
-| `iter_children(path)` | Chains `list_files()` + `list_folders()` |
-| `glob(pattern)` | Raises `CapabilityNotSupported` |
-| `to_key(native_path)` | Identity function |
-| `native_path(path)` | Identity function |
-| `resolve(path)` | Builds a `ResolutionPlan` from `name` and `native_path()`; no I/O. Override to add backend-specific `details` |
-| `check_health()` | No-op |
-| `close()` | No-op |
-| `unwrap(type_hint)` | Raises `CapabilityNotSupported` |
+| Attribute | Type | Meaning |
+|---|---|---|
+| `name` | `str` | Unique backend name, carried on every error |
+| `namespace` | `"flat"` or `"hierarchical"` | Who checks a write's key shape: the kernel, or the storage system |
+| `parents` | `"none"`, `"implicit"` or `"explicit"` | Whether folders are objects, and who creates them |
+| `capabilities` | [`CapabilitySet`](../reference/api/capabilities.md) | What the backend supports; each one backed (Step 2) |
+| `put_is_atomic` | `bool` | `put()` never exposes partial content |
+| `close_is_terminal` | `bool` | Use after `close()` raises `BackendUnavailable`; same value on the backend class |
+| `stream_catch` | tuple of exception types | Optional: what a `get()` stream raises beyond `OSError` and `EOFError` |
+| `size_probe` | callable | Optional: resolves `SEEK_END` for a `get()` stream |
+
+### Optional protocols
+
+| Protocol | Member | Serves |
+|---|---|---|
+| [`SupportsRangeRead`](../reference/api/drivers.md#remote_store.drivers.SupportsRangeRead) | `get_range(key, offset, length)` | `read_seekable()` by ranged requests |
+| [`SupportsOpenWrite`](../reference/api/drivers.md#remote_store.drivers.SupportsOpenWrite) | `open_write(key, overwrite, metadata)` | `write_atomic()` and `open_atomic()` through a storage-side temporary |
+| [`SupportsAtomicMove`](../reference/api/drivers.md#remote_store.drivers.SupportsAtomicMove) | `move(src, dst, overwrite)` | `MOVE` and `ATOMIC_MOVE`, forwarded whole |
+| [`SupportsRename`](../reference/api/drivers.md#remote_store.drivers.SupportsRename) | `rename(src, dst, replace)`, `rename_replaces` | `MOVE`; with `rename_replaces`, also `ATOMIC_MOVE` and `ATOMIC_WRITE` |
+| [`SupportsCopy`](../reference/api/drivers.md#remote_store.drivers.SupportsCopy) | `copy(src, dst, overwrite)` | `COPY`, and `MOVE` as copy-then-delete |
+| [`SupportsDeleteTree`](../reference/api/drivers.md#remote_store.drivers.SupportsDeleteTree) | `delete_tree(key)` | Recursive `delete_folder()` in one call |
+| [`SupportsRemoveFolder`](../reference/api/drivers.md#remote_store.drivers.SupportsRemoveFolder) | `remove_folder(key)` | Removing an empty folder; required when `parents` is not `"none"` |
+| [`SupportsEnsureParents`](../reference/api/drivers.md#remote_store.drivers.SupportsEnsureParents) | `ensure_parents(key)` | Creating a write's parents; required when `parents == "explicit"` |
+| [`SupportsFolderStats`](../reference/api/drivers.md#remote_store.drivers.SupportsFolderStats) | `folder_stats(prefix)` | `get_folder_info()` from a native aggregate |
+| [`SupportsGlob`](../reference/api/drivers.md#remote_store.drivers.SupportsGlob) | `glob(pattern)` | `GLOB` |
 
 ---
 
 ## See also
 
-- [Backend API reference](../reference/api/backend.md) — full method documentation
-- [Error types API reference](../reference/api/errors.md) — all error classes
-- [Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md) — formal spec
-- [Capabilities Matrix](../reference/capabilities-matrix.md) — all backends and their capabilities
-- [Choosing a Backend](choosing-a-backend.md) — decision guide for built-in backends
-- [Architecture Overview](../explanation/architecture.md) — how Store, Backend, and extensions fit together
+- [Drivers API reference](../reference/api/drivers.md): every protocol, record and kernel class
+- [Backend API reference](../reference/api/backend.md): the interface the kernel implements for you
+- [Error types API reference](../reference/api/errors.md): all error classes
+- [Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md): formal spec
+- [Capabilities Matrix](../reference/capabilities-matrix.md): all backends and their capabilities
+- [Choosing a Backend](choosing-a-backend.md): decision guide for built-in backends
+- [Architecture Overview](../explanation/architecture.md): how Store, Backend, and extensions fit together

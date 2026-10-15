@@ -37,6 +37,31 @@ state. If you relied on a best-effort walk over a tree with unreadable parts,
 walk it yourself with `list_folders()` and `list_files()` per folder, catching
 `PermissionDenied` for each.
 
+**For backend authors: a backend is now written as a driver:**
+
+`remote_store.drivers` is new. A custom backend is now documented as a
+*driver*, a class implementing your storage system's primitives, wrapped in
+`DriverBackend` (or `AsyncDriverBackend`), which supplies the rest of the
+`Backend` contract. See [Build Your Own Backend](../guides/custom-backend-guide.md).
+**Nothing you have breaks:** a class that subclasses `Backend` or
+`AsyncBackend` directly keeps working and needs no change.
+
+*`MemoryBackend` and `AsyncMemoryBackend` are built on drivers.* They now
+subclass `DriverBackend` and `AsyncDriverBackend`, keeping their names, import
+paths and zero-argument constructors; their drivers are public as
+`MemoryDriver` (`remote_store.backends`) and `AsyncMemoryDriver`
+(`remote_store.aio`). Three things you might observe:
+
+- **Some error messages changed** to the kernel's wording, for example
+  `Cannot write to the store root`, `Is a folder, not a file: k` and
+  `Not found: k`. The error types are unchanged. If a test matches on the
+  message text, match on the type instead, or on the new text.
+- **`native_path()` and `resolve()` normalise the key**, as they do for a valid
+  key on any driver-backed store: `native_path("./a//b")` returns `"a/b"`.
+  `resolve()` keeps your spelling in the plan's `key`.
+- **A key holding a backslash is `InvalidPath`** on every file and folder
+  operation, `exists()` and the listings included.
+
 ## v0.32.0 to v0.33.0
 
 **Python 3.10 is no longer supported:**

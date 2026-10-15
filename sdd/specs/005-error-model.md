@@ -8,6 +8,7 @@ All errors raised by `remote_store` inherit from a single base class `RemoteStor
 
 **Invariant:** `RemoteStoreError` is the root of the error hierarchy.
 **Postconditions:** Carries optional `path: str | None` and `backend: str | None` attributes.
+**On the kernel:** for a class on the contract kernel ([003](003-backend-adapter-contract.md#contract-kernel)), an error passing the kernel's choke point gets `path` set to the operation's key and `backend` set to the driver's `name`, each where the error left it unset, so a driver need not set either. An error the caller's own content raised passes the choke point untouched (ASYNC-091).
 **Example:**
 ```python
 try:
@@ -91,6 +92,7 @@ assert exc_info.value.capability == "atomic_write"
 ## ERR-009: Meaningful String Representations
 
 **Invariant:** `str()` and `repr()` produce meaningful messages including all non-None context attributes.
+**On the kernel:** for a class on the contract kernel, the choke point guarantees a non-empty message: an error passing it with none is given one naming the native exception's type and the operation.
 **Example:**
 ```python
 e = NotFound("File not found", path="data/file.txt", backend="s3")

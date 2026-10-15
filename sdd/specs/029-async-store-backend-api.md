@@ -16,6 +16,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-001: Abstract Base Class
 
 **Invariant:** `AsyncBackend` is an ABC. Subclasses must implement all abstract methods.
+**On the kernel:** `AsyncDriverBackend` is a complete `AsyncBackend` over an `AsyncDriver` of async wire primitives, the async route of the contract kernel ([003 § Contract kernel](003-backend-adapter-contract.md#contract-kernel)); both are public in `remote_store.drivers`. A subclass builds its driver and need implement no abstract method itself. `AsyncMemoryBackend` is the first class on it.
 **See also:** [BE-001](003-backend-adapter-contract.md).
 
 ### ASYNC-002: Name Property
@@ -148,6 +149,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-024: Error Mapping
 
 **Invariant:** Backend-native exceptions never leak. All exceptions are mapped to `remote_store` error types.
+**On the kernel:** for a class on `AsyncDriverBackend` the mapping is the kernel's choke point over the driver's `classify`, split as BE-021's placement table states; a `read` stream's errors are mapped there too.
 **See also:** [BE-021](003-backend-adapter-contract.md), [005-error-model.md](005-error-model.md).
 
 ### ASYNC-025: unwrap()
@@ -179,6 +181,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-057: check_health()
 
 **Invariant:** `async def check_health() -> None` is a concrete method (default no-op). Native async backends override to verify connectivity (e.g., container probe). `SyncBackendAdapter` delegates to the sync backend's `check_health()` via `asyncio.to_thread()` (see ASYNC-037).
+**On the kernel:** `AsyncDriverBackend.check_health()` awaits the driver's `probe()` behind the closed guard, its errors mapped by the choke point (PING-002).
 **See also:** [026-health-check.md](026-health-check.md).
 
 ### ASYNC-058: resolve()
@@ -653,6 +656,12 @@ adapter performs no rollback of its own.  For `write_atomic()` on a
 backend with `ATOMIC_WRITE`, the destination `path` is untouched on
 failure; for `write()`, whatever bytes reached the backend before the
 exception are visible per that backend's non-atomic write semantics.
+**On the kernel:** a class on the contract kernel, sync or async, passes an
+error raised by the caller's own content through its choke point verbatim on
+`write` and `write_atomic`, neither classified nor retyped, so the wrapped
+backend does not turn it into a backend error before the adapter sees it.
+Pinned by `test_an_error_from_the_callers_content_passes_the_choke_point_verbatim`
+in `tests/_kernel/test_kernel.py`.
 **See also:** [007-atomic-writes.md](007-atomic-writes.md),
 [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md) § Write-side
 content.

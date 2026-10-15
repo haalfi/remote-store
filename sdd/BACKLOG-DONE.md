@@ -298,6 +298,30 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
+  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
+  `MemoryBackend` and `AsyncMemoryBackend` run on the contract kernel over
+  `MemoryDriver` and `AsyncMemoryDriver`, one lock-free `MemoryTree` under
+  each runtime's lock; names, imports and constructors kept. The kernel is
+  public as `remote_store.drivers`, and a caller's content error now passes
+  its choke point verbatim (ASYNC-091). ADR-0042, RFC-0017 and the new
+  ADR-0047 (RFC-0021's stances) are Accepted; specs 003, 005, 007, 010, 013,
+  022, 026, 029 and 037 carry their placements, `TESTING.md` Rule 13 is
+  stated over the driver's probe, and `BackendContract.dfy`'s `DeleteFolder`
+  is guarded by `CanonicalUnder`. The custom-backend guide teaches a driver.
+  New Memory cells: `tests/backends/memory/test_kernel_cells.py`. Item 7's
+  items carry their D3 placement in their dossiers. Co-shipped: BK-398.
+  Trace: [bk-394](traces/bk-394-memory-drivers-accept-adr-0042.yml). Detail:
+  [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md).
+
+- [x] **BK-398 — Three round-trip clauses promise `to_key(native_path(k)) == k` verbatim, which `GraphBackend` already breaks**
+  spec: NPR-005, NPR-020, BE-029 · effort: S · audience: contributor.process, user.api_docs
+  NPR-005, NPR-020 and BE-029 § Round-trip consequence now take BE-025's
+  non-canonical exception: a non-canonical key's address inverts to its
+  canonical key, as `GraphBackend` and, with BK-394 in the same PR, both
+  Memory classes answer. Trace:
+  [bk-394](traces/bk-394-memory-drivers-accept-adr-0042.yml).
+
 - [x] **BUG-326 — `ship-report` crashes on Windows when a PR comment holds a character cp1252 cannot decode**
   spec: — · effort: S · audience: contributor.tooling
   `_gh` and `_git` in `sdd/rfcs/rfc-0015-findings.py`, and `ship_report.py`'s own

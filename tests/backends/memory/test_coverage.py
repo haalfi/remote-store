@@ -7,7 +7,7 @@ import io
 
 import pytest
 
-from remote_store._errors import DirectoryNotEmpty, InvalidPath, NotFound
+from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound
 from remote_store.backends._memory import MemoryBackend
 
 
@@ -17,7 +17,7 @@ def mb() -> MemoryBackend:
 
 
 # ---------------------------------------------------------------------------
-# _split_path / _traverse / _ensure_parents validation
+# Key validation (the kernel's, BE-030) and the tree's traversal
 # ---------------------------------------------------------------------------
 
 
@@ -26,7 +26,7 @@ def mb() -> MemoryBackend:
     ("path", "match"),
     [
         pytest.param("a/\0b", "null byte", id="null_byte"),
-        pytest.param("/root/file", "Absolute", id="absolute"),
+        pytest.param("/root/file", "must not start with '/'", id="absolute"),
         pytest.param("a/../b", "\\.\\.", id="dotdot"),
     ],
 )
@@ -52,7 +52,7 @@ def test_traverse_through_file_returns_false(mb: MemoryBackend, method: str) -> 
 @pytest.mark.spec("MEM-DS-005")
 def test_file_blocks_intermediate_directory(mb: MemoryBackend) -> None:
     mb.write("a/b", b"data")
-    with pytest.raises(InvalidPath, match="exists as a file"):
+    with pytest.raises(InvalidPath, match="ancestor of the path is a file"):
         mb.write("a/b/c/d", b"nested")
 
 
@@ -73,19 +73,19 @@ def test_is_file_root(mb: MemoryBackend, path: str) -> None:
     [pytest.param(("", b"data"), id="empty"), pytest.param((".", b"data"), id="dot")],
 )
 def test_write_empty_path_rejected(mb: MemoryBackend, args: tuple) -> None:
-    with pytest.raises(InvalidPath, match="must not be empty"):
+    with pytest.raises(InvalidPath, match="Cannot write to the store root"):
         mb.write(*args)
 
 
 @pytest.mark.spec("BE-012")
 def test_delete_empty_path_rejected(mb: MemoryBackend) -> None:
-    with pytest.raises(InvalidPath, match="must not be empty"):
+    with pytest.raises(InvalidPath, match="store root is a folder, not a file"):
         mb.delete("")
 
 
-@pytest.mark.spec("MEM-014")
+@pytest.mark.spec("BE-031")
 def test_delete_folder_empty_path_rejected(mb: MemoryBackend) -> None:
-    with pytest.raises(InvalidPath, match="must not be empty"):
+    with pytest.raises(InvalidPath, match="Cannot delete the store root"):
         mb.delete_folder("")
 
 
@@ -100,7 +100,7 @@ def test_delete_folder_empty_path_rejected(mb: MemoryBackend) -> None:
 def test_write_special_cases(mb: MemoryBackend, label: str, data: bytes, expected: bytes | None) -> None:
     if label == "directory":
         mb.write("a/b/c", b"file-under-b")
-        with pytest.raises(InvalidPath, match="exists as a directory"):
+        with pytest.raises(InvalidPath, match="Is a folder, not a file"):
             mb.write("a/b", data)
     else:
         mb.write("file.txt", data)
@@ -123,7 +123,7 @@ def test_write_special_cases(mb: MemoryBackend, label: str, data: bytes, expecte
 def test_delete_folder_parent_is_file(mb: MemoryBackend, missing_ok: bool, expect_raise: bool) -> None:
     mb.write("a/b", b"data")
     if expect_raise:
-        with pytest.raises(NotFound, match="Folder not found"):
+        with pytest.raises(NotFound, match="Not found"):
             mb.delete_folder("a/b/sub", missing_ok=missing_ok)
     else:
         mb.delete_folder("a/b/sub", missing_ok=missing_ok)
@@ -150,7 +150,7 @@ def test_get_file_info_on_root_raises_invalid_path(mb: MemoryBackend, root: str)
     Was ``NotFound``, which made this the one backend where the root's verdict
     depended on which file-shaped method you asked.
     """
-    with pytest.raises(InvalidPath, match="Not a file"):
+    with pytest.raises(InvalidPath, match="store root is a folder, not a file"):
         mb.get_file_info(root)
 
 
@@ -172,10 +172,10 @@ def test_get_folder_info_with_nested_subdirectories(mb: MemoryBackend) -> None:
 @pytest.mark.parametrize(
     ("op", "src", "dst", "match"),
     [
-        pytest.param("move", "", "dst", "Source path must not be empty", id="move_empty_src"),
-        pytest.param("move", "src", "", "Destination path must not be empty", id="move_empty_dst"),
-        pytest.param("copy", "", "dst", "Source path must not be empty", id="copy_empty_src"),
-        pytest.param("copy", "src", "", "Destination path must not be empty", id="copy_empty_dst"),
+        pytest.param("move", "", "dst", "store root is a folder, not a file", id="move_empty_src"),
+        pytest.param("move", "src", "", "Cannot write to the store root", id="move_empty_dst"),
+        pytest.param("copy", "", "dst", "store root is a folder, not a file", id="copy_empty_src"),
+        pytest.param("copy", "src", "", "Cannot write to the store root", id="copy_empty_dst"),
     ],
 )
 def test_move_copy_empty_paths(mb: MemoryBackend, op: str, src: str, dst: str, match: str) -> None:
@@ -187,7 +187,7 @@ def test_move_copy_empty_paths(mb: MemoryBackend, op: str, src: str, dst: str, m
 def test_dst_is_directory(mb: MemoryBackend, op: str) -> None:
     mb.write("src", b"data")
     mb.write("dst/child", b"nested")
-    with pytest.raises(InvalidPath, match="exists as a directory"):
+    with pytest.raises(InvalidPath, match="Is a folder, not a file"):
         getattr(mb, op)("src", "dst")
 
 
@@ -205,14 +205,14 @@ def test_move_same_path_exists(mb: MemoryBackend) -> None:
 
 @pytest.mark.spec("MEM-016")
 def test_move_same_path_not_found(mb: MemoryBackend) -> None:
-    with pytest.raises(NotFound, match="Source not found"):
+    with pytest.raises(NotFound, match="Not found"):
         mb.move("missing", "missing")
 
 
 @pytest.mark.spec("MEM-016")
 def test_move_same_path_directory_raises_invalid_path(mb: MemoryBackend) -> None:
     mb.write("a/b/c", b"data")
-    with pytest.raises(InvalidPath, match="Source is a directory"):
+    with pytest.raises(InvalidPath, match="Is a folder, not a file"):
         mb.move("a/b", "a/b")
 
 
@@ -243,8 +243,28 @@ class TestMemoryListingCorrectness:
     @pytest.mark.spec("BK-006")
     def test_open_atomic_empty_path_raises_invalid_path(self, mb: MemoryBackend) -> None:
         """open_atomic('') raises InvalidPath — empty path is invalid for file ops."""
-        with pytest.raises(InvalidPath, match="empty"), mb.open_atomic(""):
+        with pytest.raises(InvalidPath, match="Cannot write to the store root"), mb.open_atomic(""):
             pass
+
+    @pytest.mark.spec("SAW-012")
+    def test_open_atomic_refuses_an_existing_file_on_entry(self, mb: MemoryBackend) -> None:
+        """Without overwrite an existing file is refused before the body runs, not at commit."""
+        mb.write("f.txt", b"old")
+        entered = False
+        with pytest.raises(AlreadyExists), mb.open_atomic("f.txt"):
+            entered = True
+        assert entered is False
+        assert mb.read_bytes("f.txt") == b"old"
+
+    @pytest.mark.spec("SAW-012")
+    def test_open_atomic_buffers_in_memory_never_on_disk(self, mb: MemoryBackend) -> None:
+        """The temporary is the driver's own buffer, so nothing spills to a file."""
+        import tempfile
+
+        with mb.open_atomic("f.bin") as stream:
+            assert not isinstance(stream, tempfile.SpooledTemporaryFile)
+            stream.write(b"x" * 10)
+        assert mb.read_bytes("f.bin") == b"x" * 10
 
     @pytest.mark.spec("BK-123")
     @pytest.mark.spec("MEM-025")

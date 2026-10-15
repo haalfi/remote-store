@@ -31,3 +31,5 @@ for the middle group.
 **Check `capabilities-matrix.md` at the same time** — it is the neighbouring
 ten-backend table and a candidate home for the derivable rows, but whether it
 is generated or hand-maintained was not established.
+
+**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. no step absorbs it; the rows it decides on are Store behaviour, unchanged by a class moving onto the kernel.

@@ -116,8 +116,10 @@ Your Store code doesn't change.
 
 ## Bring your own
 
-Implement the `Backend` protocol for a new storage target. Or write an
-extension. The hooks are public.
+Write a driver for a new storage target: a handful of wire primitives
+(stat, get, put, delete, list) and a few declarations. The contract kernel
+supplies the rest of the backend, path rules and error typing included.
+Or write an extension. The hooks are public.
 
 ```python
 --8<-- "examples/snippets/homepage.py:custom-backend"

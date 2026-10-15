@@ -38,6 +38,7 @@ from tests._kernel._fake import (
     FakeStore,
     keys_of,
     make_kernel,
+    run_async,
 )
 
 pytestmark = pytest.mark.parametrize("runtime", RUNTIMES)
@@ -523,6 +524,46 @@ def test_a_base_exception_passes_the_choke_point_untouched(runtime: str) -> None
     with pytest.raises(KeyboardInterrupt):
         run.get_file_info("f")
     assert run.driver.classified == []
+
+
+class _CallerStreamError(Exception):
+    """An error the caller's own content raises, not the wire's."""
+
+
+def _failing_content(runtime: str) -> Any:
+    if runtime == "sync":
+
+        class _Failing:
+            def read(self, n: int = -1) -> bytes:
+                raise _CallerStreamError("disk full")
+
+        return _Failing()
+
+    async def chunks() -> Any:
+        yield b"ab"
+        raise _CallerStreamError("disk full")
+
+    return chunks()
+
+
+@pytest.mark.spec("ASYNC-091", "BE-021")
+@pytest.mark.parametrize("member", ["write", "write_atomic"])
+def test_an_error_from_the_callers_content_passes_the_choke_point_verbatim(runtime: str, member: str) -> None:
+    # The caller's stream is not the wire: what it raises is the caller's, so the
+    # choke point neither classifies nor retypes it.
+    run = _kernel(runtime)
+    content = _failing_content(runtime)
+    call = getattr(run.kernel, member)
+
+    def write() -> None:
+        result = call("n", content)
+        if runtime == "async":
+            run_async(result)
+
+    with pytest.raises(_CallerStreamError, match="disk full"):
+        write()
+    assert run.driver.classified == []
+    assert "n" not in run.store.files
 
 
 @pytest.mark.spec("BE-021")

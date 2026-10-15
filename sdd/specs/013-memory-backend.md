@@ -4,7 +4,30 @@
 
 `MemoryBackend` implements the `Backend` ABC using an in-process tree-indexed
 data structure. Zero runtime dependencies, no filesystem access, no network.
-Built-in (no optional extra).
+Built-in (no optional extra). `open_atomic` holds its temporary in memory too,
+through the driver's `open_write` (SAW-012).
+
+`MemoryBackend` is a class on the contract kernel
+([003 § Contract kernel](003-backend-adapter-contract.md#contract-kernel)):
+`class MemoryBackend(DriverBackend)`, whose zero-argument constructor builds a
+`MemoryDriver`. `AsyncMemoryBackend(AsyncDriverBackend)` builds an
+`AsyncMemoryDriver` the same way. Both drivers hold a `MemoryTree`
+(`remote_store/backends/_memory_tree.py`), the tree this spec describes, and
+differ only in their lock (`threading.Lock`, `asyncio.Lock`) and stream
+shape. The clauses below state Memory's behaviour once for both classes.
+
+**Placement.** Each clause is discharged by the kernel, by the driver, or
+forwarded through the public class; IDs and prose are kept. The table places
+each `### MEM-` heading once, except MEM-DS-005 and MEM-014, which split, so
+31 headings give 33 placements (headings counted by
+`rg -n '^### MEM-' sdd/specs/013-memory-backend.md`).
+
+| Owner | Clauses |
+|---|---|
+| kernel (5) | MEM-DS-005's validation table (BE-030: the driver receives a canonical key), MEM-014's `recursive` dispatch (BE-031: `remove_folder` or `delete_tree`, the root refused first), MEM-013 (`write_atomic` is `put`, from `put_is_atomic = True`; AW-001), MEM-018 (`close`, through `close_is_terminal = False`; BE-020), MEM-020 (the choke point; the driver raises no native exception, so `classify` is never reached) |
+| driver (15) | MEM-DS-001, MEM-DS-002, MEM-DS-003, MEM-DS-004, MEM-DS-005's traversal (`MemoryTree.traverse`, O(d) over a canonical key), MEM-DS-006, MEM-010, MEM-011, MEM-012, MEM-014's two primitives (`delete_tree` for the recursive case, `remove_folder` for the other, each under the one lock), MEM-015 (`folder_stats`, one walk under the one lock), MEM-016 (`move`, one lock), MEM-016b (`copy`), MEM-025 (each `list_page` one locked collect with no cursor, and the kernel lists a recursive call as one `delimiter=None` request, so a listing stays one snapshot), MEM-026 |
+| forwarded or declared (7) | MEM-001 (constructor), MEM-002 (`name`, the driver's), MEM-003 (capabilities, declared by the driver), MEM-004 (`repr` on the public class, reading the driver's counters), MEM-005 (registration), MEM-017 (`to_key`), MEM-019 (`unwrap`) |
+| unchanged (6) | MEM-030, MEM-031, MEM-032 (testing), MEM-040, MEM-041, MEM-042 (performance) |
 
 **Primary use cases:** unit testing (no temp-dir setup/teardown, no OS-error
 variability), interactive exploration, documentation examples, CI speed,
@@ -46,36 +69,38 @@ lookups that evaporates the moment any hierarchical query is needed.
 ### MEM-DS-002: Tree Structure
 
 ```text
-_root (_DirNode)
-├── "data" (_DirNode)
-│   ├── "images" (_DirNode)
-│   │   ├── "cat.jpg" (_FileEntry: 2.1 MB)
-│   │   └── "dog.jpg" (_FileEntry: 1.8 MB)
-│   └── "config.yaml" (_FileEntry: 412 B)
-└── "logs" (_DirNode)
-    └── "2024" (_DirNode)
-        └── "app.log" (_FileEntry: 50 KB)
+root (DirNode)
+├── "data" (DirNode)
+│   ├── "images" (DirNode)
+│   │   ├── "cat.jpg" (FileEntry: 2.1 MB)
+│   │   └── "dog.jpg" (FileEntry: 1.8 MB)
+│   └── "config.yaml" (FileEntry: 412 B)
+└── "logs" (DirNode)
+    └── "2024" (DirNode)
+        └── "app.log" (FileEntry: 50 KB)
 ```
 
-Each internal **`_DirNode`** holds a `dict[str, _DirNode | _FileEntry]` mapping
-segment names to children. Each leaf **`_FileEntry`** stores the file's content
+Each internal **`DirNode`** holds a `dict[str, DirNode | FileEntry]` mapping
+segment names to children. Each leaf **`FileEntry`** stores the file's content
 and metadata.
 
-Internal types (not public API):
+Internal types (not public API), in `remote_store/backends/_memory_tree.py`,
+where `MemoryTree` holds the `root` node and the two counters:
 
 ```python
 @dataclass(slots=True)
-class _FileEntry:
+class FileEntry:
     data: bytearray
     modified_at: datetime
     content_type: str | None = None
+    metadata: dict[str, str] | None = None
 
 @dataclass(slots=True)
-class _DirNode:
-    children: dict[str, _DirNode | _FileEntry] = field(default_factory=dict)
+class DirNode:
+    children: dict[str, DirNode | FileEntry] = field(default_factory=dict)
 ```
 
-`_DirNode` uses `field(default_factory=dict)` so that `_DirNode()` can be
+`DirNode` uses `field(default_factory=dict)` so that `DirNode()` can be
 called without arguments — this is the common case when creating intermediate
 directories during `write()`, `move()`, and `copy()`.
 
@@ -114,50 +139,58 @@ this saves ~1 GB of pure object overhead.
 
 ### MEM-DS-005: Path Traversal
 
-All operations share a single traversal primitive:
+All operations share a single traversal primitive, the driver's:
 
 ```python
-def _traverse(self, path: str) -> _DirNode | _FileEntry | None:
-    """Walk the tree by splitting path on '/' and following children dicts.
-    Returns None if any segment is missing."""
+def traverse(self, key: str) -> DirNode | FileEntry | None:  # MemoryTree
+    """The node at *key*, or None when absent or under a file. O(d)."""
 ```
 
 This is O(d) dict lookups where d = path depth. Each lookup is an O(1) hash
-operation on a short string (single path segment, not the full path).
+operation on a short string (single path segment, not the full path). The key
+it receives is canonical, so the split is a plain split on `'/'`, with `""`
+the root.
 
 **Path validation:** When `MemoryBackend` is used directly (without `Store`),
 the backend validates paths before traversal. When used via `Store`, the
 `RemotePath` constructor handles normalization upstream — but the backend must
-not rely on this since direct use is a supported pattern.
+not rely on this since direct use is a supported pattern. On the kernel the
+validation is the kernel's, by
+[BE-030](003-backend-adapter-contract.md#be-030-key-rule-on-the-kernel)'s key
+rule, ahead of every driver call; every row below is that rule's answer.
 
 Validation rules (applied by splitting on `'/'` and inspecting segments):
 
 | Input | Behavior |
 |---|---|
-| `""` (empty string) | Valid for folder operations (resolves to root `_DirNode`). Rejected by file-targeted operations per existing `Store` convention. |
+| `""` (empty string) | Valid for folder operations (resolves to root `DirNode`), except `delete_folder`, which raises `InvalidPath` ("Cannot delete the store root", BE-031). Rejected by file-targeted operations per existing `Store` convention. |
 | `"/"` or absolute paths | Raise `InvalidPath`. Paths are always relative. |
 | `"a/b/"` (trailing slash) | Trailing slash is stripped (normalize to `"a/b"`). |
 | `"a//b"` (double slash) | Empty segments are skipped (normalize to `"a/b"`). |
 | `"a/./b"` (dot segment) | `"."` segments are skipped (normalize to `"a/b"`). |
 | `"a/../b"` (`..` segment) | Raise `InvalidPath`. Escape attempt. |
 | `"a/b\x00c"` (null byte) | Raise `InvalidPath`. Unsafe character. |
+| `"a\\b"`, `"\\"` (backslash) | Raise `InvalidPath`, on every operation, and store nothing. |
 
-This table is its own rule. It is neither `RemotePath` normalization nor
-`LocalBackend._resolve()`; the rows where those differ are recorded in
-[BK-389's dossier](../backlog/bk-389-kernel-step-1-memory.md), decision 6.
-The validation is a simple segment check — no filesystem interaction.
+This table is BE-030's rule as Memory meets it. It is neither `RemotePath`
+normalization nor `LocalBackend._resolve()`; the rows where those differ are
+recorded in [BK-389's dossier](../backlog/bk-389-kernel-step-1-memory.md),
+decision 6. The validation is a simple segment check — no filesystem
+interaction. The non-canonical rows reach addressing too: `native_path` of
+`"a//b"`, `"a/./b"` or `"a/"` is the canonical key, and of `"./"` is `""`
+(BE-025).
 
 ### MEM-DS-006: Folder Semantics
 
 Folders are **explicit tree nodes**, not virtual prefixes. This matches
 `LocalBackend` semantics:
 
-- `write("a/b/c.txt", data)` creates `_DirNode` entries for `"a"` and `"a/b"`
-  and a `_FileEntry` for `"c.txt"` under `"a/b"`.
+- `write("a/b/c.txt", data)` creates `DirNode` entries for `"a"` and `"a/b"`
+  and a `FileEntry` for `"c.txt"` under `"a/b"`.
 - Deleting the last file in a directory does **not** auto-prune the parent
-  `_DirNode`. The empty folder persists until explicitly removed via
+  `DirNode`. The empty folder persists until explicitly removed via
   `delete_folder()`.
-- `is_folder("a/b")` returns `True` if the `_DirNode` exists, regardless of
+- `is_folder("a/b")` returns `True` if the `DirNode` exists, regardless of
   whether it has children.
 - `delete_folder("a/b", recursive=False)` on a non-empty folder raises
   `DirectoryNotEmpty`.
@@ -178,15 +211,16 @@ MemoryBackend()
 ```
 
 **Invariant:** No required parameters. The backend starts empty.
-**Postconditions:** An empty root `_DirNode` is created. `_file_count = 0`,
-`_folder_count = 0`. The root node is **not** counted in `_folder_count` — it
+**Postconditions:** An empty root `DirNode` is created. `file_count = 0`,
+`folder_count = 0`. The root node is **not** counted in `folder_count` — it
 is an implicit container, not a user-created folder. A fresh
 `MemoryBackend()` has `repr` `MemoryBackend(files=0, folders=0)`. No I/O, no
 side effects.
 
 ### MEM-002: Backend Name
 
-**Invariant:** `name` property returns `"memory"`.
+**Invariant:** `name` property returns `"memory"`. It is the driver's `name`,
+forwarded by the kernel; `AsyncMemoryBackend`'s is `"async-memory"`.
 
 ### MEM-003: Capability Declaration
 
@@ -206,9 +240,10 @@ MemoryBackend(files=42, folders=7)
 ```
 No secrets to mask.
 
-**Implementation:** The backend maintains two running counters (`_file_count`,
-`_folder_count`) incremented/decremented on mutations. `__repr__` reads these
-in O(1) — no tree traversal. This avoids O(n) surprise on large trees (e.g.
+**Implementation:** The driver's `MemoryTree` maintains two running counters
+(`file_count`, `folder_count`) incremented/decremented on mutations. The public
+class's `__repr__` reads these through the driver's `counts` in O(1) — no tree
+traversal. `AsyncMemoryBackend`'s `repr` has the same form under its own name. This avoids O(n) surprise on large trees (e.g.
 debugger tooltip triggering `repr` on a 10M-file backend).
 
 ### MEM-005: Registration
@@ -226,34 +261,28 @@ documents memory-specific behavior only.
 ### MEM-010: read() — Stream Type
 
 **Invariant:** `read(path)` returns a `BinaryIO` that is a seekable, closable
-`io.BytesIO` wrapping an independent copy of the file content.
+stream over an `io.BytesIO` wrapping an independent copy of the file content.
 
-**Implementation:**
+**Implementation:** the driver's `get`:
 ```python
-def read(self, path: str) -> BinaryIO:
+def get(self, key: str) -> BinaryIO:
     with self._lock:
-        entry = ...  # traverse to _FileEntry, raise NotFound if missing
-        result = io.BytesIO(node.data)  # copy happens inside the lock
-    return result
+        data = bytes(self._tree.file(key).data)  # copy happens inside the lock
+    return io.BytesIO(data)
 ```
-`io.BytesIO(bytearray)` copies the buffer immediately during `__init__`,
-before the lock is released. The returned `BytesIO` therefore holds an
-independent snapshot: a concurrent `write()` that mutates the `bytearray`
-after the lock releases cannot affect the caller's copy. The lock is held only
-for the traversal and the copy; the caller reads from the returned stream
-without holding the lock.
+`bytes(node.data)` copies the buffer before the lock is released. The returned
+`BytesIO` therefore holds an independent snapshot: a concurrent `write()` that
+mutates the `bytearray` after the lock releases cannot affect the caller's
+copy. The lock is held only for the traversal and the copy; the caller reads
+from the returned stream without holding the lock. The kernel's `read` wraps
+that `BytesIO` in its error-mapping stream, which delegates seeking to it, so
+the caller's stream is seekable but is not a plain `io.BytesIO`.
 
-**Allocation rationale:** Constructing `BytesIO` directly from `node.data`
-eliminates the intermediate `bytes(node.data)` object that a two-step approach
-(`snapshot = bytes(node.data); return io.BytesIO(snapshot)`) would require.
-One copy instead of two — the byte buffer is allocated once, inside the
-`BytesIO`, under the lock.
+**Allocation rationale:** the copy is made under the lock, from the
+`bytearray`, and the `BytesIO` is built over it after the lock is released.
 
-**Note:** This returns a plain `io.BytesIO`. The conformance test
-`test_read_returns_true_stream_not_bytesio` does not apply to `MemoryBackend`
-— that test targets backends that naively return `BytesIO` *without* copying
-(i.e., exposing a live internal buffer). Here the copy is always made, so the
-returned `BytesIO` is independent and safe.
+**Note:** Here the copy is always made, so the stream never exposes a live
+internal buffer.
 
 ### MEM-011: read_bytes() — Copy Semantics
 
@@ -265,26 +294,27 @@ corrupt the backend's state. This is a deliberate safety boundary.
 ### MEM-012: write() — Full Operation
 
 **Preconditions:** Path must pass validation (MEM-DS-005). If the path resolves
-to an existing `_FileEntry` and `overwrite=False`, raise `AlreadyExists`.
+to an existing `FileEntry` and `overwrite=False`, raise `AlreadyExists`.
 
 **Behavior:**
-1. Validate path.
-2. Traverse the tree, creating intermediate `_DirNode` entries for any missing
-   path segments (same as BE-009). Each new `_DirNode` uses
-   `_DirNode(children={})` and increments `_folder_count`.
-3. If the leaf already exists as a `_FileEntry`:
+1. Validate path (the kernel's, BE-030; the driver's `put` receives the canonical key).
+2. Traverse the tree, creating intermediate `DirNode` entries for any missing
+   path segments (same as BE-009). Each new `DirNode` uses
+   `DirNode(children={})` and increments `folder_count`.
+3. If the leaf already exists as a `FileEntry`:
    - If `overwrite=False`: raise `AlreadyExists`.
    - If `overwrite=True`: update content in-place via slice assignment.
-4. If the leaf does not exist: create a new `_FileEntry`, insert into parent's
-   `children`, and increment `_file_count`.
+4. If the leaf does not exist: create a new `FileEntry`, insert into parent's
+   `children`, and increment `file_count`.
 5. Set `modified_at` to `datetime.now(timezone.utc)`.
 
-**Content handling:**
+**Content handling:** the driver's `put` buffers the body before it takes the
+lock, then stores it under the lock:
 ```python
-if isinstance(content, bytes):
-    entry.data[:] = content      # in-place slice assignment
-else:
-    entry.data[:] = content.read()  # BinaryIO: read from current position
+raw = bytearray(content) if isinstance(content, bytes) else _drain(content)
+# _drain: BinaryIO read from current position, 64 KiB at a time
+with self._lock:
+    ...  # an existing entry: entry.data[:] = raw (in-place slice assignment)
 ```
 
 ### MEM-013: write_atomic() — Identical to write()
@@ -293,13 +323,15 @@ else:
 
 In-memory operations are inherently atomic — no temp file, no rename, no
 partial-write window. Implementing a fake temp-file dance would add complexity
-and slow down writes for no correctness benefit.
+and slow down writes for no correctness benefit. On the kernel this is the
+first of AW-001's routes: the driver declares `put_is_atomic = True`, so the
+kernel's `write_atomic` is the driver's `put`.
 
 ### MEM-014: delete_folder() — Subtree Removal
 
 **Invariant:** `delete_folder(path, recursive=True)` walks the subtree to
-count files and folders being removed, decrements `_file_count` and
-`_folder_count` accordingly, then detaches the `_DirNode` from its parent's
+count files and folders being removed, decrements `file_count` and
+`folder_count` accordingly, then detaches the `DirNode` from its parent's
 `children` dict. Descendants become unreachable and are collected by GC.
 
 This is O(subtree) — the walk is required to maintain the running counters
@@ -309,7 +341,13 @@ walk is pure dict iteration without I/O.
 
 `delete_folder(path, recursive=False)` is O(d): traverse to the node, verify
 it has no children (else `DirectoryNotEmpty`), remove from parent, decrement
-`_folder_count` by 1.
+`folder_count` by 1.
+
+On the kernel the `recursive` dispatch is the kernel's
+([BE-031](003-backend-adapter-contract.md#be-031-delete_folder-on-the-kernel)):
+the recursive case calls the driver's `delete_tree`, the other its
+`remove_folder`, each one locked step over `MemoryTree`. The root is refused
+with `InvalidPath` before either is called.
 
 ### MEM-015: get_folder_info() — Subtree Walk
 
@@ -317,7 +355,7 @@ it has no children (else `DirectoryNotEmpty`), remove from parent, decrement
 target node, aggregating `file_count`, `total_size`, and `modified_at`.
 
 **Aggregation semantics:**
-- `file_count`: Total `_FileEntry` nodes in the subtree.
+- `file_count`: Total `FileEntry` nodes in the subtree.
 - `total_size`: Sum of `len(entry.data)` across all files.
 - `modified_at`: `max(entry.modified_at)` across all files, or `None` if the
   folder contains no files. This matches `LocalBackend` which uses
@@ -328,16 +366,16 @@ directories, this is CPU-bound on dict iteration, not I/O-bound.
 
 ### MEM-016: move() — Detach and Reattach
 
-**Preconditions:** `src` must resolve to an existing `_FileEntry` (else
-`NotFound`). If `dst` resolves to an existing `_FileEntry` and
+**Preconditions:** `src` must resolve to an existing `FileEntry` (else
+`NotFound`). If `dst` resolves to an existing `FileEntry` and
 `overwrite=False`, raise `AlreadyExists`.
 
-**Behavior:** Detach the `_FileEntry` from the source parent's `children` dict
-and insert it into the destination parent. Intermediate `_DirNode` entries for
+**Behavior:** Detach the `FileEntry` from the source parent's `children` dict
+and insert it into the destination parent. Intermediate `DirNode` entries for
 `dst` are created as needed (same as `write()`, per BE-009). The `data` buffer
 is not copied — the same `bytearray` is reattached. `modified_at` is preserved
-from the source. `_file_count` is unchanged (no net add/remove).
-`_folder_count` increments for any new intermediate directories created for
+from the source. `file_count` is unchanged (no net add/remove).
+`folder_count` increments for any new intermediate directories created for
 `dst`; the source parent directory is **not** auto-pruned even if now empty
 (consistent with MEM-DS-006).
 
@@ -345,16 +383,16 @@ This is O(d_src + d_dst) — two tree traversals. File content is not touched.
 
 ### MEM-016b: copy() — Deep Copy Content
 
-**Preconditions:** `src` must resolve to an existing `_FileEntry` (else
-`NotFound`). If `dst` resolves to an existing `_FileEntry` and
+**Preconditions:** `src` must resolve to an existing `FileEntry` (else
+`NotFound`). If `dst` resolves to an existing `FileEntry` and
 `overwrite=False`, raise `AlreadyExists`.
 
-**Behavior:** Traverse to the source `_FileEntry`, create a new `_FileEntry`
+**Behavior:** Traverse to the source `FileEntry`, create a new `FileEntry`
 with `bytearray(entry.data)` (deep copy of content buffer), and insert it into
-the destination parent. Intermediate `_DirNode` entries for `dst` are created
+the destination parent. Intermediate `DirNode` entries for `dst` are created
 as needed (per BE-009). `modified_at` is set to `datetime.now(timezone.utc)`
 (it is a new file, not a preservation of the source timestamp). `content_type`
-is copied from the source. `_file_count` increments by 1. `_folder_count`
+is copied from the source. `file_count` increments by 1. `folder_count`
 increments for any new intermediate directories.
 
 This is O(d_src + d_dst + content) — two tree traversals plus a buffer copy.
@@ -385,7 +423,10 @@ handle to expose.
 `delete_folder`, `move`, `copy`) acquire a single `threading.Lock` before
 modifying the tree. Read operations (`read`, `read_bytes`, `exists`, `is_file`,
 `is_folder`, `list_files`, `list_folders`, `get_file_info`, `get_folder_info`)
-also acquire the lock for the duration of their tree traversal.
+also acquire the lock for the duration of their tree traversal. The lock is the
+driver's, one per `MemoryDriver` instance, taken by each driver primitive for
+one step over `MemoryTree`, which takes no lock itself; `AsyncMemoryDriver`
+holds one `asyncio.Lock` the same way.
 
 **Rationale:** `Store` is documented as "safe to share across threads" (DESIGN
 §3.1). A single coarse lock is the simplest correct approach. Fine-grained
@@ -396,11 +437,12 @@ where contention is rare.
 **Postconditions:** The lock is never held during caller consumption of returned
 data. Specifically:
 
-- `read()` constructs `io.BytesIO(node.data)` under the lock — the constructor
-  copies the buffer immediately — then releases the lock and returns the
-  `BytesIO`. The caller reads from an independent copy without holding the lock.
-- `list_files()` and `list_folders()` **eagerly collect** all results into a
-  list under the lock, release it, then return `iter(list)`. This avoids
+- `read()` copies the buffer with `bytes(node.data)` under the lock, then
+  releases the lock and returns a `BytesIO` over the copy (MEM-010). The caller
+  reads from an independent copy without holding the lock.
+- `list_files()` and `list_folders()` **eagerly collect** all results under the
+  lock: the driver's `list_page` answers one `Page` with no cursor, and the
+  kernel iterates it after the lock is released. This avoids
   holding the lock during caller iteration (which would deadlock if the caller
   calls another backend method mid-iteration, since `threading.Lock` is not
   reentrant). The trade-off is O(k) up-front memory instead of O(1) per yield.
@@ -428,6 +470,11 @@ Error conditions are detected by tree inspection:
 | File exists and `overwrite=False` | `AlreadyExists` |
 | Non-empty folder with `recursive=False` | `DirectoryNotEmpty` |
 | Invalid path (null byte, `..`, etc.) | `InvalidPath` |
+
+On the kernel the invalid-path row is the kernel's (BE-030), raised before the
+driver is called. The driver raises the other rows already typed and without
+`backend`, which the kernel's choke point fills from the driver's `name`
+(ERR-001); the kernel's own probes may raise them too (BE-032 A.8). The error messages are the kernel's and the tree's.
 
 `PermissionDenied` and `BackendUnavailable` are never raised — memory is always
 accessible and there are no permission checks.
@@ -491,8 +538,8 @@ Where: **d** = path depth (typically 3–8), **k** = direct children count,
 
 | Component | Bytes (CPython 3.12, 64-bit) |
 |---|---|
-| `_FileEntry` (slots, no data) | ~56 |
-| `_DirNode` (slots, empty children dict) | ~120 |
+| `FileEntry` (slots, no data) | ~56 |
+| `DirNode` (slots, empty children dict) | ~120 |
 | `bytearray` overhead (empty) | ~57 |
 | `str` key per segment (avg 10 chars) | ~75 |
 | **Total per file (excl. content)** | **~190** |

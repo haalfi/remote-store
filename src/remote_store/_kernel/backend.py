@@ -32,8 +32,8 @@ _SPOOL_MAX = 8 * 1024 * 1024
 class DriverBackend(_KernelCore, Backend):
     """``Backend`` implemented once, over a sync driver.
 
-    Private until the first backend migrates onto it. Construct it with a
-    built driver; see ``_KernelCore`` for the arguments.
+    Construct it with a built driver, usually from the ``__init__`` of a
+    subclass that builds its own; see ``_KernelCore`` for the arguments.
     """
 
     def read(self, path: str) -> BinaryIO:

@@ -2,13 +2,14 @@
 
 ## Status
 
-Draft, decided. Filed from [audit-021](../audits/audit-021-contract-placement.md) at
+**Accepted**, in BK-394's PR, together with
+[ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md), which records
+the design. Filed from [audit-021](../audits/audit-021-contract-placement.md) at
 the user's direction. BK-387 carried D8 step 1: Open Questions 1, 4, 6 and 7
-are answered below, and the design is recorded in
-[ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md), **Proposed**.
-The maintainer's condition is that the ADR and this RFC become Accepted
-together, in the PR that lands the first backend on this design (D3 step 1),
-not on the answers alone. The lifecycle, and where each amendment lands, are
+are answered below. The maintainer's condition was that the ADR and this RFC
+become Accepted together, in the PR that lands the first backend on this
+design (D3 step 1), not on the answers alone; BK-394's PR puts
+`MemoryBackend` and `AsyncMemoryBackend` on the kernel. The lifecycle, and where each amendment lands, are
 in D8 and § Impact. BK-389's planning PR answered Open Questions 2 and 3,
 deferred 5 to D3 step 3 with the shape step 1 keeps open, added the close
 posture and `SupportsRemoveFolder` to D1 and key validation to D2, and split step 1 into a kernel PR (BK-389) and a Memory PR

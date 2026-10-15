@@ -266,7 +266,7 @@ class _Choke:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> Literal[False]:
-        if exc is None or not isinstance(exc, Exception):
+        if exc is None or not isinstance(exc, Exception) or _io.from_content(exc):
             return False
         err = self._core._mapped(exc, self._op, self._key)
         if err is exc:
@@ -808,6 +808,7 @@ class _AsyncKernelCore:
         self._require_metadata(metadata, key)
         target = RemotePath(key)  # built before the driver commits (BE-030 step 5)
         await self._prepare_write(Op.WRITE, key)
+        content = _io.guard_content(content)  # the caller's own errors pass verbatim (ASYNC-091)
         return _write_result(target, await self._put(Op.WRITE, key, content, overwrite, metadata))
 
     async def write_atomic(
@@ -827,6 +828,7 @@ class _AsyncKernelCore:
         self._require_metadata(metadata, key)
         target = RemotePath(key)
         await self._prepare_write(Op.WRITE_ATOMIC, key)
+        content = _io.guard_content(content)
         if self._driver.put_is_atomic:
             result = await self._put(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
         elif self._open_write is not None:

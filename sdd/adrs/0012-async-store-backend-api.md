@@ -45,6 +45,14 @@ for our flat Backend ABC. Adds a C extension dependency (greenlet).
 **Option E — Async-first with sync wrapper (fsspec-style).** Dismissed —
 requires rewriting all backends as async-first. Breaking internal change
 with no user-facing benefit.
+*Amended by [ADR-0042](0042-contract-kernel-over-thin-drivers.md):* the
+dismissal is narrowed, not reversed. Async-first source is taken for the
+contract kernel and the Azure driver. Sync drivers are served by the sync
+kernel, whose shared surface is generated as native sync source from the async
+kernel; Azure by a generated sync twin, with no runtime wrapper; and
+async-only drivers (Graph) by
+`AsyncBackendSyncAdapter`, Option E's runtime wrapper, where ADR-0025 already
+uses it. The async types stay separate (Decision 1).
 
 ## Decision
 

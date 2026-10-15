@@ -21,8 +21,8 @@ if TYPE_CHECKING:
 class AsyncDriverBackend(_AsyncKernelCore, AsyncBackend):
     """``AsyncBackend`` implemented once, over an async driver.
 
-    Private until the first backend migrates onto it. Construct it with a
-    built driver; see ``_AsyncKernelCore`` for the arguments.
+    Construct it with a built driver, usually from the ``__init__`` of a
+    subclass that builds its own; see ``_AsyncKernelCore`` for the arguments.
     """
 
     async def read(self, path: str) -> AsyncIterator[bytes]:

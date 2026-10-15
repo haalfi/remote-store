@@ -21,8 +21,9 @@ def _load():
 
 _mod = _load()
 check_snippet_regions = _mod.check_snippet_regions
-check_abstract_table = _mod.check_abstract_table
-check_optional_overrides_table = _mod.check_optional_overrides_table
+check_required_table = _mod.check_required_table
+check_attributes_table = _mod.check_attributes_table
+check_protocols_table = _mod.check_protocols_table
 check_conformance_files = _mod.check_conformance_files
 check_registration_toml = _mod.check_registration_toml
 main = _mod.main
@@ -72,88 +73,138 @@ class TestSnippetRegions:
         assert any("malformed snippet ref" in v for v in violations)
 
 
-class TestAbstractTable:
+def _section(start_heading: str, end_heading: str) -> str:
+    """One quick-reference section of the current guide, as the known-good fixture."""
+    text = _GUIDE.read_text(encoding="utf-8")
+    return text[text.index(start_heading) : text.index(end_heading)]
+
+
+def _required_section() -> str:
+    return _section("### Required driver members", "### Declared attributes")
+
+
+def _attributes_section() -> str:
+    return _section("### Declared attributes", "### Optional protocols")
+
+
+def _protocols_section() -> str:
+    return _section("### Optional protocols", "## See also")
+
+
+def _without_row(section: str, prefix: str) -> str:
+    lines = section.splitlines()
+    kept = [line for line in lines if not line.startswith(prefix)]
+    assert len(kept) == len(lines) - 1, f"fixture no longer has exactly one row starting {prefix!r}"
+    return "\n".join(kept)
+
+
+class TestRequiredTable:
     def test_missing_table_flagged(self) -> None:
-        violations = check_abstract_table("# A guide with no table\n")
+        violations = check_required_table("# A guide with no table\n")
         assert len(violations) == 1
         assert "table not found" in violations[0]
 
     def test_missing_member_flagged(self) -> None:
-        guide = "### Abstract methods (must implement)\n\n| Member |\n|---|\n| `exists(path)` |\n"
-        violations = check_abstract_table(guide)
-        assert any("missing row for 'read'" in v for v in violations)
+        violations = check_required_table(_without_row(_required_section(), "| `get(key)`"))
+        assert violations == ["required-members table: missing row for 'get'"]
 
     def test_stale_member_flagged(self) -> None:
-        # A row for a method the ABC does not declare abstract must be flagged.
-        real_table = _real_guide_table()
-        guide = real_table + "| `frobnicate(path)` | x | x |\n"
-        violations = check_abstract_table(guide)
-        assert violations == ["abstract-methods table: row 'frobnicate' is not an abstract member of Backend"]
+        # A row for a method Driver does not declare must be flagged.
+        guide = _required_section() + "| `frobnicate(key)` | x | x |\n"
+        violations = check_required_table(guide)
+        assert violations == ["required-members table: row 'frobnicate' is not a method Driver declares"]
 
     def test_param_drift_flagged(self) -> None:
-        # Simulate the BUG-235 drift: drop max_depth from the list_files row.
-        real_table = _real_guide_table()
-        drifted = real_table.replace("`list_files(path, recursive, max_depth)`", "`list_files(path, recursive)`")
-        assert drifted != real_table, "guide fixture no longer contains the expected list_files row"
-        violations = check_abstract_table(drifted)
+        # The drift this gate exists for: a protocol parameter the table never followed.
+        real = _required_section()
+        drifted = real.replace("`stat(key, follow_links)`", "`stat(key)`")
+        assert drifted != real, "guide fixture no longer contains the expected stat row"
+        violations = check_required_table(drifted)
         assert len(violations) == 1
-        assert "list_files" in violations[0]
-        assert "max_depth" in violations[0]
+        assert "stat" in violations[0]
+        assert "follow_links" in violations[0]
 
     def test_real_guide_table_is_clean(self) -> None:
-        assert check_abstract_table(_real_guide_table()) == []
+        assert check_required_table(_required_section()) == []
 
     def test_subheading_terminates_scan(self) -> None:
         # A #### subheading must end the table scan: the bogus row below it
         # must NOT be absorbed (and therefore not reported as stale).
-        guide = _real_guide_table() + "#### aside\n\n| `bogus_member(path)` | x | x |\n"
-        assert not any("bogus_member" in v for v in check_abstract_table(guide))
+        guide = _required_section() + "#### aside\n\n| `bogus_member(key)` | x | x |\n"
+        assert not any("bogus_member" in v for v in check_required_table(guide))
+
+    def test_escaped_pipe_stays_in_its_cell(self) -> None:
+        # `bytes \| BinaryIO` in a later cell must not split the row's first cell.
+        guide = _required_section().replace("| `BinaryIO` |", "| `bytes \\| BinaryIO` |")
+        assert check_required_table(guide) == []
 
 
-def _real_guide_table() -> str:
-    """The current guide's abstract-methods section, as the known-good fixture."""
-    text = _GUIDE.read_text(encoding="utf-8")
-    start = text.index("### Abstract methods")
-    end = text.index("### Optional overrides")
-    return text[start:end]
-
-
-def _real_overrides_table() -> str:
-    """The current guide's optional-overrides section, as the known-good fixture."""
-    text = _GUIDE.read_text(encoding="utf-8")
-    start = text.index("### Optional overrides")
-    end = text.index("## See also")
-    return text[start:end]
-
-
-class TestOptionalOverridesTable:
+class TestAttributesTable:
     def test_missing_table_flagged(self) -> None:
-        violations = check_optional_overrides_table("# A guide with no table\n")
+        violations = check_attributes_table("# A guide with no table\n")
         assert len(violations) == 1
         assert "table not found" in violations[0]
 
-    def test_missing_member_flagged(self) -> None:
-        # Simulate the BK-320 drift this check exists for: drop the resolve() row.
-        real_table = _real_overrides_table()
-        lines = [line for line in real_table.splitlines() if not line.startswith("| `resolve(")]
-        assert len(lines) < len(real_table.splitlines()), "overrides fixture no longer contains a resolve() row"
-        violations = check_optional_overrides_table("\n".join(lines))
-        assert violations == ["optional-overrides table: missing row for 'resolve'"]
+    def test_missing_attribute_flagged(self) -> None:
+        violations = check_attributes_table(_without_row(_attributes_section(), "| `namespace`"))
+        assert violations == ["attributes table: missing row for 'namespace'"]
 
-    def test_stale_member_flagged(self) -> None:
-        guide = _real_overrides_table() + "| `frobnicate(path)` | x |\n"
-        violations = check_optional_overrides_table(guide)
-        assert violations == ["optional-overrides table: row 'frobnicate' is not a public non-abstract Backend method"]
+    def test_missing_optional_attribute_flagged(self) -> None:
+        violations = check_attributes_table(_without_row(_attributes_section(), "| `stream_catch`"))
+        assert violations == ["attributes table: missing row for 'stream_catch'"]
 
-    def test_param_drift_flagged(self) -> None:
-        drifted = _real_overrides_table().replace("`unwrap(type_hint)`", "`unwrap(hint)`")
-        violations = check_optional_overrides_table(drifted)
+    def test_stale_attribute_flagged(self) -> None:
+        guide = _attributes_section() + "| `frobnicate` | x | x |\n"
+        violations = check_attributes_table(guide)
+        assert violations == ["attributes table: row 'frobnicate' is not a Driver attribute"]
+
+    def test_optional_attribute_dropped_from_driver_docstring_flagged(self, monkeypatch) -> None:
+        from remote_store.drivers import Driver
+
+        monkeypatch.setattr(Driver, "__doc__", (Driver.__doc__ or "").replace("``size_probe``", "size_probe"))
+        violations = check_attributes_table(_attributes_section())
         assert len(violations) == 1
-        assert "unwrap" in violations[0]
-        assert "type_hint" in violations[0]
+        assert "'size_probe' is no longer named in the Driver docstring" in violations[0]
 
     def test_real_guide_table_is_clean(self) -> None:
-        assert check_optional_overrides_table(_real_overrides_table()) == []
+        assert check_attributes_table(_attributes_section()) == []
+
+
+class TestProtocolsTable:
+    def test_missing_table_flagged(self) -> None:
+        violations = check_protocols_table("# A guide with no table\n")
+        assert len(violations) == 1
+        assert "table not found" in violations[0]
+
+    def test_missing_protocol_flagged(self) -> None:
+        violations = check_protocols_table(_without_row(_protocols_section(), "| [`SupportsGlob`]"))
+        assert violations == ["protocols table: missing row for 'SupportsGlob'"]
+
+    def test_stale_protocol_flagged(self) -> None:
+        guide = _protocols_section() + "| `SupportsTeleport` | `teleport(key)` | x |\n"
+        violations = check_protocols_table(guide)
+        assert violations == [
+            "protocols table: row 'SupportsTeleport' is not a Supports* protocol in remote_store.drivers"
+        ]
+
+    def test_param_drift_flagged(self) -> None:
+        real = _protocols_section()
+        drifted = real.replace("`get_range(key, offset, length)`", "`get_range(key, offset)`")
+        assert drifted != real, "guide fixture no longer contains the expected get_range row"
+        violations = check_protocols_table(drifted)
+        assert len(violations) == 1
+        assert "SupportsRangeRead.get_range" in violations[0]
+        assert "length" in violations[0]
+
+    def test_wrong_member_flagged(self) -> None:
+        real = _protocols_section()
+        drifted = real.replace("`copy(src, dst, overwrite)`", "`duplicate(src, dst, overwrite)`")
+        assert drifted != real, "guide fixture no longer contains the expected copy row"
+        violations = check_protocols_table(drifted)
+        assert violations == ["protocols table: 'SupportsCopy' row names 'duplicate', not one of its methods ['copy']"]
+
+    def test_real_guide_table_is_clean(self) -> None:
+        assert check_protocols_table(_protocols_section()) == []
 
 
 class TestConformanceFiles:
@@ -236,25 +287,32 @@ class TestMain:
         assert "guide not found" in capsys.readouterr().err
 
     def test_drifted_guide_returns_one(self, tmp_path: Path, capsys) -> None:
-        drifted = _GUIDE.read_text(encoding="utf-8").replace(
-            "`list_files(path, recursive, max_depth)`", "`list_files(path, recursive)`"
-        )
+        drifted = _GUIDE.read_text(encoding="utf-8").replace("`stat(key, follow_links)`", "`stat(key)`")
         target = tmp_path / "guide.md"
         target.write_text(drifted, encoding="utf-8")
         assert main([str(target)]) == 1
-        assert "list_files" in capsys.readouterr().err
+        assert "follow_links" in capsys.readouterr().err
 
     # One drift case per remaining check, so silently unwiring any check
     # from main() fails a test (each drift is invisible to the others).
 
-    def test_optional_table_drift_fails_main(self, tmp_path: Path, capsys) -> None:
+    def test_attributes_table_drift_fails_main(self, tmp_path: Path, capsys) -> None:
         text = _GUIDE.read_text(encoding="utf-8")
-        drifted = "\n".join(line for line in text.splitlines() if not line.startswith("| `resolve("))
-        assert drifted != text, "guide fixture no longer contains the resolve() row"
+        drifted = "\n".join(line for line in text.splitlines() if not line.startswith("| `put_is_atomic`"))
+        assert drifted != text, "guide fixture no longer contains the put_is_atomic row"
         target = tmp_path / "guide.md"
         target.write_text(drifted, encoding="utf-8")
         assert main([str(target)]) == 1
-        assert "resolve" in capsys.readouterr().err
+        assert "put_is_atomic" in capsys.readouterr().err
+
+    def test_protocols_table_drift_fails_main(self, tmp_path: Path, capsys) -> None:
+        text = _GUIDE.read_text(encoding="utf-8")
+        drifted = "\n".join(line for line in text.splitlines() if not line.startswith("| [`SupportsFolderStats`]"))
+        assert drifted != text, "guide fixture no longer contains the SupportsFolderStats row"
+        target = tmp_path / "guide.md"
+        target.write_text(drifted, encoding="utf-8")
+        assert main([str(target)]) == 1
+        assert "SupportsFolderStats" in capsys.readouterr().err
 
     def test_conformance_file_drift_fails_main(self, tmp_path: Path, capsys) -> None:
         drifted = _GUIDE.read_text(encoding="utf-8").replace(

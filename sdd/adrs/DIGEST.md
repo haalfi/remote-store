@@ -2,50 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 46 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
-
-## Proposed
-
-### [ADR-0042](0042-contract-kernel-over-thin-drivers.md): One Contract Kernel over Thin Drivers
-
-Section references are to RFC-0017, which carries the rationale.
-
-- **One kernel implements `Backend` over a thin `Driver`** (D1, D2). The
-  driver supplies wire primitives, declared capabilities and a classifier.
-  The kernel owns the cross-cutting clauses and one error-mapping choke
-  point. Direct `Backend` subclassing keeps working. *Reverse if*
-  kernel-owned defects recur at the per-class rate audit-021 measured.
-- **The kernel is written once in async** (D6, Open Question 1). `unasync`
-  generates the sync surface both runtimes share. A small hand-written sync
-  layer adds what async lacks: `read_seekable`, `open_atomic` and a `BinaryIO`
-  `read`. *Reverse if* the generated part needs hand edits.
-- **Every remote driver owns its lifecycle through a `Session`** (D5). The
-  `Session` owns connect, connect retry where the wire separates connect from
-  operation, liveness and invalidation behind one
-  `run(op)`, and the kernel runs every remote operation through it. Local and
-  Memory have none. *Reverse if* a driver's lifecycle cannot be separated
-  from its operations.
-- **One driver per service** (D4). S3's is the boto3 driver, registered as
-  `"s3"`; s3fs and PyArrow's S3 filesystem stop being backend layers.
-  Azure's is async. Sync Azure callers get a sync driver generated from it,
-  with the stream primitives hand-written, and it replaces the sync
-  `AzureBackend`. *Reverse if* the boto3 driver cannot reach D4's option
-  parity, or the generation cannot map Azure's two SDK surfaces.
-- **Classification stays in each driver** (Open Question 6). The kernel calls
-  `classify(exc, op, key)` at its choke point, then sets `path` and
-  `backend` and guarantees a message. *Reverse if* mapping-content defects
-  recur across drivers.
-- **`max_depth` applies only when `recursive`** (Open Question 4). This is
-  DEPTH-003's reading, the one `BackendContract.dfy` verifies. ASYNC-014,
-  which stated the contrary, was amended to it (BUG-240).
-- **The formal model covers the root rule, the close posture and the absent
-  container** (Open Question 7). BE-029, BE-020 and BE-021 § Reach become
-  verified clauses before kernel code.
-
-The migration order, retirement gates and benchmarks are process, and they
-live in D3 and D8.
-
-> amends ADR-0001, ADR-0011, ADR-0012, ADR-0025 (clause).
+Compiled from 47 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -58,6 +15,9 @@ Three-layer architecture:
 2. **Registry** — owns backend lifecycle. Lazily instantiates backends from config. Shares backend instances across stores. Acts as context manager for cleanup.
 
 3. **Backend (ABC)** — encapsulates all storage-specific behavior. Declares capabilities. Maps native errors to normalized types. Never exposed directly to end users.
+   *Amended by [ADR-0042](0042-contract-kernel-over-thin-drivers.md):* the
+   backend layer splits in two, a kernel implementing the contract and a driver
+   carrying the storage-specific wire.
 
 ```text
 User → Store → Backend (ABC) → Local/S3/Azure/SFTP
@@ -346,6 +306,10 @@ maps to each backend's own retry mechanism.
   because it is meaningless for local I/O. *Reverse if* a cross-cutting retry
   concern emerges that no single backend can own (e.g. mid-operation reconnect
   spanning backends).
+  *Amended by [ADR-0042](0042-contract-kernel-over-thin-drivers.md):* for every
+  remote driver whose wire separates connect from operation, the **connect**
+  budget moves to its `Session` (RFC-0017 D5); per-operation retry stays each
+  driver's native mechanism.
 - **The policy replaces SDK defaults rather than stacking on them,** so retries
   do not multiply. That was the flaw in Option A (a Store-level tenacity wrapper)
   and Option C (an `ext/` retry proxy), both of which compose on top of SDK
@@ -751,6 +715,12 @@ by delegating to a wrapped `AsyncBackend` that runs on a private event loop in a
 dedicated daemon thread (**Option D** of the four weighed in Context). It mirrors
 `SyncBackendAdapter` (ADR-0012); together they form the full bidirectional bridge
 the hybrid model needs.
+*Amended by [ADR-0042](0042-contract-kernel-over-thin-drivers.md):* the adapter
+stays the sync route for async-only backends (Graph) and is not the route for
+Azure, which gets a generated sync driver. Capability translation is unchanged,
+and its *reverse if* a native async seekable-read op is added does not fire:
+`get_range` is a driver primitive, and the async surface gains no seekable-read
+operation.
 
 **Private loop on a dedicated daemon thread, not `asyncio.run()` per call and not
 `nest_asyncio`.** `asyncio` forbids re-entering a running loop, and a fresh loop
@@ -1361,6 +1331,47 @@ crossing, whichever comes first.
 
 > amends ADR-0040 (clause).
 
+### [ADR-0042](0042-contract-kernel-over-thin-drivers.md): One Contract Kernel over Thin Drivers
+
+Section references are to RFC-0017, which carries the rationale.
+
+- **One kernel implements `Backend` over a thin `Driver`** (D1, D2). The
+  driver supplies wire primitives, declared capabilities and a classifier.
+  The kernel owns the cross-cutting clauses and one error-mapping choke
+  point. Direct `Backend` subclassing keeps working. *Reverse if*
+  kernel-owned defects recur at the per-class rate audit-021 measured.
+- **The kernel is written once in async** (D6, Open Question 1). `unasync`
+  generates the sync surface both runtimes share. A small hand-written sync
+  layer adds what async lacks: `read_seekable`, `open_atomic` and a `BinaryIO`
+  `read`. *Reverse if* the generated part needs hand edits.
+- **Every remote driver owns its lifecycle through a `Session`** (D5). The
+  `Session` owns connect, connect retry where the wire separates connect from
+  operation, liveness and invalidation behind one
+  `run(op)`, and the kernel runs every remote operation through it. Local and
+  Memory have none. *Reverse if* a driver's lifecycle cannot be separated
+  from its operations.
+- **One driver per service** (D4). S3's is the boto3 driver, registered as
+  `"s3"`; s3fs and PyArrow's S3 filesystem stop being backend layers.
+  Azure's is async. Sync Azure callers get a sync driver generated from it,
+  with the stream primitives hand-written, and it replaces the sync
+  `AzureBackend`. *Reverse if* the boto3 driver cannot reach D4's option
+  parity, or the generation cannot map Azure's two SDK surfaces.
+- **Classification stays in each driver** (Open Question 6). The kernel calls
+  `classify(exc, op, key)` at its choke point, then sets `path` and
+  `backend` and guarantees a message. *Reverse if* mapping-content defects
+  recur across drivers.
+- **`max_depth` applies only when `recursive`** (Open Question 4). This is
+  DEPTH-003's reading, the one `BackendContract.dfy` verifies. ASYNC-014,
+  which stated the contrary, was amended to it (BUG-240).
+- **The formal model covers the root rule, the close posture and the absent
+  container** (Open Question 7). BE-029, BE-020 and BE-021 § Reach become
+  verified clauses before kernel code.
+
+The migration order, retirement gates and benchmarks are process, and they
+live in D3 and D8.
+
+> amends ADR-0001, ADR-0011, ADR-0012, ADR-0025 (clause).
+
 ### [ADR-0043](0043-tiered-ci-gate-derived-interpreter-set.md): Tiered per-PR CI gate, interpreter set by derivation
 
 The per-PR gate is split by **test tier**, and the full per-interpreter live
@@ -1457,6 +1468,40 @@ reviewer input is kept is BK-431's open decision in `sdd/BACKLOG.md`, decided by
 a measured delivery.
 
 > amends ADR-0035 (clause).
+
+### [ADR-0047](0047-store-tree-key-resolution.md): The Store Is One Tree, and Each Backend Encodes It
+
+Section references are to RFC-0021, which carries the rationale.
+
+- **The store is one tree** (D1), spec 051's. A Key resolves to an item, a
+  folder or nothing, and every keyed operation is specified once against that.
+  Rejected: keeping the per-operation rules and adding the missing driver
+  obligation, which leaves two rules for one `stat` answer.
+- **Each backend encodes the tree through a partial `decode`** (D2). Backends
+  differ only in the properties their drivers declare, so a backend's quirk
+  belongs to its encoding, and what an answer costs depends on the encoding,
+  never the answer. Rejected: geometry as a parameter of the model, whose
+  outcomes grew a flat `Prefix` and a `FileAndPrefix`.
+- **A raw state that does not decode is not in the store** (D3). Listings omit
+  it. On a flat encoding a keyed operation below an item trusts the encoding,
+  a stated limit. Rejected: keeping such entries reachable by their own key,
+  which puts nodes outside the tree; and checking every ancestor on every flat
+  lookup, success included, for states only a foreign writer creates.
+- **The library never writes a state that does not decode** (D4). A write
+  below an item, or of an item over a folder, is `InvalidPath` on every
+  backend; neither check stops another writer. Rejected: keeping BE-008's
+  opt-in, whose default lets the library create such states. *Reverse if* the
+  checks' per-write cost on flat backends outweighs a decodable store.
+- **Refusals are observations of the encoding** (D8). After a refusal the
+  kernel probes until the family's result is decided, and replaces the refusal
+  only where the call must refuse, or with a listing's empty result. A probe
+  that runs anyway fails closed; one run only because the call refused fails
+  open. Drivers owe no rule on how a refusal is typed beyond two: drivers with
+  links, and flat listings. Rejected: a probe set per call family, and a
+  typing obligation on every driver, since a wire's ENOTDIR may arrive as any
+  probed shape.
+
+D5 to D7, D9 and D10 are contract or placement and live in BE-032.
 
 ## Superseded
 

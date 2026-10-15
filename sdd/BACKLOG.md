@@ -285,22 +285,6 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
-- [ ] **BK-398 — Three round-trip clauses promise `to_key(native_path(k)) == k` verbatim, which `GraphBackend` already breaks**
-  spec: NPR-005, NPR-020, BE-029 · effort: S · audience: contributor.process, user.api_docs
-  NPR-005, NPR-020 and BE-029 § Round-trip consequence say the identity holds
-  verbatim for every key but `"."`, yet `GraphBackend` folds `"d//f"`,
-  `"d/./f"`, `"d/"` and `"./"` on master, as BE-025 already permits and records.
-  BK-395's addressing rule adds both Memory classes at BK-394. Open decision:
-  none; amend all three to BE-025's non-canonical exception.
-
-- [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
-  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
-  ADR-0042 is accepted only with the first backend on the new design: the two
-  Memory drivers on BK-389's kernel, step 1's other spec amendments (listed in
-  the dossier's item 4), and the guide as a driver. After BK-389, BK-432, BK-398, the v0.33.0 tag and ID-244's decision (§ 2). Open
-  decision: none; Memory's identity and spec 013's placement are in the dossier.
-  Detail: [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md)
-
 - [ ] **BK-439 — `glob` on the kernel skips the store tree's flat rules, so a flat glob can match below an item**
   spec: BE-024, BE-032 · effort: S · audience: library.maintainer, user.api
   BE-032 A.5 makes `glob` a folder-read over its literal prefix, but the
@@ -314,8 +298,8 @@ failure it was.
   A direct `write("\\")` stores the row, raises, and `exists("\\")` is then
   `True` (master `57d0797`); `Store` refuses first. Fixed by BK-389's kernel
   refusal when SQLBlob migrates at RFC-0017 D3 step 3. Open decision: none.
-  - **(was BUG-297, absorbed here)** Its SQLBlob half; the Memory half is
-    BK-394's. Evidence: BK-395's dossier.
+  - **(was BUG-297, absorbed here)** Its SQLBlob half; the Memory half
+    shipped with BK-394. Evidence: BK-395's dossier.
 
 - [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
   spec: BE-021 · effort: M · audience: infra.test
@@ -323,7 +307,7 @@ failure it was.
   new backend that can delete passes CI without meeting it, as `GraphBackend`
   did until BUG-248. Its kernel half landed in BK-389; what stays here is the
   gate, as per-driver `container_absent` cells from D3 step 2. Open decision:
-  none of its own; depends on ID-244 (§ 2) for the seeding hook, and on BK-394.
+  none of its own; depends on ID-244 (§ 2) for the seeding hook.
   Detail: [dossier](backlog/bk-345-absent-container-conformance.md)
 
 - [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
@@ -376,7 +360,7 @@ no clause of the contract ships unexercised.
   gated on `Capability.WRITE` and a read-only backend reaches none of them:
   `ReadOnlyHttpBackend` never runs SIO-009's laziness cells. Open decision:
   where a per-fixture seeding hook binds (fixture, helper, or capability-neutral
-  classes); BK-345 (§ 1) consumes it, due before BK-394 (§ 1) changes the registry.
+  classes); BK-345 (§ 1) consumes it, due before the registry registers drivers.
   Detail: [dossier](backlog/id-244-write-gated-conformance-cells.md)
 
 - [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
@@ -566,7 +550,7 @@ copies an example, without opening an issue.
   Building a backend from the guide, unaided, has run once, as a side effect
   of PR #932, and found BK-324 and BK-325; nothing schedules it, and
   `rg -i rehearsal` over `sdd/traces/` and `BACKLOG-DONE.md` finds no later
-  run. Runs after BK-394 (§ 1) rewrites the guide as a driver. Open decision:
+  run. BK-394 rewrote the guide as a driver, so it can run now. Open decision:
   none on shape; cadence, effort split and n = 1 caveat are in the dossier.
   Detail: [dossier](backlog/bk-332-custom-backend-rehearsal.md)
 

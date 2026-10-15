@@ -18,6 +18,13 @@ cannot see whether that override contacts the backend. The per-backend behaviour
 tests (``tests/backends/<x>/**/test_ping.py``) prove the probe *works*; this proves
 it is *there*. The two are complementary, not interchangeable.
 
+A class on the contract kernel always owns a ``check_health``, the kernel's, which
+runs its driver's ``probe()`` (PING-002). For such a class the decision lives on
+the driver, so the rule is asked of the driver class instead: its ``probe`` must
+not be the driver protocol's inherited no-op body, unless exempted. Every kernel
+class must be mapped to its driver in ``_DRIVERS``; an unmapped one fails, so a
+new class on the kernel cannot pass on the kernel's ``check_health`` alone.
+
 First instantiated for BUG-231 (Graph had no probe and no exemption).
 """
 
@@ -28,6 +35,10 @@ import contextlib
 import pytest
 
 from remote_store._backend import Backend
+from remote_store._kernel._async.driver import AsyncDriver
+from remote_store._kernel._async.kernel import _AsyncKernelCore
+from remote_store._kernel._sync.driver import Driver
+from remote_store._kernel._sync.kernel import _KernelCore
 from remote_store.aio._async_backend import AsyncBackend
 
 # Import every production backend module so its class is registered as a
@@ -35,8 +46,8 @@ from remote_store.aio._async_backend import AsyncBackend
 # best-effort: when the extra is absent the class simply is not discovered, so
 # the CI-with-all-extras run is the enforcing environment (mirrors the
 # ``importorskip`` guard in the per-backend ``test_ping.py`` files).
-from remote_store.aio.backends._memory import AsyncMemoryBackend
-from remote_store.backends._memory import MemoryBackend
+from remote_store.aio.backends._memory import AsyncMemoryBackend, AsyncMemoryDriver
+from remote_store.backends._memory import MemoryBackend, MemoryDriver
 
 for _mod in (
     "remote_store.backends._local",
@@ -65,10 +76,20 @@ for _mod in (
 # exactly the case the rule exists to catch.
 _ABC_DEFAULTS = (Backend, AsyncBackend)
 
-# The exemption registry — keyed by class, not by ``name``: sync ``MemoryBackend``
-# and ``AsyncMemoryBackend`` both report ``name == "memory"`` and both legitimately
-# inherit the no-op, so a name-keyed dict would collide. An entry costs a spec ID
-# and a reason.
+# The driver protocols, whose ``probe`` body is the no-op a driver inherits when
+# it subclasses them without declaring its own.
+_DRIVER_DEFAULTS = (Driver, AsyncDriver)
+_KERNEL_CORES = (_KernelCore, _AsyncKernelCore)
+
+# Each class on the contract kernel and the driver it builds. Discovery finds the
+# classes; this map says where each one's probe decision lives.
+_DRIVERS: dict[type, type] = {
+    MemoryBackend: MemoryDriver,
+    AsyncMemoryBackend: AsyncMemoryDriver,
+}
+
+# The exemption registry — keyed by class, not by ``name``, so a sync and an async
+# twin are two entries. An entry costs a spec ID and a reason.
 _NO_PROBE: dict[type, str] = {
     MemoryBackend: "PING-008 — in-memory, always healthy",
     AsyncMemoryBackend: "PING-008 — in-memory, always healthy",
@@ -78,6 +99,10 @@ _NO_PROBE: dict[type, str] = {
 # standalone backends in the per-backend health-check taxonomy, so they are not
 # subject to the probe-or-exempt rule.
 _ADAPTER_NAMES = frozenset({"SyncBackendAdapter", "AsyncBackendSyncAdapter"})
+
+# The kernel's two runtimes take any driver, so they have no probe decision of
+# their own; each class built on them is checked through its driver instead.
+_KERNEL_BASES = frozenset({"DriverBackend", "AsyncDriverBackend"})
 
 
 def _all_subclasses(root: type) -> set[type]:
@@ -103,14 +128,24 @@ def _concrete_backends() -> list[type]:
             continue
         if cls.__name__.startswith("_") or cls.__name__ in _ADAPTER_NAMES:
             continue
+        if cls.__name__ in _KERNEL_BASES:
+            continue
         if getattr(cls, "__abstractmethods__", frozenset()):
             continue
         concrete.append(cls)
     return sorted(concrete, key=lambda c: (c.__module__, c.__name__))
 
 
+def _on_kernel(cls: type) -> bool:
+    return issubclass(cls, _KERNEL_CORES)
+
+
 def _has_own_probe(cls: type) -> bool:
-    """True iff *cls* supplies its own ``check_health`` (not an inherited ABC no-op)."""
+    """True iff *cls* decides its probe: its own ``check_health``, or on the kernel its driver's ``probe``."""
+    if _on_kernel(cls):
+        driver = _DRIVERS[cls]
+        owner = next(k for k in driver.__mro__ if "probe" in k.__dict__)
+        return owner not in _DRIVER_DEFAULTS
     owner = next(k for k in cls.__mro__ if "check_health" in k.__dict__)
     return owner not in _ABC_DEFAULTS
 
@@ -127,8 +162,20 @@ def test_discovery_found_the_backends() -> None:
 
 
 @pytest.mark.spec("PING-002")
+def test_every_class_on_the_kernel_names_its_driver() -> None:
+    # Fails closed: a kernel class missing here would otherwise be judged by the
+    # kernel's own check_health, which every such class owns.
+    unmapped = [c.__name__ for c in _BACKENDS if _on_kernel(c) and c not in _DRIVERS]
+    assert not unmapped, f"add each to _DRIVERS with the driver class it builds: {unmapped}"
+    stale = [c.__name__ for c in _DRIVERS if c not in _BACKENDS]
+    assert not stale, f"_DRIVERS names classes discovery no longer finds: {stale}"
+
+
+@pytest.mark.spec("PING-002")
 @pytest.mark.parametrize("cls", _BACKENDS, ids=lambda c: f"{c.__module__.split('.')[-1]}.{c.__name__}")
 def test_health_probe_is_declared(cls: type) -> None:
+    if _on_kernel(cls) and cls not in _DRIVERS:
+        pytest.fail(f"{cls.__name__} is on the kernel but not in _DRIVERS")
     overrides = _has_own_probe(cls)
     if cls in _NO_PROBE:
         # Direction 2: an exemption that grew a real probe is stale.

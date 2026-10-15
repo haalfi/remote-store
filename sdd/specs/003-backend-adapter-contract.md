@@ -247,8 +247,10 @@ the conformance suite itself.
 **Round-trip consequence.** Because both spellings share one native path,
 BE-025's `to_key(native_path(k)) == k` identity returns the *canonical* root
 key: `to_key(native_path("."))` is `""`, not `"."`. The identity holds verbatim
-for every other key. This is forced, not a concession — an inverse cannot
-return two spellings from one input.
+for every other canonical key. This is forced, not a concession — an inverse cannot
+return two spellings from one input. A non-canonical key's address inverts to
+its canonical key, as BE-025's non-canonical exception allows: `GraphBackend`
+and both Memory classes fold `"d//f"`, `"d/./f"`, `"d/"` and `"./"` that way.
 
 **A write *to* the root is refused before anything is transferred.**
 `write`, `write_atomic` and `open_atomic` MUST raise `InvalidPath` naming the
@@ -364,6 +366,15 @@ class on the kernel, where [BE-031](#be-031-delete_folder-on-the-kernel) refuses
 it with `InvalidPath`. Note
 `delete("")` is **not** out of scope — it is a file-shaped operation on a folder,
 and the row above governs it.
+
+**On the kernel:** this clause's answers are the kernel's, not the driver's.
+The kernel decides the root on the canonical key, after the closed guard
+([BE-030](#be-030-key-rule-on-the-kernel), steps 1 and 4), so every spelling
+that addresses the root reaches the driver as `""`, and only for a
+folder-shaped call or addressing; the probes answer the root from the key
+without a driver call. The driver owes a listing of `""` (`list_page`, and
+`folder_stats` where it aggregates natively) and its bare root from
+`native_path("")`.
 
 **Conformance:** `tests/backends/conformance/test_io.py::TestBackendRootPath`
 and its async sibling in `test_async_extended.py`, both gated on
@@ -647,7 +658,7 @@ discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
 **Flat-namespace backends are not exempt** (BK-324): when the prefix listing comes back empty they probe the exact key and raise `InvalidPath` rather than `NotFound`. See [BE-021](#be-021-error-mapping) for the shared error-path rule and its cost model.
 **Root:** `get_folder_info("")` aggregates over the whole store rather than raising — see BE-029.
-**`modified_at` on a class on the kernel:** the latest known modification time of any file under the folder, recursively. A file whose time is the unknown sentinel (`datetime.min` in UTC, `FileInfo.modified_at`'s "cannot know") is skipped, and a folder with no known time answers `None`. The kernel computes it over a listing; a driver that aggregates natively returns the same value. Backends not on the kernel are outside this sentence.
+**`modified_at` on a class on the kernel:** the latest known modification time of any file under the folder, recursively. A file whose time is the unknown sentinel (`datetime.min` in UTC, `FileInfo.modified_at`'s "cannot know") is skipped, and a folder with no known time answers `None`. The kernel computes it over a listing; a driver that aggregates natively returns the same value. Backends not on the kernel are outside this sentence; among them `GraphBackend` answers its folder item's own time, until RFC-0017 D3 step 7 migrates it (BK-390).
 **Formal coverage:** `get_folder_info()` is modelled in `sdd/formal/BackendContract.dfy` as `GetFolderInfo` with postconditions `IsFile → InvalidPath`, `!PathExists → NotFound`, `IsDir → Ok`, `file_count == |ChildFiles(fs, path)|`, and `total_size == SumSizes(fs, ChildFiles(fs, path))`, each under BE-020's `Live()` guard; since BK-388 also an absent-container clause (BE-021 § Reach): the root aggregates to zero, any other path is `NotFound`. Verified in `MemoryBackend.dfy`. Property-based aggregate coverage against the compiled Dafny oracle lives in `tests/test_pbt_folder_info_aggregates.py`. See ID-130, ID-134, ID-187.
 
 ### BE-018: move()
@@ -707,6 +718,7 @@ drops metadata fails to verify. Verified in `MemoryBackend.dfy`. See BK-196.
 - `close_is_terminal = True`: `close()` / `aclose()` is **terminal** — the flag flips at the *start* of `close()` and every lazy client accessor guards on it, so a subsequent operation raises `BackendUnavailable` rather than silently re-opening resources the caller cannot observe. The posture of `AzureBackend` (AZ-029), the three S3 backends (S3-019), and `GraphBackend` (GR-051).
 
 The use-after-close conformance lane (`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling) gates on this attribute, asserting the terminal error for terminal backends and re-initialisation for the rest.
+**On the kernel:** the closed guard is the kernel's, [BE-030](#be-030-key-rule-on-the-kernel)'s step 1, and the posture is the driver's `close_is_terminal`. The class's own `close_is_terminal`, which the lane above reads, must match the driver's; the kernel refuses to construct over one that differs. `MemoryBackend` and `AsyncMemoryBackend` are on the kernel, and their drivers declare `close_is_terminal = False`.
 **Rationale:** A terminal close turns a use-after-close (a likely bug) into a clear typed error instead of a silent resource reopen, while leaving stateless/cheap backends freely reusable.
 **Formal coverage:** since BK-388, `sdd/formal/BackendContract.dfy` models the posture as `closeIsTerminal`, `closed` and `Live()`, with a `Close()` that sets `closed` and promises nothing about the store's contents. Every operation that returns a result, except `RequireCapability`, answers `BackendUnavailable` when `!Live()`, ahead of every other clause and with `fs` unchanged. `Close()` returns nothing and stays callable after a terminal close, and `DropContainer()` models the environment rather than an operation, so neither carries the guard; every other postcondition the other formal-coverage notes in this spec quote holds under `Live()`. `MemoryBackendMinimal` is the close-terminal witness in `MemoryBackend.dfy`.
 
@@ -742,6 +754,24 @@ roster for both halves; the clauses below explain the mechanism behind the
 split and what it costs, and do not restate it.
 
 **Scope note:** This table covers *cross-cutting* scenarios that apply to multiple operations. Method-specific errors (e.g. `DirectoryNotEmpty` from `delete_folder`, `CapabilityNotSupported` from capability-gated operations) are documented per-method and intentionally omitted here.
+
+**On the kernel, each obligation has two halves.** For a class on the kernel the
+table below assigns each obligation of this clause to the kernel or to its
+driver; the obligations themselves, and the prose stating them, are unchanged.
+A class not yet migrated discharges both halves itself.
+
+| Obligation | Kernel | Driver |
+|---|---|---|
+| Native exceptions never leak (the invariant) | the choke point: a `RemoteStoreError` passes, any other `Exception` goes to `classify`, and a classifier that raises or answers a non-error still yields a `RemoteStoreError` ([ERR-001](005-error-model.md#err-001-base-error), [ERR-009](005-error-model.md#err-009-meaningful-string-representations)). An error raised by the caller's own content passes verbatim ([ASYNC-091](029-async-store-backend-api.md#async-091-write-side-binaryio-failure-mid-write)) | `classify` maps its wire's exceptions |
+| The type-mismatch and `NotFound` rows, and type mismatch outranking `missing_ok` | decided from the driver's observations by [BE-032](#be-032-the-store-tree-on-the-kernel)'s A.5 and A.8 | `stat` and `list_page` observe, and refusals keep A.8's "What drivers owe instead" |
+| The `PermissionDenied` rows | passes the driver's type through | `classify` types a denial |
+| Parent creation fails on a path conflict | A.8's write and `ensure_parents` rows type a refusal | a write primitive or `ensure_parents` refuses an item above the key |
+| Flat namespaces' error-path obligation, fail-open probes, fail-closed determinants | A.3 and A.8 | — |
+| An absent container reads as an absent path | the choke point maps a refusal `container_absent` recognises to `NotFound`, which `missing_ok` and A.8's listing rows read | `container_absent` recognises its wire's shape |
+| § Reach's first-page bound | A.9, kept once per operation | `list_page` answers one `Page` per wire request |
+| The root decided before the probe | BE-030's step 4 | — |
+| The broad exception handler rule | `exists`, `is_file` and `is_folder` answer from `stat` | `classify` discriminates by type, `errno` or status |
+| A listing's denial is about the folder it lists | — (A.7: no driver on the kernel declares links yet) | `list_page` raises the denial of the folder it lists |
 
 **Flat-namespace backends: no exemption, but an error-path obligation.** A
 flat namespace stores keys, not nodes, so "this path is a directory" is not an
@@ -879,7 +909,9 @@ prefixes.
 Backends whose listing API exposes no page boundary may satisfy this by marking
 each item the service returned *before* its own filters run; the residue is a
 truncated page carrying no items at all, which MUST then be stated as a
-divergence rather than left implied.
+divergence rather than left implied. That licence is for a class not yet on the
+kernel: a driver answers the kernel in `Page`s, so a migrated class has no
+unmarked page, and the kernel keeps the bound (BE-032's A.9).
 
 **The root is decided by BE-029, not here, and BE-029 wins.** This paragraph
 assigns answers per *operation*; it says nothing about the store root within
@@ -1265,7 +1297,7 @@ follow them, as `LocalBackend`'s do.
 **Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key **in canonical form** round-trips verbatim; a non-canonical one need not, and for the same reason — `native_path` normalises, and one address cannot invert to the several keys that produced it. Every lossy class is one `WellFormedPath` (PATH-002 through PATH-008) already excludes, though not every exclusion is lossy — `".."` segments and null bytes are excluded and do round-trip verbatim. The lossy ones are: a redundant `"."` segment, an empty segment (leading, trailing or doubled slash), and on backends that fold it, a backslash. Measured on `GraphBackend`, `native_path("a/./b")`, `native_path("dir/")`, `native_path("a//b")` and `native_path("/a")` each invert to the canonical key rather than the caller's spelling. So the identity is exact over the keys `to_key` produces and over every canonical key, and lossy over the wider set a caller holding a `Backend` directly may hand `native_path`. The identity-default implementation normalises both root spellings for the same reason.
 **Postconditions:** Pure, deterministic, total (never raises). The returned path is usable with the native handle from `unwrap()`.
 **On the kernel:** a class on the kernel normalises a key before its driver addresses it and passes a refused key raw, so a non-canonical key inverts to its canonical form and a `..` or null-byte key round-trips verbatim; the rule is [BE-030](#be-030-key-rule-on-the-kernel)'s **Addressing stays total**.
-**Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container).
+**Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container), `MemoryBackend` and `AsyncMemoryBackend` (the kernel's normalisation, over a driver whose `native_path` is the identity on a canonical key).
 **Example:** `S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")` returns `"lake/data/file.parquet"`.
 **See also:** [001-store-api.md](001-store-api.md) (STORE-015), [014-pyarrow-filesystem-adapter.md](014-pyarrow-filesystem-adapter.md) (PA-010 Tier 1).
 
@@ -1356,10 +1388,12 @@ concurrency conformance lane tests against.
 ## Contract kernel
 
 The clauses below bind a **class on the kernel**: a backend implemented as the
-contract kernel (`DriverBackend` / `AsyncDriverBackend`, private until the first
-backend migrates) over a driver of wire primitives, per
+contract kernel (`DriverBackend` / `AsyncDriverBackend`, public in
+`remote_store.drivers` with the driver protocols) over a driver of wire
+primitives, per
 [RFC-0017](../rfcs/rfc-0017-contract-kernel-over-thin-drivers.md) D1 and D2 and
-[ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md). Each states, once,
+[ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md). `MemoryBackend`
+and `AsyncMemoryBackend` are the first such classes. Each clause states, once,
 an answer the other clauses of this spec leave to the backend. A backend not on
 the kernel is unaffected by them. The decisions behind them, with their
 measurements, are recorded in BK-389's dossier (the key rule and
@@ -1410,8 +1444,9 @@ write carrying metadata a `stat`. On a flat namespace the first two are
 answered by BE-032's A.4 checks, which the kernel runs anyway, but they are I/O
 and the gate is held ahead of any I/O, so it ranks first there too; only the
 overwrite state would cost a `stat` of its own. A class on the kernel departs
-from the model in those three states on both namespaces; reconciling the model
-is BK-394's, with the first class on the kernel.
+from the model in those three states on both namespaces. Both Memory classes
+declare `USER_METADATA`, so neither reaches them. The departure stands, and
+reconciling the model is re-homed to BK-434.
 
 **What a key resolves to** is [BE-032](#be-032-the-store-tree-on-the-kernel)'s
 answer, for every call below: the tree's `Item`, `Folder` or `Nothing` (A.1),
@@ -1492,7 +1527,9 @@ canonical `""` names the root, a folder, and yields nothing. Worked examples:
 `"d\\*.csv"` raise `InvalidPath`.
 
 **Conformance:** fake-driver kernel cells in `tests/_kernel/`, run against both
-runtimes; Memory's cells arrive with its migration. What a key resolves to is
+runtimes. Memory's cells are in `tests/backends/memory/test_kernel_cells.py`,
+both classes: the root spellings' `FolderInfo`, addressing's fold of a
+non-canonical key, and the backslash refusal storing nothing. What a key resolves to is
 BE-032's two generated suites (its A.10); `glob`, the capability gates and
 construction are generated over axes of their own.
 
@@ -1588,10 +1625,11 @@ replaced or standing, when it is a `NotFound`.
 the listing omits (BE-030, BE-032 A.3) stays behind. BE-013's prose lists the error for
 `recursive=False` only, but `BackendContract.dfy`'s `DeleteFolder` (tagged
 BE-013) requires a recursive delete of a present folder to succeed and remove
-every child. A concurrent writer lies outside that sequential model; a stored
-key BE-030 omits lies inside it, so in that state a class on the kernel departs
-from the postcondition. Reconciling the model is BK-394's, with the first class
-on the kernel.
+every child. A concurrent writer lies outside that sequential model. A stored
+key BE-030 omits lies inside it, and the model now covers that state: its
+recursive-success and emptiness postconditions are guarded by a
+canonical-subtree predicate, `CanonicalUnder`, so the walk's `DirectoryNotEmpty` over an omitted stored key is a state the model
+admits rather than a departure from it.
 
 **The root.** `delete_folder` on any root spelling raises `InvalidPath` before
 the driver is called (BE-030's table), never reaching `remove_folder`,

@@ -32,7 +32,7 @@ RFC: `sdd/rfcs/rfc-0004-streaming-atomic-writes.md`
 | SAW-009 | SFTPBackend uses `.~tmp.*` + `posix_rename`, falling back to displace + `rename` | Done |
 | SAW-010 | S3Backend / S3PyArrowBackend buffer via `SpooledTemporaryFile` then PUT | Done |
 | SAW-011 | AzureBackend non-HNS buffers then PUT; HNS uses temp + DFS rename | Done |
-| SAW-012 | MemoryBackend buffers in `BytesIO` then commits | Done |
+| SAW-012 | MemoryBackend buffers in memory through its driver's `open_write`, then commits by its atomic `put` | Done |
 | SAW-013 | Yielded file supports `write()` and `tell()`; seekability is backend-dependent | Done |
 | SAW-014 | `ext.observe` fires `on_write` hook after successful promotion | Done |
 | SAW-015 | `ext.otel` emits a span covering the full open-write-promote lifecycle | Done |
@@ -104,7 +104,23 @@ On failure the temp blob is deleted.
 
 ### MemoryBackend (SAW-012)
 
-Buffers in `BytesIO`, commits via `self.write()` on successful exit.
+`MemoryBackend` is on the contract kernel, and its driver presents
+`open_write`: the handle is a buffer in memory, so nothing spills to disk,
+and the commit is the driver's atomic `put` under its lock (MEM-013). Opening
+refuses what the commit would refuse at that moment, so with
+`overwrite=False` an existing file is refused on entry, before the body runs;
+the commit checks again under the lock. On exception the buffer is dropped
+and nothing is written. Pinned by `tests/backends/memory/test_coverage.py`
+`test_open_atomic_refuses_an_existing_file_on_entry` and
+`test_open_atomic_buffers_in_memory_never_on_disk`.
+
+### On the kernel (SAW-003)
+
+For a class on the contract kernel, `open_atomic` and its promotion are the
+kernel's: over a driver's `open_write` handle, committed on a clean exit and
+aborted on an exception; without one, the spool above, promoted by the
+kernel's `write_atomic` ([007-atomic-writes.md](007-atomic-writes.md) AW-001
+states its three routes).
 
 ## Observability
 
