@@ -531,18 +531,16 @@ section on what the Alloy checks add. It is an exposition, not
 machine-checked: the Lean file stays the authority for the proofs.
 
 **Relation to existing formal work.** [`sdd/formal/StoreTree.dfy`](../formal/StoreTree.dfy) §1 models the
-store as `Tree = map<Key, Kind>` with `Key = seq<string>`, requiring the root
+store as `Tree = map<Key, Kind>` with `Key = seq<Name>`, requiring the root
 to be a folder and every proper prefix of a node's key to be a folder. That
 reads as the keys-as-words presentation of §4's trie view, with L6 as the
-statement that connects them. This document does not check that reading;
-reconciling the two is left to the formalization step, and nothing here
-depends on it. One mismatch is already visible: `Key = seq<string>` places no
-restriction on its segments, so `ValidTree` admits the segments `""` and
-`"a/b"`, which AX-7 excludes. AX-8 is automatic in a map keyed by sequences.
-`StoreTree.dfy` §12 has since checked the reading for finite stores:
-`ValidTree` holds exactly when the tree's keys and items meet L6's conditions
-other than the names condition, and every such finite pair is the keys and
-items of one valid tree. An infinite pair, which L6 admits, is the keys of no
+statement that connects them. `Name` is a non-empty string with no `/`, so a
+valid tree satisfies AX-7 by its type; until 2026-10-15 `Key` was
+`seq<string>` and admitted the segments `""` and `"a/b"`. AX-8 is automatic in
+a map keyed by sequences. `StoreTree.dfy` §12 checks the reading for finite
+stores: `ValidTree` holds exactly when the tree's keys and items meet L6's
+conditions, and every such finite pair is the keys and items of one valid
+tree. An infinite pair, which L6 admits, is the keys of no
 Dafny `map`.
 
 **Decided (maintainer, 2026-10-13).** The four questions this section left
@@ -558,8 +556,9 @@ open:
   and states that limit where the operations are specified.
 - **`StoreTree.dfy`'s `Key`.** It gains AX-7's restriction as a type: segments
   are non-empty and contain no `/`, so a valid tree satisfies AX-7 by
-  construction rather than by a precondition on callers. The change is
-  BK-434's, since it touches `StoreTree.dfy`.
+  construction rather than by a precondition on callers. Recorded first as
+  BK-434's, the change landed with BK-432 (PR #1130, 2026-10-15), once spec
+  051 became the authority RFC-0021 and `StoreTree.dfy` must agree with.
 - **Spec.** The axioms are promoted into a store-model spec, with this
   document as its rationale. Done:
   [spec 051, the store tree](../specs/051-store-tree.md), TREE-001 to
@@ -570,9 +569,10 @@ open:
   layers. Spec 004 governs input strings: `RemotePath` maps an accepted input
   onto a Key or rejects it, so the library addresses a subset of the Keys this
   model admits. Spec 003's § The store tree, drafted in RFC-0021 Appendix A,
-  lands with A.1 as accepted (BK-432); A.1's statement of the tree then
-  becomes a pointer to spec 051 and the section keeps what concerns backends
-  and encodings (BK-435).
+  lands through BK-432 with A.1 already a pointer to spec 051 for the tree's
+  structure, keeping what concerns backends and encodings. The plan had A.1
+  land as accepted and become a pointer later (BK-435); the pointer moved
+  into RFC-0021 on 2026-10-15, with the same alignment.
 
 ---
 

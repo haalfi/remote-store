@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted, 2026-10-13, by the maintainer. Drafted 2026-10-12. Tracked as
+Accepted, 2026-10-13, by the maintainer. Drafted 2026-10-12. Aligned with
+[spec 051](../specs/051-store-tree.md) on 2026-10-15 (below). Tracked as
 **BK-432**. PR #1127 (BK-389) was parked until this was decided, and resumes
 against it: its open `delete_folder` findings are answered from it.
 
@@ -13,9 +14,10 @@ against it: its open `delete_folder` findings are answered from it.
 model, not against edge cases per operation or quirks of each backend's
 geometry.
 
-A store is a tree. The root is a folder, a folder holds named folders and
-items, and an item is a leaf. A key is a path of names from the root and names
-at most one node, so a key that names an item can never name a folder.
+The tree is [spec 051](../specs/051-store-tree.md)'s (TREE-001 to TREE-012),
+which states its structure. This RFC adds what that spec leaves out: what a
+Key resolves to, how a backend encodes the tree, and what each operation
+returns.
 
 A backend does not hold that tree directly. It holds an *encoding*: paths on a
 disk, keys in a bucket, rows in a table. An *abstraction function* decodes the
@@ -63,7 +65,8 @@ store.
 **The formal spec already holds the logical model. What it lacks is the
 decoding step.** `BackendContract.dfy` models the store as `map<Path, Entry>`
 and its class invariant `Valid()` (line 536) requires every ancestor of an
-entry to be a directory, which is the tree. Nothing maps a flat or implicit
+entry to be a directory, which is the tree's prefix closure (TREE-012).
+Nothing maps a flat or implicit
 encoding onto it, so the states the review kept hitting fall outside every
 verified statement.
 
@@ -75,15 +78,15 @@ it costs is in [Impact](#impact).
 
 ### D0. Out of scope
 
-The key rule, the root, the close posture, capability gating and `glob`'s
-pattern rule are settled before the tree is consulted (BE-020, BE-029,
-BE-030), and they are unchanged.
+How a caller's input string becomes a Key (spec 004's `RemotePath` and
+BE-030's key rule), the root, the close posture, capability gating and
+`glob`'s pattern rule are settled before the tree is consulted (BE-020,
+BE-029, BE-030), and they are unchanged.
 
 ### D1. The store is a tree
 
-The root is a folder, folders hold named folders and items, and an item is a
-leaf. A key names at most one node, and resolves to an item, a folder or
-nothing. ([A.1](#a1-nodes-and-keys))
+The store is spec 051's tree, and its structure is stated there. A Key
+resolves to an item, a folder or nothing. ([A.1](#a1-nodes-and-keys))
 
 ### D2. Each backend encodes the tree
 
@@ -101,8 +104,10 @@ limit of the model. ([A.3](#a3-undecodable-states))
 ### D4. The library never writes a state that does not decode
 
 Writing below an item, or writing an item over a folder, is `InvalidPath` on
-every backend. The first replaces BE-008's opt-in check. The second has no
-check today. Neither can stop another writer. ([A.4](#a4-writes))
+every backend whose names compare exactly, as spec 051's do. Which backends
+compare names coarser is open under BK-436. The first replaces BE-008's opt-in
+check. The second has no check today. Neither can stop another writer.
+([A.4](#a4-writes))
 
 ### D5. One result table
 
@@ -120,7 +125,7 @@ the encoding, stated once. ([A.6](#a6-empty-folders))
 How a link decodes is one policy for the whole store, never a per-call option.
 `delete`, `delete_folder` and a `move` source name the entry at the key, so
 for them a link that decodes is an item. A link that does not decode is
-refused like a key the rule refuses, and only `delete` removes it. The public
+refused like an input the key rule refuses, and only `delete` removes it. The public
 option comes later. ([A.7](#a7-links))
 
 ### D8. Refusals are observations of the encoding
@@ -186,10 +191,12 @@ CHANGELOG entry and a migration note:
 
 Keyed calls on a link that does not decode keep today's Local answer,
 `InvalidPath`. BE-021's cost table records the costs when the clauses land. A
-stored key the key rule refuses (`a\b`) is already omitted and logged today
-(BE-030). A recursive `delete_folder` over it already answers
-`DirectoryNotEmpty` when it walks and removes it when it runs `delete_tree`
-(BE-030, BE-031), and A.3 keeps both routes, so it does not change.
+stored key outside the addressable subset (`a\b`, A.2), and one with an empty
+segment (`a//b`), are already omitted and logged today, since BE-030 omits a
+listed key the rule would refuse or rewrite. A recursive `delete_folder` over
+such a key already answers `DirectoryNotEmpty` when it walks and removes the
+key when it runs `delete_tree` (BE-030, BE-031), and A.3 keeps both routes, so
+that does not change.
 
 - **Public API.** `reject_write_under_file_ancestor`, a constructor keyword on
   five flat backends (BE-008), loses its effect, since the check it enabled
@@ -209,9 +216,15 @@ stored key the key rule refuses (`a\b`) is already omitted and logged today
     - BE-031's probe rule, and its "a file and a prefix both" row.
 - **Tests:** two generated suites (A.10) replace
   `tests/_kernel/test_condition_space.py`'s hand-assembled axes.
-- **Formal model:** `Valid()` in `BackendContract.dfy` already is A.1's tree.
-  `sdd/formal/StoreTree.dfy` states the model in Dafny and verifies with
-  `bash scripts/dafny_verify.sh StoreTree.dfy` (33 verified, 0 errors). CI's
+- **Formal model:** `Valid()` in `BackendContract.dfy` states the tree's
+  prefix closure (TREE-012) over string paths, but not TREE-007's names: it
+  admits an entry `a/` or `/a`, whose empty segment is no name. Only the
+  paths its methods take are constrained, by the `WellFormedPath`
+  precondition, which also excludes the names spec 004 refuses.
+  `sdd/formal/StoreTree.dfy` states the model in Dafny, its `Key` a sequence
+  of spec 051's names, and verifies with
+  `bash scripts/dafny_verify.sh StoreTree.dfy` (38 verified, 0 errors on
+  2026-10-15). CI's
   `verify-formal` job runs it. Eleven mutants, each weakening one check or rule,
   fail verification; the trace's verify phase lists each edit and the
   command. It covers:
@@ -310,6 +323,17 @@ argued in prose only, as D10 states.
 - The model lives in one new section of spec 003. The RFC keeps decisions to
   their claims and drafts that section as Appendix A.
 
+### Aligned with spec 051 (maintainer, 2026-10-15)
+
+Spec 051 (TREE-001 to TREE-012) is the authority for the tree's structure,
+and this RFC and `StoreTree.dfy` agree with it. A.1 points to it and separates
+a Key from a caller's input (spec 004). `StoreTree.dfy`'s `Key` is a sequence
+of names, taken from BK-434. A flat raw key with an empty segment does not
+decode, except S3's folder marker, which the driver maps to a folder and which
+A.6 admits as an empty folder. A stored `a\b` is a Key outside the addressable
+subset, not an undecodable state. D4 and A.5's write column are scoped to
+exact name equality, and other equalities are left to BK-436.
+
 <a id="appendix-a"></a>
 ## Appendix A: draft of spec 003 § The store tree
 
@@ -318,11 +342,20 @@ proposal's detail, and the decisions above are what is being decided.
 
 ### A.1 Nodes and keys
 
-- The root is a folder. A folder holds named children, each either a folder or
-  an item. An item has content and metadata, and no children.
-- A key is the sequence of names from the root to a node. It names at most one
-  node, so `is_file(k)` and `is_folder(k)` are never both true.
-- A key resolves to exactly one of `Item`, `Folder` or `Nothing`. Where an
+- **The tree** is [spec 051](../specs/051-store-tree.md)'s: TREE-001 to
+  TREE-012 state its folders and items, its names (TREE-007), its Keys
+  (TREE-009) and that a Key names at most one entity (TREE-010). This section
+  states none of them again. An item also has content and metadata, which
+  that structure does not model. By TREE-010, `is_file(k)` and `is_folder(k)`
+  are never both true.
+- **A Key is not a caller's input.** A caller passes an input string, and
+  spec 004's `RemotePath` maps an accepted one onto a Key or rejects it (spec
+  051 § Layering). BE-030's non-canonical rows (`d//f`, `d/./f`, `d/`) and
+  root spellings (`./`) are inputs of that layer: each is mapped onto a Key,
+  or refused, before the tree is consulted. A backend stores a
+  *raw key*, its encoding's own spelling, which A.2 decodes. Below, "key"
+  means a Key unless it says otherwise.
+- A Key resolves to exactly one of `Item`, `Folder` or `Nothing`. Where an
   operation cares why there is nothing, the reason travels with the answer.
   The case that matters is a key whose path passes through an item, which
   makes a write `InvalidPath` (A.5).
@@ -344,12 +377,26 @@ Each driver declares its encoding's properties:
 
 The kernel refuses to construct over a flat driver with folder objects.
 
+Names compare exactly (spec 051 § Name equality). A.4's checks and A.5's
+write column assume an encoding that compares them exactly too. On a
+case-insensitive or normalizing encoding two raw keys can spell one name,
+and which backends compare names how is open under BK-436.
+
 These raw states decode to no tree:
 
 - an item at `k` together with entries below `k/`, on a flat encoding;
-- a stored key the key rule refuses, such as `a\b` (BK-399's case);
+- on a flat encoding, a raw key with an empty segment, such as `/a`, `a//b`
+  or `a/`, since that segment would be an empty name (TREE-007). One
+  exception: S3's folder marker, a raw key ending in `/` such as `a/`, which
+  the S3 driver maps to the folder `a` and never reports as an item (A.6);
 - under `follow_within_root`, a link whose target is outside the root, a
   dangling link, and a loop of links.
+
+A stored key such as `a\b`, `..` or one holding NUL is not in that list. Spec
+051's names forbid only `/`, so it decodes to a Key in the tree, but that Key
+lies outside the library's addressable subset: spec 004 refuses every input
+that would address it. Listings omit it and log it, as BE-030 already does
+(BK-399's case), because no call could address what they returned.
 
 ### A.3 Undecodable states
 
@@ -357,9 +404,11 @@ These raw states decode to no tree:
   as a prefix omits the prefix. A recursive listing omits every entry below an
   item it has listed. For that, a flat driver's `list_page` returns keys in
   byte-lexicographic order, so `k` arrives before every key below `k/`; that
-  is a driver obligation, and hierarchical drivers stay unordered. A link that
-  does not decode is omitted too. Each omission is logged. This extends BE-030's omission of a key the rule
-  refuses, and the listing itself shows what to omit.
+  is a driver obligation, and hierarchical drivers stay unordered. A raw key
+  with an empty segment, other than S3's folder marker (A.2), and a link that
+  does not decode are omitted too. Each
+  omission is logged. This extends BE-030's omission of a stored key outside
+  the addressable subset (A.2), and the listing itself shows what to omit.
 - **Folder operations on an item.** `list_files(k)` is empty and
   `delete_folder(k)` answers `InvalidPath` when `k` is an item. On a flat
   encoding, a listing of `k/` cannot see an item `k`, so a flat folder
@@ -372,7 +421,7 @@ These raw states decode to no tree:
   `k/d/` as it stands. This is a stated limit of the model, where the tree
   would answer as A.5's last row. A.4 keeps the library's own writes from
   producing it.
-- **A link that does not decode** is refused like a key the rule refuses:
+- **A link that does not decode** is refused like an input the key rule refuses:
   every keyed operation answers `InvalidPath`, including a `move` from it,
   except `delete`, which removes the link (A.7). It never resolves to
   `Nothing`, so nothing is written through it. The driver signals it with
@@ -380,7 +429,7 @@ These raw states decode to no tree:
 - **Omitted entries and `delete_folder`.** A recursive `delete_folder` that
   walks removes only what its listings return, so an omitted entry below the
   folder remains and the call answers `DirectoryNotEmpty`, as BE-030 already
-  rules for a key the rule refuses. One that runs the driver's `delete_tree`
+  rules for a stored key outside the addressable subset. One that runs the driver's `delete_tree`
   removes the omitted entry with the rest, as BE-030 and BE-031 rule today;
   neither route changes. On a flat encoding, a recursive `delete_folder` of
   an item `k` answers `InvalidPath` and removes nothing, and a walk of `k`'s
@@ -424,6 +473,7 @@ The last row is what the tree answers. On a flat encoding the keyed families
 and the folder families trust the encoding instead (A.3). For `delete`,
 `delete_folder` and a `move` source, a link at the key that decodes resolves
 to `Item` (A.7). A link that does not decode never reaches this table (A.3).
+The write-file column holds where names compare exactly (A.2, BK-436).
 `missing_ok` turns a delete's `NotFound` into success. `get_folder_info`
 types an empty aggregate as BE-017 states. The per-operation clauses keep what
 is specific to them, such as `overwrite`, cursors, `max_depth` and the
@@ -433,7 +483,10 @@ synthesised write routes, and cite this table for the rest.
 
 The tree allows an empty folder. A folder becomes empty when its last child is
 deleted or moved out. An encoding without folder objects cannot hold an empty
-folder, so there it vanishes. With folder objects it stays.
+folder, so there it vanishes. With folder objects it stays. One exception: on
+S3, a folder marker another tool wrote (A.2) holds an empty folder until it is
+deleted, since a listing of the parent and `list_page(k, limit=1)` both see
+it. The library never writes one.
 
 ### A.7 Links
 
@@ -458,7 +511,7 @@ folder, so there it vanishes. With folder objects it stays.
   are `InvalidPath`; replacing a link the store did not make would destroy it
   without a signal.
 - **A link that does not decode** (its target outside the root, dangling, or
-  in a loop) is refused like a key the rule refuses (A.3). That outranks the
+  in a loop) is refused like an input the key rule refuses (A.3). That outranks the
   entry rule: `move` of such a link is `InvalidPath`, and only `delete`
   removes it. The driver signals it (A.8's last obligation).
 

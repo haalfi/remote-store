@@ -94,6 +94,7 @@ review:
   ci: {verdict: GREEN, failed: 0, pending: 0}
 decisions:
   - sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl
+  - sdd/decisions/752328a5-d7ca-4f46-80e1-ed02fa74508b.jsonl
 discovery_followups:
   - BUG-323
   - BK-433
@@ -207,4 +208,32 @@ phases:
         section: "(full)"
         read_type: verify
         extract: "bash scripts/dafny_verify.sh StoreTree.dfy: 33 verified, 0 errors. Eleven mutants, each a copy of the file under sdd/formal/ verified the same way and then deleted, each failed verification (7 to 9 re-run against the final section 11 as well, plus 10: RefusalAnswersAreTrue without the flat listing obligation; 11: the hierarchical listing probe without its stat seeing a folder): (1) FlatWriteChecks without the below-k conjunct; (2) without the ancestor conjunct; (3) Children at depth |k|+2; (4) FlatDeleteTree deleting every key below k, hidden or not; (5) FlatMoveIsTheTree without FlatWriteChecks; (6) FlatChildren returning full keys; (7) the flat get/delete probe without its stat (the closing round's false-success finding); (8) KernelAnswer replacing a refusal on any concluded row; (9) the hierarchical write probe without its ancestor stats. The first run of section 11 failed RefusalAnswersAreTrue on a flat delete_tree probed stat-first, which found the missing flat delete_tree row in A.8"
+        outcome: ok
+  - id: align
+    name: Align with spec 051
+    steps:
+      - file: sdd/specs/051-store-tree.md
+        section: "(full): Layering, Name equality, TREE-001 to TREE-012"
+        read_type: gate
+        extract: "Authority for the tree's structure after #1131 merged into this branch (8308dc62e). Disagreements from the maintainer's handoff: Key = seq<string> admits non-names (TREE-007, TREE-010); A.1 defined no name and did not separate a Key from an input; A.2 listed a\\b as undecodable though names forbid only '/'; A.2 lacked empty-segment raw keys; no name-equality scope; D1, the Summary and A.1 restated the structure"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "WellFormedPath (line 320); Valid() (line 536)"
+        read_type: verify
+        extract: "Valid() quantifies over every p in fs with no shape condition, so it admits an entry 'a/' or '/a'; WellFormedPath is only a requires on method paths. My own Impact claim 'Valid() already is A.1's tree' was false against TREE-007; reworded to the prefix closure (TREE-012)"
+        outcome: ok
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "get_folder_info marker skip (line 675); put_object (line 481)"
+        read_type: verify
+        extract: "Keys ending in '/' are skipped as files and the only write is put_object(Key=path) with a well-formed path, so the library writes no marker; a foreign marker shows as an empty folder, which A.6 now admits on S3 (maintainer's choice)"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-030 listing omission (line 1511); key-shape rows (lines 1494, 1499)"
+        read_type: reference
+        extract: "BE-030 already omits a listed key the rule would refuse or rewrite, so omitting empty-segment raw keys is no behaviour change; d//f, d/./f, d/ and ./ are input rows mapped onto a Key"
+        outcome: ok
+      - file: sdd/formal/StoreTree.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "bash scripts/dafny_verify.sh StoreTree.dfy: 37 verified at 8308dc62e; 38 verified, 0 errors with type Name = s: string | |s| > 0 && '/' !in s witness \"a\" and Key = seq<Name> (the extra one is the subset type's witness). No proof changed, and §12's TrieWF needs no names conjunct since the type holds it"
         outcome: ok

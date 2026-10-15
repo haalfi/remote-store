@@ -2,8 +2,10 @@
 // encodes it (BK-432).  A sketch verified before the RFC's acceptance; it
 // checks the RFC's prose and is not yet wired into BackendContract.dfy.
 //
-//   §1  The tree: keys name at most one node; Valid() in BackendContract.dfy
-//       states the same invariant over its string paths.
+//   §1  The tree: a Key is a sequence of spec 051's names (TREE-007), and
+//       names at most one node.  Valid() in BackendContract.dfy states the
+//       prefix condition over its string paths but not TREE-007's names,
+//       which hold only for the paths its methods take (WellFormedPath).
 //   §2  Resolution: what a key resolves to (A.1).
 //   §3  A write at the tree level, and that it keeps the tree valid when the
 //       key resolves to an item or to nothing (A.4, A.5's write column).
@@ -32,11 +34,12 @@
 //       call must refuse is typed, and so is a listing's row that holds
 //       nothing, except a flat listing refused in another shape.
 //   §12 The tree against spec 051: a valid Tree is exactly a pair (L, K)
-//       meeting the conditions of lemma L6 in lean/StoreAxioms.lean, except
-//       its condition on names, for finite pairs only.
+//       meeting the conditions of lemma L6 in lean/StoreAxioms.lean, its
+//       condition on names held by Key's type, for finite pairs only.
 //
-// Not modelled here: links (A.7), a listing's omissions as observed page by
-// page (A.3's order obligation), and changes under an operation (A.9).  A
+// Not modelled here: links (A.7), S3's folder markers (A.2, A.6), a
+// listing's omissions as observed page by page (A.3's order obligation), and
+// changes under an operation (A.9).  A
 // hierarchical encoding with folder objects is the tree itself, so §3 covers
 // its writes.
 
@@ -46,7 +49,11 @@ module StoreTree {
   // §1  The tree
   // -------------------------------------------------------------------------
 
-  type Key = seq<string>
+  // A name is non-empty and contains no '/' (spec 051 TREE-007), so a Key
+  // joins to one string and two Keys never join to the same one (TREE-010).
+  type Name = s: string | |s| > 0 && '/' !in s witness "a"
+
+  type Key = seq<Name>
 
   predicate ProperPrefix(p: Key, k: Key) {
     |p| < |k| && k[..|p|] == p
@@ -655,14 +662,14 @@ module StoreTree {
   // of non-empty sequences of L, each with no proper extension in L (a leaf
   // of L outside K is an empty folder).  A Tree is such a
   // pair, L its keys and K its items, so the lemmas below tie §1 to spec 051
-  // through L6, with two exceptions.  Trie.WF's condition that every segment
-  // is a name (TREE-007) is not stated: Key admits "" and "a/b" until BK-434
-  // restricts it.  And a Dafny set or map is finite, while L6 also covers
-  // infinite pairs (infinite_model in the Lean file), so the tie reaches
-  // finite stores only, the limit research § 10 sets for a finite map.
+  // through L6.  Trie.WF's condition that every segment is a name (TREE-007)
+  // is not a conjunct below, because Key's type (§1) already holds it.  A
+  // Dafny set or map is finite, while L6 also covers infinite pairs
+  // (infinite_model in the Lean file), so the tie reaches finite stores only,
+  // the limit research § 10 sets for a finite map.
 
-  // Trie.WF without its names condition, over finite sets: nil, closed, K_L,
-  // K_ne, K_leaf.
+  // Trie.WF over finite sets, its names condition held by Key's type: nil,
+  // closed, K_L, K_ne, K_leaf.
   ghost predicate TrieWF(l: set<Key>, k: set<Key>) {
     && [] in l
     && (forall s, i :: s in l && 0 <= i <= |s| ==> s[..i] in l)
@@ -728,7 +735,7 @@ module StoreTree {
 
   // The other round trip: a tree gives its pair, and that pair gives the
   // tree back.  With TreeIsTrie and TrieIsTree, a finite pair (L, K) and a
-  // Tree are two spellings of one valid store, names aside.
+  // Tree are two spellings of one valid store.
   lemma TreeIsTrieTree(t: Tree)
     ensures TrieTree(t.Keys, Items(t)) == t
   {
