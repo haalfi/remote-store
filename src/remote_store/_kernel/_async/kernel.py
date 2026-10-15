@@ -166,7 +166,7 @@ class _Omitted:
     tree.
     """
 
-    # BE-030's omission, and A.3 of spec 003 § The store tree.
+    # BE-030's omission, and BE-032's A.3.
 
     __slots__ = ("_count", "_first", "_name", "_where")
 
@@ -585,11 +585,13 @@ class _AsyncKernelCore:
     async def _write_target(self, op: Op, key: str) -> Entry | None:
         """A write target's determinant: the entry there, ``None`` for a miss.
 
-        A ``stat`` alone, so on a flat namespace a key may shadow a prefix. A
-        file above the key, which a raising ``stat`` lets ``_state`` find, is
-        ``InvalidPath``; a ``stat`` that cannot answer fails the call.
+        A ``stat`` alone, with no folder listing: every caller runs
+        ``_prepare_write`` first, whose flat checks already refused a folder
+        at the key. A file above the key, which a raising ``stat`` lets
+        ``_state`` find, is ``InvalidPath``; a ``stat`` that cannot answer
+        fails the call.
         """
-        # BE-008's flat exemption, as BE-030 states it for the kernel.
+        # BE-032 A.4: no flat exemption on the kernel; _prepare_write checked the folder.
         seen = await self._state(op, key, walk=False, folders=False)
         if seen.error is not None:
             raise seen.error
@@ -1253,7 +1255,7 @@ class _AsyncKernelCore:
 
     # endregion
 
-    # region: delete_folder (BE-031; spec 003 § The store tree, A.5's delete-folder column)
+    # region: delete_folder (BE-031; BE-032, A.5's delete-folder column)
 
     def _df_error(self, cls: type[RemoteStoreError], key: str) -> RemoteStoreError:
         messages = {

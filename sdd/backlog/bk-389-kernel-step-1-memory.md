@@ -364,8 +364,11 @@ every case. RFC-0017 carries the same answers at the question each settles.
        probes, the probe of a refused listing of `key` (now only its first page
        gets A.8's rows; a later page propagates), the claim that only
        `delete_folder` calls `stat` without following links (`delete` and a
-       `move` source do too), the driver obligation below and the
-       `parents == "none"` table's "a file and a prefix both" row, by spec 003's
+       `move` source do too), the driver obligation below, and in the
+       `parents == "none"` paragraph its list-first order (on a flat namespace
+       the key is `stat`ed first, A.3), its unprobed `delete_tree` refusal after
+       a non-empty listing (now A.8's flat `delete_tree` row) and its table's
+       "a file and a prefix both" row, by spec 003's
        BE-031 and BE-032 (§ Resumed against RFC-0021 below): every refusal in
        BE-032's probe set is probed, a refusal on the walk's way propagates, and
        drivers owe no rule about how a refusal is typed. The history and

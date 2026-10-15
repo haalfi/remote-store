@@ -701,3 +701,8 @@ phases:
         read_type: gate
         extract: "the second closing round over a0db936 found no kernel defect; its findings were prose my fix pass left stale or overstated (BE-018/019 kernel lines, the folder_stats bullet, a displaced spec marker, dated dossier sections read as present state) and one unpinned rename in the transfer oracle, now killed"
         outcome: misleading
+      - file: src/remote_store/_kernel/__init__.py
+        section: "the package's design pointer; _write_target's comment"
+        read_type: verify
+        extract: "the third closing round over 8e5f78c found no correctness defect and nothing by measuring; its five findings were pointers the resume had not reached (the package comment naming only BE-030 and BE-031, a draft section title, a round-6 comment on the withdrawn flat exemption) and the PR body's silence on what #1130 brought in"
+        outcome: misleading
