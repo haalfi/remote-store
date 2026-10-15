@@ -305,9 +305,12 @@ if evidence changes; these are retired.
   `gh` output was decoded as cp1252: on PR #1130 a byte 0x81 left `.stdout` `None`
   and `json.loads` raised `TypeError`. All three now go through one `_run` that
   decodes UTF-8 with `errors="replace"`, because a strict failure in Windows'
-  reader thread surfaces only as that `TypeError`. Tests, seen failing first:
+  reader thread surfaces only as that `TypeError`. Review found the output side:
+  a piped stdout is cp1252 and strict, so a title outside it raised
+  `UnicodeEncodeError`; `main` now writes UTF-8. Tests, seen failing first:
   `tests/scripts/test_rfc_0015_findings.py` `TestSubprocessDecoding`,
-  `tests/scripts/test_ship_report.py` `TestGhOneDecoding`. Trace:
+  `tests/scripts/test_ship_report.py` `TestGhOneDecoding` and
+  `TestMain::test_a_cp1252_stdout_gets_the_report_as_utf8`. Trace:
   [bug-326](traces/bug-326-ship-report-utf8.yml).
 
 - [x] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**

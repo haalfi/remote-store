@@ -31,6 +31,7 @@ say that is still true.
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import locale
 import subprocess
@@ -1187,6 +1188,22 @@ class TestMain:
         assert _mod.main(["1025", "--out", str(target)]) == 0
         assert target.read_text(encoding="utf-8").startswith("# /ship report")
         assert f"Written to {target}" in capsys.readouterr().err
+
+    def test_a_cp1252_stdout_gets_the_report_as_utf8(self, collected, monkeypatch: pytest.MonkeyPatch) -> None:
+        """BUG-326, output side: a piped stdout on Windows is cp1252 with ``errors="strict"``.
+
+        The report interpolates the PR title raw, so a character cp1252 has no
+        slot for raised ``UnicodeEncodeError`` before ``--out`` was written. The
+        stand-in stdout is that stream: a ``TextIOWrapper`` over bytes, cp1252,
+        strict.
+        """
+        collected["title"] = "BK-1: a \N{RIGHTWARDS ARROW} b"
+        raw = io.BytesIO()
+        stdout = io.TextIOWrapper(raw, encoding="cp1252", errors="strict")
+        monkeypatch.setattr(sys, "stdout", stdout)
+        assert _mod.main(["1025"]) == 0
+        stdout.flush()
+        assert "*BK-1: a \N{RIGHTWARDS ARROW} b*" in raw.getvalue().decode("utf-8")
 
     def test_out_honours_trace_block_only(self, collected, tmp_path: Path) -> None:
         target = tmp_path / "block.yml"

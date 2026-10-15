@@ -160,6 +160,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import io
 import json
 import sys
 from collections import Counter, OrderedDict
@@ -588,6 +589,12 @@ def main(argv: list[str] | None = None) -> int:
 
     data = collect(args.pr)
     text = trace_block(data) if args.trace_block_only else step5_report(data)
+    # The report carries PR titles and commit subjects raw. A piped stdout on
+    # Windows is cp1252 and strict, so one character outside it raised
+    # UnicodeEncodeError before --out was written (BUG-326). UTF-8 is what --out
+    # writes too.
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(encoding="utf-8")
     print(text, end="")
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)

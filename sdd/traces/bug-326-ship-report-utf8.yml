@@ -119,7 +119,9 @@ phases:
           `hatch run ship-report 1130 --trace-block-only`, the run that crashed,
           completed and printed the review block, in an env where
           `sys.flags.utf8_mode` is 0 and `locale.getencoding()` is cp1252, so
-          the run went through the fixed decoding, not UTF-8 mode.
+          the run went through the fixed decoding, not UTF-8 mode. It checked
+          the decode side only: that block's free text is `json.dumps` with
+          ASCII escapes, so it never reaches the output encoding (review round 1).
         outcome: ok
       - file: .pre-commit-config.yaml
         section: "ruff hook"
@@ -132,4 +134,20 @@ phases:
           exists) and wrapped the two f-strings; both test modules still pass.
           The Edit hook had made the same rewrite earlier, which I reverted
           before learning the commit hook requires it.
+        outcome: ok
+  - id: review_fix_1
+    name: Review round 1 fixes
+    steps:
+      - file: scripts/ship_report.py
+        section: "main (review thread, file-level)"
+        read_type: verify
+        extract: >-
+          Review: the bare report could still crash on output. Reproduced by
+          TestMain::test_a_cp1252_stdout_gets_the_report_as_utf8 (a cp1252,
+          strict TextIOWrapper as stdout, a title holding U+2192): failed with
+          UnicodeEncodeError at `print`. `main` now reconfigures a TextIOWrapper
+          stdout to UTF-8, and the test passes. A piped run on #1130 now emits
+          the em dash as e2 80 94, where it was cp1252's 0x97 before. Swept the
+          other prints: rfc-0015-findings.py's `main` prints counts only, and
+          ship_report's stderr line prints the `--out` path.
         outcome: ok
