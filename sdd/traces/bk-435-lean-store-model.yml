@@ -1,0 +1,119 @@
+id: BK-435
+title: "The store model's axioms are machine-checked but stated only in a research doc, so no spec binds a backend to them"
+trigger: "Step 2 of the accepted research doc's formalization order (§ 10): after the Alloy check found no disagreement in bounded scope, prove D1 and the § 7 lemmas over the unrestricted universe in Lean 4; the maintainer put L6 in this step"
+source_items:
+  - BK-435
+audience:
+  - library.maintainer
+  - contributor.tooling
+expected_ripples:
+  - sdd/formal/README.md
+  - sdd/research/research-store-model-axioms.md
+  - sdd/BACKLOG.md
+  - sdd/CLAUDE-REFERENCE.md
+  - sdd/process-budget.json
+  - pyproject.toml
+  - .claude/hooks/session-init.sh
+decisions:
+  - sdd/decisions/ef396977-f51e-463e-bfc3-d413be64ea17.jsonl
+  - sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl
+orient:
+  - items: [BK-434]
+    verdict: unrelated
+    evidence: "BK-434 wires RFC-0021's encodings into BackendContract.dfy. This work adds a Lean project proving the research doc's lemmas and touches no .dfy file; L6 proves the trie view that StoreTree.dfy's Tree = map<Key, Kind> instantiates, but reconciling that file with AX-7 (its Key = seq<string> admits \"\" and \"a/b\") stays the doc's open question and BK-434's, unchanged."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-store-model-axioms.md
+        section: "(full)"
+        read_type: gate
+        extract: "§ 3 clauses to restate, § 4 D1 and chain, § 7 L1 to L6, § 9.7 infinite half, § 10 step 2 and the split-of-join auxiliary lemma"
+      - file: sdd/formal/README.md
+        section: "(full)"
+        read_type: gate
+        extract: "Alloy layer and its native-first runner as the pattern; layers table; authoring rule 3 on CI status"
+      - file: sdd/formal/alloy/StoreAxioms.als
+        section: "(full)"
+        read_type: reference
+        extract: "Clause-per-predicate restatement mirrored as one Axioms field per clause; L5's non-root ancestor reading"
+  - id: proofs
+    name: Write and check the Lean proofs
+    steps:
+      - file: scripts/alloy_check.sh
+        section: "(full)"
+        read_type: reference
+        extract: "Native-first with version check, Docker fallback, repo mounted read-only; lean_check.sh copies the project into the container because lake writes .lake/"
+      - file: scripts/alloy.Dockerfile
+        section: "(full)"
+        read_type: reference
+        extract: "ADD --checksum pin; the Lean archive's sha256 is the digest GitHub publishes for the release asset"
+  - id: toolchain
+    name: Local Lean setup like Alloy's
+    steps:
+      - file: .claude/hooks/session-init.sh
+        section: "Alloy install block"
+        read_type: reference
+        extract: "Container install with sha256 check; Lean's archive is .tar.zst, so the guard is zstd rather than java"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Local toolchain"
+        read_type: reference
+        extract: "One row per tool; the added row needed a recorded process-budget raise"
+      - file: scripts/check_process_budget.py
+        section: "module docstring"
+        read_type: gate
+        extract: "Growth of a budgeted file needs a recorded --raise"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: gate
+        extract: "Read late, after the review flagged its absence: no row covers a new formal-layer toolchain; Local-machine reference and Test-outside-src rows checked and not owed. My miss to read it first; it was not the table's"
+surprising_ripples:
+  - ".gitignore and sdd/formal/lean/lake-manifest.json: a native lake build writes .lake/ and the manifest inside the project; Alloy and Dafny write nothing into the repo. The manifest was found by review, because the Docker path builds a copy"
+  - ".github/workflows/ci.yml FORMAL_PAT: it matches all of sdd/formal/ and excluded only tla/, so every Alloy or Lean change ran the Dafny job while the README said no CI job runs them; alloy/ and lean/ are now excluded like tla/. Found by review round 1; no ripple-check row covers a new sdd/formal/ subtree"
+  - "scripts/lean.Dockerfile platform pin: found by the tooling review (the pinned archive is x86_64-only)"
+  - ".claude/hooks/session-init.sh: the container auto-install copied from Alloy was dropped after review measured its cost (580 MB download, about 2.9 GB unpacked, every fresh container start; commands in sdd/formal/README.md § Running the verifier); the hook now only prints a message, which in such a container says the proofs cannot be checked there (review round 2)"
+# The review loop ran locally: each round was an unprimed analyze-only
+# /rvw-pr pass (no GitHub API in the session then), its findings posted on
+# #1132 as one plain PR comment per round (`gh pr view 1132 --json comments`).
+# ship-report counts PR reviews only, so the zeros below are that artifact,
+# not an absent review; the per-round findings live in those comments.
+review:
+  # Derived by `hatch run ship-report 1132 --trace-block-only` at head 4d3a607.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1132 --trace-block-only"
+  pr: 1132
+  review_rounds: 0
+  submissions: 0
+  findings: 0
+  by_round: []
+  by_file: []
+  untouched_files:
+    - ".claude/hooks/session-init.sh"
+    - ".github/workflows/ci.yml"
+    - ".gitignore"
+    - "pyproject.toml"
+    - "scripts/alloy.Dockerfile"
+    - "scripts/alloy_check.sh"
+    - "scripts/lean.Dockerfile"
+    - "scripts/lean_check.sh"
+    - "sdd/BACKLOG.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/decisions/a43a478b-6ba7-4978-89f5-773056c9d7c7.jsonl"
+    - "sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl"
+    - "sdd/decisions/ef396977-f51e-463e-bfc3-d413be64ea17.jsonl"
+    - "sdd/decisions/f9bf6c85-56f9-4b02-be3a-7d6217885009.jsonl"
+    - "sdd/formal/README.md"
+    - "sdd/formal/alloy/StoreAxioms.als"
+    - "sdd/formal/lean/StoreAxioms.lean"
+    - "sdd/formal/lean/lake-manifest.json"
+    - "sdd/formal/lean/lakefile.toml"
+    - "sdd/formal/lean/lean-toolchain"
+    - "sdd/process-budget.json"
+    - "sdd/research/research-store-model-axioms.md"
+    - "sdd/traces/bk-435-alloy-store-model.yml"
+    - "sdd/traces/bk-435-lean-store-model.yml"
+    - "sdd/traces/bk-435-store-model-axioms.yml"
+  review_driven_commits:
+    []
+  ci: {verdict: NO CHECKS, failed: 0, pending: 0}

@@ -34,6 +34,8 @@ build/
 *.egg-info/
 *.whl
 *.tar.gz
+# Lake's build directory (a native `lake build` in sdd/formal/lean)
+.lake/
 
 # Testing & Coverage
 .coverage
