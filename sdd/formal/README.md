@@ -26,7 +26,11 @@ Three properties we want this layer to enforce:
    `WriteResult` unchanged."
 
 The first two are per-operation questions — **Dafny** territory. The
-third is composition — **TLA+** territory.
+third is composition — **TLA+** territory. Below all three sits the
+structure the operations act on; whether its axioms are consistent and
+independent is a question for a model finder — **Alloy** territory —
+and what follows from them over any universe is a question for a proof
+assistant — **Lean 4** territory.
 
 ## Three shapes of Dafny-section work: (C), (T), (O)
 
@@ -87,6 +91,46 @@ proxy forwarding invariants, interleavings.
 TLC's boundary: it is finite-state. Guarantees hold for the bounded
 model only; scaling constants can change runtime from milliseconds to
 minutes.
+
+### Alloy
+
+Alloy (the Alloy Analyzer, SAT-backed) searches for instances of a
+relational model within a bounded scope. It is the fit for a static
+axiom set: a `run` that finds an instance shows a structure exists
+(consistency, a countermodel), and a `check` with no counterexample
+shows a consequence holds up to the scope. Here it checks the store
+tree of [spec 051](../specs/051-store-tree.md), which it restates
+(§ Traceability tags). The rows, witnesses and lemma numbers are those
+of its rationale,
+[`research-store-model-axioms.md`](../research/research-store-model-axioms.md)
+(BK-435): each § 5 countermodel breaks exactly its clause, the
+witnesses are models, and lemmas L1 to L5 hold in scope.
+
+Alloy's boundary: bounded scope, so nothing about infinite structures,
+and a statement over all models (L6's correspondence up to
+isomorphism) is out of reach. Proofs over the unrestricted universe are
+the next layer's job. Every command carries `expect`, so a run is
+green only when each outcome matches.
+
+### Lean 4
+
+Lean 4 is a proof assistant: a statement it accepts holds for every
+structure its types admit, with no scope. Here it restates spec 051
+too, and proves the research doc's lemmas over an arbitrary universe:
+D1, L1 to L6
+(including L6's correspondence up to isomorphism, which Alloy cannot
+state), that the axioms have an infinite model, and § 9.7's infinite
+upward chain. Lean core only, no Mathlib.
+
+Lean's boundary: it proves what the file states, so fidelity to spec
+051 is a review question, as for every layer here. The build fails on a
+`sorry`, and `#guard_msgs` lines pin the axioms each headline result
+rests on (the 10 at the end of `StoreAxioms.lean`); a new result is
+pinned only once a line is added for it.
+
+[`tex/`](tex/README.md) retells these proofs, and what the Alloy model
+adds, in prose for human readers. Its proofs are not machine-checked; its
+README says how to redo it when the Lean file changes.
 
 ### Decoupled, not coupled
 
@@ -214,6 +258,8 @@ age worse than the qualitative one.
 | Spec (`.md`) | Human-readable requirements | Review |
 | Dafny (`.dfy`) | Machine-checkable per-operation contract | Dafny verifier |
 | TLA+ (`.tla`, under `sdd/formal/tla/`) | Cross-layer protocol properties | TLC (bounded model) |
+| Alloy (`.als`, under `sdd/formal/alloy/`) | Static store-model axioms: consistency, independence, lemmas in scope | Alloy Analyzer (bounded scope) |
+| Lean 4 (`.lean`, under `sdd/formal/lean/`) | Static store-model lemmas over an unrestricted universe | Lean 4 kernel (`lake build`) |
 | Python (`_backend.py`) | Runtime implementation | pytest + Hypothesis PBT |
 
 Dafny and TLA+ are parallel specifications — not auto-generated from
@@ -238,7 +284,7 @@ that must move — see [`000-process.md` Rule
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
 | `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
-| `StoreTree.dfy` | RFC-0021's model, a sketch not yet wired into the trait. Its header lists §1 to §11: the store as a tree; a flat encoding's partial `decode`; agreement between a flat driver's lookups, listings, recursive `delete_folder` walk and `move`/`copy` and the tree; D4's write checks; that a flat encoding holds no empty folder; and A.8's refusal rule for every call, namespace and row |
+| `StoreTree.dfy` | RFC-0021's model, a sketch not yet wired into the trait. Its header lists §1 to §12: the store as a tree; a flat encoding's partial `decode`; agreement between a flat driver's lookups, listings, recursive `delete_folder` walk and `move`/`copy` and the tree; D4's write checks; that a flat encoding holds no empty folder; A.8's refusal rule for every call, namespace and row; and that a valid tree is the pair of spec 051's lemma L6, except its condition on names and for finite stores only |
 
 Live TLA+ modules live in `sdd/formal/tla/`. The frozen PoC modules
 remain in `sdd/research/tla-poc/` as the historical record of the
@@ -260,7 +306,8 @@ pinned version (see
 then `dafny verify sdd/formal/<file>.dfy`.
 
 CI runs the `verify-formal` job automatically when a changed path outside
-`sdd/formal/tla/` (which the filter step drops first) matches `FORMAL_PAT` in
+`sdd/formal/tla/`, `alloy/` and `lean/` (which the filter step drops first)
+matches `FORMAL_PAT` in
 `.github/workflows/ci.yml`; it also checks the compiled oracle
 against its sources and runs the oracle's tests (see § Compiled oracle as
 conformance gate).
@@ -272,6 +319,100 @@ configs still run via `bash scripts/tlc_check.sh sdd/research/tla-poc MC`
 (or `MC2`). CI's informational `verify-tla` job runs the live MC3
 model whenever files under `sdd/formal/tla/` or the TLC tooling
 change.
+
+Alloy: `bash scripts/alloy_check.sh` (or `hatch run verify-alloy`) runs
+every command of `sdd/formal/alloy/StoreAxioms.als` and exits non-zero
+when any outcome differs from its `expect`. It uses a native `alloy` on
+`PATH` that reports the pinned version, and otherwise a Docker image
+built from `scripts/alloy.Dockerfile`; `ALLOY_RUNNER=docker` forces
+Docker. No CI job runs it (maintainer decision, 2026-10-13); one added
+later starts informational, as authoring rule 3 sets for TLA+.
+
+Native setup needs a Java runtime and no root. On 2026-10-13 the model
+ran green under the image's Java 21 (`eclipse-temurin:21-jre`) and,
+natively, under OpenJDK 25.0.1 (`java -version` on the machine that ran
+it); other versions are untried. `session-init.sh` does the same into
+`/usr/local` in a claude.ai/code container. The version and sha256 are
+the ones pinned in `scripts/alloy.Dockerfile`. `~/.local/bin` must be on
+`PATH` for the last line and for `alloy_check.sh` to find it:
+
+```bash
+mkdir -p ~/.local/lib/alloy ~/.local/bin
+curl -fsSL -o ~/.local/lib/alloy/alloy.jar \
+  https://repo1.maven.org/maven2/org/alloytools/org.alloytools.alloy.dist/6.2.0/org.alloytools.alloy.dist-6.2.0.jar
+echo "6037cbeee0e8423c1c468447ed10f5fcf2f2743a2ffc39cb1c81f2905c0fdb9d  $HOME/.local/lib/alloy/alloy.jar" | sha256sum --check
+printf '#!/bin/bash\nexec java --enable-native-access=ALL-UNNAMED -jar "$HOME/.local/lib/alloy/alloy.jar" "$@"\n' > ~/.local/bin/alloy
+chmod +x ~/.local/bin/alloy
+alloy version    # 6.2.0
+```
+
+`alloy gui` opens the Analyzer's editor and visualizer on the same jar,
+which is the quickest way to look at an instance a `run` found.
+
+Lean: `bash scripts/lean_check.sh` (or `hatch run verify-lean`) runs
+`lake build` on `sdd/formal/lean/` and exits non-zero on any error,
+a `sorry` or a changed axiom list included. It builds
+`StoreAxioms.lean` and what that file imports, so a new `.lean` file
+is checked only once it is imported there. It uses a native `lean` on
+`PATH` that reports the pinned version from inside the project, and
+otherwise a Docker image built from `scripts/lean.Dockerfile`, which
+checks the release archive against a pinned sha256;
+`LEAN_RUNNER=docker` forces Docker. No CI job runs it, as for Alloy.
+Unlike Alloy, `session-init.sh` does not install Lean in a
+claude.ai/code container: the release archive is about 580 MB
+(`content-length: 580432872` for `lean-4.34.1-linux.tar.zst` from
+`curl -sIL` on the release URL in `scripts/lean.Dockerfile`), it unpacks
+to about 2.9 GB (`du -sh /opt/lean` in the image built from that
+Dockerfile), and a container starts fresh each session (maintainer
+decision, 2026-10-13). It prints a message instead: in such a container
+that the proofs cannot be checked in the session, elsewhere that
+`lean_check.sh` falls back to Docker.
+
+Native setup needs no root. [elan](https://github.com/leanprover/elan),
+Lean's version manager, reads the project's `lean-toolchain` file and
+fetches that release on first use; it does not check the Dockerfile's
+sha256, and the installer below is fetched unpinned. These steps are
+untested: on 2026-10-13 the proofs were built only through the Docker
+image (maintainer decision to leave the native path untested). The installer adds
+`~/.elan/bin` to the shell profile; the `export` line puts it on `PATH`
+in the current shell:
+
+```bash
+curl -fsSL -o elan-init.sh https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh
+sh elan-init.sh -y --default-toolchain none
+export PATH="$HOME/.elan/bin:$PATH"
+cd sdd/formal/lean
+lean --version    # Lean (version 4.34.1, ...)
+```
+
+An editor with the Lean 4 extension (VS Code) shows each proof state
+interactively on the same toolchain.
+
+<a id="traceability-tags"></a>
+### Traceability tags
+
+A formal statement names the spec section it encodes in a line comment:
+
+- **Dafny:** `// @spec <ID>` above the `ensures` it tags.
+- **Alloy and Lean:** `-- @spec <ID>` above the predicate, structure field,
+  definition or theorem that restates the section, and one
+  `-- @restates sdd/specs/<file>.md` line per spec the file restates. A
+  file at the top level of `alloy/` or `lean/` with none fails the check,
+  so a module that restates no spec sits in a subdirectory, which the
+  check does not read: Alloy opens it as `open sub/Helper`, and Lean
+  imports `lean/StoreAxioms/Helper.lean` as `StoreAxioms.Helper`.
+  `StoreAxioms.als` and `StoreAxioms.lean` each restate spec 051.
+
+**The spec governs the tags.** A section with no tag in a file that
+restates its spec, or a tag citing an ID no spec declares, is fixed in the
+formal file. Disagreement about content follows each file's header rule
+and [`000-process.md` Rule 7](../000-process.md#intent-attribution).
+
+`scripts/check_formal_trace.py` enforces both directions in `lint`,
+`docs-gate` and CI's `verify-formal`, so an edit confined to an `.als` or
+`.lean` file is checked through `docs-gate`. It checks citation only. It
+does not check that a tagged statement says what its section says, and it
+does not run Alloy or Lean. Its docstring states the full bound.
 
 ### Verification practices
 

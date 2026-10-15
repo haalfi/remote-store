@@ -1,0 +1,111 @@
+id: BK-435
+title: "Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations"
+trigger: "The maintainer asked how to help #1130's session adapt the Dafny part of BK-435; the answer was to tie StoreTree.dfy's Tree to spec 051 here, in #1131's stack"
+source_items:
+  - BK-435
+audience:
+  - library.maintainer
+expected_ripples:
+  - sdd/formal/StoreTree.dfy
+  - sdd/formal/README.md
+  - sdd/BACKLOG.md
+  - sdd/research/research-store-model-axioms.md
+surprising_ripples:
+  - "scripts/check_formal_trace.py F1: a `// @spec TREE-002` tag in StoreTree.dfy fails the gate ([dafny-clause-untested] TREE-002, run once and reverted), since D asks every tagged ID for a conformance marker and spec 051 has none until BK-436. §12 cites spec 051 in prose, and BK-435's entry lists the tags as not done until BK-436 (BK-436's own entry is at its R2 diagnosis cap)"
+discovery_followups:
+  - BUG-325
+decisions:
+  - sdd/decisions/76a5c608-6e68-4795-9152-690035aed9eb.jsonl
+orient:
+  - items: [BK-434]
+    verdict: constrains
+    evidence: "Research § 10, 'Decided (maintainer, 2026-10-13)': StoreTree.dfy's Key 'gains AX-7's restriction as a type ... The change is BK-434's'. BK-434's entry records the same divergence. So §12 leaves Trie.WF's names condition out and does not touch §1's Key."
+  - items: [BK-432]
+    verdict: constrains
+    evidence: "Research § 10: spec 003's § The store tree 'lands with A.1 as accepted (BK-432)'; A.1 becomes a pointer to spec 051 afterwards (BK-435). RFC-0021 is Accepted 2026-10-13. So the A.1 pointer stays out of this PR, and #1130 is not asked to change A.1."
+  - items: [BK-436]
+    verdict: constrains
+    evidence: "check_formal_trace.py's docstring keeps R out of D because 'spec 051 has none [conformance] until BK-436', and a probe tag confirmed F1 fires. The @spec tags for §12 therefore wait on BK-436."
+  - items: [ID-207, ID-245]
+    verdict: unrelated
+    evidence: "Both name check_formal_trace.py for its citation-versus-assertion limits and its discarded matrix; neither changes how a .dfy tag is read."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Orient: does related open work change the fix?"
+        read_type: gate
+        extract: "Find by spec IDs and by file, cluster, read dossiers and RFC/ADR, judge, record, recommend in one dialog"
+      - file: scripts/sdd_lookup.py
+        section: "backlog-find --spec TREE-001 ... --spec TREE-012"
+        read_type: gate
+        outcome: misleading
+        extract: "Reported 'No item, entry or dossier matches' for all twelve IDs, while BK-435 and BK-436 both carry `spec: TREE-001 -- TREE-012`: a range on an attribute line is not matched by an ID inside it. The file half (backlog-find StoreTree) found BK-432, BK-434 and BK-435"
+      - file: sdd/BACKLOG.md
+        section: "BK-432, BK-434, BK-436, BK-388, ID-207 (backlog-show)"
+        read_type: reference
+        extract: "BK-434 already records that StoreTree.dfy's Key admits \"\" and \"a/b\" and points to research § 10 for the resolution"
+      - file: sdd/research/research-store-model-axioms.md
+        section: "§ 9.5, § 10 (Relation to existing formal work; Decided 2026-10-13)"
+        read_type: reference
+        extract: "Key restriction is BK-434's; A.1 lands as accepted and later points to spec 051 (BK-435). Read after two review comments on #1130 had already asked that PR for both; both comments were withdrawn by reply on their threads"
+      - file: sdd/formal/lean/StoreAxioms.lean
+        section: "§ 7, L6 (Trie, Trie.WF, theorem L6)"
+        read_type: reference
+        extract: "Trie.WF has six conditions: names, nil, closed, K_L, K_ne, K_leaf. All but names state over a Dafny Tree, for finite pairs only: Trie.L and Trie.K are predicates of any extent, and infinite_model is one such pair (review of #1141)"
+      - file: scripts/check_formal_trace.py
+        section: "module docstring; extract_dafny_specs; _BASELINE"
+        read_type: gate
+        extract: "Every // @spec tag in sdd/formal/*.dfy joins D and needs a conformance marker (F1); the baseline must not grow"
+  - id: build
+    name: Prove the tie
+    steps:
+      - file: sdd/formal/StoreTree.dfy
+        section: "§12 TrieWF, TreeIsTrie, TrieTree, TrieIsTree, TreeIsTrieTree"
+        read_type: reference
+        extract: "bash scripts/dafny_verify.sh StoreTree.dfy: 36 verified, 0 errors (two hints added after two failed runs: the root's kind, and s[..|s|] == s). Mutants on scratch copies, deleted after: K_ne removed fails TreeIsTrie's postcondition; K_leaf removed fails its forall's Folder postcondition. Review round 3 of #1141 found tree to pair to tree unproved, so 'exactly' and 'two spellings' overclaimed; TreeIsTrieTree added: 37 verified, 0 errors, and TrieTree mapping every key to Folder fails its u[j] == t[j]"
+review:
+  # Derived by `hatch run ship-report 1141 --trace-block-only` at head 0ce5910.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1141 --trace-block-only"
+  pr: 1141
+  review_rounds: 3
+  submissions: 3
+  findings: 6
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.22
+    - round: 2
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.35
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 1.03
+  by_file:
+    - path: "sdd/formal/StoreTree.dfy"
+      findings: 3
+    - path: "sdd/traces/bk-435-storetree-tie.yml"
+      findings: 2
+    - path: "sdd/research/research-store-model-axioms.md"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/76a5c608-6e68-4795-9152-690035aed9eb.jsonl"
+    - "sdd/formal/README.md"
+  review_driven_commits:
+    - sha: "1ef3de6"
+      subject: "fix: address PR #1141 review"
+    - sha: "cfb751f"
+      subject: "fix: address PR #1141 review"
+    - sha: "0ce5910"
+      subject: "fix: address PR #1141 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

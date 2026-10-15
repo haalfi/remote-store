@@ -297,9 +297,9 @@ failure it was.
   spec: BE-004, BE-005, BE-008, BE-013, BE-014, BE-017, BE-021, BE-030, BE-031 · effort: L · audience: library.maintainer, user.api, contributor.process
   Spec 003 states per operation what an absent key, a file, a folder, a key under a file or a
   shadowed prefix answers, and the kernel's two probe rules disagree on one `stat` answer.
-  RFC-0021 (accepted 2026-10-13) sets one store tree, a partial abstraction function per
-  backend encoding and one refusal table per namespace, checked by `StoreTree.dfy`.
-  Remaining: its spec 003 section, landed with PR #1127's resume. Open decision: none.
+  RFC-0021 (accepted 2026-10-13) sets one store tree, a partial abstraction function per encoding
+  and one refusal table per namespace, checked by `StoreTree.dfy`. Remaining: its spec 003 section
+  (PR #1127's resume), whose A.1 later points to spec 051 (BK-435). Open decision: none.
 
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
@@ -463,11 +463,26 @@ no clause of the contract ships unexercised.
 
 - [ ] **BK-434 — RFC-0021's encodings are verified in `StoreTree.dfy` alone, so the trait's operations are not refined against them**
   spec: BE-008, BE-013, BE-014, BE-021 · effort: L · audience: library.maintainer
-  `StoreTree.dfy` proves a flat encoding's `decode` and RFC-0021's refusal rule
-  (A.8) on its own types; `BackendContract.dfy`'s operations still range over
-  `map<Path, Entry>` with `Valid()` and never see an encoding. RFC-0021 D10 names
-  the wiring as a follow-up. Open decision: refinement lemmas per encoding, or one
-  encoding-parametric trait. After BK-432.
+  `StoreTree.dfy` proves a flat encoding's `decode` and RFC-0021's refusal rule (A.8) on its
+  own types; `BackendContract.dfy`'s operations still range over `map<Path, Entry>` and never
+  see an encoding (RFC-0021 D10 names the wiring as a follow-up). `StoreTree.dfy`'s `Key` admits
+  `""` and `"a/b"`, against AX-7 (resolution: research-store-model-axioms.md § 10). Open
+  decision: refinement lemmas per encoding, or one encoding-parametric trait. After BK-432.
+
+- [~] **BK-435 — Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations**
+  spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
+  Spec 051 states the axioms of `research/research-store-model-axioms.md`, checked in Alloy, Lean
+  and, as L6's finite pair, `StoreTree.dfy` §12. Not done: spec 003's A.1 as a pointer to it (after
+  BK-432); §12's names condition (BK-434's `Key`) and `@spec` tags (F1 needs BK-436); research
+  § 10 step 3's Dafny operations (after BK-434). Open decision: none.
+
+- [ ] **BK-436 — No backend's observed tree is checked against spec 051**
+  spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
+  Spec 051's sections are tested only against a reference model (`tests/test_store_tree.py`). A
+  flat backend can hold an item with keys below it until RFC-0021's decoding lands (BK-432), and a
+  case-insensitive or normalizing one merges names spec 051 keeps apart (its Name equality, a TREE
+  section once measured). Open decision: which listings and probes observe a backend's tree, and
+  how each backend's name equality is measured. After BK-432.
 
 ---
 
@@ -914,6 +929,14 @@ CHANGELOG the release body is built from — say what is actually true.
   `hatch run ship-report 1130 --trace-block-only` printed `ci: {verdict: GREEN,
   failed: 0, pending: 0}` (2026-10-13), and that block goes into the trace unedited.
   Open decision: none; report no checks run as its own verdict.
+
+- [ ] **BUG-325 — `backlog-find --spec` misses every item whose `spec:` line names a range**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  `_spec_ids` in `scripts/sdd_lookup.py` splits the attribute value on `,` only, so
+  `spec: TREE-001 -- TREE-012` is one token and `--spec TREE-00n` matches nothing:
+  `hatch run backlog-find --spec TREE-001 ... --spec TREE-012` printed no match while BK-435
+  and BK-436 carry that range (2026-10-14). `/ship` § Orient finds related work this way.
+  Open decision: expand ranges, or reject range syntax on attribute lines.
 
 ---
 

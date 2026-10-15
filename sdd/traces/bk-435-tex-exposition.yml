@@ -1,0 +1,60 @@
+id: BK-435
+title: "Spec 051's store tree is not yet tied to spec 003's tree, `StoreTree.dfy`'s `Tree` or the store's operations"
+trigger: "A sandbox session wrote prose proofs of StoreAxioms.lean in TeX (sandbox only, by the maintainer's choice); the maintainer then asked to place the TeX, its README and the PDF under sdd/formal/tex/ and to mention it in the research doc for curious readers"
+source_items:
+  - BK-435
+audience:
+  - library.maintainer
+expected_ripples:
+  - sdd/formal/tex/store-axioms.tex
+  - sdd/formal/tex/README.md
+  - sdd/formal/tex/store-axioms.pdf
+  - sdd/formal/README.md
+  - sdd/research/research-store-model-axioms.md
+surprising_ripples:
+  - "sdd/formal/tex/README.md needed a <!-- doc: repo-only --> marker: check_docs_framework.py G-01 classifies every tracked .md by marker or directory default, and sdd/formal/ has no default. Found by docs-gate failing, as AUTHORING.md names no rule for sdd/formal/"
+decisions:
+  - sdd/decisions/df94f14f-fa1a-431e-8206-f5ff691f68c7.jsonl
+  - sdd/decisions/df48024d-396f-4f91-92d7-1d6657c34286.jsonl
+orient:
+  - items: [BK-437]
+    verdict: unrelated
+    evidence: "check_formal_trace.py's restatement globs are alloy/*.als and lean/*.lean (_RESTATEMENT_GLOBS), so a .tex file under sdd/formal/tex/ is no restatement R1 to R4 read; the TeX restates the Lean proofs, not spec 051's sections, and carries no @spec tag."
+  - items: [BK-434, BK-436]
+    verdict: unrelated
+    evidence: "BK-434 changes StoreTree.dfy and BackendContract.dfy, BK-436 binds backends to spec 051; neither touches the Lean file the TeX expounds."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/formal/tex/README.md
+        section: "(full, as the sandbox session left it), with store-axioms.tex and that session's decision log"
+        read_type: reference
+        extract: "Written against 21a0e534b; three review passes found 7, 8 and 2 defects and no unsound step, the last pass's fixes unreviewed. git diff 21a0e534b bffcee464 over the Lean file and spec 051 is empty, so the text is current"
+      - file: sdd/AUTHORING.md
+        section: "placement (git grep formal|binary|pdf)"
+        read_type: gate
+        extract: "No rule names sdd/formal/ or binaries; no .pdf or .tex was committed before (git ls-files)"
+      - file: scripts/check_no_retrospective.py
+        section: "SURFACE"
+        read_type: gate
+        extract: "sdd/formal/ is off the surface; check_formal_trace reads alloy and lean only; formal/README is outside the process budget (the #1139 edit left 298254 unchanged)"
+      - file: sdd/traces/_schema.yml
+        section: "audience, derived CHANGELOG rule"
+        read_type: gate
+        extract: "library.maintainer alone owes no CHANGELOG entry"
+  - id: place
+    name: Place and rebuild
+    steps:
+      - file: sdd/formal/tex/store-axioms.tex
+        section: "\\date"
+        read_type: verify
+        extract: "Date line now names bffcee464. pdflatex three times (the second still asked for a rerun as the TOC moved page breaks); the final log holds only the requested-release warning; 11 pages"
+      - file: sdd/formal/tex/README.md
+        section: "Checking"
+        read_type: verify
+        extract: "My first condensed note said the passes found no wrong statement; the sandbox README records a false abstract claim in pass 2 and unreviewed pass-3 fixes, so the note gives the counts instead"
+      - file: sdd/formal/README.md
+        section: "Lean 4"
+        read_type: verify
+        extract: "My draft pointer said no gate reads tex/; check_links reads its README, so it now says the proofs are not machine-checked"
