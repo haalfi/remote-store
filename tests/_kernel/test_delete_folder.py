@@ -3,17 +3,22 @@
 Two halves. The first runs the real kernel and the decided model of
 ``sdd/rfcs/rfc-0017-delete-folder-measure.py`` (its ``Kernel`` under P1 D1 W1
 R1 M1 F1 Q1, the options BK-396 decided) side by side over the model's own
-drivers, and requires the same answer and post-state in every cell,
-including the 88-cell ``enum`` product over refusal, ``stat`` outcome,
-listing outcome and ``missing_ok`` that enumerates the probe rule. So the
-port is checked against the model, not re-typed by hand. The second half
-covers, over the fake driver, the cases the model measures only through
-drivers that need a live wire or filesystem (its ``S3Driver``, ``SQLDriver``,
-``AzureFlatDriver`` and ``LocalDriver``): ``parents == "none"``, links,
-concurrent writers and deleters, and refusals that pass unprobed. Its
-``parents == "none"`` table departs from the model in one place on purpose:
-the model's ``_none`` lets a raising listing propagate, while the kernel
-reads a ``NotFound`` on the listing's first page as an empty listing (BE-031).
+drivers: over its key states it requires the same answer and post-state;
+over the 88-cell ``enum`` product (refusal, ``stat`` outcome, listing
+outcome, ``missing_ok``) that enumerates the probe rule it requires the same
+answer, except in the 24 walk cells with an untyped refusal, where BE-032
+A.9 supersedes the model and the refusal propagates. So the port is checked
+against the model, not re-typed by hand. The second half covers, over the
+fake driver, the cases the model measures only through drivers that need a
+live wire or filesystem (its ``S3Driver``, ``SQLDriver``, ``AzureFlatDriver``
+and ``LocalDriver``): ``parents == "none"``, links, concurrent writers and
+deleters, and refusals that pass unprobed. Its ``parents == "none"`` cells
+follow BE-031 and BE-032 where they depart from the model on purpose: a
+refusal of the listing's first page is read by A.8's first-page row (the
+model lets a raising listing propagate), a flat ``stat`` of the key comes
+first so an item with raw entries below it is ``InvalidPath`` with nothing
+removed (A.3), and a ``delete_tree`` refusal after a non-empty listing gets
+A.8's flat ``delete_tree`` row.
 """
 
 from __future__ import annotations
@@ -235,7 +240,7 @@ def test_the_probe_rule_matches_the_model_over_its_enumerated_space(
     recursive = ctx != "remove_folder"
     expected = _model(MODEL.ScriptedDriver(ctx, refusal, stat_out, list_out), "d", recursive, missing_ok)
     if ctx.startswith("walk") and refusal is RemoteStoreError:
-        # Spec 003 § The store tree, A.9, supersedes the model on the walk's way: a
+        # BE-032 A.9 supersedes the model on the walk's way: a
         # refusal of an entry after the operation's first page propagates unprobed.
         # Only a NotFound, an entry already gone, is still tolerated.
         expected = str(MODEL.answer(RemoteStoreError("refused on the way")))

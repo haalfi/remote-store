@@ -741,7 +741,7 @@ def test_a_flat_driver_finds_a_prefix_folder_by_one_listing_probe(runtime: str) 
 @pytest.mark.parametrize("protocols", [("rename",), ("copy",), ("atomic_move",)])
 @pytest.mark.spec("BE-032")
 def test_a_flat_item_over_a_folder_is_invalid_path(runtime: str, protocols: tuple[str, ...]) -> None:
-    # Spec 003 § The store tree, A.4: the library never writes a state that does not
+    # BE-032 A.4: the library never writes a state that does not
     # decode, so a write or move onto a key that is a flat folder is refused on every
     # route, before the wire is asked.
     store = FakeStore(parents="none").add("s", data=b"S").add("k/x", "p/y", "w/z")
@@ -777,13 +777,24 @@ def test_a_source_probe_that_cannot_answer_leaves_the_sources_refusal(runtime: s
 @pytest.mark.spec("BE-017")
 @pytest.mark.spec("BE-032")
 def test_a_flat_empty_aggregate_asks_stat_once(runtime: str) -> None:
-    # A.3's stat already ruled out an item, so typing the empty aggregate needs only the
-    # listing that tells a folder of omitted keys from nothing.
+    # A.3's stat already ruled out an item, and the aggregation listing itself tells a
+    # folder of omitted keys from nothing, so typing the empty aggregate asks no more.
     store = FakeStore(parents="none")
     run = make_kernel(runtime, store, namespace="flat", protocols=())
     with pytest.raises(NotFound):
         run.get_folder_info("n")
-    assert [prim for prim, key in store.calls if key == "n"] == ["stat", "list_page", "list_page"]
+    assert [prim for prim, key in store.calls if key == "n"] == ["stat", "list_page"]
+    # A prefix holding only an omitted key is a folder, with no extra probe either.
+    store.add("x")
+    store.files["o/b\\c"] = store.files["x"]
+    store.calls.clear()
+    assert run.get_folder_info("o").file_count == 0
+    assert [prim for prim, key in store.calls if key == "o"] == ["stat", "list_page"]
+    # The push-down sees no listing, so there the probe listing still types it.
+    pushed = make_kernel(runtime, FakeStore(parents="none"), namespace="flat", protocols=("folder_stats",))
+    with pytest.raises(NotFound):
+        pushed.get_folder_info("n")
+    assert [prim for prim, key in pushed.store.calls if key == "n"] == ["stat", "folder_stats", "list_page"]
 
 
 @pytest.mark.spec("BE-021")

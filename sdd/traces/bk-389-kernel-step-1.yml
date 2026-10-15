@@ -706,3 +706,7 @@ phases:
         read_type: verify
         extract: "the third closing round over 8e5f78c found no correctness defect and nothing by measuring; its five findings were pointers the resume had not reached (the package comment naming only BE-030 and BE-031, a draft section title, a round-6 comment on the withdrawn flat exemption) and the PR body's silence on what #1130 brought in"
         outcome: misleading
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "get_folder_info's empty-aggregate typing; the module opening"
+        read_type: verify
+        extract: "the fourth closing round over 92d5ebc found no correctness defect; one real extra list_page on the flat listing route (the aggregation listing already answers it, now used, pinned by the cell seen failing first) and five more pointer siblings the earlier passes had not reached"

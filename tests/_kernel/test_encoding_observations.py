@@ -1223,9 +1223,13 @@ def _listing_oracle(call: str, sim: _Sim, key: str) -> tuple[Expected, Any, int]
     value, omitted = (((0, 0) if aggregate else []), 0) if refused is not None else _listed(raw, key, call)
     if aggregate and value[0] == 0 and key:
         # BE-017 types an empty aggregate: a determinant with folder objects, fail-open without.
-        # On a flat namespace A.3's stat already ruled out an item, so only the probe listing
-        # is asked, with _node's flat reading of it.
-        if raw.flat:
+        # On a flat namespace A.3's stat already ruled out an item. On the listing route the
+        # aggregation listing itself answers whether anything lies under the prefix (a refused
+        # first page reads as empty, by the flat listing obligation); only the push-down asks
+        # the probe listing, with _node's flat reading of it.
+        if raw.flat and call != "get_folder_info-push_down":
+            node = FOLDER if refused is None and omitted else NOTHING
+        elif raw.flat:
             held = sim.holds(key)
             node = (NOTHING if held in MISS else held) if _err(held) else (FOLDER if held else NOTHING)
         else:

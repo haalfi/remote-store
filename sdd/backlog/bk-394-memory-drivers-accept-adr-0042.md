@@ -124,6 +124,14 @@ labelled **(was … , absorbed here)**, which is the absorption form
      Memory's `_NO_PROBE` exemption reads as stale once `MemoryBackend` is on
      the kernel. Restate the rule over the driver's `probe` for kernel
      classes (found in PR #1127's second closing round).
+   - A narrow ADR for RFC-0021's design stances, accepted with ADR-0042 in
+     this item's PR once Memory runs on the kernel: D1 and D2 (one store
+     tree, a partial `decode` per encoding, so a backend's quirks belong to
+     its encoding), D8 (refusals are observations: the kernel probes, and
+     drivers owe no rule about how a refusal is typed beyond A.8's two), and
+     possibly D3 and D4, each with the alternatives RFC-0021 rejected. It
+     points to spec 003's BE-032 for the contract rather than restating it.
+     (Maintainer's decision, 2026-10-15, in PR #1127.)
    - the Memory drivers' own rows under 007 and 022. Every later driver's rows
      are BK-390's, at that driver's step.
    - [spec 013, by the table above. MEM-DS-005's validation rows and

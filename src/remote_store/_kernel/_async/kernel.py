@@ -2,9 +2,13 @@
 
 ``_AsyncKernelCore`` implements the ``AsyncBackend`` surface over an
 ``AsyncDriver`` and owns, once, what the design assigns to the kernel: the
-key rule, the root and closed guards, the error-mapping choke point,
-the absent-container answers, the wrong-type probes, the listing bound, the
-write, move and copy syntheses and the ``delete_folder`` sequence.
+key rule and its listing omission, the root and closed guards, the
+error-mapping choke point, the absent-container answers, what a key resolves
+to and how a driver refusal is typed (the error-path probes), on a flat
+namespace the write checks below a file and over a folder and the folder
+operations' ``stat`` and omission below a listed item, the listing bound,
+``max_depth``, the folder aggregate, the write, move and copy syntheses and
+the ``delete_folder`` sequence. A driver does none of these.
 ``AsyncDriverBackend`` adds ``read``, the one member whose shape is the
 runtime's own.
 
@@ -507,8 +511,8 @@ class _AsyncKernelCore:
     def _under_file(self, seen: _Seen, key: str) -> InvalidPath:
         return InvalidPath(f"An ancestor of the path is a file: {seen.above}", path=key, backend=self.name)
 
-    # The error-path probes below are A.8's per-call tables (spec 003 § The store
-    # tree). Each runs only after a refusal in the probe set, fails open (a probe
+    # The error-path probes below are BE-032 A.8's per-call tables. Each runs
+    # only after a refusal in the probe set, fails open (a probe
     # that cannot answer leaves the refusal standing), and replaces the refusal
     # only on a row where the call must refuse: rule 4.
 
@@ -1093,9 +1097,14 @@ class _AsyncKernelCore:
             out.append(FolderEntry(path=RemotePath(folder), name=_keys.name(folder)))
         return out
 
-    async def _listed_files(self, op: Op, key: str, recursive: bool, omitted: _Omitted) -> AsyncIterator[Entry]:
+    async def _listed_files(
+        self, op: Op, key: str, recursive: bool, omitted: _Omitted, held: list[bool] | None = None
+    ) -> AsyncIterator[Entry]:
+        """The listing's files as the tree has them; *held* records whether any raw key was listed."""
         shadows = _Shadows(self._flat)
         async for page in self._pages(op, key, None if recursive else "/"):
+            if held is not None and (page.entries or page.prefixes):
+                held[0] = True
             for entry in self._files_of(page, self._below(page, shadows), omitted):
                 yield entry
 
@@ -1218,6 +1227,7 @@ class _AsyncKernelCore:
         if await self._flat_item(op, key):
             # A.3: an item is no folder, whatever raw entries lie below it.
             raise InvalidPath(f"Is a file, not a folder: {key}", path=key, backend=self.name)
+        held: list[bool] | None = None  # set when the aggregate came from the kernel's own listing
         if self._stats is not None:
             try:
                 with self._choke(op, key):
@@ -1231,8 +1241,9 @@ class _AsyncKernelCore:
         else:
             tally = FolderTally()
             omitted = _Omitted(self.name, key)
+            held = [False]
             try:
-                async for entry in self._listed_files(op, key, True, omitted):
+                async for entry in self._listed_files(op, key, True, omitted, held):
                     tally.add(entry)
             finally:
                 omitted.log()
@@ -1242,9 +1253,16 @@ class _AsyncKernelCore:
             # objects this is the error path's type probe, fail-open; with them an
             # empty folder exists, so the stat is the determinant and fails closed
             # (BE-021's fail-open is a property of the call site).
-            # On a flat namespace A.3's stat already ruled out an item, so only the
-            # listing that tells a folder of omitted keys from nothing is left.
-            seen = await (self._flat_folder(op, key) if self._flat else self._state(op, key, walk=False))
+            # On a flat namespace A.3's stat already ruled out an item, so only whether
+            # anything lies under the prefix is left: the aggregation listing answered
+            # that itself (a refused first page read as empty by the flat listing
+            # obligation), and only the push-down needs the probe listing.
+            if self._flat and held is not None:
+                seen = _Seen(_State.FOLDER if held[0] else _State.ABSENT)
+            elif self._flat:
+                seen = await self._flat_folder(op, key)
+            else:
+                seen = await self._state(op, key, walk=False)
             if seen.error is not None and self._driver.parents != "none":
                 raise seen.error
             if seen.state is _State.FILE:

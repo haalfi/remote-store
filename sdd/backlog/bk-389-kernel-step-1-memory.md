@@ -47,7 +47,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
 3. **Open Question 5, construction: deferred to step 3 (BUG-245).** The shape
    step 1 keeps open: the kernel's constructor takes a **built** driver,
    `DriverBackend(driver, *, reject_write_under_file_ancestor=False)` and its
-   async twin; each public class builds its driver in its own `__init__`.
+   async twin (*superseded 2026-10-15:* the keyword is gone, the constructor
+   takes the driver alone, BE-032 A.4); each public class builds its driver in
+   its own `__init__`.
    Step 3 may add a wrapped-build form (a classmethod or factory run inside
    the choke point) beside it, never instead of it. Memory's constructor
    cannot fail, so step 1 maps nothing at construction.
@@ -475,7 +477,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
        PR #1057's round 1, the maintainer's decision].
        After an empty listing, `stat`: a file answers `InvalidPath`,
        anything else `NotFound`, to which `missing_ok` applies. Per BE-021,
-       the listing is the determinant and fails closed, and the `stat`
+       the listing is the determinant and fails closed (since 2026-10-15,
+       but for a first-page refusal A.8's first-page row reads as empty,
+       BE-031), and the `stat`
        fails open, so a raising `stat` leaves the empty listing's
        `NotFound`. After a non-empty listing, a refusal from `delete_tree`,
        or one other than that tolerated `NotFound` from a listed file's
@@ -916,7 +920,10 @@ the driver has explicit parents or the opt-in walk is on; the destination
 `overwrite`; the opt-in file-ancestor walk; and the empty-aggregate `stat`
 of `get_folder_info` with folder objects. The kernel's error-path probes
 type every refusal in the probe set. A dead service, a lock and a non-empty
-folder pass through, since they say nothing about the key.
+folder pass through, since they say nothing about the key. (*Superseded
+2026-10-15* for the opt-in walk, which is gone: BE-032 A.8 rule 1 lists the
+determinants now, A.4's flat write checks and A.3's flat folder-operation
+`stat` among them.)
 
 **What the product found against the kernel at `b9351b5`** (the review's
 last head; this section's first fake, `pytest --junitxml` grouped by
