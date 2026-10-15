@@ -13309,22 +13309,22 @@ the path names a folder.</p>
 <code>AsyncIterator[FileInfo]</code>, <code>list_folders(path)</code> returns
 <code>AsyncIterator[FolderEntry]</code>, and <code>iter_children(path)</code> returns
 <code>AsyncIterator[FileInfo | FolderEntry]</code> per BE-014, BE-015, BE-026 (and
-their async ASYNC-<em> equivalents in spec 029). All three are backed by
+their async ASYNC-* equivalents in spec 029). All three are backed by
 <code>GET /drives/{drive_id}/root:{encoded_path}:/children</code>, which interleaves
 file items (carrying the <code>file</code> facet) and folder items (carrying the
 <code>folder</code> facet) in one response.
-</em><em><code>iter_children</code> override:</em><em> The backend overrides the default
+<strong><code>iter_children</code> override:</strong> The backend overrides the default
 <code>BE-026</code> implementation (which would chain <code>list_files</code> + <code>list_folders</code>
 and double the round-trips) to consume the shared <code>/children</code> response
 directly, yielding <code>FileInfo</code> for <code>file</code>-faceted items and <code>FolderEntry</code>
 for <code>folder</code>-faceted items in the order Graph returns them.
-</em><em>Missing-path behavior:</em><em> Matches BE-014, BE-015, BE-026 — yields
+<strong>Missing-path behavior:</strong> Matches BE-014, BE-015, BE-026 — yields
 nothing for non-existent paths, never raises <code>NotFound</code>.
-</em><em><code>recursive</code>, <code>max_depth</code>, <code>pattern</code>:</em><em> <code>AsyncBackend.list_files</code>
+<strong><code>recursive</code>, <code>max_depth</code>, <code>pattern</code>:</strong> <code>AsyncBackend.list_files</code>
 accepts <code>recursive</code> and <code>max_depth</code> (ASYNC-014) but no <code>pattern</code>;
 <code>AsyncBackend.list_folders</code> does not accept <code>max_depth</code> (ASYNC-015).
 Pattern-limited listing is composed at <code>AsyncStore</code> level (ASYNC-052).
-</em><em>Precedence (per ASYNC-014):</em>* <code>max_depth</code> applies only when
+<strong>Precedence (per ASYNC-014):</strong> <code>max_depth</code> applies only when
 <code>recursive=True</code>. <code>recursive=False</code> (the default) yields only immediate
 children for every <code>max_depth</code>; <code>recursive=True</code> walks unbounded when
 <code>max_depth=None</code> and to <code>max_depth</code> levels (inclusive) otherwise. The

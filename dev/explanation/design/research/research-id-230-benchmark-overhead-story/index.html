@@ -11731,9 +11731,9 @@ groups profiles by an <em>in-file</em> key, not the filename:</p>
   least one latency profile" <strong>placeholder</strong> instead of the real chart
   (<code>benchmarks/charts.py:248-273</code>). The filenames are cosmetic.</li>
 <li>For any non-clean profile the chart looks up the <strong><code>-latency</code> backend variant</strong>
-  (<code>bk = _LATENCY_VARIANT[base]</code>, <code>benchmarks/charts.py:231</code>), so the rtt<em> files
+  (<code>bk = _LATENCY_VARIANT[base]</code>, <code>benchmarks/charts.py:231</code>), so the rtt* files
   must contain benchmarks named for <code>s3-latency</code> / <code>sftp-latency</code> /
-  <code>azure-latency</code>, </em><em>not</em>* the base <code>s3</code> / <code>sftp</code> / <code>azure</code>. A run that merely
+  <code>azure-latency</code>, <strong>not</strong> the base <code>s3</code> / <code>sftp</code> / <code>azure</code>. A run that merely
   wraps the base backends in a toxiproxy RTT will produce base-named benchmarks,
   the <code>_LATENCY_VARIANT</code> lookup will miss, and those series drop silently.</li>
 </ul>

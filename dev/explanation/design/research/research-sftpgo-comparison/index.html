@@ -11508,7 +11508,7 @@ direction if demand materialises.</p>
 <code>pre_upload</code>, <code>post_upload</code>, <code>post_download</code>, <code>post_delete</code>, <code>post_rename</code>,
 <code>pre_login</code>, <code>post_login</code>, <code>post_connect</code>, <code>post_disconnect</code>, <code>data_retention</code>,
 <code>check_password</code>, <code>external_auth</code>, <code>keyboard_interactive</code>, <code>startup</code>.</p>
-<p>Pre-<em> hooks run synchronously (blocking); post-</em> hooks run asynchronously. Our
+<p>Pre-* hooks run synchronously (blocking); post-* hooks run asynchronously. Our
 <code>ext.observe</code> fires a single <code>on_operation</code> callback with an operation enum. If
 we ever formalize the observability contract beyond the current ad-hoc callback,
 SFTPGo's taxonomy is a practical reference for the event vocabulary.</p>

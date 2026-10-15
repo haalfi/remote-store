@@ -885,7 +885,7 @@ Run the whole suite at once with `pytest tests/backends/conformance/`.
 pytest -m extended_conformance
 ```
 
-Async backends have their own extended sibling, [`test_async_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_async_extended.py), which exercises the `AsyncBackend` contract (ASYNC- *mirroring BE-*).
+Async backends have their own extended sibling, [`test_async_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_async_extended.py), which exercises the `AsyncBackend` contract (ASYNC-\* mirroring BE-\*).
 
 The conformance suite itself is validated by running it against a mathematically verified oracle compiled from the formal Dafny specification (`sdd/formal/MemoryBackend.dfy`). If the oracle passes a test, the test is known-correct. This means passing the conformance suite is a strong guarantee of correctness — not just "matches what existing backends happen to do." See [`sdd/formal/README.md`](https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md) § Compiled Oracle for details.
 
