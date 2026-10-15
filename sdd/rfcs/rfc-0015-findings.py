@@ -89,7 +89,7 @@ import re
 import subprocess
 import sys
 from collections import Counter, OrderedDict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 REPO = "haalfi/remote-store"
@@ -105,17 +105,26 @@ _MUST_FIX = re.compile(r"\bFixed in\b|\bConfirmed\b|\bCorrect\b|\bTaken\b|\bAdde
 UNCLASSIFIABLE = ("unclassifiable-file", "unclassifiable-left", "unclassifiable-noline", "unclassifiable-blame")
 
 
+def _run(argv: list[str], check: bool = True) -> subprocess.CompletedProcess[str]:
+    """Run ``gh`` or ``git`` and decode its output as UTF-8, never the locale's codepage.
+
+    Both tools write UTF-8; the locale default on Windows is cp1252, which has no
+    character for 0x81 (BUG-326). ``errors="replace"`` is deliberate: on Windows
+    ``communicate`` decodes in a reader thread, where a strict failure leaves
+    ``.stdout`` as ``None`` and surfaces as an unrelated ``TypeError`` later.
+    """
+    return subprocess.run(argv, check=check, capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+
 def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", "-C", str(ROOT), *args], check=check, capture_output=True, text=True)
+    return _run(["git", "-C", str(ROOT), *args], check=check)
 
 
 def _gh(path: str) -> list[dict]:
     rows: list[dict] = []
     page = 1
     while True:
-        out = subprocess.run(
-            ["gh", "api", f"repos/{REPO}/{path}?per_page=100&page={page}"], check=True, capture_output=True, text=True
-        ).stdout
+        out = _run(["gh", "api", f"repos/{REPO}/{path}?per_page=100&page={page}"]).stdout
         batch = json.loads(out)
         rows.extend(batch)
         if len(batch) < 100:
@@ -124,7 +133,7 @@ def _gh(path: str) -> list[dict]:
 
 
 def _ts(iso: str) -> int:
-    return int(datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(timezone.utc).timestamp())
+    return int(datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(UTC).timestamp())
 
 
 def artifact_class(path: str) -> str:
@@ -235,7 +244,8 @@ def main(prs: list[int]) -> None:
             cells.append(
                 f"r{i}: {c['code']}c/{c['prose']}p o{c['original']} l{c['loop-introduced']} "
                 f"p{c['pre-existing']} u{c['unclassifiable']} | mf o{c['mf-original']} l{c['mf-loop-introduced']} "
-                f"p{c['mf-pre-existing']} u{c['mf-unclassifiable']} | filed {c['filed']} refuted {c['refuted']} ?{c['unknown']}"
+                f"p{c['mf-pre-existing']} u{c['mf-unclassifiable']} | "
+                f"filed {c['filed']} refuted {c['refuted']} ?{c['unknown']}"
             )
             # D5 dry run, three readings
             for reading in fired:
@@ -263,7 +273,8 @@ def main(prs: list[int]) -> None:
         f"pre-existing {grand['pre-existing']}, unclassifiable {grand['unclassifiable']} "
         f"(file {grand['unclassifiable-file']}, left {grand['unclassifiable-left']}, "
         f"noline {grand['unclassifiable-noline']}, blame {grand['unclassifiable-blame']}); "
-        f"triage must-fix {grand['must-fix']}, filed {grand['filed']}, refuted {grand['refuted']}, unknown {grand['unknown']}"
+        f"triage must-fix {grand['must-fix']}, filed {grand['filed']}, "
+        f"refuted {grand['refuted']}, unknown {grand['unknown']}"
     )
     print(f"FIRST PUSH >1 COMMIT: {multi_commit_first_push} of {n} PRs")
     print(f"ROUND ORDER: comments-endpoint order differed from submission order in {len(reordered)} PR(s) {reordered}")

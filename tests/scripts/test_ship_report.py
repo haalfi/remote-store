@@ -31,6 +31,10 @@ say that is still true.
 from __future__ import annotations
 
 import importlib.util
+import io
+import json
+import locale
+import subprocess
 import sys
 from pathlib import Path
 
@@ -1110,6 +1114,25 @@ class TestPaging:
         assert _mod._gh_wrapped("commits/x/check-runs", "check_runs") == []
 
 
+class TestGhOneDecoding:
+    """BUG-326: the script's own ``gh`` reach decodes UTF-8 like the classifier's."""
+
+    def test_a_byte_cp1252_cannot_decode_reaches_json(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A child Python stands in for ``gh``; the real ``subprocess.run`` decodes.
+
+        ``locale.getencoding`` is patched to cp1252, what a German-locale
+        Windows host answers, so the reproduction is not Windows-only.
+        """
+        title = "\N{LATIN CAPITAL LETTER A WITH ACUTE}nderung"
+        payload = json.dumps({"title": title}, ensure_ascii=False).encode("utf-8")
+        assert b"\x81" in payload
+        real_run = subprocess.run
+        script = f"import sys; sys.stdout.buffer.write(bytes.fromhex({payload.hex()!r}))"
+        monkeypatch.setattr(subprocess, "run", lambda argv, **kw: real_run([sys.executable, "-c", script], **kw))
+        monkeypatch.setattr(locale, "getencoding", lambda: "cp1252")
+        assert _mod._gh_one("pulls/1") == {"title": title}
+
+
 class TestChangedFiles:
     """The minuend, whose truncation the module docstring calls invisible."""
 
@@ -1165,6 +1188,22 @@ class TestMain:
         assert _mod.main(["1025", "--out", str(target)]) == 0
         assert target.read_text(encoding="utf-8").startswith("# /ship report")
         assert f"Written to {target}" in capsys.readouterr().err
+
+    def test_a_cp1252_stdout_gets_the_report_as_utf8(self, collected, monkeypatch: pytest.MonkeyPatch) -> None:
+        """BUG-326, output side: a piped stdout on Windows is cp1252 with ``errors="strict"``.
+
+        The report interpolates the PR title raw, so a character cp1252 has no
+        slot for raised ``UnicodeEncodeError`` before ``--out`` was written. The
+        stand-in stdout is that stream: a ``TextIOWrapper`` over bytes, cp1252,
+        strict.
+        """
+        collected["title"] = "BK-1: a \N{RIGHTWARDS ARROW} b"
+        raw = io.BytesIO()
+        stdout = io.TextIOWrapper(raw, encoding="cp1252", errors="strict")
+        monkeypatch.setattr(sys, "stdout", stdout)
+        assert _mod.main(["1025"]) == 0
+        stdout.flush()
+        assert "*BK-1: a \N{RIGHTWARDS ARROW} b*" in raw.getvalue().decode("utf-8")
 
     def test_out_honours_trace_block_only(self, collected, tmp_path: Path) -> None:
         target = tmp_path / "block.yml"

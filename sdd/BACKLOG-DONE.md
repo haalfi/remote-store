@@ -298,6 +298,21 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-326 — `ship-report` crashes on Windows when a PR comment holds a character cp1252 cannot decode**
+  spec: — · effort: S · audience: contributor.tooling
+  `_gh` and `_git` in `sdd/rfcs/rfc-0015-findings.py`, and `ship_report.py`'s own
+  `_gh_one`, ran `subprocess.run(..., text=True)` with no `encoding`, so on Windows
+  `gh` output was decoded as cp1252: on PR #1130 a byte 0x81 left `.stdout` `None`
+  and `json.loads` raised `TypeError`. All three now go through one `_run` that
+  decodes UTF-8 with `errors="replace"`, because a strict failure in Windows'
+  reader thread surfaces only as that `TypeError`. Review found the output side:
+  a piped stdout is cp1252 and strict, so a title outside it raised
+  `UnicodeEncodeError`; `main` now writes UTF-8. Tests, seen failing first:
+  `tests/scripts/test_rfc_0015_findings.py` `TestSubprocessDecoding`,
+  `tests/scripts/test_ship_report.py` `TestGhOneDecoding` and
+  `TestMain::test_a_cp1252_stdout_gets_the_report_as_utf8`. Trace:
+  [bug-326](traces/bug-326-ship-report-utf8.yml).
+
 - [x] **BK-437 — Spec 051's sections are restated in Alloy and Lean with no traceability check between them**
   spec: TREE-001 -- TREE-012 · effort: S · audience: contributor.tooling, infra.ci, user.discoverability.human
   `StoreAxioms.als` and `StoreAxioms.lean` carry `-- @spec TREE-n` tags and a
