@@ -31,6 +31,9 @@ say that is still true.
 from __future__ import annotations
 
 import importlib.util
+import json
+import locale
+import subprocess
 import sys
 from pathlib import Path
 
@@ -1108,6 +1111,25 @@ class TestPaging:
     def test_a_missing_key_yields_nothing_rather_than_raising(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(_mod, "_gh_one", lambda path: {"total_count": 0})
         assert _mod._gh_wrapped("commits/x/check-runs", "check_runs") == []
+
+
+class TestGhOneDecoding:
+    """BUG-326: the script's own ``gh`` reach decodes UTF-8 like the classifier's."""
+
+    def test_a_byte_cp1252_cannot_decode_reaches_json(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A child Python stands in for ``gh``; the real ``subprocess.run`` decodes.
+
+        ``locale.getencoding`` is patched to cp1252, what a German-locale
+        Windows host answers, so the reproduction is not Windows-only.
+        """
+        title = "\N{LATIN CAPITAL LETTER A WITH ACUTE}nderung"
+        payload = json.dumps({"title": title}, ensure_ascii=False).encode("utf-8")
+        assert b"\x81" in payload
+        real_run = subprocess.run
+        script = f"import sys; sys.stdout.buffer.write(bytes.fromhex({payload.hex()!r}))"
+        monkeypatch.setattr(subprocess, "run", lambda argv, **kw: real_run([sys.executable, "-c", script], **kw))
+        monkeypatch.setattr(locale, "getencoding", lambda: "cp1252")
+        assert _mod._gh_one("pulls/1") == {"title": title}
 
 
 class TestChangedFiles:

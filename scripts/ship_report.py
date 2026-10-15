@@ -161,7 +161,6 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
-import subprocess
 import sys
 from collections import Counter, OrderedDict
 from pathlib import Path
@@ -203,8 +202,7 @@ UNCLASSIFIABLE_NO_BOUNDARY = "unclassifiable-no-boundary"
 
 def _gh_one(path: str) -> dict[str, Any]:
     """A single object from the REST API. Not every endpoint returns an array."""
-    out = subprocess.run(["gh", "api", f"repos/{fnd.REPO}/{path}"], check=True, capture_output=True, text=True).stdout
-    return json.loads(out)
+    return json.loads(fnd._run(["gh", "api", f"repos/{fnd.REPO}/{path}"]).stdout)
 
 
 def _gh_wrapped(path: str, key: str) -> list[dict[str, Any]]:

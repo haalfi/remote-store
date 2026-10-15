@@ -1,0 +1,134 @@
+id: BUG-326
+title: "`ship-report` crashes on Windows when a PR comment holds a character cp1252 cannot decode"
+trigger: >-
+  `hatch run ship-report` on PR #1130 (2026-10-15) raised `TypeError: the JSON
+  object must be str, bytes or bytearray, not NoneType` on a Windows host; the
+  session filed BUG-326 and the maintainer chose to have it fixed on the same
+  branch before opening the PR.
+source_items:
+  - BUG-326
+audience:
+  - contributor.tooling
+discovery_followups: []
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - CHANGELOG.md
+surprising_ripples:
+  - scripts/ship_report.py
+orient:
+  - items: [ID-268]
+    verdict: unrelated
+    evidence: >-
+      sdd/backlog/id-268-pr-close-step.md weighs where `ship-report` runs at a
+      PR's close (agent or post-merge workflow); every shape reads GitHub
+      through the same `_gh_one`/`_gh`, so a decoding fix changes none of them
+      and none of them decides the encoding.
+  - items: [BK-384]
+    verdict: unrelated
+    evidence: >-
+      sdd/backlog/bk-384-rfc-0015-graduation-measurement.md pools deliveries
+      through `rfc-0015-findings.py`'s classification (`triage`, `origin`);
+      the fix changes only how `gh`/`git` bytes become text, which for
+      UTF-8-clean output, the only kind the measurement read, is identical.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-326 (item); How this file works: Completing work"
+        read_type: gate
+        extract: >-
+          The item names `_gh` and `_git` in rfc-0015-findings.py. Filed and
+          fixed in one PR, so the entry moves to BACKLOG-DONE.md as [x] and
+          `gen-backlogid` is re-run.
+        outcome: ok
+      - file: sdd/backlog/id-268-pr-close-step.md
+        section: "(full)"
+        read_type: reference
+        extract: "Placement of the close step, not decoding; see orient."
+        outcome: ok
+      - file: sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
+        section: "(full)"
+        read_type: reference
+        extract: "Measurement over the classifier's tags; see orient."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: gate
+        extract: >-
+          BACKLOG item, CHANGELOG stub under [Unreleased], failing test before
+          the fix. The stub is not required for a contributor.tooling item by
+          _schema.yml's derived rule (BUG-295 and BUG-314 shipped without one);
+          it is added because the maintainer's chosen option named it.
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "_git, _gh"
+        read_type: reference
+        extract: >-
+          Both called `subprocess.run(..., text=True)` with no `encoding`, so
+          the stdlib decodes with `locale.getencoding()` (cp1252 on this host)
+          unless Python runs in UTF-8 mode.
+        outcome: ok
+      - file: scripts/ship_report.py
+        section: "_gh_one"
+        read_type: reference
+        extract: >-
+          Found by `rg "text=True" scripts`: ship-report's own single-object
+          `gh api` call had the same unencoded `subprocess.run`, and `pulls/<N>`
+          carries the PR title and body, so the item's two functions were not
+          the whole crash surface.
+        outcome: ok
+      - file: tests/scripts/test_rfc_0015_findings.py
+        section: "TestSubprocessDecoding"
+        read_type: verify
+        extract: >-
+          A child Python stands in for gh/git and writes raw bytes; the real
+          subprocess.run decodes, with `locale.getencoding` patched to cp1252 so
+          the reproduction is not Windows-only. Run before the fix, all three
+          failed: `_gh` with the reported TypeError (the reader thread's
+          UnicodeDecodeError on 0x81 left stdout None), `_git` with stdout None,
+          and the 0xff case with cp1252's 'ÿ' instead of U+FFFD.
+        outcome: ok
+      - file: tests/scripts/test_ship_report.py
+        section: "TestGhOneDecoding"
+        read_type: verify
+        extract: "Same harness through `_gh_one`; failed before the fix with the same TypeError."
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "_run"
+        read_type: verify
+        extract: >-
+          One `_run` with `encoding="utf-8", errors="replace"`, used by `_git`,
+          `_gh` and ship_report's `_gh_one`. `replace`, not `strict`: on
+          Windows `communicate` decodes in a reader thread, so a strict failure
+          surfaces only as the same opaque TypeError. After the fix both test
+          modules passed, 103 tests.
+        outcome: ok
+      - file: scripts/ship_report.py
+        section: "live run on PR #1130"
+        read_type: verify
+        extract: >-
+          `hatch run ship-report 1130 --trace-block-only`, the run that crashed,
+          completed and printed the review block, in an env where
+          `sys.flags.utf8_mode` is 0 and `locale.getencoding()` is cp1252, so
+          the run went through the fixed decoding, not UTF-8 mode.
+        outcome: ok
+      - file: .pre-commit-config.yaml
+        section: "ruff hook"
+        read_type: gate
+        extract: >-
+          The file sits outside `lint`'s ruff paths, so its existing UP017
+          (`timezone.utc`) and two E501 lines pass `lint`; the pre-commit ruff
+          hook, which runs on every staged .py file, rewrote it to
+          `datetime.UTC` and refused the two long lines. Kept `UTC` (the floor is 3.11, where it
+          exists) and wrapped the two f-strings; both test modules still pass.
+          The Edit hook had made the same rewrite earlier, which I reverted
+          before learning the commit hook requires it.
+        outcome: ok
