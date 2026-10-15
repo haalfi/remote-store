@@ -342,8 +342,8 @@ if evidence changes; these are retired.
   RFC-0021 (accepted 2026-10-13, `StoreTree.dfy` verifying it) landed as spec
   003's BE-032 with BK-389's kernel PR: one tree (spec 051), a partial
   `decode` per encoding, one result table and one refusal table per
-  namespace, which BE-030's *What is at a key* and BE-031's probe rule now
-  point to. Links (A.7) are stated but wait for the first driver with links;
+  namespace, which BE-030's **What a key resolves to** and BE-031's probe rule
+  now point to. Links (A.7) are stated but wait for the first driver with links;
   follow-ups BK-433, BK-434, BK-436, BK-438. Traces:
   [bk-432](traces/bk-432-key-resolution-rfc.yml),
   [bk-389](traces/bk-389-kernel-step-1.yml).

@@ -360,6 +360,12 @@ every case. RFC-0017 carries the same answers at the question each settles.
      its own `compare` section inline. BK-396's
      [dossier](bk-396-kernel-delete-folder-sequence.md) holds the candidate
      this replaces and the options the interview weighed.
+     - **Superseded on 2026-10-15** in its probe rule, the walk's on-the-way
+       probes, the driver obligation below and the `parents == "none"` table's
+       "a file and a prefix both" row, by spec 003's BE-031 and BE-032 (§ Resumed
+       against RFC-0021 below): every refusal in BE-032's probe set is probed, a
+       refusal on the walk's way propagates, and drivers owe no rule about how a
+       refusal is typed. The history and measurements below stand as recorded.
      - *Which refusals are probed.* Only a typed `NotFound` and an untyped
        `RemoteStoreError` get the error-path probes: one `stat`, then, for
        a folder still present, one `list_page(key, delimiter="/",
@@ -480,7 +486,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
      |---|---|---|
      | files under the prefix | `DirectoryNotEmpty` | removed |
      | file `f`, nothing under it | `InvalidPath` | `InvalidPath` |
-     | a file and a prefix both | `DirectoryNotEmpty` | the files under it removed, the file kept |
+     | a file and a prefix both (superseded: `InvalidPath`, nothing removed, BE-031) | `DirectoryNotEmpty` | the files under it removed, the file kept |
      | absent, or under a file (`f/x`) | `NotFound` | `NotFound` |
 
      **Changed cells, by the step that lists them**, against today's
@@ -782,7 +788,9 @@ Choices the decisions above left open, as built:
   over a stored key BE-030 omits answers `DirectoryNotEmpty`, where
   `BackendContract.dfy`'s `DeleteFolder` requires a recursive call to
   succeed; BE-031 says so, and BK-394 reconciles the model. **`write` departs
-  in three:** WR-010's gate outranks the checks the driver's write answers,
+  in three:** WR-010's gate outranks the type, ancestor and overwrite checks
+  (the driver's write answers them on a hierarchical namespace, BE-032's A.4
+  checks the first two on a flat one, and the gate stays ahead of that I/O),
   so a write carrying metadata on a class without `USER_METADATA` answers
   `CapabilityNotSupported` where `Write` answers `InvalidPath` for a folder
   at the key or a file above it, and `AlreadyExists` for an existing file
@@ -1075,7 +1083,7 @@ What changed in the kernel, each against BE-032:
 - **One probe set** (`_in_probe_set`): `NotFound`, `InvalidPath`,
   `AlreadyExists`, `PermissionDenied`, untyped. `_may_be_a_folder` (which
   left out `InvalidPath`) and `delete_folder`'s `_probe_wanted` (only
-  `NotFound` and untyped) are gone, and with them decision 8's obligation that
+  `NotFound` and untyped) are gone, and with them planning decision 8's obligation that
   `classify` type ENOENT/ENOTDIR as `NotFound` (A.8: drivers owe no rule
   about a refusal's shape but the two typing rules).
 - **Per-call rows replace the wrong-type helpers** (A.8, rule 4): a refused

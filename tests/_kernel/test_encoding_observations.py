@@ -48,9 +48,9 @@ the displace-and-restore ``move`` route (its synthesised retry of a missed
 file is ``test_kernel.py``'s; its A.5 answers are ``test_tree_results.py``'s),
 and a link at a write or a listing key (A.7, which the fake's links do not
 model past ``stat``). A ``get_folder_info`` push-down over a state whose
-listing omits a key is not crossed: BE-017 obliges the driver's aggregate to
-equal the listing's, which the fake's ``folder_stats`` does not, so such a
-cell would test the fake.
+listing omits a key is not crossed: BE-032 A.8 obliges the driver's
+``folder_stats`` to omit what the listing omits, which the fake's does not,
+so such a cell would test the fake.
 """
 
 from __future__ import annotations
@@ -177,6 +177,7 @@ MODE_EFFECTS: dict[str, tuple[type[FakeWireError] | str | None, type[FakeWireErr
     "odd": (FakeOdd, FakeOdd),
     "down": (FakeDown, FakeDown),
     "key_denied": ("key", None),
+    "src_denied": ("first", None),
     "list_miss": (None, FakeMissing),
     "list_denied": (None, FakeDenied),
     "list_down": (None, FakeDown),
@@ -184,6 +185,8 @@ MODE_EFFECTS: dict[str, tuple[type[FakeWireError] | str | None, type[FakeWireErr
 }
 # A probe listing runs only on a flat driver, or in delete_folder; elsewhere these modes are unreachable.
 LIST_ONLY = ("list_miss", "list_denied", "list_down", "list_empty")
+# Only the first subject's stat is denied, the source of a transfer; elsewhere it is key_denied again.
+TRANSFER_ONLY = ("src_denied",)
 MODES = tuple(MODE_EFFECTS)
 NATIVE_TYPED: dict[object, type[RemoteStoreError]] = {
     FakeMissing: NotFound,
@@ -208,6 +211,7 @@ class _Wire(FakeStore):
         super().__init__(parents=parents, page_size=page_size)
         self.mode = "answers"
         self.subjects: frozenset[str] = frozenset()
+        self.first: str | None = None
         self.lying = False
         self.stat_fault = self._stat_fault
 
@@ -218,6 +222,8 @@ class _Wire(FakeStore):
         effect = MODE_EFFECTS[self.mode][0] if self.lying else None
         if effect == "key":
             return FakeDenied if key in self.subjects else None
+        if effect == "first":
+            return FakeDenied if key == self.first else None
         return effect  # type: ignore[return-value]
 
     def list_page(
@@ -358,6 +364,8 @@ class _Sim:
         effect = MODE_EFFECTS[self.mode][0] if self.lying else None
         if effect == "key":
             return PermissionDenied if key in self.subjects else self.raw.stat(key, follow)
+        if effect == "first":
+            return PermissionDenied if key == self.subjects[0] else self.raw.stat(key, follow)
         return self.raw.stat(key, follow) if effect is None else NATIVE_TYPED[effect]
 
     def holds(self, key: str) -> bool | type[RemoteStoreError]:
@@ -577,15 +585,16 @@ def _refusals(prims: tuple[str, ...]) -> list[tuple[str, str] | None]:
     return [None, *((prim, shape) for prim in prims for shape in SHAPES)]
 
 
-def _modes(refusal: tuple[str, str] | None, *, lists: bool) -> tuple[str, ...]:
+def _modes(refusal: tuple[str, str] | None, *, lists: bool, transfer: bool = False) -> tuple[str, ...]:
     """What the probes do, where it can be reached.
 
     A refusal outside the probe set is never probed; a probe listing runs
-    only where *lists* (a flat driver, or ``delete_folder``).
+    only where *lists* (a flat driver, or ``delete_folder``); a denial of the
+    source's ``stat`` alone only in a *transfer*.
     """
     if refusal is not None and refusal[1] == "down":
         return ("answers",)
-    return MODES if lists else tuple(m for m in MODES if m not in LIST_ONLY)
+    return tuple(m for m in MODES if (lists or m not in LIST_ONLY) and (transfer or m not in TRANSFER_ONLY))
 
 
 def _lists(driver: str) -> bool:
@@ -601,6 +610,7 @@ def _arm(
 ) -> None:
     store.mode = mode
     store.subjects = frozenset(subjects)
+    store.first = subjects[0] if subjects else None
     if refusal is None:
         store.lying = True
         return
@@ -1048,9 +1058,14 @@ def _transfer_oracle(
         return "ok", None
     if refused not in PROBE_SET:
         return refused, None
-    row = _get_row(sim, src, entry=entry)
-    if row != STANDS:
-        return row, src  # type: ignore[return-value]
+    # The source as get, and the destination only when the source is an item (A.8): a source
+    # probe that cannot answer leaves the refusal standing (rule 3), since a folder at the
+    # destination must not outrank a source that may be absent (BE-018).
+    node = _node(sim, src, follow=not entry)
+    if _err(node):
+        return refused, None
+    if node != ITEM:
+        return (InvalidPath if node == FOLDER else NotFound), src
     row = _put_row(sim, dst, overwrite)
     return (refused, None) if row == STANDS else (row, dst)  # type: ignore[return-value]
 
@@ -1070,7 +1085,7 @@ def _transfer_cells(runtime: str) -> list[Cell]:
                             # The wire's key order matters only where both keys refuse.
                             orders = (False, True) if refusal is None and src != "item" else (False,)
                             for dst_first in orders:
-                                for mode in _modes(refusal, lists=_lists(driver)):
+                                for mode in _modes(refusal, lists=_lists(driver), transfer=True):
                                     cells.append(
                                         (
                                             f"{route}-{driver}-src_{src}-dst_{dst}-ow{int(overwrite)}"
@@ -1205,7 +1220,13 @@ def _listing_oracle(call: str, sim: _Sim, key: str) -> tuple[Expected, Any, int]
     value, omitted = (((0, 0) if aggregate else []), 0) if refused is not None else _listed(raw, key, call)
     if aggregate and value[0] == 0 and key:
         # BE-017 types an empty aggregate: a determinant with folder objects, fail-open without.
-        node = _node(sim, key)
+        # On a flat namespace A.3's stat already ruled out an item, so only the probe listing
+        # is asked, with _node's flat reading of it.
+        if raw.flat:
+            held = sim.holds(key)
+            node = (NOTHING if held in MISS else held) if _err(held) else (FOLDER if held else NOTHING)
+        else:
+            node = _node(sim, key)
         if _err(node):
             if raw.parents != "none":
                 return node, None, 0  # type: ignore[return-value]
@@ -1246,7 +1267,7 @@ def _listing_cells(runtime: str) -> list[Cell]:
             for state in _states(driver, exclude=("link",)):
                 key = STATES[state][0]
                 if call.endswith("push_down") and _listed(raw, key, "get_folder_info")[1]:
-                    continue  # BE-017's obligation on the driver's aggregate, not the kernel's
+                    continue  # A.8's obligation on the driver's aggregate, not the kernel's
                 for refusal in _refusals((prim,)):
                     for mode in _modes(refusal, lists=_lists(driver)):
                         # More than one page only where nothing misbehaves: A.3 across page bounds.

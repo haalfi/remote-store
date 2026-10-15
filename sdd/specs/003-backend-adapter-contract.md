@@ -554,7 +554,7 @@ ID-184, ID-209.
 
 **Invariant:** `write_atomic(path, content, *, overwrite=False, metadata=None) -> WriteResult` writes via a temporary file + atomic rename and returns a `WriteResult`.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
-**Precondition order:** Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies.
+**Precondition order:** Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies, except on the kernel, where no backend takes it ([BE-032](#be-032-the-store-tree-on-the-kernel), A.4).
 **See also:** [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
 **Formal coverage:** Delegates to BE-008 — at the Backend-contract level
 `write_atomic` shares the `Write` postcondition model (return type, precondition
@@ -655,6 +655,7 @@ discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory (cannot overwrite a directory with a file), or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008 / ID-211). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move on a file is a no-op (Dafny: `Move: src == dst → Ok`); self-move on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
 **Precondition order:** `src`-NotFound takes priority over dst-side preconditions; specifically `move(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`. `LocalBackend.move` enforces this naturally (the `mkdir_parents` walk that catches the file-ancestor case runs after the src-exists check); flat-namespace backends running the ID-211 opt-in MUST defer the `_check_no_file_ancestor(dst)` walk until after the src-NotFound probe to match. Surfaced by the ID-211 review; pinned to remove the cross-backend ambiguity that existed under BE-018 alone. **One dst-side check outranks src-NotFound: a `dst` that addresses the store root.** [BE-029](#be-029-root-path) decides it from the key before any request, so `move(missing_src, "")` MUST raise `InvalidPath(dst)`; a `src` that is the root is refused first, as `InvalidPath(src)`. "Is the root" there is `is_root`, the source end's floor: [BE-008](#be-008-write)'s two-predicate paragraph lets a backend refuse a wider source spelling first, and does not require it. That is the order the backends measured for it already take (`MemoryBackend`, `AsyncMemoryBackend` and `LocalBackend`, both root spellings, `move` and `copy`; `SFTPBackend`'s is pinned by `test_move_and_copy_destination_cannot_reach_the_corruption`), and the one `sdd/formal/BackendContract.dfy` verifies (BK-388).
+**On the kernel:** the flat-namespace opt-in walk named here does not exist; a class on the kernel checks the destination below a file and over a folder on every namespace, unconditionally and after the source check ([BE-032](#be-032-the-store-tree-on-the-kernel), A.4).
 **Metadata:** `move()` preserves the source file's user metadata: after a
 successful move, `get_file_info(dst)` MUST return the same `metadata`
 mapping the source file carried before the move — the WR-013 user-metadata
@@ -679,6 +680,7 @@ drops metadata fails to verify. Verified in `MemoryBackend.dfy`. See BK-232.
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory, or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008 / ID-211). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021.
 **Precondition order:** Same as BE-018 — `src`-NotFound takes priority over dst-side preconditions, so `copy(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`, except for a `dst` that addresses the store root, which BE-018 ranks ahead of it.
+**On the kernel:** the flat-namespace opt-in walk named here does not exist; a class on the kernel checks the destination below a file and over a folder on every namespace, unconditionally and after the source check ([BE-032](#be-032-the-store-tree-on-the-kernel), A.4).
 **Metadata:** `copy()` preserves the source file's user metadata: after a
 successful copy, `get_file_info(dst)` MUST return the same `metadata`
 mapping as `get_file_info(src)` — the WR-013 user-metadata round-trip,
@@ -757,7 +759,12 @@ type verdict when the operation has already failed to find what it needed — on
 `MaxKeys=1` prefix listing for "is this a folder?", one HEAD / exact-key lookup
 for "is this a file?" — and converts the miss into `InvalidPath`. A call that
 *finds its target* never runs the probe, so the guarantee costs nothing on the
-hot path.
+hot path. A class on the kernel with a flat namespace departs from that: it
+also refuses the states a flat store can hold and no tree gives, so every
+non-root folder operation calls `stat` on its key and every write checks the
+key's ancestors and its prefix, success included
+([BE-032](#be-032-the-store-tree-on-the-kernel), A.3 and A.4, whose cost table
+lists each).
 
 **Two cases both fail and succeed**, and both are the idempotent-delete idiom.
 They cost different things, because each spends the probe its own type verdict
@@ -1392,15 +1399,19 @@ declaration, whatever protocols the driver presents. The kernel refuses to
 construct over a declaration its protocols cannot back. WR-010's metadata gate
 on `write` and `write_atomic` comes after step 4 and before step 5, so the root
 refusal stays BE-008's first precondition and the gate stays ahead of any I/O.
-That ranks it ahead of BE-008's type, ancestor and overwrite checks, which on
-the kernel are answered by the driver's write itself. So on a class without
-`USER_METADATA`, a write carrying metadata answers `CapabilityNotSupported` in
-three states where `BackendContract.dfy`'s `Write` guards its WR-010 clause
-and answers otherwise: a folder at the key (`InvalidPath`), a file above it
-(`InvalidPath`), and an existing file with `overwrite=False`
-(`AlreadyExists`). Matching the model would cost every write carrying
-metadata a `stat`, so a class on the kernel departs from it in those three
-states; reconciling the model is BK-394's, with the first class on the kernel.
+That ranks it ahead of BE-008's type, ancestor and overwrite checks. So on a
+class without `USER_METADATA`, a write carrying metadata answers
+`CapabilityNotSupported` in three states where `BackendContract.dfy`'s `Write`
+guards its WR-010 clause and answers otherwise: a folder at the key
+(`InvalidPath`), a file above it (`InvalidPath`), and an existing file with
+`overwrite=False` (`AlreadyExists`). On a hierarchical namespace all three are
+answered by the driver's write itself, so matching the model would cost every
+write carrying metadata a `stat`. On a flat namespace the first two are
+answered by BE-032's A.4 checks, which the kernel runs anyway, but they are I/O
+and the gate is held ahead of any I/O, so it ranks first there too; only the
+overwrite state would cost a `stat` of its own. A class on the kernel departs
+from the model in those three states on both namespaces; reconciling the model
+is BK-394's, with the first class on the kernel.
 
 **What a key resolves to** is [BE-032](#be-032-the-store-tree-on-the-kernel)'s
 answer, for every call below: the tree's `Item`, `Folder` or `Nothing` (A.1),
@@ -1509,9 +1520,11 @@ error-path probes, in one place.
   true on this route. With `parents == "none"` it removes what lies under the
   prefix and leaves a file named by the key itself.
 
-**`stat` and `list_page` take `follow_links`**, default `True`. `delete_folder`
-alone calls both with `False`, a view in which a link (dangling or not, or a
-Windows junction) is a non-folder entry. So a link at `key` answers
+**`stat` and `list_page` take `follow_links`**, default `True`; `False` is a view
+in which a link (dangling or not, or a Windows junction) is a non-folder entry.
+`stat` is called with `False` by the three calls that name the entry at their
+key: `delete`, a `move` source and `delete_folder` (BE-032 A.7);
+`list_page` by `delete_folder` alone. So a link at `key` answers
 `InvalidPath`, and a link below it is deleted as an entry, never traversed.
 The walk lists `key` with no `stat` first, so the view is a driver obligation:
 `list_page` with `follow_links=False` refuses a link at `prefix` or lists
@@ -1533,12 +1546,13 @@ replaced or standing, when it is a `NotFound`.
 - *Folder objects, `recursive=True`, with `delete_tree`:* `delete_tree(key)`.
 - *Folder objects, `recursive=True`, without it (the walk):* `list_page(prefix,
   delimiter="/")` down the tree, then every file deleted, then `remove_folder`
-  deepest first and `key` last. A refusal of `key`'s own listing is the
-  operation's first page and gets A.8's rows; on the way, a typed `NotFound`
-  from any call (a subfolder's listing, a file's `delete`, a subfolder's
-  `remove_folder`) is tolerated, the entry being already gone, and any other
-  refusal propagates unprobed (A.9). Only the calls on `key` itself apply
-  `missing_ok`.
+  deepest first and `key` last. A refusal of the first page of `key`'s
+  listing is the operation's first page and gets A.8's rows; a refusal of a
+  later page of `key`'s listing propagates, `missing_ok` not applying (A.9). On
+  the way, a typed `NotFound` from any call below `key` (a subfolder's listing,
+  a file's `delete`, a subfolder's `remove_folder`) is tolerated, the entry
+  being already gone, and any other refusal propagates unprobed (A.9). Only
+  the calls on `key` itself apply `missing_ok`.
 - *`parents == "none"`:* on a flat namespace one `stat(key)` first, since a
   listing of `key/` cannot see an item `key` (A.3): an item answers
   `InvalidPath` and nothing is removed. Then list first, `stat` only after an
@@ -1872,6 +1886,9 @@ destination's state can explain it (BE-030).
   `remove_folder` refuses anything but an empty folder, and `delete_tree`
   refuses an item, a link or nothing.
 - A flat driver's `list_page` returns keys in byte-lexicographic order (A.3).
+- A driver's `folder_stats` returns the aggregate the kernel would compute over
+  its own listing, so it omits what that listing omits: a key BE-030 refuses,
+  and on a flat namespace every key below an item it lists (A.3).
 - `list_page` with `follow_links=False` never lists a link's target, and
   `delete` on a link removes the link (A.7).
 - A driver declaring `links="present"` refuses a key whose link does not decode

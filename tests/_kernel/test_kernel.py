@@ -758,6 +758,35 @@ def test_a_flat_item_over_a_folder_is_invalid_path(runtime: str, protocols: tupl
 
 
 @pytest.mark.spec("BE-021")
+@pytest.mark.spec("BE-018")
+@pytest.mark.spec("BE-032")
+@pytest.mark.parametrize("protocols", [("copy", "remove_folder"), ("atomic_move", "remove_folder")])
+def test_a_source_probe_that_cannot_answer_leaves_the_sources_refusal(runtime: str, protocols: tuple[str, ...]) -> None:
+    # A.8: a two-key refusal is answered for the source first, and the destination is
+    # probed only when the source is an item; a source probe that cannot answer leaves the
+    # refusal standing (rule 3), so a folder at the destination never outranks it (BE-018).
+    store = FakeStore(parents="implicit").add("d/x")
+    store.stat_fault = lambda key: FakeDenied if key == "s" else None
+    run = make_kernel(runtime, store, protocols=protocols)
+    transfer = run.copy if "copy" in protocols else run.move
+    with pytest.raises(NotFound) as caught:
+        transfer("s", "d")
+    assert caught.value.path == "s"
+    assert ("stat", "d") not in store.calls
+
+
+@pytest.mark.spec("BE-017")
+@pytest.mark.spec("BE-032")
+def test_a_flat_empty_aggregate_asks_stat_once(runtime: str) -> None:
+    # A.3's stat already ruled out an item, so typing the empty aggregate needs only the
+    # listing that tells a folder of omitted keys from nothing.
+    store = FakeStore(parents="none")
+    run = make_kernel(runtime, store, namespace="flat", protocols=())
+    with pytest.raises(NotFound):
+        run.get_folder_info("n")
+    assert [prim for prim, key in store.calls if key == "n"] == ["stat", "list_page", "list_page"]
+
+
 def test_a_hit_spends_no_probe(runtime: str) -> None:
     run = _kernel(runtime)
     assert run.read_bytes("f") == b"F"

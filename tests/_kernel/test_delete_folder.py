@@ -43,6 +43,7 @@ from tests._kernel._fake import (
     FakeContainerGone,
     FakeDenied,
     FakeDown,
+    FakeMissing,
     FakeOdd,
     FakeStore,
     make_kernel,
@@ -409,6 +410,23 @@ def test_a_refusal_that_says_nothing_about_the_key_passes_unprobed(runtime: str,
         run.delete_folder("d", recursive=recursive, missing_ok=True)
     assert store.called("stat") == []
     assert store.called("list_page") == []
+
+
+@pytest.mark.spec("BE-032")
+@pytest.mark.parametrize("parents", ["implicit", "explicit"])
+@pytest.mark.parametrize("missing_ok", [False, True])
+def test_a_walk_with_folder_objects_propagates_a_refusal_after_the_keys_first_page(
+    runtime: str, parents: str, missing_ok: bool
+) -> None:
+    # A.9: only a refusal of the key's first listing page is read through A.8's rows; a
+    # later page's refusal reports a change under the walk, and missing_ok never absorbs it.
+    store = FakeStore(parents=parents, page_size=1).add("k/a", "k/b", "k/c")
+    run = make_kernel(runtime, store, protocols=("remove_folder",))
+    store.fault("list_page", FakeMissing("gone under the walk"), key="k", nth=2)
+    with pytest.raises(NotFound, match="gone under the walk"):
+        run.delete_folder("k", recursive=True, missing_ok=missing_ok)
+    assert sorted(store.files) == ["k/a", "k/b", "k/c"]
+    assert store.called("stat") == []
 
 
 @pytest.mark.spec("BE-032")

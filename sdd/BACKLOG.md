@@ -468,17 +468,17 @@ no clause of the contract ships unexercised.
   see an encoding (RFC-0021 D10 names the wiring as a follow-up). Open decision: refinement
   lemmas per encoding, or one encoding-parametric trait. After BK-432.
 
-- [~] **BK-435 — Spec 051's store tree is not yet tied to spec 003's tree or the store's operations, and `StoreTree.dfy` §12 carries no `@spec` tags**
+- [~] **BK-435 — Spec 051's store tree is not yet tied to the store's operations, and `StoreTree.dfy` §12 carries no `@spec` tags**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
   Spec 051 states the axioms of `research/research-store-model-axioms.md`, checked in Alloy, Lean
-  and, as L6's finite pair, `StoreTree.dfy` §12. Not done: spec 003's section, whose A.1 points to
-  it (lands with BK-432); §12's `@spec` tags (F1 needs BK-436); research § 10 step 3's Dafny
-  operations (after BK-434). Open decision: none.
+  and, as L6's finite pair, `StoreTree.dfy` §12; spec 003's BE-032 A.1 points to it (BK-432).
+  Not done: §12's `@spec` tags (F1 needs BK-436); research § 10 step 3's Dafny operations
+  (after BK-434). Open decision: none.
 
 - [ ] **BK-436 — No backend's observed tree is checked against spec 051**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
   Spec 051's sections are tested only against a reference model (`tests/test_store_tree.py`). A
-  flat backend can hold an item with keys below it until RFC-0021's decoding lands (BK-432), and a
+  flat backend can hold an item with keys below it until it runs on the kernel (BE-032, BK-394 on), and a
   case-insensitive or normalizing one merges names spec 051 keeps apart (its Name equality, a TREE
   section once measured). Open decision: which listings and probes observe a backend's tree, how
   each backend's name equality is measured, and how a coarser one answers (RFC-0021 A.1). After BK-432.

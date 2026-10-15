@@ -691,3 +691,8 @@ phases:
         section: "A.10's second suite, first run against the re-derived kernel"
         read_type: verify
         extract: "two kernel disagreements with Appendix A, both fixed: a flat delete_tree probe listing's miss let the refusal stand (120 cells per runtime), and a move source's check followed a link (2599); the first fix over-reached to hierarchical parents=none (48 cells) and was narrowed; tests/_kernel then passed 2144 by hatch run python -m pytest tests/_kernel -q -n 12 --no-cov -p no:randomly"
+      - file: tests/_kernel/test_encoding_observations.py
+        section: "_transfer_oracle, and the probe modes"
+        read_type: verify
+        extract: "the closing round over 626b052 found the oracle shared the kernel's blind spot: it probed the destination when the source probe could not answer, and no mode denied only the source's stat; a src_denied mode and the corrected oracle now cross it, and the walk's later-page refusal and the flat aggregate's second stat each got a targeted cell seen failing first"
+        outcome: misleading

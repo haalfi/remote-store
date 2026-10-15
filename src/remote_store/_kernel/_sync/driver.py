@@ -57,8 +57,9 @@ class Driver(Protocol):
         ``NotFound`` or ``InvalidPath`` (a POSIX ``stat`` below a file raises
         ENOTDIR).
 
-        ``follow_links=False`` is ``delete_folder``'s view: a link is then a
-        non-folder entry, whatever it points to.
+        ``follow_links=False`` is the view of the calls that name the entry at
+        their key (``delete``, a ``move`` source, ``delete_folder``): a link is
+        then a non-folder entry, whatever it points to.
         """
         ...
 

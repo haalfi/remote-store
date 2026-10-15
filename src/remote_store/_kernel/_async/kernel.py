@@ -228,6 +228,14 @@ class _Shadows:
         return out
 
 
+class _FirstPageRefused(Exception):
+    """A refusal of a listing's first page, carried out of a paged loop to the caller that answers it."""
+
+    def __init__(self, err: RemoteStoreError) -> None:
+        super().__init__(str(err))
+        self.err = err
+
+
 class _Choke:
     """The choke point: a native exception leaving the block is mapped once.
 
@@ -440,18 +448,24 @@ class _AsyncKernelCore:
         if entry is not None:
             return _Seen(_State.FILE if entry.kind == "file" else _State.FOLDER, entry=entry)
         if not hier:
-            if not folders:
-                return _Seen(_State.ABSENT)
-            try:
-                with self._choke(op, key):
-                    page = await self._driver.list_page(key, delimiter="/", limit=1)
-            except (NotFound, InvalidPath):
-                # An empty listing, as on a listing's first page: nothing is there.
-                return _Seen(_State.ABSENT)
-            except RemoteStoreError as err:
-                return _Seen(_State.UNKNOWN, error=err)
-            return _Seen(_State.FOLDER if page.entries or page.prefixes else _State.ABSENT)
+            return await self._flat_folder(op, key) if folders else _Seen(_State.ABSENT)
         return await self._above(op, key, None) if walk else _Seen(_State.ABSENT)
+
+    async def _flat_folder(self, op: Op, key: str) -> _Seen:
+        """Whether a flat *key* with no item holds anything: one ``list_page(limit=1)``.
+
+        Its ``NotFound`` or ``InvalidPath`` is an empty listing, by the flat
+        listing obligation, so nothing is there; any other refusal is the
+        unknown answer.
+        """
+        try:
+            with self._choke(op, key):
+                page = await self._driver.list_page(key, delimiter="/", limit=1)
+        except (NotFound, InvalidPath):
+            return _Seen(_State.ABSENT)
+        except RemoteStoreError as err:
+            return _Seen(_State.UNKNOWN, error=err)
+        return _Seen(_State.FOLDER if page.entries or page.prefixes else _State.ABSENT)
 
     async def _above(self, op: Op, key: str, err: RemoteStoreError | None) -> _Seen:
         """A hierarchical key's ancestors, shallowest first, each ``stat`` fail-open.
@@ -929,8 +943,11 @@ class _AsyncKernelCore:
         source, so the choke point named it. The source is probed as a ``get``
         (a ``move`` source names the entry, so without following a link): an
         absent source is ``NotFound`` and a folder there ``InvalidPath``, both
-        naming the source. Then the destination as a write primitive's
-        target. Otherwise the refusal stands, naming the destination when it
+        naming the source. Only a source confirmed an item sends the probe on
+        to the destination, as a write primitive's target; a source probe that
+        cannot answer leaves the refusal standing, since a folder at the
+        destination must not outrank a source that may be absent.
+        Otherwise the refusal stands, naming the destination when it
         can only be the destination's: an ``AlreadyExists``, or a ``NotFound``
         or ``InvalidPath`` with the source confirmed a file.
         """
@@ -945,9 +962,14 @@ class _AsyncKernelCore:
             raise NotFound(f"Not found: {source}", path=source, backend=self.name) from err
         if seen is _State.FOLDER:
             raise InvalidPath(f"Is a folder, not a file: {source}", path=source, backend=self.name) from err
+        if seen is not _State.FILE:
+            # The source probe could not answer, so the refusal stands (rule 3); only
+            # the destination can be taken.
+            if isinstance(err, AlreadyExists):
+                err.path = target
+            return
         await self._write_refused(err, op, target, overwrite)
-        source_is_file = seen is _State.FILE
-        if isinstance(err, AlreadyExists) or (source_is_file and isinstance(err, (NotFound, InvalidPath))):
+        if isinstance(err, (AlreadyExists, NotFound, InvalidPath)):
             err.path = target
 
     async def _copy(self, op: Op, source: str, target: str, overwrite: bool) -> None:
@@ -1218,7 +1240,9 @@ class _AsyncKernelCore:
             # objects this is the error path's type probe, fail-open; with them an
             # empty folder exists, so the stat is the determinant and fails closed
             # (BE-021's fail-open is a property of the call site).
-            seen = await self._state(op, key, walk=False)
+            # On a flat namespace A.3's stat already ruled out an item, so only the
+            # listing that tells a folder of omitted keys from nothing is left.
+            seen = await (self._flat_folder(op, key) if self._flat else self._state(op, key, walk=False))
             if seen.error is not None and self._driver.parents != "none":
                 raise seen.error
             if seen.state is _State.FILE:
@@ -1240,14 +1264,22 @@ class _AsyncKernelCore:
         return cls(f"{messages.get(cls, 'Refused')}: {key}", path=key, backend=self.name)
 
     async def _df_list(
-        self, key: str, delimiter: str | None, limit: int | None, *, first: bool = False
+        self,
+        key: str,
+        delimiter: str | None,
+        limit: int | None,
+        *,
+        first: bool = False,
+        mark_first: bool = False,
     ) -> tuple[list[str], list[str]]:
         """Raw keys under *key*, in listing order: files (and links), and folders. Unfiltered on purpose.
 
         A probe must see every entry, the omitted ones included, or it would
         call a folder holding only those empty. With *first*, a refusal of the
-        first page is read as A.8's first-page rows (``_holds_nothing``); on a
-        later page it reports a change under the scan and propagates (A.9).
+        first page is read as A.8's first-page rows (``_holds_nothing``). With
+        *mark_first*, it is raised as ``_FirstPageRefused`` for the caller to
+        answer. On a later page a refusal reports a change under the scan and
+        propagates as itself (A.9).
         """
         files: list[str] = []
         folders: list[str] = []
@@ -1262,6 +1294,8 @@ class _AsyncKernelCore:
             except RemoteStoreError as err:
                 if first and page_one and await self._holds_nothing(err, Op.DELETE_FOLDER, key, follow_links=False):
                     return [], []
+                if mark_first and page_one:
+                    raise _FirstPageRefused(err) from err
                 raise
             page_one = False
             files += [e.key for e in page.entries if e.kind == "file"]
@@ -1358,14 +1392,14 @@ class _AsyncKernelCore:
         while stack:
             current = stack.pop()
             try:
-                found_files, found_folders = await self._df_list(current, "/", None)
+                found_files, found_folders = await self._df_list(current, "/", None, mark_first=current == key)
+            except _FirstPageRefused as refused:
+                # The operation's first page, read through A.5 (A.9).
+                return await self._df_refused(refused.err, key, missing_ok, remove=False)
             except RemoteStoreError as err:
-                if current == key:
-                    # The operation's first page, read through A.5 (A.9).
-                    return await self._df_refused(err, key, missing_ok, remove=False)
-                if isinstance(err, NotFound):
+                if current != key and isinstance(err, NotFound):
                     continue  # the subfolder is gone already
-                raise  # after the first page a refusal propagates (A.9)
+                raise  # after the operation's first page a refusal propagates (A.9)
             # A key BE-030 omits is never handed to the driver. It stays, so the
             # remove_folder of the folder holding it refuses with DirectoryNotEmpty:
             # below key that refusal propagates, and at key it answers through
