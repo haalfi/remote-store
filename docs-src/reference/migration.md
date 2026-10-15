@@ -50,7 +50,7 @@ walk it yourself with `list_folders()` and `list_files()` per folder, catching
 subclass `DriverBackend` and `AsyncDriverBackend`, keeping their names, import
 paths and zero-argument constructors; their drivers are public as
 `MemoryDriver` (`remote_store.backends`) and `AsyncMemoryDriver`
-(`remote_store.aio`). Three things you might observe:
+(`remote_store.aio`). Four things you might observe:
 
 - **Some error messages changed** to the kernel's wording, for example
   `Cannot write to the store root`, `Is a folder, not a file: k` and
@@ -61,6 +61,10 @@ paths and zero-argument constructors; their drivers are public as
   `resolve()` keeps your spelling in the plan's `key`.
 - **A key holding a backslash is `InvalidPath`** on every file and folder
   operation, `exists()` and the listings included.
+- **`read()` on a `MemoryBackend` store no longer returns an `io.BytesIO`.**
+  It returns a binary stream (an `io.RawIOBase`), so `.getvalue()`,
+  `.getbuffer()` and an `isinstance(..., io.BytesIO)` check stop working. Use
+  `read_bytes()` for the whole value, or `.read()` on the stream.
 
 ## v0.32.0 to v0.33.0
 

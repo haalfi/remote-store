@@ -566,6 +566,45 @@ def test_an_error_from_the_callers_content_passes_the_choke_point_verbatim(runti
     assert "n" not in run.store.files
 
 
+def _content_raising(runtime: str, exc: Exception) -> Any:
+    if runtime == "sync":
+
+        class _Failing:
+            def read(self, n: int = -1) -> bytes:
+                raise exc
+
+        return _Failing()
+
+    async def chunks() -> Any:
+        raise exc
+        yield b""  # pragma: no cover
+
+    return chunks()
+
+
+@pytest.mark.spec("ASYNC-091", "BE-021")
+@pytest.mark.parametrize("member", ["write", "write_atomic"])
+def test_a_typed_error_from_the_callers_content_is_not_retyped_from_the_target(runtime: str, member: str) -> None:
+    # A typed error the caller's stream raises is still the caller's: the target's
+    # row (a file there, overwrite off) must not answer it as AlreadyExists.
+    run = _kernel(runtime)
+    run.store.add("n", data=b"kept")
+    raised = NotFound("the caller's own", path="elsewhere")
+    call = getattr(run.kernel, member)
+
+    def write() -> None:
+        result = call("n", _content_raising(runtime, raised), overwrite=False)
+        if runtime == "async":
+            run_async(result)
+
+    with pytest.raises(NotFound) as caught:
+        write()
+    assert caught.value is raised
+    assert caught.value.path == "elsewhere"
+    assert run.driver.classified == []
+    assert run.read("n") == b"kept"
+
+
 @pytest.mark.spec("BE-021")
 def test_an_error_mid_stream_is_mapped(runtime: str) -> None:
     run = _kernel(runtime)

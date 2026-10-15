@@ -659,9 +659,12 @@ exception are visible per that backend's non-atomic write semantics.
 **On the kernel:** a class on the contract kernel, sync or async, passes an
 error raised by the caller's own content through its choke point verbatim on
 `write` and `write_atomic`, neither classified nor retyped, so the wrapped
-backend does not turn it into a backend error before the adapter sees it.
+backend does not turn it into a backend error before the adapter sees it. A
+typed error the content raised is not answered from the target's row either.
 Pinned by `test_an_error_from_the_callers_content_passes_the_choke_point_verbatim`
-in `tests/_kernel/test_kernel.py`.
+and `test_a_typed_error_from_the_callers_content_is_not_retyped_from_the_target`
+in `tests/_kernel/test_kernel.py`; the stream a sync driver receives keeps the
+caller's stream's reads, iteration and `with`, pinned in `tests/_kernel/test_io.py`.
 **See also:** [007-atomic-writes.md](007-atomic-writes.md),
 [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md) § Write-side
 content.

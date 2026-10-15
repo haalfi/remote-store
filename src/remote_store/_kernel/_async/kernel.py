@@ -536,9 +536,10 @@ class _AsyncKernelCore:
         Hierarchical: ``stat(k)``, then on a miss the ancestors'; a folder or an
         item above is ``InvalidPath``, an item without *overwrite*
         ``AlreadyExists``. Flat: A.4's checks ran first, so only an item
-        without *overwrite* is left to find.
+        without *overwrite* is left to find. A refusal the caller's own content
+        raised is the caller's, and stands.
         """
-        if not _in_probe_set(err):
+        if _io.from_content(err) or not _in_probe_set(err):
             return
         seen = await self._state(op, key, walk=not self._flat, folders=not self._flat)
         if seen.state is _State.FOLDER:
