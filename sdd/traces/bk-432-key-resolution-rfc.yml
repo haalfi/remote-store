@@ -8,14 +8,14 @@ audience:
   - library.maintainer
   - contributor.process
 review:
-  # Derived by `hatch run ship-report 1130 --trace-block-only` at head 736e9fb.
+  # Derived by `hatch run ship-report 1130 --trace-block-only` at head 41a9465.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1130 --trace-block-only"
   pr: 1130
-  review_rounds: 11
-  submissions: 7
-  findings: 49
+  review_rounds: 21
+  submissions: 13
+  findings: 78
   by_round:
     - round: 1
       findings: 13
@@ -52,22 +52,100 @@ review:
       origin: {loop-introduced: 3, unclassifiable-file: 1}
       triage: {must-fix: 4}
       duration_hours: 0.13
+    - round: 8
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {unknown: 2}
+      duration_hours: 31.22
+    - round: 9
+      findings: 8
+      origin: {loop-introduced: 5, unclassifiable-file: 3}
+      triage: {must-fix: 8}
+      duration_hours: 18.97
+    - round: 10
+      findings: 9
+      origin: {loop-introduced: 9}
+      triage: {must-fix: 9}
+      duration_hours: 0.68
+    - round: 11
+      findings: 6
+      origin: {loop-introduced: 6}
+      triage: {must-fix: 6}
+      duration_hours: 0.3
+    - round: 12
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.13
+    - round: 13
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.12
   by_file:
     - path: "sdd/rfcs/rfc-0021-key-resolution-model.md"
-      findings: 40
+      findings: 62
     - path: "sdd/formal/StoreTree.dfy"
-      findings: 5
+      findings: 7
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "sdd/formal/README.md"
+      findings: 2
+    - path: "sdd/research/research-store-model-axioms.md"
+      findings: 2
     - path: "sdd/traces/bk-432-key-resolution-rfc.yml"
       findings: 2
-    - path: "sdd/BACKLOG.md"
-      findings: 1
-    - path: "sdd/formal/README.md"
-      findings: 1
   untouched_files:
+    - ".claude/hooks/session-init.sh"
     - ".github/workflows/ci.yml"
+    - ".gitignore"
+    - "CHANGELOG.md"
+    - "README.md"
+    - "pyproject.toml"
+    - "scripts/alloy.Dockerfile"
+    - "scripts/alloy_check.sh"
+    - "scripts/check_formal_trace.py"
     - "scripts/dafny_verify.sh"
+    - "scripts/lean.Dockerfile"
+    - "scripts/lean_check.sh"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/GATE-INVENTORY.md"
     - "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/752328a5-d7ca-4f46-80e1-ed02fa74508b.jsonl"
+    - "sdd/decisions/76a5c608-6e68-4795-9152-690035aed9eb.jsonl"
     - "sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl"
+    - "sdd/decisions/a43a478b-6ba7-4978-89f5-773056c9d7c7.jsonl"
+    - "sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl"
+    - "sdd/decisions/df48024d-396f-4f91-92d7-1d6657c34286.jsonl"
+    - "sdd/decisions/df94f14f-fa1a-431e-8206-f5ff691f68c7.jsonl"
+    - "sdd/decisions/e9a3d98a-a1ac-43b5-82f4-24b8e7dc52fc.jsonl"
+    - "sdd/decisions/ee95990a-1fef-4e4e-b42e-faa515b89ff0.jsonl"
+    - "sdd/decisions/ef396977-f51e-463e-bfc3-d413be64ea17.jsonl"
+    - "sdd/decisions/f92d302b-65de-499e-a0e5-c20c79ca2391.jsonl"
+    - "sdd/decisions/f9bf6c85-56f9-4b02-be3a-7d6217885009.jsonl"
+    - "sdd/formal/alloy/StoreAxioms.als"
+    - "sdd/formal/lean/StoreAxioms.lean"
+    - "sdd/formal/lean/lake-manifest.json"
+    - "sdd/formal/lean/lakefile.toml"
+    - "sdd/formal/lean/lean-toolchain"
+    - "sdd/formal/tex/.gitignore"
+    - "sdd/formal/tex/README.md"
+    - "sdd/formal/tex/store-axioms.pdf"
+    - "sdd/formal/tex/store-axioms.tex"
+    - "sdd/process-budget.json"
+    - "sdd/specs/051-store-tree.md"
+    - "sdd/traces/bk-435-alloy-store-model.yml"
+    - "sdd/traces/bk-435-lean-store-model.yml"
+    - "sdd/traces/bk-435-open-questions.yml"
+    - "sdd/traces/bk-435-store-model-axioms.yml"
+    - "sdd/traces/bk-435-store-tree-spec.yml"
+    - "sdd/traces/bk-435-storetree-tie.yml"
+    - "sdd/traces/bk-435-tex-exposition.yml"
+    - "sdd/traces/bk-437-formal-restatement-tags.yml"
+    - "tests/scripts/test_check_formal_trace.py"
+    - "tests/test_store_tree.py"
   review_driven_commits:
     - sha: "3955d7c"
       subject: "BK-432: address review of RFC-0021: Impact split by case, A.8 determinants and timing rule, link and flat-lookup gaps"
@@ -91,6 +169,26 @@ review:
       subject: "BK-432: round-5 fixes: rule 4 restated everywhere, hierarchical delete and move-source probe under no_follow"
     - sha: "736e9fb"
       subject: "BK-432: round-6 fixes: rule 4's typing exception stated, copy-source probe row"
+    - sha: "0b22d5f"
+      subject: "BK-432: accept RFC-0021 (maintainer, 2026-10-13)"
+    - sha: "02cc6ca"
+      subject: "BK-432: file RFC-0021's follow-ups (BK-433, BK-434) and BUG-324"
+    - sha: "8308dc6"
+      subject: "BK-435: store model axioms, checked in Alloy and proved in Lean 4 (#1131)"
+    - sha: "29ff98a"
+      subject: "BK-432: align RFC-0021 and StoreTree.dfy with spec 051"
+    - sha: "a566196"
+      subject: "BK-432: drop a housekeeping dialog from decision log 85069900"
+    - sha: "f802a19"
+      subject: "BK-432: fix the spec-051 alignment round's findings on RFC-0021 and StoreTree.dfy"
+    - sha: "b91529a"
+      subject: "BK-432: fix round 2 of the spec-051 alignment; file BK-438"
+    - sha: "9aa4589"
+      subject: "BK-432: fix round 3: Open question 1 states today's per-shape observations"
+    - sha: "9eb5983"
+      subject: "BK-432: fix round 4: moto harness named exactly, A.3's interim omission stated in Open question 1"
+    - sha: "41a9465"
+      subject: "BK-432: cite TREE-001 with TREE-010 for A.1's item-or-folder consequence"
   ci: {verdict: GREEN, failed: 0, pending: 0}
 decisions:
   - sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl
