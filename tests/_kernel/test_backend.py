@@ -104,6 +104,61 @@ def test_open_atomic_promotes_on_success(protocols: tuple[str, ...], put_is_atom
     assert sorted(run.store.files) == ["n/a"]
 
 
+_ROUTES = pytest.mark.parametrize(
+    ("protocols", "put_is_atomic"),
+    [(("remove_folder", "open_write"), False), (("remove_folder",), True), (("remove_folder", "rename"), False)],
+    ids=["handle", "spool-put", "spool-rename"],
+)
+
+
+@pytest.mark.spec("SAW-013")
+@_ROUTES
+@pytest.mark.parametrize("bad", [3, [1, 2], "text"], ids=["int", "list", "str"])
+def test_open_atomic_refuses_a_write_that_is_not_bytes(
+    protocols: tuple[str, ...], put_is_atomic: bool, bad: object
+) -> None:
+    # bytes(3) is three NUL bytes: accepting it would commit garbage atomically.
+    store = FakeStore().add("a", data=b"old")
+    run = make_kernel("sync", store, protocols=protocols, put_is_atomic=put_is_atomic)
+
+    def write_bad() -> None:
+        with run.kernel.open_atomic("a", overwrite=True) as handle:
+            handle.write(bad)  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="bytes-like object is required"):
+        write_bad()
+    assert store.files["a"].data == b"old"
+
+
+@pytest.mark.spec("SAW-013")
+@_ROUTES
+def test_open_atomic_refuses_a_write_after_close(protocols: tuple[str, ...], put_is_atomic: bool) -> None:
+    store = FakeStore().add("a", data=b"old")
+    run = make_kernel("sync", store, protocols=protocols, put_is_atomic=put_is_atomic)
+
+    def write_after_close() -> None:
+        with run.kernel.open_atomic("a", overwrite=True) as handle:
+            handle.write(b"xy")
+            handle.close()
+            handle.write(b"z")
+
+    with pytest.raises(ValueError, match="closed"):
+        write_after_close()
+    assert store.files["a"].data == b"old"
+
+
+@pytest.mark.spec("SAW-013")
+@_ROUTES
+def test_open_atomic_tells_only_what_was_written(protocols: tuple[str, ...], put_is_atomic: bool) -> None:
+    run = make_kernel("sync", FakeStore(), protocols=protocols, put_is_atomic=put_is_atomic)
+    with run.kernel.open_atomic("t") as handle:
+        assert handle.tell() == 0
+        handle.write(bytearray(b"ab"))
+        handle.write(memoryview(b"cde"))
+        assert handle.tell() == 5
+    assert run.store.files["t"].data == b"abcde"
+
+
 @pytest.mark.spec("BE-010")
 @pytest.mark.parametrize(
     ("protocols", "put_is_atomic"),

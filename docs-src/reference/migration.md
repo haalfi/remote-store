@@ -74,10 +74,15 @@ paths and zero-argument constructors; their drivers are public as
   to the driver directly, so a subclass overriding `write()` to inject faults or
   record calls no longer sees atomic writes. Override each method you want to
   intercept.
-- **A subclass declaring more than the driver can back is refused.** Narrowing
-  `CAPABILITIES` in a subclass still narrows what the store allows, but adding a
-  capability the driver cannot back (such as `GLOB`) now raises `ValueError`
-  when the backend is built, rather than failing at the call.
+- **A narrowed set now gates the backend too, and an overclaim is refused.**
+  Narrowing `CAPABILITIES` in a subclass, or overriding its `capabilities`
+  property, still narrows what the store allows. It now also refuses the calls
+  made on the backend directly: `copy()`, `move()`, `write_atomic()`,
+  `open_atomic()` and a `write()` with `metadata` raise `CapabilityNotSupported`
+  when the set lacks their capability, where they used to run. Seed a narrowed
+  test double through an unnarrowed backend. Adding a capability the driver
+  cannot back (such as `GLOB`) raises `ValueError` when the backend is built,
+  rather than failing at the call.
 - **`open_atomic()` refuses a bad target on entry.** A folder at the key, or a
   file above it, is `InvalidPath` before the `with` body runs. It used to be
   refused on exit, so an exception the body raised came out instead.

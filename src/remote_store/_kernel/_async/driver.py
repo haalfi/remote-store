@@ -33,7 +33,8 @@ class AsyncDriver(Protocol):
 
     Two more attributes are optional and read with defaults: ``stream_catch``,
     the exception types a stream from ``get`` raises beyond ``OSError`` and
-    ``EOFError``, and ``size_probe``, a ``SEEK_END`` resolver for that stream.
+    ``EOFError``, and ``size_probe``, a ``SEEK_END`` resolver for that stream,
+    which only the sync runtime reads, since only its stream seeks.
 
     ``namespace`` says what the wire can hold and ``stat`` can see: on
     ``"flat"`` the wire would let a key shadow a prefix or sit under a file,
@@ -195,7 +196,7 @@ class AsyncWriteHandle(Protocol):
 
 @runtime_checkable
 class AsyncSupportsRangeRead(Protocol):
-    """Ranged reads, which serve ``read_seekable``."""
+    """Ranged reads, which serve ``read_seekable``; only the sync runtime has one."""
 
     async def get_range(self, key: str, offset: int, length: int) -> bytes:
         """Up to *length* bytes of *key* from *offset*."""
@@ -204,7 +205,7 @@ class AsyncSupportsRangeRead(Protocol):
 
 @runtime_checkable
 class AsyncSupportsOpenWrite(Protocol):
-    """A wire-side temporary, which serves ``write_atomic`` and ``open_atomic``."""
+    """A wire-side temporary for ``write_atomic``, and for ``open_atomic`` in the sync runtime, the only one with it."""
 
     async def open_write(
         self,

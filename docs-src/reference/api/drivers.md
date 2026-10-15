@@ -11,7 +11,9 @@ walks through writing one.
 
 !!! info "Construction checks the declarations"
     Building a `DriverBackend` or `AsyncDriverBackend` raises `ValueError` when
-    a declared capability has no protocol to back it, when a flat driver has
+    a declared `COPY`, `MOVE`, `ATOMIC_MOVE`, `ATOMIC_WRITE` or `GLOB` has no
+    protocol to back it (the [guide's table](../../guides/custom-backend-guide.md#step-2-declare-capabilities)
+    names what backs each; the other capabilities are taken as declared), when a flat driver has
     folder objects, when folder objects come without `remove_folder` or
     explicit parents without `ensure_parents`, or when the class's
     `close_is_terminal` differs from the driver's.
@@ -136,7 +138,9 @@ Each is detected on the driver instance when the kernel is constructed.
 ## Async optional protocols
 
 The async mirrors of the protocols above: the same members, as coroutines
-(`glob` returns an async iterator).
+(`glob` returns an async iterator). `AsyncBackend` has no `read_seekable` and
+no `open_atomic`, so the async kernel never calls `get_range`, and calls
+`open_write` only from `write_atomic`.
 
 ::: remote_store.drivers.AsyncSupportsRangeRead
     options:

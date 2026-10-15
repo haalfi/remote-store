@@ -239,6 +239,28 @@ class TestCapabilityTable:
             "but construction accepts ['SupportsAtomicMove', 'SupportsCopy', 'SupportsRename']"
         ]
 
+    def test_a_dropped_rename_qualifier_is_flagged(self) -> None:
+        # A rename that does not replace backs MOVE but not ATOMIC_MOVE.
+        real = _capability_section()
+        drifted = real.replace(
+            "`SupportsAtomicMove`, or `SupportsRename` with `rename_replaces = True` |",
+            "`SupportsAtomicMove` or `SupportsRename` |",
+        )
+        assert drifted != real, "guide fixture no longer contains the expected ATOMIC_MOVE row"
+        assert check_capability_table(drifted) == [
+            "capability table: 'ATOMIC_MOVE' row omits 'rename_replaces = True', "
+            "which construction needs for SupportsRename"
+        ]
+
+    def test_a_wrong_put_is_atomic_setting_is_flagged(self) -> None:
+        real = _capability_section()
+        drifted = real.replace("| `put_is_atomic = True`,", "| `put_is_atomic = False`,")
+        assert drifted != real, "guide fixture no longer contains the expected ATOMIC_WRITE row"
+        assert check_capability_table(drifted) == [
+            "capability table: 'ATOMIC_WRITE' row omits 'put_is_atomic = True', "
+            "which construction needs for put_is_atomic"
+        ]
+
     def test_a_missing_capability_row_is_flagged(self) -> None:
         violations = check_capability_table(_without_row(_capability_section(), "| `COPY`"))
         assert violations == ["capability table: missing row for 'COPY'"]

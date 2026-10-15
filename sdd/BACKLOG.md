@@ -624,7 +624,7 @@ or paying for our shortcut.
   the capability's shape. After BK-432 lands on the kernel.
 
 - [ ] **BUG-328 — Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through**
-  spec: MEM-013 · effort: S · audience: user.api
+  spec: MEM-013, MEM-020 · effort: S · audience: user.api
   `MemoryDriver.put` copies only `bytes` and drains anything else with `.read()`, and the
   async driver iterates it, so `write(k, bytearray(b"x"))` fails on both classes: on
   master as a raw `AttributeError`/`TypeError`, since BK-394 as `RemoteStoreError`

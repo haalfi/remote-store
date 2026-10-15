@@ -469,7 +469,10 @@ The members are the same, with three differences:
 
 `classify`, `container_absent`, `connection_dead`, `unwrap`, `native_path`,
 `to_key` and `resolve` stay synchronous. The optional protocols are the
-`AsyncSupports*` mirrors. The shipped [`AsyncMemoryBackend`](../reference/api/aio/backends/memory.md)
+`AsyncSupports*` mirrors. `AsyncBackend` has no `read_seekable` and no
+`open_atomic`, so the async kernel never asks for `get_range` or `size_probe`,
+and asks for `open_write` only from `write_atomic`, when `put_is_atomic` is
+false. The shipped [`AsyncMemoryBackend`](../reference/api/aio/backends/memory.md)
 is a complete example of this route, and [`MemoryBackend`](../reference/api/backends/memory.md)
 of the sync one.
 

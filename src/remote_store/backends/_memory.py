@@ -46,7 +46,7 @@ class MemoryDriver(Driver):
     close_is_terminal: bool = False
 
     def __init__(self, capabilities: CapabilitySet = _ALL_CAPABILITIES) -> None:
-        """*capabilities* narrows what is declared; the kernel refuses a set the driver cannot back."""
+        """*capabilities* narrows what is declared; construction refuses a set the protocols cannot back."""
         self.capabilities: CapabilitySet = capabilities
         self._tree = MemoryTree()
         self._lock = threading.Lock()
@@ -103,7 +103,7 @@ class MemoryDriver(Driver):
         """Nothing to release; the store stays usable."""
 
     def classify(self, exc: Exception, *, op: Op, key: str) -> RemoteStoreError:
-        # The driver raises only typed errors, so the kernel never asks (MEM-020).
+        # The tree raises only typed errors; the kernel asks only about content put cannot read (MEM-020).
         return RemoteStoreError(f"{type(exc).__name__}: {exc}")
 
     def container_absent(self, exc: BaseException, *, op: Op) -> bool:

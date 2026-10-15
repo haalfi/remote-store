@@ -20,8 +20,9 @@ authorities that evolve independently of it, and each has drifted before:
    same signatures. The tables drifted from the ``Backend`` ABC twice when
    that was the documented route, which is why they are gated at all. Step
    2's capability table lists exactly the capabilities the kernel's
-   construction check refuses without a backer, each naming what backs it,
-   measured by asking that check (``_construction_backers``). A row repeated
+   construction check refuses without a backer, each naming what backs it and
+   the setting a backer needs (``rename_replaces = True``, ``put_is_atomic =
+   True``), measured by asking that check (``_construction_terms``). A row repeated
    in any table fails, since a lookup would keep only one of the two.
 3. **The conformance suite** — every ``tests/backends/conformance/*.py``
    file the guide names must exist on disk.
@@ -249,8 +250,18 @@ def _construction_backers() -> dict[str, set[str]]:
     A bare driver declaring one capability and presenting nothing optional is
     built for every capability; each one construction refuses is gated, and is
     backed by every ``Supports*`` protocol (or ``put_is_atomic``) that, added
-    alone, makes construction accept it. A rename is offered as replacing, since
-    that is the only rename that can back an atomic capability.
+    alone, makes construction accept it, with or without the setting
+    ``_construction_terms`` names for it.
+    """
+    return {capability: set(backers) for capability, backers in _construction_terms().items()}
+
+
+def _construction_terms() -> dict[str, dict[str, str | None]]:
+    """``{capability: {backer: the qualifier construction needs, or None}}``.
+
+    A backer's qualifier is the setting it backs the capability only with:
+    ``put_is_atomic = True`` for the attribute, and ``rename_replaces = True``
+    for a rename that construction refuses when it does not replace.
     """
     from remote_store import drivers
     from remote_store._capabilities import Capability, CapabilitySet
@@ -273,19 +284,24 @@ def _construction_backers() -> dict[str, set[str]]:
             return False
         return True
 
-    backers: dict[str, set[str]] = {}
+    terms: dict[str, dict[str, str | None]] = {}
     for capability in Capability:
         if accepted(capability, {}):
             continue
-        found = {"put_is_atomic"} if accepted(capability, {"put_is_atomic": True}) else set()
+        found: dict[str, str | None] = {}
+        if accepted(capability, {"put_is_atomic": True}):
+            found["put_is_atomic"] = "put_is_atomic = True"
         for name, protocol in protocols.items():
             stubs: dict[str, object] = {member: lambda *_a, **_k: None for member in _own_methods(protocol)}
-            if name == "SupportsRename":
-                stubs["rename_replaces"] = True
-            if accepted(capability, stubs):
-                found.add(name)
-        backers[capability.name] = found
-    return backers
+            if name != "SupportsRename":
+                if accepted(capability, stubs):
+                    found[name] = None
+            elif accepted(capability, {**stubs, "rename_replaces": False}):
+                found[name] = None
+            elif accepted(capability, {**stubs, "rename_replaces": True}):
+                found[name] = "rename_replaces = True"
+        terms[capability.name] = found
+    return terms
 
 
 def check_capability_table(guide_text: str) -> list[str]:
@@ -298,6 +314,7 @@ def check_capability_table(guide_text: str) -> list[str]:
 
     label = "capability table"
     rows: dict[str, set[str]] = {}
+    texts: dict[str, str] = {}
     violations: list[str] = []
     for line in lines[start + 2 :]:
         if not line.startswith("|"):
@@ -307,14 +324,21 @@ def check_capability_table(guide_text: str) -> list[str]:
         if capability in rows:
             violations.append(f"{label}: duplicate row for '{capability}'")
         rows[capability] = set(BACKER_NAME.findall(rest))
-    expected = _construction_backers()
-    violations += _membership(set(rows), set(expected), label, "a capability construction gates")
-    for capability in sorted(set(rows) & set(expected)):
-        if rows[capability] != expected[capability]:
+        texts[capability] = rest
+    terms = _construction_terms()
+    violations += _membership(set(rows), set(terms), label, "a capability construction gates")
+    for capability in sorted(set(rows) & set(terms)):
+        expected = set(terms[capability])
+        if rows[capability] != expected:
             violations.append(
-                f"{label}: '{capability}' names {sorted(rows[capability])}, "
-                f"but construction accepts {sorted(expected[capability])}"
+                f"{label}: '{capability}' names {sorted(rows[capability])}, but construction accepts {sorted(expected)}"
             )
+        # A backer that backs the capability only with a setting must say so.
+        violations += [
+            f"{label}: '{capability}' row omits '{qualifier}', which construction needs for {backer}"
+            for backer, qualifier in sorted(terms[capability].items())
+            if qualifier is not None and qualifier not in texts[capability]
+        ]
     return violations
 
 
