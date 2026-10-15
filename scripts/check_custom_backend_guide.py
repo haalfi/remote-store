@@ -18,7 +18,11 @@ authorities that evolve independently of it, and each has drifted before:
    method signature. This is the prose twin of the executable guard in
    ``tests/test_snippets.py``, which pins the tutorial driver itself to the
    same signatures. The tables drifted from the ``Backend`` ABC twice when
-   that was the documented route, which is why they are gated at all.
+   that was the documented route, which is why they are gated at all. Step
+   2's capability table lists exactly the capabilities the kernel's
+   construction check refuses without a backer, each naming what backs it,
+   measured by asking that check (``_construction_backers``). A row repeated
+   in any table fails, since a lookup would keep only one of the two.
 3. **The conformance suite** — every ``tests/backends/conformance/*.py``
    file the guide names must exist on disk.
 4. **The fixture registry** — the registration section's fenced TOML
@@ -180,9 +184,11 @@ def check_required_table(guide_text: str) -> list[str]:
         return [f"required-members table not found (heading '{_REQUIRED_HEADING}' missing?)"]
 
     label = "required-members table"
-    table = dict(_parse_member_cell(row[0]) for row in rows)
+    parsed = [_parse_member_cell(row[0]) for row in rows]
+    table = dict(parsed)
+    duplicates = _duplicates(label, [name for name, _ in parsed])
     methods = _own_methods(Driver)
-    violations = _membership(set(table), set(methods), label, "a method Driver declares")
+    violations = duplicates + _membership(set(table), set(methods), label, "a method Driver declares")
     for name in sorted(set(table) & set(methods)):
         violations += _param_drift(label, name, table[name], methods[name])
     return violations
@@ -205,6 +211,7 @@ def check_attributes_table(guide_text: str) -> list[str]:
         if f"``{name}``" not in doc
     ]
     expected = set(Driver.__annotations__) | _OPTIONAL_ATTRIBUTES
+    violations += _duplicates(label, [row[0].strip() for row in rows])
     violations += _membership({row[0].strip() for row in rows}, expected, label, "a Driver attribute")
     return violations
 
@@ -220,7 +227,8 @@ def check_protocols_table(guide_text: str) -> list[str]:
     label = "protocols table"
     protocols = {name: getattr(drivers, name) for name in drivers.__all__ if name.startswith("Supports")}
     listed = {row[0].strip(): (row[1] if len(row) > 1 else "") for row in rows}
-    violations = _membership(set(listed), set(protocols), label, "a Supports* protocol in remote_store.drivers")
+    violations = _duplicates(label, [row[0].strip() for row in rows])
+    violations += _membership(set(listed), set(protocols), label, "a Supports* protocol in remote_store.drivers")
     for name in sorted(set(listed) & set(protocols)):
         member, params = _parse_member_cell(listed[name])
         methods = _own_methods(protocols[name])
@@ -229,6 +237,95 @@ def check_protocols_table(guide_text: str) -> list[str]:
             continue
         violations += _param_drift(label, f"{name}.{member}", params, methods[member])
     return violations
+
+
+_CAPABILITY_HEADER = "| Capability | Backed by |"
+BACKER_NAME = re.compile(r"\b(Supports[A-Za-z]+|put_is_atomic)\b")
+
+
+def _construction_backers() -> dict[str, set[str]]:
+    """``{capability: what backs it}``, measured by asking the kernel's construction check.
+
+    A bare driver declaring one capability and presenting nothing optional is
+    built for every capability; each one construction refuses is gated, and is
+    backed by every ``Supports*`` protocol (or ``put_is_atomic``) that, added
+    alone, makes construction accept it. A rename is offered as replacing, since
+    that is the only rename that can back an atomic capability.
+    """
+    from remote_store import drivers
+    from remote_store._capabilities import Capability, CapabilitySet
+    from remote_store._kernel._sync.kernel import _check_construction
+
+    protocols = {name: getattr(drivers, name) for name in drivers.__all__ if name.startswith("Supports")}
+
+    def accepted(capability: Capability, extra: dict[str, object]) -> bool:
+        attrs: dict[str, object] = {
+            "name": "probe",
+            "namespace": "flat",
+            "parents": "none",
+            "put_is_atomic": False,
+            "capabilities": CapabilitySet({capability}),
+            **extra,
+        }
+        try:
+            _check_construction(type("_Probe", (), attrs)())  # type: ignore[arg-type]
+        except ValueError:
+            return False
+        return True
+
+    backers: dict[str, set[str]] = {}
+    for capability in Capability:
+        if accepted(capability, {}):
+            continue
+        found = {"put_is_atomic"} if accepted(capability, {"put_is_atomic": True}) else set()
+        for name, protocol in protocols.items():
+            stubs: dict[str, object] = {member: lambda *_a, **_k: None for member in _own_methods(protocol)}
+            if name == "SupportsRename":
+                stubs["rename_replaces"] = True
+            if accepted(capability, stubs):
+                found.add(name)
+        backers[capability.name] = found
+    return backers
+
+
+def check_capability_table(guide_text: str) -> list[str]:
+    """Step 2's table must list exactly the capabilities construction gates, each with what backs it."""
+    lines = guide_text.splitlines()
+    try:
+        start = lines.index(_CAPABILITY_HEADER)
+    except ValueError:
+        return [f"capability table not found (header '{_CAPABILITY_HEADER}' missing?)"]
+
+    label = "capability table"
+    rows: dict[str, set[str]] = {}
+    violations: list[str] = []
+    for line in lines[start + 2 :]:
+        if not line.startswith("|"):
+            break
+        first, _, rest = line.strip("|").partition("|")
+        capability = first.strip().strip("`")
+        if capability in rows:
+            violations.append(f"{label}: duplicate row for '{capability}'")
+        rows[capability] = set(BACKER_NAME.findall(rest))
+    expected = _construction_backers()
+    violations += _membership(set(rows), set(expected), label, "a capability construction gates")
+    for capability in sorted(set(rows) & set(expected)):
+        if rows[capability] != expected[capability]:
+            violations.append(
+                f"{label}: '{capability}' names {sorted(rows[capability])}, "
+                f"but construction accepts {sorted(expected[capability])}"
+            )
+    return violations
+
+
+def _duplicates(label: str, names: list[str]) -> list[str]:
+    seen: set[str] = set()
+    out = []
+    for name in names:
+        if name in seen:
+            out.append(f"{label}: duplicate row for '{name}'")
+        seen.add(name)
+    return out
 
 
 def check_conformance_files(guide_text: str, root: Path) -> list[str]:
@@ -292,7 +389,7 @@ def check_registration_toml(guide_text: str, root: Path) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run all six checks; return 0 if clean, 1 on violations."""
+    """Run every check; return 0 if clean, 1 on violations."""
     guide = Path(argv[0]) if argv else _GUIDE
     if not guide.is_file():
         sys.stderr.write(f"error: guide not found: {guide}\n")
@@ -304,6 +401,7 @@ def main(argv: list[str] | None = None) -> int:
         *check_required_table(guide_text),
         *check_attributes_table(guide_text),
         *check_protocols_table(guide_text),
+        *check_capability_table(guide_text),
         *check_conformance_files(guide_text, _ROOT),
         *check_registration_toml(guide_text, _ROOT),
     ]

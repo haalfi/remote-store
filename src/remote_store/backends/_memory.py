@@ -45,8 +45,9 @@ class MemoryDriver(Driver):
     put_is_atomic: bool = True
     close_is_terminal: bool = False
 
-    def __init__(self) -> None:
-        self.capabilities: CapabilitySet = _ALL_CAPABILITIES
+    def __init__(self, capabilities: CapabilitySet = _ALL_CAPABILITIES) -> None:
+        """*capabilities* narrows what is declared; the kernel refuses a set the driver cannot back."""
+        self.capabilities: CapabilitySet = capabilities
         self._tree = MemoryTree()
         self._lock = threading.Lock()
 
@@ -198,7 +199,7 @@ class MemoryBackend(DriverBackend):
     documentation examples.
 
     All capabilities except ``GLOB`` and ``LAZY_READ`` are supported. Every
-    primitive runs under one process-wide lock, so ``write``,
+    primitive runs under the backend's one lock, so ``write``,
     ``write_atomic``, ``move`` and ``copy`` are atomic with respect to
     concurrent callers in the same process (``ATOMIC_MOVE`` is advertised).
     Reads materialise the value: a stream wraps a copy of the stored bytes.
@@ -208,7 +209,9 @@ class MemoryBackend(DriverBackend):
     close_is_terminal: ClassVar[bool] = False
 
     def __init__(self) -> None:
-        super().__init__(MemoryDriver())
+        # The class's CAPABILITIES is what is declared, so a subclass narrowing it
+        # narrows what the store gates on.
+        super().__init__(MemoryDriver(type(self).CAPABILITIES))
 
     def __repr__(self) -> str:
         driver = self._driver

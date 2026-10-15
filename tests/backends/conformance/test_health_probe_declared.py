@@ -23,7 +23,9 @@ runs its driver's ``probe()`` (PING-002). For such a class the decision lives on
 the driver, so the rule is asked of the driver class instead: its ``probe`` must
 not be the driver protocol's inherited no-op body, unless exempted. Every kernel
 class must be mapped to its driver in ``_DRIVERS``; an unmapped one fails, so a
-new class on the kernel cannot pass on the kernel's ``check_health`` alone.
+new class on the kernel cannot pass on the kernel's ``check_health`` alone. The
+map is checked too: the class must build the mapped driver, and must not
+override the kernel's ``check_health`` (``_kernel_decision_defects``).
 
 First instantiated for BUG-231 (Graph had no probe and no exemption).
 """
@@ -140,6 +142,28 @@ def _on_kernel(cls: type) -> bool:
     return issubclass(cls, _KERNEL_CORES)
 
 
+def _kernel_decision_defects(cls: type, driver: type) -> list[str]:
+    """Why the probe decision of kernel class *cls* is not where ``_DRIVERS`` says it is.
+
+    The map is hand-kept, so it is checked: the driver *cls* builds must be the
+    mapped one, and *cls* must not override the kernel's ``check_health``, which
+    is what runs the driver's ``probe``. A class that cannot be built without
+    arguments fails here until this check learns how to build it.
+    """
+    defects = []
+    owner = next(k for k in cls.__mro__ if "check_health" in k.__dict__)
+    if owner not in _KERNEL_CORES:
+        defects.append(f"{cls.__name__} overrides check_health in {owner.__name__}, so its driver's probe may not run")
+    try:
+        built = type(cls()._driver)
+    except TypeError as exc:
+        defects.append(f"{cls.__name__}() needs arguments ({exc}); teach this check to build it")
+    else:
+        if built is not driver:
+            defects.append(f"{cls.__name__} builds {built.__name__}, but _DRIVERS maps it to {driver.__name__}")
+    return defects
+
+
 def _has_own_probe(cls: type) -> bool:
     """True iff *cls* decides its probe: its own ``check_health``, or on the kernel its driver's ``probe``."""
     if _on_kernel(cls):
@@ -171,11 +195,47 @@ def test_every_class_on_the_kernel_names_its_driver() -> None:
     assert not stale, f"_DRIVERS names classes discovery no longer finds: {stale}"
 
 
+class _ProbingDriver(MemoryDriver):
+    def probe(self) -> None:
+        """A probe of its own, so a class mapped to this driver reads as probing."""
+
+
+@pytest.mark.spec("PING-002")
+def test_a_class_mapped_to_a_driver_it_does_not_build_is_refused() -> None:
+    # The map said a probing driver; the class builds Memory's no-op one.
+    class Remapped(MemoryBackend):
+        pass
+
+    assert _kernel_decision_defects(Remapped, _ProbingDriver) == [
+        "Remapped builds MemoryDriver, but _DRIVERS maps it to _ProbingDriver"
+    ]
+
+
+@pytest.mark.spec("PING-002")
+def test_a_kernel_class_overriding_check_health_is_refused() -> None:
+    # An override that never runs the driver's probe is no probe decision.
+    class Silenced(MemoryBackend):
+        def check_health(self) -> None:
+            return None
+
+    defects = _kernel_decision_defects(Silenced, MemoryDriver)
+    assert defects == ["Silenced overrides check_health in Silenced, so its driver's probe may not run"]
+
+
+@pytest.mark.spec("PING-002")
+def test_a_kernel_class_built_as_mapped_has_no_defect() -> None:
+    assert _kernel_decision_defects(MemoryBackend, MemoryDriver) == []
+    assert _kernel_decision_defects(AsyncMemoryBackend, AsyncMemoryDriver) == []
+
+
 @pytest.mark.spec("PING-002")
 @pytest.mark.parametrize("cls", _BACKENDS, ids=lambda c: f"{c.__module__.split('.')[-1]}.{c.__name__}")
 def test_health_probe_is_declared(cls: type) -> None:
-    if _on_kernel(cls) and cls not in _DRIVERS:
-        pytest.fail(f"{cls.__name__} is on the kernel but not in _DRIVERS")
+    if _on_kernel(cls):
+        if cls not in _DRIVERS:
+            pytest.fail(f"{cls.__name__} is on the kernel but not in _DRIVERS")
+        defects = _kernel_decision_defects(cls, _DRIVERS[cls])
+        assert not defects, "; ".join(defects)
     overrides = _has_own_probe(cls)
     if cls in _NO_PROBE:
         # Direction 2: an exemption that grew a real probe is stale.

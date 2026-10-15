@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import concurrent.futures
 import io
+from typing import Any
 
 import pytest
 
-from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound
+from remote_store import Store
+from remote_store._capabilities import Capability, CapabilitySet
+from remote_store._errors import AlreadyExists, CapabilityNotSupported, DirectoryNotEmpty, InvalidPath, NotFound
+from remote_store.aio.backends._memory import AsyncMemoryBackend
 from remote_store.backends._memory import MemoryBackend
 
 
@@ -477,6 +481,40 @@ class TestMemoryConstruction:
         mb = MemoryBackend()
         mb.write("c.txt", b"x")  # top-level file: no intermediate folders created
         assert repr(mb) == "MemoryBackend(files=1, folders=0)"
+
+
+class TestMemoryCapabilityOverride:
+    """MEM-003: a subclass's ``CAPABILITIES`` is the set the store gates on, in both runtimes."""
+
+    @staticmethod
+    def _narrowed(base: type) -> Any:
+        class Narrow(base):  # type: ignore[misc, valid-type]
+            CAPABILITIES = CapabilitySet({Capability.READ, Capability.WRITE, Capability.LIST})
+
+        return Narrow()
+
+    @pytest.mark.spec("MEM-003")
+    @pytest.mark.parametrize("base", [MemoryBackend, AsyncMemoryBackend], ids=["sync", "async"])
+    def test_a_narrowed_set_is_the_declared_one(self, base: type) -> None:
+        backend = self._narrowed(base)
+        assert backend.capabilities.supports(Capability.WRITE)
+        assert not backend.capabilities.supports(Capability.COPY)
+
+    @pytest.mark.spec("MEM-003")
+    def test_a_narrowed_set_gates_the_store(self) -> None:
+        store = Store(backend=self._narrowed(MemoryBackend))
+        store.write("a", b"x")
+        with pytest.raises(CapabilityNotSupported):
+            store.copy("a", "b")
+
+    @pytest.mark.spec("MEM-003", "BE-021")
+    @pytest.mark.parametrize("base", [MemoryBackend, AsyncMemoryBackend], ids=["sync", "async"])
+    def test_a_set_the_driver_cannot_back_is_refused_at_construction(self, base: type) -> None:
+        class Overclaim(base):  # type: ignore[misc, valid-type]
+            CAPABILITIES = CapabilitySet(set(Capability))
+
+        with pytest.raises(ValueError, match="GLOB"):
+            Overclaim()
 
 
 class TestMemoryRegistration:

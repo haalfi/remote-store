@@ -856,7 +856,9 @@ each time):
    against D1. A pre-write `stat` was rejected: it puts a round trip on the
    hot path, against BE-021.
 4. WR-010's gate keeps its place, and BE-030 records the departure from
-   `BackendContract.dfy`'s `Write`. BK-394 reconciles the model.
+   `BackendContract.dfy`'s `Write`. BK-394 reconciles the model. *Corrected
+   2026-10-15: BK-394 reconciled `DeleteFolder` only; `Write`'s reconciliation
+   is BK-440's.*
 5. `move` and `copy` are gated on the declared `MOVE` and `COPY`, ahead of
    the closed guard, as `write_atomic` is (the maintainer's round-6 decision
    for that gate).

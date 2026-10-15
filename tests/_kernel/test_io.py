@@ -70,6 +70,21 @@ def test_every_read_the_guarded_stream_forwards_marks_the_callers_error(name: st
 
 
 @pytest.mark.spec("ASYNC-091")
+def test_every_other_attribute_is_the_streams_own() -> None:
+    # A driver that rewinds or sizes its content (an upload_fileobj-style SDK)
+    # reaches the stream's own seek, tell and name through the guard.
+    source = io.BytesIO(b"abcdef")
+    source.name = "caller.bin"  # type: ignore[attr-defined]
+    guarded = sync_io.guard_content(source)
+    assert guarded.read(2) == b"ab"
+    assert guarded.tell() == 2
+    assert guarded.seek(0) == 0
+    assert guarded.read() == b"abcdef"
+    assert guarded.name == "caller.bin"
+    assert guarded.getvalue() == b"abcdef"  # type: ignore[attr-defined]
+
+
+@pytest.mark.spec("ASYNC-091")
 def test_an_attribute_the_stream_lacks_is_not_marked_as_the_callers() -> None:
     guarded = sync_io.guard_content(_ReadOnlySource(b"ab"))  # type: ignore[arg-type]
     with pytest.raises(AttributeError) as caught:

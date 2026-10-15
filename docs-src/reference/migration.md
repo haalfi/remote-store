@@ -65,6 +65,19 @@ paths and zero-argument constructors; their drivers are public as
   It returns a binary stream (an `io.RawIOBase`), so `.getvalue()`,
   `.getbuffer()` and an `isinstance(..., io.BytesIO)` check stop working. Use
   `read_bytes()` for the whole value, or `.read()` on the stream.
+- **The file `open_atomic()` yields is write-only.** It used to be an
+  `io.BytesIO`; now it answers `write()` and `tell()`, while `seek()` and
+  `read()` raise and `getvalue()` does not exist. To patch a header or read
+  back, build the bytes in your own `io.BytesIO` and write them once, or read
+  the file with `read_bytes()` after the block.
+- **`write_atomic()` and `open_atomic()` no longer call `write()`.** Each goes
+  to the driver directly, so a subclass overriding `write()` to inject faults or
+  record calls no longer sees atomic writes. Override each method you want to
+  intercept.
+- **A subclass declaring more than the driver can back is refused.** Narrowing
+  `CAPABILITIES` in a subclass still narrows what the store allows, but adding a
+  capability the driver cannot back (such as `GLOB`) now raises `ValueError`
+  when the backend is built, rather than failing at the call.
 - **`open_atomic()` refuses a bad target on entry.** A folder at the key, or a
   file above it, is `InvalidPath` before the `with` body runs. It used to be
   refused on exit, so an exception the body raised came out instead.

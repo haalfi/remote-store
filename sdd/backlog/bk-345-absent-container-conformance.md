@@ -68,4 +68,6 @@ cells from D3 step 2, the first driver whose container can be absent (both
 Memory drivers are exempt, as above). Until a class migrates, its
 hand-written per-backend suite still carries the rule. The ID-244 dependency
 stands, and BK-394 now precedes this item because it registers drivers in
-the conformance registry.
+the conformance registry. *Corrected 2026-10-15: BK-394 left the registry
+constructing `MemoryBackend()`, so the precondition is the first PR that
+registers drivers there, as ID-244's entry says.*

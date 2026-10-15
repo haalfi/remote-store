@@ -29,9 +29,10 @@ _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
 class AsyncMemoryDriver(AsyncDriver):
     """The async Memory driver: the shared tree's primitives, each under one ``asyncio.Lock``.
 
-    The same tree and the same primitives as ``MemoryDriver``; only the lock
-    and the stream shape differ. It declares no ``probe``, inheriting the
-    driver protocol's no-op: an in-memory store is always healthy.
+    The same tree and the same primitives as ``MemoryDriver``; the lock, the
+    stream shape, the ``name`` and the default capabilities (``LAZY_READ``
+    here) differ. It declares no ``probe``, inheriting the driver protocol's
+    no-op: an in-memory store is always healthy.
     """
 
     name: str = "async-memory"
@@ -40,8 +41,9 @@ class AsyncMemoryDriver(AsyncDriver):
     put_is_atomic: bool = True
     close_is_terminal: bool = False
 
-    def __init__(self) -> None:
-        self.capabilities: CapabilitySet = _ALL_CAPABILITIES
+    def __init__(self, capabilities: CapabilitySet = _ALL_CAPABILITIES) -> None:
+        """*capabilities* narrows what is declared; the kernel refuses a set the driver cannot back."""
+        self.capabilities: CapabilitySet = capabilities
         self._tree = MemoryTree()
         self._lock = asyncio.Lock()
 
@@ -215,7 +217,9 @@ class AsyncMemoryBackend(AsyncDriverBackend):
     close_is_terminal: ClassVar[bool] = False
 
     def __init__(self) -> None:
-        super().__init__(AsyncMemoryDriver())
+        # The class's CAPABILITIES is what is declared, so a subclass narrowing it
+        # narrows what the store gates on.
+        super().__init__(AsyncMemoryDriver(type(self).CAPABILITIES))
 
     def __repr__(self) -> str:
         driver = self._driver

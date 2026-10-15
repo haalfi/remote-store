@@ -1446,7 +1446,7 @@ and the gate is held ahead of any I/O, so it ranks first there too; only the
 overwrite state would cost a `stat` of its own. A class on the kernel departs
 from the model in those three states on both namespaces. Both Memory classes
 declare `USER_METADATA`, so neither reaches them. The departure stands, and
-reconciling the model is re-homed to BK-434.
+reconciling the model is BK-440's.
 
 **What a key resolves to** is [BE-032](#be-032-the-store-tree-on-the-kernel)'s
 answer, for every call below: the tree's `Item`, `Folder` or `Nothing` (A.1),

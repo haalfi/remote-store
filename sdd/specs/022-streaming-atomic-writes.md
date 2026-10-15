@@ -112,7 +112,10 @@ refuses what the commit would refuse at that moment, so with
 the commit checks again under the lock. On exception the buffer is dropped
 and nothing is written. Pinned by `tests/backends/memory/test_coverage.py`
 `test_open_atomic_refuses_an_existing_file_on_entry` and
-`test_open_atomic_buffers_in_memory_never_on_disk`.
+`test_open_atomic_buffers_in_memory_never_on_disk`. `AsyncMemoryDriver`
+presents the same handle; `AsyncBackend` has no `open_atomic`, so only a caller
+of the driver reaches it, and `tests/backends/memory/aio/test_driver_open_write.py`
+holds it to these terms.
 
 ### On the kernel (SAW-003)
 

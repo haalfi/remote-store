@@ -85,6 +85,7 @@ _REDIS_CAPABILITIES = CapabilitySet(
 # ---------------------------------------------------------------------------
 
 
+# --8<-- [start:step3-driver]
 def _glob_escape(text: str) -> str:
     """Escape SCAN MATCH wildcards, so a key holding ``*``, ``?`` or ``[`` matches itself."""
     return "".join(f"[{c}]" if c in "*?[" else c for c in text)
@@ -98,7 +99,6 @@ class RedisDriver(Driver):
 
     # -- Step 3: Declarations and constructor -------------------------------
 
-    # --8<-- [start:step3-driver]
     name: str = "redis"
     namespace: Literal["flat", "hierarchical"] = "flat"  # a key never blocks a prefix
     parents: Literal["none", "implicit", "explicit"] = "none"  # no folder objects

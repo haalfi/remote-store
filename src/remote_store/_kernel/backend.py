@@ -33,7 +33,17 @@ class DriverBackend(_KernelCore, Backend):
     """``Backend`` implemented once, over a sync driver.
 
     Construct it with a built driver, usually from the ``__init__`` of a
-    subclass that builds its own; see ``_KernelCore`` for the arguments.
+    subclass that builds its own.
+
+    Args:
+        driver: The built driver.
+
+    Raises:
+        ValueError: If the driver's declarations are not backed by its
+            protocols, it is flat and has folder objects, it has explicit
+            parents and no ``ensure_parents``, it has folder objects and no
+            ``remove_folder``, or the class's own ``close_is_terminal``
+            differs from the driver's.
     """
 
     def read(self, path: str) -> BinaryIO:
@@ -133,19 +143,25 @@ class _RangeReader(io.RawIOBase):
 
 
 class _HandleStream(io.RawIOBase):
-    """The writable face of a driver's wire temporary."""
+    """The writable face of a driver's wire temporary: forward-only, so it tells but never seeks."""
 
     def __init__(self, core: DriverBackend, handle: WriteHandle, key: str) -> None:
         super().__init__()
         self._core, self._handle, self._key = core, handle, key
+        self._pos = 0
 
     def writable(self) -> bool:
         return True
+
+    def tell(self) -> int:
+        """Bytes written so far; the stream is not seekable."""
+        return self._pos
 
     def write(self, data: bytes | bytearray | memoryview) -> int:  # type: ignore[override]
         chunk = bytes(data)
         with self._core._choke(Op.OPEN_ATOMIC, self._key):
             self._handle.write(chunk)
+        self._pos += len(chunk)
         return len(chunk)
 
 

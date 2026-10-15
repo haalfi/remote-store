@@ -240,7 +240,8 @@ by the same predicate: the class in the driver's MRO that supplies `probe`, and
 whether it is one of the two protocols. Each kernel class is mapped to its
 driver class (`_DRIVERS`); an unmapped kernel class fails, so a new class on
 the kernel cannot pass on the kernel's `check_health` alone, and a mapping
-discovery no longer finds fails too. `DriverBackend` and `AsyncDriverBackend`
+discovery no longer finds fails too. The map is checked against the class: it
+must build the mapped driver and must not override the kernel's `check_health`. `DriverBackend` and `AsyncDriverBackend`
 themselves take any driver and are left out of discovery. The `_NO_PROBE`
 entries keep their meaning: `MemoryDriver` and `AsyncMemoryDriver` declare no
 `probe`, so the two Memory entries stay true (PING-008).

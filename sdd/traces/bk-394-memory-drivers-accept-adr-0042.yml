@@ -25,10 +25,14 @@ surprising_ripples:
   - tests/backends/fixtures/memory.py
   - tests/aio/test_async_store.py
   - sdd/specs/022-streaming-atomic-writes.md
+discovery_followups:
+  - BK-440
+  - BUG-328
 co_shipped_items:
   - BK-398
 decisions:
   - sdd/decisions/115d97a6-e0fa-4bf2-81a9-dccb220e7c86.jsonl
+  - sdd/decisions/f9fa2a8e-b25c-401b-87c9-b74a05d17a91.jsonl
 orient:
   - items: [BK-398]
     verdict: constrains

@@ -13,8 +13,10 @@ through the driver's `open_write` (SAW-012).
 `MemoryDriver`. `AsyncMemoryBackend(AsyncDriverBackend)` builds an
 `AsyncMemoryDriver` the same way. Both drivers hold a `MemoryTree`
 (`remote_store/backends/_memory_tree.py`), the tree this spec describes, and
-differ only in their lock (`threading.Lock`, `asyncio.Lock`) and stream
-shape. The clauses below state Memory's behaviour once for both classes.
+call the same primitives on it. They differ in their lock (`threading.Lock`,
+`asyncio.Lock`), their stream shape, their `name` (MEM-002) and their
+capabilities (MEM-003, `LAZY_READ`). The clauses below state Memory's
+behaviour once for both classes, except where a clause names one.
 
 **Placement.** Each clause is discharged by the kernel, by the driver, or
 forwarded through the public class; IDs and prose are kept. The table places
@@ -26,7 +28,7 @@ each `### MEM-` heading once, except MEM-DS-005 and MEM-014, which split, so
 |---|---|
 | kernel (5) | MEM-DS-005's validation table (BE-030: the driver receives a canonical key), MEM-014's `recursive` dispatch (BE-031: `remove_folder` or `delete_tree`, the root refused first), MEM-013 (`write_atomic` is `put`, from `put_is_atomic = True`; AW-001), MEM-018 (`close`, through `close_is_terminal = False`; BE-020), MEM-020 (the choke point; the driver raises no native exception, so `classify` is never reached) |
 | driver (15) | MEM-DS-001, MEM-DS-002, MEM-DS-003, MEM-DS-004, MEM-DS-005's traversal (`MemoryTree.traverse`, O(d) over a canonical key), MEM-DS-006, MEM-010, MEM-011, MEM-012, MEM-014's two primitives (`delete_tree` for the recursive case, `remove_folder` for the other, each under the one lock), MEM-015 (`folder_stats`, one walk under the one lock), MEM-016 (`move`, one lock), MEM-016b (`copy`), MEM-025 (each `list_page` one locked collect with no cursor, and the kernel lists a recursive call as one `delimiter=None` request, so a listing stays one snapshot), MEM-026 |
-| forwarded or declared (7) | MEM-001 (constructor), MEM-002 (`name`, the driver's), MEM-003 (capabilities, declared by the driver), MEM-004 (`repr` on the public class, reading the driver's counters), MEM-005 (registration), MEM-017 (`to_key`), MEM-019 (`unwrap`) |
+| forwarded or declared (7) | MEM-001 (constructor), MEM-002 (`name`, the driver's), MEM-003 (capabilities, the class's `CAPABILITIES` handed to the driver), MEM-004 (`repr` on the public class, reading the driver's counters), MEM-005 (registration), MEM-017 (`to_key`), MEM-019 (`unwrap`) |
 | unchanged (6) | MEM-030, MEM-031, MEM-032 (testing), MEM-040, MEM-041, MEM-042 (performance) |
 
 **Primary use cases:** unit testing (no temp-dir setup/teardown, no OS-error
@@ -224,8 +226,16 @@ forwarded by the kernel; `AsyncMemoryBackend`'s is `"async-memory"`.
 
 ### MEM-003: Capability Declaration
 
-**Invariant:** `MemoryBackend` declares capabilities: `READ`, `WRITE`,
-`DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`. Does not declare `GLOB` (use `list_files(pattern=…)` or `ext.glob` for client-side pattern matching).
+**Invariant:** `MemoryBackend` declares every capability except `GLOB` and
+`LAZY_READ` (`set(Capability) - {GLOB, LAZY_READ}`, `_ALL_CAPABILITIES` in
+`backends/_memory.py`); `AsyncMemoryBackend` every capability except `GLOB`,
+its one-chunk read stream being lazy. Neither declares `GLOB` (use
+`list_files(pattern=…)` or `ext.glob` for client-side pattern matching). The
+declared set is the class's `CAPABILITIES`, which the constructor hands to the
+driver: a subclass narrowing it narrows what the store allows, and one
+declaring what the driver cannot back is refused with `ValueError` at
+construction. Pinned by `TestMemoryCapabilityOverride` in
+`tests/backends/memory/test_coverage.py`.
 
 **Rationale:**
 - `ATOMIC_WRITE`: In-memory writes are inherently atomic from the caller's

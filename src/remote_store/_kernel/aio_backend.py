@@ -22,7 +22,17 @@ class AsyncDriverBackend(_AsyncKernelCore, AsyncBackend):
     """``AsyncBackend`` implemented once, over an async driver.
 
     Construct it with a built driver, usually from the ``__init__`` of a
-    subclass that builds its own; see ``_AsyncKernelCore`` for the arguments.
+    subclass that builds its own.
+
+    Args:
+        driver: The built driver.
+
+    Raises:
+        ValueError: If the driver's declarations are not backed by its
+            protocols, it is flat and has folder objects, it has explicit
+            parents and no ``ensure_parents``, it has folder objects and no
+            ``remove_folder``, or the class's own ``close_is_terminal``
+            differs from the driver's.
     """
 
     async def read(self, path: str) -> AsyncIterator[bytes]:

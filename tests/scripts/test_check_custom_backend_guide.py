@@ -24,6 +24,7 @@ check_snippet_regions = _mod.check_snippet_regions
 check_required_table = _mod.check_required_table
 check_attributes_table = _mod.check_attributes_table
 check_protocols_table = _mod.check_protocols_table
+check_capability_table = _mod.check_capability_table
 check_conformance_files = _mod.check_conformance_files
 check_registration_toml = _mod.check_registration_toml
 main = _mod.main
@@ -205,6 +206,64 @@ class TestProtocolsTable:
 
     def test_real_guide_table_is_clean(self) -> None:
         assert check_protocols_table(_protocols_section()) == []
+
+
+def _capability_section() -> str:
+    return _section("## Step 2: Declare capabilities", "The other capabilities need only")
+
+
+class TestCapabilityTable:
+    def test_real_guide_table_is_clean(self) -> None:
+        assert check_capability_table(_capability_section()) == []
+
+    def test_missing_table_flagged(self) -> None:
+        violations = check_capability_table("# no table\n")
+        assert violations == ["capability table not found (header '| Capability | Backed by |' missing?)"]
+
+    def test_a_backer_construction_refuses_is_flagged(self) -> None:
+        # The guide must not teach a declaration the kernel refuses at construction.
+        real = _capability_section()
+        drifted = real.replace("| `GLOB` | `SupportsGlob` |", "| `GLOB` | nothing, the kernel globs |")
+        assert drifted != real, "guide fixture no longer contains the expected GLOB row"
+        assert check_capability_table(drifted) == [
+            "capability table: 'GLOB' names [], but construction accepts ['SupportsGlob']"
+        ]
+
+    def test_a_missing_backer_is_flagged(self) -> None:
+        real = _capability_section()
+        drifted = real.replace("`SupportsAtomicMove`, `SupportsRename` or `SupportsCopy`", "`SupportsCopy`")
+        assert drifted != real, "guide fixture no longer contains the expected MOVE row"
+        violations = check_capability_table(drifted)
+        assert violations == [
+            "capability table: 'MOVE' names ['SupportsCopy'], "
+            "but construction accepts ['SupportsAtomicMove', 'SupportsCopy', 'SupportsRename']"
+        ]
+
+    def test_a_missing_capability_row_is_flagged(self) -> None:
+        violations = check_capability_table(_without_row(_capability_section(), "| `COPY`"))
+        assert violations == ["capability table: missing row for 'COPY'"]
+
+    def test_an_ungated_capability_row_is_flagged(self) -> None:
+        guide = _capability_section().replace(
+            "| `GLOB` | `SupportsGlob` |", "| `GLOB` | `SupportsGlob` |\n| `READ` | `SupportsRangeRead` |"
+        )
+        violations = check_capability_table(guide)
+        assert violations == ["capability table: row 'READ' is not a capability construction gates"]
+
+
+class TestDuplicateRows:
+    def test_a_wrong_duplicate_before_the_right_row_is_flagged(self) -> None:
+        # dict() keeps the last row, so without this a wrong first row would pass.
+        guide = _required_section().replace("| `put(", "| `put(key)` | x | x |\n| `put(", 1)
+        assert "required-members table: duplicate row for 'put'" in check_required_table(guide)
+
+    def test_duplicate_protocol_and_attribute_rows_are_flagged(self) -> None:
+        protocols = _protocols_section()
+        row = next(line for line in protocols.splitlines() if line.startswith("| [`SupportsGlob`]"))
+        assert "protocols table: duplicate row for 'SupportsGlob'" in check_protocols_table(protocols + row + "\n")
+        attributes = _attributes_section()
+        arow = next(line for line in attributes.splitlines() if line.startswith("| `namespace`"))
+        assert "attributes table: duplicate row for 'namespace'" in check_attributes_table(attributes + arow + "\n")
 
 
 class TestConformanceFiles:

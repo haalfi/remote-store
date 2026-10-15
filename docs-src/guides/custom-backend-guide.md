@@ -252,7 +252,7 @@ as one another tool stored with a backslash, and logs the omission.
   as an empty folder.
 
 Escape your storage system's wildcard characters when a key becomes a pattern:
-the `_glob_escape` helper above keeps a folder named `w[1]` from matching `w1`.
+the `_glob_escape` helper from Step 3 keeps a folder named `w[1]` from matching `w1`.
 
 ---
 
