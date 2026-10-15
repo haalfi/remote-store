@@ -33,3 +33,8 @@ def __getattr__(name: str) -> Any:
 
         return getattr(_memory, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    # The lazy names are listed too, so dir(), inspect and pydoc see them.
+    return sorted({*globals(), "AsyncMemoryBackend", "AsyncMemoryDriver"})

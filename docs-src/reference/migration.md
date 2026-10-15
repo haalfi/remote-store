@@ -50,7 +50,7 @@ walk it yourself with `list_folders()` and `list_files()` per folder, catching
 subclass `DriverBackend` and `AsyncDriverBackend`, keeping their names, import
 paths and zero-argument constructors; their drivers are public as
 `MemoryDriver` (`remote_store.backends`) and `AsyncMemoryDriver`
-(`remote_store.aio`). Four things you might observe:
+(`remote_store.aio`). What you might observe:
 
 - **Some error messages changed** to the kernel's wording, for example
   `Cannot write to the store root`, `Is a folder, not a file: k` and
@@ -65,6 +65,14 @@ paths and zero-argument constructors; their drivers are public as
   It returns a binary stream (an `io.RawIOBase`), so `.getvalue()`,
   `.getbuffer()` and an `isinstance(..., io.BytesIO)` check stop working. Use
   `read_bytes()` for the whole value, or `.read()` on the stream.
+- **`open_atomic()` refuses a bad target on entry.** A folder at the key, or a
+  file above it, is `InvalidPath` before the `with` body runs. It used to be
+  refused on exit, so an exception the body raised came out instead.
+- **Called directly on the backend, not through a `Store`**,
+  `get_folder_info("./")`, `(".//")` and `("./.")` answer the root instead of
+  raising `InvalidPath`, and an error's `path` is the normalised key (`"d"` for
+  `"d/"`, `"d/x"` for `"d//x"`), not the spelling passed in. Through a `Store`
+  both are unchanged.
 
 ## v0.32.0 to v0.33.0
 
