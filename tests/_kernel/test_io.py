@@ -3,7 +3,11 @@
 ``guard_content`` hands a driver a proxy over the caller's stream so that what
 the stream raises is marked as the caller's and passes the choke point verbatim
 (ASYNC-091). A driver may hand that proxy on to a client library, so the proxy
-must allow what the caller's stream allows, and offer nothing it does not.
+keeps the caller's stream's reads, its iteration (as an iterator when the
+stream is one), its ``with`` and every ordinary attribute, and offers nothing
+the stream does not. Other special methods are not forwarded: Python looks
+them up on the type, so a forwarded one would answer ``hasattr`` for an
+operation that then fails.
 """
 
 from __future__ import annotations
@@ -87,7 +91,30 @@ def test_every_other_attribute_is_the_streams_own() -> None:
 
 
 @pytest.mark.spec("ASYNC-091")
-@pytest.mark.parametrize("name", ["__next__", "__len__", "__getitem__", "__contains__"])
+def test_the_guard_over_an_iterator_is_an_iterator() -> None:
+    # Every io stream is its own iterator, so next() works on it directly.
+    guarded = sync_io.guard_content(io.BytesIO(b"l1\nl2\n"))
+    assert iter(guarded) is guarded
+    assert next(guarded) == b"l1\n"
+    assert next(guarded) == b"l2\n"
+    with pytest.raises(StopIteration):
+        next(guarded)
+
+
+@pytest.mark.spec("ASYNC-091")
+def test_a_failing_next_on_the_guarded_iterator_is_marked() -> None:
+    class _Lines(io.BytesIO):
+        def __next__(self) -> bytes:
+            raise _CallerStreamError("disk full")
+
+    guarded = sync_io.guard_content(_Lines(b"x"))
+    with pytest.raises(_CallerStreamError) as caught:
+        next(guarded)
+    assert sync_io.from_content(caught.value)
+
+
+@pytest.mark.spec("ASYNC-091")
+@pytest.mark.parametrize("name", ["__len__", "__getitem__", "__contains__"])
 def test_the_guarded_stream_offers_no_special_method_it_cannot_serve(name: str) -> None:
     # Python looks special methods up on the type, so one reached through
     # __getattr__ would answer hasattr() while the operation itself fails; a

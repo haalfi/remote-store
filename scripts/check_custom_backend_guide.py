@@ -57,7 +57,8 @@ Drift-gate::
 
     kind:       pair
     compares: docs-src/guides/custom-backend-guide.md ↔ the remote_store.drivers protocols, the
-        conformance suite files and the fixture loader's closed vocabularies
+        kernel's construction check (_check_construction's refusals), the conformance suite
+        files and the fixture loader's closed vocabularies
     domain:     explanation ↔ realization
 """
 

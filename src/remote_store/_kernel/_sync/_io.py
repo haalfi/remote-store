@@ -67,8 +67,8 @@ class _MarkedReader:
     absent here too; a read among them is forwarded with its failures marked. It
     is a proxy, not an ``io.IOBase``: Python looks special methods up on the
     type, so none is forwarded (``hasattr`` would answer for an operation that
-    fails), and iteration and ``with`` are present only when the stream's type
-    supports them (``_proxy_type``).
+    fails), and iteration (as an iterator when the stream is one) and ``with``
+    are present only when the stream's type supports them (``_proxy_type``).
     """
 
     __slots__ = ("_stream",)
@@ -110,6 +110,25 @@ class _MarkedIteration:
             yield line
 
 
+class _MarkedIterator:
+    """For a stream that is its own iterator (every ``io`` stream): so is the proxy."""
+
+    __slots__ = ()
+    _stream: BinaryIO
+
+    def __iter__(self) -> _MarkedIterator:
+        return self
+
+    def __next__(self) -> bytes:
+        try:
+            return next(self._stream)
+        except StopIteration:
+            raise
+        except Exception as exc:
+            _mark(exc)
+            raise
+
+
 class _ForwardedContext:
     __slots__ = ()
     _stream: BinaryIO
@@ -122,15 +141,18 @@ class _ForwardedContext:
         return self._stream.__exit__(*exc_info)  # type: ignore[arg-type]
 
 
-_PROXY_TYPES: dict[tuple[bool, bool], type[_MarkedReader]] = {}
+_PROXY_TYPES: dict[tuple[type | None, bool], type[_MarkedReader]] = {}
 
 
 def _proxy_type(stream: object) -> type[_MarkedReader]:
     kind = type(stream)
-    shape = (hasattr(kind, "__iter__"), hasattr(kind, "__enter__") and hasattr(kind, "__exit__"))
+    iteration: type | None = None
+    if hasattr(kind, "__iter__"):
+        iteration = _MarkedIterator if hasattr(kind, "__next__") else _MarkedIteration
+    shape = (iteration, hasattr(kind, "__enter__") and hasattr(kind, "__exit__"))
     proxy = _PROXY_TYPES.get(shape)
     if proxy is None:
-        bases = (_MarkedIteration,) * shape[0] + (_ForwardedContext,) * shape[1] + (_MarkedReader,)
+        bases = ((iteration,) if iteration else ()) + (_ForwardedContext,) * shape[1] + (_MarkedReader,)
         proxy = type("_MarkedReader", bases, {"__slots__": ()}) if len(bases) > 1 else _MarkedReader
         _PROXY_TYPES[shape] = proxy
     return proxy

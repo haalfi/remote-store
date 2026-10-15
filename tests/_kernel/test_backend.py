@@ -7,6 +7,7 @@ sync kernel only.
 from __future__ import annotations
 
 import io
+import tempfile
 
 import pytest
 
@@ -18,6 +19,7 @@ from remote_store._errors import (
     InvalidPath,
     NotFound,
     PermissionDenied,
+    RemoteStoreError,
 )
 from tests._kernel._fake import FakeDenied, FakeDown, FakeStore, make_kernel
 
@@ -145,6 +147,34 @@ def test_open_atomic_refuses_a_write_after_close(protocols: tuple[str, ...], put
     with pytest.raises(ValueError, match="closed"):
         write_after_close()
     assert store.files["a"].data == b"old"
+
+
+@pytest.mark.spec("BE-021", "ASYNC-091")
+@pytest.mark.parametrize(
+    ("protocols", "put_is_atomic"),
+    [(("remove_folder",), True), (("remove_folder", "rename"), False)],
+    ids=["spool-put", "spool-rename"],
+)
+def test_a_native_error_reading_the_kernels_own_spool_is_mapped(
+    protocols: tuple[str, ...], put_is_atomic: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The spool is the kernel's, not the caller's content: its failure is a
+    # native error like any other, and must not pass the choke point verbatim.
+    run = make_kernel("sync", FakeStore(), protocols=protocols, put_is_atomic=put_is_atomic)
+
+    def failing_read(self: object, *args: object) -> bytes:
+        raise OSError(5, "EIO on the spilled spool")
+
+    monkeypatch.setattr(tempfile.SpooledTemporaryFile, "read", failing_read)
+
+    def write() -> None:
+        with run.kernel.open_atomic("k") as handle:
+            handle.write(b"abc")
+
+    with pytest.raises(RemoteStoreError, match="EIO on the spilled spool") as caught:
+        write()
+    assert caught.value.path == "k"
+    assert "k" not in run.store.files
 
 
 @pytest.mark.spec("SAW-013")

@@ -463,10 +463,12 @@ write end — the three writers and the `move`/`copy` destination — must refus
 [BE-029](#be-029-root-path), which states why a guard written as
 `if is_root(path)` is not conformant there. The source end is required only to
 refuse `is_root`. Seven of the eleven `WRITE`-capable classes meet that through
-the shared `_reject_root_as_file`, which is exactly `is_root`; the other four —
-`GraphBackend`, `MemoryBackend`, `AsyncMemoryBackend`, `SQLBlobBackend` — refuse
-the source under the **wider** predicate as a by-product of their own key
-splitters, so `move("./", dst)` raises there and not on the seven. That
+the shared `_reject_root_as_file`, which is exactly `is_root`; the other four
+refuse the source under the **wider** predicate: `GraphBackend` and
+`SQLBlobBackend` as a by-product of their own key splitters, and
+`MemoryBackend` and `AsyncMemoryBackend` by the kernel's key rule
+([BE-030](#be-030-key-rule-on-the-kernel)), so `move("./", dst)` raises there
+and not on the seven. That
 divergence is permitted: the floor is `is_root` and a backend MAY exceed it.
 
 **What an unrecognised root spelling costs on the read side, stated rather than

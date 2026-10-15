@@ -823,6 +823,14 @@ class _AsyncKernelCore:
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
         """Write atomically: ``put`` where it is atomic, else a wire temporary, else temp and rename."""
+        # The caller's own errors pass verbatim (ASYNC-091); only content a caller
+        # hands in is marked, so the kernel's own spool goes to _write_atomic.
+        return await self._write_atomic(path, _io.guard_content(content), overwrite=overwrite, metadata=metadata)
+
+    async def _write_atomic(
+        self, path: str, content: _io.Content, *, overwrite: bool, metadata: Mapping[str, str] | None
+    ) -> WriteResult:
+        """``write_atomic``'s checks and routes, over *content* as given, marked or not."""
         # Capability data, not a live operation: ahead of the closed guard and
         # the key rule, as glob's is (BE-030).
         self._require(Capability.ATOMIC_WRITE, path, "cannot write atomically")
@@ -831,7 +839,6 @@ class _AsyncKernelCore:
         self._require_metadata(metadata, key)
         target = RemotePath(key)
         await self._prepare_write(Op.WRITE_ATOMIC, key)
-        content = _io.guard_content(content)
         if self._driver.put_is_atomic:
             result = await self._put(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
         elif self._open_write is not None:

@@ -56,8 +56,8 @@ so such a cell would test the fake.
 **No Memory column.** The Memory drivers, the first real ones on the kernel,
 run in ``test_tree_results.py`` and not here, because none of this suite's
 axes reaches them past what that suite already asserts. Their tree raises only
-typed errors and never faults (the one native exception, content ``put``
-cannot read, is not a tree state), so no refusal shape can be injected and no probe can
+typed errors and never faults (the native exceptions MEM-020 names come from
+what the caller hands in, not from a tree state), so no refusal shape can be injected and no probe can
 misbehave: the refusal axis is ``none`` and the probe axis ``answers`` only.
 They are hierarchical with implicit parents and hold only what is written
 through the kernel, whose key rule refuses a backslash, so the states with a

@@ -43,7 +43,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `namespace` and `parents` as values. Both Memory drivers are
    `hierarchical` and `explicit`, so step 1 exercises one combination; the
    two-kernel fallback can be judged no earlier than the first flat driver
-   (step 2, S3).
+   (step 2, S3). *Corrected 2026-10-15: both declare `implicit`; neither
+   presents `ensure_parents`.*
 3. **Open Question 5, construction: deferred to step 3 (BUG-245).** The shape
    step 1 keeps open: the kernel's constructor takes a **built** driver,
    `DriverBackend(driver, *, reject_write_under_file_ancestor=False)` and its

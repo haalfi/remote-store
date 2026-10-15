@@ -471,9 +471,13 @@ by `write()` is not atomic as a pair. This matches all other backends.
 
 ### MEM-020: No Native Exceptions
 
-**Invariant:** Every error `MemoryBackend` itself produces is a `remote_store`
-error type. There are no native exceptions to map — no `OSError`, no
-`botocore`, no `paramiko`. Two native exceptions reach the driver from what
+**Invariant:** Every error a `MemoryBackend` operation itself produces is a
+`remote_store` error type. There are no native exceptions to map — no
+`OSError`, no `botocore`, no `paramiko`. The streams it hands out are `io`
+objects and raise the `io` protocol's own errors where that protocol does: the
+write-only file `open_atomic` yields answers `seek()` with
+`io.UnsupportedOperation`, `read()` with `NotImplementedError` and a
+non-buffer `write()` with `TypeError`. Two native exceptions reach the driver from what
 the caller hands it, and neither is the tree's: an error the caller's own
 content raises passes the choke point verbatim, still the caller's type
 (ASYNC-091); and content `put` cannot read (a `bytearray` or `memoryview`,

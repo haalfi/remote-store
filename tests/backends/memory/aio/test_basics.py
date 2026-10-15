@@ -655,7 +655,7 @@ class TestAsyncMemoryMetadataRoundTrip:
 
 
 class TestAsyncMemoryDeleteFolderEdgeCases:
-    """Cover delete_folder parent-not-found branches (lines 256-258)."""
+    """Cover delete_folder parent-not-found branches."""
 
     @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_parent_not_found_raises(self) -> None:
@@ -748,11 +748,11 @@ class TestAsyncMemoryCopyEdgeCases:
 
 
 class TestAsyncMemoryTraverseEdgeCases:
-    """Cover _traverse non-dir intermediate node and _ensure_parents file conflict."""
+    """Cover a listing through a file and ``_ensure_parents``' file conflict."""
 
     @pytest.mark.spec("ASYNC-014")
     async def test_list_files_through_file_returns_empty(self) -> None:
-        # _traverse returns None when a file is encountered mid-path
+        # A listing whose prefix runs through a file lists nothing
         backend = AsyncMemoryBackend()
         await backend.write("a.txt", b"data")
         files = [f async for f in backend.list_files("a.txt/deep")]
@@ -772,7 +772,7 @@ class TestAsyncMemoryListFilesDepthFilter:
 
     @pytest.mark.spec("ASYNC-014")
     async def test_list_files_max_depth_prunes_deep_directories(self) -> None:
-        # At depth >= max_depth a subdirectory is skipped (line 694 hit)
+        # At depth >= max_depth a subdirectory is skipped
         backend = AsyncMemoryBackend()
         await backend.write("a/b/shallow.txt", b"x")
         await backend.write("a/b/c/deep.txt", b"x")

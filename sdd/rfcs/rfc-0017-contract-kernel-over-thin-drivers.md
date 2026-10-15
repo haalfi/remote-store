@@ -959,7 +959,9 @@ and its answer keeps `classify`.
    the fallback if the branches outgrow the guards `_flat_ns` already
    carries. **Answered (BK-389 planning):** step 1 builds to the flags. Both
    Memory drivers are `hierarchical` and `explicit`, so the fallback can be
-   judged no earlier than the first flat driver, at step 2.
+   judged no earlier than the first flat driver, at step 2. *Corrected
+   2026-10-15 (BK-394): both declare `implicit` parents and present no
+   `ensure_parents`, so step 1 exercised (hierarchical, implicit).*
 4. **Which spec contradictions the kernel must adjudicate first.** BUG-240 is
    one; the kernel encodes one answer per clause and cannot land on a clause
    the specs still dispute. **Answered (BK-387):** BUG-240 is the one

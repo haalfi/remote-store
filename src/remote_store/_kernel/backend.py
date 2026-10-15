@@ -241,7 +241,9 @@ class _SpoolThenWrite:
         try:
             if exc is None:
                 spool.seek(0)
-                self._core.write_atomic(self._key, spool, overwrite=self._overwrite)
+                # The spool is the kernel's own, not the caller's content, so it is
+                # not marked: its failure is a native error the choke point maps.
+                self._core._write_atomic(self._key, spool, overwrite=self._overwrite, metadata=None)
         finally:
             with contextlib.suppress(Exception):
                 spool.close()

@@ -116,3 +116,25 @@ def test_a_backslash_key_is_refused_and_touches_nothing(runtime: str, key: str, 
     listed = _run(backend.list_files("", recursive=True))
     assert sorted(str(f.path) for f in listed) == ["src"]
     assert _run(backend.read_bytes("src")) == b"s"
+
+
+def _open_atomic_and_write(backend: MemoryBackend, key: str) -> None:
+    with backend.open_atomic(key) as handle:
+        handle.write(b"x")
+
+
+@pytest.mark.spec("BE-030", "MEM-DS-005")
+@pytest.mark.parametrize("key", _BACKSLASH)
+@pytest.mark.parametrize(
+    "call",
+    [_open_atomic_and_write, lambda b, k: b.read_seekable(k)],
+    ids=["open_atomic", "read_seekable"],
+)
+def test_a_backslash_key_is_refused_on_the_sync_only_members(key: str, call: Any) -> None:
+    # open_atomic and read_seekable take their own key paths, and only the sync
+    # class has them.
+    backend = MemoryBackend()
+    backend.write("src", b"s")
+    with pytest.raises(InvalidPath):
+        call(backend, key)
+    assert sorted(str(f.path) for f in backend.list_files("", recursive=True)) == ["src"]

@@ -516,6 +516,28 @@ class TestMemoryCapabilityOverride:
         with pytest.raises(ValueError, match="GLOB"):
             Overclaim()
 
+    @pytest.mark.spec("MEM-003")
+    def test_a_capability_construction_does_not_gate_is_taken_as_declared(self) -> None:
+        # Only COPY, MOVE, ATOMIC_MOVE, ATOMIC_WRITE and GLOB need a backer.
+        class WithLazyRead(MemoryBackend):
+            CAPABILITIES = CapabilitySet({*MemoryBackend.CAPABILITIES, Capability.LAZY_READ})
+
+        assert WithLazyRead().capabilities.supports(Capability.LAZY_READ)
+
+    @pytest.mark.spec("MEM-003")
+    def test_a_capabilities_property_override_never_reaches_construction(self) -> None:
+        # The override is read after construction checked the driver's set, so an
+        # overclaim builds and fails at the call instead.
+        class PropertyGlob(MemoryBackend):
+            @property
+            def capabilities(self) -> CapabilitySet:
+                return CapabilitySet({*MemoryBackend.CAPABILITIES, Capability.GLOB})
+
+        backend = PropertyGlob()
+        assert backend.capabilities.supports(Capability.GLOB)
+        with pytest.raises(CapabilityNotSupported):
+            list(backend.glob("*"))
+
 
 class TestMemoryRegistration:
     """MEM-005: the 'memory' backend type is registered unconditionally."""
