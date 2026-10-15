@@ -96,103 +96,262 @@ orient:
       independently of the RFC, on today's SFTPBackend, not on the kernel.
 # PR #1055's block (the planning PR, merged as c4466b05c) is in master's history:
 # git show c4466b05c:sdd/traces/bk-389-kernel-step-1.yml
+# PR #1056's block (the planning follow-up, merged as d74445c04) is in master's
+# history too: git show d74445c04:sdd/traces/bk-389-kernel-step-1.yml
 review:
-  # Derived by `hatch run ship-report 1056 --trace-block-only` at head 679c1af.
+  # Derived by `hatch run ship-report 1127 --trace-block-only` at head c0dfd8f.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
-  derivation: "hatch run ship-report 1056 --trace-block-only"
-  pr: 1056
-  review_rounds: 10
-  submissions: 10
-  findings: 44
+  derivation: "hatch run ship-report 1127 --trace-block-only"
+  pr: 1127
+  review_rounds: 23
+  submissions: 17
+  findings: 139
   by_round:
     - round: 1
-      findings: 3
-      origin: {original: 3}
-      triage: {must-fix: 3}
-      duration_hours: 0.23
-    - round: 2
-      findings: 2
-      origin: {loop-introduced: 2}
-      triage: {must-fix: 2}
-      duration_hours: 0.22
-    - round: 3
-      findings: 6
-      origin: {loop-introduced: 3, original: 1, pre-existing: 1, unclassifiable-file: 1}
-      triage: {must-fix: 6}
-      duration_hours: 0.28
-    - round: 4
       findings: 8
-      origin: {loop-introduced: 5, original: 2, pre-existing: 1}
+      origin: {original: 8}
       triage: {must-fix: 8}
-      duration_hours: 0.29
-    - round: 5
-      findings: 5
-      origin: {loop-introduced: 4, original: 1}
-      triage: {must-fix: 5}
-      duration_hours: 0.25
-    - round: 6
-      findings: 3
-      origin: {loop-introduced: 3}
-      triage: {must-fix: 3}
-      duration_hours: 0.32
-    - round: 7
-      findings: 4
-      origin: {loop-introduced: 3, unclassifiable-file: 1}
-      triage: {must-fix: 4}
-      duration_hours: 0.26
-    - round: 8
-      findings: 4
-      origin: {loop-introduced: 4}
-      triage: {must-fix: 4}
-      duration_hours: 0.34
-    - round: 9
-      findings: 4
-      origin: {loop-introduced: 4}
-      triage: {filed: 1, must-fix: 1, refuted: 1, unknown: 1}
-      duration_hours: 0.25
-    - round: 10
-      findings: 5
-      origin: {loop-introduced: 5}
-      triage: {must-fix: 5}
-      duration_hours: 0.44
-  by_file:
-    - path: "sdd/backlog/bk-389-kernel-step-1-memory.md"
-      findings: 26
-    - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+      duration_hours: 0.35
+    - round: 2
       findings: 7
-    - path: "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
+      origin: {loop-introduced: 1, original: 6}
+      triage: {must-fix: 7}
+      duration_hours: 0.34
+    - round: 3
+      findings: 11
+      origin: {loop-introduced: 6, original: 5}
+      triage: {must-fix: 11}
+      duration_hours: 12.83
+    - round: 4
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.15
+    - round: 5
+      findings: 7
+      origin: {loop-introduced: 2, original: 5}
+      triage: {must-fix: 7}
+      duration_hours: 0.83
+    - round: 6
       findings: 6
-    - path: "sdd/BACKLOG.md"
+      origin: {loop-introduced: 3, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 6}
+      duration_hours: 0.31
+    - round: 7
+      findings: 7
+      origin: {loop-introduced: 3, original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.18
+    - round: 8
+      findings: 8
+      origin: {loop-introduced: 5, original: 1, unclassifiable-file: 2}
+      triage: {must-fix: 8}
+      duration_hours: 2.69
+    - round: 9
+      findings: 10
+      origin: {loop-introduced: 5, original: 5}
+      triage: {must-fix: 10}
+      duration_hours: 0.35
+    - round: 10
+      findings: 11
+      origin: {loop-introduced: 9, original: 2}
+      triage: {must-fix: 11}
+      duration_hours: 1.78
+    - round: 11
+      findings: 19
+      origin: {original: 19}
+      triage: {refuted: 19}
+      duration_hours: 0.22
+    - round: 12
+      findings: 7
+      origin: {loop-introduced: 7}
+      triage: {must-fix: 7}
+      duration_hours: 0.92
+    - round: 13
+      findings: 7
+      origin: {loop-introduced: 3, original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.34
+    - round: 14
+      findings: 11
+      origin: {loop-introduced: 6, original: 2, unclassifiable-file: 3}
+      triage: {must-fix: 11}
+      duration_hours: 70.46
+    - round: 15
+      findings: 10
+      origin: {loop-introduced: 9, original: 1}
+      triage: {must-fix: 9, unknown: 1}
+      duration_hours: 0.32
+    - round: 16
       findings: 3
-    - path: "sdd/backlog/id-264-kernel-delete-folder-sequence.md"
+      origin: {loop-introduced: 2, unclassifiable-file: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.81
+    - round: 17
+      findings: 6
+      origin: {loop-introduced: 4, original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 6}
+      duration_hours: 0.27
+  by_file:
+    - path: "src/remote_store/_kernel/_async/kernel.py"
+      findings: 45
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 25
+    - path: "src/remote_store/_kernel/_async/driver.py"
+      findings: 17
+    - path: "sdd/backlog/bk-389-kernel-step-1-memory.md"
+      findings: 14
+    - path: "src/remote_store/_kernel/_sync/driver.py"
+      findings: 7
+    - path: "tests/_kernel/test_condition_space.py"
+      findings: 6
+    - path: "src/remote_store/_kernel/backend.py"
+      findings: 4
+    - path: "sdd/traces/bk-389-kernel-step-1.yml"
+      findings: 3
+    - path: "sdd/BACKLOG.md"
       findings: 2
+    - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+      findings: 2
+    - path: "src/remote_store/_kernel/__init__.py"
+      findings: 2
+    - path: "tests/_kernel/_fake.py"
+      findings: 2
+    - path: "tests/_kernel/test_delete_folder.py"
+      findings: 2
+    - path: "tests/_kernel/test_encoding_observations.py"
+      findings: 2
+    - path: "tests/_kernel/test_kernel.py"
+      findings: 2
+    - path: "pyproject.toml"
+      findings: 1
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "tests/_kernel/test_backend.py"
+      findings: 1
+    - path: "tests/backends/conformance/test_health_probe_declared.py"
+      findings: 1
   untouched_files:
-    - "sdd/backlog/bk-390-rfc-0017-spec-amendments.md"
-    - "sdd/backlog/bk-395-kernel-key-rule-addressing.md"
-    - "sdd/backlog/bk-396-kernel-delete-folder-sequence.md"
-    - "sdd/traces/bk-389-kernel-step-1.yml"
+    - ".claude/hooks/session-init.sh"
+    - ".github/workflows/ci.yml"
+    - ".gitignore"
+    - "CHANGELOG.md"
+    - "README.md"
+    - "scripts/alloy.Dockerfile"
+    - "scripts/alloy_check.sh"
+    - "scripts/check_formal_trace.py"
+    - "scripts/dafny_verify.sh"
+    - "scripts/gen_sync_kernel.py"
+    - "scripts/lean.Dockerfile"
+    - "scripts/lean_check.sh"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/161fd42b-6d1f-4889-be67-61ba9eea371b.jsonl"
+    - "sdd/decisions/3288309c-08e5-4f79-a209-8f9d7fca793f.jsonl"
+    - "sdd/decisions/7246c534-758c-483d-bc50-654ef7f109db.jsonl"
+    - "sdd/decisions/752328a5-d7ca-4f46-80e1-ed02fa74508b.jsonl"
+    - "sdd/decisions/76a5c608-6e68-4795-9152-690035aed9eb.jsonl"
+    - "sdd/decisions/85069900-d40e-495f-8e6a-7fc1a8675c1f.jsonl"
+    - "sdd/decisions/928fc3d9-dfbb-4d87-b779-7281d8006272.jsonl"
+    - "sdd/decisions/a43a478b-6ba7-4978-89f5-773056c9d7c7.jsonl"
+    - "sdd/decisions/c1456b6c-59b4-45b2-8351-987c86d00f19.jsonl"
+    - "sdd/decisions/df48024d-396f-4f91-92d7-1d6657c34286.jsonl"
+    - "sdd/decisions/df94f14f-fa1a-431e-8206-f5ff691f68c7.jsonl"
+    - "sdd/decisions/e400c054-34a8-4b6a-9223-19ba7df58e5c.jsonl"
+    - "sdd/decisions/e9a3d98a-a1ac-43b5-82f4-24b8e7dc52fc.jsonl"
+    - "sdd/decisions/ee95990a-1fef-4e4e-b42e-faa515b89ff0.jsonl"
+    - "sdd/decisions/ef396977-f51e-463e-bfc3-d413be64ea17.jsonl"
+    - "sdd/decisions/f92d302b-65de-499e-a0e5-c20c79ca2391.jsonl"
+    - "sdd/decisions/f9bf6c85-56f9-4b02-be3a-7d6217885009.jsonl"
+    - "sdd/formal/README.md"
+    - "sdd/formal/StoreTree.dfy"
+    - "sdd/formal/alloy/StoreAxioms.als"
+    - "sdd/formal/lean/StoreAxioms.lean"
+    - "sdd/formal/lean/lake-manifest.json"
+    - "sdd/formal/lean/lakefile.toml"
+    - "sdd/formal/lean/lean-toolchain"
+    - "sdd/formal/tex/.gitignore"
+    - "sdd/formal/tex/README.md"
+    - "sdd/formal/tex/store-axioms.pdf"
+    - "sdd/formal/tex/store-axioms.tex"
+    - "sdd/process-budget.json"
+    - "sdd/research/research-store-model-axioms.md"
+    - "sdd/rfcs/rfc-0021-key-resolution-model.md"
+    - "sdd/specs/051-store-tree.md"
+    - "sdd/traces/bk-432-key-resolution-rfc.yml"
+    - "sdd/traces/bk-435-alloy-store-model.yml"
+    - "sdd/traces/bk-435-lean-store-model.yml"
+    - "sdd/traces/bk-435-open-questions.yml"
+    - "sdd/traces/bk-435-store-model-axioms.yml"
+    - "sdd/traces/bk-435-store-tree-spec.yml"
+    - "sdd/traces/bk-435-storetree-tie.yml"
+    - "sdd/traces/bk-435-tex-exposition.yml"
+    - "sdd/traces/bk-437-formal-restatement-tags.yml"
+    - "src/remote_store/_kernel/_aggregate.py"
+    - "src/remote_store/_kernel/_async/__init__.py"
+    - "src/remote_store/_kernel/_async/_io.py"
+    - "src/remote_store/_kernel/_keys.py"
+    - "src/remote_store/_kernel/_model.py"
+    - "src/remote_store/_kernel/_sync/__init__.py"
+    - "src/remote_store/_kernel/_sync/_io.py"
+    - "src/remote_store/_kernel/_sync/kernel.py"
+    - "src/remote_store/_kernel/aio_backend.py"
+    - "tests/_kernel/__init__.py"
+    - "tests/_kernel/_cells.py"
+    - "tests/_kernel/test_tree_results.py"
+    - "tests/scripts/test_check_formal_trace.py"
+    - "tests/scripts/test_gen_sync_kernel.py"
+    - "tests/test_store_tree.py"
   review_driven_commits:
-    - sha: "a20d5ad"
-      subject: "BK-389: Round 1 fixes: remove_folder answers every key state, step 5 inverts both pins"
-    - sha: "4288216"
-      subject: "BK-389: Round 2 fixes: kernel types an untyped remove_folder refusal, MEM-014 has no root rule"
-    - sha: "d011658"
-      subject: "BK-389: Round 3 fixes: decision 8's error path as a table, one owner per clause"
-    - sha: "0db2a88"
-      subject: "BK-389: Round 4 fixes: Local's real rmdir classifier, delete_folder without the protocol, spec scope"
-    - sha: "29190b9"
-      subject: "BK-389: Round 5 fixes: SupportsRemoveFolder required with folder objects, raising probes, amendment lists"
-    - sha: "9becae7"
-      subject: "BK-389: Verification fixes: recursive delete_folder for parents none, migrating classes cited"
-    - sha: "14236cf"
-      subject: "BK-389: The parents none delete_folder path as a list-first table"
-    - sha: "40151bc"
-      subject: "BK-389: Round 8 fixes: delete_tree refusals get the stat probe only, BE-021's fail-open split"
-    - sha: "1185682"
-      subject: "BK-389, ID-264: Split the delete_folder sequence out of decision 8"
-    - sha: "679c1af"
-      subject: "BK-389, BK-396: Round 10 fixes: ID-264 renamed BK-396, round range 1 to 9, candidate relabelled as condensed"
+    - sha: "7f10696"
+      subject: "BK-389: Round 1 fixes: unasync in the dev extra, no _io import cycle, omitted keys on the none walk, write_atomic by rename"
+    - sha: "5aef21b"
+      subject: "BK-389: Round 2 fixes: glob's call and iteration ends mapped, typed errors never re-typed, is_fatal, BE-031 against the formal model"
+    - sha: "30e1b02"
+      subject: "BK-389: Round 3 fixes: flat folder probe, destination errors name the destination, means before parents, close posture tied"
+    - sha: "1195b42"
+      subject: "BK-389: Round 4 fix: a file-ancestor refusal at the destination names the destination"
+    - sha: "8ba50e2"
+      subject: "BK-389: Round 5 fixes: declared capabilities gate, metadata strict gate, first-page bound in delete_folder, empty folder fails closed"
+    - sha: "09a661f"
+      subject: "BK-389: Round 6 fixes: flat write targets keep BE-008's exemption, ATOMIC_WRITE gate ranks first"
+    - sha: "b9351b5"
+      subject: "BK-389: decision log"
+    - sha: "f454037"
+      subject: "BK-389: Round 7 fixes against the enumerated condition space"
+    - sha: "c6d01ea"
+      subject: "BK-389: Round 8 fixes: a file above a write target typed by the kernel, the driver refusal obligations stated"
+    - sha: "7e20b25"
+      subject: "BK-389: Round 9 fixes: a listing typed by the kernel, explicit parents need ensure_parents, overwrite never AlreadyExists"
+    - sha: "72ae8f9"
+      subject: "BK-389: decision log"
+    - sha: "936f7f0"
+      subject: "BK-389: Re-plan after round 10: one key-state classifier, one generated oracle"
+    - sha: "07795b9"
+      subject: "Merge remote-tracking branch 'origin/master' into bk-389-kernel"
+    - sha: "a630ef5"
+      subject: "BK-389: Round 11 fixes: a flat folder probe's NotFound is an empty listing, the probe's refusal crossed"
+    - sha: "bc03b75"
+      subject: "BK-432: RFC-0021, the store is a tree and each backend encodes it (#1130)"
+    - sha: "a902296"
+      subject: "Merge remote-tracking branch 'origin/master' into bk-389-kernel"
+    - sha: "419b055"
+      subject: "BK-389: Resume against RFC-0021: land Appendix A as BE-032 and re-derive the kernel from it"
+    - sha: "626b052"
+      subject: "Merge remote-tracking branch 'origin/master' into bk-389-kernel"
+    - sha: "418fc3a"
+      subject: "BK-389: Closing-round fixes: a walk propagates a later page of the key, a transfer probes the destination only past an item source, one stat for a flat aggregate"
+    - sha: "a0db936"
+      subject: "Merge remote-tracking branch 'origin/master' into bk-389-kernel"
+    - sha: "8e5f78c"
+      subject: "BK-389: Second closing-round fixes: kernel lines under BE-018/019 per namespace, the folder_stats obligation, restored spec marker, dated dossier sections marked"
+    - sha: "92d5ebc"
+      subject: "BK-389: Third closing-round fixes: the kernel package names BE-032, stale exemption comment replaced, decision 8 marker complete"
+    - sha: "c0dfd8f"
+      subject: "BK-389: Fourth closing-round fixes: a flat aggregate typed by its own listing, BE-032 cited everywhere, stale planning claims marked"
   ci: {verdict: GREEN, failed: 0, pending: 0}
 phases:
   - id: orient
@@ -710,3 +869,7 @@ phases:
         section: "get_folder_info's empty-aggregate typing; the module opening"
         read_type: verify
         extract: "the fourth closing round over 92d5ebc found no correctness defect; one real extra list_page on the flat listing route (the aggregation listing already answers it, now used, pinned by the cell seen failing first) and five more pointer siblings the earlier passes had not reached"
+      - file: tmp/ship-report-1127.md
+        section: "the stop rule at c0dfd8f"
+        read_type: gate
+        extract: "four closing rounds after the resume found 11, 10, 5 and 6 must-fix (correctness 2, 0, 0, 0; the last two measuring members clean); the maintainer waived the final zero-must-fix round over c0dfd8f (decision log 3288309c, dialog Close) and closed with CI green, 32 pass and 1 skipped"
