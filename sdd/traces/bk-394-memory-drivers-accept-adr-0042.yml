@@ -10,6 +10,7 @@ source_items:
   - BK-394
 audience:
   - library.maintainer
+  - user.api
   - user.api_docs
   - contributor.process
 expected_ripples:

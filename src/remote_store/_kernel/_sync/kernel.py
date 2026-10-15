@@ -234,7 +234,9 @@ class _Choke:
     driver's ``classify``. ``path``, ``backend`` and a blank message are then
     filled, and an absent container reads as an absent path where the
     kernel decides it. A ``BaseException`` that is not an ``Exception``
-    passes untouched. The end of an iteration does not: raised by a driver
+    passes untouched, and so does an error the caller's own content raised
+    (``_io.guard_content`` marks it): it is not a wire error, so it is
+    neither classified nor filled. The end of an iteration does not: raised by a driver
     call it is a native error like any other, so the one iteration step
     that may end on it (``glob``'s) catches it inside the block.
     """

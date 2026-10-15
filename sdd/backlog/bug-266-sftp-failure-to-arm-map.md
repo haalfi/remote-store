@@ -35,4 +35,4 @@ work.
 three rounds refuting one condition means enumerate the space rather than
 restate it a fourth time.
 
-**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. lands with step 6, where SFTP's arms become its driver's `classify` and its connection tiers a `Session`.
+**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. Placement: lands with step 6, where SFTP's arms become its driver's `classify` and its connection tiers a `Session`.

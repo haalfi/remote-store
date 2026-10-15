@@ -57,16 +57,18 @@ def _mark(exc: BaseException) -> None:
 
 
 #: The stream's reads, each forwarded with its failures marked.
-_READS = frozenset({"read", "read1", "readinto", "readline", "readlines"})
+_READS = frozenset({"read", "read1", "readall", "readinto", "readinto1", "readline", "readlines", "peek"})
 
 
 class _MarkedReader:
     """The caller's stream, with whatever its reads raise marked as the caller's.
 
-    Every attribute is the stream's own, so one the stream lacks is absent here
-    too; a read among them is forwarded with its failures marked. It is a proxy,
-    not an ``io.IOBase``: iteration and ``with`` are present when the stream's
-    type supports them (``_proxy_type``), since Python looks those up on the type.
+    Every ordinary attribute is the stream's own, so one the stream lacks is
+    absent here too; a read among them is forwarded with its failures marked. It
+    is a proxy, not an ``io.IOBase``: Python looks special methods up on the
+    type, so none is forwarded (``hasattr`` would answer for an operation that
+    fails), and iteration and ``with`` are present only when the stream's type
+    supports them (``_proxy_type``).
     """
 
     __slots__ = ("_stream",)
@@ -75,6 +77,8 @@ class _MarkedReader:
         self._stream = stream
 
     def __getattr__(self, name: str) -> object:
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(name)
         attr = getattr(self._stream, name)
         if name not in _READS:
             return attr

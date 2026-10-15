@@ -52,4 +52,4 @@ removal has not landed, which weakens "a year before the removal lands". The
 s3fs figures (1 failed, 272 passed, 16 errors) need a floor install and were
 not re-run. Found by the ADR-0040 § 5 conversion.
 
-**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. the s3fs floor retires with the s3fs lane at step 2; the paramiko floor stays here and is re-checked at step 6.
+**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. Placement: the s3fs floor retires with the s3fs lane at step 2; the paramiko floor stays here and is re-checked at step 6.

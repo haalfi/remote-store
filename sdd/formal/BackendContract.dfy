@@ -340,7 +340,8 @@ ghost predicate WellFormedPath(s: string)
 // WellFormedPath above, stated separately because the two answer different
 // questions: WellFormedPath bounds what a caller passes, Canonical what a
 // store may hold and still show.  Not modelled: Python compares code points
-// and Dafny chars, which agree on the five ASCII characters tested here;
+// and Dafny chars, which agree on the four ASCII characters tested here
+// ('\0', '\\', '/' and '.');
 // entries a listing omits for a reason other than the key rule (BE-032
 // A.3's key below a listed item on a flat namespace) and keys a concurrent
 // writer adds mid-walk, which lie outside this sequential model.

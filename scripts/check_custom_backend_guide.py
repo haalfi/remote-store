@@ -39,11 +39,12 @@ snippet regions.
 
 Known scope limits, on purpose: only the sync protocols are gated (the
 async twins are generated from the same source, and the guide names their
-one difference in prose); the attributes table is membership-checked only,
+differences in prose); the attributes table is membership-checked only,
 since an attribute has no parameters; the optional attributes are a
 hand-kept set, checked only for still being named in ``Driver``'s
-docstring; an optional protocol's extra attribute (``rename_replaces``) is
-not gated; and parameter comparison is by NAME only (kinds and defaults
+docstring; the protocols table does not gate an optional protocol's extra
+attribute (``rename_replaces``), whose required value the capability table
+gates; and parameter comparison is by NAME only (kinds and defaults
 are covered by the executable guard).
 
 Wired into ``hatch run lint`` and ``hatch run docs-gate``.
@@ -244,24 +245,16 @@ _CAPABILITY_HEADER = "| Capability | Backed by |"
 BACKER_NAME = re.compile(r"\b(Supports[A-Za-z]+|put_is_atomic)\b")
 
 
-def _construction_backers() -> dict[str, set[str]]:
-    """``{capability: what backs it}``, measured by asking the kernel's construction check.
+def _construction_terms() -> dict[str, dict[str, str | None]]:
+    """``{capability: {backer: the qualifier construction needs, or None}}``, measured by asking construction.
 
     A bare driver declaring one capability and presenting nothing optional is
     built for every capability; each one construction refuses is gated, and is
     backed by every ``Supports*`` protocol (or ``put_is_atomic``) that, added
-    alone, makes construction accept it, with or without the setting
-    ``_construction_terms`` names for it.
-    """
-    return {capability: set(backers) for capability, backers in _construction_terms().items()}
-
-
-def _construction_terms() -> dict[str, dict[str, str | None]]:
-    """``{capability: {backer: the qualifier construction needs, or None}}``.
-
-    A backer's qualifier is the setting it backs the capability only with:
-    ``put_is_atomic = True`` for the attribute, and ``rename_replaces = True``
-    for a rename that construction refuses when it does not replace.
+    alone, makes construction accept it. A backer's qualifier is the setting it
+    backs the capability only with: ``put_is_atomic = True`` for the attribute,
+    and ``rename_replaces = True`` for a rename that construction refuses when
+    it does not replace (a rename is probed both ways).
     """
     from remote_store import drivers
     from remote_store._capabilities import Capability, CapabilitySet

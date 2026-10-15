@@ -52,18 +52,20 @@ def test_the_guarded_stream_offers_only_what_the_callers_stream_offers(name: str
 
 
 @pytest.mark.spec("ASYNC-091")
-@pytest.mark.parametrize("name", ["read", "read1", "readinto", "readline", "readlines", "__next__"])
+@pytest.mark.parametrize(
+    "name", ["read", "read1", "readinto", "readinto1", "readline", "readlines", "readall", "peek", "__next__"]
+)
 def test_every_read_the_guarded_stream_forwards_marks_the_callers_error(name: str) -> None:
     # Whichever read a driver uses, a failure of the caller's stream is the caller's.
     class _Failing(io.BytesIO):
         def _fail(self, *args: object) -> bytes:
             raise _CallerStreamError("disk full")
 
-        read = read1 = readinto = readline = readlines = __next__ = _fail  # type: ignore[assignment]
+        read = read1 = readinto = readinto1 = readline = readlines = readall = peek = __next__ = _fail  # type: ignore[assignment]
 
     guarded = sync_io.guard_content(_Failing(b"x"))
     call = (lambda: next(iter(guarded))) if name == "__next__" else getattr(guarded, name)
-    args = (bytearray(4),) if name == "readinto" else ()
+    args = (bytearray(4),) if name in ("readinto", "readinto1") else ()
     with pytest.raises(_CallerStreamError) as caught:
         call(*args)
     assert sync_io.from_content(caught.value)
@@ -82,6 +84,26 @@ def test_every_other_attribute_is_the_streams_own() -> None:
     assert guarded.read() == b"abcdef"
     assert guarded.name == "caller.bin"
     assert guarded.getvalue() == b"abcdef"  # type: ignore[attr-defined]
+
+
+@pytest.mark.spec("ASYNC-091")
+@pytest.mark.parametrize("name", ["__next__", "__len__", "__getitem__", "__contains__"])
+def test_the_guarded_stream_offers_no_special_method_it_cannot_serve(name: str) -> None:
+    # Python looks special methods up on the type, so one reached through
+    # __getattr__ would answer hasattr() while the operation itself fails; a
+    # client probing hasattr(o, "__len__") (requests' super_len) would then break.
+    class _Rich(io.BytesIO):
+        def __len__(self) -> int:
+            return 1
+
+        def __getitem__(self, index: int) -> int:
+            return 0
+
+        def __contains__(self, item: object) -> bool:
+            return False
+
+    guarded = sync_io.guard_content(_Rich(b"x"))
+    assert not hasattr(guarded, name)
 
 
 @pytest.mark.spec("ASYNC-091")

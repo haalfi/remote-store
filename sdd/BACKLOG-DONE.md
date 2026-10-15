@@ -299,7 +299,7 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
-  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
+  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api, user.api_docs, contributor.process
   `MemoryBackend` and `AsyncMemoryBackend` run on the contract kernel over
   `MemoryDriver` and `AsyncMemoryDriver`, one lock-free `MemoryTree` under
   each runtime's lock; names, imports and constructors kept. The kernel is

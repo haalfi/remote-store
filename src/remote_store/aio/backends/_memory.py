@@ -207,9 +207,10 @@ class AsyncMemoryBackend(AsyncDriverBackend):
 
     Note:
         ``LAZY_READ`` is included here but absent from ``MemoryBackend``
-        (the sync mirror). The sync backend buffers fully in memory; the
-        async backend can yield chunks incrementally. The ``mirrors``
-        graph edge between the two does not imply capability parity.
+        (the sync mirror). Both copy the whole stored value; the async read
+        is deferred to its first iteration and yields that copy as one
+        chunk. The ``mirrors`` graph edge between the two does not
+        imply capability parity.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES

@@ -395,6 +395,15 @@ class TestMain:
         assert main([str(target)]) == 1
         assert "SupportsFolderStats" in capsys.readouterr().err
 
+    def test_capability_table_drift_fails_main(self, tmp_path: Path, capsys) -> None:
+        text = _GUIDE.read_text(encoding="utf-8")
+        drifted = text.replace("| `GLOB` | `SupportsGlob` |", "| `GLOB` | nothing, the kernel globs |")
+        assert drifted != text, "guide fixture no longer contains the GLOB capability row"
+        target = tmp_path / "guide.md"
+        target.write_text(drifted, encoding="utf-8")
+        assert main([str(target)]) == 1
+        assert "capability table: 'GLOB'" in capsys.readouterr().err
+
     def test_conformance_file_drift_fails_main(self, tmp_path: Path, capsys) -> None:
         drifted = _GUIDE.read_text(encoding="utf-8").replace(
             "tests/backends/conformance/test_io.py", "tests/backends/conformance/test_vanished.py"

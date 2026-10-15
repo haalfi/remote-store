@@ -33,4 +33,4 @@ Not named above: both conda recipes also pin `aiohttp >=3.0`
 `aiohttp==3.0.0` import failure needs a floor install and was not re-run.
 Found by the ADR-0040 § 5 conversion.
 
-**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. independent of the kernel; due no later than step 4, which replaces the Azure classes.
+**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. Placement: independent of the kernel; due no later than step 4, which replaces the Azure classes.

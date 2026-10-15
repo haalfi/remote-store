@@ -56,15 +56,19 @@ paths and zero-argument constructors; their drivers are public as
   `Cannot write to the store root`, `Is a folder, not a file: k` and
   `Not found: k`. The error types are unchanged. If a test matches on the
   message text, match on the type instead, or on the new text.
-- **`native_path()` and `resolve()` normalise the key**, as they do for a valid
-  key on any driver-backed store: `native_path("./a//b")` returns `"a/b"`.
-  `resolve()` keeps your spelling in the plan's `key`.
-- **A key holding a backslash is `InvalidPath`** on every file and folder
-  operation, `exists()` and the listings included.
-- **`read()` on a `MemoryBackend` store no longer returns an `io.BytesIO`.**
-  It returns a binary stream (an `io.RawIOBase`), so `.getvalue()`,
-  `.getbuffer()` and an `isinstance(..., io.BytesIO)` check stop working. Use
-  `read_bytes()` for the whole value, or `.read()` on the stream.
+- **Called directly on the backend, `native_path()` and `resolve()` normalise
+  the key**: `backend.native_path("./a//b")` returns `"a/b"`, and `resolve()`
+  keeps your spelling in the plan's `key`. A `Store` already hands the backend
+  a normalised key, so through a `Store` nothing changes.
+- **Called directly on the backend, a key holding a backslash is
+  `InvalidPath`** on every file and folder operation, `exists()` and the
+  listings included. A `Store` turns a backslash into `/` first, so
+  `store.write("a\\b", ...)` still writes `a/b`.
+- **`read()` and `read_seekable()` on a `MemoryBackend` store no longer return
+  an `io.BytesIO`.** Each returns a binary stream (an `io.RawIOBase`), so
+  `.getvalue()`, `.getbuffer()`, `.read1()` and an `isinstance(..., io.BytesIO)`
+  check stop working. Use `read_bytes()` for the whole value, or `.read()` on
+  the stream.
 - **The file `open_atomic()` yields is write-only.** It used to be an
   `io.BytesIO`; now it answers `write()` and `tell()`, while `seek()` and
   `read()` raise and `getvalue()` does not exist. To patch a header or read
@@ -80,9 +84,11 @@ paths and zero-argument constructors; their drivers are public as
   made on the backend directly: `copy()`, `move()`, `write_atomic()`,
   `open_atomic()` and a `write()` with `metadata` raise `CapabilityNotSupported`
   when the set lacks their capability, where they used to run. Seed a narrowed
-  test double through an unnarrowed backend. Adding a capability the driver
-  cannot back (such as `GLOB`) raises `ValueError` when the backend is built,
-  rather than failing at the call.
+  test double through an unnarrowed backend. Adding to `CAPABILITIES` a
+  `COPY`, `MOVE`, `ATOMIC_MOVE`, `ATOMIC_WRITE` or `GLOB` the driver cannot back
+  (for Memory, `GLOB`) raises `ValueError` when the backend is built, rather
+  than failing at the call; a `capabilities` property override is not checked
+  this way.
 - **`open_atomic()` refuses a bad target on entry.** A folder at the key, or a
   file above it, is `InvalidPath` before the `with` body runs. It used to be
   refused on exit, so an exception the body raised came out instead.

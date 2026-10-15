@@ -41,4 +41,4 @@ the same cells. BUG-292 is the related decision one layer down — the walk fail
 open on any driver error, which is *why* the regression was silent rather than
 loud; if that closes first, this cell becomes a much stronger check.
 
-**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. binds only classes not yet on the kernel, whose flat write check is unconditional (BE-032 A.4); each flat class retires the gate at its step (S3 2, SQL 3, Azure 4), and the item closes with the last.
+**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. Placement: binds only classes not yet on the kernel, since on the kernel the flat write check is unconditional (BE-032 A.4); each flat class retires the gate at its step (S3 2, SQL 3, Azure 4), and the item closes with the last.

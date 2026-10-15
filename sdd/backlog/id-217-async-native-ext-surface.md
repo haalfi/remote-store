@@ -46,4 +46,4 @@ fifteen modules besides `__init__.py` in `src/remote_store/ext/`, and
 nothing, so the absorbed ID-218 warning is unbuilt. ADR-0025:269 still reads
 "(tracked as ID-218)". Found by the ADR-0040 § 4 conversion.
 
-**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. no step absorbs it; the kernel's async runtime changes no extension, so it stays open as framed.
+**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. Placement: no step absorbs it; the kernel's async runtime changes no extension, so it stays open as framed.
