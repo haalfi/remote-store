@@ -2,7 +2,10 @@
 """Maintain sdd/backlogid.json — max ID per prefix in BACKLOG-DONE.md.
 
 Normal mode (no flag):
-    Scans BACKLOG-DONE.md, writes sdd/backlogid.json.
+    Scans BACKLOG-DONE.md, writes sdd/backlogid.json, and prints "Updated"
+    only when the content changed ("is current" otherwise). ``--help``/``-h``
+    prints usage; any argument other than those, ``--check`` and ``--remote``,
+    spelled exactly, exits 2 before anything is written.
     Run after moving items to BACKLOG-DONE.md: hatch run gen-backlogid.
 
 Check mode (--check):
@@ -158,10 +161,10 @@ Drift-gate::
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import subprocess
-import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -472,8 +475,12 @@ def _max_numeric(ids: set[str]) -> int:
 def _generate() -> int:
     done_ids = _extract_ids(BACKLOG_DONE.read_text(encoding="utf-8"), "x")
     max_done = {p: _max_numeric(done_ids[p]) for p in _PREFIXES}
+    text = json.dumps(max_done, indent=2) + "\n"
+    if ID_FILE.is_file() and ID_FILE.read_bytes() == text.encode("utf-8"):
+        print(f"{ID_FILE.relative_to(ROOT)} is current")
+        return 0
     # newline="\n": force LF; text-mode write on Windows emits CRLF and churns the eol=lf JSON.
-    ID_FILE.write_text(json.dumps(max_done, indent=2) + "\n", encoding="utf-8", newline="\n")
+    ID_FILE.write_text(text, encoding="utf-8", newline="\n")
     print(f"Updated {ID_FILE.relative_to(ROOT)}")
     return 0
 
@@ -591,12 +598,20 @@ def _check(remote: bool = False) -> int:
 
 
 def main() -> int:
-    args = sys.argv[1:]
-    if "--remote" in args and "--check" not in args:
+    # argparse rejects what it does not know: a bare membership test let
+    # `--help` or a typo fall through to generate mode and rewrite the JSON (BUG-332).
+    parser = argparse.ArgumentParser(
+        allow_abbrev=False,  # `--che` is refused, not read as `--check`
+        description="Write sdd/backlogid.json from BACKLOG-DONE.md, or check it. Modes and rules: module docstring.",
+    )
+    parser.add_argument("--check", action="store_true", help="read-only, offline validation; writes nothing")
+    parser.add_argument("--remote", action="store_true", help="with --check: compare against pushed origin branches")
+    args = parser.parse_args()
+    if args.remote and not args.check:
         print("ERROR: --remote is a mode of --check: run gen_backlogid.py --check --remote")
         return 1
-    if "--check" in args:
-        return _check(remote="--remote" in args)
+    if args.check:
+        return _check(remote=args.remote)
     return _generate()
 
 

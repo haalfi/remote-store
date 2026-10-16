@@ -134,6 +134,60 @@ class TestGenerate:
         _mod._generate()
         assert id_file.read_text(encoding="utf-8") == first
 
+    def test_says_updated_only_when_the_file_changed(self, tmp_path, monkeypatch, capsys):
+        """BUG-332: the hook on every BACKLOG-DONE edit printed "Updated" for a no-op."""
+        done = tmp_path / "BACKLOG-DONE.md"
+        done.write_text(_DONE_BLOCK, encoding="utf-8")
+        id_file = tmp_path / "backlogid.json"
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        _mod._generate()
+        assert capsys.readouterr().out == "Updated backlogid.json\n"
+        _mod._generate()
+        assert capsys.readouterr().out == "backlogid.json is current\n"
+
+
+class TestMain:
+    """BUG-332: an argument main() did not read fell through to generate mode."""
+
+    def _sentinel(self, tmp_path, monkeypatch, *argv):
+        id_file, done = tmp_path / "backlogid.json", tmp_path / "BACKLOG-DONE.md"
+        _write_json(id_file, {"sentinel": 1})
+        done.write_text(_DONE_BLOCK, encoding="utf-8")
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(sys, "argv", ["gen_backlogid.py", *argv])
+        return id_file
+
+    def test_help_prints_usage_and_writes_nothing(self, tmp_path, monkeypatch, capsys):
+        id_file = self._sentinel(tmp_path, monkeypatch, "--help")
+        with pytest.raises(SystemExit) as exc:
+            _mod.main()
+        assert exc.value.code == 0
+        out = capsys.readouterr().out
+        assert out.startswith("usage: gen_backlogid.py")
+        assert "--check" in out
+        assert "--remote" in out
+        assert json.loads(id_file.read_text(encoding="utf-8")) == {"sentinel": 1}
+
+    # `--che` and `--rem` are unambiguous prefixes argparse would accept by default.
+    @pytest.mark.parametrize("arg", ["--chek", "check", "--che", "--rem"])
+    def test_an_unknown_argument_is_refused_and_writes_nothing(self, tmp_path, monkeypatch, capsys, arg):
+        id_file = self._sentinel(tmp_path, monkeypatch, arg)
+        with pytest.raises(SystemExit) as exc:
+            _mod.main()
+        assert exc.value.code == 2
+        assert f"unrecognized arguments: {arg}" in capsys.readouterr().err
+        assert json.loads(id_file.read_text(encoding="utf-8")) == {"sentinel": 1}
+
+    def test_no_argument_still_generates(self, tmp_path, monkeypatch):
+        id_file = self._sentinel(tmp_path, monkeypatch)
+        assert _mod.main() == 0
+        assert json.loads(id_file.read_text(encoding="utf-8"))["BK"] == 174
+
 
 # ---------------------------------------------------------------------------
 # _check (read-only validation)

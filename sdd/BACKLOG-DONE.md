@@ -298,6 +298,13 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-332 — `gen_backlogid.py --help` regenerates `sdd/backlogid.json` instead of printing usage**
+  spec: — · effort: S · audience: contributor.tooling
+  `main()` parses with argparse: `--help` prints usage and an unknown argument, a prefix
+  such as `--che` included, exits 2, both before anything is written. Generate mode prints
+  "Updated" only when the content changed and "is current" otherwise. Pinned by `TestMain` and `TestGenerate` in
+  `tests/scripts/test_gen_backlogid.py`. Trace: [bug-332](traces/bug-332-gen-backlogid-help.yml).
+
 - [x] **BK-431 — Review subagents pay the session prefix again, and no smaller reviewer input is tested**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
   Kept. `/ship`'s passes run as the `reviewer` agent unless a persona staffs
