@@ -53,9 +53,13 @@ class MemoryDriver(Driver):
 
     @property
     def counts(self) -> tuple[int, int]:
-        """The number of files and of folders the tree holds."""
-        with self._lock:
-            return self._tree.file_count, self._tree.folder_count
+        """The number of files and of folders the tree holds.
+
+        Read without the lock, which is not reentrant: ``repr`` reads these, and a
+        debugger may call it from a thread paused inside a locked step. Each count
+        changes only inside one locked step, so no read sees a torn value.
+        """
+        return self._tree.file_count, self._tree.folder_count
 
     # region: required primitives
 

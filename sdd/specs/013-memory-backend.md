@@ -255,7 +255,9 @@ No secrets to mask.
 **Implementation:** The driver's `MemoryTree` maintains two running counters
 (`file_count`, `folder_count`) incremented/decremented on mutations. The public
 class's `__repr__` reads these through the driver's `counts` in O(1) — no tree
-traversal. `AsyncMemoryBackend`'s `repr` has the same form under its own name. This avoids O(n) surprise on large trees (e.g.
+traversal — and without the driver's lock, which is not reentrant, so `repr`
+from a thread paused inside a locked step does not deadlock (pinned by
+`test_repr_does_not_wait_for_the_lock`). `AsyncMemoryBackend`'s `repr` has the same form under its own name. This avoids O(n) surprise on large trees (e.g.
 debugger tooltip triggering `repr` on a 10M-file backend).
 
 ### MEM-005: Registration
@@ -482,7 +484,9 @@ the caller hands it, and neither is the tree's: an error the caller's own
 content raises passes the choke point verbatim, still the caller's type
 (ASYNC-091); and content `put` cannot read (a `bytearray` or `memoryview`,
 outside `WritableContent`) is turned by `classify` into a base
-`RemoteStoreError` (BUG-328).
+`RemoteStoreError`, which the kernel's probe then answers from the target: a
+base `RemoteStoreError` on a free key, `AlreadyExists` on an existing file
+without `overwrite`, `InvalidPath` on a folder (BUG-328).
 
 Error conditions are detected by tree inspection:
 

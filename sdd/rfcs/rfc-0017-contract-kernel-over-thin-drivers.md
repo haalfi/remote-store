@@ -791,7 +791,10 @@ and its answer keeps `classify`.
 - **Performance:** the kernel issues the same probes the per-backend code
   issues today (one `stat` or one `list_page(limit=1)` on the error path;
   the file-ancestor walk only when opted in; `ensure_parents` only for
-  explicit parents), and the S3 driver drops the s3fs layer.
+  explicit parents), and the S3 driver drops the s3fs layer. *Corrected
+  2026-10-16 (BK-394): since RFC-0021 D4 the ancestor walk is not opt-in; a
+  flat driver pays BE-032 A.4's ancestor `stat`s and `list_page` on every
+  write (spec 003 BE-032's cost table).*
   `delete_folder`'s counts were measured per class against today
   (`sdd/rfcs/rfc-0017-delete-folder-measure.py compare trips`, wire calls
   for a call without `missing_ok`; BK-396). Memory takes one driver

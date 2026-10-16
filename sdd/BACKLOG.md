@@ -460,6 +460,14 @@ no clause of the contract ships unexercised.
   on both namespaces. The departure stands in spec 003; the model does not. Open decision:
   reorder `Write`'s guards to the gate-first order, or carve the three states out.
 
+- [ ] **BK-441 — A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing**
+  spec: BE-021, BE-030 · effort: S · audience: user.api_docs, library.maintainer
+  The guide subclasses `Driver`, as `MemoryDriver` does, and its required members have `...`
+  bodies, so an omitted `delete` reports success and an omitted `stat` makes every key
+  absent. Construction checks only the optional protocols and declarations; only mypy's
+  abstract-instantiation error catches it (PR #1144 review). Open decision: refuse at
+  construction a required member still the protocol's body (`probe` excepted), or warn.
+
 - [~] **BK-435 — Spec 051's store tree is not yet tied to the store's operations, and `StoreTree.dfy` §12 carries no `@spec` tags**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
   Spec 051 states the axioms of `research/research-store-model-axioms.md`, checked in Alloy, Lean
@@ -625,11 +633,19 @@ or paying for our shortcut.
 
 - [ ] **BUG-328 — Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through**
   spec: MEM-013, MEM-020 · effort: S · audience: user.api
-  `MemoryDriver.put` copies only `bytes` and drains anything else with `.read()`, and the
-  async driver iterates it, so `write(k, bytearray(b"x"))` fails on both classes: on
-  master as a raw `AttributeError`/`TypeError`, since BK-394 as `RemoteStoreError`
-  (measured, PR #1144). The kernel's `guard_content` and `feed` accept all three buffer
-  types. Open decision: widen `WritableContent` to the buffer types, or refuse them typed.
+  Both Memory drivers read non-`bytes` content as a stream, so `write(k, bytearray(b"x"))`
+  fails: on master as a raw `AttributeError`/`TypeError`; since BK-394 as `RemoteStoreError`
+  on a free key, but as `AlreadyExists` or `InvalidPath` when a file or folder is at the
+  target (the kernel's probe; measured, PR #1144), an answer about the target, not the
+  content. Open decision: widen `WritableContent` to the buffer types, or refuse them typed.
+
+- [ ] **BK-442 — `from remote_store.drivers import Driver` imports the whole async package and its cloud SDKs**
+  spec: — · effort: S · audience: user.api
+  `drivers.py` imports `AsyncDriverBackend` eagerly, which runs `remote_store.aio`'s
+  `__init__`: `AsyncStore`, `SyncBackendAdapter` and, when the extras are installed, the
+  Azure async and Graph backends. A sync driver author pays all of it; the sync path did
+  not before (PR #1144 review). Open decision: resolve the async names lazily with a module
+  `__getattr__`, as `remote_store.aio` does for the Memory classes, or split the module.
 
 ---
 

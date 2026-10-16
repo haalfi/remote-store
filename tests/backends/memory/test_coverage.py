@@ -482,6 +482,21 @@ class TestMemoryConstruction:
         mb.write("c.txt", b"x")  # top-level file: no intermediate folders created
         assert repr(mb) == "MemoryBackend(files=1, folders=0)"
 
+    @pytest.mark.spec("MEM-004")
+    def test_repr_does_not_wait_for_the_lock(self) -> None:
+        # A debugger evaluates repr in a thread that may be paused inside a locked
+        # step; the lock is not reentrant, so repr must not take it.
+        mb = MemoryBackend()
+        mb.write("c.txt", b"x")
+        lock = mb._driver._lock  # type: ignore[attr-defined]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            lock.acquire()
+            try:
+                shown = pool.submit(repr, mb).result(timeout=5)
+            finally:
+                lock.release()
+        assert shown == "MemoryBackend(files=1, folders=0)"
+
 
 class TestMemoryCapabilityOverride:
     """MEM-003: a subclass's ``CAPABILITIES`` is the set the store gates on, in both runtimes."""

@@ -28,6 +28,8 @@ surprising_ripples:
   - sdd/specs/022-streaming-atomic-writes.md
 discovery_followups:
   - BK-440
+  - BK-441
+  - BK-442
   - BUG-328
 co_shipped_items:
   - BK-398
