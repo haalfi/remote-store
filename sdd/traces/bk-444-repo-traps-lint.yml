@@ -137,3 +137,8 @@ phases:
         read_type: verify
         extract: "PR #1152 review round 8: rule 2 still raised on a non-UTF-8 script, and rule 3 passed an alias to a missing script; both are now reported. Rule 1's extent claim in the Drift-gate text and BACKLOG-DONE named only the sdd/decisions/ skip and now names binary and non-UTF-8 too"
         outcome: ok
+      - file: sdd/backlog/bk-444-repo-traps-lint.md
+        section: "Plan step 1 (PLE as a second driver for a subset)"
+        read_type: verify
+        extract: "PR #1152 review round 9: PLE2502 flags U+200F and U+061C, which the 21 lacked (tmp/ple_probe.py, ruff 0.15.13), so the subset premise was false; the dossier's 12 probes never tried them. Rule 1 now refuses 24, adding U+200E too; decided in this session's log"
+        outcome: misleading

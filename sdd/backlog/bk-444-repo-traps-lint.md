@@ -138,5 +138,11 @@ accepts for a single-pass script). It is wired into `lint` in `pyproject.toml`.
 - Rule 1 asks `git check-attr` which listed files are `binary` rather than reading
   `.gitattributes` itself, so nested files and `core.ignorecase` match as git applies them
   (decision in `sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl`).
+- Rule 1 refuses 24 code points: step 1's 21 plus U+061C ARABIC LETTER MARK, U+200E
+  LEFT-TO-RIGHT MARK and U+200F RIGHT-TO-LEFT MARK. Measured with ruff 0.15.13
+  (`ruff check --isolated --select PLE` on one probe per character): PLE2502 flags U+061C and
+  U+200F, so step 1's "a second driver for a subset" held only once they were added; U+200E,
+  which PLE skips, is the remaining directional mark. None occurred in the 2182 files rule 1
+  read. Decision in the same log (PR #1152 review).
 
 Step 4's rule named the same 10 aliases the substring test above did.

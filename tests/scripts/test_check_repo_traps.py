@@ -34,9 +34,10 @@ NBSP = chr(0x00A0)
 ZWSP = chr(0x200B)
 BOM = chr(0xFEFF)
 
-# The 21 code points of sdd/backlog/bk-444-repo-traps-lint.md Plan step 1.
+# The 21 code points of sdd/backlog/bk-444-repo-traps-lint.md Plan step 1, plus
+# the three directional marks its dated departure note adds (U+061C, U+200E, U+200F).
 _PLANNED_CODE_POINTS = (
-    (0x0000, 0x0008, 0x001A, 0x001B, 0x00A0, 0x200B, 0x200C, 0x200D, 0x2028, 0x2029)
+    (0x0000, 0x0008, 0x001A, 0x001B, 0x00A0, 0x061C, 0x200B, 0x200C, 0x200D, 0x200E, 0x200F, 0x2028, 0x2029)
     + tuple(range(0x202A, 0x202F))
     + (0x2060,)
     + tuple(range(0x2066, 0x206A))

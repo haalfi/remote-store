@@ -300,7 +300,7 @@ if evidence changes; these are retired.
 
 - [x] **BK-444 — Three repo traps cost sessions retries that a check would catch before commit**
   spec: — · effort: S · audience: contributor.tooling, internal.style
-  `scripts/check_repo_traps.py`, in `lint` and `docs-gate`, refuses 21 invisible code points in
+  `scripts/check_repo_traps.py`, in `lint` and `docs-gate`, refuses 24 invisible code points in
   the UTF-8 files git lists, outside `sdd/decisions/` and the paths git marks `binary`, a `write_text` under `scripts/` without an LF-writing `newline=`, and a bare hatch alias
   dropping `{args}` for a script that takes options. It fixed what it found: 3 invisible characters
   on 2 lines, 14 calls and 10 aliases. Pinned by `tests/scripts/test_check_repo_traps.py`.
