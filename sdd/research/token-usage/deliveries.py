@@ -39,7 +39,8 @@ prints for the same session and ``--until``.
   measured sessions when that round's span had already ended; a bot's is not
   counted.
 - **Passes.** Calls, first and final context, units, the context split
-  ``tokkit.py subagents`` prints, the checkout's files read whole (a ``Read``
+  ``tokkit.py subagents`` prints and the PR tokens it implies (``pr_tokens``),
+  the checkout's files read whole (a ``Read``
   with no offset or limit), and the findings it handed back: the sum of the
   ``Bug: n | Spec: n | ...`` line in its last ``SubagentHandback``, else in its
   last text. A posted round can merge duplicates or add findings no pass
@@ -189,6 +190,13 @@ def usd(calls) -> float:
     return sum(c["units"] * cm.PRICE.get(c["model"], 2.31e-6) for c in calls)
 
 
+def pr_tokens(s) -> float:
+    """Tokens of the PR's own content a pass carried: its PR share of the context summed over its calls.
+
+    Most of them are cache reads, which ``tokkit``'s units weigh at a tenth of fresh input."""
+    return s["ctx_sum"] * s["context_pct"]["pr"] / 100
+
+
 def context_split(calls, items, changed) -> dict:
     """The context classes ``tokkit.py subagents`` prints for one subagent, in percent."""
     sumctx = sum(c["ctx"] for c in calls)
@@ -316,6 +324,7 @@ def measure_part(snap: Path, part, changed, created) -> dict:
                 "final_ctx": calls[-1]["ctx"],
                 "units": sum(c["units"] for c in calls),
                 "usd": usd(calls),
+                "ctx_sum": sum(c["ctx"] for c in calls),
                 "context_pct": context_split(calls, items, changed),
                 "findings_handed_back": handback(f),
                 "read_whole": whole,
@@ -502,6 +511,7 @@ def main(argv=None) -> int:
                     "findings_handed_back": s["findings_handed_back"],
                     "read_whole": s["read_whole"],
                     "context_pct": s["context_pct"],
+                    "pr_tokens_m": m2(pr_tokens(s)),
                 }
                 for s in passes
             ],
@@ -521,6 +531,8 @@ def main(argv=None) -> int:
                 "prefix_pct_mean": round(st.mean(s["context_pct"]["prefix"] for s in passes), 1) if passes else None,
                 "process_pct_mean": round(st.mean(s["context_pct"]["process"] for s in passes), 1) if passes else None,
                 "pr_pct_mean": round(st.mean(s["context_pct"]["pr"] for s in passes), 1) if passes else None,
+                "pr_tokens_m_median": m2(st.median(pr_tokens(s) for s in passes)) if passes else None,
+                "pr_tokens_m_total": m2(sum(pr_tokens(s) for s in passes)),
             },
             "by_method": by_method(passes),
             "unassigned_passes": sum(p["unassigned_passes"] for p in parts),

@@ -12,11 +12,12 @@ Two `/ship` deliveries on the contract kernel cost 98.25 M units (BK-389) and
 Neither loop converged: every one of BK-389's 16 rounds and BK-394's 9 posted
 findings, and both closed on a maintainer's waiver. A round cost 4.5 to 5.6 M
 units, about twice run B's 2.4 M, on larger diffs and a main context that kept
-growing; the cost did not scale with the diff's file count (§ 2).
+growing; the cost did not scale with the diff's file count or its content (§ 2).
 
-1. **The loop is still where the cost is**, and on a larger diff a round costs
-   more: the review passes read more of the PR, and the main session carries
-   every fix.
+1. **The loop is still where the cost is**, and more content makes a round cost
+   more, far less than in proportion: about six times run B's changed lines
+   cost about twice its units per round, because a pass re-reads the PR mostly
+   from cache (§ 2, § 3). The main session carries every fix.
 2. **BK-431's smaller reviewer input held in every pass.** All 82 passes ran as
    `reviewer` and opened at 19.5k to 34.6k tokens, against run B's 42.9k to
    43.9k; the prefix fell from 40.6% to 16 to 32% of a pass's context. It did
@@ -64,13 +65,16 @@ Run B, re-derived with today's kit, cost 15.00 M.
 | Est. $ | 226.97 | 66.46 | 132.17 | 34.65 |
 | Session parts | 6 | 2 | 2 | 2 |
 | Files the PR changes | 91 (37 through round 12) | 56 | 94 | 21 |
+| Lines changed, added plus removed | 18,949 (9,110 through round 12) | 7,191 | 8,479 | 1,452 |
 | Orient + plan | 1.7% | 0.3% | 5.4% | 7.2% |
 | Build (to PR open) | 6.9% | 10.5% | 22.9% | 9.8% |
 | Review loop (after PR open) | 91.5% | 89.2% | 71.8% | 83.0% |
 | Largest main context | 833k | 699k | 810k | 444k |
 
 From [`units_m`, `usd_estimate`, `sessions`, `changed_files`, `phases_pct`,
-`max_main_ctx_k`] per delivery. Phases are cut as `tokkit.py report --pr` cuts
+`max_main_ctx_k`] per delivery; the lines row is `git diff --shortstat` over
+each PR's squash commit on master (`45132599a`, `bc03b75e2`, `b7deb551c`,
+`25ac75a3f`, each against its parent). Phases are cut as `tokkit.py report --pr` cuts
 them: BK-389 at call 44 (plan approval) and 161 (PR open), BK-394 at 43 and
 171, run B at 43 and 93 [`build_cuts`]. Run B's 43 is the current kit's cut;
 `report.md` § Run B gives 44 calls and 1.11 M from the kit before BK-424, here
@@ -80,9 +84,14 @@ answered dialog marks no real plan, and its first two rows mean little.
 - **#1127 contains #1130.** RFC-0021 was merged into BK-389's branch as one
   commit and landed with it, which is why #1127 changes 91 files; the two PRs'
   costs do not overlap, since each session part is counted once. Before that
-  commit, through its round 12, #1127 changed 37 files (`git diff --shortstat
-  origin/master...bc03b75e2^1`, the branch head below #1130's squash commit;
-  `changed_files` is the PR's list when measured).
+  commit, through its round 12, #1127 changed 37 files and 9,110 lines
+  (`git diff --shortstat origin/master...bc03b75e2^1`, the branch head below
+  #1130's squash commit; `changed_files` is the PR's list when measured).
+- **What #1127's content was.** Of its 18,949 changed lines, 7,906 (42%) are
+  under `sdd/`, 6,149 (32%) under `tests/`, 1,876 (10%) the generated sync
+  twin under `src/remote_store/_kernel/_sync/`, and 3,018 (16%) everything
+  else (`git diff --shortstat 45132599a~1 45132599a -- <path>` per path, the
+  rest by difference).
 - **Two session parts are not counted in any delivery.** A subagent in
   BK-389's last session opened and fixed PRs #1142 and #1143 (BUG-326,
   BUG-327) for 2.99 M, and the RFC-0021 session's resume on 2026-10-15
@@ -148,14 +157,19 @@ two findings on #1130 posted from a session outside the delivery.
   separates from re-orienting, and the third also holds the last session's
   re-derivation of the kernel against RFC-0021. Round 12 also took a 3.11 M
   subagent that was no review pass [`BK-389.rounds[].other_units_m`].
-- **A round costs more on a larger diff, but not in proportion to it.**
-  BK-389's rounds 1 to 12 reviewed at most 37 files, 1.8 times run B's 21, and
-  cost 4.07 M each without the 18.99 M of opening and subagent cost that
-  joined rounds 7, 10 and 12; its rounds 13 to 16, on 91 files and with none
-  of that cost, cost 5.30 M each; BK-394's, on 94, 4.51 M; run B's 2.43 M
-  (summed from `BK-389.rounds[]`'s `units_m`, `opening_units_m` and
-  `other_units_m`, the file counts as in § 1). With that cost left in, rounds 1
-  to 12 cost 5.66 M each. Per finding, BK-389 cost about what run B did (0.74 M
+- **A round costs more on more content, but far less than in proportion.**
+  Against run B's 1,452 changed lines and 2.43 M per round: BK-394's 8,479
+  lines (5.8 times) cost 4.51 M per round (1.9 times); BK-389's rounds 1 to 12,
+  on at most 9,110 lines (6.3 times), cost 4.07 M each (1.7 times) without the
+  18.99 M of opening and subagent cost that joined rounds 7, 10 and 12; and its
+  rounds 13 to 16, on 18,949 lines (13 times) and with none of that cost,
+  cost 5.30 M each (2.2 times). Doubling BK-389's content raised its cost per
+  round 1.3 times (summed from `BK-389.rounds[]`'s `units_m`,
+  `opening_units_m` and `other_units_m`; the lines as in § 1). With the
+  opening cost left in, rounds 1 to 12 cost 5.66 M each. RFC-0021's 7,191
+  lines cost less per round than run B's, 1.90 M, because seven of its 13
+  rounds ran one narrow pass (below): how a round reads the content counts as
+  much as how much there is. Per finding, BK-389 cost about what run B did (0.74 M
   against 0.71 M) and BK-394 a little less (0.68 M), though they drew about
   twice run B's findings per round (7.5 and 6.7 against 3.4).
 
@@ -182,10 +196,16 @@ files read whole [`passes`]; this table summarises them.
 | Context: prefix | 16.2% | 32.1% | 17.2% | 40.6% |
 | Context: process files | 7.2% | 13.6% | 7.9% | 13.0% |
 | Context: the PR | 51.6% | 21.9% | 44.2% | 19.0% |
+| PR tokens carried per pass, median | 2.95 M | 0.35 M | 3.30 M | 0.51 M |
+| PR tokens carried by all passes | 127.85 M | 8.00 M | 81.06 M | 6.40 M |
 
 From [`pass_summary`]. Files read whole are the checkout's; a spilled tool
 output or a scratch file read back is not counted. The context rows are the
-means of `tokkit.py subagents`'s split per pass. The higher first contexts, 26k to 35k, are the
+means of `tokkit.py subagents`'s split per pass. PR tokens carried are a pass's
+PR share times its context summed over its calls (`deliveries.pr_tokens`):
+5.8 and 6.5 times run B's per pass on BK-389 and BK-394, for 1.9 and 2.2 times
+its units per pass, because most of them are cache reads, which units weigh at
+a tenth of fresh input. The higher first contexts, 26k to 35k, are the
 five solo rounds run as a forked `/rvw-pr`, which loads the skill's body
 [`passes[].first_ctx`]. Neither PR edits `rvw-pr` [`edits_rvw_pr`], so no pass
 read its own instructions as a subject, the confound #1125 met.
@@ -310,7 +330,8 @@ though the maintainer judged neither must-fix
 | --- | --- | --- | --- |
 | Cap the loop at three rounds, then file or waive the rest | Rounds 4 onward held 78.55 of BK-389's 98.25 M and 29.96 of BK-394's 57.22 M, and posted 94 of 120 and 42 of 60 findings | At most those findings go unfixed: the ones a round-4-or-later fix caused would not exist. Some of the rest are real defects, and how many is not derived here | Partly supersedes ADR-0033's convergence over a round count |
 | Review only what changed since the last round, keeping one whole-file pass to exit | 66 of BK-389's 120 findings and 21 of BK-394's 60 were caused by an earlier fix in the loop (§ 2) | A fix that breaks code it did not touch waits for the exit pass | ADR-0037's whole-file exit gate stays, or the risk has no bound |
-| Split a large PR, and settle concept work before the build | Run B's rounds cost 2.43 M on 21 files against 4.51 to 5.57 M; the RFC-0021 detour cost 28.77 M mid-loop | More PRs, each consistent on its own at every commit (principle 3) | Planning has to find the concept change, as orient is meant to |
+| Split a large PR, by kind of content too, and settle concept work before the build | Run B's rounds cost 2.43 M on 1,452 changed lines against 4.51 to 5.57 M on 8,479 to 18,949; 74% of #1127's lines were `sdd/` and tests (§ 1); the RFC-0021 detour cost 28.77 M mid-loop | More PRs, each consistent on its own at every commit (principle 3), and a spec PR merged before the code that proves it | Planning has to find the concept change, as orient is meant to |
+| Keep generated code out of review passes | 1,876 of #1127's 18,949 changed lines (10%) were the generated sync twin, which `scripts/gen_sync_kernel.py --check` gates against its source (§ 1); 29 of BK-389's 42 passes and 11 of BK-394's 20 read a twin file whole [`passes[].read_whole` under `src/remote_store/_kernel/_sync/`] | A generator defect lands unread unless a pass reviews the generator and its template | The whole-file exit gate (ADR-0037) names the generated files it exempts |
 | Choose members by the kind of PR | On BK-389 a whole-file pass handed back about five findings at a 0.82 M median, a measuring pass about two at 0.92 M (§ 3) | On prose and research PRs, measuring passes catch the figure errors that matter | Replaces the fixed panel with a choice per PR |
 | Start a fresh session every few rounds | Each of BK-389's three breaks lowered the main context (638k to 378k, 594k to 443k, 559k to 504k), but the resumes' opening calls cost 3.56 M, 5.26 M and 7.06 M, one to two rounds of 4.07 M (§ 2); the third also re-derived the kernel against RFC-0021 | Not shown to save: the resume cost is not separated from the fix it carries | — |
 

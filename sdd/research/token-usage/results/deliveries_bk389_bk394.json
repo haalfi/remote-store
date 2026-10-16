@@ -305,7 +305,8 @@
       "bash": 0.1,
       "other": 8.1,
       "unexplained": 6.5
-     }
+     },
+     "pr_tokens_m": 1.72
     },
     {
      "round": 2,
@@ -344,7 +345,8 @@
       "bash": 3.5,
       "other": 11.1,
       "unexplained": 7.3
-     }
+     },
+     "pr_tokens_m": 5.69
     },
     {
      "round": 3,
@@ -382,7 +384,8 @@
       "bash": 9.6,
       "other": 12.5,
       "unexplained": 9.4
-     }
+     },
+     "pr_tokens_m": 3.94
     },
     {
      "round": 3,
@@ -422,7 +425,8 @@
       "bash": 0.0,
       "other": 7.1,
       "unexplained": 2.8
-     }
+     },
+     "pr_tokens_m": 2.46
     },
     {
      "round": 3,
@@ -462,7 +466,8 @@
       "bash": 0.0,
       "other": 8.4,
       "unexplained": 7.7
-     }
+     },
+     "pr_tokens_m": 2.52
     },
     {
      "round": 4,
@@ -493,7 +498,8 @@
       "bash": 1.0,
       "other": 9.0,
       "unexplained": 8.1
-     }
+     },
+     "pr_tokens_m": 2.49
     },
     {
      "round": 5,
@@ -534,7 +540,8 @@
       "bash": 6.5,
       "other": 13.2,
       "unexplained": 6.0
-     }
+     },
+     "pr_tokens_m": 7.27
     },
     {
      "round": 5,
@@ -574,7 +581,8 @@
       "bash": 0.0,
       "other": 6.5,
       "unexplained": 4.1
-     }
+     },
+     "pr_tokens_m": 3.49
     },
     {
      "round": 5,
@@ -612,7 +620,8 @@
       "bash": 0.0,
       "other": 8.1,
       "unexplained": 4.9
-     }
+     },
+     "pr_tokens_m": 2.15
     },
     {
      "round": 6,
@@ -655,7 +664,8 @@
       "bash": 0.0,
       "other": 6.1,
       "unexplained": 5.4
-     }
+     },
+     "pr_tokens_m": 4.81
     },
     {
      "round": 6,
@@ -695,7 +705,8 @@
       "bash": 14.4,
       "other": 11.6,
       "unexplained": 11.3
-     }
+     },
+     "pr_tokens_m": 5.5
     },
     {
      "round": 6,
@@ -733,7 +744,8 @@
       "bash": 0.0,
       "other": 7.0,
       "unexplained": 9.0
-     }
+     },
+     "pr_tokens_m": 3.64
     },
     {
      "round": 7,
@@ -765,7 +777,8 @@
       "bash": 0.0,
       "other": 7.0,
       "unexplained": 0.7
-     }
+     },
+     "pr_tokens_m": 2.47
     },
     {
      "round": 7,
@@ -794,7 +807,8 @@
       "bash": 15.7,
       "other": 12.5,
       "unexplained": 5.2
-     }
+     },
+     "pr_tokens_m": 2.83
     },
     {
      "round": 7,
@@ -833,7 +847,8 @@
       "bash": 0.0,
       "other": 7.4,
       "unexplained": 7.7
-     }
+     },
+     "pr_tokens_m": 3.15
     },
     {
      "round": 8,
@@ -874,7 +889,8 @@
       "bash": 0.0,
       "other": 6.6,
       "unexplained": 1.5
-     }
+     },
+     "pr_tokens_m": 2.98
     },
     {
      "round": 8,
@@ -911,7 +927,8 @@
       "bash": 0.0,
       "other": 8.2,
       "unexplained": 7.5
-     }
+     },
+     "pr_tokens_m": 1.88
     },
     {
      "round": 8,
@@ -949,7 +966,8 @@
       "bash": 6.4,
       "other": 11.9,
       "unexplained": 4.2
-     }
+     },
+     "pr_tokens_m": 3.56
     },
     {
      "round": 9,
@@ -988,7 +1006,8 @@
       "bash": 5.7,
       "other": 9.5,
       "unexplained": 3.5
-     }
+     },
+     "pr_tokens_m": 3.85
     },
     {
      "round": 9,
@@ -1022,7 +1041,8 @@
       "bash": 0.0,
       "other": 8.6,
       "unexplained": 8.3
-     }
+     },
+     "pr_tokens_m": 2.11
     },
     {
      "round": 9,
@@ -1056,7 +1076,8 @@
       "bash": 9.3,
       "other": 7.8,
       "unexplained": 1.4
-     }
+     },
+     "pr_tokens_m": 2.36
     },
     {
      "round": 10,
@@ -1094,7 +1115,8 @@
       "bash": 0.0,
       "other": 7.3,
       "unexplained": 7.0
-     }
+     },
+     "pr_tokens_m": 2.64
     },
     {
      "round": 10,
@@ -1135,7 +1157,8 @@
       "bash": 0.0,
       "other": 6.7,
       "unexplained": 2.5
-     }
+     },
+     "pr_tokens_m": 3.6
     },
     {
      "round": 10,
@@ -1172,7 +1195,8 @@
       "bash": 13.0,
       "other": 9.8,
       "unexplained": -0.5
-     }
+     },
+     "pr_tokens_m": 2.75
     },
     {
      "round": 11,
@@ -1203,7 +1227,8 @@
       "bash": 1.2,
       "other": 8.4,
       "unexplained": -0.3
-     }
+     },
+     "pr_tokens_m": 1.58
     },
     {
      "round": 11,
@@ -1239,7 +1264,8 @@
       "bash": 6.5,
       "other": 9.8,
       "unexplained": 2.8
-     }
+     },
+     "pr_tokens_m": 3.86
     },
     {
      "round": 11,
@@ -1279,7 +1305,8 @@
       "bash": 0.7,
       "other": 6.2,
       "unexplained": 1.1
-     }
+     },
+     "pr_tokens_m": 3.68
     },
     {
      "round": 12,
@@ -1317,7 +1344,8 @@
       "bash": 0.0,
       "other": 7.6,
       "unexplained": 9.4
-     }
+     },
+     "pr_tokens_m": 3.29
     },
     {
      "round": 12,
@@ -1354,7 +1382,8 @@
       "bash": 6.4,
       "other": 10.3,
       "unexplained": 2.3
-     }
+     },
+     "pr_tokens_m": 3.5
     },
     {
      "round": 12,
@@ -1395,7 +1424,8 @@
       "bash": 2.6,
       "other": 6.1,
       "unexplained": 3.7
-     }
+     },
+     "pr_tokens_m": 4.16
     },
     {
      "round": 13,
@@ -1424,7 +1454,8 @@
       "bash": 0.0,
       "other": 6.0,
       "unexplained": 4.3
-     }
+     },
+     "pr_tokens_m": 4.78
     },
     {
      "round": 13,
@@ -1453,7 +1484,8 @@
       "bash": 2.6,
       "other": 9.8,
       "unexplained": 5.5
-     }
+     },
+     "pr_tokens_m": 2.58
     },
     {
      "round": 13,
@@ -1492,7 +1524,8 @@
       "bash": 0.5,
       "other": 7.2,
       "unexplained": 8.9
-     }
+     },
+     "pr_tokens_m": 3.15
     },
     {
      "round": 14,
@@ -1519,7 +1552,8 @@
       "bash": 10.9,
       "other": 6.6,
       "unexplained": 2.4
-     }
+     },
+     "pr_tokens_m": 3.3
     },
     {
      "round": 14,
@@ -1544,7 +1578,8 @@
       "bash": 21.2,
       "other": 13.5,
       "unexplained": 4.0
-     }
+     },
+     "pr_tokens_m": 1.17
     },
     {
      "round": 14,
@@ -1581,7 +1616,8 @@
       "bash": 1.2,
       "other": 7.5,
       "unexplained": 13.3
-     }
+     },
+     "pr_tokens_m": 3.36
     },
     {
      "round": 15,
@@ -1617,7 +1653,8 @@
       "bash": 0.6,
       "other": 7.6,
       "unexplained": 7.3
-     }
+     },
+     "pr_tokens_m": 2.92
     },
     {
      "round": 15,
@@ -1642,7 +1679,8 @@
       "bash": 6.0,
       "other": 8.2,
       "unexplained": 1.7
-     }
+     },
+     "pr_tokens_m": 2.47
     },
     {
      "round": 15,
@@ -1667,7 +1705,8 @@
       "bash": 21.6,
       "other": 11.6,
       "unexplained": 4.0
-     }
+     },
+     "pr_tokens_m": 0.22
     },
     {
      "round": 16,
@@ -1701,7 +1740,8 @@
       "bash": 1.9,
       "other": 9.9,
       "unexplained": 6.0
-     }
+     },
+     "pr_tokens_m": 1.8
     },
     {
      "round": 16,
@@ -1727,7 +1767,8 @@
       "bash": 2.5,
       "other": 9.0,
       "unexplained": 0.2
-     }
+     },
+     "pr_tokens_m": 1.9
     },
     {
      "round": 16,
@@ -1752,7 +1793,8 @@
       "bash": 8.7,
       "other": 11.9,
       "unexplained": 2.0
-     }
+     },
+     "pr_tokens_m": 0.28
     }
    ],
    "pass_summary": {
@@ -1768,7 +1810,9 @@
     "read_whole_median": 14.5,
     "prefix_pct_mean": 16.2,
     "process_pct_mean": 7.2,
-    "pr_pct_mean": 51.6
+    "pr_pct_mean": 51.6,
+    "pr_tokens_m_median": 2.95,
+    "pr_tokens_m_total": 127.85
    },
    "by_method": {
     "measuring": {
@@ -2035,7 +2079,8 @@
       "bash": 0.0,
       "other": 12.7,
       "unexplained": 5.5
-     }
+     },
+     "pr_tokens_m": 0.24
     },
     {
      "round": 1,
@@ -2063,7 +2108,8 @@
       "bash": 1.5,
       "other": 12.7,
       "unexplained": 0.0
-     }
+     },
+     "pr_tokens_m": 0.19
     },
     {
      "round": 2,
@@ -2090,7 +2136,8 @@
       "bash": 0.0,
       "other": 13.8,
       "unexplained": 5.1
-     }
+     },
+     "pr_tokens_m": 0.33
     },
     {
      "round": 3,
@@ -2118,7 +2165,8 @@
       "bash": 0.4,
       "other": 10.8,
       "unexplained": 7.2
-     }
+     },
+     "pr_tokens_m": 0.36
     },
     {
      "round": 3,
@@ -2144,7 +2192,8 @@
       "bash": 1.2,
       "other": 10.7,
       "unexplained": 11.2
-     }
+     },
+     "pr_tokens_m": 1.16
     },
     {
      "round": 3,
@@ -2171,7 +2220,8 @@
       "bash": 0.3,
       "other": 10.0,
       "unexplained": 11.7
-     }
+     },
+     "pr_tokens_m": 0.73
     },
     {
      "round": 4,
@@ -2198,7 +2248,8 @@
       "bash": 0.0,
       "other": 12.0,
       "unexplained": 5.3
-     }
+     },
+     "pr_tokens_m": 0.41
     },
     {
      "round": 5,
@@ -2224,7 +2275,8 @@
       "bash": 0.0,
       "other": 11.8,
       "unexplained": 8.4
-     }
+     },
+     "pr_tokens_m": 0.47
     },
     {
      "round": 6,
@@ -2249,7 +2301,8 @@
       "bash": 0.0,
       "other": 15.8,
       "unexplained": 3.1
-     }
+     },
+     "pr_tokens_m": 0.21
     },
     {
      "round": 7,
@@ -2273,7 +2326,8 @@
       "bash": 0.0,
       "other": 17.7,
       "unexplained": 0.9
-     }
+     },
+     "pr_tokens_m": 0.05
     },
     {
      "round": 8,
@@ -2299,7 +2353,8 @@
       "bash": 2.1,
       "other": 5.3,
       "unexplained": 8.4
-     }
+     },
+     "pr_tokens_m": 0.12
     },
     {
      "round": 8,
@@ -2326,7 +2381,8 @@
       "bash": 0.0,
       "other": 2.9,
       "unexplained": 5.8
-     }
+     },
+     "pr_tokens_m": 0.43
     },
     {
      "round": 9,
@@ -2353,7 +2409,8 @@
       "bash": 0.0,
       "other": 2.6,
       "unexplained": 8.4
-     }
+     },
+     "pr_tokens_m": 0.74
     },
     {
      "round": 9,
@@ -2379,7 +2436,8 @@
       "bash": 2.6,
       "other": 5.6,
       "unexplained": 3.3
-     }
+     },
+     "pr_tokens_m": 0.17
     },
     {
      "round": 10,
@@ -2406,7 +2464,8 @@
       "bash": 0.0,
       "other": 2.8,
       "unexplained": 3.8
-     }
+     },
+     "pr_tokens_m": 0.75
     },
     {
      "round": 10,
@@ -2432,7 +2491,8 @@
       "bash": 9.5,
       "other": 8.6,
       "unexplained": 8.3
-     }
+     },
+     "pr_tokens_m": 0.22
     },
     {
      "round": 11,
@@ -2457,7 +2517,8 @@
       "bash": 1.9,
       "other": 6.2,
       "unexplained": 1.1
-     }
+     },
+     "pr_tokens_m": 0.05
     },
     {
      "round": 11,
@@ -2483,7 +2544,8 @@
       "bash": 0.0,
       "other": 2.7,
       "unexplained": 4.8
-     }
+     },
+     "pr_tokens_m": 0.46
     },
     {
      "round": 12,
@@ -2510,7 +2572,8 @@
       "bash": 0.0,
       "other": 3.7,
       "unexplained": 4.0
-     }
+     },
+     "pr_tokens_m": 0.89
     },
     {
      "round": 13,
@@ -2532,7 +2595,8 @@
       "bash": 0.0,
       "other": 3.9,
       "unexplained": 0.2
-     }
+     },
+     "pr_tokens_m": 0.0
     }
    ],
    "pass_summary": {
@@ -2548,7 +2612,9 @@
     "read_whole_median": 3.0,
     "prefix_pct_mean": 32.1,
     "process_pct_mean": 13.6,
-    "pr_pct_mean": 21.9
+    "pr_pct_mean": 21.9,
+    "pr_tokens_m_median": 0.35,
+    "pr_tokens_m_total": 8.0
    },
    "by_method": {
     "measuring": {
@@ -2770,7 +2836,8 @@
       "bash": 0.9,
       "other": 7.7,
       "unexplained": 7.8
-     }
+     },
+     "pr_tokens_m": 6.6
     },
     {
      "round": 2,
@@ -2800,7 +2867,8 @@
       "bash": 5.6,
       "other": 21.3,
       "unexplained": 11.2
-     }
+     },
+     "pr_tokens_m": 1.77
     },
     {
      "round": 3,
@@ -2835,7 +2903,8 @@
       "bash": 0.7,
       "other": 7.7,
       "unexplained": 1.6
-     }
+     },
+     "pr_tokens_m": 3.91
     },
     {
      "round": 3,
@@ -2866,7 +2935,8 @@
       "bash": 2.0,
       "other": 11.4,
       "unexplained": 4.6
-     }
+     },
+     "pr_tokens_m": 1.44
     },
     {
      "round": 3,
@@ -2897,7 +2967,8 @@
       "bash": 4.5,
       "other": 13.5,
       "unexplained": 10.7
-     }
+     },
+     "pr_tokens_m": 2.24
     },
     {
      "round": 3,
@@ -2934,7 +3005,8 @@
       "bash": 0.7,
       "other": 7.6,
       "unexplained": 1.9
-     }
+     },
+     "pr_tokens_m": 3.01
     },
     {
      "round": 4,
@@ -2970,7 +3042,8 @@
       "bash": 0.8,
       "other": 8.3,
       "unexplained": 7.9
-     }
+     },
+     "pr_tokens_m": 6.66
     },
     {
      "round": 4,
@@ -3000,7 +3073,8 @@
       "bash": 6.5,
       "other": 17.1,
       "unexplained": 3.2
-     }
+     },
+     "pr_tokens_m": 0.88
     },
     {
      "round": 5,
@@ -3033,7 +3107,8 @@
       "bash": 1.1,
       "other": 7.5,
       "unexplained": 5.4
-     }
+     },
+     "pr_tokens_m": 3.77
     },
     {
      "round": 5,
@@ -3081,7 +3156,8 @@
       "bash": 1.1,
       "other": 7.4,
       "unexplained": 4.5
-     }
+     },
+     "pr_tokens_m": 3.57
     },
     {
      "round": 5,
@@ -3131,7 +3207,8 @@
       "bash": 0.5,
       "other": 6.0,
       "unexplained": 3.0
-     }
+     },
+     "pr_tokens_m": 7.47
     },
     {
      "round": 5,
@@ -3161,7 +3238,8 @@
       "bash": 8.5,
       "other": 16.8,
       "unexplained": 4.8
-     }
+     },
+     "pr_tokens_m": 1.24
     },
     {
      "round": 6,
@@ -3203,7 +3281,8 @@
       "bash": 0.1,
       "other": 5.6,
       "unexplained": 1.9
-     }
+     },
+     "pr_tokens_m": 4.48
     },
     {
      "round": 6,
@@ -3258,7 +3337,8 @@
       "bash": 0.2,
       "other": 4.2,
       "unexplained": -0.3
-     }
+     },
+     "pr_tokens_m": 18.17
     },
     {
      "round": 6,
@@ -3288,7 +3368,8 @@
       "bash": 16.3,
       "other": 16.7,
       "unexplained": 8.2
-     }
+     },
+     "pr_tokens_m": 0.71
     },
     {
      "round": 6,
@@ -3322,7 +3403,8 @@
       "bash": 1.1,
       "other": 8.6,
       "unexplained": 7.4
-     }
+     },
+     "pr_tokens_m": 3.83
     },
     {
      "round": 7,
@@ -3352,7 +3434,8 @@
       "bash": 0.6,
       "other": 7.9,
       "unexplained": 6.2
-     }
+     },
+     "pr_tokens_m": 3.03
     },
     {
      "round": 7,
@@ -3392,7 +3475,8 @@
       "bash": 10.4,
       "other": 9.0,
       "unexplained": 2.6
-     }
+     },
+     "pr_tokens_m": 6.54
     },
     {
      "round": 8,
@@ -3423,7 +3507,8 @@
       "bash": 7.6,
       "other": 11.7,
       "unexplained": 6.0
-     }
+     },
+     "pr_tokens_m": 1.53
     },
     {
      "round": 9,
@@ -3449,7 +3534,8 @@
       "bash": 10.1,
       "other": 17.1,
       "unexplained": 3.0
-     }
+     },
+     "pr_tokens_m": 0.23
     }
    ],
    "pass_summary": {
@@ -3465,7 +3551,9 @@
     "read_whole_median": 10.0,
     "prefix_pct_mean": 17.2,
     "process_pct_mean": 7.9,
-    "pr_pct_mean": 44.2
+    "pr_pct_mean": 44.2,
+    "pr_tokens_m_median": 3.3,
+    "pr_tokens_m_total": 81.06
    },
    "by_method": {
     "measuring": {
@@ -3627,7 +3715,8 @@
       "bash": 0.0,
       "other": 10.4,
       "unexplained": 2.7
-     }
+     },
+     "pr_tokens_m": 0.64
     },
     {
      "round": 2,
@@ -3654,7 +3743,8 @@
       "bash": 6.0,
       "other": 12.6,
       "unexplained": 10.2
-     }
+     },
+     "pr_tokens_m": 0.69
     },
     {
      "round": 3,
@@ -3679,7 +3769,8 @@
       "bash": 6.0,
       "other": 13.8,
       "unexplained": 5.7
-     }
+     },
+     "pr_tokens_m": 0.24
     },
     {
      "round": 3,
@@ -3704,7 +3795,8 @@
       "bash": 0.0,
       "other": 9.0,
       "unexplained": 3.8
-     }
+     },
+     "pr_tokens_m": 0.17
     },
     {
      "round": 3,
@@ -3730,7 +3822,8 @@
       "bash": 0.0,
       "other": 8.4,
       "unexplained": 1.9
-     }
+     },
+     "pr_tokens_m": 0.35
     },
     {
      "round": 4,
@@ -3756,7 +3849,8 @@
       "bash": 0.0,
       "other": 9.3,
       "unexplained": 5.7
-     }
+     },
+     "pr_tokens_m": 0.51
     },
     {
      "round": 4,
@@ -3783,7 +3877,8 @@
       "bash": 0.0,
       "other": 9.2,
       "unexplained": 2.8
-     }
+     },
+     "pr_tokens_m": 0.95
     },
     {
      "round": 4,
@@ -3808,7 +3903,8 @@
       "bash": 5.0,
       "other": 12.6,
       "unexplained": 5.6
-     }
+     },
+     "pr_tokens_m": 0.33
     },
     {
      "round": 5,
@@ -3834,7 +3930,8 @@
       "bash": 0.0,
       "other": 8.2,
       "unexplained": 7.6
-     }
+     },
+     "pr_tokens_m": 0.43
     },
     {
      "round": 5,
@@ -3858,7 +3955,8 @@
       "bash": 8.1,
       "other": 13.2,
       "unexplained": 7.0
-     }
+     },
+     "pr_tokens_m": 1.09
     },
     {
      "round": 5,
@@ -3886,7 +3984,8 @@
       "bash": 0.0,
       "other": 8.5,
       "unexplained": 6.0
-     }
+     },
+     "pr_tokens_m": 1.0
     }
    ],
    "pass_summary": {
@@ -3902,7 +4001,9 @@
     "read_whole_median": 3,
     "prefix_pct_mean": 40.6,
     "process_pct_mean": 13.0,
-    "pr_pct_mean": 19.0
+    "pr_pct_mean": 19.0,
+    "pr_tokens_m_median": 0.51,
+    "pr_tokens_m_total": 6.4
    },
    "by_method": {
     "measuring": {

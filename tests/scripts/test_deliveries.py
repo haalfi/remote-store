@@ -269,7 +269,8 @@ class TestMeasurePart:
         sub.mkdir(parents=True)
         _write(tmp_path / sid / f"{sid}.jsonl", calls)
         for name, kind, desc, ts, tokens in subagents:
-            _write(sub / f"{name}.jsonl", [_call(f"{name}-0", ts, tokens)])
+            calls = tokens if isinstance(tokens, tuple) else (tokens,)
+            _write(sub / f"{name}.jsonl", [_call(f"{name}-{n}", ts, t) for n, t in enumerate(calls)])
             (sub / f"{name}.meta.json").write_text(json.dumps({"agentType": kind, "description": desc}))
         return sid
 
@@ -290,7 +291,7 @@ class TestMeasurePart:
                 _call("m3", "2026-10-10T10:06:00Z", 1000),
             ],
             [
-                ("agent-p1", "reviewer", "Round member", "2026-10-10T10:02:00Z", 10_000),
+                ("agent-p1", "reviewer", "Round member", "2026-10-10T10:02:00Z", (4_000, 6_000)),
                 ("agent-f1", "general-purpose", "Fix the findings", "2026-10-10T10:05:30Z", 100_000),
             ],
         )
@@ -300,8 +301,13 @@ class TestMeasurePart:
         assert out["phases"] == {"review loop": 111_111}
         [r] = out["rounds"]
         assert (r["main_units"], [p["units"] for p in r["passes"]]) == (1110, [10_000])
+        assert [p["ctx_sum"] for p in r["passes"]] == [10_000]
         assert sorted((x["units"], x["main"]) for x in out["loose"]) == [(1, True), (100_000, False)]
         assert self._accounted(out) == out["phases"]["review loop"]
+
+    def test_a_pass_carries_its_pr_share_of_every_calls_context(self):
+        s = {"ctx_sum": 2_000_000, "context_pct": {"pr": 25.0}}
+        assert deliveries.pr_tokens(s) == 500_000
 
     def test_a_build_part_keeps_its_pre_pr_cost_out_of_the_loop(self, tmp_path, monkeypatch):
         """Orient work before the PR opened, by the main session and by a subagent, is not loop cost."""
