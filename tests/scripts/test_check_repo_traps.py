@@ -34,6 +34,15 @@ NBSP = chr(0x00A0)
 ZWSP = chr(0x200B)
 BOM = chr(0xFEFF)
 
+# The 21 code points of sdd/backlog/bk-444-repo-traps-lint.md Plan step 1.
+_PLANNED_CODE_POINTS = (
+    (0x0000, 0x0008, 0x001A, 0x001B, 0x00A0, 0x200B, 0x200C, 0x200D, 0x2028, 0x2029)
+    + tuple(range(0x202A, 0x202F))
+    + (0x2060,)
+    + tuple(range(0x2066, 0x206A))
+    + (0xFEFF,)
+)
+
 
 # ---------------------------------------------------------------------------
 # Rule 1: invisible characters
@@ -62,10 +71,15 @@ class TestScanInvisible:
         found = _mod.scan_invisible(f"a{LS}b\nc{NBSP}\n", "t.py")
         assert [v.location for v in found] == ["t.py:1:2", "t.py:2:2"]
 
-    @pytest.mark.parametrize("code_point", sorted(_mod._INVISIBLE))
-    def test_every_listed_code_point_is_refused(self, code_point):
+    @pytest.mark.parametrize("code_point", _PLANNED_CODE_POINTS)
+    def test_every_planned_code_point_is_refused(self, code_point):
         [v] = _mod.scan_invisible(f"s = '{chr(code_point)}'", "t.py")
         assert f"U+{code_point:04X}" in v.message
+
+    def test_refused_set_is_exactly_the_planned_one(self):
+        # A literal, not the module's dict: dropping or adding a code point must
+        # change this test too, so the set cannot narrow while the gate passes.
+        assert set(_mod._INVISIBLE) == set(_PLANNED_CODE_POINTS)
 
     @pytest.mark.parametrize("code_point", [0x0000, 0x0008, 0x001A, 0x001B])
     def test_c0_control_names_are_valid_python_escapes(self, code_point):

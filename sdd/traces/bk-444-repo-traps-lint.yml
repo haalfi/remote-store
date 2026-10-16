@@ -122,3 +122,8 @@ phases:
         read_type: verify
         extract: "PR #1152 review round 5: rule 2 accepted newline=None, the CRLF-writing default, and _attr_regex copied [!x] and POSIX classes verbatim. Rule 2 now fails a constant other than LF or empty; brackets negate on ! or ^ and map POSIX classes, matching git check-attr (tmp/git_attr_brackets.py); an unknown class fails at .gitattributes"
         outcome: ok
+      - file: tests/scripts/test_check_repo_traps.py
+        section: "_PLANNED_CODE_POINTS; test_refused_set_is_exactly_the_planned_one"
+        read_type: verify
+        extract: "PR #1152 review round 6: the per-code-point test was parametrized over _INVISIBLE itself, so 13 of the 21 could be dropped silently; it now reads a literal copied from the dossier's Plan step 1, and a set-equality test catches additions too"
+        outcome: ok
