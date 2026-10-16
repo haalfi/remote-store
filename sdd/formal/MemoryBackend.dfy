@@ -396,7 +396,15 @@ class MemoryBackend extends Backend {
       ==> r == Err(InvalidPath(path, name))
     ensures old(Live()) && AddressesRoot(path)
       ==> fs == old(fs) && containerPresent == old(containerPresent)
-    ensures old(Live()) && IsDir(old(fs), path)
+    ensures old(Live()) && !AddressesRoot(path) &&
+            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
+      ==> r == Err(CapabilityNotSupported(
+            CapabilityName(CapUserMetadata), name))
+    ensures old(Live()) && !AddressesRoot(path) &&
+            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
+      ==> fs == old(fs) && containerPresent == old(containerPresent)
+    ensures old(Live()) && IsDir(old(fs), path) &&
+            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities)
       ==> r == Err(InvalidPath(path, name))
     // ID-209: new file-ancestor error path.  MemoryBackend's
     // AncestorsTraversableCheck is the live witness — without it,
@@ -406,17 +414,13 @@ class MemoryBackend extends Backend {
     // fs`, leaving fs in a state where the inserted FileEntry at path has
     // a file ancestor and Valid() no longer holds.  The early return
     // restores trait totality (Write rejects rather than corrupts).
-    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path)
+    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path) &&
+            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities)
       ==> r == Err(InvalidPath(path, name))
     ensures old(Live()) && !AddressesRoot(path) &&
+            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities) &&
             !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
-    ensures old(Live()) && !AddressesRoot(path) &&
-            !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
-            AllAncestorsTraversable(old(fs), path) &&
-            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
-      ==> r == Err(CapabilityNotSupported(
-            CapabilityName(CapUserMetadata), name))
     ensures old(Live()) && !AddressesRoot(path) && old(containerPresent) &&
             !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
             AllAncestorsTraversable(old(fs), path) &&
@@ -450,7 +454,8 @@ class MemoryBackend extends Backend {
       fs[path].info.etag == r.value.etag &&
       fs[path].info.last_modified == r.value.last_modified
   {
-    // BE-020 first, then BE-029 from the key, then the observed checks.
+    // BE-020 first, then BE-029 from the key, then the WR-010 gate, then
+    // the observed checks (the kernel's order, BE-030).
     if !Live() {
       r := Err(BackendUnavailable(name));
       return;
@@ -459,6 +464,17 @@ class MemoryBackend extends Backend {
       r := Err(InvalidPath(path, name));
       return;
     }
+
+    // WR-010 gate.  MemoryBackend declares CapUserMetadata, so this
+    // branch is dead code for this refinement: it exists to satisfy
+    // the method contract (BackendContract.Write).  The live witness
+    // for this branch is MemoryBackendMinimal at the end of this file.
+    if HasUserMetadata(metadata) && CapUserMetadata !in capabilities {
+      r := Err(CapabilityNotSupported(
+        CapabilityName(CapUserMetadata), name));
+      return;
+    }
+
     if path in fs && fs[path].DirEntry? {
       assert IsDir(old(fs), path);
       r := Err(InvalidPath(path, name));
@@ -485,16 +501,6 @@ class MemoryBackend extends Backend {
       return;
     }
     assert AllAncestorsTraversable(old(fs), path);
-
-    // WR-010 gate.  MemoryBackend declares CapUserMetadata, so this
-    // branch is dead code for this refinement: it exists to satisfy
-    // the method contract (BackendContract.Write).  The live witness
-    // for this branch is MemoryBackendMinimal at the end of this file.
-    if HasUserMetadata(metadata) && CapUserMetadata !in capabilities {
-      r := Err(CapabilityNotSupported(
-        CapabilityName(CapUserMetadata), name));
-      return;
-    }
 
     // BE-021 § Reach leaves a write against an absent container to the
     // backend; this one recreates it.  fs is EmptyStore then, so Valid()
@@ -1560,19 +1566,23 @@ class MemoryBackendMinimal extends Backend {
       ==> r == Err(InvalidPath(path, name))
     ensures old(Live()) && AddressesRoot(path)
       ==> fs == old(fs) && containerPresent == old(containerPresent)
-    ensures old(Live()) && IsDir(old(fs), path)
-      ==> r == Err(InvalidPath(path, name))
-    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path)
-      ==> r == Err(InvalidPath(path, name))
     ensures old(Live()) && !AddressesRoot(path) &&
-            !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
-      ==> r == Err(AlreadyExists(path, name))
-    ensures old(Live()) && !AddressesRoot(path) &&
-            !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
-            AllAncestorsTraversable(old(fs), path) &&
             HasUserMetadata(metadata) && CapUserMetadata !in capabilities
       ==> r == Err(CapabilityNotSupported(
             CapabilityName(CapUserMetadata), name))
+    ensures old(Live()) && !AddressesRoot(path) &&
+            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
+      ==> fs == old(fs) && containerPresent == old(containerPresent)
+    ensures old(Live()) && IsDir(old(fs), path) &&
+            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities)
+      ==> r == Err(InvalidPath(path, name))
+    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path) &&
+            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities)
+      ==> r == Err(InvalidPath(path, name))
+    ensures old(Live()) && !AddressesRoot(path) &&
+            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities) &&
+            !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
+      ==> r == Err(AlreadyExists(path, name))
     ensures old(Live()) && !AddressesRoot(path) && old(containerPresent) &&
             !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
             AllAncestorsTraversable(old(fs), path) &&
@@ -1606,7 +1616,8 @@ class MemoryBackendMinimal extends Backend {
       fs[path].info.etag == r.value.etag &&
       fs[path].info.last_modified == r.value.last_modified
   {
-    // BE-020 first, then BE-029 from the key, then the observed checks.
+    // BE-020 first, then BE-029 from the key, then the WR-010 gate, then
+    // the observed checks (the kernel's order, BE-030).
     if !Live() {
       r := Err(BackendUnavailable(name));
       return;
@@ -1615,6 +1626,17 @@ class MemoryBackendMinimal extends Backend {
       r := Err(InvalidPath(path, name));
       return;
     }
+
+    // WR-010 gate.  MemoryBackendMinimal does not declare CapUserMetadata,
+    // so this branch executes whenever the caller passes non-empty metadata:
+    // it is the concrete satisfiability witness for the CapabilityNotSupported
+    // error path.
+    if HasUserMetadata(metadata) && CapUserMetadata !in capabilities {
+      r := Err(CapabilityNotSupported(
+        CapabilityName(CapUserMetadata), name));
+      return;
+    }
+
     if path in fs && fs[path].DirEntry? {
       assert IsDir(old(fs), path);
       r := Err(InvalidPath(path, name));
@@ -1639,16 +1661,6 @@ class MemoryBackendMinimal extends Backend {
       return;
     }
     assert AllAncestorsTraversable(old(fs), path);
-
-    // WR-010 gate.  MemoryBackendMinimal does not declare CapUserMetadata,
-    // so this branch executes whenever the caller passes non-empty metadata:
-    // it is the concrete satisfiability witness for the CapabilityNotSupported
-    // error path.
-    if HasUserMetadata(metadata) && CapUserMetadata !in capabilities {
-      r := Err(CapabilityNotSupported(
-        CapabilityName(CapUserMetadata), name));
-      return;
-    }
 
     // BE-021 § Reach leaves a write against an absent container to the
     // backend; this one recreates it.  fs is EmptyStore then, so Valid()

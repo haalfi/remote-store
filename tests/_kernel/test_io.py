@@ -13,6 +13,7 @@ operation that then fails.
 from __future__ import annotations
 
 import io
+from typing import Any
 
 import pytest
 
@@ -131,6 +132,114 @@ def test_the_guarded_stream_offers_no_special_method_it_cannot_serve(name: str) 
 
     guarded = sync_io.guard_content(_Rich(b"x"))
     assert not hasattr(guarded, name)
+
+
+def _answering(chunk: object) -> io.BytesIO:
+    """A stream whose every bytes-answering read, iteration included, answers *chunk*."""
+
+    class _Answers(io.BytesIO):
+        def _answer(self, *args: object) -> object:
+            return chunk
+
+        read = read1 = readall = readline = peek = __next__ = _answer  # type: ignore[assignment]
+
+        def readlines(self, *args: object) -> list[object]:  # type: ignore[override]
+            return [chunk]
+
+    return _Answers(b"x")
+
+
+def _read_by(guarded: object, name: str) -> object:
+    if name == "__next__":
+        return next(guarded)  # type: ignore[call-overload]
+    if name == "__iter__":
+        return next(iter(guarded))  # type: ignore[call-overload]
+    if name == "readlines":
+        return guarded.readlines()[0]  # type: ignore[attr-defined]
+    return getattr(guarded, name)()
+
+
+_BYTE_READS = ["read", "read1", "readall", "readline", "readlines", "peek", "__next__", "__iter__"]
+
+
+@pytest.mark.spec("BE-008", "MEM-020")
+@pytest.mark.parametrize("name", _BYTE_READS)
+@pytest.mark.parametrize("chunk", [bytearray(b"ab"), memoryview(b"aXb")[::2]], ids=["bytearray", "memoryview"])
+def test_a_buffer_a_read_answers_reaches_the_driver_as_bytes(name: str, chunk: object) -> None:
+    answer = _read_by(sync_io.guard_content(_answering(chunk)), name)
+    assert type(answer) is bytes
+    assert answer == b"ab"
+
+
+@pytest.mark.spec("BE-008", "MEM-020", "ASYNC-091")
+@pytest.mark.parametrize("name", _BYTE_READS)
+@pytest.mark.parametrize("chunk", ["ab", 3], ids=["str", "int"])
+def test_a_read_answering_non_bytes_is_the_callers_type_error(name: str, chunk: object) -> None:
+    with pytest.raises(TypeError, match="not bytes") as caught:
+        _read_by(sync_io.guard_content(_answering(chunk)), name)
+    assert sync_io.from_content(caught.value)
+
+
+def _released() -> memoryview:
+    view = memoryview(bytearray(b"q"))
+    view.release()
+    return view
+
+
+@pytest.mark.spec("BE-008", "ASYNC-091")
+@pytest.mark.parametrize("name", _BYTE_READS)
+def test_a_buffer_that_cannot_be_read_is_the_callers_error(name: str) -> None:
+    # Converting a released memoryview raises; it is the caller's buffer failing.
+    with pytest.raises(ValueError, match="released") as caught:
+        _read_by(sync_io.guard_content(_answering(_released())), name)
+    assert sync_io.from_content(caught.value)
+
+
+@pytest.mark.spec("ASYNC-091")
+def test_a_failing_iter_on_the_guarded_stream_is_marked() -> None:
+    class _NoIter(_ReadOnlySource):  # iterable, not its own iterator
+        def __iter__(self) -> Any:
+            raise _CallerStreamError("no lines")
+
+    guarded = sync_io.guard_content(_NoIter(b"x"))  # type: ignore[arg-type]
+    with pytest.raises(_CallerStreamError) as caught:
+        next(iter(guarded))  # type: ignore[call-overload]
+    assert sync_io.from_content(caught.value)
+
+
+@pytest.mark.spec("ASYNC-091")
+@pytest.mark.parametrize("phase", ["__enter__", "__exit__"])
+def test_a_failing_with_on_the_guarded_stream_is_marked(phase: str) -> None:
+    class _Ctx(io.BytesIO):
+        def __enter__(self) -> Any:
+            if phase == "__enter__":
+                raise _CallerStreamError("enter")
+            return self
+
+        def __exit__(self, *exc_info: object) -> Any:
+            raise _CallerStreamError("exit")
+
+    guarded = sync_io.guard_content(_Ctx(b"x"))
+    with pytest.raises(_CallerStreamError) as caught, guarded:  # type: ignore[union-attr]
+        pass
+    assert sync_io.from_content(caught.value)
+
+
+@pytest.mark.spec("ASYNC-091")
+def test_an_exit_re_raising_the_drivers_error_leaves_it_the_drivers() -> None:
+    # The exception __exit__ was handed came from the driver's own with-body; a
+    # stream that re-raises it must not turn a wire error into the caller's.
+    class _ReRaising(io.BytesIO):
+        def __exit__(self, exc_type: object, exc: BaseException | None, tb: object) -> Any:
+            if exc is not None:
+                raise exc
+            return False
+
+    wire = OSError("wire broke")
+    with pytest.raises(OSError, match="wire broke") as caught, sync_io.guard_content(_ReRaising(b"x")):  # type: ignore[union-attr]
+        raise wire
+    assert caught.value is wire
+    assert not sync_io.from_content(caught.value)
 
 
 @pytest.mark.spec("ASYNC-091")

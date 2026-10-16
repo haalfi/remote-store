@@ -28,6 +28,7 @@ from remote_store._kernel._aggregate import FolderTally, within_depth
 from remote_store._kernel._model import Entry, Op
 from remote_store._kernel._sync import _io
 from remote_store._kernel._sync.driver import (
+    Driver,
     SupportsAtomicMove,
     SupportsCopy,
     SupportsDeleteTree,
@@ -49,7 +50,6 @@ if TYPE_CHECKING:
 
     from remote_store._capabilities import CapabilitySet
     from remote_store._kernel._model import Page, PutResult
-    from remote_store._kernel._sync.driver import Driver
     from remote_store._resolution import ResolutionPlan
 
     T = TypeVar("T")
@@ -63,7 +63,7 @@ _CLASSIFY_DECIDES = frozenset({Op.WRITE, Op.WRITE_ATOMIC, Op.OPEN_ATOMIC, Op.PRO
 
 
 def _check_construction(driver: Driver) -> None:
-    """Refuse a driver whose declarations its protocols cannot back.
+    """Refuse a driver whose declarations its protocols cannot back, or that lacks a primitive.
 
     Construction is not an operation, so this raises ``ValueError``, not a
     mapped error; wrapping construction is deferred to D3 step 3 (OQ5).
@@ -99,6 +99,19 @@ def _check_construction(driver: Driver) -> None:
     if caps.supports(Capability.MOVE) and not isinstance(driver, movers):
         msg = f"driver {driver.name!r} declares MOVE without a move, a rename or a copy"
         raise ValueError(msg)
+    for member, body in _PRIMITIVE_BODIES.items():
+        # A driver subclassing the protocol inherits its `...` bodies, so an
+        # omitted primitive would answer None, not fail (BE-030). `probe`'s
+        # body is its exemption from probing (PING-008): inheriting it is not
+        # an omission, but a structural driver has nothing to inherit.
+        own = getattr(driver, member, None)
+        if own is None or (member != "probe" and getattr(own, "__func__", own) is body):
+            msg = f"driver {driver.name!r} does not implement required primitive {member!r}"
+            raise ValueError(msg)
+
+
+# The protocol's primitives and their own bodies.
+_PRIMITIVE_BODIES = {name: body for name, body in vars(Driver).items() if callable(body) and not name.startswith("_")}
 
 
 def _temp_key(key: str) -> str:
@@ -273,8 +286,9 @@ class _KernelCore:
         ValueError: If the driver's declarations are not backed by its
             protocols, it is flat and has folder objects, it has explicit
             parents and no ``ensure_parents``, it has folder objects and no
-            ``remove_folder``, or the class's own ``close_is_terminal``
-            differs from the driver's.
+            ``remove_folder``, the class's own ``close_is_terminal``
+            differs from the driver's, or a primitive is missing or, other
+            than ``probe``, is the protocol's own body.
     """
 
     def __init__(self, driver: Driver) -> None:
@@ -796,6 +810,7 @@ class _KernelCore:
         self._guard()
         key = self._write_key(path)
         self._require_metadata(metadata, key)
+        content = _io.take_content(content)  # converted or refused ahead of any I/O (BE-030 § Content)
         target = RemotePath(key)  # built before the driver commits (BE-030 step 5)
         self._prepare_write(Op.WRITE, key)
         content = _io.guard_content(content)  # the caller's own errors pass verbatim (ASYNC-091)
@@ -824,6 +839,7 @@ class _KernelCore:
         self._guard()
         key = self._write_key(path)
         self._require_metadata(metadata, key)
+        content = _io.take_content(content)
         target = RemotePath(key)
         self._prepare_write(Op.WRITE_ATOMIC, key)
         if self._driver.put_is_atomic:

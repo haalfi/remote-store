@@ -1,0 +1,131 @@
+id: BK-441
+title: "Memory driver as the template: required-primitive refusal, lazy drivers import, buffer writes, Write's gate order"
+trigger: >-
+  PR #1144 (BK-394) put both Memory classes on the RFC-0017 kernel and filed
+  four follow-ups. The maintainer's goal (2026-10-16): the Memory driver free
+  of every known defect, as the template the remaining backends migrate to.
+source_items:
+  - BK-441
+  - BK-442
+  - BUG-328
+  - BK-440
+audience:
+  - user.api
+  - user.api_docs
+  - library.maintainer
+expected_ripples:
+  - src/remote_store/_kernel/backend.py
+  - src/remote_store/_kernel/aio_backend.py
+  - src/remote_store/drivers.py
+  - src/remote_store/backends/_memory.py
+  - src/remote_store/aio/backends/_memory.py
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/specs/013-memory-backend.md
+  - sdd/formal/BackendContract.dfy
+  - docs-src/guides/custom-backend-guide.md
+surprising_ripples:
+  - tests/_kernel/test_delete_folder.py
+  - scripts/check_custom_backend_guide.py
+  - src/remote_store/_kernel/_sync/_io.py
+  - src/remote_store/_kernel/_async/_io.py
+  - sdd/formal/README.md
+  - sdd/formal/MemoryBackend-py
+discovery_followups: []
+co_shipped_items:
+  - BK-442
+  - BUG-328
+  - BK-440
+decisions:
+  - sdd/decisions/349646d5-1b21-4d77-8c1d-de2d30fe94ad.jsonl
+orient:
+  - items: [BK-441, BK-442, BUG-328, BK-440]
+    verdict: subsumes
+    evidence: >-
+      All four were filed by PR #1144 as BK-394's discovery_followups
+      (sdd/traces/bk-394-memory-drivers-accept-adr-0042.yml). Each is effort S
+      and is a defect in the Memory driver, the public driver API every later
+      driver inherits, or the formal model of the order the kernel answers.
+      Decisions (AskUserQuestion, 2026-10-16): BUG-328 first "widen
+      WritableContent", re-asked twice once reading showed the public alias
+      types every unmigrated backend (_types.py:9) and the kernel's own
+      Content is bytes | BinaryIO (_kernel/_sync/_io.py:19), buffers passing
+      only untyped through guard_content and feed; settled on the kernel
+      converting a bytearray or memoryview to bytes before any driver sees it,
+      public type unchanged; BK-441 refuse at construction (probe excepted);
+      BK-442 lazy module __getattr__ with __dir__; BK-440 reorder Write
+      gate-first, matching kernel.py write (key rule, then _require_metadata,
+      then _prepare_write).
+  - items: [BUG-298, BK-405]
+    verdict: unrelated
+    evidence: >-
+      Both live in shared glob code (pattern_to_regex, ext.glob's fallback
+      tier); Memory shows them only because it declares no GLOB. Excluded by
+      the maintainer's scope choice.
+  - items: [BK-407, BK-339]
+    verdict: unrelated
+    evidence: >-
+      BK-407 is the mutation-scope config (infra.test); BK-339 is store.md's
+      hand-kept matrix (user.site, M). Neither changes the driver. Excluded by
+      scope choice.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/traces/bk-394-memory-drivers-accept-adr-0042.yml
+        section: "whole"
+        read_type: reference
+        extract: "Follow-ups BK-440, BK-441, BK-442, BUG-328; driver.py read tagged unclear"
+      - file: sdd/BACKLOG.md
+        section: "BK-440, BK-441, BK-442, BUG-328 (backlog-show)"
+        read_type: gate
+        extract: "Open decisions per item"
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "write, _write_atomic"
+        read_type: reference
+        extract: "Order: _guard, _write_key, _require_metadata, _prepare_write"
+      - file: sdd/formal/BackendContract.dfy
+        section: "method Write"
+        read_type: reference
+        extract: "WR-010 clause guarded below IsDir, ancestor, AlreadyExists; comment calls it a known divergence"
+      - file: src/remote_store/_kernel/_sync/_io.py
+        section: "Content, guard_content, feed"
+        read_type: reference
+        extract: "Content = BinaryIO | bytes, yet guard_content and feed test bytes | bytearray | memoryview at runtime"
+      - file: tmp/repro_bk441_bug328.py
+        section: "whole"
+        read_type: verify
+        extract: "Reproduced BUG-328 on both runtimes and through Store; BK-441 omitted delete returns, file remains; BK-442 drivers import loads remote_store.aio, azure.core, httpx"
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "_check_construction, write, _write_atomic"
+        read_type: gate
+        extract: "Primitive set derived from vars(AsyncDriver), checked after the declaration checks: every member must be present, and only probe's inherited body is exempt (round 2 of PR #1147 refused an absent probe); content converted or refused after the metadata gate (take_content since round 3)"
+      - file: tests/_kernel/_fake.py
+        section: "_SyncBase, _AsyncBase, make_kernel"
+        read_type: reference
+        extract: "Fakes are structural and define every required member; the delete_folder adapter and the guide checker's probe did not"
+      - file: tmp/probe_classify_reach.py
+        section: "whole"
+        read_type: verify
+        extract: "After the buffer fix, a StringIO, list or int still reached classify and the probe answered AlreadyExists: same defect class, folded into BUG-328 by the maintainer"
+      - file: tmp/probe_mark_refusal.py
+        section: "whole"
+        read_type: verify
+        extract: "A __slots__ exception accepts the mark; one whose __setattr__ refuses did not, and was answered AlreadyExists; marking via exc.__dict__ covers every class (tmp/probe_exc_dict.py)"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "MemoryBackend.Write, MemoryBackendMinimal.Write"
+        read_type: gate
+        extract: "Gate moved after AddressesRoot in both bodies; observed clauses exclude the gated inputs; twin parity holds without a re-pin"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/dafny_verify.sh
+        section: "run"
+        read_type: verify
+        extract: "All six files verify, 0 errors (MemoryBackend.dfy 1834, BackendContract.dfy 60)"
+      - file: sdd/formal/BackendContract.dfy
+        section: "every ensures ... ==> fs == old(fs)"
+        read_type: verify
+        extract: "Enumerated for the README's 'only error-path frames' claim: BE-020 closed, BE-029 root, Write's WR-010 gate"

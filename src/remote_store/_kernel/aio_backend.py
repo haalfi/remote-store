@@ -31,8 +31,9 @@ class AsyncDriverBackend(_AsyncKernelCore, AsyncBackend):
         ValueError: If the driver's declarations are not backed by its
             protocols, it is flat and has folder objects, it has explicit
             parents and no ``ensure_parents``, it has folder objects and no
-            ``remove_folder``, or the class's own ``close_is_terminal``
-            differs from the driver's.
+            ``remove_folder``, the class's own ``close_is_terminal``
+            differs from the driver's, or a primitive is missing or, other
+            than ``probe``, is the protocol's own body.
     """
 
     async def read(self, path: str) -> AsyncIterator[bytes]:

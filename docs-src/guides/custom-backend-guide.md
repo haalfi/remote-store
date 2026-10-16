@@ -78,7 +78,11 @@ wraps any other, adding capability gating and scoping.
 
 Subclassing `Driver` explicitly is optional, since the kernel only calls the
 members, but it gives you a type checker's help and the protocol's no-op
-`probe()` for a store that is always healthy.
+`probe()` for a store that is always healthy. `probe()` is the only member you
+may inherit from the protocol: building the backend raises `ValueError` naming
+any member your driver leaves out or inherits from it otherwise, so a forgotten
+`delete()` fails at startup instead of reporting success. A driver that does
+not subclass `Driver` has no `probe()` to inherit, and must define its own.
 
 ---
 
@@ -959,6 +963,10 @@ example needs no explicit locking.
 | `native_path(key)` | `str` | Total |
 | `to_key(native_path)` | `str` | Total; inverts `native_path` |
 | `resolve(key)` | [`ResolutionPlan`](../reference/api/models.md#remote_store.ResolutionPlan) | Total; no I/O |
+
+Every member must be present, and every one but `probe()` implemented by your
+driver or a base class of yours, not inherited from the protocol; construction
+refuses either omission.
 
 ### Declared attributes
 

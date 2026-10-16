@@ -452,22 +452,6 @@ no clause of the contract ships unexercised.
   see an encoding (RFC-0021 D10 names the wiring as a follow-up). Open decision: refinement
   lemmas per encoding, or one encoding-parametric trait. After BK-432.
 
-- [ ] **BK-440 — `BackendContract.dfy`'s `Write` ranks WR-010's metadata gate below the type and overwrite checks the kernel answers after it**
-  spec: BE-030, WR-010 · effort: S · audience: library.maintainer
-  BE-030 holds WR-010's `USER_METADATA` gate ahead of any I/O, so on a class without that
-  capability a write carrying metadata answers `CapabilityNotSupported` where the model's
-  `Write` answers `InvalidPath` (a folder at the key, a file above it) or `AlreadyExists`,
-  on both namespaces. The departure stands in spec 003; the model does not. Open decision:
-  reorder `Write`'s guards to the gate-first order, or carve the three states out.
-
-- [ ] **BK-441 — A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing**
-  spec: BE-021, BE-030 · effort: S · audience: user.api_docs, library.maintainer
-  The guide subclasses `Driver`, as `MemoryDriver` does, and its required members have `...`
-  bodies, so an omitted `delete` reports success and an omitted `stat` makes every key
-  absent. Construction checks only the optional protocols and declarations; only mypy's
-  abstract-instantiation error catches it (PR #1144 review). Open decision: refuse at
-  construction a required member still the protocol's body (`probe` excepted), or warn.
-
 - [~] **BK-435 — Spec 051's store tree is not yet tied to the store's operations, and `StoreTree.dfy` §12 carries no `@spec` tags**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
   Spec 051 states the axioms of `research/research-store-model-axioms.md`, checked in Alloy, Lean
@@ -630,22 +614,6 @@ or paying for our shortcut.
   surface. Today Local and SFTP follow links on keyed calls, and SFTP hides them in
   listings (measured, RFC-0021). Open decision: the constructor option's name and
   the capability's shape. After BK-432 lands on the kernel.
-
-- [ ] **BUG-328 — Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through**
-  spec: MEM-013, MEM-020 · effort: S · audience: user.api
-  Both Memory drivers read non-`bytes` content as a stream, so `write(k, bytearray(b"x"))`
-  fails: on master as a raw `AttributeError`/`TypeError`; since BK-394 as `RemoteStoreError`,
-  which the kernel's probe turns into `AlreadyExists` (a file, no `overwrite`) or `InvalidPath`
-  (a folder, or a file above), an answer about the target (measured, PR #1144). Open
-  decision: widen `WritableContent` to the buffer types, or refuse them typed.
-
-- [ ] **BK-442 — `from remote_store.drivers import Driver` imports the whole async package and its cloud SDKs**
-  spec: — · effort: S · audience: user.api
-  `drivers.py` imports `AsyncDriverBackend` eagerly, which runs `remote_store.aio`'s
-  `__init__`: `AsyncStore`, `SyncBackendAdapter` and, when the extras are installed, the
-  Azure async and Graph backends. A sync driver author pays all of it; the sync path did
-  not before (PR #1144 review). Open decision: resolve the async names lazily with a module
-  `__getattr__`, as `remote_store.aio` does for the Memory classes, or split the module.
 
 ---
 

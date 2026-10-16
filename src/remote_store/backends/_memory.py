@@ -108,7 +108,8 @@ class MemoryDriver(Driver):
         """Nothing to release; the store stays usable."""
 
     def classify(self, exc: Exception, *, op: Op, key: str) -> RemoteStoreError:
-        # The tree raises only typed errors; the kernel asks only about content put cannot read (MEM-020).
+        # The tree raises only typed errors, and the kernel converts or refuses content put
+        # could not read and marks what put's reads raise, so nothing a caller passes reaches here (MEM-020).
         return RemoteStoreError(f"{type(exc).__name__}: {exc}")
 
     def container_absent(self, exc: BaseException, *, op: Op) -> bool:

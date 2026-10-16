@@ -129,6 +129,12 @@ class _Adapter:
     def container_absent(self, exc: BaseException, *, op: Op) -> bool:
         return False
 
+    # Required primitives delete_folder never reaches; construction refuses a driver without them.
+    def _unreached(self, *args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("delete_folder reached a primitive it does not use")
+
+    get = put = probe = close = aclose = connection_dead = unwrap = native_path = to_key = resolve = _unreached
+
 
 class _TreeAdapter(_Adapter):
     def delete_tree(self, key: str) -> None:

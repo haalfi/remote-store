@@ -1431,6 +1431,212 @@ def test_a_declared_capability_the_protocols_cannot_back_is_refused(
         make_kernel(runtime, FakeStore(), caps=caps, protocols=protocols)
 
 
+# The primitives whose protocol body construction refuses: every one but probe
+# (and close or aclose, added per runtime). Presence is checked for all fourteen.
+_BODY_CHECKED = {
+    "stat", "get", "put", "delete", "list_page", "classify", "container_absent",
+    "connection_dead", "unwrap", "native_path", "to_key", "resolve",
+}  # fmt: skip
+
+
+def _protocol(runtime: str) -> type:
+    from remote_store.drivers import AsyncDriver, Driver
+
+    return Driver if runtime == "sync" else AsyncDriver
+
+
+def _kernel_class(runtime: str) -> type:
+    from remote_store.drivers import AsyncDriverBackend, DriverBackend
+
+    return DriverBackend if runtime == "sync" else AsyncDriverBackend
+
+
+def _with_member(driver: Any, member: str, value: Any) -> Any:
+    """*driver*, re-classed so that *member* is *value* on its type."""
+    driver.__class__ = type(type(driver).__name__, (type(driver),), {member: value})
+    return driver
+
+
+def _body_checked_members(runtime: str) -> list[str]:
+    return sorted(_BODY_CHECKED | {"close" if runtime == "sync" else "aclose"})
+
+
+@pytest.mark.spec("BE-030")
+@pytest.mark.parametrize("member", sorted(_BODY_CHECKED | {"close/aclose"}))
+def test_a_required_primitive_left_as_the_protocols_body_is_refused(runtime: str, member: str) -> None:
+    if member == "close/aclose":
+        member = "close" if runtime == "sync" else "aclose"
+    driver = _with_member(_kernel(runtime).driver, member, vars(_protocol(runtime))[member])
+    with pytest.raises(ValueError, match=rf"driver 'fake' does not implement required primitive '{member}'"):
+        _kernel_class(runtime)(driver)
+
+
+@pytest.mark.spec("BE-030", "PING-008")
+@pytest.mark.parametrize("member", sorted(_BODY_CHECKED | {"close/aclose", "probe"}))
+def test_an_absent_required_primitive_is_refused(runtime: str, member: str) -> None:
+    # probe too: only the inherited body is the exemption, and a structural
+    # driver has nothing to inherit.
+    if member == "close/aclose":
+        member = "close" if runtime == "sync" else "aclose"
+    driver = _with_member(_kernel(runtime).driver, member, None)
+    with pytest.raises(ValueError, match=rf"does not implement required primitive '{member}'"):
+        _kernel_class(runtime)(driver)
+
+
+@pytest.mark.spec("BE-030", "PING-008")
+def test_an_inherited_probe_is_the_exemption_not_a_refusal(runtime: str) -> None:
+    driver = _with_member(_kernel(runtime).driver, "probe", vars(_protocol(runtime))["probe"])
+    kernel = _kernel_class(runtime)(driver)
+    assert kernel.name == "fake"
+
+
+@pytest.mark.spec("BE-030")
+def test_the_body_checked_set_is_every_protocol_method_but_probe(runtime: str) -> None:
+    # Drift guard: the cells above cover what the protocol declares, no more and
+    # no less; presence is checked for all of it, probe included.
+    declared = {n for n, v in vars(_protocol(runtime)).items() if callable(v) and not n.startswith("_")}
+    assert sorted(declared - {"probe"}) == _body_checked_members(runtime)
+
+
+# ---------------------------------------------------------------------------
+# BE-008: buffer content reaches the driver as bytes (BUG-328)
+# ---------------------------------------------------------------------------
+
+_WRITE_ROUTES = {
+    "write": {"put_is_atomic": False},
+    "write_atomic-put": {"put_is_atomic": True},
+    "write_atomic-open_write": {"put_is_atomic": False},
+    "write_atomic-rename": {"put_is_atomic": False, "protocols": ("remove_folder", "rename")},
+}
+
+
+@pytest.mark.spec("BE-008", "MEM-020")
+@pytest.mark.parametrize("route", sorted(_WRITE_ROUTES))
+@pytest.mark.parametrize("content", [bytearray(b"abc"), memoryview(b"aXbXc")[::2]], ids=["bytearray", "memoryview"])
+def test_a_buffer_reaches_the_driver_as_bytes(
+    runtime: str, route: str, content: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tests._kernel import _fake
+
+    run = make_kernel(runtime, FakeStore(), **_WRITE_ROUTES[route])
+    seen: list[type] = []
+    put = run.driver.put
+    handle_write = _fake._Handle.write  # the async handle delegates to it
+
+    def spy(key: str, data: Any, **kwargs: Any) -> Any:
+        seen.append(type(data))
+        return put(key, data, **kwargs)
+
+    def handle_spy(self: Any, data: Any) -> None:
+        seen.append(type(data))
+        handle_write(self, data)
+
+    run.driver.put = spy
+    monkeypatch.setattr(_fake._Handle, "write", handle_spy)
+    method = "write" if route == "write" else "write_atomic"
+    getattr(run, method)("d/f", content)
+    assert run.store.files["d/f"].data == b"abc"
+    # Every route hands the driver something, by put or by its handle; each is bytes.
+    assert seen
+    assert all(t is bytes for t in seen)
+
+
+@pytest.mark.spec("BE-030", "BE-008")
+@pytest.mark.parametrize("route", sorted(_WRITE_ROUTES))
+@pytest.mark.parametrize("content", [["x"], 3, "text"], ids=["list", "int", "str"])
+def test_content_that_is_no_bytes_source_is_refused_before_any_io(runtime: str, route: str, content: Any) -> None:
+    run = make_kernel(runtime, _store(), **_WRITE_ROUTES[route])
+    run.store.calls.clear()
+    method = "write" if route == "write" else "write_atomic"
+    with pytest.raises(TypeError, match="content must be bytes"):
+        getattr(run, method)("f", content, overwrite=True)
+    assert run.store.calls == []  # nothing probed, nothing written
+    assert run.store.files["f"].data == b"F"
+
+
+def _flat_with_a_file_above() -> dict[str, Any]:
+    return {"store": FakeStore(parents="none").add("a/x"), "namespace": "flat"}
+
+
+# Each kernel does I/O before put for valid content at "a/b": BE-032 A.4's
+# stat on a flat namespace, ensure_parents with explicit parents, the target's
+# stat on temp-and-rename without overwrite. So "no driver call" observes the
+# refusal's rank, not only its existence.
+_IO_BEFORE_PUT: dict[str, tuple[Any, str, dict[str, Any]]] = {
+    "flat-write": (_flat_with_a_file_above, "write", {}),
+    "flat-write_atomic": (_flat_with_a_file_above, "write_atomic", {}),
+    "explicit-parents-write": (lambda: {"store": FakeStore()}, "write", {}),
+    "explicit-parents-write_atomic": (lambda: {"store": FakeStore()}, "write_atomic", {}),
+    "rename-no-overwrite": (
+        lambda: {"store": _store(), "protocols": ("remove_folder", "rename")},
+        "write_atomic",
+        {"overwrite": False},
+    ),
+}
+
+
+def _released() -> memoryview:
+    view = memoryview(bytearray(b"q"))
+    view.release()
+    return view
+
+
+# Content the kernel refuses at BE-030 § Content's rank, and what it raises:
+# no bytes source at all, and a buffer that cannot be read as bytes.
+_BAD_CONTENT: dict[str, tuple[Any, type[Exception], str]] = {
+    "no-bytes-source": (lambda: ["x"], TypeError, "content must be bytes"),
+    "unreadable-buffer": (_released, ValueError, "released"),
+}
+
+
+@pytest.mark.spec("BE-030", "BE-008")
+@pytest.mark.parametrize("bad", sorted(_BAD_CONTENT))
+@pytest.mark.parametrize("case", sorted(_IO_BEFORE_PUT))
+def test_the_content_refusal_ranks_ahead_of_the_kernels_own_io(runtime: str, case: str, bad: str) -> None:
+    make, method, kwargs = _IO_BEFORE_PUT[case]
+    content, error, message = _BAD_CONTENT[bad]
+    setup = make()
+    store = setup.pop("store")
+    run = make_kernel(runtime, store, **setup)
+    store.calls.clear()
+    with pytest.raises(error, match=message):
+        getattr(run, method)("a/b", content(), **kwargs)
+    assert store.calls == []
+
+
+@pytest.mark.spec("BE-030", "BE-020")
+@pytest.mark.parametrize("bad", sorted(_BAD_CONTENT))
+@pytest.mark.parametrize("method", ["write", "write_atomic"])
+def test_a_closed_backend_outranks_the_content_refusal(runtime: str, method: str, bad: str) -> None:
+    run = make_kernel(runtime, _store(), close_is_terminal=True)
+    run.close()
+    with pytest.raises(BackendUnavailable, match="closed"):
+        getattr(run, method)("f", _BAD_CONTENT[bad][0]())
+
+
+@pytest.mark.spec("BE-030", "BE-008", "WR-010")
+@pytest.mark.parametrize("bad", sorted(_BAD_CONTENT))
+@pytest.mark.parametrize("method", ["write", "write_atomic"])
+def test_the_content_refusal_ranks_after_the_root_and_the_metadata_gate(runtime: str, method: str, bad: str) -> None:
+    caps = (Capability.READ, Capability.WRITE, Capability.ATOMIC_WRITE)
+    run = make_kernel(runtime, _store(), caps=caps)
+    content = _BAD_CONTENT[bad][0]
+    with pytest.raises(InvalidPath):
+        getattr(run, method)("", content())
+    with pytest.raises(InvalidPath):
+        getattr(run, method)("d\\f", content())
+    with pytest.raises(CapabilityNotSupported):
+        getattr(run, method)("f", content(), metadata={"k": "v"})
+
+
+@pytest.mark.spec("BE-030", "BE-011")
+@pytest.mark.parametrize("bad", sorted(_BAD_CONTENT))
+def test_an_undeclared_atomic_write_outranks_the_content_refusal(runtime: str, bad: str) -> None:
+    run = make_kernel(runtime, _store(), caps=(Capability.READ, Capability.WRITE))
+    with pytest.raises(CapabilityNotSupported):
+        run.write_atomic("f", _BAD_CONTENT[bad][0]())
+
+
 @pytest.mark.spec("BE-002")
 def test_name_capabilities_and_unwrap_are_the_drivers(runtime: str) -> None:
     run = _kernel(runtime)

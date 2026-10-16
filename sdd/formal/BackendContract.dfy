@@ -36,9 +36,9 @@
 //   for the reference implementation but NOT enforced by the abstract
 //   contract. See gap coverage table in README.  The exception (BK-388)
 //   is a frame keyed on the pre-state rather than on `r`: the closed
-//   guard (`!old(Live())`) and the BE-029 root refusals state
-//   `fs == old(fs)` directly, since those errors are decided before any
-//   effect.
+//   guard (`!old(Live())`), the BE-029 root refusals and `Write`'s
+//   WR-010 metadata gate state `fs == old(fs)` directly, since those
+//   errors are decided before any effect.
 // - Happy-path postconditions use `ensures <preconditions> ==> r.Ok?`
 //   to mandate success when no error condition applies.
 
@@ -718,15 +718,11 @@ trait Backend {
   // WR-010 strict gate: HasUserMetadata(metadata) && CapUserMetadata
   // !in capabilities → CapabilityNotSupported before any I/O.
   //
-  // Ordering divergence vs the Python implementation: here the WR-010
-  // gate fires AFTER the IsDir/IsFile precondition chain, so for a
-  // directory-path + non-empty-metadata + non-declaring-backend input
-  // the Dafny contract returns InvalidPath while the Python Store layer
-  // (which evaluates WR-011 → WR-010 before dispatching to
-  // backend.write()) returns CapabilityNotSupported.  This is a known
-  // contract-level simplification: Dafny models the Backend trait in
-  // isolation; the Store-layer ordering (WR-011) is outside the trait.
-  // Tracked in the ID-151 "Out of scope" list.
+  // Order, as the kernel answers it (BE-030): closed (BE-020), the root
+  // from the key (BE-029), the WR-010 gate, then the observed checks — a
+  // folder at the key, a file above it, an existing file without
+  // overwrite.  The gate is capability data, so it outranks every check
+  // that reads fs; each observed clause below excludes the gated inputs.
   method Write(
     path: Path,
     content: seq<nat>,
@@ -755,10 +751,24 @@ trait Backend {
     // @spec BE-029
     ensures old(Live()) && AddressesRoot(path)
       ==> fs == old(fs) && containerPresent == old(containerPresent)
-    // Gap 1 / BE-008: precondition order — type check first (directory
-    // path → InvalidPath).
+    // WR-010 strict gate, right after the root: non-empty metadata on a
+    // backend without CapUserMetadata → CapabilityNotSupported, whatever
+    // the path holds (BE-030 holds it ahead of any I/O).
+    // @spec WR-010
+    ensures old(Live()) && !AddressesRoot(path) &&
+            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
+      ==> r == Err(CapabilityNotSupported(
+            CapabilityName(CapUserMetadata), name))
+    // WR-010: "before any I/O" — the refusal has no effect.
+    // @spec WR-010
+    ensures old(Live()) && !AddressesRoot(path) &&
+            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
+      ==> fs == old(fs) && containerPresent == old(containerPresent)
+    // Gap 1 / BE-008: precondition order — type check first among the
+    // observed checks (directory path → InvalidPath).
     // @spec BE-008
-    ensures old(Live()) && IsDir(old(fs), path)
+    ensures old(Live()) && IsDir(old(fs), path) &&
+            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities)
       ==> r == Err(InvalidPath(path, name))
     // ID-209 / BE-008: precondition order — path-validity also covers a
     // file-ancestor in the path.  Mutually exclusive with IsDir / IsFile
@@ -770,27 +780,18 @@ trait Backend {
     // explicitly rather than EnsureParents'ing into a Valid()-breaking
     // state.
     // @spec BE-008
-    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path)
+    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path) &&
+            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities)
       ==> r == Err(InvalidPath(path, name))
     // Gap 1 / BE-008: precondition order — overwrite conflict second.
     // @spec BE-008
     ensures old(Live()) && !AddressesRoot(path) &&
+            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities) &&
             !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
-    // WR-010 strict gate: non-empty metadata on a backend without
-    // CapUserMetadata → CapabilityNotSupported (pre-I/O).  ID-209 tightens
-    // the guard with AllAncestorsTraversable so this clause stays
-    // mutually exclusive with the new file-ancestor clause above.
-    // @spec WR-010
-    ensures old(Live()) && !AddressesRoot(path) &&
-            !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
-            AllAncestorsTraversable(old(fs), path) &&
-            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
-      ==> r == Err(CapabilityNotSupported(
-            CapabilityName(CapUserMetadata), name))
     // BE-008 happy path: no error condition → must succeed.  ID-209 adds
-    // the AllAncestorsTraversable conjunct for the same reason as the
-    // WR-010 guard above.  BK-388 adds old(containerPresent): what a write
+    // the AllAncestorsTraversable conjunct so it stays mutually exclusive
+    // with the file-ancestor clause.  BK-388 adds old(containerPresent): what a write
     // does against an absent container is a backend spec's to decide
     // (BE-021 § Reach), except at the root, which the BE-029 clause decides.
     // @spec BE-008

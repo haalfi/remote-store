@@ -7,9 +7,8 @@ imports the driver module, which imports them.
 
 from __future__ import annotations
 
-import contextlib
 from collections.abc import AsyncIterator
-from typing import Protocol
+from typing import Protocol, cast
 
 #: What ``get`` returns: the async driver streams chunks.
 ReadStream = AsyncIterator[bytes]
@@ -43,17 +42,21 @@ _FROM_CONTENT = "_remote_store_from_content"
 
 def from_content(exc: BaseException) -> bool:
     """Whether *exc* was raised by the caller's own content, not by the wire."""
-    return bool(getattr(exc, _FROM_CONTENT, False))
+    return bool(exc.__dict__.get(_FROM_CONTENT, False))
 
 
 def _mark(exc: BaseException) -> None:
-    # An exception class that refuses new attributes stays unmarked, and is mapped.
-    with contextlib.suppress(AttributeError):
-        setattr(exc, _FROM_CONTENT, True)
+    # Into the instance dict, which every exception has: a class whose own
+    # __setattr__ refuses new attributes is marked too.
+    exc.__dict__[_FROM_CONTENT] = True
 
 
 async def _marked(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
-    iterator = chunks.__aiter__()
+    try:
+        iterator = chunks.__aiter__()
+    except Exception as exc:
+        _mark(exc)
+        raise
     while True:
         try:
             chunk = await iterator.__anext__()
@@ -62,24 +65,54 @@ async def _marked(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
         except Exception as exc:
             _mark(exc)
             raise
+        if isinstance(chunk, bytearray | memoryview):
+            try:
+                chunk = bytes(chunk)
+            except Exception as exc:  # a buffer that cannot be read, such as a released memoryview
+                _mark(exc)
+                raise
+        elif not isinstance(chunk, bytes):
+            # Not binary: the caller's error, passed through verbatim, never one about the target.
+            err = TypeError(f"content iterator yielded {type(chunk).__name__}, not bytes")
+            _mark(err)
+            raise err
         yield chunk
 
 
+def take_content(content: object) -> Content:
+    """*content* as the kernel passes it on, converted or refused after the metadata gate and before any I/O.
+
+    A ``bytearray`` or ``memoryview`` becomes a copy as ``bytes`` here, so a
+    buffer that cannot be read fails at the same rank as content that is
+    neither a buffer nor an async iterator, which is a ``TypeError``.
+    """
+    if isinstance(content, bytes):
+        return content
+    if isinstance(content, bytearray | memoryview):
+        return bytes(content)
+    if callable(getattr(content, "__aiter__", None)):
+        return cast("AsyncIterator[bytes]", content)
+    msg = f"content must be bytes or an async iterator of bytes, not {type(content).__name__}"
+    raise TypeError(msg)
+
+
 def guard_content(content: Content) -> Content:
-    """*content* with whatever the caller's iterator raises marked as the caller's.
+    """*content* with the caller's iterator marked: what it raises is the caller's.
 
     The choke point passes a marked error through verbatim: a failing source
-    the caller handed in is not a wire error to classify.
+    the caller handed in is not a wire error to classify. A buffer, or anything
+    without ``__aiter__``, is returned as it is: ``take_content`` converts or
+    refuses it, at its own rank.
     """
-    if isinstance(content, bytes | bytearray | memoryview):
+    if isinstance(content, bytes | bytearray | memoryview) or not callable(getattr(content, "__aiter__", None)):
         return content
     return _marked(content)
 
 
 async def feed(handle: _Writable, content: Content) -> None:
     """Write all of *content* into an open write handle."""
-    if isinstance(content, bytes | bytearray | memoryview):
-        await handle.write(bytes(content))
+    if isinstance(content, bytes):
+        await handle.write(content)
         return
     async for chunk in content:
         await handle.write(chunk)
