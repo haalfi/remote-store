@@ -37,6 +37,21 @@ state. If you relied on a best-effort walk over a tree with unreadable parts,
 walk it yourself with `list_folders()` and `list_files()` per folder, catching
 `PermissionDenied` for each.
 
+**`metadata=` must be `None` or a mapping:**
+
+Every `Store` and `AsyncStore` call that takes `metadata=`, such as `write()`,
+`write_atomic()` and `write_text()`, and `write_with_hash()` and
+`open_atomic_with_hash()`, took an empty non-mapping such as `[]`, `()`, `0`
+or `""` for no metadata and wrote the file. They now raise `ValueError` and
+write nothing, for every value that is not a `collections.abc.Mapping`,
+including an object that only has `.items()`. Called directly,
+`MemoryBackend` and `AsyncMemoryBackend` also stored a list of pairs such as
+`[("k", "v")]` as a dict; they refuse it too, as does a backend you build on
+`DriverBackend` or `AsyncDriverBackend`. Other backend classes called
+directly, outside a `Store`,
+are unchanged. Pass `None` (the default) or `{}` for no metadata, and a
+`dict` or another mapping otherwise.
+
 **For backend authors: a backend is now written as a driver:**
 
 `remote_store.drivers` is new. A custom backend is now documented as a

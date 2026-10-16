@@ -17,11 +17,13 @@ operation that then fails.
 from __future__ import annotations
 
 import io
+import re
 from typing import Any
 
 import pytest
 
 from remote_store._kernel._sync import _io as sync_io
+from tests._kernel._fake import NonBlockingRaw
 
 
 class _CallerStreamError(Exception):
@@ -166,7 +168,7 @@ _ANSWERS: dict[str, Any] = {
 
 
 def _answering(shape: str, answer: object, name: str) -> object:
-    """A stream whose every read answers *answer*, wrapped in a list where *shape* is lines.
+    """A stream whose first read answers *answer* (in a list where *shape* is lines) and every later one the end.
 
     For ``__iter__`` the stream is iterable but not its own iterator, so the
     proxy iterates it through ``_MarkedIteration`` rather than ``__next__``.
@@ -183,7 +185,13 @@ def _answering(shape: str, answer: object, name: str) -> object:
         return _Lines()
 
     class _Answers(io.BytesIO):
+        answered = False
+
         def _answer(self, *args: object) -> object:
+            # Answers once, then the end: an unsized read loops sized reads until b"".
+            first, self.answered = not self.answered, True
+            if not first:
+                return [] if shape == "lines" else (0 if shape == "count" else b"")
             return [answer] if shape == "lines" else answer
 
         read = read1 = readall = readline = peek = __next__ = readlines = readinto = readinto1 = _answer  # type: ignore[assignment]
@@ -293,6 +301,108 @@ def test_an_exit_re_raising_the_drivers_error_leaves_it_the_drivers() -> None:
         raise wire
     assert caught.value is wire
     assert not sync_io.from_content(caught.value)
+
+
+_UNSIZED: dict[str, Any] = {
+    "read()": lambda s: s.read(),
+    "read(-1)": lambda s: s.read(-1),
+    "read(None)": lambda s: s.read(None),
+    "read(size=-1)": lambda s: s.read(size=-1),
+    "readall()": lambda s: s.readall(),
+}
+
+
+@pytest.mark.spec("BE-030", "ASYNC-091")
+@pytest.mark.parametrize("how", sorted(_UNSIZED))
+def test_an_unsized_read_never_stops_at_a_none_the_stream_hides(how: str) -> None:
+    # The stream's own unsized read is readall, which stops at the None and
+    # answers b"ab": the proxy reads in sized chunks so it sees the None itself.
+    if how != "read(None)":  # the spellings a raw read accepts
+        assert _UNSIZED[how](NonBlockingRaw()) == b"ab"
+    with pytest.raises(TypeError, match="NoneType, not bytes") as caught:
+        _UNSIZED[how](sync_io.guard_content(NonBlockingRaw()))  # type: ignore[arg-type]
+    assert sync_io.from_content(caught.value)
+
+
+class _Counted(io.BytesIO):
+    """A stream that records the size of every read."""
+
+    def __init__(self, data: bytes) -> None:
+        super().__init__(data)
+        self.sizes: list[object] = []
+
+    def read(self, size: int | None = -1) -> bytes:
+        self.sizes.append(size)
+        return super().read(size)
+
+
+@pytest.mark.spec("BE-030")
+@pytest.mark.parametrize("how", sorted(set(_UNSIZED) - {"readall()"}))
+def test_an_unsized_read_answers_every_byte_in_sized_chunks(how: str) -> None:
+    data = bytes(range(256)) * (3 * sync_io._CHUNK // 256) + b"tail"
+    source = _Counted(data)
+    answer = _UNSIZED[how](sync_io.guard_content(source))
+    assert type(answer) is bytes
+    assert answer == data
+    assert source.sizes == [sync_io._CHUNK] * 5  # four reads of data, one of the end
+
+
+@pytest.mark.spec("BE-030")
+@pytest.mark.parametrize("size", [0, 3])
+def test_a_sized_read_is_forwarded_as_it_is(size: int) -> None:
+    source = _Counted(b"abcdef")
+    assert sync_io.guard_content(source).read(size) == b"abcdef"[:size]  # type: ignore[union-attr]
+    assert source.sizes == [size]
+
+
+class _NamedSize(io.BytesIO):
+    """A stream whose ``read`` names its size ``n``, not ``size``."""
+
+    def __init__(self, data: bytes) -> None:
+        super().__init__(data)
+        self.sizes: list[object] = []
+
+    def read(self, n: int | None = -1) -> bytes:  # type: ignore[override]
+        self.sizes.append(n)
+        return super().read(n)
+
+
+@pytest.mark.spec("BE-030")
+def test_a_size_under_the_streams_own_keyword_is_forwarded_as_it_is() -> None:
+    # Only a size the proxy can read as unsized is read in full; any other keyword is the stream's.
+    source = _NamedSize(b"abcdef")
+    assert sync_io.guard_content(source).read(n=3) == b"abc"  # type: ignore[union-attr,call-arg]
+    assert source.sizes == [3]
+
+
+@pytest.mark.spec("BE-030")
+@pytest.mark.parametrize(
+    "call",
+    [lambda s: s.read(-1, size=2), lambda s: s.read(None, foo=1)],
+    ids=["read(-1, size=2)", "read(None, foo=1)"],
+)
+def test_a_size_with_keywords_beside_it_is_the_streams_to_answer(call: Any) -> None:
+    # The stream refuses the call itself; the proxy does not read it as unsized.
+    with pytest.raises(TypeError, match="argument") as native:
+        call(io.BytesIO(b"abc"))
+    with pytest.raises(TypeError, match=re.escape(str(native.value))):
+        call(sync_io.guard_content(io.BytesIO(b"abc")))
+
+
+@pytest.mark.spec("BE-030")
+@pytest.mark.parametrize(
+    "call",
+    [lambda s: s.read(size=-1), lambda s: s.read(size=None), lambda s: s.readall(5), lambda s: s.readall(-1)],
+    ids=["read(size=-1)", "read(size=None)", "readall(5)", "readall(-1)"],
+)
+def test_an_unsized_spelling_the_stream_refuses_is_refused_through_the_proxy(call: Any, tmp_path: Any) -> None:
+    # A raw file takes read's size positionally only and readall with no argument.
+    path = tmp_path / "f"
+    path.write_bytes(b"abc")
+    with open(path, "rb", buffering=0) as stream, pytest.raises(TypeError, match="argument") as native:
+        call(stream)
+    with open(path, "rb", buffering=0) as stream, pytest.raises(TypeError, match=re.escape(str(native.value))):
+        call(sync_io.guard_content(stream))
 
 
 @pytest.mark.spec("ASYNC-091")

@@ -7,7 +7,7 @@ imports the driver module, which imports them.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, BinaryIO, Protocol, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, cast
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -127,7 +127,10 @@ class _MarkedReader:
     and so is a ``readinto`` answer that is not a count or a ``readlines``
     answer that is not a list. Every ordinary attribute is the stream's own, so one the
     stream lacks is absent here too; a read among them is forwarded with its
-    failures marked. It
+    failures marked. An unsized ``read`` and an argument-free ``readall`` are
+    read here in sized chunks instead: a raw stream's own ``readall`` stops at a ``None`` this
+    proxy would never see, so a driver reading in full would store a
+    truncated file. Line reads loop inside the stream and are not covered. It
     is a proxy, not an ``io.IOBase``: Python looks special methods up on the
     type, so none is forwarded (``hasattr`` would answer for an operation that
     fails), and iteration (as an iterator when the stream is one) and ``with``
@@ -147,6 +150,8 @@ class _MarkedReader:
             return attr
 
         def marked(*args: object, **kwargs: object) -> object:
+            if (name == "readall" and not args and not kwargs) or (name == "read" and _unsized(args, kwargs)):
+                return self._read_whole(by_keyword="size" in kwargs)
             try:
                 answer = attr(*args, **kwargs)
             except Exception as exc:
@@ -159,6 +164,42 @@ class _MarkedReader:
             return _count(answer, self._stream)  # readinto, readinto1
 
         return marked
+
+    def _read_whole(self, *, by_keyword: bool) -> bytes:
+        """The rest of the stream, by checked sized reads until one answers empty.
+
+        Each read spells its size as the caller did, so a stream that refuses
+        ``size=`` refuses it here too. The chunks are joined, so the content is
+        held twice at the end, where a file's own ``read()`` holds it once.
+        """
+        # typing's BinaryIO.read names no size parameter; io's streams take it positionally.
+        stream: Any = self._stream
+        chunks: list[bytes] = []
+        while True:
+            try:
+                answer = stream.read(size=_CHUNK) if by_keyword else stream.read(_CHUNK)
+            except Exception as exc:
+                _mark(exc)
+                raise
+            chunk = cast("bytes", _binary(answer, self._stream))
+            if not chunk:
+                return b"".join(chunks)
+            chunks.append(chunk)
+
+
+def _unsized(args: tuple[object, ...], kwargs: dict[str, object]) -> bool:
+    """Whether a ``read`` call asks for everything: no size, ``None`` or a negative one.
+
+    Any other call, a keyword other than ``size`` or a keyword beside a
+    positional size, is the stream's own to answer, so it is forwarded.
+    """
+    if args and not kwargs and len(args) == 1:
+        size = args[0]
+    elif not args and set(kwargs) == {"size"}:
+        size = kwargs["size"]
+    else:
+        return not args and not kwargs
+    return size is None or (isinstance(size, int) and size < 0)
 
 
 class _MarkedIteration:

@@ -562,6 +562,16 @@ class TestCustomBackendGuideSnippets:
         with pytest.raises(PermissionDenied, match="authentication failed"):
             _backend_with_client(monkeypatch, _LockedClient()).check_health()
 
+    @pytest.mark.spec("BE-030")
+    @pytest.mark.parametrize("method", ["write", "write_atomic"])
+    def test_reading_content_in_full_never_stores_a_truncated_file(self, guide_redis_backend, method: str) -> None:
+        """Step 6's put reads a stream with one unsized read(); a None mid-stream is refused, not stored."""
+        from tests._kernel._fake import NonBlockingRaw
+
+        with pytest.raises(TypeError, match="NoneType, not bytes"):
+            getattr(guide_redis_backend, method)("x.txt", NonBlockingRaw())
+        assert not guide_redis_backend.exists("x.txt")
+
     @pytest.mark.spec("ID-057")
     def test_secret_is_revealed_and_retry_accepted(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Step 3's constructor: a Secret reaches the client as plain text; retry= is accepted."""

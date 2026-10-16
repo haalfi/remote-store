@@ -1439,6 +1439,10 @@ being the exemption from probing (PING-008); a `probe` left out is refused like
 any other. WR-010's metadata gate
 on `write` and `write_atomic` comes after step 4 and before step 5, so the root
 refusal stays BE-008's first precondition and the gate stays ahead of any I/O.
+Shape comes first within it, as WR-011 orders it: `metadata` that is neither
+`None` nor a `Mapping`, a falsy one included, is refused with `ValueError`
+whatever the class declares, and only then is a non-empty mapping refused for
+want of `USER_METADATA`.
 That ranks it ahead of BE-008's type, ancestor and overwrite checks: on a class
 without `USER_METADATA`, a write carrying metadata answers
 `CapabilityNotSupported` with a folder at the key, a file above it, or an
@@ -1461,11 +1465,17 @@ a count or `readlines` anything but a list, raises `TypeError` when read; one
 that yields a buffer that cannot be read as `bytes` raises that buffer's error.
 Either is the caller's own error, passed through verbatim like ASYNC-091's and
 never classified. Async content is checked chunk by chunk whatever the driver
-does. On sync it holds for a driver that reads in sized chunks, as the sync
-`_io.feed` and `MemoryDriver` do: an unsized `read()` on a raw stream is the
-stream's own `readall`, which stops at the `None` before the kernel sees it
-(BUG-331). A check on the target made before the stream is read answers first,
-such as `write_atomic`'s `stat` by temp and rename without `overwrite`.
+does. On sync the stream a driver receives answers an unsized `read` (no size,
+`None` or a negative one) and `readall` by sized reads of the caller's stream,
+each checked, so a driver that reads its content in full sees the `None` a raw
+stream's own `readall` would stop at. Line reads (`readline`, `readlines`,
+iteration) loop inside the caller's stream, where the kernel cannot see a
+`None`, and are not covered. A check on the target made before the stream is
+read answers first, such as `write_atomic`'s `stat` by temp and rename without
+`overwrite`. The stream `open_atomic` yields takes a write as Python's binary
+files do, on the wire temporary's route and the spool's alike: a buffer that is
+not C-contiguous is refused with its exporter's own error, `BufferError` for a
+`memoryview`.
 
 **What a key resolves to** is [BE-032](#be-032-the-store-tree-on-the-kernel)'s
 answer, for every call below: the tree's `Item`, `Folder` or `Nothing` (A.1),
@@ -1548,7 +1558,9 @@ canonical `""` names the root, a folder, and yields nothing. Worked examples:
 **Conformance:** fake-driver kernel cells in `tests/_kernel/`, run against both
 runtimes. Memory's cells are in `tests/backends/memory/test_kernel_cells.py`,
 both classes: the root spellings' `FolderInfo`, addressing's fold of a
-non-canonical key, and the backslash refusal storing nothing. What a key resolves to is
+non-canonical key, and the backslash refusal storing nothing; and in
+`tests/backends/memory/test_metadata_shape.py`, both classes: metadata that is
+not a mapping refused with no parent folder made. What a key resolves to is
 BE-032's two generated suites (its A.10); `glob`, the capability gates and
 construction are generated over axes of their own.
 

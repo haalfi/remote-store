@@ -109,8 +109,8 @@ class MemoryDriver(Driver):
 
     def classify(self, exc: Exception, *, op: Op, key: str) -> RemoteStoreError:
         # No content error reaches here: the kernel converts or refuses content put could
-        # not read and marks what put's reads raise. What the tree's dict(metadata) raises
-        # on non-mapping metadata does (BUG-329); otherwise it raises only typed errors (MEM-020).
+        # not read, marks what put's reads raise, and refuses metadata that is no mapping
+        # before put; the tree raises only typed errors (MEM-020).
         return RemoteStoreError(f"{type(exc).__name__}: {exc}")
 
     def container_absent(self, exc: BaseException, *, op: Op) -> bool:

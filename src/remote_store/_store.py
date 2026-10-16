@@ -6,6 +6,7 @@ import contextlib
 import dataclasses
 import fnmatch
 import logging
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
@@ -42,7 +43,7 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterator
     from datetime import datetime
     from types import TracebackType
 
@@ -205,8 +206,8 @@ class Store:
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
             InvalidPath: If *path* is empty.
-            ValueError: If *metadata* fails shape validation (keys and
-                values must be ``str`` with bounded total size).
+            ValueError: If *metadata* fails shape validation (a mapping
+                whose keys and values are ``str``, with bounded total size).
             CapabilityNotSupported: If *metadata* is non-empty and the
                 backend lacks ``USER_METADATA``.
         """
@@ -1094,6 +1095,7 @@ def _validate_metadata(metadata: Mapping[str, str] | None) -> None:
     Rules (mirrored from the ``metadata:`` parameter doc on every
     ``write*`` method):
 
+    * it must be a mapping (``None`` aside), even an empty one;
     * keys and values must both be ``str``;
     * keys must be non-empty ASCII without a leading underscore;
     * the combined key + value byte payload must not exceed 2048 bytes.
@@ -1103,8 +1105,11 @@ def _validate_metadata(metadata: Mapping[str, str] | None) -> None:
     Raises:
         ValueError: On any rule violation.
     """
-    if not metadata:
+    if metadata is None:
         return
+    if not isinstance(metadata, Mapping):
+        msg = f"metadata must be a mapping, not {type(metadata).__name__}"
+        raise ValueError(msg)
     total = 0
     for key, value in metadata.items():
         if not isinstance(key, str):

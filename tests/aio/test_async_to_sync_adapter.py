@@ -1305,6 +1305,37 @@ class TestAdapterWriteResult:
         adapter.close()
 
 
+class _NoneMidStream(io.RawIOBase):
+    """A non-blocking raw stream: ``None`` (no data yet) between two chunks."""
+
+    def __init__(self) -> None:
+        self._answers: list[bytes | None] = [b"ab", None, b"c", b""]
+
+    def readable(self) -> bool:
+        return True
+
+    def read(self, size: int = -1) -> Any:  # type: ignore[override]
+        return self._answers.pop(0)
+
+
+class TestNoneReadIsRefused:
+    """BE-030 § Content, ASYNC-091: a ``None`` read is the caller's error, never the end of the upload."""
+
+    @pytest.mark.spec("BE-030", "ASYNC-091")
+    @pytest.mark.parametrize("method", ["write", "write_atomic"])
+    @pytest.mark.parametrize("seeded", [False, True], ids=["free", "existing"])
+    def test_a_none_read_is_a_type_error_and_stores_nothing(self, method: str, seeded: bool) -> None:
+        adapter, _ = _make_memory_adapter()
+        if seeded:
+            adapter.write("f", b"old")
+        with pytest.raises(TypeError, match="NoneType, not bytes"):
+            getattr(adapter, method)("f", _NoneMidStream(), overwrite=True)
+        assert adapter.exists("f") is seeded
+        if seeded:
+            assert adapter.read_bytes("f") == b"old"
+        adapter.close()
+
+
 # ---------------------------------------------------------------------------
 # BK-258 — coverage hardening for residual adapter branches
 #
