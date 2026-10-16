@@ -1040,8 +1040,8 @@ sessions work is measured before it becomes process.
 
 - [ ] **BK-445 — A measuring reviewer pushed off `env -C <root>` tests the main checkout's code**
   spec: — · effort: S · audience: contributor.process, contributor.tooling
-  `env -C <root> hatch run python <file>` imports the review worktree's own `src` from its own `.venv`.
-  In a session launched inside a worktree, Claude Code's isolation guard refuses an `env -C` command it
-  cannot parse, such as `python -c "<snippet>"`; a bare `python` from the session imports the main
-  checkout's `src`. A PR #1151 measuring member took that fallback and saw 100+ false failures. Open
-  decision: have `rvw-pr/measuring.md` run probes as script files, or name the guard there.
+  `env -C <root> hatch run python <file>` imports the review worktree's own `src` and `.venv`. Claude
+  Code's worktree-isolation guard refuses an `env -C` command parsing as `stmt; call(...)`, such as
+  `python -c "import os; print(1)"`; a bare `python` fallback imports the main checkout's `src` (PR #1151:
+  100+ false failures). The route lives in `rvw-pr/SKILL.md` § Review root. Open decision: script-file
+  probes, naming the guard there, or widening its `os.chdir` spelling, which clears the guard, to it.
