@@ -13874,11 +13874,18 @@ yields. Content that is no bytes source, neither a buffer nor a readable stream
 (async: an async iterator), is refused with <code>TypeError</code> after WR-010's gate and
 before any I/O, on <code>write</code> and <code>write_atomic</code> alike; a buffer that cannot be
 read as <code>bytes</code> (a released <code>memoryview</code>) fails at the same rank with its own
-error. A stream that yields something not binary raises <code>TypeError</code>
-when read, as the caller's own error, passed through verbatim like
-ASYNC-091's and never classified. A check on the target made before the
-stream is read answers first, such as <code>write_atomic</code>'s <code>stat</code> by temp and
-rename without <code>overwrite</code>.</p>
+error, and so does content whose <code>read</code> (async: <code>__aiter__</code>) cannot even be
+looked up. A stream that yields something not binary, <code>None</code> included (a
+non-blocking stream's "no data yet"), or whose <code>readinto</code> answers anything but
+a count or <code>readlines</code> anything but a list, raises <code>TypeError</code> when read; one
+that yields a buffer that cannot be read as <code>bytes</code> raises that buffer's error.
+Either is the caller's own error, passed through verbatim like ASYNC-091's and
+never classified. Async content is checked chunk by chunk whatever the driver
+does. On sync it holds for a driver that reads in sized chunks, as the sync
+<code>_io.feed</code> and <code>MemoryDriver</code> do: an unsized <code>read()</code> on a raw stream is the
+stream's own <code>readall</code>, which stops at the <code>None</code> before the kernel sees it
+(BUG-331). A check on the target made before the stream is read answers first,
+such as <code>write_atomic</code>'s <code>stat</code> by temp and rename without <code>overwrite</code>.</p>
 <p><strong>What a key resolves to</strong> is <a href="#be-032-the-store-tree-on-the-kernel">BE-032</a>'s
 answer, for every call below: the tree's <code>Item</code>, <code>Folder</code> or <code>Nothing</code> (A.1),
 each family's result (A.5), the determinants a call runs whether or not it

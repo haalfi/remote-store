@@ -42,7 +42,7 @@ counts: tuple[int, int]
 
 The number of files and of folders the tree holds.
 
-Read without the lock, as `repr` needs. A coroutine on the loop never sees a step in progress, since no locked primitive awaits; a debugger paused inside one, or another thread (`SyncBackendAdapter` runs the loop on its own), may, so it is a display figure, not a snapshot.
+Read without the lock, as `repr` needs. A coroutine on the loop never sees a step in progress, since no locked primitive awaits; a debugger paused inside one, or another thread (`AsyncBackendSyncAdapter` runs the loop on its own), may, so it is a display figure, not a snapshot.
 
 ### get
 

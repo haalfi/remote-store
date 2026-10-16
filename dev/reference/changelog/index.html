@@ -15594,7 +15594,7 @@
 <ul>
 <li>BK-441: A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing</li>
 <li>BK-442: <code>from remote_store.drivers import Driver</code> imports the whole async package and its cloud SDKs</li>
-<li>BUG-328: Both Memory drivers refuse a <code>bytearray</code> or <code>memoryview</code> write, though the kernel passes either through</li>
+<li>BUG-328: Both Memory drivers refuse a <code>bytearray</code> or <code>memoryview</code> write, though the kernel passes either through, and the sync driver stores a truncated file from a stream whose read answers <code>None</code></li>
 <li>BK-440: <code>BackendContract.dfy</code>'s <code>Write</code> ranks WR-010's metadata gate below the type and overwrite checks the kernel answers after it</li>
 <li>BK-394: No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed</li>
 <li>BK-398: Three round-trip clauses promise <code>to_key(native_path(k)) == k</code> verbatim, which <code>GraphBackend</code> already breaks</li>
