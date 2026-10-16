@@ -35,11 +35,13 @@ prints for the same session and ``--until``.
   measured sessions when that round's span had already ended; a bot's is not
   counted.
 - **Passes.** Calls, first and final context, units, the context split
-  ``tokkit.py subagents`` prints, the files read whole (a ``Read`` with no
-  offset or limit), and the findings it handed back: the sum of the
+  ``tokkit.py subagents`` prints, the checkout's files read whole (a ``Read``
+  with no offset or limit), and the findings it handed back: the sum of the
   ``Bug: n | Spec: n | ...`` line in its last ``SubagentHandback``, else in its
-  last text. A posted round merges duplicates, so its passes can sum higher.
-- **Active time.** The handoff's gap method, on the main transcript's user and
+  last text. A posted round can merge duplicates or add findings no pass
+  handed back, so per round the two counts differ in either direction.
+  ``by_method`` groups passes by the method their description names first.
+- **Active time.** A gap method, on the main transcript's user and
   assistant records: a gap of 60 s or more ended by a user prompt, or by the
   answer to ``AskUserQuestion`` or ``ExitPlanMode``, is a wait; one ended by a
   ``<task-notification>``, a subagent's hand-back or a tool result is work.
@@ -123,6 +125,23 @@ def handback(path: Path):
     return None if line is None else sum(int(n) for n in re.findall(r":\s*(\d+)", line))
 
 
+def read_whole(path: Path) -> list[str]:
+    """The files a pass read whole: each ``Read`` target with no offset or limit, once.
+
+    A target ``tokkit.norm_path`` folded to a placeholder (a spilled tool output, a
+    transcript, a scratch file) is not a file of the checkout, so it is left out; a
+    review snapshot's files are the PR's and stay."""
+    return sorted(
+        {
+            t["target"]
+            for t in tokkit.tool_calls(path)
+            if t["tool"] == "Read"
+            and not t["target"].endswith("]")
+            and (not t["target"].startswith("<") or t["target"].startswith("<review-snapshot>/"))
+        }
+    )
+
+
 def is_wait(r, tools) -> bool:
     m = r.get("message")
     if r.get("type") != "user" or not isinstance(m, dict) or r.get("isMeta"):
@@ -178,6 +197,47 @@ def context_split(calls, items, changed) -> dict:
     return {k: round(split[k] / sumctx * 100, 1) for k in tokkit.SUB_CLASSES}
 
 
+def group_rounds(subs, spawns, mc) -> dict:
+    """Review passes keyed by the spawn event that started them, ``None`` when none did.
+
+    ``spawns`` holds ``(idx, detail)`` events, where ``idx`` is one past the spawning call
+    in ``mc``. A pass belongs to the latest spawn with its description (cut to 50
+    characters, as ``tokkit`` cuts it; a forked ``/rvw-pr`` matches the skill call) whose
+    call came no later than the pass's first call."""
+    rounds = collections.defaultdict(list)
+    for s in subs:
+        if not is_pass(s):
+            continue
+        key = "/rvw-pr" if s["description"].startswith("/rvw-pr") else s["description"][:50]
+        at = max(
+            (i for i, d in spawns if d == key and (mc[i - 1]["ts"] or "") <= s["first_ts"]),
+            default=None,
+        )
+        rounds[at].append(s)
+    return rounds
+
+
+def round_spans(rounds, hi) -> list[tuple[int, int]]:
+    """Each round's main-session calls ``[i, j)``: from its spawn to the next round's, the last to ``hi``."""
+    starts = sorted(i for i in rounds if i is not None)
+    return [(i, starts[n + 1] if n + 1 < len(starts) else hi) for n, i in enumerate(starts)]
+
+
+def assign_submissions(subs, rounds) -> tuple[collections.Counter, int]:
+    """Posted findings per round index, and those outside the measured sessions.
+
+    A submission ``(epoch seconds, findings)`` goes to the latest round spawned before it;
+    it is outside when no round was, or when that round's span had ended."""
+    posted, outside = collections.Counter(), 0
+    for ts, n in subs:
+        at = max((k for k, r in enumerate(rounds) if when(r["spawn_ts"]).timestamp() <= ts), default=None)
+        if at is None or ts > when(rounds[at]["end_ts"]).timestamp():
+            outside += n
+        else:
+            posted[at] += n
+    return posted, outside
+
+
 def measure_part(snap: Path, part, changed, created) -> dict:
     sid = part["session"]
     main = snap / sid / f"{sid}.jsonl"
@@ -191,9 +251,7 @@ def measure_part(snap: Path, part, changed, created) -> dict:
             continue
         meta = f.with_name(f.stem + ".meta.json")
         meta = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else {}
-        whole = sorted(
-            {t["target"] for t in tokkit.tool_calls(f) if t["tool"] == "Read" and not t["target"].endswith("]")}
-        )
+        whole = read_whole(f)
         subs.append(
             {
                 "type": meta.get("agentType", "?"),
@@ -244,21 +302,10 @@ def measure_part(snap: Path, part, changed, created) -> dict:
         for e in me
         if e["kind"] == "skill" and e["detail"].endswith("rvw-pr") and lo < e["idx"] <= hi
     ]
-    rounds = collections.defaultdict(list)
-    for s in subs:
-        if not is_pass(s):
-            continue
-        key = "/rvw-pr" if s["description"].startswith("/rvw-pr") else s["description"][:50]
-        at = max(
-            (i for i, d in spawns if d == key and (mc[i - 1]["ts"] or "") <= s["first_ts"]),
-            default=None,
-        )
-        rounds[at].append(s)
-    starts = sorted(i for i in rounds if i is not None)
+    rounds = group_rounds(subs, spawns, mc)
     out_rounds = []
-    for n, i in enumerate(starts):
-        j = starts[n + 1] if n + 1 < len(starts) else hi
-        main_span = [c for c in mc[i:j]]
+    for i, j in round_spans(rounds, hi):
+        main_span = mc[i:j]
         out_rounds.append(
             {
                 "spawn_ts": mc[i - 1]["ts"],
@@ -297,7 +344,8 @@ def by_method(passes) -> dict:
     groups = collections.defaultdict(list)
     for s in passes:
         d = s["description"].lower()
-        groups[next((w for w in ("unprimed", "whole-file", "measuring") if w in d), "other")].append(s)
+        named = [(d.find(w), w) for w in ("unprimed", "whole-file", "measuring") if w in d]
+        groups[min(named)[1] if named else "other"].append(s)
     return {
         k: {
             "passes": len(ps),
@@ -339,14 +387,7 @@ def main(argv=None) -> int:
         idle = sum((when(b) - when(a)).total_seconds() for a, b in d.get("idle", []))
         rounds = sorted((r for p in parts for r in p["rounds"]), key=lambda r: when(r["spawn_ts"]))
         subs, bot_subs = submissions(sr, pr)
-        posted = collections.Counter()
-        outside = 0
-        for ts, n in subs:
-            at = max((k for k, r in enumerate(rounds) if when(r["spawn_ts"]).timestamp() <= ts), default=None)
-            if at is None or ts > when(rounds[at]["end_ts"]).timestamp():
-                outside += n
-            else:
-                posted[at] += n
+        posted, outside = assign_submissions(subs, rounds)
         passes = [s for r in rounds for s in r["passes"]]
         out_rounds = []
         for k, r in enumerate(rounds):

@@ -126,3 +126,76 @@ class TestSelection:
         assert not deliveries.keep_agent("agent-a4614f4bcebad8abf", part)
         assert deliveries.keep_agent("agent-ad87b172", part)
         assert deliveries.keep_agent("agent-a4614f4bcebad8abf", {"agents": ["a4614"]})
+
+    def test_a_pass_counts_under_the_method_its_description_names_first(self):
+        passes = [
+            {"description": d, "calls": 10, "units": 1e6, "read_whole": [], "findings_handed_back": 1}
+            for d in ("Final measuring + whole-file member", "Whole-file then unprimed member", "Reader member")
+        ]
+        out = deliveries.by_method(passes)
+        assert {k: v["passes"] for k, v in out.items()} == {"measuring": 1, "whole-file": 1, "other": 1}
+
+    def test_a_read_whole_is_a_repo_file_not_a_spilled_output_or_a_scratch_file(self, tmp_path, monkeypatch):
+        def read(i, path, **extra):
+            return {"type": "tool_use", "id": f"r{i}", "name": "Read", "input": {"file_path": path, **extra}}
+
+        monkeypatch.setattr(
+            deliveries.tokkit,
+            "ARGS",
+            deliveries.argparse.Namespace(repo_root=Path("K:/Code/remote-store")),
+            raising=False,
+        )
+        t = _write(
+            tmp_path / "a.jsonl",
+            [
+                _assistant(
+                    "2026-10-10T10:00:00Z",
+                    [
+                        read(1, "K:/Code/remote-store/tmp/review/abc123/src/a.py"),
+                        read(2, "K:/Code/remote-store/sdd/b.md"),
+                        read(3, "K:/Code/remote-store/sdd/c.md", offset=10, limit=20),
+                        read(4, "C:/Users/x/.claude/projects/p/s/tool-results/t1.txt"),
+                        read(5, "C:/Users/x/.claude/projects/p/s/tool-results/t2.txt"),
+                        read(6, "F:/Temp/claude/p/s/scratchpad/n.md"),
+                    ],
+                )
+            ],
+        )
+        assert deliveries.read_whole(t) == ["<review-snapshot>/src/a.py", "sdd/b.md"]
+
+
+class TestRounds:
+    @staticmethod
+    def _pass(desc, ts):
+        return {"type": "reviewer", "description": desc, "first_ts": ts}
+
+    def test_a_pass_joins_the_latest_spawn_of_its_description_before_it(self):
+        mc = [{"ts": f"2026-10-10T10:0{n}:00Z"} for n in range(6)]
+        # The same description is spawned at call 1 and at call 4 (events sit one past the call).
+        spawns = [(2, "Closing review"), (5, "Closing review"), (3, "Other member")]
+        early = self._pass("Closing review", "2026-10-10T10:02:30Z")
+        late = self._pass("Closing review", "2026-10-10T10:04:30Z")
+        orphan = self._pass("Unspawned member", "2026-10-10T10:04:30Z")
+        builder = {"type": "testing-expert", "description": "Write suites", "first_ts": "2026-10-10T10:02:30Z"}
+        rounds = deliveries.group_rounds([early, late, orphan, builder], spawns, mc)
+        assert dict(rounds) == {2: [early], 5: [late], None: [orphan]}
+
+    def test_a_round_spans_main_calls_from_its_spawn_to_the_next(self):
+        assert deliveries.round_spans({5: [], 2: [], None: []}, 9) == [(2, 5), (5, 9)]
+
+    def test_a_submission_goes_to_the_round_spawned_before_it_unless_that_round_had_ended(self):
+        def epoch(ts):
+            return deliveries.when(ts).timestamp()
+
+        rounds = [
+            {"spawn_ts": "2026-10-10T10:00:00Z", "end_ts": "2026-10-10T11:00:00Z"},
+            {"spawn_ts": "2026-10-10T11:00:00Z", "end_ts": "2026-10-10T12:00:00Z"},
+        ]
+        subs = [
+            (epoch("2026-10-10T09:59:00Z"), 1),  # before any round
+            (epoch("2026-10-10T10:30:00Z"), 2),
+            (epoch("2026-10-10T11:30:00Z"), 4),
+            (epoch("2026-10-10T12:00:01Z"), 8),  # after the last round's span
+        ]
+        posted, outside = deliveries.assign_submissions(subs, rounds)
+        assert (dict(posted), outside) == ({0: 2, 1: 4}, 9)

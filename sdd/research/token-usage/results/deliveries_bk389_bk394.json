@@ -260,8 +260,7 @@
       "<review-snapshot>/tests/_kernel/test_backend.py",
       "<review-snapshot>/tests/_kernel/test_delete_folder.py",
       "<review-snapshot>/tests/_kernel/test_kernel.py",
-      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py"
      ],
      "context_pct": {
       "prefix": 22.8,
@@ -378,8 +377,7 @@
       "<review-snapshot>/src/remote_store/_kernel/backend.py",
       "<review-snapshot>/tests/_kernel/test_delete_folder.py",
       "<review-snapshot>/tests/backends/conformance/test_health_probe_declared.py",
-      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py"
      ],
      "context_pct": {
       "prefix": 15.1,
@@ -531,8 +529,7 @@
       "<review-snapshot>/src/remote_store/_kernel/backend.py",
       "<review-snapshot>/tests/_kernel/test_backend.py",
       "<review-snapshot>/tests/_kernel/test_delete_folder.py",
-      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py"
      ],
      "context_pct": {
       "prefix": 13.1,
@@ -613,8 +610,7 @@
       "<review-snapshot>/tests/_kernel/test_delete_folder.py",
       "<review-snapshot>/tests/_kernel/test_kernel.py",
       "<review-snapshot>/tests/backends/conformance/test_health_probe_declared.py",
-      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py"
      ],
      "context_pct": {
       "prefix": 11.5,
@@ -792,8 +788,7 @@
       "<review-snapshot>/tests/_kernel/_fake.py",
       "<review-snapshot>/tests/_kernel/test_backend.py",
       "<review-snapshot>/tests/_kernel/test_delete_folder.py",
-      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py"
      ],
      "context_pct": {
       "prefix": 13.4,
@@ -834,8 +829,7 @@
       "<review-snapshot>/tests/_kernel/_fake.py",
       "<review-snapshot>/tests/_kernel/test_backend.py",
       "<review-snapshot>/tests/_kernel/test_condition_space.py",
-      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py"
      ],
      "context_pct": {
       "prefix": 14.2,
@@ -1453,8 +1447,7 @@
       "<review-snapshot>/src/remote_store/_kernel/backend.py",
       "<review-snapshot>/tests/_kernel/_fake.py",
       "<review-snapshot>/tests/_kernel/test_condition_space.py",
-      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/scripts/test_gen_sync_kernel.py"
      ],
      "context_pct": {
       "prefix": 13.3,
@@ -1579,8 +1572,7 @@
       "<review-snapshot>/src/remote_store/_kernel/_sync/_io.py",
       "<review-snapshot>/src/remote_store/_kernel/aio_backend.py",
       "<review-snapshot>/src/remote_store/_kernel/backend.py",
-      "<review-snapshot>/tests/_kernel/test_backend.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/_kernel/test_backend.py"
      ],
      "context_pct": {
       "prefix": 14.3,
@@ -1664,8 +1656,7 @@
       "<review-snapshot>/src/remote_store/_kernel/_model.py",
       "<review-snapshot>/src/remote_store/_kernel/_sync/_io.py",
       "<review-snapshot>/src/remote_store/_kernel/aio_backend.py",
-      "<review-snapshot>/src/remote_store/_kernel/backend.py",
-      "<tool-results>"
+      "<review-snapshot>/src/remote_store/_kernel/backend.py"
      ],
      "context_pct": {
       "prefix": 15.1,
@@ -1758,7 +1749,7 @@
      "passes": 2,
      "calls_median": 32.5,
      "units_m_median": 0.64,
-     "read_whole_median": 18.0,
+     "read_whole_median": 17.0,
      "findings_handed_back": 12
     },
     "unprimed": {
@@ -2108,8 +2099,7 @@
       "<review-snapshot>/.claude/skills/rvw-pr/SKILL.md",
       "<review-snapshot>/sdd/formal/StoreTree.dfy",
       "<review-snapshot>/sdd/rfcs/rfc-0021-key-resolution-model.md",
-      "<review-snapshot>/sdd/traces/bk-432-key-resolution-rfc.yml",
-      "<tool-results>"
+      "<review-snapshot>/sdd/traces/bk-432-key-resolution-rfc.yml"
      ],
      "context_pct": {
       "prefix": 20.6,
@@ -2237,7 +2227,6 @@
      "read_whole": [
       ".claude/skills/rvw-pr/SKILL.md",
       ".claude/skills/rvw-pr/measuring.md",
-      "<tool-results>",
       "scripts/dafny_verify.sh"
      ],
      "context_pct": {
@@ -2263,7 +2252,6 @@
      "findings_handed_back": 7,
      "read_whole": [
       ".claude/skills/rvw-pr/SKILL.md",
-      "<tool-results>",
       "sdd/formal/StoreTree.dfy",
       "sdd/rfcs/rfc-0021-key-resolution-model.md",
       "sdd/specs/051-store-tree.md"
@@ -2291,7 +2279,6 @@
      "findings_handed_back": 7,
      "read_whole": [
       ".claude/skills/rvw-pr/SKILL.md",
-      "<tool-results>",
       "sdd/formal/StoreTree.dfy",
       "sdd/rfcs/rfc-0021-key-resolution-model.md",
       "sdd/specs/051-store-tree.md"
@@ -2345,7 +2332,6 @@
      "findings_handed_back": 5,
      "read_whole": [
       ".claude/skills/rvw-pr/SKILL.md",
-      "<tool-results>",
       "sdd/formal/StoreTree.dfy",
       "sdd/rfcs/rfc-0021-key-resolution-model.md",
       "sdd/specs/051-store-tree.md"
@@ -2424,7 +2410,6 @@
      "findings_handed_back": 3,
      "read_whole": [
       ".claude/skills/rvw-pr/SKILL.md",
-      "<tool-results>",
       "sdd/rfcs/rfc-0021-key-resolution-model.md",
       "sdd/specs/051-store-tree.md"
      ],
@@ -2451,7 +2436,6 @@
      "findings_handed_back": 1,
      "read_whole": [
       ".claude/skills/rvw-pr/SKILL.md",
-      "<tool-results>",
       "sdd/formal/StoreTree.dfy",
       "sdd/rfcs/rfc-0021-key-resolution-model.md",
       "sdd/specs/051-store-tree.md"
@@ -2501,7 +2485,7 @@
     "calls_median": 21.0,
     "units_m_median": 0.3,
     "units_m_total": 5.58,
-    "read_whole_median": 4.0,
+    "read_whole_median": 3.0,
     "prefix_pct_mean": 32.1,
     "process_pct_mean": 13.6,
     "pr_pct_mean": 21.9
@@ -2511,7 +2495,7 @@
      "passes": 6,
      "calls_median": 21.0,
      "units_m_median": 0.3,
-     "read_whole_median": 3.5,
+     "read_whole_median": 3.0,
      "findings_handed_back": 13
     },
     "other": {
@@ -2532,7 +2516,7 @@
      "passes": 5,
      "calls_median": 24,
      "units_m_median": 0.35,
-     "read_whole_median": 5,
+     "read_whole_median": 4,
      "findings_handed_back": 31
     }
    },
@@ -2760,8 +2744,7 @@
       "<review-snapshot>/src/remote_store/aio/backends/_memory.py",
       "<review-snapshot>/src/remote_store/backends/_memory.py",
       "<review-snapshot>/src/remote_store/backends/_memory_tree.py",
-      "<review-snapshot>/src/remote_store/drivers.py",
-      "<tool-results>"
+      "<review-snapshot>/src/remote_store/drivers.py"
      ],
      "context_pct": {
       "prefix": 14.7,
@@ -2823,8 +2806,7 @@
       "<review-snapshot>/src/remote_store/_kernel/_sync/driver.py",
       "<review-snapshot>/src/remote_store/_kernel/backend.py",
       "<review-snapshot>/src/remote_store/drivers.py",
-      "<review-snapshot>/tests/backends/conformance/test_health_probe_declared.py",
-      "<scratch>"
+      "<review-snapshot>/tests/backends/conformance/test_health_probe_declared.py"
      ],
      "context_pct": {
       "prefix": 18.0,
@@ -2927,8 +2909,7 @@
       "<review-snapshot>/src/remote_store/aio/backends/_memory.py",
       "<review-snapshot>/src/remote_store/backends/_memory.py",
       "<review-snapshot>/tests/backends/conformance/test_health_probe_declared.py",
-      "<review-snapshot>/tmp/base/src/remote_store/backends/_memory.py",
-      "<tool-results>"
+      "<review-snapshot>/tmp/base/src/remote_store/backends/_memory.py"
      ],
      "context_pct": {
       "prefix": 18.9,
@@ -2961,8 +2942,7 @@
       "<review-snapshot>/src/remote_store/backends/_memory.py",
       "<review-snapshot>/src/remote_store/backends/_memory_tree.py",
       "<review-snapshot>/src/remote_store/drivers.py",
-      "<review-snapshot>/tests/backends/conformance/test_health_probe_declared.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/backends/conformance/test_health_probe_declared.py"
      ],
      "context_pct": {
       "prefix": 12.4,
@@ -3060,8 +3040,7 @@
       "<review-snapshot>/src/remote_store/aio/backends/_memory.py",
       "<review-snapshot>/src/remote_store/backends/_memory.py",
       "<review-snapshot>/src/remote_store/drivers.py",
-      "<review-snapshot>/tests/backends/conformance/test_health_probe_declared.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/backends/conformance/test_health_probe_declared.py"
      ],
      "context_pct": {
       "prefix": 10.5,
@@ -3282,8 +3261,7 @@
       "<review-snapshot>/src/remote_store/aio/backends/_memory.py",
       "<review-snapshot>/src/remote_store/backends/_memory.py",
       "<review-snapshot>/src/remote_store/backends/_memory_tree.py",
-      "<review-snapshot>/tests/backends/memory/test_kernel_cells.py",
-      "<tool-results>"
+      "<review-snapshot>/tests/backends/memory/test_kernel_cells.py"
      ],
      "context_pct": {
       "prefix": 14.3,
@@ -3405,39 +3383,39 @@
     "calls_median": 51.5,
     "units_m_median": 0.94,
     "units_m_total": 21.49,
-    "read_whole_median": 10.5,
+    "read_whole_median": 10.0,
     "prefix_pct_mean": 17.2,
     "process_pct_mean": 7.9,
     "pr_pct_mean": 44.2
    },
    "by_method": {
     "measuring": {
-     "passes": 7,
-     "calls_median": 48,
-     "units_m_median": 0.68,
-     "read_whole_median": 7,
-     "findings_handed_back": 18
+     "passes": 8,
+     "calls_median": 50.5,
+     "units_m_median": 0.7,
+     "read_whole_median": 7.0,
+     "findings_handed_back": 19
     },
     "other": {
      "passes": 4,
      "calls_median": 60.5,
      "units_m_median": 1.2,
-     "read_whole_median": 13.0,
+     "read_whole_median": 12.5,
      "findings_handed_back": 14
     },
     "unprimed": {
      "passes": 4,
      "calls_median": 50.0,
      "units_m_median": 0.91,
-     "read_whole_median": 9.5,
+     "read_whole_median": 9.0,
      "findings_handed_back": 13
     },
     "whole-file": {
-     "passes": 5,
-     "calls_median": 72,
-     "units_m_median": 1.82,
-     "read_whole_median": 25,
-     "findings_handed_back": 20
+     "passes": 4,
+     "calls_median": 57.0,
+     "units_m_median": 1.4,
+     "read_whole_median": 26.0,
+     "findings_handed_back": 19
     }
    },
    "unassigned_passes": 0
@@ -3650,8 +3628,7 @@
      "read_whole": [
       ".claude/skills/rvw-pr/SKILL.md",
       "<review-snapshot>/sdd/backlog/bug-280-local-listing-permission-leak.md",
-      "<review-snapshot>/src/remote_store/backends/_local.py",
-      "<tool-results>"
+      "<review-snapshot>/src/remote_store/backends/_local.py"
      ],
      "context_pct": {
       "prefix": 40.9,
@@ -3677,8 +3654,7 @@
      "read_whole": [
       "<review-snapshot>/.claude/skills/rvw-pr/SKILL.md",
       "<review-snapshot>/sdd/backlog/bug-280-local-listing-permission-leak.md",
-      "<review-snapshot>/sdd/backlogid.json",
-      "<tool-results>"
+      "<review-snapshot>/sdd/backlogid.json"
      ],
      "context_pct": {
       "prefix": 33.7,
@@ -3780,8 +3756,7 @@
      "units_m": 0.73,
      "findings_handed_back": 1,
      "read_whole": [
-      ".claude/skills/rvw-pr/SKILL.md",
-      "<scratch>"
+      ".claude/skills/rvw-pr/SKILL.md"
      ],
      "context_pct": {
       "prefix": 37.5,

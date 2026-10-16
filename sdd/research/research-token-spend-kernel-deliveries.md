@@ -1,7 +1,7 @@
 # Research: Two Kernel Deliveries Measured — Long Loops on Large Diffs
 
 **Date:** 2026-10-16
-**Backlog items:** BK-389 (PR #1127, with the RFC-0021 detour BK-432, PR #1130) and BK-394 (PR #1144), measured as order step 2 of the token-spend work; evidence for BK-431's open keep-or-drop decision.
+**Backlog items:** BK-389 (PR #1127, with the RFC-0021 detour BK-432, PR #1130) and BK-394 (PR #1144); evidence for BK-431's open keep-or-drop decision.
 **Status:** Measurement complete for the two deliveries. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md#document-types). It follows [`research-token-spend-means.md`](research-token-spend-means.md) and [`token-usage/report.md`](token-usage/report.md), which stay as written; where a figure here re-derives one of theirs, both are given.
 **Related:** proposal 6 of [`research-token-spend-means.md` § 6](research-token-spend-means.md#6-proposals) asked for this measurement; [ADR-0045](../adrs/0045-close-on-a-check-that-can-fail.md) says a spend figure is judged with the defects shipped.
 
@@ -10,25 +10,25 @@
 Two `/ship` deliveries on the contract kernel cost 98.25 M units (BK-389) and
 57.22 M (BK-394), about $227 and $132, and 72 to 92% of it was the review loop.
 Neither loop converged: every one of BK-389's 16 rounds and BK-394's 9 posted
-must-fix findings, and both closed on a maintainer's waiver. Measured per
-round, a round cost 4.4 to 4.5 M units, nearly twice run B's 2.4 M, because the
-diffs were four to five times larger and the main context kept growing.
+findings, and both closed on a maintainer's waiver. A round cost 4.4 to 4.5 M
+units, nearly twice run B's 2.4 M, on larger diffs and a main context that kept
+growing; the cost did not scale with the diff's file count (§ 2).
 
-1. **The loop is still where the cost is**, and on a large diff it grows with
-   the diff: the review passes read more of the PR, and the main session
-   carries every fix.
+1. **The loop is still where the cost is**, and on a larger diff a round costs
+   more: the review passes read more of the PR, and the main session carries
+   every fix.
 2. **BK-431's smaller reviewer input held in every pass.** All 82 passes ran as
    `reviewer` and opened at 19.5k to 34.6k tokens, against run B's 42.9k to
    43.9k; the prefix fell from 40.6% to 16 to 32% of a pass's context. It did
    not make passes cheaper, because the PR's own files took the room.
-3. **These runs cannot show that run B's saving recurs.** They have no A run,
-   are four to five times run B's size, drew code findings, not prose only,
-   and ran locally. Done-when 2 of the topic's roadmap is not met by them, and
-   no further delivery is measured.
+3. **These runs cannot show that run B's saving recurs.** Proposal 6 asked for
+   two more `/ship` deliveries, one of them drawing prose findings only, to
+   decide that. These two have no A run and both drew code findings, and no
+   further delivery is measured.
 
 ## Context
 
-Order step 2 measured `/ship BK-389`, the RFC-0017 kernel, as the next delivery
+The delivery measured was `/ship BK-389`, the RFC-0017 kernel, the next one run
 on the means of [`research-token-spend-means.md`](research-token-spend-means.md).
 The run did not stay one delivery. After twelve review rounds its maintainer
 paused it for a concept change, RFC-0021 (PR #1130, built and reviewed in its
@@ -57,7 +57,7 @@ Run B, re-derived with today's kit, cost 15.00 M.
 | Units | 98.25 M | 28.77 M | 57.22 M | 15.00 M |
 | Est. $ | 226.97 | 66.46 | 132.17 | 34.65 |
 | Session parts | 6 | 2 | 2 | 2 |
-| Files the PR changes | 91 | 56 | 94 | 21 |
+| Files the PR changes | 91 (37 through round 12) | 56 | 94 | 21 |
 | Orient + plan | 1.7% | 0.3% | 5.4% | 7.2% |
 | Build (to PR open) | 6.9% | 10.5% | 22.9% | 9.8% |
 | Review loop (after PR open) | 91.5% | 89.2% | 71.8% | 83.0% |
@@ -73,12 +73,15 @@ answered dialog marks no real plan, and its first two rows mean little.
 
 - **#1127 contains #1130.** RFC-0021 was merged into BK-389's branch as one
   commit and landed with it, which is why #1127 changes 91 files; the two PRs'
-  costs do not overlap, since each session part is counted once.
+  costs do not overlap, since each session part is counted once. Before that
+  commit, through its round 12, #1127 changed 37 files (`git diff --shortstat
+  origin/master...bc03b75e2^1`, the branch head below #1130's squash commit;
+  `changed_files` is the PR's list when measured).
 - **Two session parts are not counted in any delivery.** A subagent in
   BK-389's last session opened and fixed PRs #1142 and #1143 (BUG-326,
   BUG-327) for 2.99 M, and the RFC-0021 session's resume on 2026-10-15
   reviewed PR #1131 (BK-435) for 2.41 M in 13 calls after two idle days
-  [other]. The handoff counted the second under RFC-0021.
+  [other].
 - **Not split:** BK-389's last session also relayed the BUG-326 work in its
   main context, a few calls left inside BK-389.
 
@@ -125,10 +128,13 @@ two findings on #1130 posted from a session outside the delivery.
   to 378k, 594k to 443k, 559k to 504k [`BK-389.rounds[].main_ctx_k`]. BK-394
   ran all nine rounds in one session, from 91k to 736k. No session compacted
   except one RFC-0021 session, once.
-- **A round costs more on a large diff.** BK-389 and BK-394 change four to five
-  times run B's files, and a round cost 1.8 to 1.9 times run B's; per finding,
-  they cost less than run B, because they drew about twice run B's findings
-  per round (7.5 and 6.7 against 3.4).
+- **A round costs more on a larger diff, but not in proportion to it.**
+  BK-389's rounds 1 to 12 reviewed at most 37 files, 1.8 times run B's 21, and
+  cost 4.06 M each; its rounds 13 to 16, on 91 files, cost 5.29 M each;
+  BK-394's, on 94, 4.51 M; run B's 2.43 M (BK-389's split summed from
+  `BK-389.rounds[].units_m`, the file counts as in § 1). Per finding, they cost
+  less than run B, because they drew about twice run B's findings per round
+  (7.5 and 6.7 against 3.4).
 
 **RFC-0021's loop was cheap per round because its rounds were narrow.** Seven of
 its 13 rounds ran a single pass, three of them narrow checks of one commit, and
@@ -149,32 +155,37 @@ files read whole [`passes`]; this table summarises them.
 | Calls, median | 39 | 21 | 51.5 | 25 |
 | Units per pass, median | 0.81 M | 0.30 M | 0.94 M | 0.43 M |
 | Units of all passes | 35.04 M | 5.58 M | 21.49 M | 5.19 M |
-| Files read whole, median | 14.5 | 4 | 10.5 | 3 |
+| Files read whole, median | 14.5 | 3 | 10 | 3 |
 | Context: prefix | 16.2% | 32.1% | 17.2% | 40.6% |
 | Context: process files | 7.2% | 13.6% | 7.9% | 13.0% |
 | Context: the PR | 51.6% | 21.9% | 44.2% | 19.0% |
 
-From [`pass_summary`]. The context rows are the means of `tokkit.py
-subagents`'s split per pass. The higher first contexts, 26k to 35k, are the
+From [`pass_summary`]. Files read whole are the checkout's; a spilled tool
+output or a scratch file read back is not counted. The context rows are the
+means of `tokkit.py subagents`'s split per pass. The higher first contexts, 26k to 35k, are the
 five solo rounds run as a forked `/rvw-pr`, which loads the skill's body
 [`passes[].first_ctx`]. Neither PR edits `rvw-pr` [`edits_rvw_pr`], so no pass
 read its own instructions as a subject, the confound #1125 met.
 
-By method, from [`by_method`]; findings are those each pass handed back, which
-a posted round merges where they share a file, so they sum above the posted
-count (135 against 120 on BK-389, 65 against 60 on BK-394):
+By method, from [`by_method`]: a pass counts under the method its description
+names first, and its findings are those it handed back. In total these exceed
+the posted count (135 against 120 on BK-389, 65 against 60 on BK-394), since a
+posted round merges findings that share a file, but not in every round: BK-389's
+round 2, a solo measuring pass, and RFC-0021's round 2, also one pass, posted 7
+and 5 against 4 handed back [`rounds[]`], so a method's row can also fall short
+of what it contributed to the posted count.
 
 | Method | BK-389 passes | its findings | BK-394 passes | its findings |
 | --- | ---: | ---: | ---: | ---: |
-| Whole-file | 12 | 62 | 5 | 20 |
+| Whole-file | 12 | 62 | 4 | 19 |
 | Unprimed | 13 | 33 | 4 | 13 |
-| Measuring | 15 | 28 | 7 | 18 |
+| Measuring | 15 | 28 | 8 | 19 |
 | Other lens (solo, reader, consistency, neglected surface) | 2 | 12 | 4 | 14 |
 
 - **Whole-file passes found the most on BK-389**, about five findings each
   against two for a measuring pass, at a similar median cost (0.82 M against
-  0.92 M). On BK-394 the whole-file passes read a median 25 files whole and
-  cost a median 1.82 M, the most of any method, for four findings each.
+  0.92 M). On BK-394 the whole-file passes read a median 26 files whole and
+  cost a median 1.40 M, the most of any method, for about five findings each.
 - **The files each pass read whole are in its row** of
   [`passes[].read_whole`], with its calls, for the call-list comparison #1125
   made by hand between two passes; this record does not repeat it.
@@ -210,7 +221,7 @@ replaces, has no partner here: neither delivery has an A run.
 
 ## 5. Active time
 
-**By the handoff's gap method, BK-389 was worked for 7 h 02 min over 24.6 hours
+**By the gap method in `deliveries.py`, BK-389 was worked for 7 h 02 min over 24.6 hours
 of session time, BK-394 for 3 h 54 min, and RFC-0021 for 2 h 37 min.**
 
 | | BK-389 | RFC-0021 | BK-394 | run B |
@@ -241,20 +252,24 @@ sessions are not in it, and the overnight waits inside a session are.
 **BK-431's input is the one control these runs test, and it held; nothing here
 re-tests the other controls.**
 
-- **For BK-431.** Every pass opened on the smaller input, the prefix share fell
-  by more than half against run B, and neither PR edits `rvw-pr`, so the
-  confound #1125 met does not arise. This supports keeping it. Whether to
-  close it, and with it the partial supersession of ADR-0036's staffing clause
-  the roadmap names, is the maintainer's call; this record does not close it.
+- **For BK-431.** Every pass opened on the smaller input; the prefix share fell
+  by more than half against run B's 40.6% on BK-389 and BK-394 (16.2% and
+  17.2%) and by a fifth on RFC-0021 (32.1%) [`pass_summary.prefix_pct_mean`];
+  and neither PR edits `rvw-pr`, so the confound #1125 met does not arise. This
+  supports keeping it. Whether to close it is the maintainer's call, and so is
+  whether spawning every member as `reviewer` partially supersedes
+  [ADR-0036](../adrs/0036-reviewers-by-subject-and-method.md)'s first decision,
+  which keeps domain personas as a way to staff a scoped lens; this record does
+  not close it.
 - **The loop's cost on a large PR is its length, not its passes.** Half of a
   round's units were the main session's, and that session carried every fix
   forward; only a session break lowered its context. A loop that does not
   converge pays its context again every round.
-- **Proposal 6 ends here unmet.** It asked for deliveries that show run B's
-  saving recurs without more defects, one of them drawing prose findings only
-  and one in a cloud session. These two have no A run and drew code findings,
-  both ran locally, and BK-394 started with a context prompt in the main
-  checkout rather than in a fresh worktree.
+- **Proposal 6 ends here unmet.** It asked for two more `/ship` deliveries,
+  one of them drawing prose findings only, to decide whether the saving
+  recurs. These two have no A run to compare with, and both drew code
+  findings; BK-394 also started with a context prompt in the main checkout
+  rather than in a fresh worktree.
 
 ## Reproducing
 
