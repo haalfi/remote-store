@@ -8,7 +8,7 @@ imports the driver module, which imports them.
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from typing import Protocol
+from typing import Protocol, cast
 
 #: What ``get`` returns: the async driver streams chunks.
 ReadStream = AsyncIterator[bytes]
@@ -79,28 +79,33 @@ async def _marked(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
         yield chunk
 
 
-def require_content(content: object) -> None:
-    """Refuse, before any I/O, *content* that is neither a bytes buffer nor an async iterator."""
-    if isinstance(content, bytes | bytearray | memoryview) or callable(getattr(content, "__aiter__", None)):
-        return
-    msg = f"content must be bytes or an async iterator of bytes, not {type(content).__name__}"
-    raise TypeError(msg)
+def take_content(content: object) -> Content:
+    """*content* as the kernel passes it on, converted or refused after the metadata gate and before any I/O.
 
-
-def guard_content(content: Content) -> Content:
-    """*content* as a driver receives it: ``bytes``, or the caller's iterator marked.
-
-    A ``bytearray`` or ``memoryview`` becomes a copy as ``bytes``, so no driver
-    sees a type ``Content`` does not name. The choke point passes a marked
-    error through verbatim: a failing source the caller handed in is not a
-    wire error to classify.
+    A ``bytearray`` or ``memoryview`` becomes a copy as ``bytes`` here, so a
+    buffer that cannot be read fails at the same rank as content that is
+    neither a buffer nor an async iterator, which is a ``TypeError``.
     """
     if isinstance(content, bytes):
         return content
     if isinstance(content, bytearray | memoryview):
         return bytes(content)
-    if not callable(getattr(content, "__aiter__", None)):
-        return content  # not content at all: require_content refuses it, in pipeline order
+    if callable(getattr(content, "__aiter__", None)):
+        return cast("AsyncIterator[bytes]", content)
+    msg = f"content must be bytes or an async iterator of bytes, not {type(content).__name__}"
+    raise TypeError(msg)
+
+
+def guard_content(content: Content) -> Content:
+    """*content* with the caller's iterator marked: what it raises is the caller's.
+
+    The choke point passes a marked error through verbatim: a failing source
+    the caller handed in is not a wire error to classify. A buffer, or anything
+    without ``__aiter__``, is returned as it is: ``take_content`` converts or
+    refuses it, at its own rank.
+    """
+    if isinstance(content, bytes | bytearray | memoryview) or not callable(getattr(content, "__aiter__", None)):
+        return content
     return _marked(content)
 
 

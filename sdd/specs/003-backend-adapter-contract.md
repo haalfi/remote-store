@@ -536,12 +536,12 @@ for all backends, including SQLBlob.
 **Formal coverage:** `write()` is modelled in `sdd/formal/BackendContract.dfy`
 as `Write` with postconditions covering the precondition evaluation order
 (since BK-388 the closed guard `!Live() → BackendUnavailable` (BE-020) and the
-root refusal `AddressesRoot(path) → InvalidPath` (BE-029) first, then
-`IsDir → InvalidPath`, `!AllAncestorsTraversable → InvalidPath` (ID-209),
-`IsFile ∧ !overwrite → AlreadyExists`), the WR-010
-strict gate (`HasUserMetadata(metadata) ∧ CapUserMetadata !in capabilities →
-CapabilityNotSupported`, with empty-mapping carve-out encoded by
-`HasUserMetadata`), the WR-001a schema (`r.value.path == path ∧ r.value.size
+root refusal `AddressesRoot(path) → InvalidPath` (BE-029) first, then the
+WR-010 strict gate (`HasUserMetadata(metadata) ∧ CapUserMetadata !in
+capabilities → CapabilityNotSupported`, with empty-mapping carve-out encoded
+by `HasUserMetadata`, and an unchanged-state frame; BE-030 holds it ahead of
+any I/O), then `IsDir → InvalidPath`, `!AllAncestorsTraversable → InvalidPath`
+(ID-209), `IsFile ∧ !overwrite → AlreadyExists`), the WR-001a schema (`r.value.path == path ∧ r.value.size
 == |content|`), WR-004 (source Native iff `CapWriteResultNative`), WR-005
 (Basic source → rich fields None), WR-012 metadata echo, and WR-013
 round-trip (`fs[path].info.metadata` reflects what was stored). ID-209
@@ -1452,7 +1452,9 @@ states the same order.
 a `bytes` copy, and so does a buffer a content stream (or, async, its iterator)
 yields. Content that is no bytes source, neither a buffer nor a readable stream
 (async: an async iterator), is refused with `TypeError` after WR-010's gate and
-before any I/O; a stream that yields something not binary raises `TypeError`
+before any I/O, on `write` and `write_atomic` alike; a buffer that cannot be
+read as `bytes` (a released `memoryview`) fails at the same rank with its own
+error. A stream that yields something not binary raises `TypeError`
 when read, as the caller's own error, passed through verbatim like
 ASYNC-091's and never classified. A check on the target made before the
 stream is read answers first, such as `write_atomic`'s `stat` by temp and

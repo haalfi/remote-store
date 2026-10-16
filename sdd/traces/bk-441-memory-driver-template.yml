@@ -101,7 +101,7 @@ phases:
       - file: src/remote_store/_kernel/_async/kernel.py
         section: "_check_construction, write, _write_atomic"
         read_type: gate
-        extract: "Required set derived from vars(AsyncDriver) minus probe, checked after the declaration checks; require_content after the metadata gate"
+        extract: "Primitive set derived from vars(AsyncDriver), checked after the declaration checks: every member must be present, and only probe's inherited body is exempt (round 2 of PR #1147 refused an absent probe); content converted or refused after the metadata gate (take_content since round 3)"
       - file: tests/_kernel/_fake.py
         section: "_SyncBase, _AsyncBase, make_kernel"
         read_type: reference

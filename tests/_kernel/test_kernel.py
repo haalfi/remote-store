@@ -1431,7 +1431,9 @@ def test_a_declared_capability_the_protocols_cannot_back_is_refused(
         make_kernel(runtime, FakeStore(), caps=caps, protocols=protocols)
 
 
-_REQUIRED = {
+# The primitives whose protocol body construction refuses: every one but probe
+# (and close or aclose, added per runtime). Presence is checked for all fourteen.
+_BODY_CHECKED = {
     "stat", "get", "put", "delete", "list_page", "classify", "container_absent",
     "connection_dead", "unwrap", "native_path", "to_key", "resolve",
 }  # fmt: skip
@@ -1455,12 +1457,12 @@ def _with_member(driver: Any, member: str, value: Any) -> Any:
     return driver
 
 
-def _required_members(runtime: str) -> list[str]:
-    return sorted(_REQUIRED | {"close" if runtime == "sync" else "aclose"})
+def _body_checked_members(runtime: str) -> list[str]:
+    return sorted(_BODY_CHECKED | {"close" if runtime == "sync" else "aclose"})
 
 
 @pytest.mark.spec("BE-030")
-@pytest.mark.parametrize("member", sorted(_REQUIRED | {"close/aclose"}))
+@pytest.mark.parametrize("member", sorted(_BODY_CHECKED | {"close/aclose"}))
 def test_a_required_primitive_left_as_the_protocols_body_is_refused(runtime: str, member: str) -> None:
     if member == "close/aclose":
         member = "close" if runtime == "sync" else "aclose"
@@ -1470,7 +1472,7 @@ def test_a_required_primitive_left_as_the_protocols_body_is_refused(runtime: str
 
 
 @pytest.mark.spec("BE-030", "PING-008")
-@pytest.mark.parametrize("member", sorted(_REQUIRED | {"close/aclose", "probe"}))
+@pytest.mark.parametrize("member", sorted(_BODY_CHECKED | {"close/aclose", "probe"}))
 def test_an_absent_required_primitive_is_refused(runtime: str, member: str) -> None:
     # probe too: only the inherited body is the exemption, and a structural
     # driver has nothing to inherit.
@@ -1489,10 +1491,11 @@ def test_an_inherited_probe_is_the_exemption_not_a_refusal(runtime: str) -> None
 
 
 @pytest.mark.spec("BE-030")
-def test_the_required_set_is_every_protocol_method_but_probe(runtime: str) -> None:
-    # Drift guard: the refusal covers what the protocol declares, no more and no less.
+def test_the_body_checked_set_is_every_protocol_method_but_probe(runtime: str) -> None:
+    # Drift guard: the cells above cover what the protocol declares, no more and
+    # no less; presence is checked for all of it, probe included.
     declared = {n for n, v in vars(_protocol(runtime)).items() if callable(v) and not n.startswith("_")}
-    assert sorted(declared - {"probe"}) == _required_members(runtime)
+    assert sorted(declared - {"probe"}) == _body_checked_members(runtime)
 
 
 # ---------------------------------------------------------------------------
@@ -1560,8 +1563,10 @@ def _flat_with_a_file_above() -> dict[str, Any]:
 # stat on temp-and-rename without overwrite. So "no driver call" observes the
 # refusal's rank, not only its existence.
 _IO_BEFORE_PUT: dict[str, tuple[Any, str, dict[str, Any]]] = {
-    "flat": (_flat_with_a_file_above, "write", {}),
-    "explicit-parents": (lambda: {"store": FakeStore()}, "write", {}),
+    "flat-write": (_flat_with_a_file_above, "write", {}),
+    "flat-write_atomic": (_flat_with_a_file_above, "write_atomic", {}),
+    "explicit-parents-write": (lambda: {"store": FakeStore()}, "write", {}),
+    "explicit-parents-write_atomic": (lambda: {"store": FakeStore()}, "write_atomic", {}),
     "rename-no-overwrite": (
         lambda: {"store": _store(), "protocols": ("remove_folder", "rename")},
         "write_atomic",
@@ -1570,34 +1575,66 @@ _IO_BEFORE_PUT: dict[str, tuple[Any, str, dict[str, Any]]] = {
 }
 
 
+def _released() -> memoryview:
+    view = memoryview(bytearray(b"q"))
+    view.release()
+    return view
+
+
+# Content the kernel refuses at BE-030 § Content's rank, and what it raises:
+# no bytes source at all, and a buffer that cannot be read as bytes.
+_BAD_CONTENT: dict[str, tuple[Any, type[Exception], str]] = {
+    "no-bytes-source": (lambda: ["x"], TypeError, "content must be bytes"),
+    "unreadable-buffer": (_released, ValueError, "released"),
+}
+
+
 @pytest.mark.spec("BE-030", "BE-008")
+@pytest.mark.parametrize("bad", sorted(_BAD_CONTENT))
 @pytest.mark.parametrize("case", sorted(_IO_BEFORE_PUT))
-def test_the_type_refusal_ranks_ahead_of_the_kernels_own_io(runtime: str, case: str) -> None:
+def test_the_content_refusal_ranks_ahead_of_the_kernels_own_io(runtime: str, case: str, bad: str) -> None:
     make, method, kwargs = _IO_BEFORE_PUT[case]
+    content, error, message = _BAD_CONTENT[bad]
     setup = make()
     store = setup.pop("store")
     run = make_kernel(runtime, store, **setup)
     store.calls.clear()
-    with pytest.raises(TypeError, match="content must be bytes"):
-        getattr(run, method)("a/b", ["x"], **kwargs)
+    with pytest.raises(error, match=message):
+        getattr(run, method)("a/b", content(), **kwargs)
     assert store.calls == []
 
 
 @pytest.mark.spec("BE-030", "BE-020")
-def test_a_closed_backend_outranks_the_type_refusal(runtime: str) -> None:
+@pytest.mark.parametrize("bad", sorted(_BAD_CONTENT))
+@pytest.mark.parametrize("method", ["write", "write_atomic"])
+def test_a_closed_backend_outranks_the_content_refusal(runtime: str, method: str, bad: str) -> None:
     run = make_kernel(runtime, _store(), close_is_terminal=True)
     run.close()
     with pytest.raises(BackendUnavailable, match="closed"):
-        run.write("f", ["x"])  # type: ignore[arg-type]
+        getattr(run, method)("f", _BAD_CONTENT[bad][0]())
 
 
-@pytest.mark.spec("BE-030", "BE-008")
-def test_the_type_refusal_ranks_after_the_root_and_the_metadata_gate(runtime: str) -> None:
-    run = make_kernel(runtime, _store(), caps=(Capability.READ, Capability.WRITE))
+@pytest.mark.spec("BE-030", "BE-008", "WR-010")
+@pytest.mark.parametrize("bad", sorted(_BAD_CONTENT))
+@pytest.mark.parametrize("method", ["write", "write_atomic"])
+def test_the_content_refusal_ranks_after_the_root_and_the_metadata_gate(runtime: str, method: str, bad: str) -> None:
+    caps = (Capability.READ, Capability.WRITE, Capability.ATOMIC_WRITE)
+    run = make_kernel(runtime, _store(), caps=caps)
+    content = _BAD_CONTENT[bad][0]
     with pytest.raises(InvalidPath):
-        run.write("", ["x"])  # type: ignore[arg-type]
+        getattr(run, method)("", content())
+    with pytest.raises(InvalidPath):
+        getattr(run, method)("d\\f", content())
     with pytest.raises(CapabilityNotSupported):
-        run.write("f", ["x"], metadata={"k": "v"})  # type: ignore[arg-type]
+        getattr(run, method)("f", content(), metadata={"k": "v"})
+
+
+@pytest.mark.spec("BE-030", "BE-011")
+@pytest.mark.parametrize("bad", sorted(_BAD_CONTENT))
+def test_an_undeclared_atomic_write_outranks_the_content_refusal(runtime: str, bad: str) -> None:
+    run = make_kernel(runtime, _store(), caps=(Capability.READ, Capability.WRITE))
+    with pytest.raises(CapabilityNotSupported):
+        run.write_atomic("f", _BAD_CONTENT[bad][0]())
 
 
 @pytest.mark.spec("BE-002")

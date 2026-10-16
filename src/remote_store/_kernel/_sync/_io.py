@@ -76,10 +76,19 @@ def _binary(chunk: object, source: object) -> object:
     raise exc
 
 
-def require_content(content: object) -> None:
-    """Refuse, before any I/O, *content* that is neither a bytes buffer nor a readable stream."""
-    if isinstance(content, bytes | bytearray | memoryview) or callable(getattr(content, "read", None)):
-        return
+def take_content(content: object) -> Content:
+    """*content* as the kernel passes it on, converted or refused after the metadata gate and before any I/O.
+
+    A ``bytearray`` or ``memoryview`` becomes a copy as ``bytes`` here, so a
+    buffer that cannot be read fails at the same rank as content that is
+    neither a buffer nor a readable stream, which is a ``TypeError``.
+    """
+    if isinstance(content, bytes):
+        return content
+    if isinstance(content, bytearray | memoryview):
+        return bytes(content)
+    if callable(getattr(content, "read", None)):
+        return cast("BinaryIO", content)
     msg = f"content must be bytes or a readable binary stream, not {type(content).__name__}"
     raise TypeError(msg)
 
@@ -113,7 +122,11 @@ class _MarkedReader:
             except Exception as exc:
                 _mark(exc)
                 raise
-            return _binary(answer, self._stream) if name in _BYTE_READS else answer
+            if name in _BYTE_READS:
+                return _binary(answer, self._stream)
+            if name == "readlines":
+                return [_binary(line, self._stream) for line in cast("list[object]", answer)]
+            return answer
 
         return marked
 
@@ -175,7 +188,9 @@ class _ForwardedContext:
         try:
             return self._stream.__exit__(*exc_info)  # type: ignore[arg-type]
         except Exception as exc:
-            _mark(exc)
+            # The exception the with-body raised, re-raised, is the driver's own.
+            if exc is not exc_info[1]:
+                _mark(exc)
             raise
 
 
@@ -197,19 +212,15 @@ def _proxy_type(stream: object) -> type[_MarkedReader]:
 
 
 def guard_content(content: Content) -> Content:
-    """*content* as a driver receives it: ``bytes``, or the caller's stream marked.
+    """*content* with the caller's stream marked: what its reads raise is the caller's.
 
-    A ``bytearray`` or ``memoryview`` becomes a copy as ``bytes``, so no driver
-    sees a type ``Content`` does not name. The choke point passes a marked
-    error through verbatim: a failing source the caller handed in is not a
-    wire error to classify.
+    The choke point passes a marked error through verbatim: a failing source
+    the caller handed in is not a wire error to classify. A buffer, or anything
+    without ``read``, is returned as it is: ``take_content`` converts or
+    refuses it, at its own rank.
     """
-    if isinstance(content, bytes):
+    if isinstance(content, bytes | bytearray | memoryview) or not callable(getattr(content, "read", None)):
         return content
-    if isinstance(content, bytearray | memoryview):
-        return bytes(content)
-    if not callable(getattr(content, "read", None)):
-        return content  # not content at all: require_content refuses it, in pipeline order
     return cast("BinaryIO", _proxy_type(content)(content))
 
 

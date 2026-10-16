@@ -76,7 +76,7 @@ _CLASSIFY_DECIDES = frozenset({Op.WRITE, Op.WRITE_ATOMIC, Op.OPEN_ATOMIC, Op.PRO
 
 
 def _check_construction(driver: AsyncDriver) -> None:
-    """Refuse a driver whose declarations its protocols cannot back.
+    """Refuse a driver whose declarations its protocols cannot back, or that lacks a primitive.
 
     Construction is not an operation, so this raises ``ValueError``, not a
     mapped error; wrapping construction is deferred to D3 step 3 (OQ5).
@@ -301,8 +301,9 @@ class _AsyncKernelCore:
         ValueError: If the driver's declarations are not backed by its
             protocols, it is flat and has folder objects, it has explicit
             parents and no ``ensure_parents``, it has folder objects and no
-            ``remove_folder``, or the class's own ``close_is_terminal``
-            differs from the driver's.
+            ``remove_folder``, the class's own ``close_is_terminal``
+            differs from the driver's, or a primitive is missing or, other
+            than ``probe``, is the protocol's own body.
     """
 
     def __init__(self, driver: AsyncDriver) -> None:
@@ -824,7 +825,7 @@ class _AsyncKernelCore:
         self._guard()
         key = self._write_key(path)
         self._require_metadata(metadata, key)
-        _io.require_content(content)  # a caller's type error, ahead of any I/O (BE-030 § Content)
+        content = _io.take_content(content)  # converted or refused ahead of any I/O (BE-030 § Content)
         target = RemotePath(key)  # built before the driver commits (BE-030 step 5)
         await self._prepare_write(Op.WRITE, key)
         content = _io.guard_content(content)  # the caller's own errors pass verbatim (ASYNC-091)
@@ -853,7 +854,7 @@ class _AsyncKernelCore:
         self._guard()
         key = self._write_key(path)
         self._require_metadata(metadata, key)
-        _io.require_content(content)
+        content = _io.take_content(content)
         target = RemotePath(key)
         await self._prepare_write(Op.WRITE_ATOMIC, key)
         if self._driver.put_is_atomic:

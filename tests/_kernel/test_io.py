@@ -143,6 +143,9 @@ def _answering(chunk: object) -> io.BytesIO:
 
         read = read1 = readall = readline = peek = __next__ = _answer  # type: ignore[assignment]
 
+        def readlines(self, *args: object) -> list[object]:  # type: ignore[override]
+            return [chunk]
+
     return _Answers(b"x")
 
 
@@ -151,10 +154,12 @@ def _read_by(guarded: object, name: str) -> object:
         return next(guarded)  # type: ignore[call-overload]
     if name == "__iter__":
         return next(iter(guarded))  # type: ignore[call-overload]
+    if name == "readlines":
+        return guarded.readlines()[0]  # type: ignore[attr-defined]
     return getattr(guarded, name)()
 
 
-_BYTE_READS = ["read", "read1", "readall", "readline", "peek", "__next__", "__iter__"]
+_BYTE_READS = ["read", "read1", "readall", "readline", "readlines", "peek", "__next__", "__iter__"]
 
 
 @pytest.mark.spec("BE-008", "MEM-020")
@@ -218,6 +223,23 @@ def test_a_failing_with_on_the_guarded_stream_is_marked(phase: str) -> None:
     with pytest.raises(_CallerStreamError) as caught, guarded:  # type: ignore[union-attr]
         pass
     assert sync_io.from_content(caught.value)
+
+
+@pytest.mark.spec("ASYNC-091")
+def test_an_exit_re_raising_the_drivers_error_leaves_it_the_drivers() -> None:
+    # The exception __exit__ was handed came from the driver's own with-body; a
+    # stream that re-raises it must not turn a wire error into the caller's.
+    class _ReRaising(io.BytesIO):
+        def __exit__(self, exc_type: object, exc: BaseException | None, tb: object) -> Any:
+            if exc is not None:
+                raise exc
+            return False
+
+    wire = OSError("wire broke")
+    with pytest.raises(OSError, match="wire broke") as caught, sync_io.guard_content(_ReRaising(b"x")):  # type: ignore[union-attr]
+        raise wire
+    assert caught.value is wire
+    assert not sync_io.from_content(caught.value)
 
 
 @pytest.mark.spec("ASYNC-091")
