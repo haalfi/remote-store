@@ -25,8 +25,10 @@ What the rules do not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   through a local ``hatch run fast`` or ``all``.
 - Rule 1 reads the files ``git ls-files --cached --others --exclude-standard``
   lists, so an ignored file is out of reach. It skips a file that does not
-  decode as UTF-8, every path a ``binary`` pattern in ``.gitattributes``
-  matches, and the decision logs under ``sdd/decisions/`` (``_RECORD_DIRS``),
+  decode as UTF-8, every path a ``binary`` pattern in the root
+  ``.gitattributes`` matches by git's rules (a nested ``.gitattributes``, and
+  ``-text`` spelled without the ``binary`` macro, are not read), and the
+  decision logs under ``sdd/decisions/`` (``_RECORD_DIRS``),
   which store dialog payloads as received. It has no per-file exemption list: in a Python file, a character the code
   needs is spelled as a named escape, which reads the same to Python and is
   visible to a reviewer. In any other file the only remedy it offers is
@@ -74,7 +76,6 @@ Drift-gate::
 from __future__ import annotations
 
 import ast
-import fnmatch
 import re
 import subprocess
 import sys
@@ -173,10 +174,44 @@ def binary_patterns(root: Path) -> list[str]:
     return patterns
 
 
-def _is_binary(rel: str, patterns: list[str]) -> bool:
-    # A pattern without a slash matches the basename at any depth, as in git.
+def _attr_regex(pattern: str) -> re.Pattern[str]:
+    """Translate one ``.gitattributes`` pattern into git's matching rules.
+
+    Not ``fnmatch``: its ``*`` crosses ``/`` and its ``**/`` misses the root, so
+    an anchored ``binary`` line would silently skip files git still scans.
+    ``*`` and ``?`` stay inside one path segment; ``**/``, ``/**/`` and a
+    trailing ``/**`` span any number of segments; ``[...]`` is copied as a class.
+    """
+    out: list[str] = []
+    i = 0
+    while i < len(pattern):
+        if pattern.startswith("**/", i) and (i == 0 or pattern[i - 1] == "/"):
+            out.append("(?:.*/)?")
+            i += 3
+        elif pattern.startswith("**", i) and i + 2 == len(pattern) and i > 0 and pattern[i - 1] == "/":
+            out.append(".*")
+            i += 2
+        elif pattern[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        elif pattern[i] == "?":
+            out.append("[^/]")
+            i += 1
+        elif pattern[i] == "[" and "]" in pattern[i + 1 :]:
+            end = pattern.index("]", i + 1)
+            out.append(pattern[i : end + 1])
+            i = end + 1
+        else:
+            out.append(re.escape(pattern[i]))
+            i += 1
+    return re.compile("".join(out))
+
+
+def _is_binary(rel: str, patterns: list[tuple[bool, re.Pattern[str]]]) -> bool:
+    # A pattern without a slash matches the basename at any depth; one with a
+    # slash matches the whole path from the root, as in git.
     base = rel.rsplit("/", 1)[-1]
-    return any(fnmatch.fnmatch(rel if "/" in p else base, p.lstrip("/")) for p in patterns)
+    return any(regex.fullmatch(rel if anchored else base) for anchored, regex in patterns)
 
 
 def listed_files(root: Path) -> list[str]:
@@ -192,7 +227,7 @@ def listed_files(root: Path) -> list[str]:
 
 def check_invisible(root: Path, files: list[str]) -> list[Violation]:
     """Rule 1 over *files* (repo-relative), skipping binary and non-UTF-8 ones."""
-    patterns = binary_patterns(root)
+    patterns = [("/" in p, _attr_regex(p.lstrip("/"))) for p in binary_patterns(root)]
     found: list[Violation] = []
     for rel in files:
         if rel.startswith(_RECORD_DIRS) or _is_binary(rel, patterns):

@@ -121,13 +121,17 @@ accepts for a single-pass script). It is wired into `lint` in `pyproject.toml`.
    then close BK-444 with its trace. No CHANGELOG entry: the audience is `contributor.tooling`
    and `internal.style`.
 
-**Built 2026-10-16, two departures from the plan.** Rule 1 reads
-`git ls-files --cached --others --exclude-standard`, not `git ls-files` alone, so a new file
-is checked before its first `git add`. The script is also wired into `docs-gate` as
-`check-repo-traps` (decision in `sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl`):
-rule 1 reads `sdd/` and `docs-src/`, which reach CI through `DOCS_PAT` alone. Step 4's rule
-named the same 10 aliases the substring test above did. Rule 1 names the `\N{…}` spelling for a
-`.py` file only; in any other file `\N{…}` is not an escape, so the message says to remove the
-character (PR #1152 review). Rule 1 also skips `sdd/decisions/`: `scripts/record_decision.py`
-stores dialog payloads with `ensure_ascii=False`, so a log may hold a raw U+2028 that no edit may
-remove (decision in `sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl`).
+**Built 2026-10-16. Where the build departs from the plan above:**
+
+- Rule 1 reads `git ls-files --cached --others --exclude-standard`, not `git ls-files` alone,
+  so a new file is checked before its first `git add`.
+- The script is also wired into `docs-gate` as `check-repo-traps`: rule 1 reads `sdd/` and
+  `docs-src/`, which reach CI through `DOCS_PAT` alone. Decision in
+  `sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl`.
+- Rule 1 names the `\N{…}` spelling for a `.py` file only. In any other file `\N{…}` is not an
+  escape, so the message says to remove the character (PR #1152 review).
+- Rule 1 skips `sdd/decisions/`, the one exemption the plan's "No exemption list" did not
+  foresee: `scripts/record_decision.py` stores dialog payloads with `ensure_ascii=False`, so a
+  log may hold a raw U+2028 that no edit may remove. Decision in the same log.
+
+Step 4's rule named the same 10 aliases the substring test above did.

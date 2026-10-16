@@ -112,3 +112,8 @@ phases:
         read_type: verify
         extract: "PR #1152 review round 3: the recorder stores dialog payloads raw, so rule 1 could fail lint on a log no author wrote. Rule 1 now skips sdd/decisions/ (_RECORD_DIRS), asked and decided in this session's log; I had not checked which listed files are generated records"
         outcome: ok
+      - file: scripts/check_repo_traps.py
+        section: "_is_binary, _attr_regex"
+        read_type: verify
+        extract: "PR #1152 review round 4: fnmatch let `*` cross `/` and missed `**/` at the root, so an anchored binary line could shrink rule 1 silently; a git-rule translator now matches what `git check-attr` reports for the four fixture patterns (tmp/git_attr_truth.py). The dossier's departure count was replaced by the list it counted"
+        outcome: ok

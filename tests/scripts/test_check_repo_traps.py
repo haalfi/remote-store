@@ -98,6 +98,24 @@ class TestCheckInvisible:
         found = _mod.check_invisible(tmp_path, ["sdd/decisions/s.jsonl", "sdd/notes.md"])
         assert [v.location for v in found] == ["sdd/notes.md:1:2"]
 
+    @pytest.mark.parametrize(
+        ("pattern", "skipped", "scanned"),
+        [
+            ("assets/*.svg", "assets/x.svg", "assets/icons/x.svg"),  # `*` does not cross `/`
+            ("/assets/*.svg", "assets/x.svg", "sub/assets/x.svg"),  # anchored at the root
+            ("**/gen/*.bin", "gen/a.bin", "gen/sub/a.bin"),  # `**/` also matches the root
+            ("data/**", "data/sub/a.txt", "other/data/a.txt"),
+        ],
+        ids=["star-stays-in-segment", "leading-slash", "double-star-prefix", "double-star-suffix"],
+    )
+    def test_patterns_with_a_slash_match_as_git_does(self, tmp_path, pattern, skipped, scanned):
+        (tmp_path / ".gitattributes").write_text(f"{pattern} binary\n", encoding="utf-8")
+        for rel in (skipped, scanned):
+            (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+            (tmp_path / rel).write_text(f"x{ZWSP}\n", encoding="utf-8")
+        found = _mod.check_invisible(tmp_path, [skipped, scanned])
+        assert [v.location for v in found] == [f"{scanned}:1:2"]
+
     def test_binary_patterns_ignore_comments_and_text_rules(self, tmp_path):
         (tmp_path / ".gitattributes").write_text("# *.md binary\n* text=auto\n*.ico binary\n", encoding="utf-8")
         assert _mod.binary_patterns(tmp_path) == ["*.ico"]
