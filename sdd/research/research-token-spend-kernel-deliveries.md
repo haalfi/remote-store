@@ -25,6 +25,10 @@ growing; the cost did not scale with the diff's file count (§ 2).
    two more `/ship` deliveries, one of them drawing prose findings only, to
    decide that. These two have no A run and both drew code findings, and no
    further delivery is measured.
+4. **The largest cut, a three-round cap, trades units for unfixed findings**
+   (§ 7): it would have removed 80% of BK-389's units and 94 of its 120 posted
+   findings. Reviewing only what changed since the last round targets the
+   findings fixes caused, and a fresh session is not shown to save.
 
 ## Context
 
@@ -286,6 +290,30 @@ re-tests the other controls.**
   recurs. These two have no A run to compare with, and both drew code
   findings; BK-394 also started with a context prompt in the main checkout
   rather than in a fresh worktree.
+
+## 7. Where the cost could be cut
+
+**Every cut worth making is in the review loop, and the largest trades units
+for findings left unfixed.** The figures below are what the measured rounds
+cost, from the result file; what a changed loop would have cost or shipped
+instead is not measured, and ADR-0045 counts a cut only if the defects shipped
+do not rise. Run B is the warning: its five rounds shipped two regressions run
+A's PR had measured and avoided, one of them found in run A's seventh round,
+though the maintainer judged neither must-fix
+([`research-token-spend-means.md` § 5](research-token-spend-means.md#5-where-the-argument-breaks)).
+
+| Cut | What the measured runs show | Risk | What it would change |
+| --- | --- | --- | --- |
+| Cap the loop at three rounds, then file or waive the rest | Rounds 4 onward held 78.49 of BK-389's 98.25 M and 29.88 of BK-394's 57.22 M, and posted 94 of 120 and 42 of 60 findings | Those findings go unfixed; some are real defects, and how many is not derived here | Partly supersedes ADR-0033's convergence over a round count |
+| Review only what changed since the last round, keeping one whole-file pass to exit | 66 of BK-389's 120 findings and 21 of BK-394's 60 were caused by an earlier fix in the loop (§ 2) | A fix that breaks code it did not touch waits for the exit pass | ADR-0037's whole-file exit gate stays, or the risk has no bound |
+| Split a large PR, and settle concept work before the build | Run B's rounds cost 2.43 M on 21 files against 4.51 to 5.57 M; the RFC-0021 detour cost 28.77 M mid-loop | More PRs, each consistent on its own at every commit (principle 3) | Planning has to find the concept change, as orient is meant to |
+| Choose members by the kind of PR | On BK-389 a whole-file pass handed back about five findings at a 0.82 M median, a measuring pass about two at 0.92 M (§ 3) | On prose and research PRs, measuring passes catch the figure errors that matter | Replaces the fixed panel with a choice per PR |
+| Start a fresh session every few rounds | A break lowered the main context (638k to 378k, 594k to 443k), but each resume's opening calls cost 3.57 M and 5.26 M, about a round (§ 2) | Not shown to save: the resume cost is not separated from the fix it carries | — |
+
+From [`rounds[].units_m`, `rounds[].findings_posted`, `units_m_per_round`,
+`by_method`], the cap rows summed over rounds 4 onward. Orient and plan, at 1.7
+to 7.2% of a delivery (§ 1), is not worth cutting: orienting badly is how a
+detour like RFC-0021 starts. Waiting time costs no units.
 
 ## Reproducing
 
