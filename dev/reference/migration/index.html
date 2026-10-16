@@ -11794,6 +11794,19 @@ does a denied folder. Python's own <code>rmdir</code> and <code>rmtree</code> do
 state. If you relied on a best-effort walk over a tree with unreadable parts,
 walk it yourself with <code>list_folders()</code> and <code>list_files()</code> per folder, catching
 <code>PermissionDenied</code> for each.</p>
+<p><strong><code>metadata=</code> must be <code>None</code> or a mapping:</strong></p>
+<p>Every <code>Store</code> and <code>AsyncStore</code> call that takes <code>metadata=</code>, such as <code>write()</code>,
+<code>write_atomic()</code> and <code>write_text()</code>, and <code>write_with_hash()</code> and
+<code>open_atomic_with_hash()</code>, took an empty non-mapping such as <code>[]</code>, <code>()</code>, <code>0</code>
+or <code>""</code> for no metadata and wrote the file. They now raise <code>ValueError</code> and
+write nothing, for every value that is not a <code>collections.abc.Mapping</code>,
+including an object that only has <code>.items()</code>. Called directly,
+<code>MemoryBackend</code> and <code>AsyncMemoryBackend</code> also stored a list of pairs such as
+<code>[("k", "v")]</code> as a dict; they refuse it too, as does a backend you build on
+<code>DriverBackend</code> or <code>AsyncDriverBackend</code>. Other backend classes called
+directly, outside a <code>Store</code>,
+are unchanged. Pass <code>None</code> (the default) or <code>{}</code> for no metadata, and a
+<code>dict</code> or another mapping otherwise.</p>
 <p><strong>For backend authors: a backend is now written as a driver:</strong></p>
 <p><code>remote_store.drivers</code> is new. A custom backend is now documented as a
 <em>driver</em>, a class implementing your storage system's primitives, wrapped in

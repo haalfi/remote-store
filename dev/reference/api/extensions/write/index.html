@@ -11708,9 +11708,9 @@ yielded <code>HashingAtomicWriter.result</code> is a <code>WriteResult</code> wi
 <p><strong>Metadata branch:</strong> When <em>metadata</em> is non-empty, the implementation
 buffers all written bytes in memory (<code>io.BytesIO</code>) and then calls
 <code>store.write_atomic()</code> on exit.  This means (a) the full payload is
-held in RAM, and (b) validation errors (<code>ValueError</code>) and capability
-checks (<code>CapabilityNotSupported</code>) are raised after the caller has
-finished writing — not before.  For large payloads, prefer calling
+held in RAM, and (b) capability checks (<code>CapabilityNotSupported</code>) are
+raised after the caller has finished writing — not before.  <em>metadata</em>
+is validated (<code>ValueError</code>) on entry.  For large payloads, prefer calling
 <code>store.write()</code> directly with <code>metadata=</code>.</p>
 <p><strong><code>source</code> field:</strong> Both branches always set <code>source="basic"</code> on
 the returned <code>WriteResult</code>.  The metadata branch discards the

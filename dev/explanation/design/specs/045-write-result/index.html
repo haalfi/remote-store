@@ -12216,7 +12216,10 @@ to be the primary protection for callers using <code>Store(AsyncBackendSyncAdapt
 <h2 id="wr-011-metadata-validation">WR-011: metadata Validation<a class="headerlink" href="#wr-011-metadata-validation" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>metadata</code> is <code>Mapping[str, str]</code>. Validation is performed at the
 Store layer (one place, not per-backend) <strong>before</strong> the WR-010 capability
-dispatch. The precedence is fixed:</p>
+dispatch. A class on the contract kernel, called directly, also refuses
+<code>metadata</code> that is neither <code>None</code> nor a <code>Mapping</code> ahead of the capability check
+(<a href="../003-backend-adapter-contract/#be-030-key-rule-on-the-kernel">BE-030</a>); the
+key, value and size rules below stay the Store's. The precedence is fixed:</p>
 <ol>
 <li><strong>Shape validation first.</strong> Validate <code>metadata</code> against the rules below.
    On any violation, raise <code>ValueError</code> before any I/O — regardless of
@@ -12229,6 +12232,8 @@ dispatch. The precedence is fixed:</p>
 <code>ValueError</code>, even on backends that do not declare <code>USER_METADATA</code>.</p>
 <p>Validation rules:</p>
 <ul>
+<li><code>metadata</code> is <code>None</code> or a <code>Mapping</code>. Anything else, a falsy value such as
+  <code>[]</code> included, is a violation: it is never taken for the empty mapping.</li>
 <li>Keys must be non-empty ASCII strings with no leading underscore.</li>
 <li>Values must be strings.</li>
 <li><code>sum(len(k.encode("ascii")) + len(v.encode("utf-8")) for k, v in
@@ -12240,7 +12245,7 @@ dispatch. The precedence is fixed:</p>
   validation failure. A non-declaring backend therefore treats <code>metadata={}</code>
   the same as <code>metadata=None</code>: no <code>CapabilityNotSupported</code> is raised.</li>
 </ul>
-<p>Violations raise <code>ValueError</code> with the offending key or value before any I/O.</p>
+<p>Violations raise <code>ValueError</code> before any I/O.</p>
 <h2 id="wr-012-writeresultmetadata-echo">WR-012: WriteResult.metadata Echo<a class="headerlink" href="#wr-012-writeresultmetadata-echo" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> When <code>metadata=</code> is passed and the backend declares
 <code>USER_METADATA</code>, <code>WriteResult.metadata</code> echoes the mapping <strong>verbatim, as the

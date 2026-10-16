@@ -12340,7 +12340,7 @@ each <code>### MEM-</code> heading once, except MEM-DS-005 and MEM-014, which sp
 <tbody>
 <tr>
 <td>kernel (5)</td>
-<td>MEM-DS-005's validation table (BE-030: the driver receives a canonical key), MEM-014's <code>recursive</code> dispatch (BE-031: <code>remove_folder</code> or <code>delete_tree</code>, the root refused first), MEM-013 (<code>write_atomic</code> is <code>put</code>, from <code>put_is_atomic = True</code>; AW-001), MEM-018 (<code>close</code>, through <code>close_is_terminal = False</code>; BE-020), MEM-020 (the choke point; the tree raises only typed errors except on non-mapping metadata (BUG-329), and the kernel converts or refuses content <code>put</code> could not read and marks what the content raises as <code>put</code> reads it, so nothing the caller's content raises reaches <code>classify</code>)</td>
+<td>MEM-DS-005's validation table (BE-030: the driver receives a canonical key), MEM-014's <code>recursive</code> dispatch (BE-031: <code>remove_folder</code> or <code>delete_tree</code>, the root refused first), MEM-013 (<code>write_atomic</code> is <code>put</code>, from <code>put_is_atomic = True</code>; AW-001), MEM-018 (<code>close</code>, through <code>close_is_terminal = False</code>; BE-020), MEM-020 (the choke point; the tree raises only typed errors, the kernel refusing non-mapping metadata before it, and the kernel converts or refuses content <code>put</code> could not read and marks what the content raises as <code>put</code> reads it, so nothing the caller's content raises reaches <code>classify</code>)</td>
 </tr>
 <tr>
 <td>driver (15)</td>
@@ -12770,13 +12770,14 @@ by <code>write()</code> is not atomic as a pair. This matches all other backends
 <h3 id="mem-020-no-native-exceptions">MEM-020: No Native Exceptions<a class="headerlink" href="#mem-020-no-native-exceptions" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Every error a <code>MemoryBackend</code> operation itself produces is a
 <code>remote_store</code> error type. There are no native exceptions to map — no
-<code>OSError</code>, no <code>botocore</code>, no <code>paramiko</code> — except what the tree raises on
-metadata that is not a mapping, passed to the class directly rather than
-through <code>Store</code> (BUG-329). The streams it hands out are <code>io</code>
+<code>OSError</code>, no <code>botocore</code>, no <code>paramiko</code>. Metadata that is not a mapping never
+reaches the tree: the kernel refuses it with <code>ValueError</code> first (BE-030). The
+streams it hands out are <code>io</code>
 objects and raise the <code>io</code> protocol's own errors where that protocol does: the
 write-only file <code>open_atomic</code> yields answers <code>seek()</code> with
-<code>io.UnsupportedOperation</code>, <code>read()</code> with <code>NotImplementedError</code> and a
-non-buffer <code>write()</code> with <code>TypeError</code>. One native exception reaches the driver
+<code>io.UnsupportedOperation</code>, <code>read()</code> with <code>NotImplementedError</code>, a
+non-buffer <code>write()</code> with <code>TypeError</code> and a <code>write()</code> of a <code>memoryview</code> that is
+not C-contiguous with <code>BufferError</code>. One native exception reaches the driver
 from the caller's content, and it is not the tree's: an error the content
 raises passes the choke point verbatim, still the caller's type (ASYNC-091). A <code>bytearray</code> or <code>memoryview</code> is stored as its bytes, since the
 kernel hands the driver a <code>bytes</code> copy, and content that is no bytes source is

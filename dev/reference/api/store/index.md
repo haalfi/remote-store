@@ -187,7 +187,7 @@ Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
 - `InvalidPath` – If path is empty.
-- `ValueError` – If metadata fails shape validation (keys and values must be str with bounded total size).
+- `ValueError` – If metadata fails shape validation (a mapping whose keys and values are str, with bounded total size).
 - `CapabilityNotSupported` – If metadata is non-empty and the backend lacks USER_METADATA.
 
 Backend-conditional argument: `metadata=`

@@ -13860,6 +13860,10 @@ being the exemption from probing (PING-008); a <code>probe</code> left out is re
 any other. WR-010's metadata gate
 on <code>write</code> and <code>write_atomic</code> comes after step 4 and before step 5, so the root
 refusal stays BE-008's first precondition and the gate stays ahead of any I/O.
+Shape comes first within it, as WR-011 orders it: <code>metadata</code> that is neither
+<code>None</code> nor a <code>Mapping</code>, a falsy one included, is refused with <code>ValueError</code>
+whatever the class declares, and only then is a non-empty mapping refused for
+want of <code>USER_METADATA</code>.
 That ranks it ahead of BE-008's type, ancestor and overwrite checks: on a class
 without <code>USER_METADATA</code>, a write carrying metadata answers
 <code>CapabilityNotSupported</code> with a folder at the key, a file above it, or an
@@ -13881,11 +13885,17 @@ a count or <code>readlines</code> anything but a list, raises <code>TypeError</c
 that yields a buffer that cannot be read as <code>bytes</code> raises that buffer's error.
 Either is the caller's own error, passed through verbatim like ASYNC-091's and
 never classified. Async content is checked chunk by chunk whatever the driver
-does. On sync it holds for a driver that reads in sized chunks, as the sync
-<code>_io.feed</code> and <code>MemoryDriver</code> do: an unsized <code>read()</code> on a raw stream is the
-stream's own <code>readall</code>, which stops at the <code>None</code> before the kernel sees it
-(BUG-331). A check on the target made before the stream is read answers first,
-such as <code>write_atomic</code>'s <code>stat</code> by temp and rename without <code>overwrite</code>.</p>
+does. On sync the stream a driver receives answers an unsized <code>read</code> (no size,
+<code>None</code> or a negative one) and <code>readall</code> by sized reads of the caller's stream,
+each checked, so a driver that reads its content in full sees the <code>None</code> a raw
+stream's own <code>readall</code> would stop at. Line reads (<code>readline</code>, <code>readlines</code>,
+iteration) loop inside the caller's stream, where the kernel cannot see a
+<code>None</code>, and are not covered. A check on the target made before the stream is
+read answers first, such as <code>write_atomic</code>'s <code>stat</code> by temp and rename without
+<code>overwrite</code>. The stream <code>open_atomic</code> yields takes a write as Python's binary
+files do, on the wire temporary's route and the spool's alike: a buffer that is
+not C-contiguous is refused with its exporter's own error, <code>BufferError</code> for a
+<code>memoryview</code>.</p>
 <p><strong>What a key resolves to</strong> is <a href="#be-032-the-store-tree-on-the-kernel">BE-032</a>'s
 answer, for every call below: the tree's <code>Item</code>, <code>Folder</code> or <code>Nothing</code> (A.1),
 each family's result (A.5), the determinants a call runs whether or not it
@@ -14022,7 +14032,9 @@ canonical <code>""</code> names the root, a folder, and yields nothing. Worked e
 <p><strong>Conformance:</strong> fake-driver kernel cells in <code>tests/_kernel/</code>, run against both
 runtimes. Memory's cells are in <code>tests/backends/memory/test_kernel_cells.py</code>,
 both classes: the root spellings' <code>FolderInfo</code>, addressing's fold of a
-non-canonical key, and the backslash refusal storing nothing. What a key resolves to is
+non-canonical key, and the backslash refusal storing nothing; and in
+<code>tests/backends/memory/test_metadata_shape.py</code>, both classes: metadata that is
+not a mapping refused with no parent folder made. What a key resolves to is
 BE-032's two generated suites (its A.10); <code>glob</code>, the capability gates and
 construction are generated over axes of their own.</p>
 <h3 id="be-031-delete_folder-on-the-kernel">BE-031: <code>delete_folder</code> on the Kernel<a class="headerlink" href="#be-031-delete_folder-on-the-kernel" title="Permanent link">&para;</a></h3>
