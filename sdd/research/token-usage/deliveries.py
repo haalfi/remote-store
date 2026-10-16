@@ -28,8 +28,8 @@ prints for the same session and ``--until``.
   first call falls in. Every other part is review loop.
 - **Rounds.** A review pass is what ``is_pass`` says; passes spawned by one
   main-session call form a round. A round costs its passes plus the
-  main-session calls from its spawn to the next round's, or to the part's end,
-  so it includes the fix that follows it. Review-loop cost outside every span
+  main-session calls from the one that spawned it up to the one that spawned
+  the next round, or to the part's end, so it includes the fix that follows it. Review-loop cost outside every span
   (a part's calls before its first round, a subagent that is no round's pass)
   joins the latest round spawned before it, across parts, so a resume session's
   opening calls count toward the round they fix; what precedes the first
@@ -222,9 +222,41 @@ def group_rounds(subs, spawns, mc) -> dict:
 
 
 def round_spans(rounds, hi) -> list[tuple[int, int]]:
-    """Each round's main-session calls ``[i, j)``: from its spawn to the next round's, the last to ``hi``."""
+    """Each round's main-session calls ``[a, b)``: from its spawning call to the next round's, the last to ``hi``.
+
+    A spawn event's index is one past its call, so a round keyed ``i`` starts at call ``i - 1``."""
     starts = sorted(i for i in rounds if i is not None)
-    return [(i, starts[n + 1] if n + 1 < len(starts) else hi) for n, i in enumerate(starts)]
+    return [(i - 1, starts[n + 1] - 1 if n + 1 < len(starts) else hi) for n, i in enumerate(starts)]
+
+
+def fold_rounds(rounds, extra, posted) -> tuple[list[dict], float]:
+    """Each round's row, with the loose cost ``assign_loose`` gave it folded in, and the loop's units.
+
+    ``opening_units_m`` is the main-session part of that cost: calls a later session made
+    before its first round, which carry the fix of the round before the break."""
+    zero = {"main_units": 0, "other_units": 0, "usd": 0.0}
+    out, loop_units = [], 0
+    for k, r in enumerate(rounds):
+        x = extra.get(k, zero)
+        pu = sum(s["units"] for s in r["passes"])
+        mu = r["main_units"] + x["main_units"]
+        loop_units += mu + pu + x["other_units"]
+        out.append(
+            {
+                "round": k + 1,
+                "passes": len(r["passes"]),
+                "main_ctx_k": r["main_ctx_k"],
+                "main_units_m": m2(mu),
+                "opening_units_m": m2(x["main_units"]),
+                "pass_units_m": m2(pu),
+                "other_units_m": m2(x["other_units"]),
+                "units_m": m2(mu + pu + x["other_units"]),
+                "usd": round(r["main_usd"] + sum(s["usd"] for s in r["passes"]) + x["usd"], 2),
+                "findings_posted": posted[k],
+                "findings_handed_back": sum(s["findings_handed_back"] or 0 for s in r["passes"]),
+            }
+        )
+    return out, loop_units
 
 
 def assign_submissions(subs, rounds) -> tuple[collections.Counter, int]:
@@ -341,16 +373,16 @@ def measure_part(snap: Path, part, changed, created) -> dict:
         if id(s) not in in_round and phase(ts=s["first_ts"]) == "review loop"
     ]
     out_rounds = []
-    for i, j in spans:
-        main_span = mc[i:j]
+    for a, b in spans:
+        main_span = mc[a:b]
         out_rounds.append(
             {
-                "spawn_ts": mc[i - 1]["ts"],
-                "end_ts": mc[j - 1]["ts"],
-                "main_ctx_k": round(mc[i - 1]["ctx"] / 1e3),
+                "spawn_ts": mc[a]["ts"],
+                "end_ts": mc[b - 1]["ts"],
+                "main_ctx_k": round(mc[a]["ctx"] / 1e3),
                 "main_units": sum(c["units"] for c in main_span),
                 "main_usd": usd(main_span),
-                "passes": rounds[i],
+                "passes": rounds[a + 1],
             }
         )
     return {
@@ -431,27 +463,7 @@ def main(argv=None) -> int:
         posted, outside = assign_submissions(subs, rounds)
         extra, before = assign_loose([x for p in parts for x in p["loose"]], rounds)
         passes = [s for r in rounds for s in r["passes"]]
-        out_rounds = []
-        loop_units = 0
-        for k, r in enumerate(rounds):
-            pu = sum(s["units"] for s in r["passes"])
-            mu = r["main_units"] + extra[k]["main_units"]
-            ou = extra[k]["other_units"]
-            loop_units += mu + pu + ou
-            out_rounds.append(
-                {
-                    "round": k + 1,
-                    "passes": len(r["passes"]),
-                    "main_ctx_k": r["main_ctx_k"],
-                    "main_units_m": m2(mu),
-                    "pass_units_m": m2(pu),
-                    "other_units_m": m2(ou),
-                    "units_m": m2(mu + pu + ou),
-                    "usd": round(r["main_usd"] + sum(s["usd"] for s in r["passes"]) + extra[k]["usd"], 2),
-                    "findings_posted": posted[k],
-                    "findings_handed_back": sum(s["findings_handed_back"] or 0 for s in r["passes"]),
-                }
-            )
+        out_rounds, loop_units = fold_rounds(rounds, extra, posted)
         found = sum(posted.values())
         payload["deliveries"][label] = {
             "pr": pr,

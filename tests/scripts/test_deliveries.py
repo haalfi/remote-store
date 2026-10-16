@@ -7,6 +7,7 @@ calls a session part keeps. Transcripts are synthetic ``tmp_path`` JSONL.
 
 from __future__ import annotations
 
+import collections
 import json
 import sys
 from pathlib import Path
@@ -187,8 +188,27 @@ class TestRounds:
         rounds = deliveries.group_rounds([early, late, orphan, builder], spawns, mc)
         assert dict(rounds) == {2: [early], 5: [late], None: [orphan]}
 
-    def test_a_round_spans_main_calls_from_its_spawn_to_the_next(self):
-        assert deliveries.round_spans({5: [], 2: [], None: []}, 9) == [(2, 5), (5, 9)]
+    def test_a_round_spans_main_calls_from_its_spawning_call_to_the_next(self):
+        # Spawn events sit one past their call, so rounds spawned at calls 1 and 4 span [1, 4) and [4, 9).
+        assert deliveries.round_spans({5: [], 2: [], None: []}, 9) == [(1, 4), (4, 9)]
+
+    def test_a_round_folds_in_the_cost_that_joined_it(self):
+        rounds = [
+            {
+                "main_ctx_k": 100,
+                "main_units": 1e6,
+                "main_usd": 1.0,
+                "passes": [{"units": 2e6, "usd": 2.0, "findings_handed_back": 3}],
+            },
+            {"main_ctx_k": 200, "main_units": 3e6, "main_usd": 3.0, "passes": []},
+        ]
+        extra = {1: {"main_units": 4e6, "other_units": 5e6, "usd": 4.0}}
+        out, loop_units = deliveries.fold_rounds(rounds, extra, collections.Counter({1: 7}))
+        assert [(r["main_units_m"], r["opening_units_m"], r["other_units_m"], r["units_m"], r["usd"]) for r in out] == [
+            (1.0, 0.0, 0.0, 3.0, 3.0),
+            (7.0, 4.0, 5.0, 12.0, 7.0),
+        ]
+        assert ([r["findings_posted"] for r in out], loop_units) == ([0, 7], 15e6)
 
     def test_a_submission_goes_to_the_round_spawned_before_it_unless_that_round_had_ended(self):
         def epoch(ts):
@@ -232,8 +252,12 @@ class TestRounds:
 
 
 class TestMeasurePart:
-    def test_every_loop_unit_lands_in_a_round_or_in_the_loose_cost(self, tmp_path, monkeypatch):
-        """A resume part: a call before the first spawn, the spawning call, a pass, a fixer, two fix calls."""
+    SPAWN = {"type": "tool_use", "id": "a1", "name": "Agent", "input": {"description": "Round member"}}
+
+    @staticmethod
+    def _session(tmp_path, monkeypatch, calls, subagents) -> str:
+        """A snapshot folder holding one session: ``calls`` as its main transcript, plus
+        ``(name, agent type, description, first ts, tokens)`` subagents with their meta files."""
         monkeypatch.setattr(
             deliveries.tokkit,
             "ARGS",
@@ -243,28 +267,60 @@ class TestMeasurePart:
         sid = "s1"
         sub = tmp_path / sid / sid / "subagents"
         sub.mkdir(parents=True)
-        spawn = {"type": "tool_use", "id": "a1", "name": "Agent", "input": {"description": "Round member"}}
-        _write(
-            tmp_path / sid / f"{sid}.jsonl",
+        _write(tmp_path / sid / f"{sid}.jsonl", calls)
+        for name, kind, desc, ts, tokens in subagents:
+            _write(sub / f"{name}.jsonl", [_call(f"{name}-0", ts, tokens)])
+            (sub / f"{name}.meta.json").write_text(json.dumps({"agentType": kind, "description": desc}))
+        return sid
+
+    @staticmethod
+    def _accounted(out) -> float:
+        in_rounds = sum(r["main_units"] + sum(p["units"] for p in r["passes"]) for r in out["rounds"])
+        return in_rounds + sum(x["units"] for x in out["loose"])
+
+    def test_every_loop_unit_lands_in_a_round_or_in_the_loose_cost(self, tmp_path, monkeypatch):
+        """A resume part: a call before the first spawn, the spawning call, a pass, a fixer, two fix calls."""
+        sid = self._session(
+            tmp_path,
+            monkeypatch,
             [
                 _call("m0", "2026-10-10T10:00:00Z", 1),
-                _call("m1", "2026-10-10T10:01:00Z", 10, [spawn]),
+                _call("m1", "2026-10-10T10:01:00Z", 10, [self.SPAWN]),
                 _call("m2", "2026-10-10T10:05:00Z", 100),
                 _call("m3", "2026-10-10T10:06:00Z", 1000),
             ],
+            [
+                ("agent-p1", "reviewer", "Round member", "2026-10-10T10:02:00Z", 10_000),
+                ("agent-f1", "general-purpose", "Fix the findings", "2026-10-10T10:05:30Z", 100_000),
+            ],
         )
-        for name, kind, desc, ts, tokens in (
-            ("agent-p1", "reviewer", "Round member", "2026-10-10T10:02:00Z", 10_000),
-            ("agent-f1", "general-purpose", "Fix the findings", "2026-10-10T10:05:30Z", 100_000),
-        ):
-            _write(sub / f"{name}.jsonl", [_call(f"{name}-0", ts, tokens)])
-            (sub / f"{name}.meta.json").write_text(json.dumps({"agentType": kind, "description": desc}))
 
         out = deliveries.measure_part(tmp_path, {"session": sid}, set(), "9999-01-01T00:00:00Z")
 
         assert out["phases"] == {"review loop": 111_111}
         [r] = out["rounds"]
-        assert (r["main_units"], [p["units"] for p in r["passes"]]) == (1100, [10_000])
-        assert sorted((x["units"], x["main"]) for x in out["loose"]) == [(1, True), (10, True), (100_000, False)]
-        in_rounds = r["main_units"] + sum(p["units"] for p in r["passes"])
-        assert in_rounds + sum(x["units"] for x in out["loose"]) == out["phases"]["review loop"]
+        assert (r["main_units"], [p["units"] for p in r["passes"]]) == (1110, [10_000])
+        assert sorted((x["units"], x["main"]) for x in out["loose"]) == [(1, True), (100_000, False)]
+        assert self._accounted(out) == out["phases"]["review loop"]
+
+    def test_a_build_part_keeps_its_pre_pr_cost_out_of_the_loop(self, tmp_path, monkeypatch):
+        """Orient work before the PR opened, by the main session and by a subagent, is not loop cost."""
+        sid = self._session(
+            tmp_path,
+            monkeypatch,
+            [
+                _call("m0", "2026-10-10T10:00:00Z", 1),
+                _call("m1", "2026-10-10T10:01:00Z", 10, [self.SPAWN]),
+                _call("m2", "2026-10-10T10:05:00Z", 100),
+            ],
+            [
+                ("agent-b1", "testing-expert", "Write suites", "2026-10-10T10:00:10Z", 1000),
+                ("agent-p1", "reviewer", "Round member", "2026-10-10T10:02:00Z", 10_000),
+            ],
+        )
+
+        out = deliveries.measure_part(tmp_path, {"session": sid, "build": True}, set(), "2026-10-10T10:00:30Z")
+
+        assert out["phases"] == {"orient + plan": 1001, "review loop": 10_110}
+        assert out["loose"] == []
+        assert self._accounted(out) == out["phases"]["review loop"]

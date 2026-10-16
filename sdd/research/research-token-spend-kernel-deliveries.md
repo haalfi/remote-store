@@ -26,9 +26,11 @@ growing; the cost did not scale with the diff's file count (§ 2).
    decide that. These two have no A run and both drew code findings, and no
    further delivery is measured.
 4. **The largest cut, a three-round cap, trades units for unfixed findings**
-   (§ 7): it would have removed 80% of BK-389's units and 94 of its 120 posted
-   findings. Reviewing only what changed since the last round targets the
-   findings fixes caused, and a fresh session is not shown to save.
+   (§ 7): BK-389's rounds 4 onward held 80% of its units and posted 94 of its
+   120 findings, an upper bound on what a cap would leave unfixed. What a cap
+   would have cost instead is not measured. Reviewing only what changed since
+   the last round targets the findings fixes caused, and a fresh session is
+   not shown to save.
 
 ## Context
 
@@ -101,7 +103,7 @@ refuted findings on #1127 is not counted [`bot_submissions_ignored`].
 | Rounds | 16 | 13 | 9 | 5 |
 | Findings posted | 120 | 76 | 60 | 17 |
 | Units in the rounds | 89.06 M | 24.71 M | 40.62 M | 12.14 M |
-| of it the main session | 50.91 M | 19.13 M | 19.13 M | 6.96 M |
+| of it the main session | 50.90 M | 19.14 M | 19.13 M | 6.95 M |
 | Loop units before the first round | 0.81 M | 0.95 M | 0.44 M | 0.31 M |
 | Units per round | 5.57 M | 1.90 M | 4.51 M | 2.43 M |
 | Units per finding | 0.74 M | 0.33 M | 0.68 M | 0.71 M |
@@ -111,8 +113,8 @@ From [`rounds`, `findings_posted`, `review_loop_rounds_units_m`,
 `review_loop_before_first_round_units_m`, `units_m_per_round`,
 `units_m_per_finding`]; the main-session row sums `rounds[].main_units_m`. The
 rounds and the row before them add up to the review-loop phase of § 1 within
-0.01 M. A round runs from the main-session call that spawned its passes to the
-next round's spawn, so its cost includes the fix after it; loop cost outside
+0.01 M. A round runs from the main-session call that spawned its passes up to
+the call that spawned the next round's, so its cost includes the fix after it; loop cost outside
 every such span, a session's calls before its first round and a subagent that
 is no round's pass, joins the latest round spawned before it, so a resume
 session's opening calls count toward the round they fix.
@@ -138,22 +140,24 @@ two findings on #1130 posted from a session outside the delivery.
   to 378k, 594k to 443k, 559k to 504k [`BK-389.rounds[].main_ctx_k`]. BK-394
   ran all nine rounds in one session, from 91k to 736k. No session compacted
   except one RFC-0021 session, once.
-- **A resume cost about a round.** After each of BK-389's three session
-  breaks, the new session's calls before its first round added 3.57 M, 5.26 M
-  and 10.17 M to rounds 7, 10 and 12, the last round before each break (the
-  gain of `rounds[].units_m` over the result committed at `cf3ad3dda`, which
-  left this cost out). That cost carries the round's fix, which no figure here
-  separates from re-orienting. Round 12's share also holds the last session's
-  re-derivation of the kernel against RFC-0021 and a 3.11 M subagent that was
-  no review pass (round 12's `other_units_m`).
+- **A resume cost one to two rounds.** After each of BK-389's three session
+  breaks, the new session's calls before its first round cost 3.56 M, 5.26 M
+  and 7.06 M, and joined rounds 7, 10 and 12, the last round before each break
+  [`BK-389.rounds[].opening_units_m`]. A round before the breaks cost 4.07 M
+  without them (below). That cost carries the round's fix, which no figure here
+  separates from re-orienting, and the third also holds the last session's
+  re-derivation of the kernel against RFC-0021. Round 12 also took a 3.11 M
+  subagent that was no review pass [`BK-389.rounds[].other_units_m`].
 - **A round costs more on a larger diff, but not in proportion to it.**
   BK-389's rounds 1 to 12 reviewed at most 37 files, 1.8 times run B's 21, and
-  cost 5.65 M each; its rounds 13 to 16, on 91 files, cost 5.30 M each;
-  BK-394's, on 94, 4.51 M; run B's 2.43 M (BK-389's split summed from
-  `BK-389.rounds[].units_m`, the file counts as in § 1). Without round 12's
-  13.52 M, rounds 1 to 11 cost 4.94 M each. Per finding, BK-389 cost about what
-  run B did (0.74 M against 0.71 M) and BK-394 a little less (0.68 M), though
-  they drew about twice run B's findings per round (7.5 and 6.7 against 3.4).
+  cost 4.07 M each without the 18.99 M of opening and subagent cost that
+  joined rounds 7, 10 and 12; its rounds 13 to 16, on 91 files and with none
+  of that cost, cost 5.30 M each; BK-394's, on 94, 4.51 M; run B's 2.43 M
+  (summed from `BK-389.rounds[]`'s `units_m`, `opening_units_m` and
+  `other_units_m`, the file counts as in § 1). With that cost left in, rounds 1
+  to 12 cost 5.66 M each. Per finding, BK-389 cost about what run B did (0.74 M
+  against 0.71 M) and BK-394 a little less (0.68 M), though they drew about
+  twice run B's findings per round (7.5 and 6.7 against 3.4).
 
 **RFC-0021's loop was cheap per round because its rounds were narrow.** Seven of
 its 13 rounds ran a single pass, three of them narrow checks of one commit, and
@@ -283,7 +287,7 @@ re-tests the other controls.**
 - **The loop's cost on a large PR is its length, not its passes.** The main
   session took 57% of BK-389's round units and 47% of BK-394's (§ 2's table),
   and that session carried every fix forward; only a session break lowered its
-  context, and a resume cost about a round. A loop that does not
+  context, and a resume cost one to two rounds. A loop that does not
   converge pays its context again every round.
 - **Proposal 6 ends here unmet.** It asked for two more `/ship` deliveries,
   one of them drawing prose findings only, to decide whether the saving
@@ -304,11 +308,11 @@ though the maintainer judged neither must-fix
 
 | Cut | What the measured runs show | Risk | What it would change |
 | --- | --- | --- | --- |
-| Cap the loop at three rounds, then file or waive the rest | Rounds 4 onward held 78.49 of BK-389's 98.25 M and 29.88 of BK-394's 57.22 M, and posted 94 of 120 and 42 of 60 findings | Those findings go unfixed; some are real defects, and how many is not derived here | Partly supersedes ADR-0033's convergence over a round count |
+| Cap the loop at three rounds, then file or waive the rest | Rounds 4 onward held 78.55 of BK-389's 98.25 M and 29.96 of BK-394's 57.22 M, and posted 94 of 120 and 42 of 60 findings | At most those findings go unfixed: the ones a round-4-or-later fix caused would not exist. Some of the rest are real defects, and how many is not derived here | Partly supersedes ADR-0033's convergence over a round count |
 | Review only what changed since the last round, keeping one whole-file pass to exit | 66 of BK-389's 120 findings and 21 of BK-394's 60 were caused by an earlier fix in the loop (§ 2) | A fix that breaks code it did not touch waits for the exit pass | ADR-0037's whole-file exit gate stays, or the risk has no bound |
 | Split a large PR, and settle concept work before the build | Run B's rounds cost 2.43 M on 21 files against 4.51 to 5.57 M; the RFC-0021 detour cost 28.77 M mid-loop | More PRs, each consistent on its own at every commit (principle 3) | Planning has to find the concept change, as orient is meant to |
 | Choose members by the kind of PR | On BK-389 a whole-file pass handed back about five findings at a 0.82 M median, a measuring pass about two at 0.92 M (§ 3) | On prose and research PRs, measuring passes catch the figure errors that matter | Replaces the fixed panel with a choice per PR |
-| Start a fresh session every few rounds | A break lowered the main context (638k to 378k, 594k to 443k), but each resume's opening calls cost 3.57 M and 5.26 M, about a round (§ 2) | Not shown to save: the resume cost is not separated from the fix it carries | — |
+| Start a fresh session every few rounds | Each of BK-389's three breaks lowered the main context (638k to 378k, 594k to 443k, 559k to 504k), but the resumes' opening calls cost 3.56 M, 5.26 M and 7.06 M, one to two rounds of 4.07 M (§ 2); the third also re-derived the kernel against RFC-0021 | Not shown to save: the resume cost is not separated from the fix it carries | — |
 
 From [`rounds[].units_m`, `rounds[].findings_posted`, `units_m_per_round`,
 `by_method`], the cap rows summed over rounds 4 onward. Orient and plan, at 1.7
