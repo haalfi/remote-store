@@ -475,6 +475,14 @@ no clause of the contract ships unexercised.
   empty folder, if the service holds a prefix with no object behind it). Before any flat driver
   (S3, Azure, SQLAlchemy) moves onto the kernel; after BK-394.
 
+- [ ] **BK-443 — A backend missing from the fixture registry gets no conformance coverage, and no test notices**
+  spec: — · effort: S · audience: infra.test
+  Conformance runs only the backends `tests/backends/fixtures/registry.py` lists, and no test in
+  `tests/backends/fixtures/test_registry.py` compares them with the concrete backend classes.
+  `SQLBlobBackend` was missing until cb300156c (#471); adding it surfaced BUG-175 and BUG-176.
+  `_concrete_backends()` in `test_health_probe_declared.py` already enumerates the classes. BK-345
+  gates BE-021 on the same registry, a separate surface. Open decision: where an exemption lives.
+
 ---
 
 <a id="users-succeed-unaided"></a>
@@ -782,6 +790,14 @@ CHANGELOG the release body is built from — say what is actually true.
   Open decision: which rules to add, and what a dangling ID means.
   Detail: [dossier](backlog/id-235-backlog-integrity-lint.md)
 
+- [ ] **BUG-332 — `gen_backlogid.py --help` regenerates `sdd/backlogid.json` instead of printing usage**
+  spec: — · effort: S · audience: contributor.tooling
+  `main()` in `scripts/gen_backlogid.py` reads only `--check` and `--remote`; any other argument,
+  `--help` or a typo, runs generate mode, prints "Updated sdd\backlogid.json" and rewrites the file
+  (reproduced 2026-10-16). It prints the same line when nothing changed, and no skill runs
+  `--check --remote` after a rebase, so an ID master closed meanwhile is found late. Open decision:
+  whether `/pr` or a git hook runs the remote check. ID-235 lints the same files, separate rules.
+
 - [ ] **ID-254 — The `[Unreleased]` stub's bold marker has no defined meaning beyond `**Breaking**`, and nobody owns section assignment**
   spec: — · effort: S · audience: contributor.process
   The bold marker after an `[Unreleased]` entry's ID is a gated obligation
@@ -1020,3 +1036,11 @@ sessions work is measured before it becomes process.
   78 over 37 transcripts before it. Re-walk the transcripts about 30 days after
   #1099 merges, by [BK-414's dossier](backlog/bk-414-sdd-lookup.md) § Acceptance
   measure. Open decision: keep, change or remove the pointers, by that result.
+
+- [ ] **BK-444 — Three repo traps cost sessions retries that a check would catch before commit**
+  spec: — · effort: S · audience: contributor.tooling, internal.style
+  14 of the 20 `.write_text(` calls in `scripts/` pass no `newline=`, so on Windows they can write
+  CRLF into a tracked file. Ruff selects no `PLE` rule, so a raw invisible character lands in source
+  unflagged. A hatch script without `{args}` drops passed flags silently; 44 single-line scripts in
+  `pyproject.toml` have none, most by design. Derivations: Grep over `scripts/` and `pyproject.toml`.
+  Open decision: lint rule or test per trap, and where the `{args}` allowlist lives.
