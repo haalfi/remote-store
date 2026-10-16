@@ -29,7 +29,11 @@ prints for the same session and ``--until``.
 - **Rounds.** A review pass is what ``is_pass`` says; passes spawned by one
   main-session call form a round. A round costs its passes plus the
   main-session calls from its spawn to the next round's, or to the part's end,
-  so it includes the fix that follows it. Each human-submitted GitHub
+  so it includes the fix that follows it. Review-loop cost outside every span
+  (a part's calls before its first round, a subagent that is no round's pass)
+  joins the latest round spawned before it, across parts, so a resume session's
+  opening calls count toward the round they fix; what precedes the first
+  round is reported on its own. Each human-submitted GitHub
   review carrying findings (``ship_report.rounds_with_findings``) is assigned
   to the latest round spawned before it was submitted, and counted outside the
   measured sessions when that round's span had already ended; a bot's is not
@@ -238,6 +242,24 @@ def assign_submissions(subs, rounds) -> tuple[collections.Counter, int]:
     return posted, outside
 
 
+def assign_loose(loose, rounds) -> tuple[dict, dict]:
+    """Loop cost outside every round span, per round index, and what precedes the first round.
+
+    Each item ``{"ts", "units", "usd", "main"}`` goes to the latest round spawned no later
+    than it: a resume session's opening calls fix the round the last session ran, and a
+    fixer subagent works on the round it follows. Returns ``(per_round, before)``, each
+    summing ``main_units``, ``other_units`` and ``usd``."""
+    zero = {"main_units": 0, "other_units": 0, "usd": 0.0}
+    per_round: dict[int, dict] = collections.defaultdict(lambda: dict(zero))
+    before = dict(zero)
+    for x in loose:
+        at = max((k for k, r in enumerate(rounds) if when(r["spawn_ts"]) <= when(x["ts"])), default=None)
+        into = before if at is None else per_round[at]
+        into["main_units" if x["main"] else "other_units"] += x["units"]
+        into["usd"] += x["usd"]
+    return per_round, before
+
+
 def measure_part(snap: Path, part, changed, created) -> dict:
     sid = part["session"]
     main = snap / sid / f"{sid}.jsonl"
@@ -267,9 +289,10 @@ def measure_part(snap: Path, part, changed, created) -> dict:
                 "read_whole": whole,
             }
         )
-    # Phases, as tokkit.py report cuts them (build part only).
-    phases = collections.Counter()
-    if part.get("build"):
+    # Phases, as tokkit.py report cuts them (build part only; every other part is review loop).
+    build = bool(part.get("build"))
+    pr_idx = plan_idx = plan_ts = None
+    if build:
         pr_idx = next((c["idx"] for c in mc if c["ts"] and when(c["ts"]) >= when(created)), None)
         events = sorted(
             [*me, {"ts": created, "kind": "pr-open", "detail": "", "idx": pr_idx}],
@@ -278,23 +301,23 @@ def measure_part(snap: Path, part, changed, created) -> dict:
         plan_idx, _ = tokkit.plan_end(events, pr_idx)
         plan_ts = mc[plan_idx]["ts"] if plan_idx is not None and plan_idx < len(mc) else None
 
-        def phase(idx=None, ts=None):
-            if (idx is not None and pr_idx is not None and idx >= pr_idx) or (ts and when(ts) >= when(created)):
-                return "review loop"
-            if (idx is not None and plan_idx is not None and idx >= plan_idx) or (
-                ts and plan_ts and when(ts) >= when(plan_ts)
-            ):
-                return "build"
-            return "orient + plan"
+    def phase(idx=None, ts=None):
+        if not build:
+            return "review loop"
+        if (idx is not None and pr_idx is not None and idx >= pr_idx) or (ts and when(ts) >= when(created)):
+            return "review loop"
+        if (idx is not None and plan_idx is not None and idx >= plan_idx) or (
+            ts and plan_ts and when(ts) >= when(plan_ts)
+        ):
+            return "build"
+        return "orient + plan"
 
-        for c in keep:
-            phases[phase(idx=c["idx"])] += c["units"]
-        for s in subs:
-            phases[phase(ts=s["first_ts"])] += s["units"]
-        phase_calls = {"plan_approval_call": plan_idx, "pr_open_call": pr_idx}
-    else:
-        phases["review loop"] = sum(c["units"] for c in keep) + sum(s["units"] for s in subs)
-        phase_calls = {}
+    phases = collections.Counter()
+    for c in keep:
+        phases[phase(idx=c["idx"])] += c["units"]
+    for s in subs:
+        phases[phase(ts=s["first_ts"])] += s["units"]
+    phase_calls = {"plan_approval_call": plan_idx, "pr_open_call": pr_idx} if build else {}
     # Review rounds: passes grouped by the main-session call that spawned them.
     spawns = [(e["idx"], e["detail"]) for e in me if e["kind"] == "agent-spawn" and lo < e["idx"] <= hi]
     spawns += [
@@ -303,8 +326,22 @@ def measure_part(snap: Path, part, changed, created) -> dict:
         if e["kind"] == "skill" and e["detail"].endswith("rvw-pr") and lo < e["idx"] <= hi
     ]
     rounds = group_rounds(subs, spawns, mc)
+    spans = round_spans(rounds, hi)
+    # Loop cost no round span holds: main calls before the part's first round, and
+    # subagents that are not a round's pass. main() gives each to the round before it.
+    in_span = {k for i, j in spans for k in range(i, j)}
+    in_round = {id(s) for i, ps in rounds.items() if i is not None for s in ps}
+    loose = [
+        {"ts": c["ts"], "units": c["units"], "usd": usd([c]), "main": True}
+        for c in keep
+        if c["idx"] not in in_span and phase(idx=c["idx"]) == "review loop"
+    ] + [
+        {"ts": s["first_ts"], "units": s["units"], "usd": s["usd"], "main": False}
+        for s in subs
+        if id(s) not in in_round and phase(ts=s["first_ts"]) == "review loop"
+    ]
     out_rounds = []
-    for i, j in round_spans(rounds, hi):
+    for i, j in spans:
         main_span = mc[i:j]
         out_rounds.append(
             {
@@ -323,6 +360,7 @@ def measure_part(snap: Path, part, changed, created) -> dict:
         "phases": phases,
         "phase_calls": phase_calls,
         "rounds": out_rounds,
+        "loose": loose,
         "unassigned_passes": len(rounds.get(None, [])),
         "max_main_ctx_k": round(max((c["ctx"] for c in keep), default=0) / 1e3),
         "time": active(main, part),
@@ -330,10 +368,13 @@ def measure_part(snap: Path, part, changed, created) -> dict:
 
 
 def submissions(sr, pr: int):
-    """Human-submitted reviews carrying findings, oldest first: (submitted_at, findings)."""
-    rounds, review_ts, _, _ = sr.rounds_with_findings(pr)
+    """Human-submitted reviews carrying findings, oldest first: (submitted_at, findings).
+
+    A review not yet submitted has no time to place it by, so it is left out; so is a bot's,
+    whose count is returned beside the list."""
+    rounds, review_ts, _, unsubmitted = sr.rounds_with_findings(pr)
     bots = {rv["id"] for rv in sr.fnd._gh(f"pulls/{pr}/reviews") if (rv.get("user") or {}).get("type") == "Bot"}
-    return [(review_ts.get(rid), len(fs)) for rid, fs in rounds.items() if rid not in bots], len(
+    return [(review_ts[rid], len(fs)) for rid, fs in rounds.items() if rid not in bots and rid not in unsubmitted], len(
         [rid for rid in rounds if rid in bots]
     )
 
@@ -388,24 +429,29 @@ def main(argv=None) -> int:
         rounds = sorted((r for p in parts for r in p["rounds"]), key=lambda r: when(r["spawn_ts"]))
         subs, bot_subs = submissions(sr, pr)
         posted, outside = assign_submissions(subs, rounds)
+        extra, before = assign_loose([x for p in parts for x in p["loose"]], rounds)
         passes = [s for r in rounds for s in r["passes"]]
         out_rounds = []
+        loop_units = 0
         for k, r in enumerate(rounds):
             pu = sum(s["units"] for s in r["passes"])
+            mu = r["main_units"] + extra[k]["main_units"]
+            ou = extra[k]["other_units"]
+            loop_units += mu + pu + ou
             out_rounds.append(
                 {
                     "round": k + 1,
                     "passes": len(r["passes"]),
                     "main_ctx_k": r["main_ctx_k"],
-                    "main_units_m": m2(r["main_units"]),
+                    "main_units_m": m2(mu),
                     "pass_units_m": m2(pu),
-                    "units_m": m2(r["main_units"] + pu),
-                    "usd": round(r["main_usd"] + sum(s["usd"] for s in r["passes"]), 2),
+                    "other_units_m": m2(ou),
+                    "units_m": m2(mu + pu + ou),
+                    "usd": round(r["main_usd"] + sum(s["usd"] for s in r["passes"]) + extra[k]["usd"], 2),
                     "findings_posted": posted[k],
                     "findings_handed_back": sum(s["findings_handed_back"] or 0 for s in r["passes"]),
                 }
             )
-        loop_units = sum(r["main_units"] + sum(s["units"] for s in r["passes"]) for r in rounds)
         found = sum(posted.values())
         payload["deliveries"][label] = {
             "pr": pr,
@@ -426,6 +472,7 @@ def main(argv=None) -> int:
             "active_min": round((wall - wait - idle) / 60),
             "rounds": out_rounds,
             "review_loop_rounds_units_m": m2(loop_units),
+            "review_loop_before_first_round_units_m": m2(before["main_units"] + before["other_units"]),
             "findings_posted": found,
             "findings_outside_measured_sessions": outside,
             "bot_submissions_ignored": bot_subs,

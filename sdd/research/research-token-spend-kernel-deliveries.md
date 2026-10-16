@@ -10,8 +10,8 @@
 Two `/ship` deliveries on the contract kernel cost 98.25 M units (BK-389) and
 57.22 M (BK-394), about $227 and $132, and 72 to 92% of it was the review loop.
 Neither loop converged: every one of BK-389's 16 rounds and BK-394's 9 posted
-findings, and both closed on a maintainer's waiver. A round cost 4.4 to 4.5 M
-units, nearly twice run B's 2.4 M, on larger diffs and a main context that kept
+findings, and both closed on a maintainer's waiver. A round cost 4.5 to 5.6 M
+units, about twice run B's 2.4 M, on larger diffs and a main context that kept
 growing; the cost did not scale with the diff's file count (§ 2).
 
 1. **The loop is still where the cost is**, and on a larger diff a round costs
@@ -96,16 +96,22 @@ refuted findings on #1127 is not counted [`bot_submissions_ignored`].
 | --- | ---: | ---: | ---: | ---: |
 | Rounds | 16 | 13 | 9 | 5 |
 | Findings posted | 120 | 76 | 60 | 17 |
-| Units in the rounds | 69.83 M | 23.00 M | 40.61 M | 12.13 M |
-| of it the main session | 34.79 M | 17.41 M | 19.11 M | 6.94 M |
-| Units per round | 4.36 M | 1.77 M | 4.51 M | 2.43 M |
-| Units per finding | 0.58 M | 0.30 M | 0.68 M | 0.71 M |
+| Units in the rounds | 89.06 M | 24.71 M | 40.62 M | 12.14 M |
+| of it the main session | 50.91 M | 19.13 M | 19.13 M | 6.96 M |
+| Loop units before the first round | 0.81 M | 0.95 M | 0.44 M | 0.31 M |
+| Units per round | 5.57 M | 1.90 M | 4.51 M | 2.43 M |
+| Units per finding | 0.74 M | 0.33 M | 0.68 M | 0.71 M |
 | Main context entering the first and last round | 219k, 733k | 329k, 435k | 91k, 736k | 104k, 360k |
 
 From [`rounds`, `findings_posted`, `review_loop_rounds_units_m`,
-`units_m_per_round`, `units_m_per_finding`]; the main-session row sums
-`rounds[].main_units_m`. A round runs from the main-session call that spawned
-its passes to the next round's spawn, so its cost includes the fix after it.
+`review_loop_before_first_round_units_m`, `units_m_per_round`,
+`units_m_per_finding`]; the main-session row sums `rounds[].main_units_m`. The
+rounds and the row before them add up to the review-loop phase of § 1 within
+0.01 M. A round runs from the main-session call that spawned its passes to the
+next round's spawn, so its cost includes the fix after it; loop cost outside
+every such span, a session's calls before its first round and a subagent that
+is no round's pass, joins the latest round spawned before it, so a resume
+session's opening calls count toward the round they fix.
 Run B's figures match `report.md` § Run B; its sixth submission, posted after
 the run, is counted outside [`findings_outside_measured_sessions`], as are
 two findings on #1130 posted from a session outside the delivery.
@@ -128,13 +134,22 @@ two findings on #1130 posted from a session outside the delivery.
   to 378k, 594k to 443k, 559k to 504k [`BK-389.rounds[].main_ctx_k`]. BK-394
   ran all nine rounds in one session, from 91k to 736k. No session compacted
   except one RFC-0021 session, once.
+- **A resume cost about a round.** After each of BK-389's three session
+  breaks, the new session's calls before its first round added 3.57 M, 5.26 M
+  and 10.17 M to rounds 7, 10 and 12, the last round before each break (the
+  gain of `rounds[].units_m` over the result committed at `cf3ad3dda`, which
+  left this cost out). That cost carries the round's fix, which no figure here
+  separates from re-orienting. Round 12's share also holds the last session's
+  re-derivation of the kernel against RFC-0021 and a 3.11 M subagent that was
+  no review pass (round 12's `other_units_m`).
 - **A round costs more on a larger diff, but not in proportion to it.**
   BK-389's rounds 1 to 12 reviewed at most 37 files, 1.8 times run B's 21, and
-  cost 4.06 M each; its rounds 13 to 16, on 91 files, cost 5.29 M each;
+  cost 5.65 M each; its rounds 13 to 16, on 91 files, cost 5.30 M each;
   BK-394's, on 94, 4.51 M; run B's 2.43 M (BK-389's split summed from
-  `BK-389.rounds[].units_m`, the file counts as in § 1). Per finding, they cost
-  less than run B, because they drew about twice run B's findings per round
-  (7.5 and 6.7 against 3.4).
+  `BK-389.rounds[].units_m`, the file counts as in § 1). Without round 12's
+  13.52 M, rounds 1 to 11 cost 4.94 M each. Per finding, BK-389 cost about what
+  run B did (0.74 M against 0.71 M) and BK-394 a little less (0.68 M), though
+  they drew about twice run B's findings per round (7.5 and 6.7 against 3.4).
 
 **RFC-0021's loop was cheap per round because its rounds were narrow.** Seven of
 its 13 rounds ran a single pass, three of them narrow checks of one commit, and
@@ -261,9 +276,10 @@ re-tests the other controls.**
   [ADR-0036](../adrs/0036-reviewers-by-subject-and-method.md)'s first decision,
   which keeps domain personas as a way to staff a scoped lens; this record does
   not close it.
-- **The loop's cost on a large PR is its length, not its passes.** Half of a
-  round's units were the main session's, and that session carried every fix
-  forward; only a session break lowered its context. A loop that does not
+- **The loop's cost on a large PR is its length, not its passes.** The main
+  session took 57% of BK-389's round units and 47% of BK-394's (§ 2's table),
+  and that session carried every fix forward; only a session break lowered its
+  context, and a resume cost about a round. A loop that does not
   converge pays its context again every round.
 - **Proposal 6 ends here unmet.** It asked for two more `/ship` deliveries,
   one of them drawing prose findings only, to decide whether the saving

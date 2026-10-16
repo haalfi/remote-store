@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -30,6 +31,12 @@ def _assistant(ts: str, content: list | None = None) -> dict:
 
 def _user(ts: str, content) -> dict:
     return {"type": "user", "timestamp": ts, "message": {"content": content}}
+
+
+def _call(mid: str, ts: str, tokens: int, content: list | None = None) -> dict:
+    """An assistant record carrying usage: ``tokens`` fresh input tokens weigh one unit each."""
+    msg = {"id": mid, "model": "claude-opus-4-6", "usage": {"input_tokens": tokens}, "content": content or []}
+    return {"type": "assistant", "timestamp": ts, "message": msg}
 
 
 class TestActive:
@@ -199,3 +206,65 @@ class TestRounds:
         ]
         posted, outside = deliveries.assign_submissions(subs, rounds)
         assert (dict(posted), outside) == ({0: 2, 1: 4}, 9)
+
+    def test_an_unsubmitted_or_bot_review_is_not_a_submission(self):
+        findings = {1: ["f"] * 2, 2: ["f"] * 3, 3: ["f"] * 5}  # 3 is still pending
+        sr = SimpleNamespace(
+            rounds_with_findings=lambda pr: (findings, {1: 100, 2: 200}, {}, [3]),
+            fnd=SimpleNamespace(_gh=lambda path: [{"id": 2, "user": {"type": "Bot"}}, {"id": 1, "user": {}}]),
+        )
+        assert deliveries.submissions(sr, 1) == ([(100, 2)], 1)
+
+    def test_loop_cost_outside_every_span_joins_the_round_before_it(self):
+        rounds = [{"spawn_ts": "2026-10-10T10:00:00Z"}, {"spawn_ts": "2026-10-10T12:00:00Z"}]
+        loose = [
+            {"ts": "2026-10-10T09:00:00Z", "units": 1, "usd": 0.5, "main": True},  # before any round
+            {"ts": "2026-10-10T10:00:00Z", "units": 2, "usd": 0.5, "main": True},  # the spawning call
+            {"ts": "2026-10-10T11:00:00Z", "units": 4, "usd": 0.5, "main": False},  # a fixer subagent
+            {"ts": "2026-10-11T08:00:00Z", "units": 8, "usd": 0.5, "main": True},  # a resume session's opening
+        ]
+        per_round, before = deliveries.assign_loose(loose, rounds)
+        assert dict(per_round) == {
+            0: {"main_units": 2, "other_units": 4, "usd": 1.0},
+            1: {"main_units": 8, "other_units": 0, "usd": 0.5},
+        }
+        assert before == {"main_units": 1, "other_units": 0, "usd": 0.5}
+
+
+class TestMeasurePart:
+    def test_every_loop_unit_lands_in_a_round_or_in_the_loose_cost(self, tmp_path, monkeypatch):
+        """A resume part: a call before the first spawn, the spawning call, a pass, a fixer, two fix calls."""
+        monkeypatch.setattr(
+            deliveries.tokkit,
+            "ARGS",
+            deliveries.argparse.Namespace(repo_root=Path("K:/Code/remote-store")),
+            raising=False,
+        )
+        sid = "s1"
+        sub = tmp_path / sid / sid / "subagents"
+        sub.mkdir(parents=True)
+        spawn = {"type": "tool_use", "id": "a1", "name": "Agent", "input": {"description": "Round member"}}
+        _write(
+            tmp_path / sid / f"{sid}.jsonl",
+            [
+                _call("m0", "2026-10-10T10:00:00Z", 1),
+                _call("m1", "2026-10-10T10:01:00Z", 10, [spawn]),
+                _call("m2", "2026-10-10T10:05:00Z", 100),
+                _call("m3", "2026-10-10T10:06:00Z", 1000),
+            ],
+        )
+        for name, kind, desc, ts, tokens in (
+            ("agent-p1", "reviewer", "Round member", "2026-10-10T10:02:00Z", 10_000),
+            ("agent-f1", "general-purpose", "Fix the findings", "2026-10-10T10:05:30Z", 100_000),
+        ):
+            _write(sub / f"{name}.jsonl", [_call(f"{name}-0", ts, tokens)])
+            (sub / f"{name}.meta.json").write_text(json.dumps({"agentType": kind, "description": desc}))
+
+        out = deliveries.measure_part(tmp_path, {"session": sid}, set(), "9999-01-01T00:00:00Z")
+
+        assert out["phases"] == {"review loop": 111_111}
+        [r] = out["rounds"]
+        assert (r["main_units"], [p["units"] for p in r["passes"]]) == (1100, [10_000])
+        assert sorted((x["units"], x["main"]) for x in out["loose"]) == [(1, True), (10, True), (100_000, False)]
+        in_rounds = r["main_units"] + sum(p["units"] for p in r["passes"])
+        assert in_rounds + sum(x["units"] for x in out["loose"]) == out["phases"]["review loop"]
