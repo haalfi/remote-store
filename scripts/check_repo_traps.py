@@ -25,10 +25,8 @@ What the rules do not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   through a local ``hatch run fast`` or ``all``.
 - Rule 1 reads the files ``git ls-files --cached --others --exclude-standard``
   lists, so an ignored file is out of reach. It skips a file that does not
-  decode as UTF-8, every path a ``binary`` pattern in the root
-  ``.gitattributes`` matches by git's rules (a nested ``.gitattributes``, and
-  ``-text`` spelled without the ``binary`` macro, are not read), and the
-  decision logs under ``sdd/decisions/`` (``_RECORD_DIRS``),
+  decode as UTF-8, every path ``git check-attr`` reports ``binary`` for (so a
+  path marked only ``-text`` is still read), and the decision logs under ``sdd/decisions/`` (``_RECORD_DIRS``),
   which store dialog payloads as received. It has no per-file exemption list: in a Python file, a character the code
   needs is spelled as a named escape, which reads the same to Python and is
   visible to a reviewer. In any other file the only remedy it offers is
@@ -39,7 +37,9 @@ What the rules do not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   A ``newline`` keyword or fourth positional argument passes when it is
   ``"\\n"`` or ``""``, or when it is not a constant (its value is not
   inspected); ``None``, the default, and any other constant fail. A call that
-  passes ``**kwargs`` is taken to pass ``newline``. It requires the keyword on every call, also on an
+  passes ``**kwargs`` is taken to pass ``newline``. A file that does not parse
+  (a raw invisible character between tokens, which rule 1 reports) is reported
+  as such, and rules 2 and 3 check nothing in it. It requires the keyword on every call, also on an
   untracked target or one-line content, so it never has to guess what a path
   resolves to.
 - Rule 3 reads string entries of ``[tool.hatch.envs.*.scripts]`` whose whole
@@ -164,100 +164,6 @@ def scan_invisible(text: str, rel: str) -> list[Violation]:
     return found
 
 
-def binary_patterns(root: Path) -> list[str]:
-    """Return the patterns ``.gitattributes`` marks ``binary``."""
-    attributes = root / ".gitattributes"
-    if not attributes.is_file():
-        return []
-    patterns = []
-    for line in attributes.read_text(encoding="utf-8").splitlines():
-        fields = line.split()
-        if fields and not fields[0].startswith("#") and "binary" in fields[1:]:
-            patterns.append(fields[0])
-    return patterns
-
-
-# The POSIX classes git's wildmatch accepts inside `[...]`, as regex set members.
-_POSIX_CLASSES: dict[str, str] = {
-    "alnum": "a-zA-Z0-9",
-    "alpha": "a-zA-Z",
-    "blank": " \\t",
-    "cntrl": "\\x00-\\x1f\\x7f",
-    "digit": "0-9",
-    "graph": "!-~",
-    "lower": "a-z",
-    "print": " -~",
-    "punct": "!-/:-@\\[-`{-~",
-    "space": " \\t\\n\\r\\f\\v",
-    "upper": "A-Z",
-    "xdigit": "0-9A-Fa-f",
-}
-
-
-def _bracket_class(pattern: str, start: int) -> tuple[str, int] | None:
-    """Translate the ``[...]`` opening at *start*; None when it never closes (a literal ``[``)."""
-    i = start + 1
-    negated = i < len(pattern) and pattern[i] in "!^"
-    i += negated
-    members: list[str] = []
-    while i < len(pattern):
-        ch = pattern[i]
-        if ch == "]" and members:
-            # A negated class never matches "/", as in git.
-            return "[" + ("^/" if negated else "") + "".join(members) + "]", i + 1
-        if pattern.startswith("[:", i) and (end := pattern.find(":]", i + 2)) != -1:
-            name = pattern[i + 2 : end]
-            if name not in _POSIX_CLASSES:
-                raise ValueError(f"unknown POSIX class [:{name}:]")
-            members.append(_POSIX_CLASSES[name])
-            i = end + 2
-            continue
-        members.append("-" if ch == "-" else re.escape(ch))
-        i += 1
-    return None
-
-
-def _attr_regex(pattern: str) -> re.Pattern[str]:
-    """Translate one ``.gitattributes`` pattern into git's matching rules.
-
-    Not ``fnmatch``: its ``*`` crosses ``/`` and its ``**/`` misses the root, so
-    an anchored ``binary`` line would silently skip files git still scans.
-    ``*`` and ``?`` stay inside one path segment; ``**/``, ``/**/`` and a
-    trailing ``/**`` span any number of segments; a ``[...]`` class is negated
-    by a leading ``!`` or ``^`` and may hold the POSIX classes in
-    ``_POSIX_CLASSES``. Raises ``ValueError`` on any other ``[:name:]``.
-    """
-    out: list[str] = []
-    i = 0
-    while i < len(pattern):
-        if pattern.startswith("**/", i) and (i == 0 or pattern[i - 1] == "/"):
-            out.append("(?:.*/)?")
-            i += 3
-        elif pattern.startswith("**", i) and i + 2 == len(pattern) and i > 0 and pattern[i - 1] == "/":
-            out.append(".*")
-            i += 2
-        elif pattern[i] == "*":
-            out.append("[^/]*")
-            i += 1
-        elif pattern[i] == "?":
-            out.append("[^/]")
-            i += 1
-        elif pattern[i] == "[" and (bracket := _bracket_class(pattern, i)) is not None:
-            regex, i = bracket
-            out.append(regex)
-        else:
-            out.append(re.escape(pattern[i]))
-            i += 1
-    return re.compile("".join(out))
-
-
-def _is_binary(rel: str, patterns: list[tuple[bool, re.Pattern[str]]]) -> bool:
-    # A pattern without a slash matches the basename at any depth; one with a
-    # slash matches the whole path from the root, as in git.
-    base = rel.rsplit("/", 1)[-1]
-    return any(regex.fullmatch(rel if anchored else base) for anchored, regex in patterns)
-
-
 def listed_files(root: Path) -> list[str]:
     """Return the repo-relative paths git lists for the working tree, tracked or new."""
     out = subprocess.run(
@@ -269,18 +175,34 @@ def listed_files(root: Path) -> list[str]:
     return sorted({p for p in out.decode("utf-8").split("\0") if p})
 
 
+def binary_files(root: Path, files: list[str]) -> set[str]:
+    """Return the members of *files* git marks ``binary``, asking git itself.
+
+    One ``git check-attr`` call, so nested ``.gitattributes`` files,
+    ``core.ignorecase`` and the full pattern syntax all match exactly as git
+    applies them. A re-implementation would have to track all three, and any
+    gap in it skips a file rule 1 should read.
+    """
+    if not files:
+        return set()
+    out = subprocess.run(
+        ["git", "check-attr", "-z", "--stdin", "binary"],
+        cwd=root,
+        input="\0".join(files).encode("utf-8"),
+        capture_output=True,
+        check=True,
+    ).stdout
+    # -z output is path NUL attribute NUL value NUL, per path.
+    fields = out.decode("utf-8").split("\0")
+    return {fields[i] for i in range(0, len(fields) - 2, 3) if fields[i + 2] == "set"}
+
+
 def check_invisible(root: Path, files: list[str]) -> list[Violation]:
-    """Rule 1 over *files* (repo-relative), skipping binary and non-UTF-8 ones."""
-    patterns: list[tuple[bool, re.Pattern[str]]] = []
+    """Rule 1 over *files* (repo-relative), skipping records, binary and non-UTF-8 ones."""
+    binary = binary_files(root, files)
     found: list[Violation] = []
-    for p in binary_patterns(root):
-        try:
-            patterns.append(("/" in p, _attr_regex(p.lstrip("/"))))
-        except ValueError as exc:
-            # Fail loudly: a pattern skipped on a guess would shrink rule 1 silently.
-            found.append(Violation(".gitattributes", f"binary pattern {p!r}: {exc}; extend _POSIX_CLASSES"))
     for rel in files:
-        if rel.startswith(_RECORD_DIRS) or _is_binary(rel, patterns):
+        if rel.startswith(_RECORD_DIRS) or rel in binary:
             continue
         try:
             text = (root / rel).read_bytes().decode("utf-8")
@@ -297,7 +219,13 @@ def check_invisible(root: Path, files: list[str]) -> list[Violation]:
 def scan_write_text(source: str, rel: str) -> list[Violation]:
     """Return one violation per ``.write_text(`` call in *source* whose ``newline`` can write CRLF."""
     found: list[Violation] = []
-    for node in ast.walk(ast.parse(source, filename=rel)):
+    try:
+        tree = ast.parse(source, filename=rel)
+    except (SyntaxError, ValueError) as exc:
+        # A raw invisible character between tokens lands here; rule 1 reports
+        # the character itself, so this rule only says why it read nothing.
+        return [Violation(f"{rel}:{getattr(exc, 'lineno', None) or 1}", f"does not parse ({exc}); rule 2 skipped it")]
+    for node in ast.walk(tree):
         if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)):
             continue
         if node.func.attr != "write_text":
@@ -332,7 +260,10 @@ def check_write_text(root: Path) -> list[Violation]:
 
 
 def takes_options(source: str) -> bool:
-    """True when *source* calls ``add_argument`` or subscripts ``sys.argv``."""
+    """True when *source* calls ``add_argument`` or subscripts ``sys.argv``.
+
+    Raises ``SyntaxError`` or ``ValueError`` when *source* does not parse.
+    """
     for node in ast.walk(ast.parse(source)):
         if isinstance(node, ast.Call):
             func = node.func
@@ -361,12 +292,17 @@ def check_hatch_args(root: Path) -> list[Violation]:
             if match is None or match.group(2):
                 continue
             script = root / match.group(1)
-            if script.is_file() and takes_options(script.read_text(encoding="utf-8")):
+            if not script.is_file():
+                continue
+            location = f"pyproject.toml [tool.hatch.envs.{env_name}.scripts] {alias}"
+            try:
+                options = takes_options(script.read_text(encoding="utf-8"))
+            except (SyntaxError, ValueError) as exc:
+                found.append(Violation(location, f"{match.group(1)} does not parse ({exc}); rule 3 skipped it"))
+                continue
+            if options:
                 found.append(
-                    Violation(
-                        f"pyproject.toml [tool.hatch.envs.{env_name}.scripts] {alias}",
-                        f"{match.group(1)} takes options but the alias drops them; append ' {{args}}'",
-                    )
+                    Violation(location, f"{match.group(1)} takes options but the alias drops them; append ' {{args}}'")
                 )
     return found
 

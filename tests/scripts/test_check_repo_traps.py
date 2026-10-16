@@ -94,22 +94,39 @@ class TestScanInvisible:
         assert _mod.scan_invisible('s = "\\N{ZERO WIDTH SPACE}"\n', "t.py") == []
 
 
+def _git(tmp_path: Path, attributes: str = "", *, ignorecase: bool = False) -> Path:
+    """A scratch repo, so binary detection runs through git check-attr as in the gate."""
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    # Pinned, not inherited: git defaults it per platform (true on Windows).
+    subprocess.run(["git", "config", "core.ignorecase", str(ignorecase).lower()], cwd=tmp_path, check=True)
+    if attributes:
+        (tmp_path / ".gitattributes").write_text(attributes, encoding="utf-8")
+    return tmp_path
+
+
+def _write(root: Path, *rels: str) -> None:
+    for rel in rels:
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        (root / rel).write_text(f"x{ZWSP}\n", encoding="utf-8")
+
+
 class TestCheckInvisible:
     def test_binary_pattern_and_non_utf8_files_are_skipped(self, tmp_path):
-        (tmp_path / ".gitattributes").write_text("* text=auto eol=lf\n*.png binary\n", encoding="utf-8")
-        (tmp_path / "img").mkdir()
-        (tmp_path / "img" / "a.png").write_bytes(f"x{ZWSP}".encode())
-        (tmp_path / "latin.txt").write_bytes(b"caf\xe9")
-        (tmp_path / "bad.md").write_text(f"x{ZWSP}\n", encoding="utf-8")
-        found = _mod.check_invisible(tmp_path, ["img/a.png", "latin.txt", "bad.md", "gone.py"])
+        root = _git(tmp_path, "* text=auto eol=lf\n*.png binary\n")
+        (root / "img").mkdir()
+        (root / "img" / "a.png").write_bytes(f"x{ZWSP}".encode())
+        (root / "latin.txt").write_bytes(b"caf\xe9")
+        (root / "bad.md").write_text(f"x{ZWSP}\n", encoding="utf-8")
+        found = _mod.check_invisible(root, ["img/a.png", "latin.txt", "bad.md", "gone.py"])
         assert [v.location for v in found] == ["bad.md:1:2"]
 
     def test_decision_logs_are_skipped(self, tmp_path):
         # record_decision.py stores dialog payloads as received (ensure_ascii=False).
-        (tmp_path / "sdd" / "decisions").mkdir(parents=True)
-        (tmp_path / "sdd" / "decisions" / "s.jsonl").write_text(f'{{"q": "a{LS}b"}}\n', encoding="utf-8")
-        (tmp_path / "sdd" / "notes.md").write_text(f"a{LS}b\n", encoding="utf-8")
-        found = _mod.check_invisible(tmp_path, ["sdd/decisions/s.jsonl", "sdd/notes.md"])
+        root = _git(tmp_path)
+        (root / "sdd" / "decisions").mkdir(parents=True)
+        (root / "sdd" / "decisions" / "s.jsonl").write_text(f'{{"q": "a{LS}b"}}\n', encoding="utf-8")
+        (root / "sdd" / "notes.md").write_text(f"a{LS}b\n", encoding="utf-8")
+        found = _mod.check_invisible(root, ["sdd/decisions/s.jsonl", "sdd/notes.md"])
         assert [v.location for v in found] == ["sdd/notes.md:1:2"]
 
     @pytest.mark.parametrize(
@@ -119,43 +136,46 @@ class TestCheckInvisible:
             ("/assets/*.svg", "assets/x.svg", "sub/assets/x.svg"),  # anchored at the root
             ("**/gen/*.bin", "gen/a.bin", "gen/sub/a.bin"),  # `**/` also matches the root
             ("data/**", "data/sub/a.txt", "other/data/a.txt"),
-        ],
-        ids=["star-stays-in-segment", "leading-slash", "double-star-prefix", "double-star-suffix"],
-    )
-    def test_patterns_with_a_slash_match_as_git_does(self, tmp_path, pattern, skipped, scanned):
-        (tmp_path / ".gitattributes").write_text(f"{pattern} binary\n", encoding="utf-8")
-        for rel in (skipped, scanned):
-            (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
-            (tmp_path / rel).write_text(f"x{ZWSP}\n", encoding="utf-8")
-        found = _mod.check_invisible(tmp_path, [skipped, scanned])
-        assert [v.location for v in found] == [f"{scanned}:1:2"]
-
-    @pytest.mark.parametrize(
-        ("pattern", "skipped", "scanned"),
-        [
             ("*.[!t]xt", "a.bxt", "a.txt"),  # git negates with `!`
-            ("*.[^t]xt", "a.bxt", "a.txt"),  # and with `^`
             ("*.[[:digit:]]", "a.1", "a.x"),
         ],
-        ids=["bang-negates", "caret-negates", "posix-class"],
+        ids=[
+            "star-stays-in-segment",
+            "leading-slash",
+            "double-star-prefix",
+            "double-star-suffix",
+            "bang-negates",
+            "posix-class",
+        ],
     )
-    def test_bracket_classes_match_as_git_does(self, tmp_path, pattern, skipped, scanned):
-        (tmp_path / ".gitattributes").write_text(f"{pattern} binary\n", encoding="utf-8")
-        for rel in (skipped, scanned):
-            (tmp_path / rel).write_text(f"x{ZWSP}\n", encoding="utf-8")
-        found = _mod.check_invisible(tmp_path, [skipped, scanned])
+    def test_patterns_match_as_git_does(self, tmp_path, pattern, skipped, scanned):
+        root = _git(tmp_path, f"{pattern} binary\n")
+        _write(root, skipped, scanned)
+        found = _mod.check_invisible(root, [skipped, scanned])
         assert [v.location for v in found] == [f"{scanned}:1:2"]
 
-    def test_untranslatable_bracket_class_fails_instead_of_skipping(self, tmp_path):
-        (tmp_path / ".gitattributes").write_text("*.[[:nope:]] binary\n", encoding="utf-8")
-        (tmp_path / "a.1").write_text(f"x{ZWSP}\n", encoding="utf-8")
-        found = _mod.check_invisible(tmp_path, ["a.1"])
-        assert [v.location for v in found] == [".gitattributes", "a.1:1:2"]
-        assert "*.[[:nope:]]" in found[0].message
+    def test_nested_gitattributes_is_honoured(self, tmp_path):
+        root = _git(tmp_path)
+        (root / "sub").mkdir()
+        (root / "sub" / ".gitattributes").write_text("*.dat binary\n", encoding="utf-8")
+        _write(root, "sub/x.dat", "x.dat")
+        found = _mod.check_invisible(root, ["sub/x.dat", "x.dat"])
+        assert [v.location for v in found] == ["x.dat:1:2"]
 
-    def test_binary_patterns_ignore_comments_and_text_rules(self, tmp_path):
-        (tmp_path / ".gitattributes").write_text("# *.md binary\n* text=auto\n*.ico binary\n", encoding="utf-8")
-        assert _mod.binary_patterns(tmp_path) == ["*.ico"]
+    @pytest.mark.parametrize(("ignorecase", "reported"), [(True, []), (False, ["LOGO.PNG:1:2"])])
+    def test_case_folding_follows_core_ignorecase(self, tmp_path, ignorecase, reported):
+        root = _git(tmp_path, "*.png binary\n", ignorecase=ignorecase)
+        _write(root, "LOGO.PNG")
+        assert [v.location for v in _mod.check_invisible(root, ["LOGO.PNG"])] == reported
+
+    def test_minus_text_alone_is_still_scanned(self, tmp_path):
+        # Only the `binary` macro skips a file; `-text` leaves it readable as text.
+        root = _git(tmp_path, "*.raw -text\n")
+        _write(root, "a.raw")
+        assert [v.location for v in _mod.check_invisible(root, ["a.raw"])] == ["a.raw:1:2"]
+
+    def test_no_files_needs_no_git(self, tmp_path):
+        assert _mod.binary_files(tmp_path, []) == set()
 
     def test_listed_files_includes_untracked_and_excludes_ignored(self, tmp_path):
         subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
@@ -220,6 +240,12 @@ class TestScanWriteText:
     def test_stated_bounds_are_not_checked(self, src):
         assert _mod.scan_write_text(src, "s.py") == []
 
+    def test_unparsable_source_is_reported_not_raised(self):
+        # A raw NBSP between tokens is rule 1's subject; rule 2 must not crash on it.
+        [v] = _mod.scan_write_text(f"x = 1{NBSP}+ 2\n", "s.py")
+        assert v.location == "s.py:1"
+        assert "does not parse" in v.message
+
 
 class TestCheckWriteText:
     def test_reads_scripts_only(self, tmp_path):
@@ -277,6 +303,13 @@ class TestCheckHatchArgs:
         assert v.location == "pyproject.toml [tool.hatch.envs.docs.scripts] x"
         assert "scripts/x.py" in v.message
 
+    def test_unparsable_script_is_reported_not_raised(self, tmp_path):
+        root = _repo(tmp_path, '[tool.hatch.envs.default.scripts]\nx = "python scripts/x.py"\n')
+        (root / "scripts" / "x.py").write_text(f"x = 1{NBSP}+ 2\n", encoding="utf-8")
+        [v] = _mod.check_hatch_args(root)
+        assert v.location == "pyproject.toml [tool.hatch.envs.default.scripts] x"
+        assert "does not parse" in v.message
+
     def test_script_without_options_needs_no_args(self, tmp_path):
         root = _repo(tmp_path, '[tool.hatch.envs.default.scripts]\nx = "python scripts/x.py"\n', takes=False)
         assert _mod.check_hatch_args(root) == []
@@ -312,6 +345,15 @@ class TestMain:
         assert "1 invisible characters found" in err
         assert "1 write_text that can write CRLF found" in err
         assert "1 hatch alias without {args} found" in err
+
+    def test_unparsable_script_still_gets_rule_1_report(self, tmp_path, capsys):
+        root = _repo(tmp_path, "[tool.hatch.envs.default.scripts]\n")
+        (root / "scripts" / "bad.py").write_text(f"x = 1{NBSP}+ 2\n", encoding="utf-8")
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        assert _mod.main(root) == 1
+        err = capsys.readouterr().err
+        assert "scripts/bad.py:1:6: U+00A0 NO-BREAK SPACE" in err
+        assert "scripts/bad.py:1: does not parse" in err
 
     def test_real_repo_is_clean(self, capsys):
         assert _mod.main() == 0, capsys.readouterr().err

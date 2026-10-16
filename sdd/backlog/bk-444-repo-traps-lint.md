@@ -135,5 +135,8 @@ accepts for a single-pass script). It is wired into `lint` in `pyproject.toml`.
   log may hold a raw U+2028 that no edit may remove. Decision in the same log.
 - Rule 2 also fails a `newline` keyword or fourth positional that is a constant other than
   `"\n"` or `""`: `newline=None` is the default, which still writes CRLF (PR #1152 review).
+- Rule 1 asks `git check-attr` which listed files are `binary` rather than reading
+  `.gitattributes` itself, so nested files and `core.ignorecase` match as git applies them
+  (decision in `sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl`).
 
 Step 4's rule named the same 10 aliases the substring test above did.
