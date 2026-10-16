@@ -631,6 +631,10 @@ class NonBlockingRaw(io.RawIOBase):
     def readable(self) -> bool:
         return True
 
+    def read(self, size: int = -1) -> bytes | None:
+        # io.RawIOBase.read takes its size positionally only; this one also takes size=.
+        return super().read(size)
+
     def readinto(self, buffer: Any) -> int | None:  # type: ignore[override]
         answer = self._answers.pop(0) if self._answers else b""
         if answer is None:

@@ -39,11 +39,15 @@ walk it yourself with `list_folders()` and `list_files()` per folder, catching
 
 **`metadata=` must be `None` or a mapping:**
 
-`write()` and `write_atomic()` on `Store` and `AsyncStore`, and
-`write_with_hash()` and `open_atomic_with_hash()`, took an empty non-mapping such as `[]`, `()`, `0` or
-`""` for no metadata and wrote the file. They now raise `ValueError` and write
-nothing, as they do for any other value that is not a mapping, which used to
-fail with `AttributeError`. Pass `None` (the default) or `{}` for no metadata.
+Every call that takes `metadata=`, such as `write()`, `write_atomic()` and
+`write_text()` on `Store` and `AsyncStore`, `write_with_hash()` and
+`open_atomic_with_hash()`, took an empty non-mapping such as `[]`, `()`, `0`
+or `""` for no metadata and wrote the file. They now raise `ValueError` and
+write nothing, for every value that is not a `collections.abc.Mapping`,
+including an object that only has `.items()`. Called directly,
+`MemoryBackend` and `AsyncMemoryBackend` also stored a list of pairs such as
+`[("k", "v")]` as a dict; they refuse it too. Pass `None` (the default) or
+`{}` for no metadata, and a `dict` or another mapping otherwise.
 
 **For backend authors: a backend is now written as a driver:**
 

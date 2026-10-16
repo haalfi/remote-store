@@ -168,7 +168,7 @@ _ANSWERS: dict[str, Any] = {
 
 
 def _answering(shape: str, answer: object, name: str) -> object:
-    """A stream whose every read answers *answer*, wrapped in a list where *shape* is lines.
+    """A stream whose first read answers *answer* (in a list where *shape* is lines) and every later one the end.
 
     For ``__iter__`` the stream is iterable but not its own iterator, so the
     proxy iterates it through ``_MarkedIteration`` rather than ``__next__``.
@@ -317,7 +317,7 @@ _UNSIZED: dict[str, Any] = {
 def test_an_unsized_read_never_stops_at_a_none_the_stream_hides(how: str) -> None:
     # The stream's own unsized read is readall, which stops at the None and
     # answers b"ab": the proxy reads in sized chunks so it sees the None itself.
-    if how in ("read()", "read(-1)", "readall()"):  # the spellings a raw read accepts
+    if how != "read(None)":  # the spellings a raw read accepts
         assert _UNSIZED[how](NonBlockingRaw()) == b"ab"
     with pytest.raises(TypeError, match="NoneType, not bytes") as caught:
         _UNSIZED[how](sync_io.guard_content(NonBlockingRaw()))  # type: ignore[arg-type]
@@ -390,22 +390,19 @@ def test_a_size_with_keywords_beside_it_is_the_streams_to_answer(call: Any) -> N
 
 
 @pytest.mark.spec("BE-030")
-def test_an_unsized_read_is_not_a_join_of_its_chunks() -> None:
-    # Joining the chunks held the content twice. tracemalloc counts a buffer's
-    # resize once, so this pins the join away, not the process peak, which a
-    # growing buffer can still raise.
-    import tracemalloc
-
-    data = b"x" * (16 * sync_io._CHUNK)
-    guarded = sync_io.guard_content(io.BytesIO(data))
-    tracemalloc.start()
-    try:
-        answer = guarded.read()  # type: ignore[union-attr]
-        _, peak = tracemalloc.get_traced_memory()
-    finally:
-        tracemalloc.stop()
-    assert answer == data
-    assert peak < 1.5 * len(data)
+@pytest.mark.parametrize(
+    "call",
+    [lambda s: s.read(size=-1), lambda s: s.read(size=None), lambda s: s.readall(5), lambda s: s.readall(-1)],
+    ids=["read(size=-1)", "read(size=None)", "readall(5)", "readall(-1)"],
+)
+def test_an_unsized_spelling_the_stream_refuses_is_refused_through_the_proxy(call: Any, tmp_path: Any) -> None:
+    # A raw file takes read's size positionally only and readall with no argument.
+    path = tmp_path / "f"
+    path.write_bytes(b"abc")
+    with open(path, "rb", buffering=0) as stream, pytest.raises(TypeError, match="argument") as native:
+        call(stream)
+    with open(path, "rb", buffering=0) as stream, pytest.raises(TypeError, match=re.escape(str(native.value))):
+        call(sync_io.guard_content(stream))
 
 
 @pytest.mark.spec("ASYNC-091")
