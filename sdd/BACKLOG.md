@@ -413,6 +413,14 @@ no clause of the contract ships unexercised.
   regex (read only). Open decision: anchor with `\Z` on every backend, or state
   the newline rule in GLOB-014.
 
+- [ ] **BUG-329 — Metadata that is not a mapping, passed straight to a kernel class, is answered as a statement about the target**
+  spec: WR-010, BE-030, MEM-020 · effort: S · audience: user.api
+  The WR-010 gate checks only truthiness, so `MemoryBackend().write("d/f", b"x",
+  metadata=5)` fails inside `put` and is classified: a free key keeps folder `d`,
+  an existing file without `overwrite` answers `AlreadyExists` (measured, both
+  runtimes; `Store` validates first). Open decision: refuse non-mapping
+  metadata in the kernel at the gate's rank, or leave it to `Store`.
+
 - [ ] **BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`**
   spec: SIO-001, SEEK-006 · effort: M · audience: user.api
   After `close()`, Azure `read_seekable()` raises `RemoteStoreError` while bytes

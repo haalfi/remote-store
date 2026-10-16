@@ -825,14 +825,18 @@ class _KernelCore:
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
         """Write atomically: ``put`` where it is atomic, else a wire temporary, else temp and rename."""
-        # The caller's own errors pass verbatim (ASYNC-091); only content a caller
-        # hands in is marked, so the kernel's own spool goes to _write_atomic.
-        return self._write_atomic(path, _io.guard_content(content), overwrite=overwrite, metadata=metadata)
+        return self._write_atomic(path, content, overwrite=overwrite, metadata=metadata, caller=True)
 
     def _write_atomic(
-        self, path: str, content: _io.Content, *, overwrite: bool, metadata: Mapping[str, str] | None
+        self,
+        path: str,
+        content: _io.Content,
+        *,
+        overwrite: bool,
+        metadata: Mapping[str, str] | None,
+        caller: bool,
     ) -> WriteResult:
-        """``write_atomic``'s checks and routes, over *content* as given, marked or not."""
+        """``write_atomic``'s checks and routes; *caller* content is guarded, the kernel's own spool is not."""
         # Capability data, not a live operation: ahead of the closed guard and
         # the key rule, as glob's is (BE-030).
         self._require(Capability.ATOMIC_WRITE, path, "cannot write atomically")
@@ -840,6 +844,10 @@ class _KernelCore:
         key = self._write_key(path)
         self._require_metadata(metadata, key)
         content = _io.take_content(content)
+        if caller:
+            # Guarded after the gates, so nothing of the caller's object is read
+            # ahead of them; its own errors then pass verbatim (ASYNC-091).
+            content = _io.guard_content(content)
         target = RemotePath(key)
         self._prepare_write(Op.WRITE_ATOMIC, key)
         if self._driver.put_is_atomic:

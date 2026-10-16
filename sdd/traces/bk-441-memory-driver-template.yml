@@ -30,13 +30,15 @@ surprising_ripples:
   - src/remote_store/_kernel/_async/_io.py
   - sdd/formal/README.md
   - sdd/formal/MemoryBackend-py
-discovery_followups: []
+discovery_followups:
+  - BUG-329
 co_shipped_items:
   - BK-442
   - BUG-328
   - BK-440
 decisions:
   - sdd/decisions/349646d5-1b21-4d77-8c1d-de2d30fe94ad.jsonl
+  - sdd/decisions/820a011f-2470-4981-9a46-d721b604b082.jsonl
 orient:
   - items: [BK-441, BK-442, BUG-328, BK-440]
     verdict: subsumes

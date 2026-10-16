@@ -110,7 +110,7 @@ class AsyncMemoryDriver(AsyncDriver):
 
     def classify(self, exc: Exception, *, op: Op, key: str) -> RemoteStoreError:
         # The tree raises only typed errors, and the kernel converts or refuses content put
-        # could not read and marks what put's reads raise, so nothing a caller passes reaches here (MEM-020).
+        # could not read and marks what put's reads raise, so no content error reaches here (MEM-020).
         return RemoteStoreError(f"{type(exc).__name__}: {exc}")
 
     def container_absent(self, exc: BaseException, *, op: Op) -> bool:

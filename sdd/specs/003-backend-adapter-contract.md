@@ -1454,8 +1454,9 @@ yields. Content that is no bytes source, neither a buffer nor a readable stream
 (async: an async iterator), is refused with `TypeError` after WR-010's gate and
 before any I/O, on `write` and `write_atomic` alike; a buffer that cannot be
 read as `bytes` (a released `memoryview`) fails at the same rank with its own
-error. A stream that yields something not binary raises `TypeError`
-when read, as the caller's own error, passed through verbatim like
+error. A stream that yields something not binary, `None` included (a
+non-blocking stream's "no data yet", never taken for the end), raises
+`TypeError` when read, as the caller's own error, passed through verbatim like
 ASYNC-091's and never classified. A check on the target made before the
 stream is read answers first, such as `write_atomic`'s `stat` by temp and
 rename without `overwrite`.

@@ -82,6 +82,19 @@ class _StrStream(io.RawIOBase):
         return "x"
 
 
+class _NoneMidStream(io.RawIOBase):
+    """A non-blocking raw stream: ``None`` (no data yet) between two chunks."""
+
+    def __init__(self) -> None:
+        self._answers = [b"ab", None, b"c", b""]
+
+    def readable(self) -> bool:
+        return True
+
+    def read(self, size: int = -1) -> Any:  # type: ignore[override]
+        return self._answers.pop(0)
+
+
 async def _chunks(*parts: Any) -> AsyncIterator[Any]:
     for part in parts:
         yield part
@@ -89,7 +102,8 @@ async def _chunks(*parts: Any) -> AsyncIterator[Any]:
 
 def _not_content(runtime: str) -> list[Any]:
     common = [["x"], 3, "text"]
-    return common + ([io.StringIO("x"), _StrStream()] if runtime == "sync" else [_chunks("x")])
+    sync_only = [io.StringIO("x"), _StrStream(), _NoneMidStream()]  # None: never a truncated file
+    return common + (sync_only if runtime == "sync" else [_chunks("x"), _chunks(b"ab", None)])
 
 
 @pytest.mark.spec("MEM-020", "BE-008")

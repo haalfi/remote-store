@@ -2,9 +2,11 @@
 
 ``guard_content`` hands a driver a proxy over the caller's stream so that what
 the stream raises is marked as the caller's and passes the choke point verbatim
-(ASYNC-091). A driver may hand that proxy on to a client library, so the proxy
-keeps the caller's stream's reads, its iteration (as an iterator when the
-stream is one), its ``with`` and every ordinary attribute, and offers nothing
+(ASYNC-091), and what its reads answer reaches the driver as ``bytes``: a
+buffer converted, anything not binary a caller-marked ``TypeError``. A driver
+may hand that proxy on to a client library, so the proxy keeps the caller's
+stream's reads, its iteration (as an iterator when the stream is one), its
+``with`` and every ordinary attribute, and offers nothing
 the stream does not. Other special methods are not forwarded: Python looks
 them up on the type, so a forwarded one would answer ``hasattr`` for an
 operation that then fails.
@@ -173,8 +175,10 @@ def test_a_buffer_a_read_answers_reaches_the_driver_as_bytes(name: str, chunk: o
 
 @pytest.mark.spec("BE-008", "MEM-020", "ASYNC-091")
 @pytest.mark.parametrize("name", _BYTE_READS)
-@pytest.mark.parametrize("chunk", ["ab", 3], ids=["str", "int"])
+@pytest.mark.parametrize("chunk", ["ab", 3, None], ids=["str", "int", "none"])
 def test_a_read_answering_non_bytes_is_the_callers_type_error(name: str, chunk: object) -> None:
+    # None too: a non-blocking raw stream's "no data yet", which a driver's
+    # read loop would take for the end and store a truncated file.
     with pytest.raises(TypeError, match="not bytes") as caught:
         _read_by(sync_io.guard_content(_answering(chunk)), name)
     assert sync_io.from_content(caught.value)
