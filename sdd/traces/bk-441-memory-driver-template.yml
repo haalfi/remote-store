@@ -34,6 +34,7 @@ discovery_followups:
   - BUG-329
   - BUG-330
   - BUG-331
+  - BUG-333
 co_shipped_items:
   - BK-442
   - BUG-328
@@ -156,11 +157,11 @@ phases:
       - file: tests/_kernel/test_io.py
         section: "test_a_readlines_answer_that_is_not_a_list_is_the_callers_type_error"
         read_type: verify
-        extract: "A readlines answering a bare None or int raised an unmarked TypeError from the proxy's own loop, so it was classified; 3 of 7 cells failed (int, none, released), fixed by _lines"
-      - file: tests/_kernel/test_backend.py
-        section: "test_open_atomic_stores_a_strided_buffer_on_every_route"
+        extract: "A readlines answering a bare None or int raised an unmarked TypeError from the proxy's own loop, so it was classified; fixed by _lines. Against the pre-fix proxy the shipped test (match 'not a list') fails all 7 cells; 3 of them (int, none, released) failed for want of the refusal itself, the other 4 raised a marked TypeError of another message"
+      - file: src/remote_store/_kernel/backend.py
+        section: "_SpoolThenWrite"
         read_type: verify
-        extract: "open_atomic's spool routes raised BufferError on memoryview(b'aXbXc')[::2] where the handle route stores b'abc' (2 of 3 cells failed, as on master); the spool's write now copies through memoryview(...).tobytes()"
+        extract: "BUG-333: open_atomic's spool raises BufferError on a strided memoryview the handle route stores (as on master). A write override was tried in PR #1148 and reverted: writelines bypasses it on 3.11 and after rollover on 3.13 (measured by the closing panel); filed with the adapter's _SpoolAndFlush"
 review:
   # Derived by `hatch run ship-report 1147 --trace-block-only` at head c3c0797.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

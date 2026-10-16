@@ -214,14 +214,6 @@ class _HandleWriter:
             raise
 
 
-class _Spool(tempfile.SpooledTemporaryFile):  # type: ignore[type-arg]
-    """The caller's spool: it takes any buffer as the handle route does, a strided ``memoryview`` included."""
-
-    def write(self, s: bytes | bytearray | memoryview) -> int:  # type: ignore[override]
-        # memoryview refuses what is not a buffer with TypeError, as _HandleStream.write does.
-        return super().write(memoryview(s).tobytes())
-
-
 class _SpoolThenWrite:
     """``open_atomic`` without a wire temporary: spool locally, then ``write_atomic``.
 
@@ -236,7 +228,7 @@ class _SpoolThenWrite:
         self._spool: BinaryIO | None = None
 
     def __enter__(self) -> BinaryIO:
-        self._spool = cast("BinaryIO", _Spool(max_size=_SPOOL_MAX))
+        self._spool = cast("BinaryIO", tempfile.SpooledTemporaryFile(max_size=_SPOOL_MAX))  # noqa: SIM115
         return self._spool
 
     def __exit__(

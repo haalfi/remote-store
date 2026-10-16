@@ -430,12 +430,19 @@ no clause of the contract ships unexercised.
   refuses the same stream (BE-030 § Content); the adapter should as well.
 
 - [ ] **BUG-331 — A kernel driver that reads content with one unsized `read()` stores a truncated file from a non-blocking stream**
-  spec: BE-030 · effort: S · audience: library.maintainer
-  The proxy forwards `read()` to the raw stream, whose `readall` loops its own
-  `readinto` and stops at a `None` the kernel never sees: `tests/_kernel/_fake.py`'s
-  `put` (`content.read()`) stores `b"ab"` from `b"ab", None, b"c"` on `write`,
-  `write_atomic` by `put` and by temp-and-rename; sized reads refuse it. Open decision: serve `read(-1)`
-  in the proxy as sized reads, or require drivers to read in sized chunks.
+  spec: BE-030 · effort: S · audience: library.maintainer, user.api_docs
+  The proxy forwards `read()` to the raw stream, whose `readall` stops at a
+  `None` the kernel never sees: `tests/_kernel/_fake.py`'s `put` stores `b"ab"`
+  from `b"ab", None, b"c"` on every route through `put`. The guide's example
+  driver reads the same way (`custom_backend_guide.py:185`, "Read it in full").
+  Open decision: serve `read(-1)` in the proxy as sized reads, or change the guide.
+
+- [ ] **BUG-333 — `open_atomic`'s spool refuses a strided `memoryview` that the handle route stores**
+  spec: SAW-013, BE-008 · effort: S · audience: user.api
+  On a driver without `open_write`, and through `AsyncBackendSyncAdapter`'s
+  `_SpoolAndFlush`, the raw `SpooledTemporaryFile` raises `BufferError` on
+  `memoryview(b"aXbXc")[::2]`. A `write` override alone does not fix it:
+  `writelines` bypasses it on 3.11, and on 3.13 after rollover (PR #1148).
 
 - [ ] **BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`**
   spec: SIO-001, SEEK-006 · effort: M · audience: user.api
