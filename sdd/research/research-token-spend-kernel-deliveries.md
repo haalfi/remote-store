@@ -1,7 +1,7 @@
 # Research: Two Kernel Deliveries Measured — Long Loops on Large Diffs
 
 **Date:** 2026-10-16
-**Backlog items:** BK-389 (PR #1127, with the RFC-0021 detour BK-432, PR #1130) and BK-394 (PR #1144); evidence for BK-431's open keep-or-drop decision.
+**Backlog items:** BK-389 (PR #1127, with the RFC-0021 detour BK-432, PR #1130) and BK-394 (PR #1144); evidence for BK-431's keep-or-drop decision, closed as keep in the same PR.
 **Status:** Measurement complete for the two deliveries. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md#document-types). It follows [`research-token-spend-means.md`](research-token-spend-means.md) and [`token-usage/report.md`](token-usage/report.md), which stay as written; where a figure here re-derives one of theirs, both are given.
 **Related:** proposal 6 of [`research-token-spend-means.md` § 6](research-token-spend-means.md#6-proposals) asked for this measurement; [ADR-0045](../adrs/0045-close-on-a-check-that-can-fail.md) says a spend figure is judged with the defects shipped.
 

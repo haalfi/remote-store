@@ -11,6 +11,7 @@ audience:
   - contributor.tooling
 decisions:
   - sdd/decisions/c09288d7-a16e-487a-afcc-be52197f7119.jsonl
+  - sdd/decisions/88c92b9b-6530-4797-bc58-58c9d7fa9f4b.jsonl
 orient:
   - items: [BK-346]
     verdict: unrelated
