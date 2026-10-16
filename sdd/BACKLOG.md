@@ -1037,3 +1037,11 @@ sessions work is measured before it becomes process.
   59 of 89 single-line scripts in `pyproject.toml` lack it, most by design. Open decision: lint rule
   or test per trap, and where exemptions and the `{args}` allowlist live.
   Detail: [dossier](backlog/bk-444-repo-traps-lint.md)
+
+- [ ] **BK-445 — A measuring reviewer pushed off `env -C <root>` tests the main checkout's code**
+  spec: — · effort: S · audience: contributor.process, contributor.tooling
+  `env -C <root> hatch run python <file>` imports the review worktree's own `src` and `.venv`. Claude
+  Code's worktree-isolation guard refuses an `env -C` command parsing as `stmt; call(...)`, such as
+  `python -c "import os; print(1)"`; a bare `python` fallback imports the main checkout's `src` (PR #1151:
+  100+ false failures). The route lives in `rvw-pr/SKILL.md` § Review root. Open decision: script-file
+  probes, naming the guard there, or widening its `os.chdir` spelling, which clears the guard, to it.
