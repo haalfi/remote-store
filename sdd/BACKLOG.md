@@ -433,8 +433,8 @@ no clause of the contract ships unexercised.
   spec: BE-030 · effort: S · audience: library.maintainer
   The proxy forwards `read()` to the raw stream, whose `readall` loops its own
   `readinto` and stops at a `None` the kernel never sees: `tests/_kernel/_fake.py`'s
-  `put` (`content.read()`) stores `b"ab"` from `b"ab", None, b"c"` on every write
-  route, where Memory's sized reads refuse it. Open decision: serve `read(-1)`
+  `put` (`content.read()`) stores `b"ab"` from `b"ab", None, b"c"` on `write`,
+  `write_atomic` by `put` and by temp-and-rename; sized reads refuse it. Open decision: serve `read(-1)`
   in the proxy as sized reads, or require drivers to read in sized chunks.
 
 - [ ] **BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`**

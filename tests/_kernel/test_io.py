@@ -211,12 +211,25 @@ def _expected(shape: str, kind: str) -> tuple[str, Any]:
     return ("raises", ValueError if kind == "released" else TypeError)
 
 
+@pytest.mark.spec("BE-030", "BE-008", "ASYNC-091")
+@pytest.mark.parametrize("kind", sorted(_ANSWERS))
+def test_a_readlines_answer_that_is_not_a_list_is_the_callers_type_error(kind: str) -> None:
+    # The lines shape above answers a list; here readlines answers the bare kind.
+    class _Bare(io.BytesIO):
+        def readlines(self, *args: object) -> Any:  # type: ignore[override]
+            return _ANSWERS[kind]()
+
+    with pytest.raises(TypeError, match="readlines returned .*, not a list") as caught:
+        sync_io.guard_content(_Bare(b"x")).readlines()  # type: ignore[union-attr]
+    assert sync_io.from_content(caught.value)
+
+
 def test_every_forwarded_read_has_a_shape() -> None:
     # Drift guard: a read added to the proxy without a shape here goes unenumerated.
     assert set(sync_io._READS) | {"__next__", "__iter__"} == set(_SHAPE)
 
 
-@pytest.mark.spec("BE-008", "MEM-020", "ASYNC-091")
+@pytest.mark.spec("BE-030", "BE-008", "MEM-020", "ASYNC-091")
 @pytest.mark.parametrize("kind", sorted(_ANSWERS))
 @pytest.mark.parametrize("name", sorted(_SHAPE))
 def test_what_every_read_answers_reaches_the_driver_as_its_shape_or_the_callers_error(name: str, kind: str) -> None:

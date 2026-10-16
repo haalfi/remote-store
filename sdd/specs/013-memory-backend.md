@@ -475,14 +475,15 @@ by `write()` is not atomic as a pair. This matches all other backends.
 
 **Invariant:** Every error a `MemoryBackend` operation itself produces is a
 `remote_store` error type. There are no native exceptions to map — no
-`OSError`, no `botocore`, no `paramiko`. The streams it hands out are `io`
+`OSError`, no `botocore`, no `paramiko` — except what the tree raises on
+metadata that is not a mapping, passed to the class directly rather than
+through `Store` (BUG-329). The streams it hands out are `io`
 objects and raise the `io` protocol's own errors where that protocol does: the
 write-only file `open_atomic` yields answers `seek()` with
 `io.UnsupportedOperation`, `read()` with `NotImplementedError` and a
-non-buffer `write()` with `TypeError`. Two native exceptions reach the driver
-from what the caller hands it. The first is not the tree's: an error the
-caller's own content raises passes the choke point verbatim, still the caller's
-type (ASYNC-091). A `bytearray` or `memoryview` is stored as its bytes, since the
+non-buffer `write()` with `TypeError`. One native exception reaches the driver
+from the caller's content, and it is not the tree's: an error the content
+raises passes the choke point verbatim, still the caller's type (ASYNC-091). A `bytearray` or `memoryview` is stored as its bytes, since the
 kernel hands the driver a `bytes` copy, and content that is no bytes source is
 the kernel's `TypeError` before the tree is touched (BE-030 § Content).
 The drivers touch the caller's content only through `read` (sync) and
@@ -490,11 +491,7 @@ The drivers touch the caller's content only through `read` (sync) and
 caller's, a buffer that cannot be read as `bytes` and an `__aiter__` that
 fails included (`tests/backends/memory/test_buffer_content.py`). So nothing the
 caller's content raises reaches `classify`, which stays as the protocol
-requires and answers a base `RemoteStoreError`. The second is the tree's own:
-metadata that is not a mapping, passed to the class directly rather than
-through `Store`, goes to `MemoryTree.put`'s `dict(metadata)`, and whatever that
-raises (`TypeError` for `5`, `ValueError` for `"ab"`) reaches `classify`; an
-iterable of pairs is stored instead (BUG-329).
+requires and answers a base `RemoteStoreError`.
 
 Error conditions are detected by tree inspection:
 

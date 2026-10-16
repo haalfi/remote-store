@@ -1458,8 +1458,9 @@ error, and so does content whose `read` (async: `__aiter__`) cannot even be
 looked up. A stream that yields something not binary, `None` included (a
 non-blocking stream's "no data yet"), or whose `readinto` answers anything but
 a count, raises `TypeError` when read, as the caller's own error, passed
-through verbatim like ASYNC-091's and never classified. That holds for a driver
-that reads in sized chunks, as `_io.feed` and both Memory drivers do: an
+through verbatim like ASYNC-091's and never classified. Async content is
+checked chunk by chunk whatever the driver does. On sync it holds for a driver
+that reads in sized chunks, as the sync `_io.feed` and `MemoryDriver` do: an
 unsized `read()` on a raw stream is the stream's own `readall`, which stops at
 the `None` before the kernel sees it (BUG-331). A check on the target made before the
 stream is read answers first, such as `write_atomic`'s `stat` by temp and

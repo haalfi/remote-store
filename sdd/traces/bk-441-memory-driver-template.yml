@@ -152,7 +152,15 @@ phases:
       - file: tests/_kernel/_fake.py
         section: "_SyncBase.put"
         read_type: verify
-        extract: "BUG-331: a raw stream whose readinto answers b'ab', None, b'c' is stored as b'ab' by the fake's unsized content.read() on write, write_atomic by put and by temp-rename (readall stops at the None the proxy never sees); MemoryBackend refuses it; BE-030 bounded to sized reads"
+        extract: "BUG-331: a raw stream whose readinto answers b'ab', None, b'c' is stored as b'ab' by the fake's unsized content.read() on write, write_atomic by put and by temp-rename (readall stops at the None the proxy never sees); MemoryBackend refuses it; BE-030 bounded to sized reads on sync"
+      - file: tests/_kernel/test_io.py
+        section: "test_a_readlines_answer_that_is_not_a_list_is_the_callers_type_error"
+        read_type: verify
+        extract: "A readlines answering a bare None or int raised an unmarked TypeError from the proxy's own loop, so it was classified; 3 of 7 cells failed (int, none, released), fixed by _lines"
+      - file: tests/_kernel/test_backend.py
+        section: "test_open_atomic_stores_a_strided_buffer_on_every_route"
+        read_type: verify
+        extract: "open_atomic's spool routes raised BufferError on memoryview(b'aXbXc')[::2] where the handle route stores b'abc' (2 of 3 cells failed, as on master); the spool's write now copies through memoryview(...).tobytes()"
 review:
   # Derived by `hatch run ship-report 1147 --trace-block-only` at head c3c0797.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

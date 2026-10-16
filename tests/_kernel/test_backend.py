@@ -189,6 +189,17 @@ def test_open_atomic_tells_only_what_was_written(protocols: tuple[str, ...], put
     assert run.store.files["t"].data == b"abcde"
 
 
+@pytest.mark.spec("SAW-013", "BE-008")
+@_ROUTES
+def test_open_atomic_stores_a_strided_buffer_on_every_route(protocols: tuple[str, ...], put_is_atomic: bool) -> None:
+    # A non-contiguous memoryview is a buffer like any other: the spool takes it
+    # as the handle does, not with BufferError.
+    run = make_kernel("sync", FakeStore(), protocols=protocols, put_is_atomic=put_is_atomic)
+    with run.kernel.open_atomic("t") as handle:
+        assert handle.write(memoryview(b"aXbXc")[::2]) == 3
+    assert run.store.files["t"].data == b"abc"
+
+
 @pytest.mark.spec("BE-010")
 @pytest.mark.parametrize(
     ("protocols", "put_is_atomic"),

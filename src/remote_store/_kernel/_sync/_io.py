@@ -93,6 +93,15 @@ def _count(answer: object, source: object) -> object:
     raise exc
 
 
+def _lines(answer: object, source: object) -> list[object]:
+    """*answer* when ``readlines`` answered a list; a caller-marked ``TypeError`` otherwise."""
+    if isinstance(answer, list):
+        return answer
+    exc = TypeError(f"content stream {type(source).__name__} readlines returned {type(answer).__name__}, not a list")
+    _mark(exc)
+    raise exc
+
+
 def take_content(content: object) -> Content:
     """*content* as the kernel passes it on, converted or refused after the metadata gate and before any I/O.
 
@@ -115,7 +124,8 @@ class _MarkedReader:
 
     What a read answers is checked too: a buffer becomes ``bytes``, an answer
     that is not binary (``None`` included) is a caller-marked ``TypeError``,
-    and so is a ``readinto`` answer that is not a count. Every ordinary attribute is the stream's own, so one the
+    and so is a ``readinto`` answer that is not a count or a ``readlines``
+    answer that is not a list. Every ordinary attribute is the stream's own, so one the
     stream lacks is absent here too; a read among them is forwarded with its
     failures marked. It
     is a proxy, not an ``io.IOBase``: Python looks special methods up on the
@@ -145,7 +155,7 @@ class _MarkedReader:
             if name in _BYTE_READS:
                 return _binary(answer, self._stream)
             if name == "readlines":
-                return [_binary(line, self._stream) for line in cast("list[object]", answer)]
+                return [_binary(line, self._stream) for line in _lines(answer, self._stream)]
             return _count(answer, self._stream)  # readinto, readinto1
 
         return marked
