@@ -298,6 +298,22 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-431 — Review subagents pay the session prefix again, and no smaller reviewer input is tested**
+  spec: — · effort: M · audience: contributor.process, contributor.tooling
+  Kept. `/ship`'s passes run as the `reviewer` agent unless a persona staffs
+  the lens, and `rvw-pr` keeps its measuring and posting rules in
+  `measuring.md` and `posting.md`, which a non-measuring, analyze-only pass
+  skips (#1125, with [ADR-0046](adrs/0046-review-tools-come-from-the-agent.md)).
+  On BK-389, its RFC-0021 detour and BK-394, all 82 passes ran as `reviewer`
+  and opened at 19.5k to 34.6k tokens against run B's 42.9k to 43.9k, and the
+  session prefix fell from 40.6% of a run B pass's context to 16 to 32%
+  ([§ 6](research/research-token-spend-kernel-deliveries.md#6-what-this-changes)).
+  Passes did not get cheaper, because the PR's own files took the room, and
+  with no A run the defects shipped are not compared. ADR-0036's persona
+  staffing is unchanged. Traces:
+  [bk-431](traces/bk-431-scoped-reviewer-input.yml),
+  [bk-431 subagents](traces/bk-431-tokkit-subagents.yml).
+
 - [x] **BK-441 — A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing**
   spec: BE-021, BE-030 · effort: S · audience: user.api_docs, library.maintainer
   Construction refuses, with a `ValueError` naming it, a required primitive a
