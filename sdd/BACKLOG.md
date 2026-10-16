@@ -1038,10 +1038,10 @@ sessions work is measured before it becomes process.
   or test per trap, and where exemptions and the `{args}` allowlist live.
   Detail: [dossier](backlog/bk-444-repo-traps-lint.md)
 
-- [ ] **BK-445 — A measuring reviewer's pytest in the review worktree tests the main checkout's code**
+- [ ] **BK-445 — A measuring reviewer pushed off `env -C <root>` tests the main checkout's code**
   spec: — · effort: S · audience: contributor.process, contributor.tooling
-  The shared `.venv`'s editable install puts the main checkout's `src` first, so `python -m pytest` in
-  `tmp/review/<sha>` imports the code the fixer edits. On PR #1151 a measuring member saw 100+ new tests
-  fail until it set `PYTHONPATH=<root>/src`; the worktree hook refused `env -C <root>`. No skill states
-  the prefix (Grep `PYTHONPATH` under `.claude/skills/`: no match). Open decision: state it in
-  `rvw-pr/measuring.md`, or give each review worktree its own environment.
+  `env -C <root> hatch run python <file>` imports the review worktree's own `src` from its own `.venv`.
+  In a session launched inside a worktree, Claude Code's isolation guard refuses an `env -C` command it
+  cannot parse, such as `python -c "<snippet>"`; a bare `python` from the session imports the main
+  checkout's `src`. A PR #1151 measuring member took that fallback and saw 100+ false failures. Open
+  decision: have `rvw-pr/measuring.md` run probes as script files, or name the guard there.
