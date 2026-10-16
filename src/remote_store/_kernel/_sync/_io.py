@@ -172,11 +172,12 @@ class _MarkedReader:
         ``size=`` refuses it here too. The chunks are joined, so the content is
         held twice at the end, where a file's own ``read()`` holds it once.
         """
+        # typing's BinaryIO.read names no size parameter; io's streams take it positionally.
+        stream: Any = self._stream
         chunks: list[bytes] = []
         while True:
             try:
-                # typing's BinaryIO.read names no size parameter; io's streams take it positionally.
-                answer = cast("Any", self._stream).read(size=_CHUNK) if by_keyword else self._stream.read(_CHUNK)
+                answer = stream.read(size=_CHUNK) if by_keyword else stream.read(_CHUNK)
             except Exception as exc:
                 _mark(exc)
                 raise
