@@ -766,7 +766,7 @@ def main(argv: list[str] | None = None) -> int:
         # it writes: a truncated JSON is an input the report job cannot read,
         # and a half-written file is worse than an absent one.
         temporary = args.out.with_suffix(args.out.suffix + ".tmp")
-        temporary.write_text(report, encoding="utf-8")
+        temporary.write_text(report, encoding="utf-8", newline="\n")
         temporary.replace(args.out)
     except OSError as exc:
         print(f"::error::cannot write {args.out}: {exc}", file=sys.stderr)

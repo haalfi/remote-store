@@ -598,7 +598,7 @@ def main(argv: list[str] | None = None) -> int:
     print(text, end="")
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(text, encoding="utf-8")
+        args.out.write_text(text, encoding="utf-8", newline="\n")
         print(f"\nWritten to {args.out}", file=sys.stderr)
     return 0
 

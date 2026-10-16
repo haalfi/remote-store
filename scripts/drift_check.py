@@ -371,7 +371,7 @@ def write_lock(extra: str, packages: dict[str, str]) -> None:
     ]
     for name in sorted(packages):
         lines.append(f"{name}=={packages[name]}")
-    _lock_path(extra).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    _lock_path(extra).write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
 
 
 def read_lock(extra: str) -> LockFile:

@@ -8,6 +8,12 @@ audience:
   - internal.style
 decisions:
   - sdd/decisions/c29e9ca6-10af-44f2-86cd-e1db3fe67d75.jsonl
+  - sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl
+expected_ripples:
+  - sdd/GATE-INVENTORY.md
+  - sdd/backlogid.json
+surprising_ripples:
+  - .github/workflows/ci.yml
 orient:
   - items: [BUG-327]
     verdict: constrains
@@ -43,4 +49,50 @@ phases:
         section: "Drift-gate block parsing"
         read_type: gate
         extract: "a single-pass script may declare several Drift-gate blocks without entrypoint:, so one check_repo_traps.py can carry three rules"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/backlog/bk-444-repo-traps-lint.md
+        section: "Plan"
+        read_type: gate
+        extract: "one script, three rules, no allowlists; the rules' first run named exactly the dossier's 14 write_text calls and 10 aliases"
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "module docstring; _VALID_FIELDS, _KIND_FIELDS, _VALID_DOMAINS"
+        read_type: reference
+        extract: "block fields and closed domain set for the three declarations"
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2-7"
+        read_type: gate
+        extract: "localize, derived claim space, authority for the {args} pair stated in the script's docstring, bounds in the same docstring"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "CODE_PAT, DOCS_PAT"
+        read_type: verify
+        extract: "lint runs only on CODE_PAT diffs, so rule 1's sdd/ and docs-src/ reach needed docs-gate too; asked, and wired both. The plan named lint alone"
+        outcome: ok
+      - file: scripts/fast_gate.py
+        section: "ALWAYS"
+        read_type: verify
+        extract: "lint always runs locally, so a path matching neither CI pattern is still reached by fast"
+        outcome: ok
+      - file: .pre-commit-config.yaml
+        section: "no-rst-roles"
+        read_type: verify
+        extract: "the pygrep pattern does not match the \\N{ZERO WIDTH SPACE} spelling in check_rst_roles.py"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_check_repo_traps.py
+        section: "(full)"
+        read_type: verify
+        extract: "59 pass; deleting each rule's condition failed 26, 4 and 2 tests (tmp/mutate_traps.py)"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / New or changed cross-artifact check; New test file; Backlog item touched"
+        read_type: verify
+        extract: "DRIFT-RULES applied; the new test exercises no OS-specific code, so no os_sensitive mark"
         outcome: ok

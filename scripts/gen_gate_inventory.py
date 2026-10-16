@@ -838,7 +838,7 @@ def main() -> None:
         print(f"{name} is up to date ({len(mechanisms)} mechanisms).")
         return
 
-    OUTPUT.write_text(rendered, encoding="utf-8")
+    OUTPUT.write_text(rendered, encoding="utf-8", newline="\n")
     print(f"Wrote {name} ({len(mechanisms)} mechanisms).")
 
 

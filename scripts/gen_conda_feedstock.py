@@ -190,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(expected, encoding="utf-8")
+        args.out.write_text(expected, encoding="utf-8", newline="\n")
     except OSError as exc:
         # Reported, not tracebacked, like the read above and like
         # `drift_feedstock.main` for the same failure: a traceback out of a

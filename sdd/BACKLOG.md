@@ -1029,15 +1029,6 @@ sessions work is measured before it becomes process.
   #1099 merges, by [BK-414's dossier](backlog/bk-414-sdd-lookup.md) § Acceptance
   measure. Open decision: keep, change or remove the pointers, by that result.
 
-- [ ] **BK-444 — Three repo traps cost sessions retries that a check would catch before commit**
-  spec: — · effort: S · audience: contributor.tooling, internal.style
-  14 of the 20 `.write_text(` calls in `scripts/` pass no `newline=`; 6 of those write multi-line
-  text to a tracked file, which Windows text mode writes as CRLF. Ruff selects no `PLE` rule, so a raw
-  invisible character lands in source unflagged. A hatch script without `{args}` drops flags silently;
-  59 of 89 single-line scripts in `pyproject.toml` lack it, most by design. Open decision: none;
-  the dossier's § Plan holds the decided design.
-  Detail: [dossier](backlog/bk-444-repo-traps-lint.md)
-
 - [ ] **BK-445 — A measuring reviewer pushed off `env -C <root>` tests the main checkout's code**
   spec: — · effort: S · audience: contributor.process, contributor.tooling
   `env -C <root> hatch run python <file>` imports the review worktree's own `src` and `.venv`. Claude

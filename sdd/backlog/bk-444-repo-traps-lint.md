@@ -120,3 +120,10 @@ accepts for a single-pass script). It is wired into `lint` in `pyproject.toml`.
    `{args}` pair against `sdd/DRIFT-RULES.md` (claim space, declared authority, stated bounds),
    then close BK-444 with its trace. No CHANGELOG entry: the audience is `contributor.tooling`
    and `internal.style`.
+
+**Built 2026-10-16, two departures from the plan.** Rule 1 reads
+`git ls-files --cached --others --exclude-standard`, not `git ls-files` alone, so a new file
+is checked before its first `git add`. The script is also wired into `docs-gate` as
+`check-repo-traps` (decision in `sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl`):
+rule 1 reads `sdd/` and `docs-src/`, which reach CI through `DOCS_PAT` alone. Step 4's rule
+named the same 10 aliases the substring test above did.
