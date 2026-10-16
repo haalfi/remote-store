@@ -7,8 +7,9 @@ Named regions can be included in the guide via pymdownx.snippets:
     ```
 
 Run directly or via ``hatch run examples`` to verify all snippets.
-The RedisBackend class is syntax-checked on import. Usage examples
-(Steps 13-14) exercise the patterns with MemoryBackend to avoid
+The Redis driver is syntax-checked on import and driven end to end by
+``tests/test_snippets.py`` against a fake Redis client. Usage examples
+(Steps 12-13) exercise the patterns with MemoryBackend to avoid
 requiring a Redis server.
 """
 
@@ -16,21 +17,20 @@ requiring a Redis server.
 # mypy: ignore-errors
 #
 # Tutorial source for the Build Your Own Backend guide. Snippet regions
-# include partial code (incomplete method bodies, undefined names referenced
+# include partial code (method bodies split across steps, names referenced
 # from later steps) that wouldn't pass strict typing as a single file.
 # The runtime smoke check at the bottom exercises a subset that does.
 
 # ---------------------------------------------------------------------------
-# Step 1: Scaffold the class -- imports
+# Step 1: Imports
 # ---------------------------------------------------------------------------
 
 # --8<-- [start:step1-imports]
 from __future__ import annotations
 
-import contextlib
 import io
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, BinaryIO, ClassVar
+from typing import TYPE_CHECKING, BinaryIO, ClassVar, Literal, TypeVar
 
 try:
     import redis
@@ -39,27 +39,23 @@ except ImportError:  # graceful fallback when redis is not installed
 
 from remote_store import (
     AlreadyExists,
-    Backend,
     BackendUnavailable,
     Capability,
     CapabilitySet,
     CapabilityNotSupported,
-    DirectoryNotEmpty,
-    FileInfo,
-    FolderEntry,
-    FolderInfo,
-    InvalidPath,
     NotFound,
     PermissionDenied,
-    RemotePath,
-    WriteResult,
+    RemoteStoreError,
+    ResolutionPlan,
+    RetryPolicy,
+    Secret,
 )
+from remote_store.drivers import Driver, DriverBackend, Entry, Op, Page, PutResult
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
-    from contextlib import AbstractContextManager
 
-    from remote_store._types import WritableContent
+T = TypeVar("T")
 # --8<-- [end:step1-imports]
 
 # ---------------------------------------------------------------------------
@@ -67,531 +63,274 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 # --8<-- [start:step2-capabilities]
-# Redis doesn't support atomic rename or native glob.
 _REDIS_CAPABILITIES = CapabilitySet(
     {
         Capability.READ,
         Capability.WRITE,
         Capability.DELETE,
         Capability.LIST,
-        Capability.MOVE,
-        Capability.COPY,
+        Capability.MOVE,  # backed by rename() (Step 10)
+        Capability.COPY,  # backed by copy() (Step 10)
+        Capability.ATOMIC_MOVE,  # RENAME is atomic, and rename_replaces says so
+        Capability.ATOMIC_WRITE,  # one HSET is atomic, and put_is_atomic says so
         Capability.METADATA,
-        Capability.SEEKABLE_READ,  # We return BytesIO, which is always seekable
+        Capability.SEEKABLE_READ,  # get() returns BytesIO, which is always seekable
     }
 )
 # --8<-- [end:step2-capabilities]
 
 
 # ---------------------------------------------------------------------------
-# Steps 3-12: The full RedisBackend class
+# Steps 3-10: The RedisDriver class
 # ---------------------------------------------------------------------------
 
 
-class RedisBackend(Backend):
-    """Redis-backed file storage.
+# --8<-- [start:step3-driver]
+def _glob_escape(text: str) -> str:
+    """Escape SCAN MATCH wildcards, so a key holding ``*``, ``?`` or ``[`` matches itself."""
+    return "".join(f"[{c}]" if c in "*?[" else c for c in text)
 
-    Files are stored as Redis hash keys under a configurable prefix.
-    Each file is a hash with fields: ``data``, ``size``, ``modified_at``.
+
+class RedisDriver(Driver):
+    """Files as Redis hashes: one hash per file, under a key prefix.
+
+    Each hash holds the fields ``data``, ``size`` and ``modified_at``.
     """
 
-    # -- Step 3: Constructor and properties --------------------------------
+    # -- Step 3: Declarations and constructor -------------------------------
 
-    # --8<-- [start:step3-constructor]
-    CAPABILITIES: ClassVar[CapabilitySet] = _REDIS_CAPABILITIES
+    name: str = "redis"
+    namespace: Literal["flat", "hierarchical"] = "flat"  # a key never blocks a prefix
+    parents: Literal["none", "implicit", "explicit"] = "none"  # no folder objects
+    capabilities: CapabilitySet = _REDIS_CAPABILITIES
+    put_is_atomic: bool = True  # put() is one HSET
+    close_is_terminal: bool = False  # redis-py reconnects after close()
 
-    def __init__(self, url: str = "redis://localhost:6379/0", prefix: str = "rs:") -> None:
-        self._client = redis.Redis.from_url(url, decode_responses=False)
+    def __init__(
+        self,
+        url: str = "redis://localhost:6379/0",
+        prefix: str = "rs:",
+        *,
+        password: str | Secret | None = None,
+        retry: RetryPolicy | None = None,
+    ) -> None:
+        # A credential loaded from config arrives wrapped in Secret (Step 12).
+        if isinstance(password, Secret):
+            password = password.reveal()
+        self._client = redis.Redis.from_url(url, password=password, decode_responses=False)
         self._prefix = prefix
+        # Map what your client can honour and ignore the rest: RetryPolicy's
+        # documented contract. redis-py configures retries on the client.
+        self._retry = retry
 
-    @property
-    def name(self) -> str:
-        return "redis"
+    # --8<-- [end:step3-driver]
 
-    @property
-    def capabilities(self) -> CapabilitySet:
-        return self.CAPABILITIES
+    # -- Step 4: Addressing -------------------------------------------------
 
-    # --8<-- [end:step3-constructor]
+    # --8<-- [start:step4-addressing]
+    def native_path(self, key: str) -> str:
+        """The Redis key of the hash holding *key*."""
+        return f"{self._prefix}file:{key}"
 
-    # -- Step 4: Internal helpers ------------------------------------------
+    def to_key(self, native_path: str) -> str:
+        return native_path.removeprefix(f"{self._prefix}file:")
 
-    # --8<-- [start:step4-helpers]
-    # -- Key helpers --
-
-    def _key(self, path: str) -> str:
-        """Convert a backend-relative path to a Redis key."""
-        return f"{self._prefix}file:{path}"
-
-    def _folder_marker(self, path: str) -> str:
-        """Key for folder existence markers."""
-        return f"{self._prefix}dir:{path}"
-
-    def _all_file_keys_pattern(self) -> str:
-        """Pattern to scan all file keys."""
-        return f"{self._prefix}file:*"
-
-    def _path_from_key(self, key: bytes) -> str:
-        """Extract the backend-relative path from a Redis key."""
-        prefix = f"{self._prefix}file:"
-        return key.decode().removeprefix(prefix)
-
-    def _addressable_segments(self, path: str) -> list[str]:
-        """Return the segments of *path* that actually address something.
-
-        Empty and ``"."`` segments name nothing, so every spelling of the store
-        root -- ``""``, ``"."``, ``"./"``, ``".//"``, ``"./."``, ``"/"`` --
-        yields ``[]``. This is the predicate the backend contract requires for
-        deciding root-ness on a write, and it is deliberately wider than a
-        ``not path or path == "."`` test, which lets ``"./"`` through.
-        ``remote_store.backends._flat_ns._addressable_segments`` is the same
-        function; it is restated here so the tutorial stays dependency-free.
-
-        Use this one predicate everywhere you split a key, addressing included.
-        A backend that guards with it and addresses with something stricter
-        accepts ``"./x"`` at the guard and then writes it somewhere else.
-        """
-        return [s for s in path.split("/") if s and s != "."]
-
-    def _reject_root_as_write_target(self, path: str) -> None:
-        """Refuse the store root as a write target, decided from the key."""
-        if not self._addressable_segments(path):
-            raise InvalidPath(
-                f"Cannot write -- '{path}' is the store root, which is a folder",
-                path=path,
-                backend=self.name,
-            )
-
-    # --8<-- [end:step4-helpers]
-
-    # --8<-- [start:step4-error-mapping]
-    # -- Error mapping --
-
-    def _map_error(self, exc: redis.RedisError, path: str = "") -> None:
-        """Map Redis exceptions to remote-store errors. Always raises."""
-        if isinstance(exc, redis.AuthenticationError):
-            raise PermissionDenied(
-                f"Redis authentication failed: {exc}",
-                path=path or None,
-                backend=self.name,
-            ) from exc
-        if isinstance(exc, redis.ConnectionError):
-            raise BackendUnavailable(
-                f"Redis connection failed: {exc}",
-                path=path or None,
-                backend=self.name,
-            ) from exc
-        raise BackendUnavailable(
-            f"Redis error: {exc}",
-            path=path or None,
+    def resolve(self, key: str) -> ResolutionPlan:
+        return ResolutionPlan(
+            kind=self.name,
             backend=self.name,
-        ) from exc
+            key=key,
+            native_path=self.native_path(key),
+            details={"prefix": self._prefix},
+        )
 
-    # --8<-- [end:step4-error-mapping]
+    # --8<-- [end:step4-addressing]
 
-    # -- Step 5: Existence checks ------------------------------------------
+    # -- Step 5: stat and get -----------------------------------------------
 
-    # --8<-- [start:step5-existence]
-    def exists(self, path: str) -> bool:
-        if not path or path == ".":
-            return True  # Root always exists
-        try:
-            return bool(self._client.exists(self._key(path)) or self._has_children(path))
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
+    # --8<-- [start:step5-stat-get]
+    def stat(self, key: str, *, follow_links: bool = True) -> Entry | None:
+        # Flat: a lookup of the key alone. A folder is the kernel's to find.
+        size, modified = self._client.hmget(self.native_path(key), ["size", "modified_at"])
+        if size is None:
+            return None
+        return Entry(
+            key=key,
+            kind="file",
+            size=int(size),
+            modified_at=datetime.fromisoformat(modified.decode()),
+        )
 
-    def is_file(self, path: str) -> bool:
-        if not path or path == ".":
-            return False
-        try:
-            return bool(self._client.exists(self._key(path)))
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
-
-    def is_folder(self, path: str) -> bool:
-        if not path or path == ".":
-            return True  # Root is always a folder
-        try:
-            return self._has_children(path)
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
-
-    def _has_children(self, path: str) -> bool:
-        """Check if any keys exist under this path prefix."""
-        # SCAN may return an empty page with a nonzero cursor, so loop
-        # until a key shows up or the cursor wraps to 0. Note the cost:
-        # SCAN+MATCH walks the whole keyspace on a miss, so a production
-        # backend should keep a secondary index (e.g. a per-prefix set)
-        # instead of scanning per existence check.
-        pattern = f"{self._prefix}file:{path}/*"
-        cursor = 0
-        while True:
-            cursor, keys = self._client.scan(cursor=cursor, match=pattern, count=100)
-            if keys:
-                return True
-            if cursor == 0:
-                return False
-
-    # --8<-- [end:step5-existence]
-
-    # -- Step 6: Reading ---------------------------------------------------
-
-    # --8<-- [start:step6-reading]
-    def read(self, path: str) -> BinaryIO:
-        try:
-            data = self._client.hget(self._key(path), "data")
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
+    def get(self, key: str) -> BinaryIO:
+        data = self._client.hget(self.native_path(key), "data")
         if data is None:
-            raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+            # A folder at the key also lands here: the kernel probes and
+            # raises InvalidPath for it, NotFound for nothing.
+            raise NotFound(f"Not found: {key}")
         return io.BytesIO(data)
 
-    def read_bytes(self, path: str) -> bytes:
-        try:
-            data = self._client.hget(self._key(path), "data")
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
-        if data is None:
-            raise NotFound(f"File not found: {path}", path=path, backend=self.name)
-        return bytes(data)
+    # --8<-- [end:step5-stat-get]
 
-    # --8<-- [end:step6-reading]
+    # -- Step 6: put and delete ---------------------------------------------
 
-    # -- Step 7: Writing ---------------------------------------------------
-
-    # --8<-- [start:step7-writing]
-    def write(
+    # --8<-- [start:step6-put-delete]
+    def put(
         self,
-        path: str,
-        content: WritableContent,
+        key: str,
+        content: bytes | BinaryIO,
         *,
-        overwrite: bool = False,
-        metadata: Mapping[str, str] | None = None,
-    ) -> WriteResult:
-        # Precondition (0): the root, from the key, before any request. Wider
-        # than ``not path or path == "."`` on purpose -- see _addressable_segments.
-        self._reject_root_as_write_target(path)
-
+        overwrite: bool,
+        metadata: Mapping[str, str] | None,
+    ) -> PutResult:
         raw = content if isinstance(content, bytes) else content.read()
-
-        try:
-            if not overwrite and self._client.exists(self._key(path)):
-                raise AlreadyExists(
-                    f"File already exists: {path}",
-                    path=path,
-                    backend=self.name,
-                )
-            self._client.hset(
-                self._key(path),
-                mapping={
-                    "data": raw,
-                    "size": str(len(raw)),
-                    "modified_at": datetime.now(UTC).isoformat(),
-                },
-            )
-        except (AlreadyExists, InvalidPath):
-            raise  # Don't re-map our own errors
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
-
-        return WriteResult(path=RemotePath(path), size=len(raw))
-
-    def write_atomic(
-        self,
-        path: str,
-        content: WritableContent,
-        *,
-        overwrite: bool = False,
-        metadata: Mapping[str, str] | None = None,
-    ) -> WriteResult:
-        # Redis HSET is already atomic, but we didn't declare ATOMIC_WRITE.
-        # Store will reject this call before it reaches us.
-        # If you want to support it, declare the capability and implement here.
-        raise CapabilityNotSupported(
-            "Redis backend does not support atomic writes",
-            capability="atomic_write",
-            backend=self.name,
+        target = self.native_path(key)
+        # Check-then-set: two writers without overwrite can both pass the check.
+        # A production driver closes that window with WATCH/MULTI or a script.
+        if not overwrite and self._client.exists(target):
+            raise AlreadyExists(f"Already exists: {key}")
+        self._client.hset(
+            target,
+            mapping={"data": raw, "size": len(raw), "modified_at": datetime.now(UTC).isoformat()},
         )
+        return PutResult(size=len(raw))
 
-    @contextlib.contextmanager
-    def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
-        raise CapabilityNotSupported(
-            "Redis backend does not support atomic writes",
-            capability="atomic_write",
-            backend=self.name,
-        )
-        yield  # Unreachable, but satisfies the generator contract
+    def delete(self, key: str) -> None:
+        if not self._client.delete(self.native_path(key)):
+            raise NotFound(f"Not found: {key}")
 
-    # --8<-- [end:step7-writing]
+    # --8<-- [end:step6-put-delete]
 
-    # -- Step 8: Deletion --------------------------------------------------
+    # -- Step 7: list_page --------------------------------------------------
 
-    # --8<-- [start:step8-deletion]
-    def delete(self, path: str, *, missing_ok: bool = False) -> None:
-        if not path or path == ".":
-            raise InvalidPath(
-                "Path must not be empty for file operations",
-                path=path,
-                backend=self.name,
-            )
-        try:
-            removed = self._client.delete(self._key(path))
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
-        if not removed and not missing_ok:
-            raise NotFound(f"File not found: {path}", path=path, backend=self.name)
-
-    def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
-        if not path or path == ".":
-            raise InvalidPath(
-                "Cannot delete root folder",
-                path=path,
-                backend=self.name,
-            )
-
-        try:
-            children = list(self._iter_file_paths_under(path))
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
-
-        if not children and not self._has_children(path):
-            if not missing_ok:
-                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
-            return
-
-        if children and not recursive:
-            raise DirectoryNotEmpty(
-                f"Folder not empty: {path}",
-                path=path,
-                backend=self.name,
-            )
-
-        if recursive:
-            try:
-                keys = [self._key(p) for p in children]
-                if keys:
-                    self._client.delete(*keys)
-            except redis.RedisError as exc:
-                self._map_error(exc, path)
-
-    # --8<-- [end:step8-deletion]
-
-    # -- Step 9: Listing ---------------------------------------------------
-
-    # --8<-- [start:step9-listing]
-    def list_files(
+    # --8<-- [start:step7-list-page]
+    def list_page(
         self,
-        path: str,
+        prefix: str,
         *,
-        recursive: bool = False,
-        max_depth: int | None = None,
-    ) -> Iterator[FileInfo]:
-        # The conformance suite calls backends directly and asserts the
-        # depth boundary on what *you* return, so honor max_depth here.
-        # recursive and max_depth are independent filters: recursive=False
-        # always wins (immediate children only), and max_depth prunes
-        # recursive listings.
-        try:
-            for file_path in self._iter_file_paths_under(path):
-                rel = file_path.removeprefix(f"{path}/" if path else "")
-                depth = rel.count("/")  # 0 = directly in `path`
-                if not recursive and depth > 0:
-                    continue  # Skip nested files
-                if max_depth is not None and depth > max_depth:
-                    continue  # Prune below the requested depth
-
-                info = self._build_file_info(file_path)
-                if info is not None:
-                    yield info
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
-
-    def list_folders(self, path: str) -> Iterator[FolderEntry]:
-        seen: set[str] = set()
-        try:
-            for file_path in self._iter_file_paths_under(path):
-                # Extract the immediate subfolder name
-                prefix = f"{path}/" if path else ""
-                rel = file_path.removeprefix(prefix)
-                if "/" in rel:
-                    folder_name = rel.split("/", 1)[0]
-                    if folder_name not in seen:
-                        seen.add(folder_name)
-                        folder_path = f"{prefix}{folder_name}"
-                        yield FolderEntry(
-                            path=RemotePath(folder_path),
-                            name=folder_name,
-                        )
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
-
-    def _iter_file_paths_under(self, path: str) -> Iterator[str]:
-        """Scan Redis for all file keys under a path prefix."""
-        if path and path != ".":
-            pattern = f"{self._prefix}file:{path}/*"
-        else:
-            pattern = self._all_file_keys_pattern()
-
-        cursor = 0
+        delimiter: str | None,
+        cursor: object | None = None,
+        limit: int | None = None,
+        follow_links: bool = True,
+    ) -> Page:
+        # SCAN returns keys in no order, and a flat driver owes byte order, so
+        # this collects every match, sorts, and returns one page (cursor None).
+        # It ignores `limit`, as the shipped Memory driver does. SCAN walks the
+        # whole keyspace: a production driver keeps an index per prefix instead.
+        base = f"{prefix}/" if prefix else ""
+        pattern = _glob_escape(self.native_path(base)) + "*"
+        keys: set[str] = set()
+        scan_cursor = 0
         while True:
-            cursor, keys = self._client.scan(cursor=cursor, match=pattern, count=100)
-            for key in keys:
-                yield self._path_from_key(key)
-            if cursor == 0:
+            scan_cursor, found = self._client.scan(cursor=scan_cursor, match=pattern, count=100)
+            keys.update(self.to_key(k.decode()) for k in found)
+            if scan_cursor == 0:
                 break
+        entries: list[Entry] = []
+        folders: set[str] = set()
+        for key in sorted(keys):
+            rest = key[len(base) :]
+            if delimiter is not None and delimiter in rest:
+                folders.add(base + rest.split(delimiter, 1)[0])  # an immediate subfolder
+                continue
+            entry = self.stat(key)
+            if entry is not None:  # gone since the scan
+                entries.append(entry)
+        return Page(entries=tuple(entries), prefixes=tuple(sorted(folders)))
 
-    def _build_file_info(self, path: str) -> FileInfo | None:
-        """Build a FileInfo from Redis hash fields."""
-        fields = self._client.hgetall(self._key(path))
-        if not fields:
-            return None
-        return FileInfo(
-            path=RemotePath(path),
-            name=path.rsplit("/", 1)[-1],
-            size=int(fields.get(b"size", b"0")),
-            modified_at=datetime.fromisoformat(fields[b"modified_at"].decode()),
-        )
+    # --8<-- [end:step7-list-page]
 
-    # --8<-- [end:step9-listing]
+    # -- Step 8: Error classification ---------------------------------------
 
-    # -- Step 10: Metadata -------------------------------------------------
+    # --8<-- [start:step8-errors]
+    def classify(self, exc: Exception, *, op: Op, key: str) -> RemoteStoreError:
+        # Return the error; the kernel raises it, chained to `exc`, and fills
+        # in `path` and `backend`. AuthenticationError subclasses
+        # ConnectionError in redis-py, so it is tested first.
+        if isinstance(exc, redis.AuthenticationError):
+            return PermissionDenied(f"Redis authentication failed: {exc}")
+        if isinstance(exc, (redis.ConnectionError, redis.TimeoutError)):
+            return BackendUnavailable(f"Redis is not reachable: {exc}")
+        return RemoteStoreError(f"Redis error during {op.value}: {exc}")
 
-    # --8<-- [start:step10-metadata]
-    def get_file_info(self, path: str) -> FileInfo:
-        if not path or path == ".":
-            raise NotFound("File not found: (empty path)", path=path, backend=self.name)
-        try:
-            info = self._build_file_info(path)
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
-        if info is None:
-            raise NotFound(f"File not found: {path}", path=path, backend=self.name)
-        return info
+    def container_absent(self, exc: BaseException, *, op: Op) -> bool:
+        return False  # a Redis database always exists: there is no container to lose
 
-    def get_folder_info(self, path: str) -> FolderInfo:
-        try:
-            file_count = 0
-            total_size = 0
-            latest: datetime | None = None
+    def connection_dead(self, exc: BaseException) -> bool:
+        return isinstance(exc, redis.ConnectionError)
 
-            for file_path in self._iter_file_paths_under(path):
-                info = self._build_file_info(file_path)
-                if info is not None:
-                    file_count += 1
-                    total_size += info.size
-                    if latest is None or info.modified_at > latest:
-                        latest = info.modified_at
-        except redis.RedisError as exc:
-            self._map_error(exc, path)
+    # --8<-- [end:step8-errors]
 
-        if file_count == 0 and path and path != ".":
-            raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+    # -- Step 9: Lifecycle --------------------------------------------------
 
-        return FolderInfo(
-            path=RemotePath.from_backend_path(path),
-            file_count=file_count,
-            total_size=total_size,
-            modified_at=latest,
-        )
-
-    # --8<-- [end:step10-metadata]
-
-    # -- Step 11: Move and copy --------------------------------------------
-
-    # --8<-- [start:step11-move-copy]
-    def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        # The source is a file-shaped operation on a folder; the destination is
-        # a write. Different messages, and the destination takes the wider
-        # predicate -- an unrecognised root spelling costs a read an error class
-        # and cost a write, on a shipped backend, its container.
-        if not src or src == ".":
-            raise InvalidPath("Source path is a folder, not a file", path=src, backend=self.name)
-        self._reject_root_as_write_target(dst)
-
-        try:
-            # Read source
-            data = self._client.hgetall(self._key(src))
-            if not data:
-                raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
-
-            # src == dst is a data-preserving no-op (Backend contract) —
-            # after the source check, so a missing source still raises NotFound.
-            if src == dst:
-                return
-
-            # Check destination
-            if not overwrite and self._client.exists(self._key(dst)):
-                raise AlreadyExists(
-                    f"Destination already exists: {dst}",
-                    path=dst,
-                    backend=self.name,
-                )
-
-            # Atomic: write destination then delete source
-            pipe = self._client.pipeline()
-            pipe.hset(self._key(dst), mapping=data)
-            pipe.delete(self._key(src))
-            pipe.execute()
-        except (NotFound, AlreadyExists, InvalidPath):
-            raise
-        except redis.RedisError as exc:
-            self._map_error(exc, src)
-
-    def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        if not src or src == ".":
-            raise InvalidPath("Source path is a folder, not a file", path=src, backend=self.name)
-        self._reject_root_as_write_target(dst)
-
-        try:
-            data = self._client.hgetall(self._key(src))
-            if not data:
-                raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
-
-            if src == dst:
-                return  # Data-preserving no-op, same as move()
-
-            if not overwrite and self._client.exists(self._key(dst)):
-                raise AlreadyExists(
-                    f"Destination already exists: {dst}",
-                    path=dst,
-                    backend=self.name,
-                )
-
-            # Update modified_at for the copy
-            data[b"modified_at"] = datetime.now(UTC).isoformat().encode()
-            self._client.hset(self._key(dst), mapping=data)
-        except (NotFound, AlreadyExists, InvalidPath):
-            raise
-        except redis.RedisError as exc:
-            self._map_error(exc, src)
-
-    # --8<-- [end:step11-move-copy]
-
-    # -- Step 12: Lifecycle ------------------------------------------------
-
-    # --8<-- [start:step12-lifecycle]
-    def check_health(self) -> None:
-        try:
-            self._client.ping()
-        except redis.AuthenticationError as exc:
-            raise PermissionDenied(
-                f"Redis authentication failed: {exc}",
-                backend=self.name,
-            ) from exc
-        except redis.RedisError as exc:
-            raise BackendUnavailable(
-                f"Redis is not reachable: {exc}",
-                backend=self.name,
-            ) from exc
+    # --8<-- [start:step9-lifecycle]
+    def probe(self) -> None:
+        self._client.ping()  # errors go through classify() like any other
 
     def close(self) -> None:
         self._client.close()
 
-    # --8<-- [end:step12-lifecycle]
+    def unwrap(self, type_hint: type[T]) -> T:
+        if isinstance(self._client, type_hint):
+            return self._client
+        raise CapabilityNotSupported(
+            f"Backend '{self.name}' does not expose native handle of type {type_hint.__name__}.",
+            capability="unwrap",
+            backend=self.name,
+        )
+
+    # --8<-- [end:step9-lifecycle]
+
+    # -- Step 10: Optional protocols ----------------------------------------
+
+    # --8<-- [start:step10-optional]
+    # SupportsCopy: backs Capability.COPY (Redis 6.2+ for COPY).
+    def copy(self, src: str, dst: str, *, overwrite: bool) -> None:
+        if not self._client.copy(self.native_path(src), self.native_path(dst), replace=overwrite):
+            # COPY answers 0 for a missing source and for an existing
+            # destination alike. Say only that it refused: the kernel probes
+            # both keys and raises NotFound or AlreadyExists as they answer.
+            raise RemoteStoreError(f"COPY refused: {src} -> {dst}")
+
+    # SupportsRename: backs Capability.MOVE, and ATOMIC_MOVE with rename_replaces.
+    rename_replaces: bool = True  # RENAME replaces the destination atomically
+
+    def rename(self, src: str, dst: str, *, replace: bool) -> None:
+        source, target = self.native_path(src), self.native_path(dst)
+        if replace:
+            self._client.rename(source, target)
+        elif not self._client.renamenx(source, target):
+            raise AlreadyExists(f"Already exists: {dst}")
+
+    # --8<-- [end:step10-optional]
 
 
 # ---------------------------------------------------------------------------
-# Step 13-14: Usage examples (exercised with MemoryBackend)
+# Step 11: The backend class
+# ---------------------------------------------------------------------------
+
+
+# --8<-- [start:step11-backend]
+class RedisBackend(DriverBackend):
+    """Redis-backed file storage on the contract kernel."""
+
+    CAPABILITIES: ClassVar[CapabilitySet] = _REDIS_CAPABILITIES
+
+    def __init__(
+        self,
+        url: str = "redis://localhost:6379/0",
+        prefix: str = "rs:",
+        *,
+        password: str | Secret | None = None,
+        retry: RetryPolicy | None = None,
+    ) -> None:
+        super().__init__(RedisDriver(url, prefix, password=password, retry=retry))
+
+
+# --8<-- [end:step11-backend]
+
+
+# ---------------------------------------------------------------------------
+# Step 12-13: Usage examples (exercised with MemoryBackend)
 # ---------------------------------------------------------------------------
 
 if TYPE_CHECKING:
@@ -599,7 +338,7 @@ if TYPE_CHECKING:
 
 
 def _demo_direct_usage() -> None:
-    # --8<-- [start:step13-direct]
+    # --8<-- [start:step12-direct]
     from remote_store import Store
 
     backend = RedisBackend(url="redis://localhost:6379/0", prefix="myapp:")
@@ -611,11 +350,11 @@ def _demo_direct_usage() -> None:
 
     for info in store.list_files("reports"):
         print(f"{info.name}: {info.size} bytes")
-    # --8<-- [end:step13-direct]
+    # --8<-- [end:step12-direct]
 
 
 def _demo_registry_usage() -> bytes:
-    # --8<-- [start:step13-registry]
+    # --8<-- [start:step12-registry]
     from remote_store import Registry, register_backend
     from remote_store.ext.yaml import from_yaml  # needs: pip install "remote-store[yaml]"
 
@@ -626,12 +365,12 @@ def _demo_registry_usage() -> bytes:
         store = registry.get_store("cache")
         store.write("hello.txt", b"from-registry")
         data = store.read_bytes("hello.txt")
-    # --8<-- [end:step13-registry]
+    # --8<-- [end:step12-registry]
     return data
 
 
 def _demo_extensions(store: Store) -> None:
-    # --8<-- [start:step14-extensions]
+    # --8<-- [start:step13-extensions]
     from remote_store.ext.batch import batch_copy
     from remote_store.ext.cache import cache
     from remote_store.ext.observe import StoreEvent, observe
@@ -654,7 +393,7 @@ def _demo_extensions(store: Store) -> None:
 
     # Batch operations
     results = batch_copy(observed, [("a.txt", "b.txt"), ("c.txt", "d.txt")])
-    # --8<-- [end:step14-extensions]
+    # --8<-- [end:step13-extensions]
 
     assert [e.operation for e in events] == ["write", "write", "read_bytes", "copy", "copy"]
     assert fast.stats.hits == 1, "cached re-read did not hit"
@@ -662,35 +401,38 @@ def _demo_extensions(store: Store) -> None:
     assert results.all_succeeded, "batch_copy reported failures"
 
 
-def _demo_partial_capabilities() -> type[Backend]:
+def _demo_partial_capabilities() -> type[Driver]:
     # --8<-- [start:partial-capabilities]
-    class _ReadOnlyBackend(Backend):  # type: ignore[abstract]
-        CAPABILITIES: ClassVar[CapabilitySet] = CapabilitySet(
+    class ReadOnlyHttpDriver(Driver):
+        name: str = "http-readonly"
+        namespace: Literal["flat", "hierarchical"] = "flat"
+        parents: Literal["none", "implicit", "explicit"] = "none"
+        capabilities: CapabilitySet = CapabilitySet(
             {
                 Capability.READ,
                 Capability.METADATA,
                 Capability.LAZY_READ,
             }
         )
+        put_is_atomic: bool = False
+        close_is_terminal: bool = False
 
-        @property
-        def capabilities(self) -> CapabilitySet:
-            return self.CAPABILITIES
+        # ... the required primitives, as in Steps 4-9 ...
 
     # --8<-- [end:partial-capabilities]
-    return _ReadOnlyBackend
+    return ReadOnlyHttpDriver
 
 
 def _demo_partial_write():
     # --8<-- [start:partial-write]
-    def write(
+    def put(
         self,
-        path: str,
-        content: WritableContent,
+        key: str,
+        content: bytes | BinaryIO,
         *,
-        overwrite: bool = False,
-        metadata: Mapping[str, str] | None = None,
-    ) -> WriteResult:
+        overwrite: bool,
+        metadata: Mapping[str, str] | None,
+    ) -> PutResult:
         raise CapabilityNotSupported(
             "HTTP backend is read-only",
             capability="write",
@@ -698,19 +440,35 @@ def _demo_partial_write():
         )
 
     # --8<-- [end:partial-write]
-    return write
+    return put
+
+
+def _demo_overclaim(read_only_cls: type[Driver]) -> str:
+    """Construction refuses a declaration no protocol backs; return its message."""
+
+    class _Overclaiming(read_only_cls):
+        capabilities = CapabilitySet({Capability.READ, Capability.COPY})
+
+    try:
+        DriverBackend(_Overclaiming())
+    except ValueError as exc:
+        return str(exc)
+    raise AssertionError("construction accepted COPY without copy()")
 
 
 def _demo_test_examples() -> dict:
     # --8<-- [start:test-examples]
+    import uuid
+
     import pytest
-    from remote_store import AlreadyExists, NotFound, Store
+    from remote_store import AlreadyExists, InvalidPath, NotFound, Store
 
     @pytest.fixture
     def store():
-        backend = RedisBackend(url="redis://localhost:6379/15", prefix="test:")
-        backend._client.flushdb()  # Clean slate
-        return Store(backend=backend)
+        # A fresh prefix per test keeps one test's keys out of the next.
+        backend = RedisBackend(url="redis://localhost:6379/15", prefix=f"test-{uuid.uuid4().hex[:8]}:")
+        with Store(backend=backend) as s:
+            yield s
 
     def test_read_write_roundtrip(store):
         store.write("hello.txt", b"world")
@@ -724,6 +482,11 @@ def _demo_test_examples() -> dict:
     def test_read_missing(store):
         with pytest.raises(NotFound):
             store.read("nope.txt")
+
+    def test_read_a_folder(store):
+        store.write("docs/readme.md", b"# Hello")
+        with pytest.raises(InvalidPath):
+            store.read("docs")
 
     def test_list_files(store):
         store.write("a/1.txt", b"one")
@@ -755,6 +518,7 @@ def _demo_test_examples() -> dict:
         "test_read_write_roundtrip": test_read_write_roundtrip,
         "test_write_no_overwrite": test_write_no_overwrite,
         "test_read_missing": test_read_missing,
+        "test_read_a_folder": test_read_a_folder,
         "test_list_files": test_list_files,
         "test_list_files_recursive": test_list_files_recursive,
         "test_list_folders": test_list_folders,
@@ -774,17 +538,17 @@ def demo() -> None:
     from remote_store import Store
     from remote_store.backends import MemoryBackend
 
-    # --- Verify RedisBackend class is valid Python (importable) ---
+    # --- Verify the driver classes are valid Python (importable) ---
     assert RedisBackend.__name__ == "RedisBackend"
-    assert Capability.READ in _REDIS_CAPABILITIES
+    assert RedisDriver.capabilities is _REDIS_CAPABILITIES
+    assert RedisBackend.CAPABILITIES is RedisDriver.capabilities
     assert Capability.SEEKABLE_READ in _REDIS_CAPABILITIES
-    assert Capability.ATOMIC_WRITE not in _REDIS_CAPABILITIES
     assert Capability.GLOB not in _REDIS_CAPABILITIES
 
-    # --- Exercise the usage patterns from Steps 13-14 with MemoryBackend ---
+    # --- Exercise the usage patterns from Steps 12-13 with MemoryBackend ---
     store = Store(MemoryBackend())
 
-    # Step 13: direct usage pattern
+    # Step 12: direct usage pattern
     store.write("reports/q1.csv", b"revenue,100\n")
     data = store.read_bytes("reports/q1.csv")
     assert data == b"revenue,100\n"
@@ -793,7 +557,7 @@ def demo() -> None:
     assert len(files) == 1
     assert files[0].name == "q1.csv"
 
-    # Step 13: registry pattern — runs the guide region against a
+    # Step 12: registry pattern — runs the guide region against a
     # memory-backed stores.yaml (no Redis server in the example runner).
     # Guarded on the YAML *parser* only, so a broken ext.yaml import path
     # still fails loudly instead of being swallowed.
@@ -829,39 +593,40 @@ def demo() -> None:
     else:
         print("Skipping the registry snippet: no YAML parser installed.")
 
-    # Step 14: extensions work with any backend — runs the guide region itself
+    # Step 13: extensions work with any backend — runs the guide region itself
     _demo_extensions(store)
     assert store.read_bytes("b.txt") == b"alpha"
     assert store.read_bytes("d.txt") == b"gamma"
 
-    # Step 5 invariants (via MemoryBackend, same contract)
+    # Root invariants (via MemoryBackend, same kernel)
     assert store.exists("reports/q1.csv")
     assert not store.is_file("")
     assert store.is_folder("")
 
-    # Partial-capability regions: execute their bodies, then check the class
-    # the region actually defines against the real ReadOnlyHttpBackend set.
+    # Partial-capability regions: check the declarations against the real
+    # ReadOnlyHttpBackend set, run the put body, and show construction
+    # refusing a capability no protocol backs.
     import types
 
     from remote_store.backends import ReadOnlyHttpBackend
 
     read_only_cls = _demo_partial_capabilities()
-    assert set(read_only_cls.CAPABILITIES) == set(ReadOnlyHttpBackend.CAPABILITIES)
-    assert Capability.WRITE not in read_only_cls.CAPABILITIES
-    # Run the property body (the class is abstract, so no instance exists).
-    assert read_only_cls.capabilities.fget(read_only_cls) is read_only_cls.CAPABILITIES
+    assert set(read_only_cls.capabilities) == set(ReadOnlyHttpBackend.CAPABILITIES)
+    assert Capability.WRITE not in read_only_cls.capabilities
 
-    write_fn = _demo_partial_write()
+    put_fn = _demo_partial_write()
     try:
-        write_fn(types.SimpleNamespace(name="http"), "x.txt", b"data")
+        put_fn(types.SimpleNamespace(name="http-readonly"), "x.txt", b"data", overwrite=False, metadata=None)
     except CapabilityNotSupported:
         pass
     else:
         raise AssertionError("partial-write region did not raise CapabilityNotSupported")
 
+    assert "declares COPY without copy" in _demo_overclaim(read_only_cls)
+
     # The test-examples region's bodies run in tests/test_snippets.py against
     # a fake redis client; here we execute the definitions and count them.
-    assert len(_demo_test_examples()) == 6
+    assert len(_demo_test_examples()) == 7
 
     print("All custom backend guide snippets passed.")
 

@@ -33,3 +33,5 @@ scopes arises only on paramiko ≥ 5.0. `pyproject.toml` pins `paramiko>=3.1`
 with no upper bound (`rg -n 'paramiko' pyproject.toml`), so both occur.
 `rg -n allow_legacy_ssh_rsa src docs-src sdd/specs` finds nothing: the sketched
 option is unbuilt. Found by the ADR-0040 § 4 conversion.
+
+**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. Placement: step 6, as an option of SFTP's driver and `Session`.

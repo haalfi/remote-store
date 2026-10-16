@@ -7,7 +7,11 @@ imports the driver module, which imports them.
 
 from __future__ import annotations
 
-from typing import BinaryIO, Protocol
+import contextlib
+from typing import TYPE_CHECKING, BinaryIO, Protocol, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 #: What ``get`` returns: the sync driver hands back a binary stream.
 ReadStream = BinaryIO
@@ -36,6 +40,133 @@ def close_stream(stream: object) -> None:
     close = getattr(stream, "close", None)
     if close is not None:
         close()
+
+
+_FROM_CONTENT = "_remote_store_from_content"
+
+
+def from_content(exc: BaseException) -> bool:
+    """Whether *exc* was raised by the caller's own content, not by the wire."""
+    return bool(getattr(exc, _FROM_CONTENT, False))
+
+
+def _mark(exc: BaseException) -> None:
+    # An exception class that refuses new attributes stays unmarked, and is mapped.
+    with contextlib.suppress(AttributeError):
+        setattr(exc, _FROM_CONTENT, True)
+
+
+#: The stream's reads, each forwarded with its failures marked.
+_READS = frozenset({"read", "read1", "readall", "readinto", "readinto1", "readline", "readlines", "peek"})
+
+
+class _MarkedReader:
+    """The caller's stream, with whatever its reads raise marked as the caller's.
+
+    Every ordinary attribute is the stream's own, so one the stream lacks is
+    absent here too; a read among them is forwarded with its failures marked. It
+    is a proxy, not an ``io.IOBase``: Python looks special methods up on the
+    type, so none is forwarded (``hasattr`` would answer for an operation that
+    fails), and iteration (as an iterator when the stream is one) and ``with``
+    are present only when the stream's type supports them (``_proxy_type``).
+    """
+
+    __slots__ = ("_stream",)
+
+    def __init__(self, stream: BinaryIO) -> None:
+        self._stream = stream
+
+    def __getattr__(self, name: str) -> object:
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(name)
+        attr = getattr(self._stream, name)
+        if name not in _READS:
+            return attr
+
+        def marked(*args: object, **kwargs: object) -> object:
+            try:
+                return attr(*args, **kwargs)
+            except Exception as exc:
+                _mark(exc)
+                raise
+
+        return marked
+
+
+class _MarkedIteration:
+    __slots__ = ()
+    _stream: BinaryIO
+
+    def __iter__(self) -> Iterator[bytes]:
+        lines = iter(self._stream)
+        while True:
+            try:
+                line = next(lines)
+            except StopIteration:
+                return
+            except Exception as exc:
+                _mark(exc)
+                raise
+            yield line
+
+
+class _MarkedIterator:
+    """For a stream that is its own iterator (every ``io`` stream): so is the proxy."""
+
+    __slots__ = ()
+    _stream: BinaryIO
+
+    def __iter__(self) -> _MarkedIterator:
+        return self
+
+    def __next__(self) -> bytes:
+        try:
+            return next(self._stream)
+        except StopIteration:
+            raise
+        except Exception as exc:
+            _mark(exc)
+            raise
+
+
+class _ForwardedContext:
+    __slots__ = ()
+    _stream: BinaryIO
+
+    def __enter__(self) -> _ForwardedContext:
+        self._stream.__enter__()
+        return self
+
+    def __exit__(self, *exc_info: object) -> object:
+        return self._stream.__exit__(*exc_info)  # type: ignore[arg-type]
+
+
+_PROXY_TYPES: dict[tuple[type | None, bool], type[_MarkedReader]] = {}
+
+
+def _proxy_type(stream: object) -> type[_MarkedReader]:
+    kind = type(stream)
+    iteration: type | None = None
+    if hasattr(kind, "__iter__"):
+        iteration = _MarkedIterator if hasattr(kind, "__next__") else _MarkedIteration
+    shape = (iteration, hasattr(kind, "__enter__") and hasattr(kind, "__exit__"))
+    proxy = _PROXY_TYPES.get(shape)
+    if proxy is None:
+        bases = ((iteration,) if iteration else ()) + (_ForwardedContext,) * shape[1] + (_MarkedReader,)
+        proxy = type("_MarkedReader", bases, {"__slots__": ()}) if len(bases) > 1 else _MarkedReader
+        _PROXY_TYPES[shape] = proxy
+    return proxy
+
+
+def guard_content(content: Content) -> Content:
+    """*content* with whatever the caller's stream raises marked as the caller's.
+
+    The choke point passes a marked error through verbatim: a failing source
+    the caller handed in is not a wire error to classify.
+    """
+    if isinstance(content, bytes | bytearray | memoryview):
+        return content
+    return cast("BinaryIO", _proxy_type(content)(content))
 
 
 def feed(handle: _Writable, content: Content) -> None:

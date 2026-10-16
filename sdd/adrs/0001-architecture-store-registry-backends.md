@@ -27,6 +27,9 @@ Three-layer architecture:
 2. **Registry** — owns backend lifecycle. Lazily instantiates backends from config. Shares backend instances across stores. Acts as context manager for cleanup.
 
 3. **Backend (ABC)** — encapsulates all storage-specific behavior. Declares capabilities. Maps native errors to normalized types. Never exposed directly to end users.
+   *Amended by [ADR-0042](0042-contract-kernel-over-thin-drivers.md):* the
+   backend layer splits in two, a kernel implementing the contract and a driver
+   carrying the storage-specific wire.
 
 ```text
 User → Store → Backend (ABC) → Local/S3/Azure/SFTP
@@ -38,6 +41,9 @@ User → Store → Backend (ABC) → Local/S3/Azure/SFTP
 
 - Users interact only with `Store` — simple, safe API
 - Adding a backend = implement the ABC + add conformance fixture
+  *Amended by [ADR-0042](0042-contract-kernel-over-thin-drivers.md):* adding a
+  backend means implementing a `Driver`; subclassing `Backend` directly stays
+  valid and is no longer the documented route.
 - Backend lifecycle is centralized in Registry, not scattered
 - Store is cheap and immutable — safe for concurrent use
 - No dependency on async frameworks (sync-only initially)

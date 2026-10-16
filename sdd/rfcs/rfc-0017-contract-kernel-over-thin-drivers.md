@@ -2,13 +2,14 @@
 
 ## Status
 
-Draft, decided. Filed from [audit-021](../audits/audit-021-contract-placement.md) at
+**Accepted**, in BK-394's PR, together with
+[ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md), which records
+the design. Filed from [audit-021](../audits/audit-021-contract-placement.md) at
 the user's direction. BK-387 carried D8 step 1: Open Questions 1, 4, 6 and 7
-are answered below, and the design is recorded in
-[ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md), **Proposed**.
-The maintainer's condition is that the ADR and this RFC become Accepted
-together, in the PR that lands the first backend on this design (D3 step 1),
-not on the answers alone. The lifecycle, and where each amendment lands, are
+are answered below. The maintainer's condition was that the ADR and this RFC
+become Accepted together, in the PR that lands the first backend on this
+design (D3 step 1), not on the answers alone; BK-394's PR puts
+`MemoryBackend` and `AsyncMemoryBackend` on the kernel. The lifecycle, and where each amendment lands, are
 in D8 and § Impact. BK-389's planning PR answered Open Questions 2 and 3,
 deferred 5 to D3 step 3 with the shape step 1 keeps open, added the close
 posture and `SupportsRemoveFolder` to D1 and key validation to D2, and split step 1 into a kernel PR (BK-389) and a Memory PR
@@ -790,7 +791,10 @@ and its answer keeps `classify`.
 - **Performance:** the kernel issues the same probes the per-backend code
   issues today (one `stat` or one `list_page(limit=1)` on the error path;
   the file-ancestor walk only when opted in; `ensure_parents` only for
-  explicit parents), and the S3 driver drops the s3fs layer.
+  explicit parents), and the S3 driver drops the s3fs layer. *Corrected
+  2026-10-16 (BK-394): since RFC-0021 D4 the ancestor walk is not opt-in; a
+  flat driver pays BE-032 A.4's ancestor `stat`s and `list_page` on every
+  write (spec 003 BE-032's cost table).*
   `delete_folder`'s counts were measured per class against today
   (`sdd/rfcs/rfc-0017-delete-folder-measure.py compare trips`, wire calls
   for a call without `missing_ok`; BK-396). Memory takes one driver
@@ -958,7 +962,9 @@ and its answer keeps `classify`.
    the fallback if the branches outgrow the guards `_flat_ns` already
    carries. **Answered (BK-389 planning):** step 1 builds to the flags. Both
    Memory drivers are `hierarchical` and `explicit`, so the fallback can be
-   judged no earlier than the first flat driver, at step 2.
+   judged no earlier than the first flat driver, at step 2. *Corrected
+   2026-10-15 (BK-394): both declare `implicit` parents and present no
+   `ensure_parents`, so step 1 exercised (hierarchical, implicit).*
 4. **Which spec contradictions the kernel must adjudicate first.** BUG-240 is
    one; the kernel encodes one answer per clause and cannot land on a clause
    the specs still dispute. **Answered (BK-387):** BUG-240 is the one

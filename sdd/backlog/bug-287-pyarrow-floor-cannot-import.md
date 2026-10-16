@@ -46,3 +46,5 @@ body's "priced by `CONTRIBUTING.md` § When to bump" and the `[arrow]` row's
 (`infra/drift-locks/KNOWN-FINDINGS.md:71`), both written when that raise was
 breaking. The import failure needs a floor install
 and was not re-run. Found by the ADR-0040 § 5 conversion.
+
+**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. `[s3-pyarrow]`'s floor retires with that lane at step 2; `[arrow]` and `[sql-query]` stay here.

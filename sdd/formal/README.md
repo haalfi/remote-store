@@ -439,7 +439,7 @@ small, stable, and maintainable:
   there for other spellings: `Write`, `Move` and `Copy` check
   `AddressesRoot` to rank the root refusal ahead of every observed check
   on `Root` itself (BE-029, BE-018's root-destination carve-out), and
-  `DeleteFolder` refuses `Root` (MEM-014). Spellings such as `"./"` or
+  `DeleteFolder` refuses `Root` (spec 003 BE-031 § The root). Spellings such as `"./"` or
   `"/"` are outside the methods' `WellFormedPath` domain; the raw-key
   entry in `RootPath.dfy` §5 folds them onto `Root` before the trait.
   `MemoryBackend.dfy` includes `RootPath.dfy` so that entry compiles into
@@ -630,7 +630,18 @@ file-shaped operations reach the root through the `IsDir` clause, because
 `Valid()` keeps `Root` a `DirEntry` in every state. `DeleteFolder`'s clauses
 leave the root's own answer free, since BE-029 leaves `delete_folder("")`
 undefined, but not its survival; both refinements refuse it with
-`InvalidPath`, as the Python `MemoryBackend` does (MEM-014).
+`InvalidPath`, as a class on the kernel does (spec 003 BE-031 § The root),
+the Python `MemoryBackend` among them.
+
+`DeleteFolder` requires a recursive delete of a present folder to succeed and
+remove every key under it only when `CanonicalUnder(old(fs), path)` holds:
+every key below `path` is `Canonical`, the model of BE-030's `listable`. Over
+a key the rule omits, a walk on the kernel leaves it behind and answers
+`DirectoryNotEmpty`, so there the trait permits that error or success
+(spec 003 BE-031). The emptiness clauses carry the same guard. Both
+refinements keep the unguarded clauses, because they remove every key under
+`path`. `Canonical`'s comment in `BackendContract.dfy` states what it does
+not model.
 
 The trait takes well-formed paths, and on that domain `AddressesRoot` holds
 for `Root` alone, so the trait by itself states the root rule for the

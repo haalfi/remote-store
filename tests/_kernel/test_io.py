@@ -1,0 +1,141 @@
+"""The sync kernel's content guard: the caller's stream as a driver receives it.
+
+``guard_content`` hands a driver a proxy over the caller's stream so that what
+the stream raises is marked as the caller's and passes the choke point verbatim
+(ASYNC-091). A driver may hand that proxy on to a client library, so the proxy
+keeps the caller's stream's reads, its iteration (as an iterator when the
+stream is one), its ``with`` and every ordinary attribute, and offers nothing
+the stream does not. Other special methods are not forwarded: Python looks
+them up on the type, so a forwarded one would answer ``hasattr`` for an
+operation that then fails.
+"""
+
+from __future__ import annotations
+
+import io
+
+import pytest
+
+from remote_store._kernel._sync import _io as sync_io
+
+
+class _CallerStreamError(Exception):
+    """An error the caller's own content raises, not the wire's."""
+
+
+class _ReadOnlySource:
+    """A source with ``read`` and nothing else, as a caller may hand in."""
+
+    def __init__(self, data: bytes) -> None:
+        self._data = io.BytesIO(data)
+
+    def read(self, n: int = -1) -> bytes:
+        return self._data.read(n)
+
+
+@pytest.mark.spec("ASYNC-091")
+def test_the_guarded_stream_iterates_and_closes_as_the_callers_stream_does() -> None:
+    # A driver may hand content to a client that iterates it or enters it as a
+    # context manager; the guard must not refuse what the caller's stream allows.
+    source = io.BytesIO(b"l1\nl2\n")
+    guarded = sync_io.guard_content(source)
+    assert list(guarded) == [b"l1\n", b"l2\n"]
+    with guarded as entered:
+        assert entered is guarded
+    assert source.closed
+
+
+@pytest.mark.spec("ASYNC-091")
+@pytest.mark.parametrize("name", ["read1", "readinto", "readline", "readlines", "__iter__", "__enter__"])
+def test_the_guarded_stream_offers_only_what_the_callers_stream_offers(name: str) -> None:
+    # A method the caller's stream lacks is absent, so a driver probing for it
+    # (``hasattr``) takes its fallback rather than a marked AttributeError.
+    guarded = sync_io.guard_content(_ReadOnlySource(b"ab"))  # type: ignore[arg-type]
+    assert not hasattr(guarded, name)
+    assert guarded.read() == b"ab"
+
+
+@pytest.mark.spec("ASYNC-091")
+@pytest.mark.parametrize(
+    "name", ["read", "read1", "readinto", "readinto1", "readline", "readlines", "readall", "peek", "__next__"]
+)
+def test_every_read_the_guarded_stream_forwards_marks_the_callers_error(name: str) -> None:
+    # Whichever read a driver uses, a failure of the caller's stream is the caller's.
+    class _Failing(io.BytesIO):
+        def _fail(self, *args: object) -> bytes:
+            raise _CallerStreamError("disk full")
+
+        read = read1 = readinto = readinto1 = readline = readlines = readall = peek = __next__ = _fail  # type: ignore[assignment]
+
+    guarded = sync_io.guard_content(_Failing(b"x"))
+    call = (lambda: next(iter(guarded))) if name == "__next__" else getattr(guarded, name)
+    args = (bytearray(4),) if name in ("readinto", "readinto1") else ()
+    with pytest.raises(_CallerStreamError) as caught:
+        call(*args)
+    assert sync_io.from_content(caught.value)
+
+
+@pytest.mark.spec("ASYNC-091")
+def test_every_other_attribute_is_the_streams_own() -> None:
+    # A driver that rewinds or sizes its content (an upload_fileobj-style SDK)
+    # reaches the stream's own seek, tell and name through the guard.
+    source = io.BytesIO(b"abcdef")
+    source.name = "caller.bin"  # type: ignore[attr-defined]
+    guarded = sync_io.guard_content(source)
+    assert guarded.read(2) == b"ab"
+    assert guarded.tell() == 2
+    assert guarded.seek(0) == 0
+    assert guarded.read() == b"abcdef"
+    assert guarded.name == "caller.bin"
+    assert guarded.getvalue() == b"abcdef"  # type: ignore[attr-defined]
+
+
+@pytest.mark.spec("ASYNC-091")
+def test_the_guard_over_an_iterator_is_an_iterator() -> None:
+    # Every io stream is its own iterator, so next() works on it directly.
+    guarded = sync_io.guard_content(io.BytesIO(b"l1\nl2\n"))
+    assert iter(guarded) is guarded
+    assert next(guarded) == b"l1\n"
+    assert next(guarded) == b"l2\n"
+    with pytest.raises(StopIteration):
+        next(guarded)
+
+
+@pytest.mark.spec("ASYNC-091")
+def test_a_failing_next_on_the_guarded_iterator_is_marked() -> None:
+    class _Lines(io.BytesIO):
+        def __next__(self) -> bytes:
+            raise _CallerStreamError("disk full")
+
+    guarded = sync_io.guard_content(_Lines(b"x"))
+    with pytest.raises(_CallerStreamError) as caught:
+        next(guarded)
+    assert sync_io.from_content(caught.value)
+
+
+@pytest.mark.spec("ASYNC-091")
+@pytest.mark.parametrize("name", ["__len__", "__getitem__", "__contains__"])
+def test_the_guarded_stream_offers_no_special_method_it_cannot_serve(name: str) -> None:
+    # Python looks special methods up on the type, so one reached through
+    # __getattr__ would answer hasattr() while the operation itself fails; a
+    # client probing hasattr(o, "__len__") (requests' super_len) would then break.
+    class _Rich(io.BytesIO):
+        def __len__(self) -> int:
+            return 1
+
+        def __getitem__(self, index: int) -> int:
+            return 0
+
+        def __contains__(self, item: object) -> bool:
+            return False
+
+    guarded = sync_io.guard_content(_Rich(b"x"))
+    assert not hasattr(guarded, name)
+
+
+@pytest.mark.spec("ASYNC-091")
+def test_an_attribute_the_stream_lacks_is_not_marked_as_the_callers() -> None:
+    guarded = sync_io.guard_content(_ReadOnlySource(b"ab"))  # type: ignore[arg-type]
+    with pytest.raises(AttributeError) as caught:
+        guarded.readinto  # noqa: B018
+    assert not sync_io.from_content(caught.value)

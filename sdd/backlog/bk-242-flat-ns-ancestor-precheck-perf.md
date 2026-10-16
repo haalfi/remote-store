@@ -47,3 +47,5 @@ Callers enumerated with `rg -n 'check_no_file_ancestor\(' src`, which matches
 both walks and the `_maybe_` wrappers, read past. Neither optimisation has shipped:
 `rg -n '\.in_\(|TTLCache|lru_cache|functools.cache'` over `_flat_ns.py` and the
 five closure files above finds nothing. Found by the ADR-0040 § 4 conversion.
+
+**RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. Placement: on the kernel the pre-check is A.4's unconditional flat check, so the cost becomes the kernel's, measured at step 2, the first flat driver.

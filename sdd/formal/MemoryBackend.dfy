@@ -622,8 +622,9 @@ class MemoryBackend extends Backend {
     ensures containerPresent == old(containerPresent)
     ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
     ensures !old(Live()) ==> fs == old(fs)
-    // MEM-014: the refinement refuses the root, where the trait leaves
-    // it free; the Python MemoryBackend answers the same.
+    // Spec 003 BE-031 § The root: the refinement refuses the root, where
+    // the trait leaves it free (BE-029); a class on the kernel, the Python
+    // MemoryBackend among them, answers the same.
     ensures old(Live()) && path == Root ==> r == Err(InvalidPath(path, name)) && fs == old(fs)
     ensures old(Live()) && IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
@@ -636,6 +637,11 @@ class MemoryBackend extends Backend {
     ensures old(Live()) && path != Root &&
             IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
+    // Stronger than the trait, which guards recursive success and the two
+    // emptiness clauses below with CanonicalUnder (spec 003 BE-031): the
+    // refinement removes every key under `path`, canonical or not.  The
+    // Python MemoryBackend reaches the same answer by `delete_tree`, never
+    // the walk, and its key rule keeps every stored key canonical.
     ensures old(Live()) && path != Root && old(containerPresent) &&
             IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
       ==> r.Ok?
@@ -648,7 +654,7 @@ class MemoryBackend extends Backend {
       r := Err(BackendUnavailable(name));
       return;
     }
-    // MEM-014: the root is refused, present container or absent.
+    // Spec 003 BE-031 § The root: refused, present container or absent.
     if path == Root {
       r := Err(InvalidPath(path, name));
       return;
@@ -1744,8 +1750,9 @@ class MemoryBackendMinimal extends Backend {
     ensures containerPresent == old(containerPresent)
     ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
     ensures !old(Live()) ==> fs == old(fs)
-    // MEM-014: the refinement refuses the root, where the trait leaves
-    // it free; the Python MemoryBackend answers the same.
+    // Spec 003 BE-031 § The root: the refinement refuses the root, where
+    // the trait leaves it free (BE-029); a class on the kernel, the Python
+    // MemoryBackend among them, answers the same.
     ensures old(Live()) && path == Root ==> r == Err(InvalidPath(path, name)) && fs == old(fs)
     ensures old(Live()) && IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
@@ -1758,6 +1765,11 @@ class MemoryBackendMinimal extends Backend {
     ensures old(Live()) && path != Root &&
             IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
+    // Stronger than the trait, which guards recursive success and the two
+    // emptiness clauses below with CanonicalUnder (spec 003 BE-031): the
+    // refinement removes every key under `path`, canonical or not.  The
+    // Python MemoryBackend reaches the same answer by `delete_tree`, never
+    // the walk, and its key rule keeps every stored key canonical.
     ensures old(Live()) && path != Root && old(containerPresent) &&
             IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
       ==> r.Ok?
@@ -1770,7 +1782,7 @@ class MemoryBackendMinimal extends Backend {
       r := Err(BackendUnavailable(name));
       return;
     }
-    // MEM-014: the root is refused, present container or absent.
+    // Spec 003 BE-031 § The root: refused, present container or absent.
     if path == Root {
       r := Err(InvalidPath(path, name));
       return;

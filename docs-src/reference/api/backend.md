@@ -5,9 +5,11 @@
       members: false
 
 !!! info "Implementing a backend"
-    Subclass `Backend` and implement all abstract methods. Map every
-    backend-native exception to a `remote_store` error — native exceptions
-    must never leak to callers.
+    Write a driver and wrap it in [`DriverBackend`](drivers.md#remote_store.drivers.DriverBackend),
+    which implements every method below over the driver's primitives. A
+    direct `Backend` subclass still works, but then must implement every
+    abstract method and map every native exception to a `remote_store`
+    error itself.
 
 ---
 

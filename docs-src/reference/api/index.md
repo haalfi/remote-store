@@ -4,6 +4,7 @@ Complete reference for all public exports of `remote-store`.
 
 Symbols below are grouped by role. The import path is `remote_store` unless a
 group says otherwise: storage backends live in `remote_store.backends`,
+the driver protocols for writing one in `remote_store.drivers`,
 extensions in `remote_store.ext`, and the entire async surface in
 `remote_store.aio` (see the [Async section](#async), whose layout mirrors this page).
 
@@ -23,6 +24,44 @@ extensions in `remote_store.ext`, and the entire async surface in
 | [Registry](registry.md) | Creates and manages backend instances and stores |
 | [Backend](backend.md) | Abstract base class for storage backends |
 
+## Drivers
+
+The contract kernel and the protocols a backend is written against
+(`remote_store.drivers`). See [Build Your Own Backend](../../guides/custom-backend-guide.md).
+
+| Class | Description |
+|-------|-------------|
+| [DriverBackend](drivers.md#remote_store.drivers.DriverBackend) | The sync kernel: a complete `Backend` over a `Driver` |
+| [AsyncDriverBackend](drivers.md#remote_store.drivers.AsyncDriverBackend) | The async kernel: a complete `AsyncBackend` over an `AsyncDriver` |
+| [Driver](drivers.md#remote_store.drivers.Driver) | Required primitives and declared attributes of a sync driver |
+| [AsyncDriver](drivers.md#remote_store.drivers.AsyncDriver) | Required primitives and declared attributes of an async driver |
+| [Entry](drivers.md#remote_store.drivers.Entry) | One node as a driver reports it |
+| [Page](drivers.md#remote_store.drivers.Page) | One page of a driver listing |
+| [PutResult](drivers.md#remote_store.drivers.PutResult) | What a driver write reports |
+| [Op](drivers.md#remote_store.drivers.Op) | The operation a `classify` call is asked about |
+| [SupportsRangeRead](drivers.md#remote_store.drivers.SupportsRangeRead) | Optional: ranged reads for `read_seekable` |
+| [SupportsOpenWrite](drivers.md#remote_store.drivers.SupportsOpenWrite) | Optional: a wire-side temporary for atomic writes |
+| [WriteHandle](drivers.md#remote_store.drivers.WriteHandle) | The temporary `open_write` returns |
+| [SupportsAtomicMove](drivers.md#remote_store.drivers.SupportsAtomicMove) | Optional: a move the wire performs whole |
+| [SupportsRename](drivers.md#remote_store.drivers.SupportsRename) | Optional: a rename, atomically replacing or not |
+| [SupportsCopy](drivers.md#remote_store.drivers.SupportsCopy) | Optional: a copy on the wire |
+| [SupportsDeleteTree](drivers.md#remote_store.drivers.SupportsDeleteTree) | Optional: a tree delete in one call |
+| [SupportsRemoveFolder](drivers.md#remote_store.drivers.SupportsRemoveFolder) | Optional: removal of one empty folder |
+| [SupportsEnsureParents](drivers.md#remote_store.drivers.SupportsEnsureParents) | Optional: parent creation before a write |
+| [SupportsFolderStats](drivers.md#remote_store.drivers.SupportsFolderStats) | Optional: a native folder aggregate |
+| [SupportsGlob](drivers.md#remote_store.drivers.SupportsGlob) | Optional: native `glob` |
+| [AsyncSupportsRangeRead](drivers.md#remote_store.drivers.AsyncSupportsRangeRead) | Async mirror of `SupportsRangeRead` |
+| [AsyncSupportsOpenWrite](drivers.md#remote_store.drivers.AsyncSupportsOpenWrite) | Async mirror of `SupportsOpenWrite` |
+| [AsyncWriteHandle](drivers.md#remote_store.drivers.AsyncWriteHandle) | Async mirror of `WriteHandle` |
+| [AsyncSupportsAtomicMove](drivers.md#remote_store.drivers.AsyncSupportsAtomicMove) | Async mirror of `SupportsAtomicMove` |
+| [AsyncSupportsRename](drivers.md#remote_store.drivers.AsyncSupportsRename) | Async mirror of `SupportsRename` |
+| [AsyncSupportsCopy](drivers.md#remote_store.drivers.AsyncSupportsCopy) | Async mirror of `SupportsCopy` |
+| [AsyncSupportsDeleteTree](drivers.md#remote_store.drivers.AsyncSupportsDeleteTree) | Async mirror of `SupportsDeleteTree` |
+| [AsyncSupportsRemoveFolder](drivers.md#remote_store.drivers.AsyncSupportsRemoveFolder) | Async mirror of `SupportsRemoveFolder` |
+| [AsyncSupportsEnsureParents](drivers.md#remote_store.drivers.AsyncSupportsEnsureParents) | Async mirror of `SupportsEnsureParents` |
+| [AsyncSupportsFolderStats](drivers.md#remote_store.drivers.AsyncSupportsFolderStats) | Async mirror of `SupportsFolderStats` |
+| [AsyncSupportsGlob](drivers.md#remote_store.drivers.AsyncSupportsGlob) | Async mirror of `SupportsGlob` |
+
 ## Backends
 
 Synchronous storage backends (`remote_store.backends`). Native async
@@ -33,6 +72,7 @@ backends — including the async-only Microsoft Graph backend — live under
 |-------|-------------|
 | [LocalBackend](backends/local.md) | Local filesystem storage |
 | [MemoryBackend](backends/memory.md) | In-process storage for testing |
+| [MemoryDriver](backends/memory.md#remote_store.backends.MemoryDriver) | The driver `MemoryBackend` is built on |
 | [S3Backend](backends/s3.md) | Amazon S3 and S3-compatible services |
 | [S3PyArrowBackend](backends/s3-pyarrow.md) | S3 via PyArrow C++ for higher throughput |
 | [AzureBackend](backends/azure.md) | Azure Blob Storage and ADLS Gen2 |
@@ -54,6 +94,7 @@ full sync ↔ async map.
 | [SyncBackendAdapter](aio/adapters.md#syncbackendadapter) | Wraps any synchronous backend for async use via thread-pool executor |
 | [AsyncBackendSyncAdapter](aio/adapters.md#asyncbackendsyncadapter) | Wraps any `AsyncBackend` as a synchronous `Backend` via a private event loop |
 | [AsyncMemoryBackend](aio/backends/memory.md) | In-memory async backend for testing |
+| [AsyncMemoryDriver](aio/backends/memory.md#remote_store.aio.AsyncMemoryDriver) | The driver `AsyncMemoryBackend` is built on |
 | [AsyncAzureBackend](aio/backends/azure.md) | Native async Azure Blob Storage and ADLS Gen2 |
 | [GraphBackend](aio/backends/graph.md) | Microsoft Graph backend (OneDrive, SharePoint, Teams files) |
 | [AsyncWritableContent](aio/adapters.md#asyncwritablecontent) | Type alias: ``bytes`` or ``AsyncIterator[bytes]`` |

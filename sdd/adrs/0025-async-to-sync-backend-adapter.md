@@ -71,6 +71,12 @@ by delegating to a wrapped `AsyncBackend` that runs on a private event loop in a
 dedicated daemon thread (**Option D** of the four weighed in Context). It mirrors
 `SyncBackendAdapter` (ADR-0012); together they form the full bidirectional bridge
 the hybrid model needs.
+*Amended by [ADR-0042](0042-contract-kernel-over-thin-drivers.md):* the adapter
+stays the sync route for async-only backends (Graph) and is not the route for
+Azure, which gets a generated sync driver. Capability translation is unchanged,
+and its *reverse if* a native async seekable-read op is added does not fire:
+`get_range` is a driver primitive, and the async surface gains no seekable-read
+operation.
 
 **Private loop on a dedicated daemon thread, not `asyncio.run()` per call and not
 `nest_asyncio`.** `asyncio` forbids re-entering a running loop, and a fresh loop

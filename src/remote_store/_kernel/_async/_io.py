@@ -7,6 +7,7 @@ imports the driver module, which imports them.
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import AsyncIterator
 from typing import Protocol
 
@@ -35,6 +36,44 @@ async def close_stream(stream: object) -> None:
     aclose = getattr(stream, "aclose", None)
     if aclose is not None:
         await aclose()
+
+
+_FROM_CONTENT = "_remote_store_from_content"
+
+
+def from_content(exc: BaseException) -> bool:
+    """Whether *exc* was raised by the caller's own content, not by the wire."""
+    return bool(getattr(exc, _FROM_CONTENT, False))
+
+
+def _mark(exc: BaseException) -> None:
+    # An exception class that refuses new attributes stays unmarked, and is mapped.
+    with contextlib.suppress(AttributeError):
+        setattr(exc, _FROM_CONTENT, True)
+
+
+async def _marked(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
+    iterator = chunks.__aiter__()
+    while True:
+        try:
+            chunk = await iterator.__anext__()
+        except StopAsyncIteration:
+            return
+        except Exception as exc:
+            _mark(exc)
+            raise
+        yield chunk
+
+
+def guard_content(content: Content) -> Content:
+    """*content* with whatever the caller's iterator raises marked as the caller's.
+
+    The choke point passes a marked error through verbatim: a failing source
+    the caller handed in is not a wire error to classify.
+    """
+    if isinstance(content, bytes | bytearray | memoryview):
+        return content
+    return _marked(content)
 
 
 async def feed(handle: _Writable, content: Content) -> None:

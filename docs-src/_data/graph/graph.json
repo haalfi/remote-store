@@ -2272,11 +2272,11 @@
       "file": "src/remote_store/aio/backends/_memory.py",
       "id": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend",
       "kind": "class",
-      "line": 32,
+      "line": 201,
       "role": "backend",
       "runtime": "async",
       "spec": "sdd/specs/013-memory-backend.md",
-      "summary": "In-memory async backend using a tree-indexed data structure."
+      "summary": "In-memory async backend: a tree-indexed store on the contract kernel."
     },
     {
       "doc": "docs-src/reference/api/backends/azure.md",
@@ -2316,11 +2316,11 @@
       "file": "src/remote_store/backends/_memory.py",
       "id": "cls:remote_store.backends._memory.MemoryBackend",
       "kind": "class",
-      "line": 31,
+      "line": 199,
       "role": "backend",
       "runtime": "sync",
       "spec": "sdd/specs/013-memory-backend.md",
-      "summary": "In-memory backend using a tree-indexed data structure."
+      "summary": "In-memory backend: a tree-indexed store on the contract kernel."
     },
     {
       "doc": "docs-src/reference/api/backends/s3.md",

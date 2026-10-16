@@ -234,7 +234,9 @@ class _Choke:
     driver's ``classify``. ``path``, ``backend`` and a blank message are then
     filled, and an absent container reads as an absent path where the
     kernel decides it. A ``BaseException`` that is not an ``Exception``
-    passes untouched. The end of an iteration does not: raised by a driver
+    passes untouched, and so does an error the caller's own content raised
+    (``_io.guard_content`` marks it): it is not a wire error, so it is
+    neither classified nor filled. The end of an iteration does not: raised by a driver
     call it is a native error like any other, so the one iteration step
     that may end on it (``glob``'s) catches it inside the block.
     """
@@ -253,7 +255,7 @@ class _Choke:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> Literal[False]:
-        if exc is None or not isinstance(exc, Exception):
+        if exc is None or not isinstance(exc, Exception) or _io.from_content(exc):
             return False
         err = self._core._mapped(exc, self._op, self._key)
         if err is exc:
@@ -523,9 +525,10 @@ class _KernelCore:
         Hierarchical: ``stat(k)``, then on a miss the ancestors'; a folder or an
         item above is ``InvalidPath``, an item without *overwrite*
         ``AlreadyExists``. Flat: A.4's checks ran first, so only an item
-        without *overwrite* is left to find.
+        without *overwrite* is left to find. A refusal the caller's own content
+        raised is the caller's, and stands.
         """
-        if not _in_probe_set(err):
+        if _io.from_content(err) or not _in_probe_set(err):
             return
         seen = self._state(op, key, walk=not self._flat, folders=not self._flat)
         if seen.state is _State.FOLDER:
@@ -795,6 +798,7 @@ class _KernelCore:
         self._require_metadata(metadata, key)
         target = RemotePath(key)  # built before the driver commits (BE-030 step 5)
         self._prepare_write(Op.WRITE, key)
+        content = _io.guard_content(content)  # the caller's own errors pass verbatim (ASYNC-091)
         return _write_result(target, self._put(Op.WRITE, key, content, overwrite, metadata))
 
     def write_atomic(
@@ -806,6 +810,14 @@ class _KernelCore:
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
         """Write atomically: ``put`` where it is atomic, else a wire temporary, else temp and rename."""
+        # The caller's own errors pass verbatim (ASYNC-091); only content a caller
+        # hands in is marked, so the kernel's own spool goes to _write_atomic.
+        return self._write_atomic(path, _io.guard_content(content), overwrite=overwrite, metadata=metadata)
+
+    def _write_atomic(
+        self, path: str, content: _io.Content, *, overwrite: bool, metadata: Mapping[str, str] | None
+    ) -> WriteResult:
+        """``write_atomic``'s checks and routes, over *content* as given, marked or not."""
         # Capability data, not a live operation: ahead of the closed guard and
         # the key rule, as glob's is (BE-030).
         self._require(Capability.ATOMIC_WRITE, path, "cannot write atomically")

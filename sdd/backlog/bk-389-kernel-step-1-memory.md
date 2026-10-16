@@ -43,7 +43,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `namespace` and `parents` as values. Both Memory drivers are
    `hierarchical` and `explicit`, so step 1 exercises one combination; the
    two-kernel fallback can be judged no earlier than the first flat driver
-   (step 2, S3).
+   (step 2, S3). *Corrected 2026-10-15: both declare `implicit`; neither
+   presents `ensure_parents`.*
 3. **Open Question 5, construction: deferred to step 3 (BUG-245).** The shape
    step 1 keeps open: the kernel's constructor takes a **built** driver,
    `DriverBackend(driver, *, reject_write_under_file_ancestor=False)` and its
@@ -856,7 +857,9 @@ each time):
    against D1. A pre-write `stat` was rejected: it puts a round trip on the
    hot path, against BE-021.
 4. WR-010's gate keeps its place, and BE-030 records the departure from
-   `BackendContract.dfy`'s `Write`. BK-394 reconciles the model.
+   `BackendContract.dfy`'s `Write`. BK-394 reconciles the model. *Corrected
+   2026-10-15: BK-394 reconciled `DeleteFolder` only; `Write`'s reconciliation
+   is BK-440's.*
 5. `move` and `copy` are gated on the declared `MOVE` and `COPY`, ahead of
    the closed guard, as `write_atomic` is (the maintainer's round-6 decision
    for that gate).

@@ -1,6 +1,7 @@
 """The contract kernel: one ``Backend`` implementation over thin drivers.
 
-Private. Nothing here is exported until the first backend runs on it.
+The modules are private; ``remote_store.drivers`` is the public surface that
+re-exports what a driver author uses.
 
 Layout: ``_model``, ``_keys`` and ``_aggregate`` are runtime-neutral.
 ``_async`` holds the hand-written async driver protocols and kernel core.

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import copy
 import importlib
+import pickle
+from typing import Any
 
 import pytest
 
@@ -66,6 +69,21 @@ class TestCapabilitySetConstruction:
     def test_construction(self) -> None:
         cs = CapabilitySet({Capability.READ, Capability.WRITE})
         assert len(cs) == 2
+
+    @pytest.mark.spec("CAP-002")
+    @pytest.mark.parametrize(
+        "clone",
+        [copy.copy, copy.deepcopy, lambda cs: pickle.loads(pickle.dumps(cs))],
+        ids=["copy", "deepcopy", "pickle"],
+    )
+    def test_a_set_copies_and_pickles_as_itself(self, clone: Any) -> None:
+        # Immutable, so it is rebuilt from its members rather than mutated into place.
+        cs = CapabilitySet({Capability.READ, Capability.COPY})
+        copied = clone(cs)
+        assert isinstance(copied, CapabilitySet)
+        assert set(copied) == {Capability.READ, Capability.COPY}
+        assert copied.supports(Capability.COPY)
+        assert not copied.supports(Capability.GLOB)
 
 
 class TestCapabilitySetSupports:
