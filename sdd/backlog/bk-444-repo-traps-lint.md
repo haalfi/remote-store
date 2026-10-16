@@ -128,4 +128,6 @@ is checked before its first `git add`. The script is also wired into `docs-gate`
 rule 1 reads `sdd/` and `docs-src/`, which reach CI through `DOCS_PAT` alone. Step 4's rule
 named the same 10 aliases the substring test above did. Rule 1 names the `\N{…}` spelling for a
 `.py` file only; in any other file `\N{…}` is not an escape, so the message says to remove the
-character (PR #1152 review).
+character (PR #1152 review). Rule 1 also skips `sdd/decisions/`: `scripts/record_decision.py`
+stores dialog payloads with `ensure_ascii=False`, so a log may hold a raw U+2028 that no edit may
+remove (decision in `sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl`).

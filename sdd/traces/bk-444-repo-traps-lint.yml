@@ -107,3 +107,8 @@ phases:
         read_type: verify
         extract: "PR #1152 review round 2: rule 1 walked every character in Python, 0.95s over 2246 files (tmp/time_rule1.py); a compiled character class with an early search takes 0.13s, output unchanged. surprising_ripples removed: ci.yml was read, not touched, and pyproject.toml is a cited orient read"
         outcome: ok
+      - file: scripts/record_decision.py
+        section: "module docstring; json.dumps(..., ensure_ascii=False)"
+        read_type: verify
+        extract: "PR #1152 review round 3: the recorder stores dialog payloads raw, so rule 1 could fail lint on a log no author wrote. Rule 1 now skips sdd/decisions/ (_RECORD_DIRS), asked and decided in this session's log; I had not checked which listed files are generated records"
+        outcome: ok

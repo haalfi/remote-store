@@ -90,6 +90,14 @@ class TestCheckInvisible:
         found = _mod.check_invisible(tmp_path, ["img/a.png", "latin.txt", "bad.md", "gone.py"])
         assert [v.location for v in found] == ["bad.md:1:2"]
 
+    def test_decision_logs_are_skipped(self, tmp_path):
+        # record_decision.py stores dialog payloads as received (ensure_ascii=False).
+        (tmp_path / "sdd" / "decisions").mkdir(parents=True)
+        (tmp_path / "sdd" / "decisions" / "s.jsonl").write_text(f'{{"q": "a{LS}b"}}\n', encoding="utf-8")
+        (tmp_path / "sdd" / "notes.md").write_text(f"a{LS}b\n", encoding="utf-8")
+        found = _mod.check_invisible(tmp_path, ["sdd/decisions/s.jsonl", "sdd/notes.md"])
+        assert [v.location for v in found] == ["sdd/notes.md:1:2"]
+
     def test_binary_patterns_ignore_comments_and_text_rules(self, tmp_path):
         (tmp_path / ".gitattributes").write_text("# *.md binary\n* text=auto\n*.ico binary\n", encoding="utf-8")
         assert _mod.binary_patterns(tmp_path) == ["*.ico"]

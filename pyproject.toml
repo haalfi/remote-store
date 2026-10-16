@@ -582,7 +582,7 @@ check-process-budget = "python scripts/check_process_budget.py {args}"
 # edit confined to an .als or .lean file reaches CI through DOCS_PAT alone.
 check-formal-trace = "python scripts/check_formal_trace.py"
 # BK-444. In `lint` and `docs-gate` for the reason `check-no-retrospective`
-# records above: its invisible-character rule reads every file git lists, so an
+# records above: its invisible-character rule reads the files git lists, so an
 # edit confined to `sdd/` or `docs-src/` reaches CI through DOCS_PAT alone. A
 # path matching neither pattern is a bound stated in the script's docstring.
 check-repo-traps = "python scripts/check_repo_traps.py"

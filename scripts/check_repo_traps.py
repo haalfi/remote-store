@@ -25,8 +25,9 @@ What the rules do not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   through a local ``hatch run fast`` or ``all``.
 - Rule 1 reads the files ``git ls-files --cached --others --exclude-standard``
   lists, so an ignored file is out of reach. It skips a file that does not
-  decode as UTF-8 and every path a ``binary`` pattern in ``.gitattributes``
-  matches. It has no exemption list: in a Python file, a character the code
+  decode as UTF-8, every path a ``binary`` pattern in ``.gitattributes``
+  matches, and the decision logs under ``sdd/decisions/`` (``_RECORD_DIRS``),
+  which store dialog payloads as received. It has no per-file exemption list: in a Python file, a character the code
   needs is spelled as a named escape, which reads the same to Python and is
   visible to a reviewer. In any other file the only remedy it offers is
   removing the character, because ``\\N{…}`` is not an escape there.
@@ -51,8 +52,9 @@ defect, fixed by adding `` {args}`` to the alias.
 Drift-gate::
 
     kind:       rule
-    rule: no file git lists for the working tree holds one of the invisible or
-        bidirectional-control code points in _INVISIBLE
+    rule: no file git lists for the working tree, outside the decision logs in
+        _RECORD_DIRS, holds one of the invisible or bidirectional-control code
+        points in _INVISIBLE
     domain:     realization
 
 Drift-gate::
@@ -111,6 +113,11 @@ _INVISIBLE: dict[int, str | None] = {
 }
 # Built from the integers above, so this file still holds none of the characters.
 _INVISIBLE_RE = re.compile("[" + "".join(re.escape(chr(c)) for c in _INVISIBLE) + "]")
+
+# Records rule 1 does not read: scripts/record_decision.py stores each dialog
+# payload as received, with ensure_ascii=False, so a recorded question may carry
+# a raw U+2028 that no author typed and no edit may remove.
+_RECORD_DIRS: tuple[str, ...] = ("sdd/decisions/",)
 
 # A bare alias: the whole entry runs one scripts/ file, optionally forwarding argv.
 _BARE_ALIAS_RE = re.compile(r"^python (scripts/[\w/]+\.py)( \{args\})?$")
@@ -188,7 +195,7 @@ def check_invisible(root: Path, files: list[str]) -> list[Violation]:
     patterns = binary_patterns(root)
     found: list[Violation] = []
     for rel in files:
-        if _is_binary(rel, patterns):
+        if rel.startswith(_RECORD_DIRS) or _is_binary(rel, patterns):
             continue
         try:
             text = (root / rel).read_bytes().decode("utf-8")
