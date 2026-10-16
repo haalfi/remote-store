@@ -1454,11 +1454,18 @@ yields. Content that is no bytes source, neither a buffer nor a readable stream
 (async: an async iterator), is refused with `TypeError` after WR-010's gate and
 before any I/O, on `write` and `write_atomic` alike; a buffer that cannot be
 read as `bytes` (a released `memoryview`) fails at the same rank with its own
-error. A stream that yields something not binary raises `TypeError`
-when read, as the caller's own error, passed through verbatim like
-ASYNC-091's and never classified. A check on the target made before the
-stream is read answers first, such as `write_atomic`'s `stat` by temp and
-rename without `overwrite`.
+error, and so does content whose `read` (async: `__aiter__`) cannot even be
+looked up. A stream that yields something not binary, `None` included (a
+non-blocking stream's "no data yet"), or whose `readinto` answers anything but
+a count or `readlines` anything but a list, raises `TypeError` when read; one
+that yields a buffer that cannot be read as `bytes` raises that buffer's error.
+Either is the caller's own error, passed through verbatim like ASYNC-091's and
+never classified. Async content is checked chunk by chunk whatever the driver
+does. On sync it holds for a driver that reads in sized chunks, as the sync
+`_io.feed` and `MemoryDriver` do: an unsized `read()` on a raw stream is the
+stream's own `readall`, which stops at the `None` before the kernel sees it
+(BUG-331). A check on the target made before the stream is read answers first,
+such as `write_atomic`'s `stat` by temp and rename without `overwrite`.
 
 **What a key resolves to** is [BE-032](#be-032-the-store-tree-on-the-kernel)'s
 answer, for every call below: the tree's `Item`, `Folder` or `Nothing` (A.1),

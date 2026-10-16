@@ -62,8 +62,12 @@ _BYTE_READS = frozenset({"read", "read1", "readall", "readline", "peek"})
 
 
 def _binary(chunk: object, source: object) -> object:
-    """*chunk* as ``bytes`` when it is a buffer; a caller-marked ``TypeError`` when it is not binary."""
-    if chunk is None or isinstance(chunk, bytes):
+    """*chunk* as ``bytes`` when it is a buffer; a caller-marked ``TypeError`` when it is not binary.
+
+    ``None``, a non-blocking raw stream's "no data yet", is refused too: a
+    driver's read loop would take it for the end and store a truncated file.
+    """
+    if isinstance(chunk, bytes):
         return chunk
     if isinstance(chunk, bytearray | memoryview):
         try:
@@ -72,6 +76,28 @@ def _binary(chunk: object, source: object) -> object:
             _mark(err)
             raise
     exc = TypeError(f"content stream {type(source).__name__} returned {type(chunk).__name__}, not bytes")
+    _mark(exc)
+    raise exc
+
+
+def _count(answer: object, source: object) -> object:
+    """*answer* when ``readinto`` answered a count; a caller-marked ``TypeError`` otherwise.
+
+    ``None``, a non-blocking raw stream's "no data yet", is refused like a
+    ``None`` read: a driver's loop would take it for the end.
+    """
+    if isinstance(answer, int):
+        return answer
+    exc = TypeError(f"content stream {type(source).__name__} readinto returned {type(answer).__name__}, not a count")
+    _mark(exc)
+    raise exc
+
+
+def _lines(answer: object, source: object) -> list[object]:
+    """*answer* when ``readlines`` answered a list; a caller-marked ``TypeError`` otherwise."""
+    if isinstance(answer, list):
+        return answer
+    exc = TypeError(f"content stream {type(source).__name__} readlines returned {type(answer).__name__}, not a list")
     _mark(exc)
     raise exc
 
@@ -96,8 +122,12 @@ def take_content(content: object) -> Content:
 class _MarkedReader:
     """The caller's stream, with whatever its reads raise marked as the caller's.
 
-    Every ordinary attribute is the stream's own, so one the stream lacks is
-    absent here too; a read among them is forwarded with its failures marked. It
+    What a read answers is checked too: a buffer becomes ``bytes``, an answer
+    that is not binary (``None`` included) is a caller-marked ``TypeError``,
+    and so is a ``readinto`` answer that is not a count or a ``readlines``
+    answer that is not a list. Every ordinary attribute is the stream's own, so one the
+    stream lacks is absent here too; a read among them is forwarded with its
+    failures marked. It
     is a proxy, not an ``io.IOBase``: Python looks special methods up on the
     type, so none is forwarded (``hasattr`` would answer for an operation that
     fails), and iteration (as an iterator when the stream is one) and ``with``
@@ -125,8 +155,8 @@ class _MarkedReader:
             if name in _BYTE_READS:
                 return _binary(answer, self._stream)
             if name == "readlines":
-                return [_binary(line, self._stream) for line in cast("list[object]", answer)]
-            return answer
+                return [_binary(line, self._stream) for line in _lines(answer, self._stream)]
+            return _count(answer, self._stream)  # readinto, readinto1
 
         return marked
 
@@ -215,9 +245,10 @@ def guard_content(content: Content) -> Content:
     """*content* with the caller's stream marked: what its reads raise is the caller's.
 
     The choke point passes a marked error through verbatim: a failing source
-    the caller handed in is not a wire error to classify. A buffer, or anything
-    without ``read``, is returned as it is: ``take_content`` converts or
-    refuses it, at its own rank.
+    the caller handed in is not a wire error to classify. What the stream's
+    reads answer is converted and checked as ``_MarkedReader`` describes. A
+    buffer, or anything without ``read``, is returned as it is:
+    ``take_content`` converts or refuses it, at its own rank.
     """
     if isinstance(content, bytes | bytearray | memoryview) or not callable(getattr(content, "read", None)):
         return content

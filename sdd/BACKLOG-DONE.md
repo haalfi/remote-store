@@ -331,14 +331,17 @@ if evidence changes; these are retired.
   no `remote_store.aio` module (`tests/test_drivers_exports.py`). Trace:
   [bk-441](traces/bk-441-memory-driver-template.yml).
 
-- [x] **BUG-328 — Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through**
+- [x] **BUG-328 — Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through, and the sync driver stores a truncated file from a stream whose read answers `None`**
   spec: MEM-013, MEM-020 · effort: S · audience: user.api
   The kernel hands every driver a `bytes` copy of a buffer, and of a buffer a
   content stream yields; content that is no bytes source is a `TypeError`
-  after WR-010's gate and before any I/O, and a stream yielding non-bytes, or
-  raising an exception whose class refuses new attributes, is the caller's
-  error passed through verbatim. None of them reaches `classify`. Public `WritableContent` is unchanged. Spec 003 BE-030 § Content,
-  MEM-020. Trace: [bk-441](traces/bk-441-memory-driver-template.yml).
+  after WR-010's gate and before any I/O, and a stream yielding non-bytes
+  (`None` included, which a sized read loop took for the end), a `readinto`
+  answering no count, a `readlines` answering no list, or an exception whose
+  class refuses new attributes, is
+  the caller's error passed through verbatim. None of them reaches `classify`.
+  Public `WritableContent` is unchanged. Spec 003 BE-030 § Content, MEM-020.
+  Trace: [bk-441](traces/bk-441-memory-driver-template.yml). Follow-up #1148.
 
 - [x] **BK-440 — `BackendContract.dfy`'s `Write` ranks WR-010's metadata gate below the type and overwrite checks the kernel answers after it**
   spec: BE-030, WR-010 · effort: S · audience: library.maintainer

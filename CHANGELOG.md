@@ -9,7 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - BK-441: A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing
 - BK-442: `from remote_store.drivers import Driver` imports the whole async package and its cloud SDKs
-- BUG-328: Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through
+- BUG-328: Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through, and the sync driver stores a truncated file from a stream whose read answers `None`
 - BK-440: `BackendContract.dfy`'s `Write` ranks WR-010's metadata gate below the type and overwrite checks the kernel answers after it
 - BK-394: No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed
 - BK-398: Three round-trip clauses promise `to_key(native_path(k)) == k` verbatim, which `GraphBackend` already breaks

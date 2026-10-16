@@ -1581,11 +1581,25 @@ def _released() -> memoryview:
     return view
 
 
+class _LookupRaises:
+    """Content whose stream attributes raise when looked up, as a lazy proxy's may."""
+
+    @property
+    def read(self) -> Any:
+        raise RuntimeError("lookup refused")
+
+    @property
+    def __aiter__(self) -> Any:
+        raise RuntimeError("lookup refused")
+
+
 # Content the kernel refuses at BE-030 § Content's rank, and what it raises:
-# no bytes source at all, and a buffer that cannot be read as bytes.
+# no bytes source at all, a buffer that cannot be read as bytes, and an object
+# whose stream attribute cannot even be looked up.
 _BAD_CONTENT: dict[str, tuple[Any, type[Exception], str]] = {
     "no-bytes-source": (lambda: ["x"], TypeError, "content must be bytes"),
     "unreadable-buffer": (_released, ValueError, "released"),
+    "lookup-raises": (_LookupRaises, RuntimeError, "lookup refused"),
 }
 
 

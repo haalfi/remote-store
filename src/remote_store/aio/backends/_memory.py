@@ -53,8 +53,8 @@ class AsyncMemoryDriver(AsyncDriver):
 
         Read without the lock, as ``repr`` needs. A coroutine on the loop never
         sees a step in progress, since no locked primitive awaits; a debugger
-        paused inside one, or another thread (``SyncBackendAdapter`` runs the
-        loop on its own), may, so it is a display figure, not a snapshot.
+        paused inside one, or another thread (``AsyncBackendSyncAdapter`` runs
+        the loop on its own), may, so it is a display figure, not a snapshot.
         """
         return self._tree.file_count, self._tree.folder_count
 
@@ -109,8 +109,9 @@ class AsyncMemoryDriver(AsyncDriver):
         """Nothing to release; the store stays usable."""
 
     def classify(self, exc: Exception, *, op: Op, key: str) -> RemoteStoreError:
-        # The tree raises only typed errors, and the kernel converts or refuses content put
-        # could not read and marks what put's reads raise, so nothing a caller passes reaches here (MEM-020).
+        # No content error reaches here: the kernel converts or refuses content put could
+        # not read and marks what put's reads raise. What the tree's dict(metadata) raises
+        # on non-mapping metadata does (BUG-329); otherwise it raises only typed errors (MEM-020).
         return RemoteStoreError(f"{type(exc).__name__}: {exc}")
 
     def container_absent(self, exc: BaseException, *, op: Op) -> bool:

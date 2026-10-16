@@ -100,7 +100,9 @@ def guard_content(content: Content) -> Content:
     """*content* with the caller's iterator marked: what it raises is the caller's.
 
     The choke point passes a marked error through verbatim: a failing source
-    the caller handed in is not a wire error to classify. A buffer, or anything
+    the caller handed in is not a wire error to classify. Each chunk it yields
+    is checked too: a buffer becomes ``bytes``, and a chunk that is not binary
+    (``None`` included) is a caller-marked ``TypeError``. A buffer, or anything
     without ``__aiter__``, is returned as it is: ``take_content`` converts or
     refuses it, at its own rank.
     """

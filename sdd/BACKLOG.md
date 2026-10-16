@@ -413,6 +413,38 @@ no clause of the contract ships unexercised.
   regex (read only). Open decision: anchor with `\Z` on every backend, or state
   the newline rule in GLOB-014.
 
+- [ ] **BUG-329 — Metadata that is not a mapping, passed straight to a kernel class, fails inside `put` or is stored as a dict**
+  spec: WR-010, BE-030, MEM-020 · effort: S · audience: user.api
+  The WR-010 gate checks only truthiness. Running `MemoryBackend().write("d/f",
+  b"x", metadata=5)` is classified from `dict(5)`'s `TypeError` (`"ab"`:
+  `ValueError`), keeping folder `d`; on an existing file it answers
+  `AlreadyExists`. `[("k", "v")]` is stored as a dict. `Store` stops all by
+  accident (`metadata.items()`). Open decision: refuse in the kernel or `Store`.
+
+- [ ] **BUG-330 — A sync stream read answering `None` through `AsyncBackendSyncAdapter` stores a truncated file**
+  spec: BE-030, ASYNC-091 · effort: S · audience: user.api
+  `_binaryio_to_async_iter` stops on `if not chunk`, so a non-blocking stream's
+  "no data yet" ends the upload before the async kernel refuses it: running
+  `AsyncBackendSyncAdapter(AsyncMemoryBackend()).write("d/f", s)` with `s.read`
+  answering `b"ab", None, b"c"` stores `b"ab"`, `write_atomic` too. The kernel
+  refuses the same stream (BE-030 § Content); the adapter should as well.
+
+- [ ] **BUG-331 — A kernel driver that reads content with one unsized `read()` stores a truncated file from a non-blocking stream**
+  spec: BE-030 · effort: S · audience: library.maintainer, user.api_docs
+  The proxy forwards `read()` to the raw stream, whose `readall` stops at a
+  `None` the kernel never sees: `tests/_kernel/_fake.py`'s `put` stores `b"ab"`
+  from `b"ab", None, b"c"` on `write`, `write_atomic` by `put` and by rename.
+  So do the guide's snippet and prose (`custom-backend-guide.md`, "Read it in
+  full"). Open decision: sized reads in the proxy, or change snippet and prose.
+
+- [ ] **BUG-333 — `open_atomic`'s spool refuses a strided `memoryview` that the handle route stores**
+  spec: SAW-013, BE-008 · effort: S · audience: user.api
+  On a driver without `open_write`, and through `AsyncBackendSyncAdapter`'s
+  `_SpoolAndFlush`, the raw `SpooledTemporaryFile` raises `BufferError` on
+  `memoryview(b"aXbXc")[::2]`; `writelines` defeats a `write` override (3.11,
+  3.13 after rollover; PR #1148). `open_atomic` in `_s3.py`, `_s3_boto3.py`,
+  `_s3_pyarrow.py`, `_azure.py` hands out the same spool (Grep), untested.
+
 - [ ] **BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`**
   spec: SIO-001, SEEK-006 · effort: M · audience: user.api
   After `close()`, Azure `read_seekable()` raises `RemoteStoreError` while bytes
