@@ -33,6 +33,7 @@ surprising_ripples:
 discovery_followups:
   - BUG-329
   - BUG-330
+  - BUG-331
 co_shipped_items:
   - BK-442
   - BUG-328
@@ -139,7 +140,7 @@ phases:
       - file: tests/_kernel/test_io.py
         section: "test_what_every_read_answers_reaches_the_driver_as_its_shape_or_the_callers_error"
         read_type: verify
-        extract: "PR #1148, after the proxy's answer check was narrowed in four rounds: every forwarded read x every answer kind against one oracle; 12 of 98 cells failed, all readinto/readinto1 counts, fixed by _count"
+        extract: "PR #1148, after the proxy's answer check was narrowed in four rounds: every forwarded read x every answer kind against one oracle (10 reads x 7 kinds = 70 cells); 12 failed, all readinto/readinto1 counts (2 reads x 6 non-int kinds), fixed by _count. Its __iter__ row reached _MarkedIteration only from the closing pass on, an iterable that is not its own iterator"
       - file: src/remote_store/backends/_memory_tree.py
         section: "MemoryTree.put"
         read_type: verify
@@ -148,6 +149,10 @@ phases:
         section: "_binaryio_to_async_iter"
         read_type: verify
         extract: "BUG-330: if not chunk ends the upload on a None read, so the sync adapter over AsyncMemoryBackend stores b'ab' where the kernel refuses"
+      - file: tests/_kernel/_fake.py
+        section: "_SyncBase.put"
+        read_type: verify
+        extract: "BUG-331: a raw stream whose readinto answers b'ab', None, b'c' is stored as b'ab' by the fake's unsized content.read() on write, write_atomic by put and by temp-rename (readall stops at the None the proxy never sees); MemoryBackend refuses it; BE-030 bounded to sized reads"
 review:
   # Derived by `hatch run ship-report 1147 --trace-block-only` at head c3c0797.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

@@ -492,8 +492,9 @@ fails included (`tests/backends/memory/test_buffer_content.py`). So nothing the
 caller's content raises reaches `classify`, which stays as the protocol
 requires and answers a base `RemoteStoreError`. The second is the tree's own:
 metadata that is not a mapping, passed to the class directly rather than
-through `Store`, makes `MemoryTree.put`'s `dict(metadata)` raise `TypeError`,
-which reaches `classify` (BUG-329).
+through `Store`, goes to `MemoryTree.put`'s `dict(metadata)`, and whatever that
+raises (`TypeError` for `5`, `ValueError` for `"ab"`) reaches `classify`; an
+iterable of pairs is stored instead (BUG-329).
 
 Error conditions are detected by tree inspection:
 

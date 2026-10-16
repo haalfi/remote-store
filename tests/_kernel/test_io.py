@@ -2,8 +2,10 @@
 
 ``guard_content`` hands a driver a proxy over the caller's stream so that what
 the stream raises is marked as the caller's and passes the choke point verbatim
-(ASYNC-091), and what its reads answer reaches the driver as ``bytes``: a
-buffer converted, anything not binary a caller-marked ``TypeError``. A driver
+(ASYNC-091), and what its reads answer reaches the driver in its shape: a
+read or a line as ``bytes`` (a buffer converted), ``readlines`` as a list of
+them, ``readinto`` as a count. Anything else, ``None`` included, is the
+caller's error. A driver
 may hand that proxy on to a client library, so the proxy keeps the caller's
 stream's reads, its iteration (as an iterator when the stream is one), its
 ``with`` and every ordinary attribute, and offers nothing
@@ -163,8 +165,22 @@ _ANSWERS: dict[str, Any] = {
 }
 
 
-def _answering(shape: str, answer: object) -> io.BytesIO:
-    """A stream whose every read answers *answer*, wrapped in a list where *shape* is lines."""
+def _answering(shape: str, answer: object, name: str) -> object:
+    """A stream whose every read answers *answer*, wrapped in a list where *shape* is lines.
+
+    For ``__iter__`` the stream is iterable but not its own iterator, so the
+    proxy iterates it through ``_MarkedIteration`` rather than ``__next__``.
+    """
+    if name == "__iter__":
+
+        class _Lines:
+            def read(self, *args: object) -> object:
+                return answer
+
+            def __iter__(self) -> Any:
+                yield answer
+
+        return _Lines()
 
     class _Answers(io.BytesIO):
         def _answer(self, *args: object) -> object:
@@ -208,7 +224,7 @@ def test_what_every_read_answers_reaches_the_driver_as_its_shape_or_the_callers_
     # loop would otherwise store a truncated file.
     shape = _SHAPE[name]
     outcome, expected = _expected(shape, kind)
-    guarded = sync_io.guard_content(_answering(shape, _ANSWERS[kind]()))
+    guarded = sync_io.guard_content(_answering(shape, _ANSWERS[kind](), name))  # type: ignore[arg-type]
     if outcome == "value":
         answer = _read_by(guarded, name)
         assert type(answer) is type(expected)

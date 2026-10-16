@@ -413,13 +413,13 @@ no clause of the contract ships unexercised.
   regex (read only). Open decision: anchor with `\Z` on every backend, or state
   the newline rule in GLOB-014.
 
-- [ ] **BUG-329 — Metadata that is not a mapping, passed straight to a kernel class, is answered as a statement about the target**
+- [ ] **BUG-329 — Metadata that is not a mapping, passed straight to a kernel class, fails inside `put` or is stored as a dict**
   spec: WR-010, BE-030, MEM-020 · effort: S · audience: user.api
-  The WR-010 gate checks only truthiness, so running `MemoryBackend().write("d/f",
-  b"x", metadata=5)` (and async) is classified inside `put`: a free key keeps
-  folder `d`, an existing file without `overwrite` answers `AlreadyExists`.
-  `Store` only stops it by accident, `metadata.items()` raising `AttributeError`.
-  Open decision: refuse non-mapping metadata in the kernel or in `Store`.
+  The WR-010 gate checks only truthiness. Running `MemoryBackend().write("d/f",
+  b"x", metadata=5)` is classified from `dict(5)`'s `TypeError` (`"ab"`:
+  `ValueError`), keeping folder `d`; on an existing file it answers
+  `AlreadyExists`. `[("k", "v")]` is stored as a dict. `Store` stops all by
+  accident (`metadata.items()`). Open decision: refuse in the kernel or `Store`.
 
 - [ ] **BUG-330 — A sync stream read answering `None` through `AsyncBackendSyncAdapter` stores a truncated file**
   spec: BE-030, ASYNC-091 · effort: S · audience: user.api
@@ -428,6 +428,14 @@ no clause of the contract ships unexercised.
   `AsyncBackendSyncAdapter(AsyncMemoryBackend()).write("d/f", s)` with `s.read`
   answering `b"ab", None, b"c"` stores `b"ab"`, `write_atomic` too. The kernel
   refuses the same stream (BE-030 § Content); the adapter should as well.
+
+- [ ] **BUG-331 — A kernel driver that reads content with one unsized `read()` stores a truncated file from a non-blocking stream**
+  spec: BE-030 · effort: S · audience: library.maintainer
+  The proxy forwards `read()` to the raw stream, whose `readall` loops its own
+  `readinto` and stops at a `None` the kernel never sees: `tests/_kernel/_fake.py`'s
+  `put` (`content.read()`) stores `b"ab"` from `b"ab", None, b"c"` on every write
+  route, where Memory's sized reads refuse it. Open decision: serve `read(-1)`
+  in the proxy as sized reads, or require drivers to read in sized chunks.
 
 - [ ] **BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`**
   spec: SIO-001, SEEK-006 · effort: M · audience: user.api
