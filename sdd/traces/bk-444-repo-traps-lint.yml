@@ -132,3 +132,8 @@ phases:
         read_type: verify
         extract: "PR #1152 review round 7: rules 2 and 3 raised on a file that does not parse, losing rule 1's report; they now report it at its line. The hand-written gitattributes matcher still missed core.ignorecase (true here), nested files and quoting, so it was replaced by one git check-attr call, 0.020s over 2250 files (tmp/checkattr_facts.py); decided in this session's log. I had kept patching the matcher for three rounds where asking git was the fix"
         outcome: ok
+      - file: scripts/check_repo_traps.py
+        section: "check_write_text; check_hatch_args; Drift-gate rule 1"
+        read_type: verify
+        extract: "PR #1152 review round 8: rule 2 still raised on a non-UTF-8 script, and rule 3 passed an alias to a missing script; both are now reported. Rule 1's extent claim in the Drift-gate text and BACKLOG-DONE named only the sdd/decisions/ skip and now names binary and non-UTF-8 too"
+        outcome: ok

@@ -256,6 +256,14 @@ class TestCheckWriteText:
         (tmp_path / "sdd" / "h.py").write_text(bad, encoding="utf-8")
         assert [v.location for v in _mod.check_write_text(tmp_path)] == ["scripts/sub/g.py:1"]
 
+    def test_non_utf8_script_is_reported_not_raised(self, tmp_path):
+        # A cp1252 save (an `é` in a comment) must not crash the gate.
+        (tmp_path / "scripts").mkdir()
+        (tmp_path / "scripts" / "w.py").write_bytes(b"# caf\xe9\n")
+        [v] = _mod.check_write_text(tmp_path)
+        assert v.location == "scripts/w.py"
+        assert "not UTF-8" in v.message
+
 
 # ---------------------------------------------------------------------------
 # Rule 3: hatch alias without {args}
@@ -321,13 +329,19 @@ class TestCheckHatchArgs:
             '["python scripts/x.py"]',
             '"python scripts/x.py && ruff check"',
             '"pytest scripts/x.py"',
-            '"python scripts/missing.py"',
         ],
-        ids=["pinned-argument", "array-form", "several-commands", "other-runner", "missing-script"],
+        ids=["pinned-argument", "array-form", "several-commands", "other-runner"],
     )
     def test_entries_outside_the_bare_shape_are_exempt(self, tmp_path, entry):
         root = _repo(tmp_path, f"[tool.hatch.envs.default.scripts]\nx = {entry}\n")
         assert _mod.check_hatch_args(root) == []
+
+    def test_alias_to_a_missing_script_is_reported(self, tmp_path):
+        # A typo or a rename leaves an alias that fails at `hatch run` time.
+        root = _repo(tmp_path, '[tool.hatch.envs.default.scripts]\nx = "python scripts/missing.py"\n')
+        [v] = _mod.check_hatch_args(root)
+        assert v.location == "pyproject.toml [tool.hatch.envs.default.scripts] x"
+        assert "scripts/missing.py does not exist" in v.message
 
 
 # ---------------------------------------------------------------------------

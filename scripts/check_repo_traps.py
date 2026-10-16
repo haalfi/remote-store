@@ -37,9 +37,9 @@ What the rules do not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   A ``newline`` keyword or fourth positional argument passes when it is
   ``"\\n"`` or ``""``, or when it is not a constant (its value is not
   inspected); ``None``, the default, and any other constant fail. A call that
-  passes ``**kwargs`` is taken to pass ``newline``. A file that does not parse
-  (a raw invisible character between tokens, which rule 1 reports) is reported
-  as such, and rules 2 and 3 check nothing in it. It requires the keyword on every call, also on an
+  passes ``**kwargs`` is taken to pass ``newline``. A file that is not UTF-8 or
+  does not parse (a raw invisible character between tokens, which rule 1
+  reports) is reported as such, and rules 2 and 3 check nothing in it. It requires the keyword on every call, also on an
   untracked target or one-line content, so it never has to guess what a path
   resolves to.
 - Rule 3 reads string entries of ``[tool.hatch.envs.*.scripts]`` whose whole
@@ -47,7 +47,8 @@ What the rules do not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   pinned arguments, several commands, another interpreter or array form is
   exempt by its shape. A script "takes options" when its AST holds a call to
   ``add_argument`` or a subscript of ``sys.argv``; a script reading
-  ``sys.argv`` whole, or parsing options another way, is missed.
+  ``sys.argv`` whole, or parsing options another way, is missed. A bare alias
+  whose script does not exist is reported.
 
 Authority for rule 3's pair: the script governs, the alias follows. A script
 that accepts options is the decision; an alias that cannot pass them on is the
@@ -56,9 +57,9 @@ defect, fixed by adding `` {args}`` to the alias.
 Drift-gate::
 
     kind:       rule
-    rule: no file git lists for the working tree, outside the decision logs in
-        _RECORD_DIRS, holds one of the invisible or bidirectional-control code
-        points in _INVISIBLE
+    rule: no UTF-8 file git lists for the working tree, outside the decision logs
+        in _RECORD_DIRS and the paths git marks binary, holds one of the invisible
+        or bidirectional-control code points in _INVISIBLE
     domain:     realization
 
 Drift-gate::
@@ -252,7 +253,12 @@ def check_write_text(root: Path) -> list[Violation]:
     found: list[Violation] = []
     for path in sorted((root / "scripts").rglob("*.py")):
         rel = path.relative_to(root).as_posix()
-        found.extend(scan_write_text(path.read_text(encoding="utf-8"), rel))
+        try:
+            source = path.read_bytes().decode("utf-8")
+        except UnicodeDecodeError as exc:
+            found.append(Violation(rel, f"not UTF-8 ({exc.reason} at byte {exc.start}); rule 2 skipped it"))
+            continue
+        found.extend(scan_write_text(source, rel))
     return found
 
 
@@ -292,9 +298,11 @@ def check_hatch_args(root: Path) -> list[Violation]:
             if match is None or match.group(2):
                 continue
             script = root / match.group(1)
-            if not script.is_file():
-                continue
             location = f"pyproject.toml [tool.hatch.envs.{env_name}.scripts] {alias}"
+            if not script.is_file():
+                # A typo or a rename; the alias fails whenever it is run.
+                found.append(Violation(location, f"{match.group(1)} does not exist"))
+                continue
             try:
                 options = takes_options(script.read_text(encoding="utf-8"))
             except (SyntaxError, ValueError) as exc:
