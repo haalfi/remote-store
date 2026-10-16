@@ -433,16 +433,17 @@ no clause of the contract ships unexercised.
   spec: BE-030 · effort: S · audience: library.maintainer, user.api_docs
   The proxy forwards `read()` to the raw stream, whose `readall` stops at a
   `None` the kernel never sees: `tests/_kernel/_fake.py`'s `put` stores `b"ab"`
-  from `b"ab", None, b"c"` on every route through `put`. The guide's example
-  driver reads the same way (`custom_backend_guide.py:185`, "Read it in full").
-  Open decision: serve `read(-1)` in the proxy as sized reads, or change the guide.
+  from `b"ab", None, b"c"` on `write`, `write_atomic` by `put` and by rename.
+  So do the guide's snippet and prose (`custom-backend-guide.md`, "Read it in
+  full"). Open decision: sized reads in the proxy, or change snippet and prose.
 
 - [ ] **BUG-333 — `open_atomic`'s spool refuses a strided `memoryview` that the handle route stores**
   spec: SAW-013, BE-008 · effort: S · audience: user.api
   On a driver without `open_write`, and through `AsyncBackendSyncAdapter`'s
   `_SpoolAndFlush`, the raw `SpooledTemporaryFile` raises `BufferError` on
-  `memoryview(b"aXbXc")[::2]`. A `write` override alone does not fix it:
-  `writelines` bypasses it on 3.11, and on 3.13 after rollover (PR #1148).
+  `memoryview(b"aXbXc")[::2]`; `writelines` defeats a `write` override (3.11,
+  3.13 after rollover; PR #1148). `open_atomic` in `_s3.py`, `_s3_boto3.py`,
+  `_s3_pyarrow.py`, `_azure.py` hands out the same spool (Grep), untested.
 
 - [ ] **BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`**
   spec: SIO-001, SEEK-006 · effort: M · audience: user.api
