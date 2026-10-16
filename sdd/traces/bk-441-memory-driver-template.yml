@@ -131,3 +131,85 @@ phases:
         section: "every ensures ... ==> fs == old(fs)"
         read_type: verify
         extract: "Enumerated for the README's 'only error-path frames' claim: BE-020 closed, BE-029 root, Write's WR-010 gate"
+review:
+  # Derived by `hatch run ship-report 1147 --trace-block-only` at head c3c0797.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1147 --trace-block-only"
+  pr: 1147
+  review_rounds: 3
+  submissions: 4
+  findings: 21
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.19
+    - round: 2
+      findings: 5
+      origin: {original: 4, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.23
+    - round: 3
+      findings: 8
+      origin: {loop-introduced: 1, original: 5, unclassifiable-file: 2}
+      triage: {must-fix: 8}
+      duration_hours: 0.37
+    - round: 4
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.29
+  by_file:
+    - path: "src/remote_store/_kernel/_sync/_io.py"
+      findings: 7
+    - path: "tests/_kernel/test_kernel.py"
+      findings: 4
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 2
+    - path: "sdd/specs/013-memory-backend.md"
+      findings: 2
+    - path: "src/remote_store/_kernel/_async/_io.py"
+      findings: 2
+    - path: "sdd/formal/README.md"
+      findings: 1
+    - path: "sdd/traces/bk-441-memory-driver-template.yml"
+      findings: 1
+    - path: "src/remote_store/_kernel/_async/kernel.py"
+      findings: 1
+    - path: "src/remote_store/_kernel/_sync/kernel.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "docs-src/_data/graph/graph.json"
+    - "docs-src/explanation/graph_viz.html"
+    - "docs-src/guides/custom-backend-guide.md"
+    - "docs-src/reference/api/drivers.md"
+    - "scripts/check_custom_backend_guide.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/349646d5-1b21-4d77-8c1d-de2d30fe94ad.jsonl"
+    - "sdd/formal/BackendContract.dfy"
+    - "sdd/formal/MemoryBackend-py/module_.py"
+    - "sdd/formal/MemoryBackend.dfy"
+    - "src/remote_store/_kernel/_async/driver.py"
+    - "src/remote_store/_kernel/_sync/driver.py"
+    - "src/remote_store/_kernel/aio_backend.py"
+    - "src/remote_store/_kernel/backend.py"
+    - "src/remote_store/aio/backends/_memory.py"
+    - "src/remote_store/backends/_memory.py"
+    - "src/remote_store/drivers.py"
+    - "tests/_kernel/test_delete_folder.py"
+    - "tests/_kernel/test_io.py"
+    - "tests/backends/memory/test_buffer_content.py"
+    - "tests/test_drivers_exports.py"
+  review_driven_commits:
+    - sha: "b667052"
+      subject: "BUG-328, BK-440: Round 1 fixes: narrow the content claim, enumerate the frames, cover the sync reads"
+    - sha: "8988a41"
+      subject: "BUG-328, BK-441: Round 2 fixes: mark every caller content failure, refuse an absent probe, pin the type refusal's rank"
+    - sha: "c3c0797"
+      subject: "BUG-328, BK-441, BK-440: Round 3 fixes: one rank for content, readlines checked, a re-raised wire error stays the driver's"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
