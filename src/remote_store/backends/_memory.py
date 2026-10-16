@@ -56,8 +56,9 @@ class MemoryDriver(Driver):
         """The number of files and of folders the tree holds.
 
         Read without the lock, which is not reentrant: ``repr`` reads these, and a
-        debugger may call it from a thread paused inside a locked step. Each count
-        changes only inside one locked step, so no read sees a torn value.
+        debugger may call it from a thread paused inside a locked step. So under
+        concurrent writers a read may show a step in progress (the two counts out
+        of step with each other); it is a display figure, not a snapshot.
         """
         return self._tree.file_count, self._tree.folder_count
 

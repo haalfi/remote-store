@@ -484,9 +484,11 @@ the caller hands it, and neither is the tree's: an error the caller's own
 content raises passes the choke point verbatim, still the caller's type
 (ASYNC-091); and content `put` cannot read (a `bytearray` or `memoryview`,
 outside `WritableContent`) is turned by `classify` into a base
-`RemoteStoreError`, which the kernel's probe then answers from the target: a
-base `RemoteStoreError` on a free key, `AlreadyExists` on an existing file
-without `overwrite`, `InvalidPath` on a folder (BUG-328).
+`RemoteStoreError`. The kernel's probe then replaces it only where the target
+alone would refuse the write: `AlreadyExists` on an existing file without
+`overwrite`, and `InvalidPath` on a folder or below a file. Elsewhere, a free
+key or an existing file with `overwrite`, the base `RemoteStoreError` stands,
+and nothing is stored (BUG-328).
 
 Error conditions are detected by tree inspection:
 

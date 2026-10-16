@@ -634,10 +634,10 @@ or paying for our shortcut.
 - [ ] **BUG-328 — Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through**
   spec: MEM-013, MEM-020 · effort: S · audience: user.api
   Both Memory drivers read non-`bytes` content as a stream, so `write(k, bytearray(b"x"))`
-  fails: on master as a raw `AttributeError`/`TypeError`; since BK-394 as `RemoteStoreError`
-  on a free key, but as `AlreadyExists` or `InvalidPath` when a file or folder is at the
-  target (the kernel's probe; measured, PR #1144), an answer about the target, not the
-  content. Open decision: widen `WritableContent` to the buffer types, or refuse them typed.
+  fails: on master as a raw `AttributeError`/`TypeError`; since BK-394 as `RemoteStoreError`,
+  which the kernel's probe turns into `AlreadyExists` (a file, no `overwrite`) or `InvalidPath`
+  (a folder, or a file above), an answer about the target (measured, PR #1144). Open
+  decision: widen `WritableContent` to the buffer types, or refuse them typed.
 
 - [ ] **BK-442 — `from remote_store.drivers import Driver` imports the whole async package and its cloud SDKs**
   spec: — · effort: S · audience: user.api
