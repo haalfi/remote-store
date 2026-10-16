@@ -477,11 +477,11 @@ no clause of the contract ships unexercised.
 
 - [ ] **BK-443 — A backend missing from the fixture registry gets no conformance coverage, and no test notices**
   spec: — · effort: S · audience: infra.test
-  Conformance runs only the backends `tests/backends/fixtures/registry.py` lists, and no test in
-  `tests/backends/fixtures/test_registry.py` compares them with the concrete backend classes.
-  `SQLBlobBackend` was missing until cb300156c (#471); adding it surfaced BUG-175 and BUG-176.
-  `_concrete_backends()` in `test_health_probe_declared.py` already enumerates the classes. BK-345
-  gates BE-021 on the same registry, a separate surface. Open decision: where an exemption lives.
+  Conformance runs only the fixtures `tests/backends/fixtures/fixtures.toml` declares, each keyed by
+  a family from `backends.toml` (`"azure"`, `"sqlblob"`), and no test compares them with the concrete
+  backend classes. `SQLBlobBackend` was missing until cb300156c (#471); adding it surfaced BUG-175 and
+  BUG-176. `_concrete_backends()` in `test_health_probe_declared.py` lists the classes; BK-345 gates
+  BE-021 on the same registry. Open decision: how a class maps to its family (no map exists), then exemptions.
 
 ---
 
@@ -794,9 +794,8 @@ CHANGELOG the release body is built from — say what is actually true.
   spec: — · effort: S · audience: contributor.tooling
   `main()` in `scripts/gen_backlogid.py` reads only `--check` and `--remote`; any other argument,
   `--help` or a typo, runs generate mode, prints "Updated sdd\backlogid.json" and rewrites the file
-  (reproduced 2026-10-16). It prints the same line when nothing changed, and no skill runs
-  `--check --remote` after a rebase, so an ID master closed meanwhile is found late. Open decision:
-  whether `/pr` or a git hook runs the remote check. ID-235 lints the same files, separate rules.
+  (reproduced 2026-10-16). It prints that line even when the file did not change. Open decision:
+  none. ID-235 lints the same files, separate rules.
 
 - [ ] **ID-254 — The `[Unreleased]` stub's bold marker has no defined meaning beyond `**Breaking**`, and nobody owns section assignment**
   spec: — · effort: S · audience: contributor.process
@@ -1039,8 +1038,9 @@ sessions work is measured before it becomes process.
 
 - [ ] **BK-444 — Three repo traps cost sessions retries that a check would catch before commit**
   spec: — · effort: S · audience: contributor.tooling, internal.style
-  14 of the 20 `.write_text(` calls in `scripts/` pass no `newline=`, so on Windows they can write
-  CRLF into a tracked file. Ruff selects no `PLE` rule, so a raw invisible character lands in source
-  unflagged. A hatch script without `{args}` drops passed flags silently; 44 single-line scripts in
-  `pyproject.toml` have none, most by design. Derivations: Grep over `scripts/` and `pyproject.toml`.
-  Open decision: lint rule or test per trap, and where the `{args}` allowlist lives.
+  14 of the 20 `.write_text(` calls in `scripts/` pass no `newline=`; 6 of those write multi-line
+  text to a tracked file, which Windows text mode writes as CRLF. Ruff selects no `PLE` rule, so a raw
+  invisible character lands in source unflagged. A hatch script without `{args}` drops flags silently;
+  59 of 89 single-line scripts in `pyproject.toml` lack it, most by design. Open decision: lint rule
+  or test per trap, and where exemptions and the `{args}` allowlist live.
+  Detail: [dossier](backlog/bk-444-repo-traps-lint.md)
