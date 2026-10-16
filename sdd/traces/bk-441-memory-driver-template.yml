@@ -32,6 +32,7 @@ surprising_ripples:
   - sdd/formal/MemoryBackend-py
 discovery_followups:
   - BUG-329
+  - BUG-330
 co_shipped_items:
   - BK-442
   - BUG-328
@@ -103,7 +104,7 @@ phases:
       - file: src/remote_store/_kernel/_async/kernel.py
         section: "_check_construction, write, _write_atomic"
         read_type: gate
-        extract: "Primitive set derived from vars(AsyncDriver), checked after the declaration checks: every member must be present, and only probe's inherited body is exempt (round 2 of PR #1147 refused an absent probe); content converted or refused after the metadata gate (take_content since round 3)"
+        extract: "Primitive set derived from vars(AsyncDriver), checked after the declaration checks: every member must be present, and only probe's inherited body is exempt (round 2 of PR #1147 refused an absent probe); content converted or refused after the metadata gate (take_content since round 3); write_atomic guards caller content inside _write_atomic after its gates, the open_atomic spool opting out with caller=False (PR #1148)"
       - file: tests/_kernel/_fake.py
         section: "_SyncBase, _AsyncBase, make_kernel"
         read_type: reference
@@ -131,6 +132,22 @@ phases:
         section: "every ensures ... ==> fs == old(fs)"
         read_type: verify
         extract: "Enumerated for the README's 'only error-path frames' claim: BE-020 closed, BE-029 root, Write's WR-010 gate"
+      - file: tests/backends/memory/test_buffer_content.py
+        section: "_NoneMidStream"
+        read_type: verify
+        extract: "PR #1148: a sync read answering b'ab', None, b'c' stored b'ab' on MemoryBackend write and write_atomic; refused as a caller-marked TypeError after the fix, as async already was"
+      - file: tests/_kernel/test_io.py
+        section: "test_what_every_read_answers_reaches_the_driver_as_its_shape_or_the_callers_error"
+        read_type: verify
+        extract: "PR #1148, after the proxy's answer check was narrowed in four rounds: every forwarded read x every answer kind against one oracle; 12 of 98 cells failed, all readinto/readinto1 counts, fixed by _count"
+      - file: src/remote_store/backends/_memory_tree.py
+        section: "MemoryTree.put"
+        read_type: verify
+        extract: "BUG-329: running MemoryBackend().write('d/f', b'x', metadata=5) is classified from dict(metadata) after _ensure_parents (folder d kept; AlreadyExists on an existing file); Store raises AttributeError from metadata.items()"
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "_binaryio_to_async_iter"
+        read_type: verify
+        extract: "BUG-330: if not chunk ends the upload on a None read, so the sync adapter over AsyncMemoryBackend stores b'ab' where the kernel refuses"
 review:
   # Derived by `hatch run ship-report 1147 --trace-block-only` at head c3c0797.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

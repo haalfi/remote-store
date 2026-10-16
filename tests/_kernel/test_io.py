@@ -136,17 +136,41 @@ def test_the_guarded_stream_offers_no_special_method_it_cannot_serve(name: str) 
     assert not hasattr(guarded, name)
 
 
-def _answering(chunk: object) -> io.BytesIO:
-    """A stream whose every bytes-answering read, iteration included, answers *chunk*."""
+def _released() -> memoryview:
+    view = memoryview(bytearray(b"q"))
+    view.release()
+    return view
+
+
+# The whole space of what a forwarded read can answer, crossed with every read
+# the proxy forwards, against one oracle. Each read answers in one of three
+# shapes: bytes (or a line of them), a list of lines, or a count of bytes read
+# into the caller's buffer.
+_SHAPE = {
+    "read": "bytes", "read1": "bytes", "readall": "bytes", "readline": "bytes", "peek": "bytes",
+    "__next__": "bytes", "__iter__": "bytes",
+    "readlines": "lines",
+    "readinto": "count", "readinto1": "count",
+}  # fmt: skip
+_ANSWERS: dict[str, Any] = {
+    "bytes": lambda: b"ab",
+    "bytearray": lambda: bytearray(b"ab"),
+    "memoryview": lambda: memoryview(b"aXb")[::2],
+    "str": lambda: "ab",
+    "int": lambda: 2,
+    "none": lambda: None,  # a non-blocking raw stream's "no data yet"
+    "released": _released,
+}
+
+
+def _answering(shape: str, answer: object) -> io.BytesIO:
+    """A stream whose every read answers *answer*, wrapped in a list where *shape* is lines."""
 
     class _Answers(io.BytesIO):
         def _answer(self, *args: object) -> object:
-            return chunk
+            return [answer] if shape == "lines" else answer
 
-        read = read1 = readall = readline = peek = __next__ = _answer  # type: ignore[assignment]
-
-        def readlines(self, *args: object) -> list[object]:  # type: ignore[override]
-            return [chunk]
+        read = read1 = readall = readline = peek = __next__ = readlines = readinto = readinto1 = _answer  # type: ignore[assignment]
 
     return _Answers(b"x")
 
@@ -156,47 +180,43 @@ def _read_by(guarded: object, name: str) -> object:
         return next(guarded)  # type: ignore[call-overload]
     if name == "__iter__":
         return next(iter(guarded))  # type: ignore[call-overload]
-    if name == "readlines":
-        return guarded.readlines()[0]  # type: ignore[attr-defined]
-    return getattr(guarded, name)()
+    if name in ("readinto", "readinto1"):
+        return getattr(guarded, name)(bytearray(4))
+    answer = getattr(guarded, name)()
+    return answer[0] if name == "readlines" else answer
 
 
-_BYTE_READS = ["read", "read1", "readall", "readline", "readlines", "peek", "__next__", "__iter__"]
+def _expected(shape: str, kind: str) -> tuple[str, Any]:
+    """What the driver must see: ``("value", v)``, or ``("raises", type)`` marked as the caller's."""
+    if shape == "count":
+        return ("value", 2) if kind == "int" else ("raises", TypeError)
+    if kind in ("bytes", "bytearray", "memoryview"):
+        return ("value", b"ab")
+    return ("raises", ValueError if kind == "released" else TypeError)
 
 
-@pytest.mark.spec("BE-008", "MEM-020")
-@pytest.mark.parametrize("name", _BYTE_READS)
-@pytest.mark.parametrize("chunk", [bytearray(b"ab"), memoryview(b"aXb")[::2]], ids=["bytearray", "memoryview"])
-def test_a_buffer_a_read_answers_reaches_the_driver_as_bytes(name: str, chunk: object) -> None:
-    answer = _read_by(sync_io.guard_content(_answering(chunk)), name)
-    assert type(answer) is bytes
-    assert answer == b"ab"
+def test_every_forwarded_read_has_a_shape() -> None:
+    # Drift guard: a read added to the proxy without a shape here goes unenumerated.
+    assert set(sync_io._READS) | {"__next__", "__iter__"} == set(_SHAPE)
 
 
 @pytest.mark.spec("BE-008", "MEM-020", "ASYNC-091")
-@pytest.mark.parametrize("name", _BYTE_READS)
-@pytest.mark.parametrize("chunk", ["ab", 3, None], ids=["str", "int", "none"])
-def test_a_read_answering_non_bytes_is_the_callers_type_error(name: str, chunk: object) -> None:
-    # None too: a non-blocking raw stream's "no data yet", which a driver's
-    # read loop would take for the end and store a truncated file.
-    with pytest.raises(TypeError, match="not bytes") as caught:
-        _read_by(sync_io.guard_content(_answering(chunk)), name)
-    assert sync_io.from_content(caught.value)
-
-
-def _released() -> memoryview:
-    view = memoryview(bytearray(b"q"))
-    view.release()
-    return view
-
-
-@pytest.mark.spec("BE-008", "ASYNC-091")
-@pytest.mark.parametrize("name", _BYTE_READS)
-def test_a_buffer_that_cannot_be_read_is_the_callers_error(name: str) -> None:
-    # Converting a released memoryview raises; it is the caller's buffer failing.
-    with pytest.raises(ValueError, match="released") as caught:
-        _read_by(sync_io.guard_content(_answering(_released())), name)
-    assert sync_io.from_content(caught.value)
+@pytest.mark.parametrize("kind", sorted(_ANSWERS))
+@pytest.mark.parametrize("name", sorted(_SHAPE))
+def test_what_every_read_answers_reaches_the_driver_as_its_shape_or_the_callers_error(name: str, kind: str) -> None:
+    # None from any read is refused, never taken for the end: a driver's read
+    # loop would otherwise store a truncated file.
+    shape = _SHAPE[name]
+    outcome, expected = _expected(shape, kind)
+    guarded = sync_io.guard_content(_answering(shape, _ANSWERS[kind]()))
+    if outcome == "value":
+        answer = _read_by(guarded, name)
+        assert type(answer) is type(expected)
+        assert answer == expected
+    else:
+        with pytest.raises(expected) as caught:
+            _read_by(guarded, name)
+        assert sync_io.from_content(caught.value)
 
 
 @pytest.mark.spec("ASYNC-091")

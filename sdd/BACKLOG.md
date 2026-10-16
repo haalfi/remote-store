@@ -415,11 +415,19 @@ no clause of the contract ships unexercised.
 
 - [ ] **BUG-329 — Metadata that is not a mapping, passed straight to a kernel class, is answered as a statement about the target**
   spec: WR-010, BE-030, MEM-020 · effort: S · audience: user.api
-  The WR-010 gate checks only truthiness, so `MemoryBackend().write("d/f", b"x",
-  metadata=5)` fails inside `put` and is classified: a free key keeps folder `d`,
-  an existing file without `overwrite` answers `AlreadyExists` (measured, both
-  runtimes; `Store` validates first). Open decision: refuse non-mapping
-  metadata in the kernel at the gate's rank, or leave it to `Store`.
+  The WR-010 gate checks only truthiness, so running `MemoryBackend().write("d/f",
+  b"x", metadata=5)` (and async) is classified inside `put`: a free key keeps
+  folder `d`, an existing file without `overwrite` answers `AlreadyExists`.
+  `Store` only stops it by accident, `metadata.items()` raising `AttributeError`.
+  Open decision: refuse non-mapping metadata in the kernel or in `Store`.
+
+- [ ] **BUG-330 — A sync stream read answering `None` through `AsyncBackendSyncAdapter` stores a truncated file**
+  spec: BE-030, ASYNC-091 · effort: S · audience: user.api
+  `_binaryio_to_async_iter` stops on `if not chunk`, so a non-blocking stream's
+  "no data yet" ends the upload before the async kernel refuses it: running
+  `AsyncBackendSyncAdapter(AsyncMemoryBackend()).write("d/f", s)` with `s.read`
+  answering `b"ab", None, b"c"` stores `b"ab"`, `write_atomic` too. The kernel
+  refuses the same stream (BE-030 § Content); the adapter should as well.
 
 - [ ] **BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`**
   spec: SIO-001, SEEK-006 · effort: M · audience: user.api

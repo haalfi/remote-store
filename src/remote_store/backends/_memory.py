@@ -108,8 +108,9 @@ class MemoryDriver(Driver):
         """Nothing to release; the store stays usable."""
 
     def classify(self, exc: Exception, *, op: Op, key: str) -> RemoteStoreError:
-        # The tree raises only typed errors, and the kernel converts or refuses content put
-        # could not read and marks what put's reads raise, so no content error reaches here (MEM-020).
+        # No content error reaches here: the kernel converts or refuses content put could
+        # not read and marks what put's reads raise. The tree's own TypeError on
+        # non-mapping metadata does (BUG-329); otherwise it raises only typed errors (MEM-020).
         return RemoteStoreError(f"{type(exc).__name__}: {exc}")
 
     def container_absent(self, exc: BaseException, *, op: Op) -> bool:
