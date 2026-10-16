@@ -170,9 +170,7 @@ class _MarkedReader:
 
         Each read spells its size as the caller did, so a stream that refuses
         ``size=`` refuses it here too. The chunks are joined, so the content is
-        held twice at the end, where a file's own ``read()`` holds it once:
-        growing one buffer instead held it a little less and took several
-        times as long.
+        held twice at the end, where a file's own ``read()`` holds it once.
         """
         chunks: list[bytes] = []
         while True:

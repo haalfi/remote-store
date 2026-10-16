@@ -109,9 +109,9 @@ def open_atomic_with_hash(
     **Metadata branch:** When *metadata* is non-empty, the implementation
     buffers all written bytes in memory (``io.BytesIO``) and then calls
     ``store.write_atomic()`` on exit.  This means (a) the full payload is
-    held in RAM, and (b) validation errors (``ValueError``) and capability
-    checks (``CapabilityNotSupported``) are raised after the caller has
-    finished writing — not before.  For large payloads, prefer calling
+    held in RAM, and (b) capability checks (``CapabilityNotSupported``) are
+    raised after the caller has finished writing — not before.  *metadata*
+    is validated (``ValueError``) on entry.  For large payloads, prefer calling
     ``store.write()`` directly with ``metadata=``.
 
     **``source`` field:** Both branches always set ``source="basic"`` on

@@ -311,7 +311,10 @@ to be the primary protection for callers using `Store(AsyncBackendSyncAdapter(..
 
 **Invariant:** `metadata` is `Mapping[str, str]`. Validation is performed at the
 Store layer (one place, not per-backend) **before** the WR-010 capability
-dispatch. The precedence is fixed:
+dispatch. A class on the contract kernel, called directly, also enforces the
+first rule below, in the same order
+([BE-030](003-backend-adapter-contract.md#be-030-key-rule-on-the-kernel)). The
+precedence is fixed:
 
 1. **Shape validation first.** Validate `metadata` against the rules below.
    On any violation, raise `ValueError` before any I/O — regardless of
@@ -338,7 +341,8 @@ Validation rules:
   validation failure. A non-declaring backend therefore treats `metadata={}`
   the same as `metadata=None`: no `CapabilityNotSupported` is raised.
 
-Violations raise `ValueError` with the offending key or value before any I/O.
+Violations raise `ValueError` before any I/O, naming the type that is not a
+mapping or the offending key or value.
 
 ## WR-012: WriteResult.metadata Echo
 

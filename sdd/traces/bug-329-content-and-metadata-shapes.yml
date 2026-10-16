@@ -38,6 +38,7 @@ co_shipped_items:
   - BUG-333
 decisions:
   - sdd/decisions/ee2d43c1-b4b5-42ae-9965-fdf1c37ba43a.jsonl
+  - sdd/decisions/f998c0f2-2e52-4728-b08b-c7f2484398db.jsonl
 orient:
   - items: [BUG-329, BUG-330, BUG-331, BUG-333]
     verdict: subsumes
@@ -133,3 +134,7 @@ phases:
         section: "test_reading_content_in_full_never_stores_a_truncated_file"
         read_type: verify
         extract: "With only the proxy fix stashed, the guide's RedisDriver stored b'ab' on write and write_atomic (2 failed); with it, refused (2 passed)"
+      - file: tmp/read_whole_space.py
+        section: "whole (review round 3, PR #1151)"
+        read_type: verify
+        extract: "_read_whole strategies, 256 MiB from a file, fresh process per cell, CPython 3.13.11 on Windows, peak working set over N / time: native read() 1.00 / 69 ms, list+join 2.00 / 151 ms, BytesIO 1.80 / 704 ms, bytearray+bytes() 2.00 / 821 ms; same order from a BytesIO source. User chose the join (decision log f998c0f2)"
