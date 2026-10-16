@@ -109,6 +109,8 @@ _INVISIBLE: dict[int, str | None] = {
     0x2069: None,
     0xFEFF: None,
 }
+# Built from the integers above, so this file still holds none of the characters.
+_INVISIBLE_RE = re.compile("[" + "".join(re.escape(chr(c)) for c in _INVISIBLE) + "]")
 
 # A bare alias: the whole entry runs one scripts/ file, optionally forwarding argv.
 _BARE_ALIAS_RE = re.compile(r"^python (scripts/[\w/]+\.py)( \{args\})?$")
@@ -135,16 +137,19 @@ def _name(code_point: int) -> str:
 def scan_invisible(text: str, rel: str) -> list[Violation]:
     """Return one violation per refused code point in *text*, by line and column."""
     found: list[Violation] = []
+    # Nearly every file is clean, so one C-level search decides most of them.
+    if not _INVISIBLE_RE.search(text):
+        return found
     python = rel.endswith(".py")
     # Split on "\n" alone: `str.splitlines` also breaks on U+2028 and U+2029,
     # which would shift every line number after the character being reported.
     for lineno, line in enumerate(text.split("\n"), 1):
-        for col, ch in enumerate(line, 1):
-            if ord(ch) in _INVISIBLE:
-                name = _name(ord(ch))
-                # `\N{…}` is an escape only inside a Python string literal.
-                remedy = f"write it as \\N{{{name}}} in a Python string, or remove it" if python else "remove it"
-                found.append(Violation(f"{rel}:{lineno}:{col}", f"U+{ord(ch):04X} {name}; {remedy}"))
+        for match in _INVISIBLE_RE.finditer(line):
+            code_point = ord(match.group())
+            name = _name(code_point)
+            # `\N{…}` is an escape only inside a Python string literal.
+            remedy = f"write it as \\N{{{name}}} in a Python string, or remove it" if python else "remove it"
+            found.append(Violation(f"{rel}:{lineno}:{match.start() + 1}", f"U+{code_point:04X} {name}; {remedy}"))
     return found
 
 
