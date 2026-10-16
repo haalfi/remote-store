@@ -47,7 +47,8 @@ write nothing, for every value that is not a `collections.abc.Mapping`,
 including an object that only has `.items()`. Called directly,
 `MemoryBackend` and `AsyncMemoryBackend` also stored a list of pairs such as
 `[("k", "v")]` as a dict; they refuse it too, as does a backend you build on
-`DriverBackend`. Other backend classes called directly, outside a `Store`,
+`DriverBackend` or `AsyncDriverBackend`. Other backend classes called
+directly, outside a `Store`,
 are unchanged. Pass `None` (the default) or `{}` for no metadata, and a
 `dict` or another mapping otherwise.
 

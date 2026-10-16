@@ -1558,7 +1558,9 @@ canonical `""` names the root, a folder, and yields nothing. Worked examples:
 **Conformance:** fake-driver kernel cells in `tests/_kernel/`, run against both
 runtimes. Memory's cells are in `tests/backends/memory/test_kernel_cells.py`,
 both classes: the root spellings' `FolderInfo`, addressing's fold of a
-non-canonical key, and the backslash refusal storing nothing. What a key resolves to is
+non-canonical key, and the backslash refusal storing nothing; and in
+`tests/backends/memory/test_metadata_shape.py`, both classes: metadata that is
+not a mapping refused with no parent folder made. What a key resolves to is
 BE-032's two generated suites (its A.10); `glob`, the capability gates and
 construction are generated over axes of their own.
 
