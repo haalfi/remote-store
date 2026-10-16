@@ -17,6 +17,7 @@ operation that then fails.
 from __future__ import annotations
 
 import io
+import re
 from typing import Any
 
 import pytest
@@ -375,9 +376,24 @@ def test_a_size_under_the_streams_own_keyword_is_forwarded_as_it_is() -> None:
 
 
 @pytest.mark.spec("BE-030")
-def test_an_unsized_read_holds_the_content_about_once() -> None:
-    # A native read() of a file peaks at about 1x its size; collecting chunks and
-    # joining them held it twice.
+@pytest.mark.parametrize(
+    "call",
+    [lambda s: s.read(-1, size=2), lambda s: s.read(None, foo=1)],
+    ids=["read(-1, size=2)", "read(None, foo=1)"],
+)
+def test_a_size_with_keywords_beside_it_is_the_streams_to_answer(call: Any) -> None:
+    # The stream refuses the call itself; the proxy does not read it as unsized.
+    with pytest.raises(TypeError, match="argument") as native:
+        call(io.BytesIO(b"abc"))
+    with pytest.raises(TypeError, match=re.escape(str(native.value))):
+        call(sync_io.guard_content(io.BytesIO(b"abc")))
+
+
+@pytest.mark.spec("BE-030")
+def test_an_unsized_read_is_not_a_join_of_its_chunks() -> None:
+    # Joining the chunks held the content twice. tracemalloc counts a buffer's
+    # resize once, so this pins the join away, not the process peak, which a
+    # growing buffer can still raise.
     import tracemalloc
 
     data = b"x" * (16 * sync_io._CHUNK)

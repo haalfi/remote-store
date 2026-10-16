@@ -37,6 +37,14 @@ state. If you relied on a best-effort walk over a tree with unreadable parts,
 walk it yourself with `list_folders()` and `list_files()` per folder, catching
 `PermissionDenied` for each.
 
+**`metadata=` must be `None` or a mapping:**
+
+`write()` and `write_atomic()` on `Store` and `AsyncStore`, and
+`write_with_hash()` and `open_atomic_with_hash()`, took an empty non-mapping such as `[]`, `()`, `0` or
+`""` for no metadata and wrote the file. They now raise `ValueError` and write
+nothing, as they do for any other value that is not a mapping, which used to
+fail with `AttributeError`. Pass `None` (the default) or `{}` for no metadata.
+
 **For backend authors: a backend is now written as a driver:**
 
 `remote_store.drivers` is new. A custom backend is now documented as a

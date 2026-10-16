@@ -1472,9 +1472,10 @@ stream's own `readall` would stop at. Line reads (`readline`, `readlines`,
 iteration) loop inside the caller's stream, where the kernel cannot see a
 `None`, and are not covered. A check on the target made before the stream is
 read answers first, such as `write_atomic`'s `stat` by temp and rename without
-`overwrite`. The stream `open_atomic` yields refuses a buffer that is not
-C-contiguous with `BufferError`, as Python's binary files do, on the wire
-temporary's route and the spool's alike.
+`overwrite`. The stream `open_atomic` yields takes a write as Python's binary
+files do, on the wire temporary's route and the spool's alike: a buffer that is
+not C-contiguous is refused with its exporter's own error, `BufferError` for a
+`memoryview`.
 
 **What a key resolves to** is [BE-032](#be-032-the-store-tree-on-the-kernel)'s
 answer, for every call below: the tree's `Item`, `Folder` or `Nothing` (A.1),

@@ -170,8 +170,9 @@ class _MarkedReader:
         """The rest of the stream, by checked sized reads until one answers empty.
 
         Collected in a ``BytesIO``, whose ``getvalue`` hands over its buffer
-        rather than copying it, so the content is held about once, as a
-        native ``read()`` holds it, not twice as a join of chunks would.
+        rather than copying it, where a join of the chunks would copy all of
+        them once more. Growing the buffer can still copy it, so the peak can
+        exceed the once a file's own ``read()`` holds.
         """
         whole = io.BytesIO()
         while True:
@@ -189,16 +190,15 @@ class _MarkedReader:
 def _unsized(args: tuple[object, ...], kwargs: dict[str, object]) -> bool:
     """Whether a ``read`` call asks for everything: no size, ``None`` or a negative one.
 
-    A keyword other than ``size`` is the stream's own, so the call is forwarded.
+    Any other call, a keyword other than ``size`` or a keyword beside a
+    positional size, is the stream's own to answer, so it is forwarded.
     """
-    if args:
+    if args and not kwargs and len(args) == 1:
         size = args[0]
-    elif kwargs:
-        if set(kwargs) != {"size"}:
-            return False
+    elif not args and set(kwargs) == {"size"}:
         size = kwargs["size"]
     else:
-        return True
+        return not args and not kwargs
     return size is None or (isinstance(size, int) and size < 0)
 
 

@@ -481,8 +481,8 @@ streams it hands out are `io`
 objects and raise the `io` protocol's own errors where that protocol does: the
 write-only file `open_atomic` yields answers `seek()` with
 `io.UnsupportedOperation`, `read()` with `NotImplementedError`, a
-non-buffer `write()` with `TypeError` and a `write()` of a buffer that is not
-C-contiguous with `BufferError`. One native exception reaches the driver
+non-buffer `write()` with `TypeError` and a `write()` of a `memoryview` that is
+not C-contiguous with `BufferError`. One native exception reaches the driver
 from the caller's content, and it is not the tree's: an error the content
 raises passes the choke point verbatim, still the caller's type (ASYNC-091). A `bytearray` or `memoryview` is stored as its bytes, since the
 kernel hands the driver a `bytes` copy, and content that is no bytes source is

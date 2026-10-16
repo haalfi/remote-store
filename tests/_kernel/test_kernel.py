@@ -10,6 +10,8 @@ the kernel's choke point or its own rules.
 from __future__ import annotations
 
 import asyncio
+import io
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -1138,6 +1140,35 @@ def test_both_open_atomic_routes_refuse_a_non_contiguous_buffer_as_pythons_files
         stream.write(bytearray(b"c"))
         stream.writelines([b"d", memoryview(b"e")])
     assert store.files["a"].data == b"abcde"
+
+
+def _non_contiguous(exporter: str) -> object:
+    if exporter == "memoryview":
+        return memoryview(b"aXbXc")[::2]
+    np = pytest.importorskip("numpy")
+    if exporter == "numpy-f-order":
+        return np.asfortranarray(np.arange(6, dtype=np.uint8).reshape(2, 3))
+    return np.arange(6, dtype=np.uint8)[::2]
+
+
+@pytest.mark.spec("BE-030", "SAW-013")
+@pytest.mark.parametrize("exporter", ["memoryview", "numpy-f-order", "numpy-strided"])
+@pytest.mark.parametrize("route", sorted(_OPEN_ATOMIC_ROUTES))
+def test_both_open_atomic_routes_refuse_a_non_contiguous_buffer_with_its_exporters_error(
+    runtime: str, route: str, exporter: str
+) -> None:
+    # The exporter refuses a contiguous request with its own error (BufferError for a
+    # memoryview, ValueError for numpy), and that is what Python's binary files raise.
+    if runtime == "async":
+        pytest.skip("open_atomic is the sync surface's alone")
+    buffer = _non_contiguous(exporter)
+    with pytest.raises(Exception) as native:
+        io.BytesIO().write(buffer)  # type: ignore[arg-type]
+    store = FakeStore()
+    run = make_kernel(runtime, store, protocols=_OPEN_ATOMIC_ROUTES[route])
+    with pytest.raises(type(native.value), match=re.escape(str(native.value))), run.kernel.open_atomic("a") as stream:
+        stream.write(buffer)
+    assert "a" not in store.files
 
 
 @pytest.mark.spec("WR-010", "BE-030")
