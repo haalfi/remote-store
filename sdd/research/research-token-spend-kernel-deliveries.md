@@ -73,8 +73,10 @@ Run B, re-derived with today's kit, cost 15.00 M.
 
 From [`units_m`, `usd_estimate`, `sessions`, `changed_files`, `phases_pct`,
 `max_main_ctx_k`] per delivery; the lines row is `git diff --shortstat` over
-each PR's squash commit on master (`45132599a`, `bc03b75e2`, `b7deb551c`,
-`25ac75a3f`, each against its parent). Phases are cut as `tokkit.py report --pr` cuts
+each PR's squash commit against its parent: `45132599a`, `b7deb551c` and
+`25ac75a3f` on master, and `bc03b75e2`, #1130's squash into BK-389's branch,
+which is on #1127's history only (`git fetch origin pull/1127/head`) and is
+also needed by the next bullet's command. Phases are cut as `tokkit.py report --pr` cuts
 them: BK-389 at call 44 (plan approval) and 161 (PR open), BK-394 at 43 and
 171, run B at 43 and 93 [`build_cuts`]. Run B's 43 is the current kit's cut;
 `report.md` § Run B gives 44 calls and 1.11 M from the kit before BK-424, here

@@ -34,9 +34,11 @@ def _user(ts: str, content) -> dict:
     return {"type": "user", "timestamp": ts, "message": {"content": content}}
 
 
-def _call(mid: str, ts: str, tokens: int, content: list | None = None) -> dict:
-    """An assistant record carrying usage: ``tokens`` fresh input tokens weigh one unit each."""
-    msg = {"id": mid, "model": "claude-opus-4-6", "usage": {"input_tokens": tokens}, "content": content or []}
+def _call(mid: str, ts: str, tokens: int, content: list | None = None, read: int = 0) -> dict:
+    """An assistant record carrying usage: ``tokens`` fresh input tokens weigh one unit each,
+    ``read`` cache-read tokens a tenth (``tokkit.W``); both count in full toward the context."""
+    usage = {"input_tokens": tokens, "cache_read_input_tokens": read}
+    msg = {"id": mid, "model": "claude-opus-4-6", "usage": usage, "content": content or []}
     return {"type": "assistant", "timestamp": ts, "message": msg}
 
 
@@ -269,8 +271,8 @@ class TestMeasurePart:
         sub.mkdir(parents=True)
         _write(tmp_path / sid / f"{sid}.jsonl", calls)
         for name, kind, desc, ts, tokens in subagents:
-            calls = tokens if isinstance(tokens, tuple) else (tokens,)
-            _write(sub / f"{name}.jsonl", [_call(f"{name}-{n}", ts, t) for n, t in enumerate(calls)])
+            calls = tokens if isinstance(tokens, tuple) else ((tokens, 0),)
+            _write(sub / f"{name}.jsonl", [_call(f"{name}-{n}", ts, t, read=r) for n, (t, r) in enumerate(calls)])
             (sub / f"{name}.meta.json").write_text(json.dumps({"agentType": kind, "description": desc}))
         return sid
 
@@ -291,16 +293,18 @@ class TestMeasurePart:
                 _call("m3", "2026-10-10T10:06:00Z", 1000),
             ],
             [
-                ("agent-p1", "reviewer", "Round member", "2026-10-10T10:02:00Z", (4_000, 6_000)),
+                # Two calls: 4,000 fresh tokens, then 6,000 read from cache (600 units).
+                ("agent-p1", "reviewer", "Round member", "2026-10-10T10:02:00Z", ((4_000, 0), (0, 6_000))),
                 ("agent-f1", "general-purpose", "Fix the findings", "2026-10-10T10:05:30Z", 100_000),
             ],
         )
 
         out = deliveries.measure_part(tmp_path, {"session": sid}, set(), "9999-01-01T00:00:00Z")
 
-        assert out["phases"] == {"review loop": 111_111}
+        assert out["phases"] == {"review loop": 105_711}
         [r] = out["rounds"]
-        assert (r["main_units"], [p["units"] for p in r["passes"]]) == (1110, [10_000])
+        assert (r["main_units"], [p["units"] for p in r["passes"]]) == (1110, [4_600])
+        # Context counts the cache read in full, units at a tenth: the two must not be confused.
         assert [p["ctx_sum"] for p in r["passes"]] == [10_000]
         assert sorted((x["units"], x["main"]) for x in out["loose"]) == [(1, True), (100_000, False)]
         assert self._accounted(out) == out["phases"]["review loop"]
