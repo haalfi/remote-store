@@ -52,7 +52,11 @@ def _mark(exc: BaseException) -> None:
 
 
 async def _marked(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
-    iterator = chunks.__aiter__()
+    try:
+        iterator = chunks.__aiter__()
+    except Exception as exc:
+        _mark(exc)
+        raise
     while True:
         try:
             chunk = await iterator.__anext__()
@@ -62,7 +66,11 @@ async def _marked(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
             _mark(exc)
             raise
         if isinstance(chunk, bytearray | memoryview):
-            chunk = bytes(chunk)
+            try:
+                chunk = bytes(chunk)
+            except Exception as exc:  # a buffer that cannot be read, such as a released memoryview
+                _mark(exc)
+                raise
         elif not isinstance(chunk, bytes):
             # Not binary: the caller's error, passed through verbatim, never one about the target.
             err = TypeError(f"content iterator yielded {type(chunk).__name__}, not bytes")

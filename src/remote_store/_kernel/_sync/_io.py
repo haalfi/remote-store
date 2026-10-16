@@ -66,7 +66,11 @@ def _binary(chunk: object, source: object) -> object:
     if chunk is None or isinstance(chunk, bytes):
         return chunk
     if isinstance(chunk, bytearray | memoryview):
-        return bytes(chunk)
+        try:
+            return bytes(chunk)
+        except Exception as err:  # a buffer that cannot be read, such as a released memoryview
+            _mark(err)
+            raise
     exc = TypeError(f"content stream {type(source).__name__} returned {type(chunk).__name__}, not bytes")
     _mark(exc)
     raise exc
@@ -119,7 +123,11 @@ class _MarkedIteration:
     _stream: BinaryIO
 
     def __iter__(self) -> Iterator[bytes]:
-        lines = iter(self._stream)
+        try:
+            lines = iter(self._stream)
+        except Exception as exc:
+            _mark(exc)
+            raise
         while True:
             try:
                 line = next(lines)
@@ -156,11 +164,19 @@ class _ForwardedContext:
     _stream: BinaryIO
 
     def __enter__(self) -> _ForwardedContext:
-        self._stream.__enter__()
+        try:
+            self._stream.__enter__()
+        except Exception as exc:
+            _mark(exc)
+            raise
         return self
 
     def __exit__(self, *exc_info: object) -> object:
-        return self._stream.__exit__(*exc_info)  # type: ignore[arg-type]
+        try:
+            return self._stream.__exit__(*exc_info)  # type: ignore[arg-type]
+        except Exception as exc:
+            _mark(exc)
+            raise
 
 
 _PROXY_TYPES: dict[tuple[type | None, bool], type[_MarkedReader]] = {}

@@ -10,8 +10,8 @@ means, and the kernel decides when it is asked and fills the error's ``path``
 and ``backend``.
 
 ``Driver`` and ``AsyncDriver`` are the required primitives and declared
-attributes; construction refuses a driver that leaves a primitive other than
-``probe`` to the protocol's empty body. Each ``Supports*`` protocol is optional
+attributes; construction refuses a driver that lacks a primitive, or leaves one
+other than ``probe`` to the protocol's empty body. Each ``Supports*`` protocol is optional
 and detected per instance when the kernel is constructed. Construction refuses
 a declared ``COPY``, ``MOVE``, ``ATOMIC_MOVE``, ``ATOMIC_WRITE`` or ``GLOB``
 that the protocols the driver presents cannot back; the other capabilities

@@ -143,6 +143,47 @@ def test_a_content_error_refusing_attributes_still_passes_verbatim(runtime: str,
     assert _run(backend.read_bytes("f")) == b"old"
 
 
+def _released() -> memoryview:
+    view = memoryview(bytearray(b"q"))
+    view.release()
+    return view
+
+
+class _ReleasedStream(io.RawIOBase):
+    def readable(self) -> bool:
+        return True
+
+    def read(self, size: int = -1) -> Any:  # type: ignore[override]
+        return _released()
+
+
+async def _released_chunks() -> AsyncIterator[Any]:
+    yield _released()
+
+
+class _AiterRaises:
+    def __aiter__(self) -> Any:
+        raise _Refusing("aiter-boom")
+
+
+def _unreadable(runtime: str) -> list[Any]:
+    return [_ReleasedStream()] if runtime == "sync" else [_released_chunks(), _AiterRaises()]
+
+
+@pytest.mark.spec("MEM-020", "ASYNC-091")
+@pytest.mark.parametrize("runtime", RUNTIMES)
+@pytest.mark.parametrize("method", ["write", "write_atomic"])
+def test_content_failing_as_it_is_read_is_the_callers_error_not_the_targets(runtime: str, method: str) -> None:
+    # A buffer that cannot be read, or an iterator that cannot be begun, fails
+    # in the caller's hands: never AlreadyExists for the existing file.
+    for content in _unreadable(runtime):
+        backend = _make(runtime)
+        _run(backend.write("f", b"old"))
+        with pytest.raises((ValueError, _Refusing), match="released|aiter-boom"):
+            _run(getattr(backend, method)("f", content))
+        assert _run(backend.read_bytes("f")) == b"old"
+
+
 @pytest.mark.spec("MEM-020", "BE-008")
 def test_async_buffer_chunks_are_stored_as_their_bytes() -> None:
     backend = AsyncMemoryBackend()

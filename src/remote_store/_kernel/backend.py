@@ -43,8 +43,8 @@ class DriverBackend(_KernelCore, Backend):
             protocols, it is flat and has folder objects, it has explicit
             parents and no ``ensure_parents``, it has folder objects and no
             ``remove_folder``, the class's own ``close_is_terminal``
-            differs from the driver's, or a required primitive other than
-            ``probe`` is missing or is the protocol's own body.
+            differs from the driver's, or a primitive is missing or, other
+            than ``probe``, is the protocol's own body.
     """
 
     def read(self, path: str) -> BinaryIO:

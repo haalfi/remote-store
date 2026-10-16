@@ -13,6 +13,7 @@ operation that then fails.
 from __future__ import annotations
 
 import io
+from typing import Any
 
 import pytest
 
@@ -171,6 +172,51 @@ def test_a_buffer_a_read_answers_reaches_the_driver_as_bytes(name: str, chunk: o
 def test_a_read_answering_non_bytes_is_the_callers_type_error(name: str, chunk: object) -> None:
     with pytest.raises(TypeError, match="not bytes") as caught:
         _read_by(sync_io.guard_content(_answering(chunk)), name)
+    assert sync_io.from_content(caught.value)
+
+
+def _released() -> memoryview:
+    view = memoryview(bytearray(b"q"))
+    view.release()
+    return view
+
+
+@pytest.mark.spec("BE-008", "ASYNC-091")
+@pytest.mark.parametrize("name", _BYTE_READS)
+def test_a_buffer_that_cannot_be_read_is_the_callers_error(name: str) -> None:
+    # Converting a released memoryview raises; it is the caller's buffer failing.
+    with pytest.raises(ValueError, match="released") as caught:
+        _read_by(sync_io.guard_content(_answering(_released())), name)
+    assert sync_io.from_content(caught.value)
+
+
+@pytest.mark.spec("ASYNC-091")
+def test_a_failing_iter_on_the_guarded_stream_is_marked() -> None:
+    class _NoIter(_ReadOnlySource):  # iterable, not its own iterator
+        def __iter__(self) -> Any:
+            raise _CallerStreamError("no lines")
+
+    guarded = sync_io.guard_content(_NoIter(b"x"))  # type: ignore[arg-type]
+    with pytest.raises(_CallerStreamError) as caught:
+        next(iter(guarded))  # type: ignore[call-overload]
+    assert sync_io.from_content(caught.value)
+
+
+@pytest.mark.spec("ASYNC-091")
+@pytest.mark.parametrize("phase", ["__enter__", "__exit__"])
+def test_a_failing_with_on_the_guarded_stream_is_marked(phase: str) -> None:
+    class _Ctx(io.BytesIO):
+        def __enter__(self) -> Any:
+            if phase == "__enter__":
+                raise _CallerStreamError("enter")
+            return self
+
+        def __exit__(self, *exc_info: object) -> Any:
+            raise _CallerStreamError("exit")
+
+    guarded = sync_io.guard_content(_Ctx(b"x"))
+    with pytest.raises(_CallerStreamError) as caught, guarded:  # type: ignore[union-attr]
+        pass
     assert sync_io.from_content(caught.value)
 
 

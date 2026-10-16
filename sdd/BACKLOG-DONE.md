@@ -302,7 +302,7 @@ if evidence changes; these are retired.
   spec: BE-021, BE-030 · effort: S · audience: user.api_docs, library.maintainer
   Construction refuses, with a `ValueError` naming it, a required primitive a
   driver lacks or inherits as the protocol's own body; `probe` alone may be
-  inherited, as the exemption from probing. The required set is derived from
+  inherited, as the exemption from probing, but not left out. The required set is derived from
   the protocol, so the generated sync twin checks `Driver`'s. Spec 003 BE-030,
   `drivers.md`, the guide and the kernel docstrings state it. Co-shipped:
   BK-442, BUG-328, BK-440. Trace:

@@ -1469,9 +1469,11 @@ def test_a_required_primitive_left_as_the_protocols_body_is_refused(runtime: str
         _kernel_class(runtime)(driver)
 
 
-@pytest.mark.spec("BE-030")
-@pytest.mark.parametrize("member", sorted(_REQUIRED | {"close/aclose"}))
+@pytest.mark.spec("BE-030", "PING-008")
+@pytest.mark.parametrize("member", sorted(_REQUIRED | {"close/aclose", "probe"}))
 def test_an_absent_required_primitive_is_refused(runtime: str, member: str) -> None:
+    # probe too: only the inherited body is the exemption, and a structural
+    # driver has nothing to inherit.
     if member == "close/aclose":
         member = "close" if runtime == "sync" else "aclose"
     driver = _with_member(_kernel(runtime).driver, member, None)
@@ -1547,6 +1549,46 @@ def test_content_that_is_no_bytes_source_is_refused_before_any_io(runtime: str, 
         getattr(run, method)("f", content, overwrite=True)
     assert run.store.calls == []  # nothing probed, nothing written
     assert run.store.files["f"].data == b"F"
+
+
+def _flat_with_a_file_above() -> dict[str, Any]:
+    return {"store": FakeStore(parents="none").add("a/x"), "namespace": "flat"}
+
+
+# Each kernel does I/O before put for valid content at "a/b": BE-032 A.4's
+# stat on a flat namespace, ensure_parents with explicit parents, the target's
+# stat on temp-and-rename without overwrite. So "no driver call" observes the
+# refusal's rank, not only its existence.
+_IO_BEFORE_PUT: dict[str, tuple[Any, str, dict[str, Any]]] = {
+    "flat": (_flat_with_a_file_above, "write", {}),
+    "explicit-parents": (lambda: {"store": FakeStore()}, "write", {}),
+    "rename-no-overwrite": (
+        lambda: {"store": _store(), "protocols": ("remove_folder", "rename")},
+        "write_atomic",
+        {"overwrite": False},
+    ),
+}
+
+
+@pytest.mark.spec("BE-030", "BE-008")
+@pytest.mark.parametrize("case", sorted(_IO_BEFORE_PUT))
+def test_the_type_refusal_ranks_ahead_of_the_kernels_own_io(runtime: str, case: str) -> None:
+    make, method, kwargs = _IO_BEFORE_PUT[case]
+    setup = make()
+    store = setup.pop("store")
+    run = make_kernel(runtime, store, **setup)
+    store.calls.clear()
+    with pytest.raises(TypeError, match="content must be bytes"):
+        getattr(run, method)("a/b", ["x"], **kwargs)
+    assert store.calls == []
+
+
+@pytest.mark.spec("BE-030", "BE-020")
+def test_a_closed_backend_outranks_the_type_refusal(runtime: str) -> None:
+    run = make_kernel(runtime, _store(), close_is_terminal=True)
+    run.close()
+    with pytest.raises(BackendUnavailable, match="closed"):
+        run.write("f", ["x"])  # type: ignore[arg-type]
 
 
 @pytest.mark.spec("BE-030", "BE-008")

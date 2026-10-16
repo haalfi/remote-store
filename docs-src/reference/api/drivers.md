@@ -18,8 +18,10 @@ walks through writing one.
     explicit parents without `ensure_parents`, when the class's
     `close_is_terminal` differs from the driver's, or when a required member
     is missing or is still the protocol's own empty body, which would answer
-    `None` instead of acting. Only `probe` may be inherited: its body is the
-    exemption from probing for a store that is always healthy.
+    `None` instead of acting. Only `probe` may be the protocol's body: it is the
+    exemption from probing for a store that is always healthy, but it must
+    still be present, so a driver that does not subclass the protocol defines
+    its own.
 
 ---
 

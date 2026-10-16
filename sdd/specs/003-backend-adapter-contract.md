@@ -1433,9 +1433,10 @@ closed or not, since capability data is not a live operation: `GLOB` for
 self-operation included, each refused with `CapabilityNotSupported` by the
 declaration, whatever protocols the driver presents. The kernel refuses to
 construct over a declaration its protocols cannot back, and over a driver that
-leaves a required primitive out or inherits the protocol's own body for one,
-which would answer `None` instead of acting; `probe` is the exception, whose
-inherited body is the exemption from probing (PING-008). WR-010's metadata gate
+leaves a primitive out or inherits the protocol's own body for one, which would
+answer `None` instead of acting. `probe`'s inherited body is the one exception,
+being the exemption from probing (PING-008); a `probe` left out is refused like
+any other. WR-010's metadata gate
 on `write` and `write_atomic` comes after step 4 and before step 5, so the root
 refusal stays BE-008's first precondition and the gate stays ahead of any I/O.
 That ranks it ahead of BE-008's type, ancestor and overwrite checks: on a class

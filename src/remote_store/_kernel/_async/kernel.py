@@ -112,21 +112,20 @@ def _check_construction(driver: AsyncDriver) -> None:
     if caps.supports(Capability.MOVE) and not isinstance(driver, movers):
         msg = f"driver {driver.name!r} declares MOVE without a move, a rename or a copy"
         raise ValueError(msg)
-    for member, body in _REQUIRED_BODIES.items():
+    for member, body in _PRIMITIVE_BODIES.items():
         # A driver subclassing the protocol inherits its `...` bodies, so an
-        # omitted primitive would answer None, not fail (BE-030).
+        # omitted primitive would answer None, not fail (BE-030). `probe`'s
+        # body is its exemption from probing (PING-008): inheriting it is not
+        # an omission, but a structural driver has nothing to inherit.
         own = getattr(driver, member, None)
-        if own is None or getattr(own, "__func__", own) is body:
+        if own is None or (member != "probe" and getattr(own, "__func__", own) is body):
             msg = f"driver {driver.name!r} does not implement required primitive {member!r}"
             raise ValueError(msg)
 
 
-# The protocol's required primitives and their own bodies; `probe`'s body is its
-# exemption from probing (PING-008), so inheriting it is not an omission.
-_REQUIRED_BODIES = {
-    name: body
-    for name, body in vars(AsyncDriver).items()
-    if callable(body) and not name.startswith("_") and name != "probe"
+# The protocol's primitives and their own bodies.
+_PRIMITIVE_BODIES = {
+    name: body for name, body in vars(AsyncDriver).items() if callable(body) and not name.startswith("_")
 }
 
 

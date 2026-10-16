@@ -24,10 +24,10 @@ T = TypeVar("T")
 class Driver(Protocol):
     """The fourteen primitives and the six declared attributes.
 
-    Thirteen primitives are required: construction refuses a driver that lacks
-    one or inherits this protocol's empty body for it, which would answer
-    ``None`` instead of acting. ``probe`` alone may be inherited, its body being
-    the exemption from probing.
+    All fourteen are required: construction refuses a driver that lacks one, or
+    inherits this protocol's empty body for one, which would answer ``None``
+    instead of acting. ``probe`` alone may be inherited, its body being the
+    exemption from probing.
 
     Two more attributes are optional and read with defaults: ``stream_catch``,
     the exception types a stream from ``get`` raises beyond ``OSError`` and
