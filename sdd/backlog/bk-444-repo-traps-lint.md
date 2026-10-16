@@ -133,5 +133,7 @@ accepts for a single-pass script). It is wired into `lint` in `pyproject.toml`.
 - Rule 1 skips `sdd/decisions/`, the one exemption the plan's "No exemption list" did not
   foresee: `scripts/record_decision.py` stores dialog payloads with `ensure_ascii=False`, so a
   log may hold a raw U+2028 that no edit may remove. Decision in the same log.
+- Rule 2 also fails a `newline` keyword or fourth positional that is a constant other than
+  `"\n"` or `""`: `newline=None` is the default, which still writes CRLF (PR #1152 review).
 
 Step 4's rule named the same 10 aliases the substring test above did.

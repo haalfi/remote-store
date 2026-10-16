@@ -117,3 +117,8 @@ phases:
         read_type: verify
         extract: "PR #1152 review round 4: fnmatch let `*` cross `/` and missed `**/` at the root, so an anchored binary line could shrink rule 1 silently; a git-rule translator now matches what `git check-attr` reports for the four fixture patterns (tmp/git_attr_truth.py). The dossier's departure count was replaced by the list it counted"
         outcome: ok
+      - file: scripts/check_repo_traps.py
+        section: "scan_write_text; _bracket_class"
+        read_type: verify
+        extract: "PR #1152 review round 5: rule 2 accepted newline=None, the CRLF-writing default, and _attr_regex copied [!x] and POSIX classes verbatim. Rule 2 now fails a constant other than LF or empty; brackets negate on ! or ^ and map POSIX classes, matching git check-attr (tmp/git_attr_brackets.py); an unknown class fails at .gitattributes"
+        outcome: ok

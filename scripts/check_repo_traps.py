@@ -35,9 +35,11 @@ What the rules do not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   removing the character, because ``\\N{…}`` is not an escape there.
 - Rule 2 reads ``scripts/**/*.py`` only (widening ruff's scope to ``sdd/*.py``
   is BUG-327's decision). It checks calls of an attribute named
-  ``write_text``; ``open(..., "w")`` and ``Path.open("w")`` are not checked. A
-  call that passes ``**kwargs`` or a fourth positional argument is taken to
-  pass ``newline``. It requires the keyword on every call, also on an
+  ``write_text``; ``open(..., "w")`` and ``Path.open("w")`` are not checked.
+  A ``newline`` keyword or fourth positional argument passes when it is
+  ``"\\n"`` or ``""``, or when it is not a constant (its value is not
+  inspected); ``None``, the default, and any other constant fail. A call that
+  passes ``**kwargs`` is taken to pass ``newline``. It requires the keyword on every call, also on an
   untracked target or one-line content, so it never has to guess what a path
   resolves to.
 - Rule 3 reads string entries of ``[tool.hatch.envs.*.scripts]`` whose whole
@@ -62,7 +64,8 @@ Drift-gate::
 Drift-gate::
 
     kind:       rule
-    rule: every write_text call under scripts/ passes newline=
+    rule: every write_text call under scripts/ passes newline= as LF or the empty
+        string, never the CRLF-writing default None
     domain:     realization
 
 Drift-gate::
@@ -174,13 +177,55 @@ def binary_patterns(root: Path) -> list[str]:
     return patterns
 
 
+# The POSIX classes git's wildmatch accepts inside `[...]`, as regex set members.
+_POSIX_CLASSES: dict[str, str] = {
+    "alnum": "a-zA-Z0-9",
+    "alpha": "a-zA-Z",
+    "blank": " \\t",
+    "cntrl": "\\x00-\\x1f\\x7f",
+    "digit": "0-9",
+    "graph": "!-~",
+    "lower": "a-z",
+    "print": " -~",
+    "punct": "!-/:-@\\[-`{-~",
+    "space": " \\t\\n\\r\\f\\v",
+    "upper": "A-Z",
+    "xdigit": "0-9A-Fa-f",
+}
+
+
+def _bracket_class(pattern: str, start: int) -> tuple[str, int] | None:
+    """Translate the ``[...]`` opening at *start*; None when it never closes (a literal ``[``)."""
+    i = start + 1
+    negated = i < len(pattern) and pattern[i] in "!^"
+    i += negated
+    members: list[str] = []
+    while i < len(pattern):
+        ch = pattern[i]
+        if ch == "]" and members:
+            # A negated class never matches "/", as in git.
+            return "[" + ("^/" if negated else "") + "".join(members) + "]", i + 1
+        if pattern.startswith("[:", i) and (end := pattern.find(":]", i + 2)) != -1:
+            name = pattern[i + 2 : end]
+            if name not in _POSIX_CLASSES:
+                raise ValueError(f"unknown POSIX class [:{name}:]")
+            members.append(_POSIX_CLASSES[name])
+            i = end + 2
+            continue
+        members.append("-" if ch == "-" else re.escape(ch))
+        i += 1
+    return None
+
+
 def _attr_regex(pattern: str) -> re.Pattern[str]:
     """Translate one ``.gitattributes`` pattern into git's matching rules.
 
     Not ``fnmatch``: its ``*`` crosses ``/`` and its ``**/`` misses the root, so
     an anchored ``binary`` line would silently skip files git still scans.
     ``*`` and ``?`` stay inside one path segment; ``**/``, ``/**/`` and a
-    trailing ``/**`` span any number of segments; ``[...]`` is copied as a class.
+    trailing ``/**`` span any number of segments; a ``[...]`` class is negated
+    by a leading ``!`` or ``^`` and may hold the POSIX classes in
+    ``_POSIX_CLASSES``. Raises ``ValueError`` on any other ``[:name:]``.
     """
     out: list[str] = []
     i = 0
@@ -197,10 +242,9 @@ def _attr_regex(pattern: str) -> re.Pattern[str]:
         elif pattern[i] == "?":
             out.append("[^/]")
             i += 1
-        elif pattern[i] == "[" and "]" in pattern[i + 1 :]:
-            end = pattern.index("]", i + 1)
-            out.append(pattern[i : end + 1])
-            i = end + 1
+        elif pattern[i] == "[" and (bracket := _bracket_class(pattern, i)) is not None:
+            regex, i = bracket
+            out.append(regex)
         else:
             out.append(re.escape(pattern[i]))
             i += 1
@@ -227,8 +271,14 @@ def listed_files(root: Path) -> list[str]:
 
 def check_invisible(root: Path, files: list[str]) -> list[Violation]:
     """Rule 1 over *files* (repo-relative), skipping binary and non-UTF-8 ones."""
-    patterns = [("/" in p, _attr_regex(p.lstrip("/"))) for p in binary_patterns(root)]
+    patterns: list[tuple[bool, re.Pattern[str]]] = []
     found: list[Violation] = []
+    for p in binary_patterns(root):
+        try:
+            patterns.append(("/" in p, _attr_regex(p.lstrip("/"))))
+        except ValueError as exc:
+            # Fail loudly: a pattern skipped on a guess would shrink rule 1 silently.
+            found.append(Violation(".gitattributes", f"binary pattern {p!r}: {exc}; extend _POSIX_CLASSES"))
     for rel in files:
         if rel.startswith(_RECORD_DIRS) or _is_binary(rel, patterns):
             continue
@@ -245,7 +295,7 @@ def check_invisible(root: Path, files: list[str]) -> list[Violation]:
 
 
 def scan_write_text(source: str, rel: str) -> list[Violation]:
-    """Return one violation per ``.write_text(`` call in *source* that passes no ``newline``."""
+    """Return one violation per ``.write_text(`` call in *source* whose ``newline`` can write CRLF."""
     found: list[Violation] = []
     for node in ast.walk(ast.parse(source, filename=rel)):
         if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)):
@@ -253,12 +303,17 @@ def scan_write_text(source: str, rel: str) -> list[Violation]:
         if node.func.attr != "write_text":
             continue
         # `newline` is Path.write_text's fourth parameter; `**kw` may carry it.
-        if len(node.args) >= 4 or any(k.arg in ("newline", None) for k in node.keywords):
+        if any(k.arg is None for k in node.keywords):
+            continue
+        given = [k.value for k in node.keywords if k.arg == "newline"] + node.args[3:4]
+        # None is the default and translates "\n" to os.linesep; only "\n" and ""
+        # write LF. A non-constant value is not inspected.
+        if given and not (isinstance(given[0], ast.Constant) and given[0].value not in ("\n", "")):
             continue
         found.append(
             Violation(
                 f"{rel}:{node.lineno}",
-                'write_text without newline=; pass newline="\\n" so Windows does not write CRLF',
+                'write_text without newline="\\n"; pass it so Windows does not write CRLF',
             )
         )
     return found
@@ -320,7 +375,7 @@ def main(root: Path = ROOT) -> int:
     """Run the three rules; return 0 when clean, 1 when any fails."""
     rules = (
         ("invisible characters", check_invisible(root, listed_files(root))),
-        ("write_text without newline=", check_write_text(root)),
+        ("write_text that can write CRLF", check_write_text(root)),
         ("hatch alias without {args}", check_hatch_args(root)),
     )
     failed = False

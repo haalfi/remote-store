@@ -116,6 +116,29 @@ class TestCheckInvisible:
         found = _mod.check_invisible(tmp_path, [skipped, scanned])
         assert [v.location for v in found] == [f"{scanned}:1:2"]
 
+    @pytest.mark.parametrize(
+        ("pattern", "skipped", "scanned"),
+        [
+            ("*.[!t]xt", "a.bxt", "a.txt"),  # git negates with `!`
+            ("*.[^t]xt", "a.bxt", "a.txt"),  # and with `^`
+            ("*.[[:digit:]]", "a.1", "a.x"),
+        ],
+        ids=["bang-negates", "caret-negates", "posix-class"],
+    )
+    def test_bracket_classes_match_as_git_does(self, tmp_path, pattern, skipped, scanned):
+        (tmp_path / ".gitattributes").write_text(f"{pattern} binary\n", encoding="utf-8")
+        for rel in (skipped, scanned):
+            (tmp_path / rel).write_text(f"x{ZWSP}\n", encoding="utf-8")
+        found = _mod.check_invisible(tmp_path, [skipped, scanned])
+        assert [v.location for v in found] == [f"{scanned}:1:2"]
+
+    def test_untranslatable_bracket_class_fails_instead_of_skipping(self, tmp_path):
+        (tmp_path / ".gitattributes").write_text("*.[[:nope:]] binary\n", encoding="utf-8")
+        (tmp_path / "a.1").write_text(f"x{ZWSP}\n", encoding="utf-8")
+        found = _mod.check_invisible(tmp_path, ["a.1"])
+        assert [v.location for v in found] == [".gitattributes", "a.1:1:2"]
+        assert "*.[[:nope:]]" in found[0].message
+
     def test_binary_patterns_ignore_comments_and_text_rules(self, tmp_path):
         (tmp_path / ".gitattributes").write_text("# *.md binary\n* text=auto\n*.ico binary\n", encoding="utf-8")
         assert _mod.binary_patterns(tmp_path) == ["*.ico"]
@@ -151,11 +174,29 @@ class TestScanWriteText:
 
     @pytest.mark.parametrize(
         "src",
-        ['p.write_text(s, "utf-8", None, "\\n")\n', "p.write_text(s, **kw)\n"],
-        ids=["fourth-positional", "double-star"],
+        [
+            'p.write_text(s, "utf-8", None, "\\n")\n',
+            "p.write_text(s, **kw)\n",
+            'p.write_text(s, newline="")\n',
+            "p.write_text(s, newline=nl)\n",
+        ],
+        ids=["fourth-positional", "double-star", "empty-string", "non-constant-is-a-bound"],
     )
     def test_newline_passed_another_way_is_accepted(self, src):
         assert _mod.scan_write_text(src, "s.py") == []
+
+    @pytest.mark.parametrize(
+        "src",
+        [
+            "p.write_text(s, newline=None)\n",
+            'p.write_text(s, newline="\\r\\n")\n',
+            'p.write_text(s, "utf-8", None, None)\n',
+        ],
+        ids=["none-is-the-default", "crlf", "fourth-positional-none"],
+    )
+    def test_newline_that_still_writes_crlf_fails(self, src):
+        [v] = _mod.scan_write_text(src, "s.py")
+        assert v.location == "s.py:1"
 
     @pytest.mark.parametrize(
         "src",
@@ -255,7 +296,7 @@ class TestMain:
         assert _mod.main(root) == 1
         err = capsys.readouterr().err
         assert "1 invisible characters found" in err
-        assert "1 write_text without newline= found" in err
+        assert "1 write_text that can write CRLF found" in err
         assert "1 hatch alias without {args} found" in err
 
     def test_real_repo_is_clean(self, capsys):
