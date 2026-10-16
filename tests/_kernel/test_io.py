@@ -354,6 +354,44 @@ def test_a_sized_read_is_forwarded_as_it_is(size: int) -> None:
     assert source.sizes == [size]
 
 
+class _NamedSize(io.BytesIO):
+    """A stream whose ``read`` names its size ``n``, not ``size``."""
+
+    def __init__(self, data: bytes) -> None:
+        super().__init__(data)
+        self.sizes: list[object] = []
+
+    def read(self, n: int | None = -1) -> bytes:  # type: ignore[override]
+        self.sizes.append(n)
+        return super().read(n)
+
+
+@pytest.mark.spec("BE-030")
+def test_a_size_under_the_streams_own_keyword_is_forwarded_as_it_is() -> None:
+    # Only a size the proxy can read as unsized is read in full; any other keyword is the stream's.
+    source = _NamedSize(b"abcdef")
+    assert sync_io.guard_content(source).read(n=3) == b"abc"  # type: ignore[union-attr,call-arg]
+    assert source.sizes == [3]
+
+
+@pytest.mark.spec("BE-030")
+def test_an_unsized_read_holds_the_content_about_once() -> None:
+    # A native read() of a file peaks at about 1x its size; collecting chunks and
+    # joining them held it twice.
+    import tracemalloc
+
+    data = b"x" * (16 * sync_io._CHUNK)
+    guarded = sync_io.guard_content(io.BytesIO(data))
+    tracemalloc.start()
+    try:
+        answer = guarded.read()  # type: ignore[union-attr]
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert answer == data
+    assert peak < 1.5 * len(data)
+
+
 @pytest.mark.spec("ASYNC-091")
 def test_an_attribute_the_stream_lacks_is_not_marked_as_the_callers() -> None:
     guarded = sync_io.guard_content(_ReadOnlySource(b"ab"))  # type: ignore[arg-type]

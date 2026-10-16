@@ -1111,7 +1111,6 @@ def _validate_metadata(metadata: Mapping[str, str] | None) -> None:
         msg = f"metadata must be a mapping, not {type(metadata).__name__}"
         raise ValueError(msg)
     total = 0
-    total = 0
     for key, value in metadata.items():
         if not isinstance(key, str):
             msg = f"metadata key must be a str, got {type(key).__name__}: {key!r}"

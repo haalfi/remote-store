@@ -7,6 +7,7 @@ imports the driver module, which imports them.
 
 from __future__ import annotations
 
+import io
 from typing import TYPE_CHECKING, BinaryIO, Protocol, cast
 
 if TYPE_CHECKING:
@@ -166,8 +167,13 @@ class _MarkedReader:
         return marked
 
     def _read_whole(self) -> bytes:
-        """The rest of the stream, by checked sized reads until one answers empty."""
-        chunks: list[bytes] = []
+        """The rest of the stream, by checked sized reads until one answers empty.
+
+        Collected in a ``BytesIO``, whose ``getvalue`` hands over its buffer
+        rather than copying it, so the content is held about once, as a
+        native ``read()`` holds it, not twice as a join of chunks would.
+        """
+        whole = io.BytesIO()
         while True:
             try:
                 answer = self._stream.read(_CHUNK)
@@ -176,13 +182,23 @@ class _MarkedReader:
                 raise
             chunk = cast("bytes", _binary(answer, self._stream))
             if not chunk:
-                return b"".join(chunks)
-            chunks.append(chunk)
+                return whole.getvalue()
+            whole.write(chunk)
 
 
 def _unsized(args: tuple[object, ...], kwargs: dict[str, object]) -> bool:
-    """Whether a ``read`` call asks for everything: no size, ``None`` or a negative one."""
-    size = args[0] if args else kwargs.get("size", -1)
+    """Whether a ``read`` call asks for everything: no size, ``None`` or a negative one.
+
+    A keyword other than ``size`` is the stream's own, so the call is forwarded.
+    """
+    if args:
+        size = args[0]
+    elif kwargs:
+        if set(kwargs) != {"size"}:
+            return False
+        size = kwargs["size"]
+    else:
+        return True
     return size is None or (isinstance(size, int) and size < 0)
 
 
