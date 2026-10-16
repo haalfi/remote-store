@@ -36,9 +36,9 @@
 //   for the reference implementation but NOT enforced by the abstract
 //   contract. See gap coverage table in README.  The exception (BK-388)
 //   is a frame keyed on the pre-state rather than on `r`: the closed
-//   guard (`!old(Live())`) and the BE-029 root refusals state
-//   `fs == old(fs)` directly, since those errors are decided before any
-//   effect.
+//   guard (`!old(Live())`), the BE-029 root refusals and `Write`'s
+//   WR-010 metadata gate state `fs == old(fs)` directly, since those
+//   errors are decided before any effect.
 // - Happy-path postconditions use `ensures <preconditions> ==> r.Ok?`
 //   to mandate success when no error condition applies.
 

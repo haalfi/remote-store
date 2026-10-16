@@ -1508,19 +1508,31 @@ _WRITE_ROUTES = {
 @pytest.mark.spec("BE-008", "MEM-020")
 @pytest.mark.parametrize("route", sorted(_WRITE_ROUTES))
 @pytest.mark.parametrize("content", [bytearray(b"abc"), memoryview(b"aXbXc")[::2]], ids=["bytearray", "memoryview"])
-def test_a_buffer_reaches_the_driver_as_bytes(runtime: str, route: str, content: Any) -> None:
+def test_a_buffer_reaches_the_driver_as_bytes(
+    runtime: str, route: str, content: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tests._kernel import _fake
+
     run = make_kernel(runtime, FakeStore(), **_WRITE_ROUTES[route])
     seen: list[type] = []
     put = run.driver.put
+    handle_write = _fake._Handle.write  # the async handle delegates to it
 
     def spy(key: str, data: Any, **kwargs: Any) -> Any:
         seen.append(type(data))
         return put(key, data, **kwargs)
 
+    def handle_spy(self: Any, data: Any) -> None:
+        seen.append(type(data))
+        handle_write(self, data)
+
     run.driver.put = spy
+    monkeypatch.setattr(_fake._Handle, "write", handle_spy)
     method = "write" if route == "write" else "write_atomic"
     getattr(run, method)("d/f", content)
     assert run.store.files["d/f"].data == b"abc"
+    # Every route hands the driver something, by put or by its handle; each is bytes.
+    assert seen
     assert all(t is bytes for t in seen)
 
 

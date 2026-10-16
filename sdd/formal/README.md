@@ -491,7 +491,7 @@ small, stable, and maintainable:
   returns. `MemoryBackend` preserves `fs` on error paths by
   construction instead. The exception is a frame keyed on the pre-state
   rather than on `r`: the closed-guard and root-refusal frames of gaps 9
-  and 10 are stated and verified.
+  and 10, and `Write`'s WR-010 gate, are stated and verified.
 
 <a id="compiled-oracle"></a>
 ### Compiled oracle as conformance gate
@@ -691,8 +691,10 @@ Error-path frame conditions (gaps 1–2: `fs == old(fs)` on error) are
 not machine-checked — the `r.Err?` discriminator taints method bodies
 as specification-only in Dafny, preventing compiled assignments and
 returns. `MemoryBackend` preserves the state by construction instead.
-Gaps 9 and 10 are the exception: their frames key on the pre-state
-(`!old(Live())`, `AddressesRoot`), not on `r`, and are verified.
+Gaps 9 and 10, and `Write`'s WR-010 gate, are the exception: their
+frames key on the pre-state (`!old(Live())`, `AddressesRoot`,
+`HasUserMetadata(metadata) && CapUserMetadata !in capabilities`), not on
+`r`, and are verified.
 
 ### TLA+: the WR-018 bundling finding
 

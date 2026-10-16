@@ -1452,8 +1452,10 @@ a `bytes` copy, and so does a buffer a content stream (or, async, its iterator)
 yields. Content that is no bytes source, neither a buffer nor a readable stream
 (async: an async iterator), is refused with `TypeError` after WR-010's gate and
 before any I/O; a stream that yields something not binary raises `TypeError`
-as the caller's own error, passed through verbatim like ASYNC-091's, never
-answered from the target.
+when read, as the caller's own error, passed through verbatim like
+ASYNC-091's and never classified. A check on the target made before the
+stream is read answers first, such as `write_atomic`'s `stat` by temp and
+rename without `overwrite`.
 
 **What a key resolves to** is [BE-032](#be-032-the-store-tree-on-the-kernel)'s
 answer, for every call below: the tree's `Item`, `Folder` or `Nothing` (A.1),

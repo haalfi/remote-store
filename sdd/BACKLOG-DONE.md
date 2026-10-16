@@ -321,8 +321,7 @@ if evidence changes; these are retired.
   content stream yields; content that is no bytes source is a `TypeError`
   after WR-010's gate and before any I/O, and a stream yielding non-bytes, or
   raising an exception whose class refuses new attributes, is the caller's
-  error passed through verbatim. No such write is answered from the target
-  any more. Public `WritableContent` is unchanged. Spec 003 BE-030 § Content,
+  error passed through verbatim. None of them reaches `classify`. Public `WritableContent` is unchanged. Spec 003 BE-030 § Content,
   MEM-020. Trace: [bk-441](traces/bk-441-memory-driver-template.yml).
 
 - [x] **BK-440 — `BackendContract.dfy`'s `Write` ranks WR-010's metadata gate below the type and overwrite checks the kernel answers after it**

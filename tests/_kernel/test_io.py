@@ -133,6 +133,47 @@ def test_the_guarded_stream_offers_no_special_method_it_cannot_serve(name: str) 
     assert not hasattr(guarded, name)
 
 
+def _answering(chunk: object) -> io.BytesIO:
+    """A stream whose every bytes-answering read, iteration included, answers *chunk*."""
+
+    class _Answers(io.BytesIO):
+        def _answer(self, *args: object) -> object:
+            return chunk
+
+        read = read1 = readall = readline = peek = __next__ = _answer  # type: ignore[assignment]
+
+    return _Answers(b"x")
+
+
+def _read_by(guarded: object, name: str) -> object:
+    if name == "__next__":
+        return next(guarded)  # type: ignore[call-overload]
+    if name == "__iter__":
+        return next(iter(guarded))  # type: ignore[call-overload]
+    return getattr(guarded, name)()
+
+
+_BYTE_READS = ["read", "read1", "readall", "readline", "peek", "__next__", "__iter__"]
+
+
+@pytest.mark.spec("BE-008", "MEM-020")
+@pytest.mark.parametrize("name", _BYTE_READS)
+@pytest.mark.parametrize("chunk", [bytearray(b"ab"), memoryview(b"aXb")[::2]], ids=["bytearray", "memoryview"])
+def test_a_buffer_a_read_answers_reaches_the_driver_as_bytes(name: str, chunk: object) -> None:
+    answer = _read_by(sync_io.guard_content(_answering(chunk)), name)
+    assert type(answer) is bytes
+    assert answer == b"ab"
+
+
+@pytest.mark.spec("BE-008", "MEM-020", "ASYNC-091")
+@pytest.mark.parametrize("name", _BYTE_READS)
+@pytest.mark.parametrize("chunk", ["ab", 3], ids=["str", "int"])
+def test_a_read_answering_non_bytes_is_the_callers_type_error(name: str, chunk: object) -> None:
+    with pytest.raises(TypeError, match="not bytes") as caught:
+        _read_by(sync_io.guard_content(_answering(chunk)), name)
+    assert sync_io.from_content(caught.value)
+
+
 @pytest.mark.spec("ASYNC-091")
 def test_an_attribute_the_stream_lacks_is_not_marked_as_the_callers() -> None:
     guarded = sync_io.guard_content(_ReadOnlySource(b"ab"))  # type: ignore[arg-type]
