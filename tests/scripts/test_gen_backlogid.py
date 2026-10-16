@@ -173,7 +173,8 @@ class TestMain:
         assert "--remote" in out
         assert json.loads(id_file.read_text(encoding="utf-8")) == {"sentinel": 1}
 
-    @pytest.mark.parametrize("arg", ["--chek", "check"])
+    # `--che` and `--rem` are unambiguous prefixes argparse would accept by default.
+    @pytest.mark.parametrize("arg", ["--chek", "check", "--che", "--rem"])
     def test_an_unknown_argument_is_refused_and_writes_nothing(self, tmp_path, monkeypatch, capsys, arg):
         id_file = self._sentinel(tmp_path, monkeypatch, arg)
         with pytest.raises(SystemExit) as exc:

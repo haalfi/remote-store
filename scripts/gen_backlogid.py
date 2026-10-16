@@ -3,8 +3,9 @@
 
 Normal mode (no flag):
     Scans BACKLOG-DONE.md, writes sdd/backlogid.json, and prints "Updated"
-    only when the content changed ("is current" otherwise). Any argument other
-    than ``--check`` and ``--remote`` is refused before anything is written.
+    only when the content changed ("is current" otherwise). ``--help``/``-h``
+    prints usage; any argument other than those, ``--check`` and ``--remote``,
+    spelled exactly, exits 2 before anything is written.
     Run after moving items to BACKLOG-DONE.md: hatch run gen-backlogid.
 
 Check mode (--check):
@@ -600,7 +601,8 @@ def main() -> int:
     # argparse rejects what it does not know: a bare membership test let
     # `--help` or a typo fall through to generate mode and rewrite the JSON (BUG-332).
     parser = argparse.ArgumentParser(
-        description="Write sdd/backlogid.json from BACKLOG-DONE.md, or check it. Modes and rules: the module docstring."
+        allow_abbrev=False,  # `--che` is refused, not read as `--check`
+        description="Write sdd/backlogid.json from BACKLOG-DONE.md, or check it. Modes and rules: module docstring.",
     )
     parser.add_argument("--check", action="store_true", help="read-only, offline validation; writes nothing")
     parser.add_argument("--remote", action="store_true", help="with --check: compare against pushed origin branches")
