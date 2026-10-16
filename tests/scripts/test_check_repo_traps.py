@@ -50,6 +50,13 @@ class TestScanInvisible:
         assert "U+2028 LINE SEPARATOR" in v.message
         assert "\\N{LINE SEPARATOR}" in v.message
 
+    def test_non_python_file_is_not_told_to_use_a_python_escape(self):
+        # `\N{…}` is an escape only in a Python string; in Markdown it is literal text.
+        [v] = _mod.scan_invisible(f"a{NBSP}b\n", "docs/page.md")
+        assert "U+00A0 NO-BREAK SPACE" in v.message
+        assert "\\N{" not in v.message
+        assert "remove it" in v.message
+
     def test_line_numbers_after_a_line_separator_are_not_shifted(self):
         # str.splitlines would split on U+2028 and report the NBSP on line 3.
         found = _mod.scan_invisible(f"a{LS}b\nc{NBSP}\n", "t.py")

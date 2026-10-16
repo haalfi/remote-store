@@ -302,8 +302,8 @@ if evidence changes; these are retired.
   spec: — · effort: S · audience: contributor.tooling, internal.style
   `scripts/check_repo_traps.py`, in `lint` and `docs-gate`, refuses 21 invisible code points in
   every file git lists, a `write_text` under `scripts/` without `newline=`, and a bare hatch alias
-  dropping `{args}` for a script that takes options. It fixed the 2 invisible-character hits, the
-  14 calls and the 10 aliases it found. Pinned by `tests/scripts/test_check_repo_traps.py`.
+  dropping `{args}` for a script that takes options. It fixed what it found: 3 invisible characters
+  on 2 lines, 14 calls and 10 aliases. Pinned by `tests/scripts/test_check_repo_traps.py`.
   Detail: [dossier](backlog/bk-444-repo-traps-lint.md). Trace: [bk-444](traces/bk-444-repo-traps-lint.yml).
 - [x] **BUG-329 — Metadata that is not a mapping, passed straight to a kernel class, fails inside `put` or is stored as a dict**
   spec: WR-010, BE-030, MEM-020 · effort: S · audience: user.api

@@ -96,3 +96,11 @@ phases:
         read_type: verify
         extract: "DRIFT-RULES applied; the new test exercises no OS-specific code, so no os_sensitive mark"
         outcome: ok
+  - id: fix
+    name: Fix review findings
+    steps:
+      - file: scripts/check_repo_traps.py
+        section: "scan_invisible; module docstring bounds"
+        read_type: verify
+        extract: "PR #1152 review: rule 1 offered the Python-only \\N{...} remedy for every file type. I carried the plan's .py-shaped wording over to a rule that reads all of git ls-files; the message now names \\N{...} for .py files only"
+        outcome: ok

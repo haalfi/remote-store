@@ -126,4 +126,6 @@ accepts for a single-pass script). It is wired into `lint` in `pyproject.toml`.
 is checked before its first `git add`. The script is also wired into `docs-gate` as
 `check-repo-traps` (decision in `sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl`):
 rule 1 reads `sdd/` and `docs-src/`, which reach CI through `DOCS_PAT` alone. Step 4's rule
-named the same 10 aliases the substring test above did.
+named the same 10 aliases the substring test above did. Rule 1 names the `\N{…}` spelling for a
+`.py` file only; in any other file `\N{…}` is not an escape, so the message says to remove the
+character (PR #1152 review).

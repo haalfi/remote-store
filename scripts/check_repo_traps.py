@@ -26,8 +26,10 @@ What the rules do not catch (``sdd/DRIFT-RULES.md`` Rule 7):
 - Rule 1 reads the files ``git ls-files --cached --others --exclude-standard``
   lists, so an ignored file is out of reach. It skips a file that does not
   decode as UTF-8 and every path a ``binary`` pattern in ``.gitattributes``
-  matches. It has no exemption list: a character a file needs is spelled as a
-  named escape, which reads the same to Python and is visible to a reviewer.
+  matches. It has no exemption list: in a Python file, a character the code
+  needs is spelled as a named escape, which reads the same to Python and is
+  visible to a reviewer. In any other file the only remedy it offers is
+  removing the character, because ``\\N{…}`` is not an escape there.
 - Rule 2 reads ``scripts/**/*.py`` only (widening ruff's scope to ``sdd/*.py``
   is BUG-327's decision). It checks calls of an attribute named
   ``write_text``; ``open(..., "w")`` and ``Path.open("w")`` are not checked. A
@@ -133,18 +135,16 @@ def _name(code_point: int) -> str:
 def scan_invisible(text: str, rel: str) -> list[Violation]:
     """Return one violation per refused code point in *text*, by line and column."""
     found: list[Violation] = []
+    python = rel.endswith(".py")
     # Split on "\n" alone: `str.splitlines` also breaks on U+2028 and U+2029,
     # which would shift every line number after the character being reported.
     for lineno, line in enumerate(text.split("\n"), 1):
         for col, ch in enumerate(line, 1):
             if ord(ch) in _INVISIBLE:
                 name = _name(ord(ch))
-                found.append(
-                    Violation(
-                        f"{rel}:{lineno}:{col}",
-                        f"U+{ord(ch):04X} {name}; write it as \\N{{{name}}} in a Python string, or remove it",
-                    )
-                )
+                # `\N{…}` is an escape only inside a Python string literal.
+                remedy = f"write it as \\N{{{name}}} in a Python string, or remove it" if python else "remove it"
+                found.append(Violation(f"{rel}:{lineno}:{col}", f"U+{ord(ch):04X} {name}; {remedy}"))
     return found
 
 
