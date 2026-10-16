@@ -10,6 +10,7 @@ import dataclasses
 import enum
 import logging
 import uuid
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Literal
 
 from remote_store._capabilities import Capability
@@ -44,7 +45,7 @@ from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult,
 from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterator
     from types import TracebackType
     from typing import TypeVar
 
@@ -794,7 +795,11 @@ class _KernelCore:
             )
 
     def _require_metadata(self, metadata: Mapping[str, str] | None, key: str) -> None:
-        # WR-010's strict gate, before any I/O; an empty mapping is a no-op.
+        # WR-010's strict gate, before any I/O; an empty mapping is a no-op. Shape
+        # comes first (WR-011): a value that is no mapping is refused whatever the
+        # class declares, a falsy one too, rather than failing inside put.
+        if metadata is not None and not isinstance(metadata, Mapping):
+            raise ValueError(f"metadata must be a mapping, not {type(metadata).__name__}")
         if metadata:
             self._require(Capability.USER_METADATA, key, "does not store user metadata")
 

@@ -946,6 +946,16 @@ class TestAsyncStoreMetadataGate:
         assert result.metadata == {"k": "v"}
 
     @pytest.mark.spec("WR-011")
+    @pytest.mark.parametrize("method", ["write", "write_atomic"])
+    @pytest.mark.parametrize("value", [5, [("k", "v")], []], ids=repr)
+    async def test_metadata_that_is_not_a_mapping_raises_value_error(
+        self, async_store: AsyncStore, method: str, value: object
+    ) -> None:
+        with pytest.raises(ValueError, match="must be a mapping"):
+            await getattr(async_store, method)("f.bin", b"x", metadata=value)
+        assert not await async_store.exists("f.bin")
+
+    @pytest.mark.spec("WR-011")
     async def test_write_invalid_metadata_raises_value_error(self, async_store: AsyncStore) -> None:
         with pytest.raises(ValueError, match="underscore"):
             await async_store.write("f.bin", b"x", metadata={"_bad": "v"})

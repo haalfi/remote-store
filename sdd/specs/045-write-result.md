@@ -325,6 +325,8 @@ This ordering means a malformed `metadata=` kwarg always surfaces as
 
 Validation rules:
 
+- `metadata` is `None` or a `Mapping`. Anything else, a falsy value such as
+  `[]` included, is a violation: it is never taken for the empty mapping.
 - Keys must be non-empty ASCII strings with no leading underscore.
 - Values must be strings.
 - `sum(len(k.encode("ascii")) + len(v.encode("utf-8")) for k, v in

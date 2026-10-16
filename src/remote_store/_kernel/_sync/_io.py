@@ -127,7 +127,10 @@ class _MarkedReader:
     and so is a ``readinto`` answer that is not a count or a ``readlines``
     answer that is not a list. Every ordinary attribute is the stream's own, so one the
     stream lacks is absent here too; a read among them is forwarded with its
-    failures marked. It
+    failures marked. An unsized ``read`` and ``readall`` are read here in sized
+    chunks instead: a raw stream's own ``readall`` stops at a ``None`` this
+    proxy would never see, so a driver reading in full would store a
+    truncated file. Line reads loop inside the stream and are not covered. It
     is a proxy, not an ``io.IOBase``: Python looks special methods up on the
     type, so none is forwarded (``hasattr`` would answer for an operation that
     fails), and iteration (as an iterator when the stream is one) and ``with``
@@ -147,6 +150,8 @@ class _MarkedReader:
             return attr
 
         def marked(*args: object, **kwargs: object) -> object:
+            if name == "readall" or (name == "read" and _unsized(args, kwargs)):
+                return self._read_whole()
             try:
                 answer = attr(*args, **kwargs)
             except Exception as exc:
@@ -159,6 +164,26 @@ class _MarkedReader:
             return _count(answer, self._stream)  # readinto, readinto1
 
         return marked
+
+    def _read_whole(self) -> bytes:
+        """The rest of the stream, by checked sized reads until one answers empty."""
+        chunks: list[bytes] = []
+        while True:
+            try:
+                answer = self._stream.read(_CHUNK)
+            except Exception as exc:
+                _mark(exc)
+                raise
+            chunk = cast("bytes", _binary(answer, self._stream))
+            if not chunk:
+                return b"".join(chunks)
+            chunks.append(chunk)
+
+
+def _unsized(args: tuple[object, ...], kwargs: dict[str, object]) -> bool:
+    """Whether a ``read`` call asks for everything: no size, ``None`` or a negative one."""
+    size = args[0] if args else kwargs.get("size", -1)
+    return size is None or (isinstance(size, int) and size < 0)
 
 
 class _MarkedIteration:

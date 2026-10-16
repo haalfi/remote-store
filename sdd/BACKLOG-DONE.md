@@ -298,6 +298,37 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-329 — Metadata that is not a mapping, passed straight to a kernel class, fails inside `put` or is stored as a dict**
+  spec: WR-010, BE-030, MEM-020 · effort: S · audience: user.api
+  `metadata` that is neither `None` nor a `Mapping`, a falsy one included, is a
+  `ValueError` ahead of the `USER_METADATA` check, in the kernel's WR-010 gate
+  (before any I/O, so no parent folder is made) and in `Store`'s validation,
+  which `AsyncStore` and `ext.write` share. Spec 003 BE-030, 045 WR-011, 013
+  MEM-020. Co-shipped: BUG-330, BUG-331, BUG-333. Trace:
+  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
+
+- [x] **BUG-330 — A sync stream read answering `None` through `AsyncBackendSyncAdapter` stores a truncated file**
+  spec: BE-030, ASYNC-091 · effort: S · audience: user.api
+  The adapter's stream bridge raises `TypeError` on a `None` read instead of
+  ending the upload, on `write` and `write_atomic`. Spec 029 ASYNC-091. Trace:
+  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
+
+- [x] **BUG-331 — A kernel driver that reads content with one unsized `read()` stores a truncated file from a non-blocking stream**
+  spec: BE-030 · effort: S · audience: library.maintainer, user.api_docs
+  The kernel's content proxy answers an unsized `read` and `readall` by
+  checked sized reads of the caller's stream, so a driver reading in full, the
+  guide's included, refuses a `None` mid-stream. Line reads stay outside the
+  guarantee, stated in BE-030 § Content. Trace:
+  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
+
+- [x] **BUG-333 — `open_atomic`'s spool refuses a strided `memoryview` that the handle route stores**
+  spec: SAW-013, BE-008 · effort: S · audience: user.api
+  Settled the other way: the kernel's handle-route stream refuses a buffer that
+  is not C-contiguous with `BufferError`, as the spool, `BytesIO` and
+  `open(..., "wb")` do (measured, 3.13), and as v0.33.0's `MemoryBackend`
+  `BytesIO` did. Spec 003 BE-030, 013 MEM-020. Trace:
+  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
+
 - [x] **BUG-332 — `gen_backlogid.py --help` regenerates `sdd/backlogid.json` instead of printing usage**
   spec: — · effort: S · audience: contributor.tooling
   `main()` parses with argparse: `--help` prints usage and an unknown argument, a prefix

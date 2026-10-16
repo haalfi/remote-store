@@ -795,10 +795,14 @@ async def _binaryio_to_async_iter(stream: BinaryIO) -> AsyncIterator[bytes]:
 
     Single-chunk in-flight: at most one pending ``to_thread`` at a time,
     no parallel pre-read.  The caller's blocking file object never
-    stalls the adapter's private event loop.
+    stalls the adapter's private event loop.  A ``None`` read, a
+    non-blocking stream's "no data yet", is a ``TypeError`` rather than
+    the end: taken for the end, it would store a truncated file.
     """
     while True:
         chunk = await asyncio.to_thread(stream.read, _WRITE_CHUNK_SIZE)
+        if chunk is None:
+            raise TypeError(f"content stream {type(stream).__name__} returned NoneType, not bytes")
         if not chunk:
             break
         yield chunk

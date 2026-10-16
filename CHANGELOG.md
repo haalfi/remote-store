@@ -7,6 +7,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-329: Metadata that is not a mapping, passed straight to a kernel class, fails inside `put` or is stored as a dict
+- BUG-330: A sync stream read answering `None` through `AsyncBackendSyncAdapter` stores a truncated file
+- BUG-331: A kernel driver that reads content with one unsized `read()` stores a truncated file from a non-blocking stream
+- BUG-333: `open_atomic`'s spool refuses a strided `memoryview` that the handle route stores
 - BK-441: A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing
 - BK-442: `from remote_store.drivers import Driver` imports the whole async package and its cloud SDKs
 - BUG-328: Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through, and the sync driver stores a truncated file from a stream whose read answers `None`

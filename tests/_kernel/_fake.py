@@ -619,6 +619,26 @@ def _flat_stat(driver: _SyncBase, entry: Entry | None) -> Entry | None:
     return entry
 
 
+class NonBlockingRaw(io.RawIOBase):
+    """A caller's non-blocking raw stream: ``readinto`` answers ``b"ab"``, ``None`` (no data yet), ``b"c"``.
+
+    Its own unsized ``read()`` is ``readall``, which stops at the ``None`` and answers ``b"ab"``.
+    """
+
+    def __init__(self) -> None:
+        self._answers: list[bytes | None] = [b"ab", None, b"c"]
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, buffer: Any) -> int | None:  # type: ignore[override]
+        answer = self._answers.pop(0) if self._answers else b""
+        if answer is None:
+            return None
+        buffer[: len(answer)] = answer
+        return len(answer)
+
+
 class _FaultyStream(io.BytesIO):
     """A read stream that raises an injected fault from ``stream.read``."""
 

@@ -205,6 +205,17 @@ def test_async_buffer_chunks_are_stored_as_their_bytes() -> None:
     assert _run(backend.read_bytes("f")) == b"abc"
 
 
+@pytest.mark.spec("MEM-020", "SAW-013")
+def test_open_atomic_refuses_a_non_contiguous_buffer_as_a_file_does() -> None:
+    backend = MemoryBackend()
+    with pytest.raises(BufferError), backend.open_atomic("f") as stream:
+        stream.write(memoryview(b"aXbXc")[::2])
+    assert not backend.exists("f")
+    with backend.open_atomic("f") as stream:
+        stream.write(memoryview(b"abc"))
+    assert backend.read_bytes("f") == b"abc"
+
+
 @pytest.mark.spec("MEM-020")
 def test_the_caller_can_reuse_a_bytearray_after_the_write() -> None:
     # The stored value is a copy: mutating the caller's buffer later changes nothing.

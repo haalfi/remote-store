@@ -162,8 +162,13 @@ class _HandleStream(io.RawIOBase):
     def write(self, data: bytes | bytearray | memoryview) -> int:  # type: ignore[override]
         self._checkClosed()
         # memoryview refuses what is not a buffer (an int, a list, a str) with TypeError,
-        # where bytes() would turn an int into that many NUL bytes.
-        chunk = memoryview(data).tobytes()
+        # where bytes() would turn an int into that many NUL bytes. A buffer that is not
+        # C-contiguous is refused as Python's own binary files refuse it, so this route
+        # and the spool route answer alike.
+        view = memoryview(data)
+        if not view.c_contiguous:
+            raise BufferError("memoryview: underlying buffer is not C-contiguous")
+        chunk = view.tobytes()
         with self._core._choke(Op.OPEN_ATOMIC, self._key):
             self._handle.write(chunk)
         self._pos += len(chunk)

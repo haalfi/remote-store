@@ -656,6 +656,9 @@ adapter performs no rollback of its own.  For `write_atomic()` on a
 backend with `ATOMIC_WRITE`, the destination `path` is untouched on
 failure; for `write()`, whatever bytes reached the backend before the
 exception are visible per that backend's non-atomic write semantics.
+A `read()` answering `None`, a non-blocking stream's "no data yet", is a
+`TypeError` the adapter raises into the upload, rather than the end of a
+stream it would store truncated (BE-030 § Content).
 **On the kernel:** a class on the contract kernel, sync or async, passes an
 error raised by the caller's own content through its choke point verbatim on
 `write` and `write_atomic`, neither classified nor retyped, so the wrapped

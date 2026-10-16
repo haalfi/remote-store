@@ -1,0 +1,135 @@
+id: BUG-329
+title: "Content and metadata shapes the kernel and its neighbours pass on unchecked"
+trigger: >-
+  PR #1148 (BUG-328, BK-441) made the kernel convert or refuse a caller's
+  content before any driver sees it, and filed four siblings it left open:
+  metadata that is not a mapping (BUG-329), a None read through the sync
+  adapter (BUG-330), an unsized read() that stops at a None the proxy never
+  sees (BUG-331), and open_atomic's two routes disagreeing on a strided
+  memoryview (BUG-333).
+source_items:
+  - BUG-329
+  - BUG-330
+  - BUG-331
+  - BUG-333
+audience:
+  - user.api
+  - user.api_docs
+  - library.maintainer
+expected_ripples:
+  - src/remote_store/_kernel/_async/kernel.py
+  - src/remote_store/_kernel/_sync/kernel.py
+  - src/remote_store/_kernel/_sync/_io.py
+  - src/remote_store/_kernel/backend.py
+  - src/remote_store/_async_to_sync_adapter.py
+  - src/remote_store/_store.py
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/specs/045-write-result.md
+surprising_ripples:
+  - src/remote_store/backends/_memory.py
+  - src/remote_store/aio/backends/_memory.py
+  - sdd/specs/013-memory-backend.md
+  - sdd/specs/029-async-store-backend-api.md
+  - tests/test_snippets.py
+  - tests/_kernel/test_io.py
+co_shipped_items:
+  - BUG-330
+  - BUG-331
+  - BUG-333
+decisions:
+  - sdd/decisions/ee2d43c1-b4b5-42ae-9965-fdf1c37ba43a.jsonl
+orient:
+  - items: [BUG-329, BUG-330, BUG-331, BUG-333]
+    verdict: subsumes
+    evidence: >-
+      All four are discovery_followups of PR #1148
+      (sdd/traces/bk-441-memory-driver-template.yml), each effort S, each a
+      caller-supplied shape reaching a driver or a spool unchecked on a path
+      the kernel's content rule (BE-030 § Content) does not yet reach. Done
+      together because BUG-330 and BUG-331 are the same None-read defect on
+      two routes, and BE-030's bound sentence names BUG-331. Decisions
+      (AskUserQuestion, 2026-10-16): all four; BUG-333 narrowed, the handle
+      route refusing a non-contiguous buffer as Python's files do; BUG-329
+      refused in the kernel and Store with ValueError, shape before
+      capability; BUG-331 in the proxy (unsized read and readall made sized),
+      line reads stated as BE-030's bound.
+  - items: [BUG-253, BUG-299, BUG-292, BUG-300, BK-382]
+    verdict: unrelated
+    evidence: >-
+      They share BE-008 only through its file-ancestor and root checks on
+      unmigrated backends (Graph, Local, SQLBlob); none concerns content or
+      metadata shape.
+  - items: [BK-434, BK-438]
+    verdict: unrelated
+    evidence: >-
+      They share BE-008/BE-030 through the formal encodings and flat raw-key
+      decoding; neither touches content, metadata or open_atomic's stream.
+  - items: [BK-332]
+    verdict: unrelated
+    evidence: >-
+      The custom-backend rehearsal runs on the guide BUG-331 names. A proxy
+      fix leaves the guide's "Read it in full" snippet correct, so the
+      rehearsal is unaffected either way; it schedules a run, not a fix.
+  - items: [ID-217, BUG-319, BK-405, ID-121]
+    verdict: unrelated
+    evidence: >-
+      Hits on the adapter's and Store's filenames for other reasons: async ext
+      surface, Local stat leaks, ext.glob tiers, CompositeStore.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-329, BUG-330, BUG-331, BUG-333 (backlog-show --dossier)"
+        read_type: gate
+        extract: "No dossiers; open decisions: BUG-329 kernel or Store, BUG-331 sized reads in the proxy or the guide"
+      - file: sdd/traces/bk-441-memory-driver-template.yml
+        section: "verify phase"
+        read_type: reference
+        extract: "Reproductions of all four; BUG-333's write override was tried and reverted in PR #1148 (writelines bypasses it)"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-030 § Content, gates around the pipeline"
+        read_type: reference
+        extract: "WR-010's gate after step 4; sync content holds only for sized reads (names BUG-331)"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-010, WR-011"
+        read_type: reference
+        extract: "Shape validation first, ValueError; Store's _validate_metadata relies on .items()"
+      - file: tmp/bug333_probe.py
+        section: "whole"
+        read_type: verify
+        extract: "3.13: SpooledTemporaryFile (before and after rollover), BytesIO, open('wb') buffered and raw all raise BufferError on memoryview(b'aXbXc')[::2], write and writelines; only the kernel's _HandleStream (tobytes) accepts it. v0.33.0's MemoryBackend.open_atomic yielded a BytesIO"
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/_kernel/_fake.py
+        section: "make_kernel, _SyncBase.put, _Handle"
+        read_type: reference
+        extract: "Sync put reads content with one unsized read(); NonBlockingRaw added here so test_io, test_kernel and test_snippets share it"
+      - file: tests/_kernel/test_io.py
+        section: "_answering, test_what_every_read_answers_..."
+        read_type: reference
+        extract: "Its fixture stream answered the same value on every read, which an unsized read looping to b'' never ends; made to answer once, then the end"
+      - file: tests/_kernel/test_kernel.py
+        section: "_WRITE_ROUTES (BUG-328 block)"
+        read_type: reference
+        extract: "An existing route table already enumerates write and write_atomic by put, handle and rename; reused rather than a second one"
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "_require_metadata"
+        read_type: gate
+        extract: "Mapping check ahead of the capability check; Mapping moved to a runtime import; sync twin regenerated (gen-sync-kernel --check clean)"
+      - file: src/remote_store/_kernel/_sync/_io.py
+        section: "_MarkedReader"
+        read_type: gate
+        extract: "Unsized read (no size, None, negative, size= keyword) and readall answered by _read_whole: checked read(_CHUNK) until b''; sized reads, read(0) included, forwarded unchanged"
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/_kernel/test_kernel.py
+        section: "new metadata, none-read and open_atomic cells"
+        read_type: verify
+        extract: "Before the fix the -k selection gave 79 failed, 78 passed, 2 skipped (pytest summary line): metadata cells in the kernel and both Stores, unsized-read cells, adapter None cells, the handle-route BufferError. 4 of the 79 were the MappingProxyType cell asserting WriteResult.metadata, which the fake's PutResult never carries: a test defect, fixed in the test. The spool route and the open_write write route already refused, as measured"
+      - file: tests/test_snippets.py
+        section: "test_reading_content_in_full_never_stores_a_truncated_file"
+        read_type: verify
+        extract: "With only the proxy fix stashed, the guide's RedisDriver stored b'ab' on write and write_atomic (2 failed); with it, refused (2 passed)"

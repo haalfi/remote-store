@@ -36,6 +36,7 @@ from tests._kernel._fake import (
     FakeMissing,
     FakeOdd,
     FakeStore,
+    NonBlockingRaw,
     keys_of,
     make_kernel,
     run_async,
@@ -1085,6 +1086,70 @@ def test_metadata_without_user_metadata_is_refused_before_any_io(runtime: str, m
     assert "b" in run.store.files
 
 
+_NOT_A_MAPPING: dict[str, object] = {"int": 5, "str": "ab", "pairs": [("k", "v")], "empty-list": [], "zero": 0}
+
+
+@pytest.mark.spec("WR-010", "WR-011", "BE-030")
+@pytest.mark.parametrize("declared", [True, False], ids=["user-metadata", "no-user-metadata"])
+@pytest.mark.parametrize("value", sorted(_NOT_A_MAPPING))
+@pytest.mark.parametrize("member", ["write", "write_atomic"])
+def test_metadata_that_is_not_a_mapping_is_a_value_error_before_any_io(
+    runtime: str, member: str, value: str, declared: bool
+) -> None:
+    # Shape before capability (WR-011): the same refusal whether or not the class
+    # stores metadata, and nothing reaches the wire, ensure_parents included.
+    caps = (Capability.READ, Capability.WRITE, Capability.LIST, Capability.DELETE, Capability.ATOMIC_WRITE)
+    if declared:
+        caps = (*caps, Capability.USER_METADATA)
+    store = FakeStore().add("d/f", data=b"old")
+    run = make_kernel(runtime, store, caps=caps)
+    store.calls.clear()
+    for key in ("d/f", "e/f"):  # an existing file; a new key under an absent parent
+        with pytest.raises(ValueError, match="must be a mapping"):
+            getattr(run, member)(key, b"x", metadata=_NOT_A_MAPPING[value])
+    assert store.calls == []
+    assert store.files["d/f"].data == b"old"
+    assert "e" not in store.folders
+
+
+_OPEN_ATOMIC_ROUTES = {
+    "handle": ("remove_folder", "open_write"),
+    "spool": ("remove_folder", "rename"),
+}
+
+
+@pytest.mark.spec("BE-030", "SAW-013")
+@pytest.mark.parametrize("route", sorted(_OPEN_ATOMIC_ROUTES))
+def test_both_open_atomic_routes_refuse_a_non_contiguous_buffer_as_pythons_files_do(runtime: str, route: str) -> None:
+    import tempfile
+
+    if runtime == "async":
+        pytest.skip("open_atomic is the sync surface's alone")
+    strided = memoryview(b"aXbXc")[::2]
+    with tempfile.TemporaryFile() as native, pytest.raises(BufferError):
+        native.write(strided)  # the premise: Python's own binary files refuse it
+    store = FakeStore()
+    run = make_kernel(runtime, store, protocols=_OPEN_ATOMIC_ROUTES[route])
+    with pytest.raises(BufferError), run.kernel.open_atomic("a") as stream:
+        stream.write(strided)
+    assert "a" not in store.files
+    with run.kernel.open_atomic("a") as stream:
+        stream.write(memoryview(b"ab"))
+        stream.write(bytearray(b"c"))
+        stream.writelines([b"d", memoryview(b"e")])
+    assert store.files["a"].data == b"abcde"
+
+
+@pytest.mark.spec("WR-010", "BE-030")
+@pytest.mark.parametrize("member", ["write", "write_atomic"])
+def test_a_mapping_that_is_not_a_dict_is_metadata(runtime: str, member: str) -> None:
+    from types import MappingProxyType
+
+    run = make_kernel(runtime, FakeStore())
+    getattr(run, member)("a", b"x", metadata=MappingProxyType({"k": "v"}))
+    assert run.store.files["a"].metadata == {"k": "v"}
+
+
 @pytest.mark.spec("BE-011")
 def test_write_atomic_without_a_route_is_capability_not_supported(runtime: str) -> None:
     run = make_kernel(runtime, FakeStore(), protocols=("remove_folder",))
@@ -1551,6 +1616,26 @@ def test_content_that_is_no_bytes_source_is_refused_before_any_io(runtime: str, 
     with pytest.raises(TypeError, match="content must be bytes"):
         getattr(run, method)("f", content, overwrite=True)
     assert run.store.calls == []  # nothing probed, nothing written
+    assert run.store.files["f"].data == b"F"
+
+
+async def _none_mid_chunks() -> Any:
+    for chunk in (b"ab", None, b"c"):
+        yield chunk
+
+
+@pytest.mark.spec("BE-030", "ASYNC-091")
+@pytest.mark.parametrize("route", sorted(_WRITE_ROUTES))
+def test_a_none_read_is_refused_on_every_write_route(runtime: str, route: str) -> None:
+    # The fake's sync put reads its content with one unsized read(): before the
+    # proxy read in sized chunks, the stream's own readall stopped at the None
+    # and the put routes stored b"ab".
+    run = make_kernel(runtime, _store(), **_WRITE_ROUTES[route])
+    content = NonBlockingRaw() if runtime == "sync" else _none_mid_chunks()
+    method = "write" if route == "write" else "write_atomic"
+    with pytest.raises(TypeError, match="NoneType, not bytes"):
+        getattr(run, method)("f", content, overwrite=True)
+    assert sorted(run.store.files) == ["d/f", "f"]  # no temporary left behind
     assert run.store.files["f"].data == b"F"
 
 
