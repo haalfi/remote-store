@@ -25,8 +25,9 @@ What the rules do not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   through a local ``hatch run fast`` or ``all``.
 - Rule 1 reads the files ``git ls-files --cached --others --exclude-standard``
   lists, so an ignored file is out of reach. It skips a file that does not
-  decode as UTF-8, every path ``git check-attr`` reports ``binary`` for (so a
-  path marked only ``-text`` is still read), and the decision logs under ``sdd/decisions/`` (``_RECORD_DIRS``),
+  decode as UTF-8, every path ``git check-attr`` reports ``binary`` for from
+  the repo's own attributes (so a path marked only ``-text`` is still read),
+  and the decision logs under ``sdd/decisions/`` (``_RECORD_DIRS``),
   which store dialog payloads as received. It has no per-file exemption list: in a Python file, a character the code
   needs is spelled as a named escape, which reads the same to Python and is
   visible to a reviewer. In any other file the only remedy it offers is
@@ -80,6 +81,7 @@ Drift-gate::
 from __future__ import annotations
 
 import ast
+import os
 import re
 import subprocess
 import sys
@@ -185,13 +187,21 @@ def binary_files(root: Path, files: list[str]) -> set[str]:
     One ``git check-attr`` call, so nested ``.gitattributes`` files,
     ``core.ignorecase`` and the full pattern syntax all match exactly as git
     applies them. A re-implementation would have to track all three, and any
-    gap in it skips a file rule 1 should read.
+    gap in it skips a file rule 1 should read. The per-user and system-wide
+    attributes files are switched off; ``$GIT_DIR/info/attributes``, which is
+    local to one clone, is still read.
     """
     if not files:
         return set()
+    # Only the repo's own attributes count: the per-user file (default
+    # ~/.config/git/attributes) points at a path that does not exist, and
+    # GIT_ATTR_NOSYSTEM drops the system-wide one, so a machine's own `binary`
+    # line cannot shrink what rule 1 reads locally while CI still reads it.
+    no_user_attributes = root / ".check-repo-traps-no-user-attributes"
     out = subprocess.run(
-        ["git", "check-attr", "-z", "--stdin", "binary"],
+        ["git", "-c", f"core.attributesFile={no_user_attributes}", "check-attr", "-z", "--stdin", "binary"],
         cwd=root,
+        env={**os.environ, "GIT_ATTR_NOSYSTEM": "1"},
         input="\0".join(files).encode("utf-8"),
         capture_output=True,
         check=True,

@@ -142,3 +142,8 @@ phases:
         read_type: verify
         extract: "PR #1152 review round 9: PLE2502 flags U+200F and U+061C, which the 21 lacked (tmp/ple_probe.py, ruff 0.15.13), so the subset premise was false; the dossier's 12 probes never tried them. Rule 1 now refuses 24, adding U+200E too; decided in this session's log"
         outcome: misleading
+      - file: scripts/check_repo_traps.py
+        section: "binary_files"
+        read_type: verify
+        extract: "PR #1152 review round 10: git check-attr also read the per-user ~/.config/git/attributes and the system file, so a machine's own binary line could shrink rule 1 locally while CI read the path; reproduced with a planted XDG_CONFIG_HOME, now neutralised with core.attributesFile and GIT_ATTR_NOSYSTEM"
+        outcome: ok

@@ -175,6 +175,18 @@ class TestCheckInvisible:
         _write(root, "a.raw")
         assert [v.location for v in _mod.check_invisible(root, ["a.raw"])] == ["a.raw:1:2"]
 
+    def test_per_user_global_attributes_are_ignored(self, tmp_path, monkeypatch):
+        # A contributor's ~/.config/git/attributes must not shrink what rule 1
+        # reads locally while CI, which has no such file, still reads it.
+        xdg = tmp_path / "xdg"
+        (xdg / "git").mkdir(parents=True)
+        (xdg / "git" / "attributes").write_text("*.md binary\n", encoding="utf-8")
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(xdg))
+        (tmp_path / "repo").mkdir()
+        root = _git(tmp_path / "repo")
+        _write(root, "bad.md")
+        assert [v.location for v in _mod.check_invisible(root, ["bad.md"])] == ["bad.md:1:2"]
+
     def test_no_files_needs_no_git(self, tmp_path):
         assert _mod.binary_files(tmp_path, []) == set()
 
