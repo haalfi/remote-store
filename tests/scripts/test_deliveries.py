@@ -1,0 +1,128 @@
+"""Unit tests for ``sdd/research/token-usage/deliveries.py``'s judgements on a transcript.
+
+Each figure in the research record rests on one of these: which gap is a wait,
+which subagent is a review pass, how many findings a pass handed back, and which
+calls a session part keeps. Transcripts are synthetic ``tmp_path`` JSONL.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+_KIT = Path(__file__).resolve().parents[2] / "sdd" / "research" / "token-usage"
+sys.path.insert(0, str(_KIT))
+
+import deliveries  # noqa: E402
+
+
+def _write(path: Path, records: list[dict]) -> Path:
+    path.write_text("\n".join(json.dumps(r) for r in records), encoding="utf-8")
+    return path
+
+
+def _assistant(ts: str, content: list | None = None) -> dict:
+    return {"type": "assistant", "timestamp": ts, "message": {"content": content or []}}
+
+
+def _user(ts: str, content) -> dict:
+    return {"type": "user", "timestamp": ts, "message": {"content": content}}
+
+
+class TestActive:
+    def test_a_gap_ended_by_a_prompt_or_a_dialog_answer_is_a_wait(self, tmp_path):
+        ask = {"type": "tool_use", "id": "q1", "name": "AskUserQuestion", "input": {}}
+        answer = {"type": "tool_result", "tool_use_id": "q1", "content": "answered"}
+        t = _write(
+            tmp_path / "m.jsonl",
+            [
+                _assistant("2026-10-10T10:00:00Z", [ask]),
+                _user("2026-10-10T10:10:00Z", [answer]),  # 10 min dialog wait
+                _assistant("2026-10-10T10:10:30Z"),
+                _user("2026-10-10T10:30:30Z", "next prompt"),  # 20 min prompt wait
+            ],
+        )
+        wall, wait = deliveries.active(t, {})
+        assert (wall, wait) == (1830.0, 1800.0)
+
+    def test_a_gap_ended_by_a_notification_or_a_tool_result_is_work(self, tmp_path):
+        bash = {"type": "tool_use", "id": "b1", "name": "Bash", "input": {"command": "hatch run fast"}}
+        result = {"type": "tool_result", "tool_use_id": "b1", "content": "ok"}
+        t = _write(
+            tmp_path / "m.jsonl",
+            [
+                _assistant("2026-10-10T10:00:00Z", [bash]),
+                _user("2026-10-10T10:05:00Z", [result]),
+                _assistant("2026-10-10T10:05:10Z"),
+                _user("2026-10-10T10:15:10Z", "<task-notification> a pass finished"),
+            ],
+        )
+        wall, wait = deliveries.active(t, {})
+        assert (wall, wait) == (910.0, 0.0)
+
+    def test_a_gap_under_a_minute_is_work_whatever_ends_it(self, tmp_path):
+        t = _write(tmp_path / "m.jsonl", [_assistant("2026-10-10T10:00:00Z"), _user("2026-10-10T10:00:59Z", "go")])
+        assert deliveries.active(t, {}) == (59.0, 0.0)
+
+    def test_only_records_inside_the_part_count(self, tmp_path):
+        t = _write(
+            tmp_path / "m.jsonl",
+            [
+                _assistant("2026-10-10T10:00:00Z"),
+                _assistant("2026-10-10T10:00:30Z"),
+                _assistant("2026-10-10T11:00:00Z"),
+            ],
+        )
+        assert deliveries.active(t, {"until": "2026-10-10T10:59:00Z"}) == (30.0, 0.0)
+
+
+class TestHandback:
+    def test_the_count_line_of_the_last_handback_is_summed(self, tmp_path):
+        early = {"type": "tool_use", "name": "SubagentHandback", "input": {"message": "Bug: 9 | Spec: 9"}}
+        last = {
+            "type": "tool_use",
+            "name": "SubagentHandback",
+            "input": {"message": "## Review\nBug: 1 | Spec: 2 (Possible) | Test: 0 | Consistency: 1"},
+        }
+        t = _write(
+            tmp_path / "a.jsonl",
+            [_assistant("2026-10-10T10:00:00Z", [early]), _assistant("2026-10-10T10:01:00Z", [last])],
+        )
+        assert deliveries.handback(t) == 4
+
+    def test_a_forked_pass_without_a_handback_is_read_from_its_last_text(self, tmp_path):
+        text = {"type": "text", "text": "## PR #1 Review\n**Bug**: 2 | Spec: 1 | Ripple: 0"}
+        t = _write(tmp_path / "a.jsonl", [_assistant("2026-10-10T10:00:00Z", [text])])
+        assert deliveries.handback(t) == 3
+
+    def test_a_pass_with_no_count_line_has_no_figure(self, tmp_path):
+        text = {"type": "text", "text": "Now tear down the worktrees."}
+        t = _write(tmp_path / "a.jsonl", [_assistant("2026-10-10T10:00:00Z", [text])])
+        assert deliveries.handback(t) is None
+
+
+class TestSelection:
+    @pytest.mark.parametrize(
+        ("sub", "expected"),
+        [
+            ({"type": "reviewer", "description": "Closing round: unprimed member"}, True),
+            ({"type": "general-purpose", "description": "Round 4 whole-file panel member"}, True),
+            ({"type": "general-purpose", "description": "/rvw-pr 1127 root=tmp/review/x"}, True),
+            ({"type": "testing-expert", "description": "Write A.10 generated kernel suites"}, False),
+            ({"type": "general-purpose", "description": "Open PR for BUG-326 branch"}, False),
+        ],
+    )
+    def test_a_review_pass_is_a_reviewer_or_a_subagent_described_as_one(self, sub, expected):
+        assert deliveries.is_pass(sub) is expected
+
+    def test_a_part_keeps_its_window_and_its_agent_filter(self):
+        part = {"since": "2026-10-12T15:00:00Z", "until": "2026-10-15T06:00:00Z", "exclude_agents": ["a4614"]}
+        assert deliveries.within("2026-10-12T15:00:00.000Z", part)
+        assert not deliveries.within("2026-10-12T14:59:59.999Z", part)
+        assert not deliveries.within("2026-10-15T06:00:00Z", part)
+        assert not deliveries.keep_agent("agent-a4614f4bcebad8abf", part)
+        assert deliveries.keep_agent("agent-ad87b172", part)
+        assert deliveries.keep_agent("agent-a4614f4bcebad8abf", {"agents": ["a4614"]})
