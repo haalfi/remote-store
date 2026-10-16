@@ -1037,3 +1037,11 @@ sessions work is measured before it becomes process.
   59 of 89 single-line scripts in `pyproject.toml` lack it, most by design. Open decision: lint rule
   or test per trap, and where exemptions and the `{args}` allowlist live.
   Detail: [dossier](backlog/bk-444-repo-traps-lint.md)
+
+- [ ] **BK-445 — A measuring reviewer's pytest in the review worktree tests the main checkout's code**
+  spec: — · effort: S · audience: contributor.process, contributor.tooling
+  The shared `.venv`'s editable install puts the main checkout's `src` first, so `python -m pytest` in
+  `tmp/review/<sha>` imports the code the fixer edits. On PR #1151 a measuring member saw 100+ new tests
+  fail until it set `PYTHONPATH=<root>/src`; the worktree hook refused `env -C <root>`. No skill states
+  the prefix (Grep `PYTHONPATH` under `.claude/skills/`: no match). Open decision: state it in
+  `rvw-pr/measuring.md`, or give each review worktree its own environment.
