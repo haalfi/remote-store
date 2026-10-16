@@ -51,8 +51,10 @@ class AsyncMemoryDriver(AsyncDriver):
     def counts(self) -> tuple[int, int]:
         """The number of files and of folders the tree holds.
 
-        Read without the lock: two integers, each changed only inside one
-        locked primitive that never awaits, so no read sees a half step.
+        Read without the lock, as ``repr`` needs. A coroutine on the loop never
+        sees a step in progress, since no locked primitive awaits; a debugger
+        paused inside one, or another thread (``SyncBackendAdapter`` runs the
+        loop on its own), may, so it is a display figure, not a snapshot.
         """
         return self._tree.file_count, self._tree.folder_count
 
