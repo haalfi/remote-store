@@ -7,7 +7,6 @@ imports the driver module, which imports them.
 
 from __future__ import annotations
 
-import contextlib
 from collections.abc import AsyncIterator
 from typing import Protocol
 
@@ -43,13 +42,13 @@ _FROM_CONTENT = "_remote_store_from_content"
 
 def from_content(exc: BaseException) -> bool:
     """Whether *exc* was raised by the caller's own content, not by the wire."""
-    return bool(getattr(exc, _FROM_CONTENT, False))
+    return bool(exc.__dict__.get(_FROM_CONTENT, False))
 
 
 def _mark(exc: BaseException) -> None:
-    # An exception class that refuses new attributes stays unmarked, and is mapped.
-    with contextlib.suppress(AttributeError):
-        setattr(exc, _FROM_CONTENT, True)
+    # Into the instance dict, which every exception has: a class whose own
+    # __setattr__ refuses new attributes is marked too.
+    exc.__dict__[_FROM_CONTENT] = True
 
 
 async def _marked(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
@@ -62,24 +61,45 @@ async def _marked(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
         except Exception as exc:
             _mark(exc)
             raise
+        if isinstance(chunk, bytearray | memoryview):
+            chunk = bytes(chunk)
+        elif not isinstance(chunk, bytes):
+            # Not binary: the caller's error, passed through verbatim, never one about the target.
+            err = TypeError(f"content iterator yielded {type(chunk).__name__}, not bytes")
+            _mark(err)
+            raise err
         yield chunk
 
 
-def guard_content(content: Content) -> Content:
-    """*content* with whatever the caller's iterator raises marked as the caller's.
+def require_content(content: object) -> None:
+    """Refuse, before any I/O, *content* that is neither a bytes buffer nor an async iterator."""
+    if isinstance(content, bytes | bytearray | memoryview) or callable(getattr(content, "__aiter__", None)):
+        return
+    msg = f"content must be bytes or an async iterator of bytes, not {type(content).__name__}"
+    raise TypeError(msg)
 
-    The choke point passes a marked error through verbatim: a failing source
-    the caller handed in is not a wire error to classify.
+
+def guard_content(content: Content) -> Content:
+    """*content* as a driver receives it: ``bytes``, or the caller's iterator marked.
+
+    A ``bytearray`` or ``memoryview`` becomes a copy as ``bytes``, so no driver
+    sees a type ``Content`` does not name. The choke point passes a marked
+    error through verbatim: a failing source the caller handed in is not a
+    wire error to classify.
     """
-    if isinstance(content, bytes | bytearray | memoryview):
+    if isinstance(content, bytes):
         return content
+    if isinstance(content, bytearray | memoryview):
+        return bytes(content)
+    if not callable(getattr(content, "__aiter__", None)):
+        return content  # not content at all: require_content refuses it, in pipeline order
     return _marked(content)
 
 
 async def feed(handle: _Writable, content: Content) -> None:
     """Write all of *content* into an open write handle."""
-    if isinstance(content, bytes | bytearray | memoryview):
-        await handle.write(bytes(content))
+    if isinstance(content, bytes):
+        await handle.write(content)
         return
     async for chunk in content:
         await handle.write(chunk)

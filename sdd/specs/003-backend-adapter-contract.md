@@ -1432,23 +1432,28 @@ closed or not, since capability data is not a live operation: `GLOB` for
 `open_atomic` (BE-011), `MOVE` for `move` and `COPY` for `copy`, a
 self-operation included, each refused with `CapabilityNotSupported` by the
 declaration, whatever protocols the driver presents. The kernel refuses to
-construct over a declaration its protocols cannot back. WR-010's metadata gate
+construct over a declaration its protocols cannot back, and over a driver that
+leaves a required primitive out or inherits the protocol's own body for one,
+which would answer `None` instead of acting; `probe` is the exception, whose
+inherited body is the exemption from probing (PING-008). WR-010's metadata gate
 on `write` and `write_atomic` comes after step 4 and before step 5, so the root
 refusal stays BE-008's first precondition and the gate stays ahead of any I/O.
-That ranks it ahead of BE-008's type, ancestor and overwrite checks. So on a
-class without `USER_METADATA`, a write carrying metadata answers
-`CapabilityNotSupported` in three states where `BackendContract.dfy`'s `Write`
-guards its WR-010 clause and answers otherwise: a folder at the key
-(`InvalidPath`), a file above it (`InvalidPath`), and an existing file with
-`overwrite=False` (`AlreadyExists`). On a hierarchical namespace all three are
-answered by the driver's write itself, so matching the model would cost every
-write carrying metadata a `stat`. On a flat namespace the first two are
-answered by BE-032's A.4 checks, which the kernel runs anyway, but they are I/O
-and the gate is held ahead of any I/O, so it ranks first there too; only the
-overwrite state would cost a `stat` of its own. A class on the kernel departs
-from the model in those three states on both namespaces. Both Memory classes
-declare `USER_METADATA`, so neither reaches them. The departure stands, and
-reconciling the model is BK-440's.
+That ranks it ahead of BE-008's type, ancestor and overwrite checks: on a class
+without `USER_METADATA`, a write carrying metadata answers
+`CapabilityNotSupported` with a folder at the key, a file above it, or an
+existing file and `overwrite=False`, on both namespaces. Matching BE-008's order
+instead would cost every such write a `stat` on a hierarchical namespace, and on
+a flat one would put I/O ahead of the gate. `BackendContract.dfy`'s `Write`
+states the same order.
+
+**Content.** A driver receives only the types its `put` declares. A
+`bytearray` or `memoryview` passed to `write` or `write_atomic` reaches it as
+a `bytes` copy, and so does a buffer a content stream (or, async, its iterator)
+yields. Content that is no bytes source, neither a buffer nor a readable stream
+(async: an async iterator), is refused with `TypeError` after WR-010's gate and
+before any I/O; a stream that yields something not binary raises `TypeError`
+as the caller's own error, passed through verbatim like ASYNC-091's, never
+answered from the target.
 
 **What a key resolves to** is [BE-032](#be-032-the-store-tree-on-the-kernel)'s
 answer, for every call below: the tree's `Item`, `Folder` or `Nothing` (A.1),

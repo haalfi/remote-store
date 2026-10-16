@@ -7,7 +7,6 @@ imports the driver module, which imports them.
 
 from __future__ import annotations
 
-import contextlib
 from typing import TYPE_CHECKING, BinaryIO, Protocol, cast
 
 if TYPE_CHECKING:
@@ -47,17 +46,38 @@ _FROM_CONTENT = "_remote_store_from_content"
 
 def from_content(exc: BaseException) -> bool:
     """Whether *exc* was raised by the caller's own content, not by the wire."""
-    return bool(getattr(exc, _FROM_CONTENT, False))
+    return bool(exc.__dict__.get(_FROM_CONTENT, False))
 
 
 def _mark(exc: BaseException) -> None:
-    # An exception class that refuses new attributes stays unmarked, and is mapped.
-    with contextlib.suppress(AttributeError):
-        setattr(exc, _FROM_CONTENT, True)
+    # Into the instance dict, which every exception has: a class whose own
+    # __setattr__ refuses new attributes is marked too.
+    exc.__dict__[_FROM_CONTENT] = True
 
 
 #: The stream's reads, each forwarded with its failures marked.
 _READS = frozenset({"read", "read1", "readall", "readinto", "readinto1", "readline", "readlines", "peek"})
+#: The reads that answer bytes, whose answer must be binary.
+_BYTE_READS = frozenset({"read", "read1", "readall", "readline", "peek"})
+
+
+def _binary(chunk: object, source: object) -> object:
+    """*chunk* as ``bytes`` when it is a buffer; a caller-marked ``TypeError`` when it is not binary."""
+    if chunk is None or isinstance(chunk, bytes):
+        return chunk
+    if isinstance(chunk, bytearray | memoryview):
+        return bytes(chunk)
+    exc = TypeError(f"content stream {type(source).__name__} returned {type(chunk).__name__}, not bytes")
+    _mark(exc)
+    raise exc
+
+
+def require_content(content: object) -> None:
+    """Refuse, before any I/O, *content* that is neither a bytes buffer nor a readable stream."""
+    if isinstance(content, bytes | bytearray | memoryview) or callable(getattr(content, "read", None)):
+        return
+    msg = f"content must be bytes or a readable binary stream, not {type(content).__name__}"
+    raise TypeError(msg)
 
 
 class _MarkedReader:
@@ -85,10 +105,11 @@ class _MarkedReader:
 
         def marked(*args: object, **kwargs: object) -> object:
             try:
-                return attr(*args, **kwargs)
+                answer = attr(*args, **kwargs)
             except Exception as exc:
                 _mark(exc)
                 raise
+            return _binary(answer, self._stream) if name in _BYTE_READS else answer
 
         return marked
 
@@ -107,7 +128,7 @@ class _MarkedIteration:
             except Exception as exc:
                 _mark(exc)
                 raise
-            yield line
+            yield cast("bytes", _binary(line, self._stream))
 
 
 class _MarkedIterator:
@@ -121,12 +142,13 @@ class _MarkedIterator:
 
     def __next__(self) -> bytes:
         try:
-            return next(self._stream)
+            line = next(self._stream)
         except StopIteration:
             raise
         except Exception as exc:
             _mark(exc)
             raise
+        return cast("bytes", _binary(line, self._stream))
 
 
 class _ForwardedContext:
@@ -159,20 +181,26 @@ def _proxy_type(stream: object) -> type[_MarkedReader]:
 
 
 def guard_content(content: Content) -> Content:
-    """*content* with whatever the caller's stream raises marked as the caller's.
+    """*content* as a driver receives it: ``bytes``, or the caller's stream marked.
 
-    The choke point passes a marked error through verbatim: a failing source
-    the caller handed in is not a wire error to classify.
+    A ``bytearray`` or ``memoryview`` becomes a copy as ``bytes``, so no driver
+    sees a type ``Content`` does not name. The choke point passes a marked
+    error through verbatim: a failing source the caller handed in is not a
+    wire error to classify.
     """
-    if isinstance(content, bytes | bytearray | memoryview):
+    if isinstance(content, bytes):
         return content
+    if isinstance(content, bytearray | memoryview):
+        return bytes(content)
+    if not callable(getattr(content, "read", None)):
+        return content  # not content at all: require_content refuses it, in pipeline order
     return cast("BinaryIO", _proxy_type(content)(content))
 
 
 def feed(handle: _Writable, content: Content) -> None:
     """Write all of *content* into an open write handle."""
-    if isinstance(content, bytes | bytearray | memoryview):
-        handle.write(bytes(content))
+    if isinstance(content, bytes):
+        handle.write(content)
         return
     while chunk := content.read(_CHUNK):
         handle.write(chunk)

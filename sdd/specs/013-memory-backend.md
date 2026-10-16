@@ -26,7 +26,7 @@ each `### MEM-` heading once, except MEM-DS-005 and MEM-014, which split, so
 
 | Owner | Clauses |
 |---|---|
-| kernel (5) | MEM-DS-005's validation table (BE-030: the driver receives a canonical key), MEM-014's `recursive` dispatch (BE-031: `remove_folder` or `delete_tree`, the root refused first), MEM-013 (`write_atomic` is `put`, from `put_is_atomic = True`; AW-001), MEM-018 (`close`, through `close_is_terminal = False`; BE-020), MEM-020 (the choke point; the tree raises only typed errors, so `classify` is reached only for content `put` cannot read, BUG-328) |
+| kernel (5) | MEM-DS-005's validation table (BE-030: the driver receives a canonical key), MEM-014's `recursive` dispatch (BE-031: `remove_folder` or `delete_tree`, the root refused first), MEM-013 (`write_atomic` is `put`, from `put_is_atomic = True`; AW-001), MEM-018 (`close`, through `close_is_terminal = False`; BE-020), MEM-020 (the choke point; the tree raises only typed errors, and the kernel converts or refuses content `put` could not read, so nothing a caller passes reaches `classify`) |
 | driver (15) | MEM-DS-001, MEM-DS-002, MEM-DS-003, MEM-DS-004, MEM-DS-005's traversal (`MemoryTree.traverse`, O(d) over a canonical key), MEM-DS-006, MEM-010, MEM-011, MEM-012, MEM-014's two primitives (`delete_tree` for the recursive case, `remove_folder` for the other, each under the one lock), MEM-015 (`folder_stats`, one walk under the one lock), MEM-016 (`move`, one lock), MEM-016b (`copy`), MEM-025 (each `list_page` one locked collect with no cursor, and the kernel lists a recursive call as one `delimiter=None` request, so a listing stays one snapshot), MEM-026 |
 | forwarded or declared (7) | MEM-001 (constructor), MEM-002 (`name`, the driver's), MEM-003 (capabilities, the class's `CAPABILITIES` handed to the driver), MEM-004 (`repr` on the public class, reading the driver's counters), MEM-005 (registration), MEM-017 (`to_key`), MEM-019 (`unwrap`) |
 | unchanged (6) | MEM-030, MEM-031, MEM-032 (testing), MEM-040, MEM-041, MEM-042 (performance) |
@@ -479,16 +479,14 @@ by `write()` is not atomic as a pair. This matches all other backends.
 objects and raise the `io` protocol's own errors where that protocol does: the
 write-only file `open_atomic` yields answers `seek()` with
 `io.UnsupportedOperation`, `read()` with `NotImplementedError` and a
-non-buffer `write()` with `TypeError`. Two native exceptions reach the driver from what
-the caller hands it, and neither is the tree's: an error the caller's own
-content raises passes the choke point verbatim, still the caller's type
-(ASYNC-091); and content `put` cannot read (a `bytearray` or `memoryview`,
-outside `WritableContent`) is turned by `classify` into a base
-`RemoteStoreError`. The kernel's probe then replaces it only where the target
-alone would refuse the write: `AlreadyExists` on an existing file without
-`overwrite`, and `InvalidPath` on a folder or below a file. Elsewhere, a free
-key or an existing file with `overwrite`, the base `RemoteStoreError` stands,
-and nothing is stored (BUG-328).
+non-buffer `write()` with `TypeError`. One native exception reaches the driver
+from what the caller hands it, and it is not the tree's: an error the caller's
+own content raises passes the choke point verbatim, still the caller's type
+(ASYNC-091). A `bytearray` or `memoryview` is stored as its bytes, since the
+kernel hands the driver a `bytes` copy, and content that is no bytes source is
+the kernel's `TypeError` before the tree is touched (BE-030 § Content).
+Nothing a caller passes reaches `classify`, which stays as the protocol
+requires and answers a base `RemoteStoreError`.
 
 Error conditions are detected by tree inspection:
 

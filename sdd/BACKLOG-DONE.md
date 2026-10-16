@@ -298,6 +298,41 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-441 — A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing**
+  spec: BE-021, BE-030 · effort: S · audience: user.api_docs, library.maintainer
+  Construction refuses, with a `ValueError` naming it, a required primitive a
+  driver lacks or inherits as the protocol's own body; `probe` alone may be
+  inherited, as the exemption from probing. The required set is derived from
+  the protocol, so the generated sync twin checks `Driver`'s. Spec 003 BE-030,
+  `drivers.md`, the guide and the kernel docstrings state it. Co-shipped:
+  BK-442, BUG-328, BK-440. Trace:
+  [bk-441](traces/bk-441-memory-driver-template.yml).
+
+- [x] **BK-442 — `from remote_store.drivers import Driver` imports the whole async package and its cloud SDKs**
+  spec: — · effort: S · audience: user.api
+  `remote_store.drivers` resolves `AsyncDriverBackend` through a module
+  `__getattr__` and lists it in `__dir__`, so importing the sync names loads
+  no `remote_store.aio` module (`tests/test_drivers_exports.py`). Trace:
+  [bk-441](traces/bk-441-memory-driver-template.yml).
+
+- [x] **BUG-328 — Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through**
+  spec: MEM-013, MEM-020 · effort: S · audience: user.api
+  The kernel hands every driver a `bytes` copy of a buffer, and of a buffer a
+  content stream yields; content that is no bytes source is a `TypeError`
+  after WR-010's gate and before any I/O, and a stream yielding non-bytes, or
+  raising an exception whose class refuses new attributes, is the caller's
+  error passed through verbatim. No such write is answered from the target
+  any more. Public `WritableContent` is unchanged. Spec 003 BE-030 § Content,
+  MEM-020. Trace: [bk-441](traces/bk-441-memory-driver-template.yml).
+
+- [x] **BK-440 — `BackendContract.dfy`'s `Write` ranks WR-010's metadata gate below the type and overwrite checks the kernel answers after it**
+  spec: BE-030, WR-010 · effort: S · audience: library.maintainer
+  `Write` ranks the gate after the root and ahead of the observed checks, with
+  an unchanged-state frame, in the contract and both `MemoryBackend.dfy`
+  refinements; the compiled oracle is regenerated, and spec 003 BE-030 no
+  longer records a departure. Trace:
+  [bk-441](traces/bk-441-memory-driver-template.yml).
+
 - [x] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api, user.api_docs, contributor.process
   `MemoryBackend` and `AsyncMemoryBackend` run on the contract kernel over

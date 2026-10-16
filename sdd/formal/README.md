@@ -611,10 +611,12 @@ written against them (RFC-0017 D7). The ranking they encode is the one
 spec 003 states: a closed terminal backend answers `BackendUnavailable` first
 (BE-029), the key-decided root checks come next, a root `move`/`copy`
 destination included (BE-018 § Precondition order), and every observed check
-follows.
-Both of the first two also state that nothing changed (`fs == old(fs)`):
-the one error-path frame the model carries, possible because it is keyed
-on the pre-state rather than on the result.
+follows. On `Write`, WR-010's metadata gate sits between the root and the
+observed checks, the order the kernel answers in (BE-030), since the gate is
+capability data and held ahead of any I/O.
+The first two, and `Write`'s gate, also state that nothing changed
+(`fs == old(fs)`): the only error-path frames the model carries, possible
+because each is keyed on the pre-state rather than on the result.
 `MemoryBackend` matches the Python class (non-terminal close, a container
 present from construction), so `MemoryBackendMinimal` witnesses the
 `BackendUnavailable` branches. Both classes carry a `DropContainer` method,

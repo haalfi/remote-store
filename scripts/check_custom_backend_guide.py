@@ -262,9 +262,12 @@ def _construction_terms() -> dict[str, dict[str, str | None]]:
     from remote_store._kernel._sync.kernel import _check_construction
 
     protocols = {name: getattr(drivers, name) for name in drivers.__all__ if name.startswith("Supports")}
+    # Construction also refuses a required primitive left out, so the bare driver has them all.
+    required: dict[str, object] = {member: lambda *_a, **_k: None for member in _own_methods(drivers.Driver)}
 
     def accepted(capability: Capability, extra: dict[str, object]) -> bool:
         attrs: dict[str, object] = {
+            **required,
             "name": "probe",
             "namespace": "flat",
             "parents": "none",

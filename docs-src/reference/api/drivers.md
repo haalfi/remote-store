@@ -15,8 +15,11 @@ walks through writing one.
     protocol to back it (the [guide's table](../../guides/custom-backend-guide.md#step-2-declare-capabilities)
     names what backs each; the other capabilities are taken as declared), when a flat driver has
     folder objects, when folder objects come without `remove_folder` or
-    explicit parents without `ensure_parents`, or when the class's
-    `close_is_terminal` differs from the driver's.
+    explicit parents without `ensure_parents`, when the class's
+    `close_is_terminal` differs from the driver's, or when a required member
+    is missing or is still the protocol's own empty body, which would answer
+    `None` instead of acting. Only `probe` may be inherited: its body is the
+    exemption from probing for a store that is always healthy.
 
 ---
 
