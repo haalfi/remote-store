@@ -322,7 +322,7 @@ if evidence changes; these are retired.
   guarantee, stated in BE-030 § Content. Trace:
   [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
 
-- [x] **BUG-333 — `open_atomic`'s spool refuses a strided `memoryview` that the handle route stores**
+- [x] **BUG-333 — `open_atomic`'s two routes disagree on a strided `memoryview`: the handle route stores it, the spool refuses it as Python's files do; both now refuse it**
   spec: SAW-013, BE-008 · effort: S · audience: user.api
   Settled the other way: the kernel's handle-route stream takes a write
   through a `BytesIO`, so a buffer that is not C-contiguous is refused with its

@@ -32,6 +32,10 @@ surprising_ripples:
   - sdd/specs/029-async-store-backend-api.md
   - tests/test_snippets.py
   - tests/_kernel/test_io.py
+  - docs-src/reference/migration.md
+  - src/remote_store/ext/write.py
+  - tests/ext/test_write.py
+  - tests/backends/memory/test_metadata_shape.py
 co_shipped_items:
   - BUG-330
   - BUG-331
@@ -138,3 +142,110 @@ phases:
         section: "whole (review round 3, PR #1151)"
         read_type: verify
         extract: "_read_whole strategies, 256 MiB from a file, fresh process per cell, CPython 3.13.11 on Windows, peak working set over N / time: native read() 1.00 / 69 ms, list+join 2.00 / 151 ms, BytesIO 1.80 / 704 ms, bytearray+bytes() 2.00 / 821 ms; same order from a BytesIO source. User chose the join (decision log f998c0f2)"
+review:
+  # Derived by `hatch run ship-report 1151 --trace-block-only` at head 287a115.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1151 --trace-block-only"
+  pr: 1151
+  review_rounds: 7
+  submissions: 7
+  findings: 24
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.27
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 2, original: 2}
+      triage: {must-fix: 4}
+      duration_hours: 0.23
+    - round: 3
+      findings: 7
+      origin: {loop-introduced: 4, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.34
+    - round: 4
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.13
+    - round: 5
+      findings: 5
+      origin: {loop-introduced: 2, unclassifiable-file: 3}
+      triage: {must-fix: 5}
+      duration_hours: 0.13
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.26
+    - round: 7
+      findings: 2
+      origin: {loop-introduced: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.17
+  by_file:
+    - path: "src/remote_store/_kernel/_sync/_io.py"
+      findings: 8
+    - path: "docs-src/reference/migration.md"
+      findings: 5
+    - path: "CHANGELOG.md"
+      findings: 2
+    - path: "sdd/specs/045-write-result.md"
+      findings: 2
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 1
+    - path: "sdd/specs/013-memory-backend.md"
+      findings: 1
+    - path: "sdd/traces/bug-329-content-and-metadata-shapes.yml"
+      findings: 1
+    - path: "src/remote_store/_kernel/backend.py"
+      findings: 1
+    - path: "src/remote_store/_store.py"
+      findings: 1
+    - path: "tests/_kernel/test_io.py"
+      findings: 1
+    - path: "tests/ext/test_write.py"
+      findings: 1
+  untouched_files:
+    - "docs-src/_data/graph/graph.json"
+    - "docs-src/explanation/graph_viz.html"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/ee2d43c1-b4b5-42ae-9965-fdf1c37ba43a.jsonl"
+    - "sdd/decisions/f998c0f2-2e52-4728-b08b-c7f2484398db.jsonl"
+    - "sdd/specs/029-async-store-backend-api.md"
+    - "src/remote_store/_async_to_sync_adapter.py"
+    - "src/remote_store/_kernel/_async/kernel.py"
+    - "src/remote_store/_kernel/_sync/kernel.py"
+    - "src/remote_store/aio/backends/_memory.py"
+    - "src/remote_store/backends/_memory.py"
+    - "src/remote_store/ext/write.py"
+    - "tests/_kernel/_fake.py"
+    - "tests/_kernel/test_kernel.py"
+    - "tests/aio/test_async_store.py"
+    - "tests/aio/test_async_to_sync_adapter.py"
+    - "tests/backends/memory/test_buffer_content.py"
+    - "tests/backends/memory/test_metadata_shape.py"
+    - "tests/test_snippets.py"
+    - "tests/test_store.py"
+  review_driven_commits:
+    - sha: "b879807"
+      subject: "BUG-331: Unsized reads forward foreign keywords and hold content about once"
+    - sha: "e80e7f5"
+      subject: "BUG-329, BUG-331, BUG-333: Round 2 fixes"
+    - sha: "15403d3"
+      subject: "BUG-329, BUG-331, BUG-333: Round 3 fixes"
+    - sha: "b7bda8b"
+      subject: "BUG-329, BUG-331: Round 4 fixes"
+    - sha: "66faf7a"
+      subject: "BUG-331: Use Any where CodeQL sees it"
+    - sha: "e0d015b"
+      subject: "BUG-329: Round 5 fixes"
+    - sha: "287a115"
+      subject: "BUG-329: Closing panel fixes"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
