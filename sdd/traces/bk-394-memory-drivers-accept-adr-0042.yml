@@ -26,6 +26,12 @@ surprising_ripples:
   - tests/backends/fixtures/memory.py
   - tests/aio/test_async_store.py
   - sdd/specs/022-streaming-atomic-writes.md
+  - src/remote_store/_capabilities.py
+  - src/remote_store/_kernel/backend.py
+  - tests/backends/conformance/test_atomic.py
+  - tests/backends/conformance/test_health_probe_declared.py
+  - sdd/GATE-INVENTORY.md
+  - sdd/backlog/bk-345-absent-container-conformance.md
 discovery_followups:
   - BK-440
   - BK-441
@@ -147,3 +153,200 @@ phases:
         section: "Pre-work index"
         read_type: verify
         extract: "Public API (__all__), API reference page, ADR, CHANGELOG entry rows discharged"
+review:
+  # Derived by `hatch run ship-report 1144 --trace-block-only` at head e8bb63a.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1144 --trace-block-only"
+  pr: 1144
+  review_rounds: 9
+  submissions: 9
+  findings: 60
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.42
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.31
+    - round: 3
+      findings: 13
+      origin: {loop-introduced: 2, original: 9, unclassifiable-file: 2}
+      triage: {must-fix: 13}
+      duration_hours: 0.38
+    - round: 4
+      findings: 8
+      origin: {loop-introduced: 4, original: 2, pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 8}
+      duration_hours: 0.44
+    - round: 5
+      findings: 13
+      origin: {loop-introduced: 5, original: 6, pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 13}
+      duration_hours: 0.33
+    - round: 6
+      findings: 12
+      origin: {loop-introduced: 5, original: 4, pre-existing: 1, unclassifiable-file: 2}
+      triage: {must-fix: 12}
+      duration_hours: 1.29
+    - round: 7
+      findings: 5
+      origin: {loop-introduced: 1, original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 3, unknown: 2}
+      duration_hours: 0.36
+    - round: 8
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 11.26
+    - round: 9
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.17
+  by_file:
+    - path: "sdd/specs/013-memory-backend.md"
+      findings: 8
+    - path: "docs-src/reference/migration.md"
+      findings: 6
+    - path: "scripts/check_custom_backend_guide.py"
+      findings: 5
+    - path: "src/remote_store/_kernel/_sync/_io.py"
+      findings: 4
+    - path: "src/remote_store/aio/backends/_memory.py"
+      findings: 4
+    - path: "src/remote_store/backends/_memory.py"
+      findings: 4
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "src/remote_store/drivers.py"
+      findings: 3
+    - path: "docs-src/guides/custom-backend-guide.md"
+      findings: 2
+    - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+      findings: 2
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 2
+    - path: "src/remote_store/_kernel/_async/kernel.py"
+      findings: 2
+    - path: "src/remote_store/_kernel/backend.py"
+      findings: 2
+    - path: "sdd/backlog/bk-382-ancestor-gate-overwrite-path.md"
+      findings: 1
+    - path: "sdd/formal/BackendContract.dfy"
+      findings: 1
+    - path: "sdd/specs/037-depth-limited-listing.md"
+      findings: 1
+    - path: "sdd/traces/bk-394-memory-drivers-accept-adr-0042.yml"
+      findings: 1
+    - path: "src/remote_store/_kernel/_async/driver.py"
+      findings: 1
+    - path: "src/remote_store/_kernel/_sync/kernel.py"
+      findings: 1
+    - path: "src/remote_store/aio/__init__.py"
+      findings: 1
+    - path: "tests/_kernel/test_encoding_observations.py"
+      findings: 1
+    - path: "tests/_kernel/test_io.py"
+      findings: 1
+    - path: "tests/backends/conformance/test_health_probe_declared.py"
+      findings: 1
+    - path: "tests/backends/memory/aio/test_basics.py"
+      findings: 1
+    - path: "tests/backends/memory/test_kernel_cells.py"
+      findings: 1
+    - path: "tests/scripts/test_check_custom_backend_guide.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "docs-src/_data/graph/graph.json"
+    - "docs-src/context7.json"
+    - "docs-src/explanation/graph_viz.html"
+    - "docs-src/guides/backends/index.md"
+    - "docs-src/index.md"
+    - "docs-src/reference/api/_nav.yml"
+    - "docs-src/reference/api/aio/backends/memory.md"
+    - "docs-src/reference/api/backend.md"
+    - "docs-src/reference/api/backends/memory.md"
+    - "docs-src/reference/api/drivers.md"
+    - "docs-src/reference/api/index.md"
+    - "examples/snippets/custom_backend_guide.py"
+    - "examples/snippets/homepage.py"
+    - "scripts/check_api_docs.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/TESTING.md"
+    - "sdd/adrs/0001-architecture-store-registry-backends.md"
+    - "sdd/adrs/0011-retry-per-backend-native.md"
+    - "sdd/adrs/0012-async-store-backend-api.md"
+    - "sdd/adrs/0025-async-to-sync-backend-adapter.md"
+    - "sdd/adrs/0042-contract-kernel-over-thin-drivers.md"
+    - "sdd/adrs/0047-store-tree-key-resolution.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/backlog/bk-242-flat-ns-ancestor-precheck-perf.md"
+    - "sdd/backlog/bk-339-store-behavior-matrix.md"
+    - "sdd/backlog/bk-345-absent-container-conformance.md"
+    - "sdd/backlog/bk-389-kernel-step-1-memory.md"
+    - "sdd/backlog/bug-266-sftp-failure-to-arm-map.md"
+    - "sdd/backlog/bug-287-pyarrow-floor-cannot-import.md"
+    - "sdd/backlog/bug-288-aiohttp-floor-cannot-import.md"
+    - "sdd/backlog/bug-289-floor-warnings-fail-suite.md"
+    - "sdd/backlog/id-140-sqlblob-lazy-reads.md"
+    - "sdd/backlog/id-181-per-backend-ssh-rsa-opt-in.md"
+    - "sdd/backlog/id-217-async-native-ext-surface.md"
+    - "sdd/decisions/115d97a6-e0fa-4bf2-81a9-dccb220e7c86.jsonl"
+    - "sdd/decisions/f9fa2a8e-b25c-401b-87c9-b74a05d17a91.jsonl"
+    - "sdd/formal/MemoryBackend.dfy"
+    - "sdd/formal/README.md"
+    - "sdd/specs/005-error-model.md"
+    - "sdd/specs/007-atomic-writes.md"
+    - "sdd/specs/010-native-path-resolution.md"
+    - "sdd/specs/022-streaming-atomic-writes.md"
+    - "sdd/specs/026-health-check.md"
+    - "sdd/specs/029-async-store-backend-api.md"
+    - "src/remote_store/_capabilities.py"
+    - "src/remote_store/_kernel/__init__.py"
+    - "src/remote_store/_kernel/_async/_io.py"
+    - "src/remote_store/_kernel/_sync/driver.py"
+    - "src/remote_store/_kernel/aio_backend.py"
+    - "src/remote_store/aio/backends/__init__.py"
+    - "src/remote_store/backends/__init__.py"
+    - "src/remote_store/backends/_memory_tree.py"
+    - "tests/_kernel/test_backend.py"
+    - "tests/_kernel/test_kernel.py"
+    - "tests/_kernel/test_tree_results.py"
+    - "tests/aio/test_async_store.py"
+    - "tests/aio/test_package_exports.py"
+    - "tests/backends/conformance/test_atomic.py"
+    - "tests/backends/fixtures/memory.py"
+    - "tests/backends/fixtures/test_registry.py"
+    - "tests/backends/memory/aio/test_copying.py"
+    - "tests/backends/memory/aio/test_driver_open_write.py"
+    - "tests/backends/memory/test_coverage.py"
+    - "tests/scripts/test_check_api_docs.py"
+    - "tests/test_capabilities.py"
+    - "tests/test_snippets.py"
+  review_driven_commits:
+    - sha: "61cd9bf"
+      subject: "BK-394: Keep the caller's content errors and stream shape intact on the kernel"
+    - sha: "9909dde"
+      subject: "BK-394: List the lazy aio Memory names in dir(), and complete the migration note"
+    - sha: "bf2b59f"
+      subject: "BK-394: Round-3 fixes: open_atomic tells, CAPABILITIES gates again, gates fail closed"
+    - sha: "cb61b31"
+      subject: "BK-394: Round-4 fixes: open_atomic stream refusals, CapabilitySet copies, public docstrings"
+    - sha: "a42b1ee"
+      subject: "BK-394: Round-5 fixes: content guard reads and dunders, scoped claims across docs and specs"
+    - sha: "6c43093"
+      subject: "BK-394: Content is marked only where a caller hands it in; closing-round fixes"
+    - sha: "b2b744e"
+      subject: "BK-394: repr reads Memory's counters unlocked; final-panel premise fixes; file BK-441, BK-442"
+    - sha: "bf5f9c2"
+      subject: "BK-394: State what an unlocked counts read and an unreadable write actually answer"
+    - sha: "e8bb63a"
+      subject: "BK-394: AsyncMemoryDriver.counts states when a read can see a step in progress"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
