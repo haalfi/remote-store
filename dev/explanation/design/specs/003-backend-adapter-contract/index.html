@@ -12884,12 +12884,12 @@ for all backends, including SQLBlob.
 <strong>Formal coverage:</strong> <code>write()</code> is modelled in <code>sdd/formal/BackendContract.dfy</code>
 as <code>Write</code> with postconditions covering the precondition evaluation order
 (since BK-388 the closed guard <code>!Live() → BackendUnavailable</code> (BE-020) and the
-root refusal <code>AddressesRoot(path) → InvalidPath</code> (BE-029) first, then
-<code>IsDir → InvalidPath</code>, <code>!AllAncestorsTraversable → InvalidPath</code> (ID-209),
-<code>IsFile ∧ !overwrite → AlreadyExists</code>), the WR-010
-strict gate (<code>HasUserMetadata(metadata) ∧ CapUserMetadata !in capabilities →
-CapabilityNotSupported</code>, with empty-mapping carve-out encoded by
-<code>HasUserMetadata</code>), the WR-001a schema (<code>r.value.path == path ∧ r.value.size
+root refusal <code>AddressesRoot(path) → InvalidPath</code> (BE-029) first, then the
+WR-010 strict gate (<code>HasUserMetadata(metadata) ∧ CapUserMetadata !in
+capabilities → CapabilityNotSupported</code>, with empty-mapping carve-out encoded
+by <code>HasUserMetadata</code>, and an unchanged-state frame; BE-030 holds it ahead of
+any I/O), then <code>IsDir → InvalidPath</code>, <code>!AllAncestorsTraversable → InvalidPath</code>
+(ID-209), <code>IsFile ∧ !overwrite → AlreadyExists</code>), the WR-001a schema (<code>r.value.path == path ∧ r.value.size
 == |content|</code>), WR-004 (source Native iff <code>CapWriteResultNative</code>), WR-005
 (Basic source → rich fields None), WR-012 metadata echo, and WR-013
 round-trip (<code>fs[path].info.metadata</code> reflects what was stored). ID-209
@@ -13825,23 +13825,32 @@ closed or not, since capability data is not a live operation: <code>GLOB</code> 
 <code>open_atomic</code> (BE-011), <code>MOVE</code> for <code>move</code> and <code>COPY</code> for <code>copy</code>, a
 self-operation included, each refused with <code>CapabilityNotSupported</code> by the
 declaration, whatever protocols the driver presents. The kernel refuses to
-construct over a declaration its protocols cannot back. WR-010's metadata gate
+construct over a declaration its protocols cannot back, and over a driver that
+leaves a primitive out or inherits the protocol's own body for one, which would
+answer <code>None</code> instead of acting. <code>probe</code>'s inherited body is the one exception,
+being the exemption from probing (PING-008); a <code>probe</code> left out is refused like
+any other. WR-010's metadata gate
 on <code>write</code> and <code>write_atomic</code> comes after step 4 and before step 5, so the root
 refusal stays BE-008's first precondition and the gate stays ahead of any I/O.
-That ranks it ahead of BE-008's type, ancestor and overwrite checks. So on a
-class without <code>USER_METADATA</code>, a write carrying metadata answers
-<code>CapabilityNotSupported</code> in three states where <code>BackendContract.dfy</code>'s <code>Write</code>
-guards its WR-010 clause and answers otherwise: a folder at the key
-(<code>InvalidPath</code>), a file above it (<code>InvalidPath</code>), and an existing file with
-<code>overwrite=False</code> (<code>AlreadyExists</code>). On a hierarchical namespace all three are
-answered by the driver's write itself, so matching the model would cost every
-write carrying metadata a <code>stat</code>. On a flat namespace the first two are
-answered by BE-032's A.4 checks, which the kernel runs anyway, but they are I/O
-and the gate is held ahead of any I/O, so it ranks first there too; only the
-overwrite state would cost a <code>stat</code> of its own. A class on the kernel departs
-from the model in those three states on both namespaces. Both Memory classes
-declare <code>USER_METADATA</code>, so neither reaches them. The departure stands, and
-reconciling the model is BK-440's.</p>
+That ranks it ahead of BE-008's type, ancestor and overwrite checks: on a class
+without <code>USER_METADATA</code>, a write carrying metadata answers
+<code>CapabilityNotSupported</code> with a folder at the key, a file above it, or an
+existing file and <code>overwrite=False</code>, on both namespaces. Matching BE-008's order
+instead would cost every such write a <code>stat</code> on a hierarchical namespace, and on
+a flat one would put I/O ahead of the gate. <code>BackendContract.dfy</code>'s <code>Write</code>
+states the same order.</p>
+<p><strong>Content.</strong> A driver receives only the types its <code>put</code> declares. A
+<code>bytearray</code> or <code>memoryview</code> passed to <code>write</code> or <code>write_atomic</code> reaches it as
+a <code>bytes</code> copy, and so does a buffer a content stream (or, async, its iterator)
+yields. Content that is no bytes source, neither a buffer nor a readable stream
+(async: an async iterator), is refused with <code>TypeError</code> after WR-010's gate and
+before any I/O, on <code>write</code> and <code>write_atomic</code> alike; a buffer that cannot be
+read as <code>bytes</code> (a released <code>memoryview</code>) fails at the same rank with its own
+error. A stream that yields something not binary raises <code>TypeError</code>
+when read, as the caller's own error, passed through verbatim like
+ASYNC-091's and never classified. A check on the target made before the
+stream is read answers first, such as <code>write_atomic</code>'s <code>stat</code> by temp and
+rename without <code>overwrite</code>.</p>
 <p><strong>What a key resolves to</strong> is <a href="#be-032-the-store-tree-on-the-kernel">BE-032</a>'s
 answer, for every call below: the tree's <code>Item</code>, <code>Folder</code> or <code>Nothing</code> (A.1),
 each family's result (A.5), the determinants a call runs whether or not it

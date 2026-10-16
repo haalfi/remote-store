@@ -12312,7 +12312,7 @@ each <code>### MEM-</code> heading once, except MEM-DS-005 and MEM-014, which sp
 <tbody>
 <tr>
 <td>kernel (5)</td>
-<td>MEM-DS-005's validation table (BE-030: the driver receives a canonical key), MEM-014's <code>recursive</code> dispatch (BE-031: <code>remove_folder</code> or <code>delete_tree</code>, the root refused first), MEM-013 (<code>write_atomic</code> is <code>put</code>, from <code>put_is_atomic = True</code>; AW-001), MEM-018 (<code>close</code>, through <code>close_is_terminal = False</code>; BE-020), MEM-020 (the choke point; the tree raises only typed errors, so <code>classify</code> is reached only for content <code>put</code> cannot read, BUG-328)</td>
+<td>MEM-DS-005's validation table (BE-030: the driver receives a canonical key), MEM-014's <code>recursive</code> dispatch (BE-031: <code>remove_folder</code> or <code>delete_tree</code>, the root refused first), MEM-013 (<code>write_atomic</code> is <code>put</code>, from <code>put_is_atomic = True</code>; AW-001), MEM-018 (<code>close</code>, through <code>close_is_terminal = False</code>; BE-020), MEM-020 (the choke point; the tree raises only typed errors, and the kernel converts or refuses content <code>put</code> could not read and marks what the content raises as <code>put</code> reads it, so nothing a caller passes reaches <code>classify</code>)</td>
 </tr>
 <tr>
 <td>driver (15)</td>
@@ -12746,16 +12746,18 @@ by <code>write()</code> is not atomic as a pair. This matches all other backends
 objects and raise the <code>io</code> protocol's own errors where that protocol does: the
 write-only file <code>open_atomic</code> yields answers <code>seek()</code> with
 <code>io.UnsupportedOperation</code>, <code>read()</code> with <code>NotImplementedError</code> and a
-non-buffer <code>write()</code> with <code>TypeError</code>. Two native exceptions reach the driver from what
-the caller hands it, and neither is the tree's: an error the caller's own
-content raises passes the choke point verbatim, still the caller's type
-(ASYNC-091); and content <code>put</code> cannot read (a <code>bytearray</code> or <code>memoryview</code>,
-outside <code>WritableContent</code>) is turned by <code>classify</code> into a base
-<code>RemoteStoreError</code>. The kernel's probe then replaces it only where the target
-alone would refuse the write: <code>AlreadyExists</code> on an existing file without
-<code>overwrite</code>, and <code>InvalidPath</code> on a folder or below a file. Elsewhere, a free
-key or an existing file with <code>overwrite</code>, the base <code>RemoteStoreError</code> stands,
-and nothing is stored (BUG-328).</p>
+non-buffer <code>write()</code> with <code>TypeError</code>. One native exception reaches the driver
+from what the caller hands it, and it is not the tree's: an error the caller's
+own content raises passes the choke point verbatim, still the caller's type
+(ASYNC-091). A <code>bytearray</code> or <code>memoryview</code> is stored as its bytes, since the
+kernel hands the driver a <code>bytes</code> copy, and content that is no bytes source is
+the kernel's <code>TypeError</code> before the tree is touched (BE-030 § Content).
+The drivers touch the caller's content only through <code>read</code> (sync) and
+<code>async for</code> (async), and the kernel marks whatever either raises as the
+caller's, a buffer that cannot be read as <code>bytes</code> and an <code>__aiter__</code> that
+fails included (<code>tests/backends/memory/test_buffer_content.py</code>). So nothing a
+caller passes reaches <code>classify</code>, which stays as the protocol requires and
+answers a base <code>RemoteStoreError</code>.</p>
 <p>Error conditions are detected by tree inspection:</p>
 <table>
 <thead>

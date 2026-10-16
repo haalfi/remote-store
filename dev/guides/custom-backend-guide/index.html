@@ -12383,7 +12383,11 @@ once for every backend.</p>
 </table>
 <p>Subclassing <code>Driver</code> explicitly is optional, since the kernel only calls the
 members, but it gives you a type checker's help and the protocol's no-op
-<code>probe()</code> for a store that is always healthy.</p>
+<code>probe()</code> for a store that is always healthy. <code>probe()</code> is the only member you
+may inherit from the protocol: building the backend raises <code>ValueError</code> naming
+any member your driver leaves out or inherits from it otherwise, so a forgotten
+<code>delete()</code> fails at startup instead of reporting success. A driver that does
+not subclass <code>Driver</code> has no <code>probe()</code> to inherit, and must define its own.</p>
 <hr />
 <h2 id="step-2-declare-capabilities">Step 2: Declare capabilities<a class="headerlink" href="#step-2-declare-capabilities" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">_REDIS_CAPABILITIES</span> <span class="o">=</span> <span class="n">CapabilitySet</span><span class="p">(</span>
@@ -13636,6 +13640,9 @@ example needs no explicit locking.</p>
 </tr>
 </tbody>
 </table>
+<p>Every member must be present, and every one but <code>probe()</code> implemented by your
+driver or a base class of yours, not inherited from the protocol; construction
+refuses either omission.</p>
 <h3 id="declared-attributes">Declared attributes<a class="headerlink" href="#declared-attributes" title="Permanent link">&para;</a></h3>
 <table>
 <thead>

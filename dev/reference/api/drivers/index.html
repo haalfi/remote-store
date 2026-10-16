@@ -13684,8 +13684,13 @@ a declared <code>COPY</code>, <code>MOVE</code>, <code>ATOMIC_MOVE</code>, <code
 protocol to back it (the <a href="../../../guides/custom-backend-guide/#step-2-declare-capabilities">guide's table</a>
 names what backs each; the other capabilities are taken as declared), when a flat driver has
 folder objects, when folder objects come without <code>remove_folder</code> or
-explicit parents without <code>ensure_parents</code>, or when the class's
-<code>close_is_terminal</code> differs from the driver's.</p>
+explicit parents without <code>ensure_parents</code>, when the class's
+<code>close_is_terminal</code> differs from the driver's, or when a required member
+is missing or is still the protocol's own empty body, which would answer
+<code>None</code> instead of acting. Only <code>probe</code> may be the protocol's body: it is the
+exemption from probing for a store that is always healthy, but it must
+still be present, so a driver that does not subclass the protocol defines
+its own.</p>
 </div>
 <hr />
 <h2 id="kernel">Kernel<a class="headerlink" href="#kernel" title="Permanent link">&para;</a></h2>
@@ -13736,8 +13741,9 @@ subclass that builds its own.</p>
             <p>If the driver's declarations are not backed by its
 protocols, it is flat and has folder objects, it has explicit
 parents and no <code>ensure_parents</code>, it has folder objects and no
-<code>remove_folder</code>, or the class's own <code>close_is_terminal</code>
-differs from the driver's.</p>
+<code>remove_folder</code>, the class's own <code>close_is_terminal</code>
+differs from the driver's, or a primitive is missing or, other
+than <code>probe</code>, is the protocol's own body.</p>
           </div>
         </li>
     </ul>
@@ -13816,8 +13822,9 @@ subclass that builds its own.</p>
             <p>If the driver's declarations are not backed by its
 protocols, it is flat and has folder objects, it has explicit
 parents and no <code>ensure_parents</code>, it has folder objects and no
-<code>remove_folder</code>, or the class's own <code>close_is_terminal</code>
-differs from the driver's.</p>
+<code>remove_folder</code>, the class's own <code>close_is_terminal</code>
+differs from the driver's, or a primitive is missing or, other
+than <code>probe</code>, is the protocol's own body.</p>
           </div>
         </li>
     </ul>
@@ -13870,7 +13877,11 @@ differs from the driver's.</p>
 
 
 
-        <p>The fourteen required primitives and the six declared attributes.</p>
+        <p>The fourteen primitives and the six declared attributes.</p>
+<p>All fourteen are required: construction refuses a driver that lacks one, or
+inherits this protocol's empty body for one, which would answer <code>None</code>
+instead of acting. <code>probe</code> alone may be inherited, its body being the
+exemption from probing.</p>
 <p>Two more attributes are optional and read with defaults: <code>stream_catch</code>,
 the exception types a stream from <code>get</code> raises beyond <code>OSError</code> and
 <code>EOFError</code>, and <code>size_probe</code>, a <code>SEEK_END</code> resolver for that stream,
@@ -14284,7 +14295,11 @@ from probing, which only a store that is always healthy may take.</p>
 
 
 
-        <p>The fourteen required primitives and the six declared attributes.</p>
+        <p>The fourteen primitives and the six declared attributes.</p>
+<p>All fourteen are required: construction refuses a driver that lacks one, or
+inherits this protocol's empty body for one, which would answer <code>None</code>
+instead of acting. <code>probe</code> alone may be inherited, its body being the
+exemption from probing.</p>
 <p>Two more attributes are optional and read with defaults: <code>stream_catch</code>,
 the exception types a stream from <code>get</code> raises beyond <code>OSError</code> and
 <code>EOFError</code>, and <code>size_probe</code>, a <code>SEEK_END</code> resolver for that stream,

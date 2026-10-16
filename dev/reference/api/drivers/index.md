@@ -4,7 +4,7 @@
 
 Construction checks the declarations
 
-Building a `DriverBackend` or `AsyncDriverBackend` raises `ValueError` when a declared `COPY`, `MOVE`, `ATOMIC_MOVE`, `ATOMIC_WRITE` or `GLOB` has no protocol to back it (the [guide's table](https://docs.remotestore.dev/stable/guides/custom-backend-guide/#step-2-declare-capabilities) names what backs each; the other capabilities are taken as declared), when a flat driver has folder objects, when folder objects come without `remove_folder` or explicit parents without `ensure_parents`, or when the class's `close_is_terminal` differs from the driver's.
+Building a `DriverBackend` or `AsyncDriverBackend` raises `ValueError` when a declared `COPY`, `MOVE`, `ATOMIC_MOVE`, `ATOMIC_WRITE` or `GLOB` has no protocol to back it (the [guide's table](https://docs.remotestore.dev/stable/guides/custom-backend-guide/#step-2-declare-capabilities) names what backs each; the other capabilities are taken as declared), when a flat driver has folder objects, when folder objects come without `remove_folder` or explicit parents without `ensure_parents`, when the class's `close_is_terminal` differs from the driver's, or when a required member is missing or is still the protocol's own empty body, which would answer `None` instead of acting. Only `probe` may be the protocol's body: it is the exemption from probing for a store that is always healthy, but it must still be present, so a driver that does not subclass the protocol defines its own.
 
 ______________________________________________________________________
 
@@ -28,7 +28,7 @@ Parameters:
 
 Raises:
 
-- `ValueError` – If the driver's declarations are not backed by its protocols, it is flat and has folder objects, it has explicit parents and no ensure_parents, it has folder objects and no remove_folder, or the class's own close_is_terminal differs from the driver's.
+- `ValueError` – If the driver's declarations are not backed by its protocols, it is flat and has folder objects, it has explicit parents and no ensure_parents, it has folder objects and no remove_folder, the class's own close_is_terminal differs from the driver's, or a primitive is missing or, other than probe, is the protocol's own body.
 
 ### AsyncDriverBackend
 
@@ -48,7 +48,7 @@ Parameters:
 
 Raises:
 
-- `ValueError` – If the driver's declarations are not backed by its protocols, it is flat and has folder objects, it has explicit parents and no ensure_parents, it has folder objects and no remove_folder, or the class's own close_is_terminal differs from the driver's.
+- `ValueError` – If the driver's declarations are not backed by its protocols, it is flat and has folder objects, it has explicit parents and no ensure_parents, it has folder objects and no remove_folder, the class's own close_is_terminal differs from the driver's, or a primitive is missing or, other than probe, is the protocol's own body.
 
 ______________________________________________________________________
 
@@ -58,7 +58,9 @@ ______________________________________________________________________
 
 Bases: `Protocol`
 
-The fourteen required primitives and the six declared attributes.
+The fourteen primitives and the six declared attributes.
+
+All fourteen are required: construction refuses a driver that lacks one, or inherits this protocol's empty body for one, which would answer `None` instead of acting. `probe` alone may be inherited, its body being the exemption from probing.
 
 Two more attributes are optional and read with defaults: `stream_catch`, the exception types a stream from `get` raises beyond `OSError` and `EOFError`, and `size_probe`, a `SEEK_END` resolver for that stream, which only the sync runtime reads, since only its stream seeks.
 
@@ -215,7 +217,9 @@ How *key* maps to storage; no I/O.
 
 Bases: `Protocol`
 
-The fourteen required primitives and the six declared attributes.
+The fourteen primitives and the six declared attributes.
+
+All fourteen are required: construction refuses a driver that lacks one, or inherits this protocol's empty body for one, which would answer `None` instead of acting. `probe` alone may be inherited, its body being the exemption from probing.
 
 Two more attributes are optional and read with defaults: `stream_catch`, the exception types a stream from `get` raises beyond `OSError` and `EOFError`, and `size_probe`, a `SEEK_END` resolver for that stream, which only the sync runtime reads, since only its stream seeks.
 
