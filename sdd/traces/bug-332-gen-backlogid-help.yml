@@ -52,3 +52,34 @@ phases:
         read_type: gate
         extract: "Done: delete from BACKLOG.md, add [x] entry under BACKLOG-DONE.md § Unreleased"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1150 --trace-block-only` at head 59adc64.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1150 --trace-block-only"
+  pr: 1150
+  review_rounds: 2
+  submissions: 1
+  findings: 1
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.02
+  by_file:
+    - path: "scripts/gen_backlogid.py"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/c29e9ca6-10af-44f2-86cd-e1db3fe67d75.jsonl"
+    - "sdd/traces/bug-332-gen-backlogid-help.yml"
+    - "tests/scripts/test_gen_backlogid.py"
+  review_driven_commits:
+    - sha: "5549b22"
+      subject: "BUG-332: decision log"
+    - sha: "59adc64"
+      subject: "fix: address PR #1150 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
