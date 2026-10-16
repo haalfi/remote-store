@@ -822,13 +822,6 @@ CHANGELOG the release body is built from — say what is actually true.
   Open decision: which rules to add, and what a dangling ID means.
   Detail: [dossier](backlog/id-235-backlog-integrity-lint.md)
 
-- [ ] **BUG-332 — `gen_backlogid.py --help` regenerates `sdd/backlogid.json` instead of printing usage**
-  spec: — · effort: S · audience: contributor.tooling
-  `main()` in `scripts/gen_backlogid.py` reads only `--check` and `--remote`; any other argument,
-  `--help` or a typo, runs generate mode, prints "Updated sdd\backlogid.json" and rewrites the file
-  (reproduced 2026-10-16). It prints that line even when the file did not change. Open decision:
-  none. ID-235 lints the same files, separate rules.
-
 - [ ] **ID-254 — The `[Unreleased]` stub's bold marker has no defined meaning beyond `**Breaking**`, and nobody owns section assignment**
   spec: — · effort: S · audience: contributor.process
   The bold marker after an `[Unreleased]` entry's ID is a gated obligation
