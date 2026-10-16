@@ -63,7 +63,7 @@ def main(argv: list[str]) -> int:
     if rewritten == original:
         print(f"{target}: already in canonical order")
         return 0
-    target.write_text(rewritten, encoding="utf-8")
+    target.write_text(rewritten, encoding="utf-8", newline="\n")
     print(f"{target}: reordered classes")
     return 0
 

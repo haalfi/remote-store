@@ -1,0 +1,264 @@
+id: BK-444
+title: "Three repo traps cost sessions retries that a check would catch before commit"
+trigger: "Sessions lost retries to three traps no check caught: a write_text without newline= rewrote tracked LF files as CRLF on Windows, a tool parameter decoded a four-digit unicode escape into a raw U+2028 inside test source, and a hatch alias without {args} dropped flags silently"
+source_items:
+  - BK-444
+audience:
+  - contributor.tooling
+  - internal.style
+decisions:
+  - sdd/decisions/c29e9ca6-10af-44f2-86cd-e1db3fe67d75.jsonl
+  - sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl
+expected_ripples:
+  - sdd/GATE-INVENTORY.md
+  - sdd/backlogid.json
+orient:
+  - items: [BUG-327]
+    verdict: constrains
+    evidence: "sdd/BACKLOG.md BUG-327: `lint` and `format-check` run ruff on `src/ tests/ examples/ scripts/` only, and its open decision is whether to widen that to sdd/*.py. BK-444's write_text rule is scoped to scripts/ and states sdd/*.py as a bound owned by BUG-327; the invisible-character rule reads git ls-files, so it does not depend on BUG-327's answer."
+  - items: [ID-235]
+    verdict: unrelated
+    evidence: "sdd/BACKLOG.md ID-235 adds BACKLOG-DONE.md integrity rules to gen_backlogid.py --check; none of its candidate rules reads source characters, write calls or hatch aliases."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-444, BUG-327, ID-235 (hatch run backlog-show; backlog-find CRLF, ruff, invisible, hatch)"
+        read_type: gate
+        extract: "BUG-327 is the only open item sharing BK-444's files (ruff scope); BK-334, the hatch-alias ripple row, was absorbed into BK-346 and is done"
+        outcome: ok
+      - file: sdd/backlog/bk-444-repo-traps-lint.md
+        section: "write_text table, Ruff PLE, Hatch {args}"
+        read_type: gate
+        extract: "14 calls without newline=, 6 to tracked targets; PLE coverage of invisible characters was unmeasured"
+        outcome: unclear
+      - file: pyproject.toml
+        section: "[tool.ruff.lint] select; [tool.hatch.envs.default.scripts]"
+        read_type: verify
+        extract: "no PLE or RUF selected; 21 bare aliases forward {args}, 10 bare aliases whose script reads argv do not"
+        outcome: ok
+      - file: .gitattributes
+        section: "* text=auto eol=lf"
+        read_type: verify
+        extract: "commits normalise CRLF, so the write_text trap costs a dirty-with-no-diff tree, measured on sdd/process-budget.json"
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "Drift-gate block parsing"
+        read_type: gate
+        extract: "a single-pass script may declare several Drift-gate blocks without entrypoint:, so one check_repo_traps.py can carry three rules"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/backlog/bk-444-repo-traps-lint.md
+        section: "Plan"
+        read_type: gate
+        extract: "one script, three rules, no allowlists; the rules' first run named exactly the dossier's 14 write_text calls and 10 aliases"
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "module docstring; _VALID_FIELDS, _KIND_FIELDS, _VALID_DOMAINS"
+        read_type: reference
+        extract: "block fields and closed domain set for the three declarations"
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2-7"
+        read_type: gate
+        extract: "localize, derived claim space, authority for the {args} pair stated in the script's docstring, bounds in the same docstring"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "CODE_PAT, DOCS_PAT"
+        read_type: verify
+        extract: "lint runs only on CODE_PAT diffs, so rule 1's sdd/ and docs-src/ reach needed docs-gate too; asked, and wired both. The plan named lint alone"
+        outcome: ok
+      - file: scripts/fast_gate.py
+        section: "ALWAYS"
+        read_type: verify
+        extract: "lint always runs locally, so a path matching neither CI pattern is still reached by fast"
+        outcome: ok
+      - file: .pre-commit-config.yaml
+        section: "no-rst-roles"
+        read_type: verify
+        extract: "the pygrep pattern does not match the \\N{ZERO WIDTH SPACE} spelling in check_rst_roles.py"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_check_repo_traps.py
+        section: "(full)"
+        read_type: verify
+        extract: "59 pass; deleting each rule's condition failed 26, 4 and 2 tests (tmp/mutate_traps.py)"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / New or changed cross-artifact check; New test file; Backlog item touched"
+        read_type: verify
+        extract: "DRIFT-RULES applied; the new test exercises no OS-specific code, so no os_sensitive mark"
+        outcome: ok
+  - id: fix
+    name: Fix review findings
+    steps:
+      - file: scripts/check_repo_traps.py
+        section: "scan_invisible; module docstring bounds"
+        read_type: verify
+        extract: "PR #1152 review: rule 1 offered the Python-only \\N{...} remedy for every file type. I carried the plan's .py-shaped wording over to a rule that reads all of git ls-files; the message now names \\N{...} for .py files only"
+        outcome: ok
+      - file: scripts/check_repo_traps.py
+        section: "scan_invisible"
+        read_type: verify
+        extract: "PR #1152 review round 2: rule 1 walked every character in Python, 0.95s over 2246 files (tmp/time_rule1.py); a compiled character class with an early search takes 0.13s, output unchanged. surprising_ripples removed: ci.yml was read, not touched, and pyproject.toml is a cited orient read"
+        outcome: ok
+      - file: scripts/record_decision.py
+        section: "module docstring; json.dumps(..., ensure_ascii=False)"
+        read_type: verify
+        extract: "PR #1152 review round 3: the recorder stores dialog payloads raw, so rule 1 could fail lint on a log no author wrote. Rule 1 now skips sdd/decisions/ (_RECORD_DIRS), asked and decided in this session's log; I had not checked which listed files are generated records"
+        outcome: ok
+      - file: scripts/check_repo_traps.py
+        section: "_is_binary, _attr_regex"
+        read_type: verify
+        extract: "PR #1152 review round 4: fnmatch let `*` cross `/` and missed `**/` at the root, so an anchored binary line could shrink rule 1 silently; a git-rule translator now matches what `git check-attr` reports for the four fixture patterns (tmp/git_attr_truth.py). The dossier's departure count was replaced by the list it counted"
+        outcome: ok
+      - file: scripts/check_repo_traps.py
+        section: "scan_write_text; _bracket_class"
+        read_type: verify
+        extract: "PR #1152 review round 5: rule 2 accepted newline=None, the CRLF-writing default, and _attr_regex copied [!x] and POSIX classes verbatim. Rule 2 now fails a constant other than LF or empty; brackets negate on ! or ^ and map POSIX classes, matching git check-attr (tmp/git_attr_brackets.py); an unknown class fails at .gitattributes"
+        outcome: ok
+      - file: tests/scripts/test_check_repo_traps.py
+        section: "_PLANNED_CODE_POINTS; test_refused_set_is_exactly_the_planned_one"
+        read_type: verify
+        extract: "PR #1152 review round 6: the per-code-point test was parametrized over _INVISIBLE itself, so 13 of the 21 could be dropped silently; it now reads a literal copied from the dossier's Plan step 1, and a set-equality test catches additions too"
+        outcome: ok
+      - file: scripts/check_repo_traps.py
+        section: "binary_files; scan_write_text; check_hatch_args"
+        read_type: verify
+        extract: "PR #1152 review round 7: rules 2 and 3 raised on a file that does not parse, losing rule 1's report; they now report it at its line. The hand-written gitattributes matcher still missed core.ignorecase (true here), nested files and quoting, so it was replaced by one git check-attr call, 0.020s over 2250 files (tmp/checkattr_facts.py); decided in this session's log. I had kept patching the matcher for three rounds where asking git was the fix"
+        outcome: ok
+      - file: scripts/check_repo_traps.py
+        section: "check_write_text; check_hatch_args; Drift-gate rule 1"
+        read_type: verify
+        extract: "PR #1152 review round 8: rule 2 still raised on a non-UTF-8 script, and rule 3 passed an alias to a missing script; both are now reported. Rule 1's extent claim in the Drift-gate text and BACKLOG-DONE named only the sdd/decisions/ skip and now names binary and non-UTF-8 too"
+        outcome: ok
+      - file: sdd/backlog/bk-444-repo-traps-lint.md
+        section: "Plan step 1 (PLE as a second driver for a subset)"
+        read_type: verify
+        extract: "PR #1152 review round 9: PLE2502 flags U+200F and U+061C, which the 21 lacked (tmp/ple_probe.py, ruff 0.15.13), so the subset premise was false; the dossier's 12 probes never tried them. Rule 1 now refuses 24, adding U+200E too; decided in this session's log"
+        outcome: misleading
+      - file: scripts/check_repo_traps.py
+        section: "binary_files"
+        read_type: verify
+        extract: "PR #1152 review round 10: git check-attr also read the per-user ~/.config/git/attributes and the system file, so a machine's own binary line could shrink rule 1 locally while CI read the path; reproduced with a planted XDG_CONFIG_HOME, now neutralised with core.attributesFile and GIT_ATTR_NOSYSTEM"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1152 --trace-block-only` at head a04167a.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1152 --trace-block-only"
+  pr: 1152
+  review_rounds: 10
+  submissions: 10
+  findings: 16
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.13
+    - round: 2
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.69
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.17
+    - round: 4
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.26
+    - round: 5
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.15
+    - round: 6
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.17
+    - round: 7
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.28
+    - round: 8
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.21
+    - round: 9
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.26
+    - round: 10
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.15
+  by_file:
+    - path: "scripts/check_repo_traps.py"
+      findings: 10
+    - path: "sdd/backlog/bk-444-repo-traps-lint.md"
+      findings: 2
+    - path: "tests/scripts/test_check_repo_traps.py"
+      findings: 2
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "sdd/traces/bk-444-repo-traps-lint.yml"
+      findings: 1
+  untouched_files:
+    - "pyproject.toml"
+    - "scripts/_dafny_classorder.py"
+    - "scripts/check_dafny_oracle_fresh.py"
+    - "scripts/check_docstring_parity.py"
+    - "scripts/check_process_budget.py"
+    - "scripts/check_rst_roles.py"
+    - "scripts/check_support_windows.py"
+    - "scripts/drift_check.py"
+    - "scripts/drift_feedstock.py"
+    - "scripts/fast_gate.py"
+    - "scripts/gen_conda_feedstock.py"
+    - "scripts/gen_gate_inventory.py"
+    - "scripts/run_mutate.py"
+    - "scripts/run_tests.py"
+    - "scripts/ship_report.py"
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/c29e9ca6-10af-44f2-86cd-e1db3fe67d75.jsonl"
+    - "sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl"
+    - "tests/scripts/test_check_dafny_oracle_fresh.py"
+  review_driven_commits:
+    - sha: "60a2417"
+      subject: "fix: address PR #1152 review"
+    - sha: "a232434"
+      subject: "fix: address PR #1152 review"
+    - sha: "e79acad"
+      subject: "fix: address PR #1152 review"
+    - sha: "6ba99af"
+      subject: "fix: address PR #1152 review"
+    - sha: "9fc04c5"
+      subject: "fix: address PR #1152 review"
+    - sha: "d8fad9f"
+      subject: "fix: address PR #1152 review"
+    - sha: "a6d58ab"
+      subject: "fix: address PR #1152 review"
+    - sha: "9947dea"
+      subject: "fix: address PR #1152 review"
+    - sha: "847593e"
+      subject: "fix: address PR #1152 review"
+    - sha: "a04167a"
+      subject: "fix: address PR #1152 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

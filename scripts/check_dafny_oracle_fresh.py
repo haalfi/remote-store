@@ -312,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
             module = rebuilt / "module_.py"
             if module.is_file():
                 try:
-                    module.write_text(reorder(module.read_text(encoding="utf-8")), encoding="utf-8")
+                    module.write_text(reorder(module.read_text(encoding="utf-8")), encoding="utf-8", newline="\n")
                 except UnicodeDecodeError as exc:
                     print(f"FAIL: the rebuilt {OUT_DIR}/module_.py is not UTF-8 ({exc}); the build is broken")
                     return 1

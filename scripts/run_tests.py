@@ -304,7 +304,7 @@ def acquire_suite_lock(
     info = {"pid": os.getpid(), "cwd": os.getcwd(), "started": dt.datetime.now().isoformat(timespec="seconds")}
     # The description is a courtesy to waiters; the lock is what counts.
     with contextlib.suppress(OSError):
-        info_path.write_text(json.dumps(info), encoding="utf-8")
+        info_path.write_text(json.dumps(info), encoding="utf-8", newline="\n")
     return SuiteLock(fd, info_path)
 
 

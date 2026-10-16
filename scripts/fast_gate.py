@@ -602,7 +602,7 @@ def green_tree(root: Path = ROOT) -> str | None:
 
 
 def record_green(tree: str, root: Path = ROOT) -> None:
-    state_path(root).write_text(json.dumps({"tree": tree, "python": _interpreter()}), encoding="utf-8")
+    state_path(root).write_text(json.dumps({"tree": tree, "python": _interpreter()}), encoding="utf-8", newline="\n")
 
 
 def merge_base_tree(root: Path = ROOT) -> str | None:
@@ -678,7 +678,7 @@ def record_durations(junit: Path, root: Path = ROOT) -> None:
         old = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         old = {}
-    path.write_text(json.dumps({**old, **new}), encoding="utf-8")
+    path.write_text(json.dumps({**old, **new}), encoding="utf-8", newline="\n")
 
 
 def estimate(sel: Selection, durations: dict[str, float], test_files: list[str]) -> tuple[float, float]:

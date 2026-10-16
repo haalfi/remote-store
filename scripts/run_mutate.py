@@ -95,7 +95,7 @@ def _ensure_report_for_empty_scope(scope, returncode: int, report_path: Path = _
     if not _scope_has_no_mutation_candidates(scope):
         return
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(_EMPTY_REPORT, indent=2), encoding="utf-8")
+    report_path.write_text(json.dumps(_EMPTY_REPORT, indent=2), encoding="utf-8", newline="\n")
     print(f"run_mutate: scope has no mutation candidates; wrote empty report to {report_path}", file=sys.stderr)
 
 

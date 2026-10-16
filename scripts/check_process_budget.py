@@ -134,7 +134,7 @@ def integrity(budget: dict) -> list[str]:
 
 
 def save(root: Path, budget: dict) -> None:
-    (root / BUDGET).write_text(json.dumps(budget, indent=2) + "\n", encoding="utf-8")
+    (root / BUDGET).write_text(json.dumps(budget, indent=2) + "\n", encoding="utf-8", newline="\n")
 
 
 def deltas(recorded: dict[str, int], current: dict[str, int]) -> list[str]:

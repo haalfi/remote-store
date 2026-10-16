@@ -386,7 +386,7 @@ def fix_twin(twin: Twin) -> list[str]:
         fixed.append(method)
 
     if fixed:
-        twin.async_path.write_text(async_src, encoding="utf-8")
+        twin.async_path.write_text(async_src, encoding="utf-8", newline="\n")
     return fixed
 
 

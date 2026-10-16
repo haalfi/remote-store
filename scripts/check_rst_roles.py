@@ -2,7 +2,7 @@
 
 RST cross-reference syntax (colon-word-colon-single-backtick) is incompatible with
 the Google-style docstrings used in this project.  Double-backtick literals like
-``:class:``​`` `` are not flagged — those are inline code, not roles.
+``:class:``\N{ZERO WIDTH SPACE}`` `` are not flagged — those are inline code, not roles.
 
 Wired into ``hatch run lint``. The ``no-rst-roles`` pre-commit hook enforces the
 same rule independently, as a ``language: pygrep`` pattern -- it does not invoke

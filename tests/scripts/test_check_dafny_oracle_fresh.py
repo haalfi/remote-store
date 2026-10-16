@@ -317,7 +317,7 @@ class TestSetupErrors:
             ("&& (/opt/dafny/dafny", "&& cd sub && (/opt/dafny/dafny", "dafny build"),
             ("CMDS=\"$CMDS && echo '==> Translating $f' && (", 'CMDS="$CMDS"\' && (', "dafny build"),
             # Separators: bash splits on space and tab only; other whitespace stays in the word.
-            ("-t py $f", "-t py $f", "-t py"),
+            ("-t py $f", "-t\N{NO-BREAK SPACE}py $f", "-t\N{NO-BREAK SPACE}py"),
             ("--output:$stem 2>&1", "--output:$stem\x0b2>&1", "dafny build"),
             # Copy target: nothing may follow `/build[/]` but `&&`, `;`, `|`, `)`, `"` or the line end.
             ("/build/ && cd", "/build/ extra/ && cd", "cp [-p|-f|-v]"),

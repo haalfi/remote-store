@@ -177,7 +177,7 @@ def read_pyproject_at(revision: str, workdir: Path) -> Path:
         text=True,
     ).stdout
     path = workdir / "pyproject.toml"
-    path.write_text(blob, encoding="utf-8")
+    path.write_text(blob, encoding="utf-8", newline="\n")
     return path
 
 
