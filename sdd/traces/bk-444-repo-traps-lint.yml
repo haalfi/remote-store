@@ -147,3 +147,118 @@ phases:
         read_type: verify
         extract: "PR #1152 review round 10: git check-attr also read the per-user ~/.config/git/attributes and the system file, so a machine's own binary line could shrink rule 1 locally while CI read the path; reproduced with a planted XDG_CONFIG_HOME, now neutralised with core.attributesFile and GIT_ATTR_NOSYSTEM"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1152 --trace-block-only` at head a04167a.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1152 --trace-block-only"
+  pr: 1152
+  review_rounds: 10
+  submissions: 10
+  findings: 16
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.13
+    - round: 2
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.69
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.17
+    - round: 4
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.26
+    - round: 5
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.15
+    - round: 6
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.17
+    - round: 7
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.28
+    - round: 8
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.21
+    - round: 9
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.26
+    - round: 10
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.15
+  by_file:
+    - path: "scripts/check_repo_traps.py"
+      findings: 10
+    - path: "sdd/backlog/bk-444-repo-traps-lint.md"
+      findings: 2
+    - path: "tests/scripts/test_check_repo_traps.py"
+      findings: 2
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "sdd/traces/bk-444-repo-traps-lint.yml"
+      findings: 1
+  untouched_files:
+    - "pyproject.toml"
+    - "scripts/_dafny_classorder.py"
+    - "scripts/check_dafny_oracle_fresh.py"
+    - "scripts/check_docstring_parity.py"
+    - "scripts/check_process_budget.py"
+    - "scripts/check_rst_roles.py"
+    - "scripts/check_support_windows.py"
+    - "scripts/drift_check.py"
+    - "scripts/drift_feedstock.py"
+    - "scripts/fast_gate.py"
+    - "scripts/gen_conda_feedstock.py"
+    - "scripts/gen_gate_inventory.py"
+    - "scripts/run_mutate.py"
+    - "scripts/run_tests.py"
+    - "scripts/ship_report.py"
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/c29e9ca6-10af-44f2-86cd-e1db3fe67d75.jsonl"
+    - "sdd/decisions/cbdb79c5-8b32-4b68-9b25-5092ca7d0ce1.jsonl"
+    - "tests/scripts/test_check_dafny_oracle_fresh.py"
+  review_driven_commits:
+    - sha: "60a2417"
+      subject: "fix: address PR #1152 review"
+    - sha: "a232434"
+      subject: "fix: address PR #1152 review"
+    - sha: "e79acad"
+      subject: "fix: address PR #1152 review"
+    - sha: "6ba99af"
+      subject: "fix: address PR #1152 review"
+    - sha: "9fc04c5"
+      subject: "fix: address PR #1152 review"
+    - sha: "d8fad9f"
+      subject: "fix: address PR #1152 review"
+    - sha: "a6d58ab"
+      subject: "fix: address PR #1152 review"
+    - sha: "9947dea"
+      subject: "fix: address PR #1152 review"
+    - sha: "847593e"
+      subject: "fix: address PR #1152 review"
+    - sha: "a04167a"
+      subject: "fix: address PR #1152 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
