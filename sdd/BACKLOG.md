@@ -1034,8 +1034,8 @@ sessions work is measured before it becomes process.
   14 of the 20 `.write_text(` calls in `scripts/` pass no `newline=`; 6 of those write multi-line
   text to a tracked file, which Windows text mode writes as CRLF. Ruff selects no `PLE` rule, so a raw
   invisible character lands in source unflagged. A hatch script without `{args}` drops flags silently;
-  59 of 89 single-line scripts in `pyproject.toml` lack it, most by design. Open decision: lint rule
-  or test per trap, and where exemptions and the `{args}` allowlist live.
+  59 of 89 single-line scripts in `pyproject.toml` lack it, most by design. Open decision: none;
+  the dossier's § Plan holds the decided design.
   Detail: [dossier](backlog/bk-444-repo-traps-lint.md)
 
 - [ ] **BK-445 — A measuring reviewer pushed off `env -C <root>` tests the main checkout's code**

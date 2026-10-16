@@ -1,0 +1,46 @@
+id: BK-444
+title: "Three repo traps cost sessions retries that a check would catch before commit"
+trigger: "Sessions lost retries to three traps no check caught: a write_text without newline= rewrote tracked LF files as CRLF on Windows, a tool parameter decoded a four-digit unicode escape into a raw U+2028 inside test source, and a hatch alias without {args} dropped flags silently"
+source_items:
+  - BK-444
+audience:
+  - contributor.tooling
+  - internal.style
+decisions:
+  - sdd/decisions/c29e9ca6-10af-44f2-86cd-e1db3fe67d75.jsonl
+orient:
+  - items: [BUG-327]
+    verdict: constrains
+    evidence: "sdd/BACKLOG.md BUG-327: `lint` and `format-check` run ruff on `src/ tests/ examples/ scripts/` only, and its open decision is whether to widen that to sdd/*.py. BK-444's write_text rule is scoped to scripts/ and states sdd/*.py as a bound owned by BUG-327; the invisible-character rule reads git ls-files, so it does not depend on BUG-327's answer."
+  - items: [ID-235]
+    verdict: unrelated
+    evidence: "sdd/BACKLOG.md ID-235 adds BACKLOG-DONE.md integrity rules to gen_backlogid.py --check; none of its candidate rules reads source characters, write calls or hatch aliases."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-444, BUG-327, ID-235 (hatch run backlog-show; backlog-find CRLF, ruff, invisible, hatch)"
+        read_type: gate
+        extract: "BUG-327 is the only open item sharing BK-444's files (ruff scope); BK-334, the hatch-alias ripple row, was absorbed into BK-346 and is done"
+        outcome: ok
+      - file: sdd/backlog/bk-444-repo-traps-lint.md
+        section: "write_text table, Ruff PLE, Hatch {args}"
+        read_type: gate
+        extract: "14 calls without newline=, 6 to tracked targets; PLE coverage of invisible characters was unmeasured"
+        outcome: unclear
+      - file: pyproject.toml
+        section: "[tool.ruff.lint] select; [tool.hatch.envs.default.scripts]"
+        read_type: verify
+        extract: "no PLE or RUF selected; 21 bare aliases forward {args}, 10 bare aliases whose script reads argv do not"
+        outcome: ok
+      - file: .gitattributes
+        section: "* text=auto eol=lf"
+        read_type: verify
+        extract: "commits normalise CRLF, so the write_text trap costs a dirty-with-no-diff tree, measured on sdd/process-budget.json"
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "Drift-gate block parsing"
+        read_type: gate
+        extract: "a single-pass script may declare several Drift-gate blocks without entrypoint:, so one check_repo_traps.py can carry three rules"
+        outcome: ok
