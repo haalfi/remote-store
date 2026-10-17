@@ -825,6 +825,15 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
+- [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split by layer**
+  spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
+  2,191 lines over 46 sections; BE-021, BE-029, BE-032 and BE-033 hold 63% of them, and
+  PR #1159's review rounds kept finding clauses of one section contradicting another. Split,
+  move-only, into four files: 003 keeps the capabilities and the per-operation contract, and
+  error mapping (BE-021), root path (BE-029) and the contract kernel (BE-030 to BE-033) get
+  their own; IDs keep their BE- prefix. After BK-449 merges. Open decision: the new numbers.
+  Detail: [dossier](backlog/bk-456-split-spec-003.md)
+
 - [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**
   spec: DOCFRAME-004 · effort: S · audience: contributor.process
   The DOCFRAME-004 table says G-07 is "`mkdocs build --strict` succeeds";

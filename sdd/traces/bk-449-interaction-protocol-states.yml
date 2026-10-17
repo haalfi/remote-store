@@ -293,6 +293,7 @@ phases:
 discovery_followups:
   - BK-454
   - BK-455
+  - BK-456
 surprising_ripples:
   - sdd/formal/KernelProtocol.dfy
   - scripts/dafny_verify.sh
