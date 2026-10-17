@@ -7538,6 +7538,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-023-kernel-migration-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: What must close before backends move onto the contract kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11512,9 +11540,9 @@
 
 
 <h1 id="audit-010-extension-private-module-imports">Audit 010: Extension Private Module Imports<a class="headerlink" href="#audit-010-extension-private-module-imports" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-04-23<br />
-<strong>Scope:</strong> All extension modules in <code>src/remote_store/ext/</code> and <code>src/remote_store/aio/ext/</code><br />
-<strong>Rule:</strong> ADR-0008 § "Public API only" — Extensions MUST use only the public <code>Store</code> and <code>Backend</code> API.</p>
+<p><strong>Date:</strong> 2026-04-23  </p>
+<p><strong>Scope:</strong> All extension modules in <code>src/remote_store/ext/</code> and <code>src/remote_store/aio/ext/</code>  </p>
+<p><strong>Rule:</strong> ADR-0008 § "Public API only" — Extensions MUST use only the public <code>Store</code> and <code>Backend</code> API.</p>
 <p><strong>Interpretation note:</strong> ADR-0008 illustrates the rule with runtime attribute access (<code>store._backend</code>). This audit extends the same principle to import-time access to private modules. That extension is not literal ADR text and may warrant a dedicated ADR to formalise.</p>
 <p><strong>TYPE_CHECKING scope:</strong> Imports inside <code>if TYPE_CHECKING:</code> blocks have no runtime effect and are out of scope. Only runtime imports — top-level and function-body deferred — are counted as violations.</p>
 <hr />

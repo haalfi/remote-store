@@ -7637,6 +7637,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-023-kernel-migration-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: What must close before backends move onto the contract kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11710,10 +11738,10 @@
 
 
 <h1 id="audit-005-laziness-memory-efficiency">Audit 005 — Laziness &amp; Memory Efficiency<a class="headerlink" href="#audit-005-laziness-memory-efficiency" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-03-28
-<strong>Scope:</strong> <code>src/remote_store/</code> — all Python source files
-<strong>Branch:</strong> <code>claude/audit-laziness-memory-cIPJr</code>
-<strong>Method:</strong> Full line-by-line read of all 40 source files. Two focus areas:
+<p><strong>Date:</strong> 2026-03-28</p>
+<p><strong>Scope:</strong> <code>src/remote_store/</code> — all Python source files</p>
+<p><strong>Branch:</strong> <code>claude/audit-laziness-memory-cIPJr</code></p>
+<p><strong>Method:</strong> Full line-by-line read of all 40 source files. Two focus areas:
 (1) missed opportunities for lazy evaluation/loading where it would genuinely help,
 (2) memory hygiene — unnecessary buffering, patterns that should stream but don't,
 objects holding more data than needed.</p>

@@ -7588,6 +7588,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-023-kernel-migration-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: What must close before backends move onto the contract kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11613,16 +11641,16 @@
 
 <h1 id="audit-020-sftp-backend-correctness-bk-313-pr-910-round-trip-cut-review">Audit 020 — SFTP backend correctness (BK-313 / PR #910) round-trip-cut review<a class="headerlink" href="#audit-020-sftp-backend-correctness-bk-313-pr-910-round-trip-cut-review" title="Permanent link">&para;</a></h1>
 <p><strong>Backlog item:</strong> BK-313 (cut SFTP per-operation metadata round-trips; PR #910,
-branch <code>claude/bk-313-sftp-roundtrips-pgx7n2</code>). Follow-ups proposed at the end.
-<strong>Date:</strong> 2026-07-18
-<strong>Scope:</strong> The SFTP backend code logic only — <code>src/remote_store/backends/_sftp.py</code>
+branch <code>claude/bk-313-sftp-roundtrips-pgx7n2</code>). Follow-ups proposed at the end.</p>
+<p><strong>Date:</strong> 2026-07-18</p>
+<p><strong>Scope:</strong> The SFTP backend code logic only — <code>src/remote_store/backends/_sftp.py</code>
 (the 292-line BK-313 diff and the paths it touches) plus the lazy-read error
 wrapper it depends on, <code>src/remote_store/_stream.py</code>. Specs and tests were read as
 <strong>helpers</strong> (to establish intent and to check whether a suspected defect is
 covered), not as audit targets. Adjacent changed files (<code>_capabilities.py</code>,
 <code>_backend.py</code>, <code>_models.py</code>) were out of scope except where the SFTP path depends
-on them.
-<strong>Method:</strong> line-by-line read of the file and the full <code>master...HEAD</code> diff; two
+on them.</p>
+<p><strong>Method:</strong> line-by-line read of the file and the full <code>master...HEAD</code> diff; two
 scoped expert sub-agents (one on the connection-liveness / staleness / reconnect
 layer, one on the file-vs-directory classification and error-code mapping);
 then <strong>live verification against the real <code>atmoz/sftp</code> (OpenSSH) container</strong>

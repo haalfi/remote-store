@@ -7660,6 +7660,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-023-kernel-migration-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: What must close before backends move onto the contract kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11757,9 +11785,9 @@
 
 <h1 id="audit-019-azure-backend-id-219-expectation-driven-review">Audit 019 — Azure backend (ID-219) expectation-driven review<a class="headerlink" href="#audit-019-azure-backend-id-219-expectation-driven-review" title="Permanent link">&para;</a></h1>
 <p><strong>Backlog item:</strong> ID-219 (apply the expectation-driven / DX review to the Azure
-backend; follow-ups proposed at the end).
-<strong>Date:</strong> 2026-06-16
-<strong>Scope:</strong> The Azure backend — sync <code>AzureBackend</code>
+backend; follow-ups proposed at the end).</p>
+<p><strong>Date:</strong> 2026-06-16</p>
+<p><strong>Scope:</strong> The Azure backend — sync <code>AzureBackend</code>
 (<code>src/remote_store/backends/_azure.py</code>), async <code>AsyncAzureBackend</code>
 (<code>src/remote_store/aio/backends/_azure.py</code>), the shared
 <code>src/remote_store/backends/_azure_common.py</code>, the <code>AsyncBackendSyncAdapter</code>
@@ -11767,8 +11795,8 @@ bridge (<code>src/remote_store/_async_to_sync_adapter.py</code>), spec
 <code>sdd/specs/012-azure-backend.md</code> plus the cross-backend posture clauses (BE-028
 spec 003, ASYNC-094 spec 029), the user guides <code>docs-src/guides/backends/azure.md</code>
 and <code>azure-hns-setup.md</code>, and the test tiers (conformance + azurite Stage 2 +
-<code>azure_live</code> Stage 3 + the 303 committed cassettes + <code>tests/backends/azure/test_live_hns.py</code>).
-<strong>Method:</strong> the expectation-driven methodology
+<code>azure_live</code> Stage 3 + the 303 committed cassettes + <code>tests/backends/azure/test_live_hns.py</code>).</p>
+<p><strong>Method:</strong> the expectation-driven methodology
 (<a href="../../research/research-expectation-driven-review/">research-expectation-driven-review.md</a>),
 run as a <strong>lens-organized panel</strong> (the eight catalog lenses across five parallel
 agents, each seeded with the matching <a href="../audit-016-graph-backend-review/">audit-016</a>

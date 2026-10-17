@@ -7843,6 +7843,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-023-kernel-migration-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: What must close before backends move onto the contract kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12122,11 +12150,11 @@
 
 
 <h1 id="audit-009-backend-specifics-visibility-in-reference">Audit 009 — Backend-Specifics Visibility in Reference<a class="headerlink" href="#audit-009-backend-specifics-visibility-in-reference" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-04-21
-<strong>Scope:</strong> All API reference pages under <code>docs-src/api/</code> and the docstrings
+<p><strong>Date:</strong> 2026-04-21</p>
+<p><strong>Scope:</strong> All API reference pages under <code>docs-src/api/</code> and the docstrings
 they render from in <code>src/remote_store/</code>. Excludes guides and explanation
-pages — they are surveyed only when the reference is the source.
-<strong>Method:</strong> Walked every reference page section by section, then
+pages — they are surveyed only when the reference is the source.</p>
+<p><strong>Method:</strong> Walked every reference page section by section, then
 cross-checked each rendered symbol against its source for capability gates,
 backend-specific behaviour, or backend-shaped data. The reference template
 is <code>Store.unwrap</code> (<code>docs-src/api/store.md:211-241</code>): a dedicated section

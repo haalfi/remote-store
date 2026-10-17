@@ -16,7 +16,7 @@
         <link rel="prev" href="../audit-021-contract-placement/">
       
       
-        <link rel="next" href="../../rfcs/">
+        <link rel="next" href="../audit-023-kernel-migration-readiness/">
       
       
         
@@ -7616,6 +7616,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-023-kernel-migration-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: What must close before backends move onto the contract kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11668,21 +11696,21 @@
 
 
 <h1 id="audit-022-gate-speed-what-to-run-and-when">Audit 022 — Gate speed: what to run, and when<a class="headerlink" href="#audit-022-gate-speed-what-to-run-and-when" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-10-03
-<strong>Scope:</strong> The local pre-commit gate (<code>hatch run all</code>) and the per-PR <code>ci.yml</code>
+<p><strong>Date:</strong> 2026-10-03</p>
+<p><strong>Scope:</strong> The local pre-commit gate (<code>hatch run all</code>) and the per-PR <code>ci.yml</code>
 gate at <code>d74445c</code>. The question is strategic: which work each gate should run
 at which point of a change's life, not how to make a single test faster.
 <code>ci-full.yml</code>, <code>drift-guard.yml</code> and <code>mutation.yml</code> are in scope only as the
-backstop a narrower gate would lean on.
-<strong>Predecessors on the same gates:</strong>
+backstop a narrower gate would lean on.</p>
+<p><strong>Predecessors on the same gates:</strong>
 - <a href="../audit-017-dev-process-gate-topology/">audit-017</a> R3: one definition of
   "what validates a change", and at most one thin fast-iteration target.
 - BK-271 (<code>sdd/BACKLOG-DONE.md</code>): the <code>/pr</code> gate composes <code>all</code> for code
   diffs and <code>lint</code> + <code>docs-gate</code> otherwise, and mints no new target.
 - <a href="../audit-018-ci-operations/">audit-018</a>: the scheduled guards'
   notification surfaces. It does not cover the durations duty.</p>
-<p>P2 and P5 below are weighed against these.
-<strong>Method:</strong>
+<p>P2 and P5 below are weighed against these.</p>
+<p><strong>Method:</strong>
 - <strong>CI figures</strong> are per-job timings from the Actions <code>list_workflow_jobs</code> API,
   for two runs on PR #1054 (BL-011):
   - the <code>pull_request</code> run
@@ -12439,13 +12467,13 @@ class or is rejected.</p>
         
         
           
-          <a href="../../rfcs/" class="md-footer__link md-footer__link--next" aria-label="Next: RFCs">
+          <a href="../audit-023-kernel-migration-readiness/" class="md-footer__link md-footer__link--next" aria-label="Next: 023: What must close before backends move onto the contract kernel">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                RFCs
+                023: What must close before backends move onto the contract kernel
               </div>
             </div>
             <div class="md-footer__button md-icon">

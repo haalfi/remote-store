@@ -7616,6 +7616,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-023-kernel-migration-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: What must close before backends move onto the contract kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11669,17 +11697,17 @@
 
 <h1 id="audit-018-ci-operations-scheduled-guard-notification-surfaces">Audit 018 — CI Operations: scheduled-guard notification surfaces<a class="headerlink" href="#audit-018-ci-operations-scheduled-guard-notification-surfaces" title="Permanent link">&para;</a></h1>
 <p><strong>Backlog item:</strong> — (ad-hoc operational audit prompted by the weekend mutation
-failure; follow-ups proposed at the end)
-<strong>Date:</strong> 2026-06-09
-<strong>Scope:</strong> The nine workflows under <code>.github/workflows/</code> and <code>.github/dependabot.yml</code>,
+failure; follow-ups proposed at the end)</p>
+<p><strong>Date:</strong> 2026-06-09</p>
+<p><strong>Scope:</strong> The nine workflows under <code>.github/workflows/</code> and <code>.github/dependabot.yml</code>,
 viewed through one question: <em>when a scheduled or automated guard finds something,
 how does a maintainer (human or agent) learn there is a TODO, and what tells them
 how to action it?</em> Specifically the <strong>scheduled-maintenance family</strong> — <code>drift-guard</code>,
 <code>mutation</code>, the weekly <code>codeql</code> sweep, and the two <code>dependabot</code> ecosystems — plus
 the <code>dependabot-auto-merge</code> automation and the absence of a CI-operations handbook.
 Out of scope: the internal correctness of <code>ci.yml</code>'s test matrix, coverage gates,
-and the formal-verification lanes (those are gating, not maintenance).
-<strong>Method:</strong> Read every workflow trigger and notification path; compared the one
+and the formal-verification lanes (those are gating, not maintenance).</p>
+<p><strong>Method:</strong> Read every workflow trigger and notification path; compared the one
 guard that produces an actionable, deduplicated TODO (<code>drift-guard</code> → rolling
 GitHub Issue → <code>/drift</code> skill) against the rest. Evidence is <code>file:line</code> in the
 workflow sources, the two referenced PRs (#763 mutation impl failure, #767 failing

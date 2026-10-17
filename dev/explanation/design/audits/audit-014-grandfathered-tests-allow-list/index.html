@@ -7615,6 +7615,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-023-kernel-migration-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: What must close before backends move onto the contract kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11666,11 +11694,11 @@
 
 
 <h1 id="audit-014-_backend_at_root_grandfathered-allow-list">Audit 014 — <code>_BACKEND_AT_ROOT_GRANDFATHERED</code> allow-list<a class="headerlink" href="#audit-014-_backend_at_root_grandfathered-allow-list" title="Permanent link">&para;</a></h1>
-<p><strong>Backlog item:</strong> BK-191
-<strong>Date:</strong> 2026-05-13
-<strong>Scope:</strong> The seven <code>tests/test_*.py</code> files grandfathered into the TEST-003
-placement exception via <code>scripts/check_test_placement.py::_BACKEND_AT_ROOT_GRANDFATHERED</code>.
-<strong>Method:</strong> AST-level enumeration of every <code>from remote_store.backends._&lt;x&gt;</code> / <code>import remote_store.backends._&lt;x&gt;</code> / <code>from remote_store.backends import &lt;Name&gt;</code> site (top-level and function-local). Each test was read in context to determine whether its assertions are per-backend, cross-backend, or example-driven.</p>
+<p><strong>Backlog item:</strong> BK-191</p>
+<p><strong>Date:</strong> 2026-05-13</p>
+<p><strong>Scope:</strong> The seven <code>tests/test_*.py</code> files grandfathered into the TEST-003
+placement exception via <code>scripts/check_test_placement.py::_BACKEND_AT_ROOT_GRANDFATHERED</code>.</p>
+<p><strong>Method:</strong> AST-level enumeration of every <code>from remote_store.backends._&lt;x&gt;</code> / <code>import remote_store.backends._&lt;x&gt;</code> / <code>from remote_store.backends import &lt;Name&gt;</code> site (top-level and function-local). Each test was read in context to determine whether its assertions are per-backend, cross-backend, or example-driven.</p>
 <hr />
 <h2 id="background">Background<a class="headerlink" href="#background" title="Permanent link">&para;</a></h2>
 <p><code>scripts/check_test_placement.py</code> Rule B forbids any test file at <code>tests/</code>

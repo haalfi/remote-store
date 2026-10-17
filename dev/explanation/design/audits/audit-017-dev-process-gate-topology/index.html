@@ -7671,6 +7671,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-023-kernel-migration-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: What must close before backends move onto the contract kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11778,9 +11806,9 @@
 
 
 <h1 id="audit-017-dev-process-gate-topology-commit-push-lint-pr-ci-in-sync">Audit 017 — Dev-process gate topology (commit / push / lint / PR / CI in sync)<a class="headerlink" href="#audit-017-dev-process-gate-topology-commit-push-lint-pr-ci-in-sync" title="Permanent link">&para;</a></h1>
-<p><strong>Backlog item:</strong> — (ad-hoc audit of the change-validation machinery; follow-ups proposed at the end)
-<strong>Date:</strong> 2026-06-09
-<strong>Scope:</strong> The whole gate topology that validates a change before it reaches
+<p><strong>Backlog item:</strong> — (ad-hoc audit of the change-validation machinery; follow-ups proposed at the end)</p>
+<p><strong>Date:</strong> 2026-06-09</p>
+<p><strong>Scope:</strong> The whole gate topology that validates a change before it reaches
 master: the pre-commit / pre-push hooks (<code>.pre-commit-config.yaml</code>), the
 <code>hatch run</code> script layer (<code>pyproject.toml</code> <code>[tool.hatch.envs.default.scripts]</code>),
 the <code>scripts/check_*.py</code> / <code>gen_*.py</code> checkers, the CI workflows
@@ -11788,8 +11816,8 @@ the <code>scripts/check_*.py</code> / <code>gen_*.py</code> checkers, the CI wor
 skills, and the authority docs (<code>CONTRIBUTING.md</code>, <code>CLAUDE.md</code>,
 <code>sdd/CLAUDE-REFERENCE.md</code>). The concern is <strong>over-specialization and drift</strong>:
 each surface encodes its own per-change-type gate logic, the logic overlaps and
-diverges, and some change types reach CI with no meaningful local gate.
-<strong>Method:</strong> Read every real source (no assumptions). Built a change-type ×
+diverges, and some change types reach CI with no meaningful local gate.</p>
+<p><strong>Method:</strong> Read every real source (no assumptions). Built a change-type ×
 enforcement-point matrix from the actual filters and script lists, then assessed
 each gate on three axes — value, redundancy, drift/sync. This is a
 <strong>report-only</strong> audit: nothing was modified. Findings carry <code>file:line</code>

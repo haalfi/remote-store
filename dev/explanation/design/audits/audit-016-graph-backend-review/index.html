@@ -7787,6 +7787,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-023-kernel-migration-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: What must close before backends move onto the contract kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12010,15 +12038,15 @@
 
 
 <h1 id="audit-016-microsoft-graph-backend-id-127-review">Audit 016 — Microsoft Graph Backend (ID-127) Review<a class="headerlink" href="#audit-016-microsoft-graph-backend-id-127-review" title="Permanent link">&para;</a></h1>
-<p><strong>Backlog item:</strong> — (ad-hoc multi-expert review of ID-127, post-merge; follow-ups proposed at the end)
-<strong>Date:</strong> 2026-06-09
-<strong>Scope:</strong> The complete Microsoft Graph / OneDrive / SharePoint backend delivered by
+<p><strong>Backlog item:</strong> — (ad-hoc multi-expert review of ID-127, post-merge; follow-ups proposed at the end)</p>
+<p><strong>Date:</strong> 2026-06-09</p>
+<p><strong>Scope:</strong> The complete Microsoft Graph / OneDrive / SharePoint backend delivered by
 ID-127 (PRs #750–#769): <code>src/remote_store/aio/backends/_graph/</code> (~2,800 LOC across
 <code>backend.py</code>, <code>http.py</code>, <code>transfer.py</code>, <code>monitor.py</code>, <code>items.py</code>, <code>auth.py</code>,
 <code>utils.py</code>), its tests (~4,400 LOC under <code>tests/backends/graph/</code>), spec
 <code>044-graph-backend.md</code>, <code>rfc-0010</code>, ADRs 0021–0024, the 13 ID-127 traces, the
-user-facing guides/example, and the extension-ecosystem interactions.
-<strong>Method:</strong> Five domain experts (Store/Backend, Testing, SDD, Documentation,
+user-facing guides/example, and the extension-ecosystem interactions.</p>
+<p><strong>Method:</strong> Five domain experts (Store/Backend, Testing, SDD, Documentation,
 Extension) reviewed independently, each from a consumer-advocate stance, against
 the spec as contract. Claims were cross-checked across experts and verified
 against source. The live consumer-OneDrive API was exercised: the full live
