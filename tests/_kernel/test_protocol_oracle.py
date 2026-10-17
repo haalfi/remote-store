@@ -47,10 +47,32 @@ import pytest
 from remote_store._errors import BackendUnavailable, InvalidPath, RemoteStoreError
 from tests._kernel._fake import RUNTIMES, FakeDown, FakeOdd, FakeStore, make_kernel
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "sdd" / "formal" / "KernelProtocol-py"))
-import KernelProtocol as KP  # noqa: E402
+# Imported without leaving a trace a later import could find. The directory holds
+# Dafny's stub `module_.py`, and `KernelProtocol.py` runs `import module_` (and never uses
+# it): left on sys.path or in sys.modules, that stub shadows MemoryBackend-py's `module_`
+# for every later import in the process. The runtime (`_dafny`, `System_`) stays cached,
+# byte-identical to the other oracle's under the one Dafny pin.
+_ORACLE_DIR = str(Path(__file__).resolve().parents[2] / "sdd" / "formal" / "KernelProtocol-py")
+_prior_module_ = sys.modules.get("module_")
+sys.path.insert(0, _ORACLE_DIR)
+try:
+    import KernelProtocol as KP
+finally:
+    sys.path.remove(_ORACLE_DIR)
+    if _prior_module_ is None:
+        sys.modules.pop("module_", None)
+    else:
+        sys.modules["module_"] = _prior_module_
 
 _MODEL = KP.default__
+
+
+@pytest.mark.spec("BE-033")
+def test_importing_the_oracle_leaves_no_stub_for_a_later_import() -> None:
+    # Before this guard, MemoryBackend-py's oracle failed to import when this module was collected first.
+    assert _ORACLE_DIR not in sys.path
+    assert _ORACLE_DIR not in str(getattr(sys.modules.get("module_"), "__file__", ""))
+
 
 # --- the model's values ----------------------------------------------------------
 

@@ -529,8 +529,13 @@ model's datatypes, and asks the compiled model for the expected state, so a
 lemma about `KernelExit` is a claim about the kernel only as far as that
 mapping is faithful. The mapping is the suite's `_observe` functions; read them
 before trusting a pass. Both oracles share the Dafny runtime (`_dafny/`,
-`System_/`), byte-identical under the one pin, and the named module keeps the
-second off the first's `module_` on a shared `sys.path`.
+`System_/`), byte-identical under the one pin. The named module gives the
+second its own `KernelProtocol.py`, but Dafny still writes a stub `module_.py`
+beside it, and `KernelProtocol.py` imports it; on `sys.path` or cached in
+`sys.modules`, that stub shadows the first oracle's `module_` for any later
+import. So the suite puts `KernelProtocol-py/` on `sys.path` for its own import
+only, then removes it and restores `sys.modules["module_"]`, and a cell pins
+both.
 
 **Regenerating the compiled output.** Ghost-only changes (lemmas,
 invariants, ghost variables, postconditions) erase at compile time and

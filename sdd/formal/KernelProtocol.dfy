@@ -10,9 +10,10 @@
 // whole finite exit space (sdd/formal/README.md § Compiled oracle). Hypothesis
 // twin: `tests/_kernel/test_protocol_stateful.py`.
 //
-// One named module, so the compiled Python is `KernelProtocol.py` beside
-// `module_.py` rather than a second `module_` that would shadow the other
-// oracle's on a shared `sys.path`.
+// One named module, so the compiled Python is `KernelProtocol.py`. Dafny still
+// writes a stub `module_.py` beside it, so the suite leaves neither this
+// directory on `sys.path` nor the stub in `sys.modules` after its import
+// (MemoryBackend-py's `module_` would be shadowed).
 //
 // A call is reduced to what decides the protocol: whether it is `close`, and
 // for a live call the exit it takes. A `LiveCall` is a call the closed guard
