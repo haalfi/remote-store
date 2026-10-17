@@ -354,10 +354,12 @@ its character classes can match `/`; `[^x]` is negation there and literal in
   `list_files("", pattern="[^x]*")` answers `[]`.
 - GLOB-014 (spec 018 l.190-192) says a `**` inside a segment raises
   `ValueError`; only the leading form is tested (`tests/test_glob.py:406-408`).
-- Shared by `_s3_base.py:666`, `_s3_boto3.py:809`, `_azure.py:1347`,
-  `aio/backends/_azure.py:1221`, `_sqlalchemy.py:1383, 1821`
-  (`rg pattern_to_regex src/`), and the natural helper for a Memory
-  `SupportsGlob` (BK-446).
+- Called at `ext/glob.py:71`, `_s3_base.py:666`, `_s3_boto3.py:809`,
+  `_azure.py:1347`, `aio/backends/_azure.py:1221`, `_sqlalchemy.py:1383, 1821`
+  (`rg "pattern_to_regex\(pattern\)" src/`, 7 hits). The first is
+  `glob_files`' fallback for every store that does not declare `GLOB`, the
+  path the probe's Memory column runs through; the rest are native globs.
+  It is also the natural helper for a Memory `SupportsGlob` (BK-446).
 
 **Disposition:** decide the dialect in GLOB-014 (a class never matches `/`;
 the meaning of `^`; the error type), then cells comparing fallback and native.
@@ -431,7 +433,7 @@ The kernel refuses an undeclared `MOVE` or `COPY` with
 `test_condition_space.py:164-233`; the model and two prose clauses say a
 closed backend answers first.
 
-**Checked:** probe `c5/probe1.py` § 4 re-run; `Move` clauses, BE-027 and the `in capabilities` grep run.
+**Checked:** probe `c5/probe1.py` § 4 re-run; `Move` clauses, BE-027, the `in capabilities` grep and the trait-method enumeration run.
 
 - Probe, closed terminal backend without `MOVE`/`COPY`:
   `move('s','d'): CapabilityNotSupported`, `copy('s','d'):
@@ -444,9 +446,16 @@ closed backend answers first.
   clause".
 - BE-027 (spec 003 l.1322, 1336): "Backend has no runtime `_gate()`
   equivalent"; enforcement "by `Store._gate()`". Stale on the kernel.
-- `sdd/formal/README.md:282` claims "all operation pre/postconditions"; the
-  trait has no `write_atomic`, `open_atomic`, `iter_children`,
-  `read_seekable` or `check_health`.
+- `sdd/formal/README.md:282` claims "all operation pre/postconditions". The
+  `Backend` operations with no `method` in the trait are `read_bytes`,
+  `read_seekable`, `write_atomic`, `open_atomic`, `iter_children`, `glob`
+  and `check_health`; `unwrap`, `to_key`, `native_path` and `resolve` are
+  absent too (`rg -n "^    def [a-z]" src/remote_store/_backend.py` against
+  `rg -n "^\s*method " sdd/formal/BackendContract.dfy`, 15 methods).
+- `glob`'s exclusion rests on a premise the kernel no longer meets:
+  `BackendContract.dfy:89-92` says it "delegates to ListFiles + pattern
+  matching", but the kernel's `glob` calls the driver's `SupportsGlob.glob`
+  with its own NotFound handling (`_async/kernel.py:1229-1248`, T7).
 
 Rule 7: the test decides; model and prose are stale. Latent for Memory, which
 declares both. **Disposition:** add the gate to `Move` and `Copy` ranked first;
@@ -655,7 +664,7 @@ Recorded, not gated. Each was measured or read as its evidence column says.
 | Async `read` refusals surface on the first iteration | spec-gap | `read('nope')`, `read('../x')` and a closed terminal `read` return an async generator; the error comes at `__anext__`; ASYNC-006 states no timing | `c3/lazy.py`, `c3/streams.py` |
 | Kernel `write_atomic` cancellation routes untested | untested-clause | Correct on the handle and temp-plus-rename routes when measured; `tests/aio/test_async_cancellation.py` covers Memory's `put` route only | `c3/cancel.py` |
 | Error `path` is canonical after normalisation, raw on refusal | spec-gap | `read_bytes('x//missing')` gives `NotFound` with `path='x/missing'`; `read_bytes('a/../b')` gives `InvalidPath` with the raw path; ERR-001 and ERR-002 do not say which | `c1/probe3.py` |
-| Driver `move`/`copy` precondition `src != dst` unstated | spec-gap | `MemoryDriver.move("k", "k", overwrite=True)` leaves counts `(0, 0)` against a walk's `(1, 0)`; the kernel short-circuits (`kernel.py:961-964`) | `c2/measure.py` § A2 |
+| Driver `move`/`copy` precondition `src != dst` stated in the guide only | spec-gap | `MemoryDriver.move("k", "k", overwrite=True)` leaves counts `(0, 0)` against a walk's `(1, 0)`; the kernel short-circuits (`kernel.py:961-964`). The guide states it (`custom-backend-guide.md:347-348`, "A move or copy onto itself never reaches your driver"); the protocol docstrings do not (a case-insensitive `rg` for `itself`, `src == dst` or `src != dst` over both `driver.py` files hits only `delete`, `list_page`, `delete_tree` and `ensure_parents`), and spec 003 only orders the source check "for a self-operation" (l.1498-1500) | `c2/measure.py` § A2; guide, driver and spec lines opened |
 | `Op.IDENTITY` and `Op.MONITOR` never reach `classify` | doc-drift | Only the enum (`_model.py:47-48`) and `_CLASSIFY_DECIDES` (sync `kernel.py:63`, async `:76`) | grep run |
 | Driver `close` must tolerate repeats, unstated | untested-clause | A second `Backend.close()` reaches the driver; a non-idempotent driver close gives `RemoteStoreError: native RuntimeError`; spec 003 l.725 says close stays callable | `c6/s6_openwrite.py` |
 | Negative `max_depth` at the backend: model unlimited, kernel empty | spec-gap | `BackendContract.dfy:963, 1000`; kernel `list_files('x', recursive=True, max_depth=-1)` gives `[]`, oracle every file; DEPTH-003 silent | `c5/probe1.py` § 3 |
@@ -731,9 +740,12 @@ observes and what the kernel decodes, and that boundary's failures are wrong
 answers, not errors. Today the trust is partly stated (BE-032 A.8's
 obligations), partly unchecked, and partly enforced only by Memory, and the
 kernel decodes driver records at scattered sites: `_keys.listable` filters at
-async `kernel.py:1119, 1134, 1254, 1470-1473, 1525`, but not the `folder_stats`
-push-down at `:1277` (T13). P1 gives every item one owner and enforces it with
-one mechanism, so a new kernel operation cannot forget a check.
+async `kernel.py:1119, 1134, 1254, 1470-1473, 1525` (`rg -n "listable"`), each
+a site a new operation must remember. The `folder_stats` push-down at `:1277`
+returns a count, which no kernel step can filter, so its omission (T13) is a
+driver obligation, not a decode-step site. P1 gives every item one owner and
+enforces the kernel's items with one mechanism, so a new kernel operation
+cannot forget a check.
 
 Owners, each a kernel check, a driver obligation or a `Session` obligation
 (RFC-0017 D5):
@@ -800,8 +812,10 @@ inside its domain.
 It decides: BK-434's open choice (refinement lemmas per encoding, or one
 encoding-parametric trait); how the oracle adapter reaches the key rule
 instead of passing raw keys (T14); the trait methods the model lacks
-(`write_atomic`, `open_atomic`, `iter_children`, `read_seekable`,
-`check_health`, T12); where kernel-only cells count for traceability.
+(`read_bytes`, `read_seekable`, `write_atomic`, `open_atomic`,
+`iter_children`, `glob`, `check_health`, and the non-I/O members, T12),
+including `glob`, whose exclusion premise (`BackendContract.dfy:89-92`) is
+stale and which P2 redefines; where kernel-only cells count for traceability.
 
 **Absorbs:** T3, T12, T13 (model half), T14, T19 (whether the contract owns
 copy and move mtime); the lower-ranked rows on
