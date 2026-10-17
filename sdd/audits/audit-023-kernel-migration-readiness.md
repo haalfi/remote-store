@@ -15,7 +15,7 @@ source and generated sync twin), `MemoryDriver` and `AsyncMemoryDriver`
 (`backends/_memory.py`, `backends/_memory_tree.py`,
 `aio/backends/_memory.py`) and the public `remote_store.drivers`, at
 `52448e0`. Read against spec 003 (BE-0xx, BE-032 Appendix A), 013, 018, 029,
-045, 051, the driver docs (`docs-src/reference/api/drivers.md`,
+045, 051, the kernel's design (RFC-0017 D1, D2 and D5, ADR-0042), the driver docs (`docs-src/reference/api/drivers.md`,
 `docs-src/guides/custom-backend-guide.md`), the formal model
 (`BackendContract.dfy`, `MemoryBackend.dfy`, `RootPath.dfy`, `StoreTree.dfy`)
 and the tests under `tests/_kernel/`, `tests/backends/memory/` and the
@@ -59,33 +59,47 @@ This is a **report-only** audit; nothing was modified. Dispositions are advisory
 
 **The kernel's pipeline is sound; what it trusts from a driver is not
 pinned.** The BE-030 order, addressing, the choke point, BE-031, BE-017 and
-BE-029 match the spec and are pinned by named tests (§ Checked clean). The 19
-findings T1 to T19 sit where the kernel takes a driver's word without a clause
-or a check: a mapping it hands out uncopied (T1), a protocol body it never
-looks behind (T2), keys and declarations it does not validate (T9, T10), and
-stream errors it maps three ways (T4, T5). The formal model trails the kernel
-in four places (T3, T12, T13, T14), one of which would fail a correct test.
+BE-029 match the spec and are pinned by named tests (§ Checked clean). The
+findings cluster where the kernel takes a driver's word without a clause or a
+check: a mapping it hands out uncopied (T1), a protocol body it never looks
+behind (T2), keys and declarations it does not validate (T9, T10), and stream
+errors it maps three ways (T4, T5). Around those calls, no protocol states who
+may call what in which state (T20). The formal model trails the kernel in four
+places (T3, T12, T13, T14), one of which would fail a correct test.
 
-**The gaps are bindings, not concepts.** The tree itself came back clean
-(§ Checked clean); the findings sit where existing concepts are not yet wired
-to the driver boundary, to glob, to the formal model, to a flat template, or
-to the async runtime. Five proposals (§ Proposals) close those bindings, and
-T1 to T16 and T19 each name the one that absorbs them; T17, T18 and most
-lower-ranked rows are direct fixes with no open choice.
+**The tree concepts are sound; the boundary lacks three.** The tree came back
+clean (§ Checked clean). The boundary between `Store`, kernel, driver and
+`Session` lacks an interaction protocol with states (T20), a fault taxonomy
+that tells a wire error from a programming error by rule (T4, T5), and one
+meaning per capability flag across runtimes (T6). The remaining findings are
+bindings: existing concepts not yet wired to glob, the formal model, a flat
+template, or the `Store`-kernel split. Seven proposals (§ Proposals, P0 to P6)
+close both kinds; T1 to T16, T19 and T20 each name the one that absorbs them;
+T17, T18 and most lower-ranked rows are direct fixes with no open choice.
 
-**Recommendations from triage:** all of T1 to T19 close before D3 step 2, so
-the migration starts on settled specs and a consistent template; the formal model gates driver
-acceptance (P3); T7 stays open (§ Open questions); the rows under
-§ Lower-ranked are recorded, not gated. Effort was ruled out as an argument for
-or against a proposal; each is judged by whether later drivers need it and
-what it prevents. Like everything in an audit these are advisory
-(CLAUDE.md § Audits). Suggested home if adopted: a new ADR for the step-2 gate
-and the model's role, with a backlog item carrying the gate, the way BACKLOG
-already carries "due before" gates (BK-439).
+**Recommendations from triage.** Each item is placed by one criterion: does
+closing it change what a migrating driver implements or may rely on?
+
+- **(a) Before D3 step 2:** P0 (T20), P1 (T1, T2, T4, T5, T9, T10, T11, T13's
+  driver half, T15, T16), P2 (T7, T8; `S3Boto3Backend` declares `GLOB`,
+  `_s3_boto3.py:88`, and globs through `pattern_to_regex`, `:809`), P4 (step 2's S3 is the first flat
+  driver) and P5 (T6).
+- **(b) Before the migration finishes (D3 step 8):** P3 (T3, T12, T13's model
+  half, T14, T19's model half), P6, T17, T18 and T19's test half. P3 moves to
+  (a) if the formal model is to gate step 2's own acceptance, as triage
+  recommends it gate driver acceptance.
+
+T7 stays open (§ Open questions); the rows under § Lower-ranked are recorded,
+not gated. Effort was ruled out as an argument for or against a proposal; each
+is judged by whether later drivers need it and what it prevents. Like
+everything in an audit these are advisory (CLAUDE.md § Audits). Suggested home
+if adopted: a new ADR for the two-tier gate and the model's role, with a
+backlog item carrying the gate, the way BACKLOG already carries "due before"
+gates (BK-439).
 
 | Severity | Count | Findings |
 |---|---|---|
-| 🔴 High | 2 | T1, T3 |
+| 🔴 High | 3 | T1, T3, T20 |
 | 🟠 Medium | 17 | T2, T4 to T19 |
 | 🟡 Low | 27 | § Lower-ranked |
 
@@ -226,7 +240,7 @@ BE-021's driver column; cells for `read_bytes` and the ranged read.
 
 ### T5 🟠 A failing stream close: swallowed, leaked, or masking
 
-**Proposal:** P1. **Kind:** contradiction, undecided under Rule 7. **Clause:** ASYNC-024,
+**Proposal:** P0, P1. **Kind:** contradiction, undecided under Rule 7. **Clause:** ASYNC-024,
 BE-021.
 When the driver stream's close raises, sync `read` suppresses it, async `read`
 leaks it raw, and `read_bytes` maps it but lets it replace an earlier read
@@ -390,7 +404,7 @@ string is hierarchical, and `parents` is compared only to `"none"` and
 
 ### T11 🟠 `unwrap` bypasses the closed guard
 
-**Proposal:** P1. **Kind:** spec-gap. **Clause:** BE-020, BE-022, BE-030 step 1.
+**Proposal:** P0, P1. **Kind:** spec-gap. **Clause:** BE-020, BE-022, BE-030 step 1.
 `unwrap` is forwarded with no closed guard and no choke point
 (`kernel.py:350-352`); BE-030 exempts only the addressing members.
 
@@ -411,7 +425,7 @@ state BE-022's refusal in the driver protocol; fix the fake.
 
 ### T12 🟠 Capability gate before the closed guard: model and BE-020/027 disagree
 
-**Proposal:** P3. **Kind:** model-gap, doc-drift. **Clause:** BE-030 § Gates, BE-020, BE-027.
+**Proposal:** P3, P6. **Kind:** model-gap, doc-drift. **Clause:** BE-030 § Gates, BE-020, BE-027.
 The kernel refuses an undeclared `MOVE` or `COPY` with
 `CapabilityNotSupported` before the closed guard, pinned by
 `test_condition_space.py:164-233`; the model and two prose clauses say a
@@ -513,7 +527,7 @@ one cell.
 
 ### T16 🟠 The `open_write` route's overwrite duty is unstated
 
-**Proposal:** P1. **Kind:** spec-gap (driver docs). **Clause:** `SupportsOpenWrite`,
+**Proposal:** P0, P1. **Kind:** spec-gap (driver docs). **Clause:** `SupportsOpenWrite`,
 `WriteHandle`.
 Who refuses an existing target under `overwrite=False` is stated for `put`
 only (`_sync/driver.py:88`); `open_write` (`:208-216`) and `commit`
@@ -582,6 +596,49 @@ behaviour holds in both runtimes, but tests assert only `is not None`.
 **Disposition:** pin the three clauses in both runtimes; decide whether the
 contract owns copy and move mtime.
 
+### T20 🔴 No interaction protocol with states joins `Store`, kernel, driver and `Session`
+
+**Proposal:** P0. **Kind:** spec-gap. **Clause:** BE-020, BE-030, RFC-0017 D2
+and D5, ASYNC-088.
+The contract is stated call by call, as each operation's pre- and
+postconditions, and the Python `Protocol` classes fix signatures. No artifact
+states the interaction as a protocol in the sense of TCP or OAuth: the states
+each party passes through, which call is legal in which state, which
+transitions a failure, a cancellation or a close takes, and which party owns
+each exit (close, abort, invalidate) on every path.
+
+**Checked:** grep run; `ResourceSafety.dfy` §1 and §3 opened; RFC-0017 D3 and D5 opened.
+
+- `rg -n -i "state machine|lifecycle|state diagram|stateDiagram"` over specs
+  003, 005, 006, 007, 022, 026, 029, RFC-0017, RFC-0021, ADR-0042, ADR-0047 and
+  `sdd/formal/README.md` hits fragments only: RFC-0017 D5 and D8, ADR-0042's
+  `Session` bullet, SAW-015 (an otel span), ASYNC-088 (`close(timeout)`), and
+  the formal README's `ResourceSafety.dfy` rows. None defines states or
+  transitions across the parties.
+- The states exist, scattered: the backend's closed posture, terminal or not
+  (BE-020); the `Session`'s connect, invalidate and reconnect (RFC-0017 D5,
+  l.494-531, an interface with no states); a write handle's open, commit or
+  abort (`_kernel/_sync/driver.py`, `WriteHandle`); a read stream's open,
+  iterate, fail, abandon and close; a listing's page cursor.
+- `ResourceSafety.dfy` models a handle lifecycle (§1, `_safe_wrap` in
+  `_stream.py`) and a connection lifecycle (§3, the BUG-144 pattern), both of
+  the pre-kernel classes, not of the kernel's parties.
+- The `Session` lands at D3 step 2 with the first remote driver (RFC-0017
+  l.374-376) and is "the same lifecycle entry, so `unwrap`, `close` and
+  connect-time classification have one path" (l.529-531). Memory has no
+  `Session` (l.497), so this audit observed only the session-less half.
+- Symptoms already found here, each a transition nobody owns: a failing close
+  after a read error (T5); `unwrap` after close (T11); the `open_write`
+  route's overwrite duty (T16); and the lower-ranked rows on repeated `close`,
+  async `connection_dead`, cancellation routes and async refusal timing.
+  BK-448 (filed after `52448e0`) is the write-side sibling: the async kernel
+  leaves a caller's content iterator suspended on refusal.
+
+**Template impact:** every remote driver from step 2 on implements a
+`Session` against a protocol that names its methods but not its states; each
+decides alone what `close` after `invalidate`, `unwrap` after close, or a
+cancel mid-stream means. **Disposition:** P0.
+
 ---
 
 ## Lower-ranked
@@ -638,32 +695,77 @@ authority, and whoever implements a proposal re-weighs it against the
 findings it cites. Each proposal is required because a later driver inherits
 the gap it closes; none adds a tree axiom, since the tree came back clean.
 
+### P0 An interaction protocol with states
+
+**Claim.** `Store`, kernel, driver and `Session` interact through calls whose
+legality and cleanup depend on state, yet only the calls are specified (T20).
+P0 states the interaction as a protocol: the parties' states, the transitions
+each call, failure, cancellation and close takes, and the party that owns each
+exit. It is the frame P1's clauses and P5's flag meanings sit in.
+
+It decides:
+
+- the state sets: the backend (constructed, open, closed terminal or not,
+  BE-020); the `Session` (unconnected, connected, condemned, reconnecting,
+  RFC-0017 D5); and per operation a read stream (opened, iterating,
+  exhausted, failed, abandoned, closed), a write handle (opened, committed,
+  aborted), a listing's cursor, and a caller's content iterator (BK-448);
+- each call's meaning in each state: the closed guard, `unwrap`, a repeated
+  `close`, when a refusal surfaces (at the call or at the first iteration);
+- the owner of each exit on every path, cancellation included: who closes a
+  stream after a failure, who aborts a handle, who invalidates a condemned
+  connection and who skips the second wait on it (SIO-010's async gap);
+- where it is stated and checked: a spec 003 section, a state model in the
+  formal layer (the TLA+ `Observer.tla` or `ResourceSafety.dfy`'s state
+  tracking are the precedents), and one conformance cell per transition, run
+  against a session-less and a `Session` driver.
+
+**Absorbs:** T20, the state half of T5, T11 and T16; the lower-ranked rows on
+repeated `close`, async `connection_dead`, cancellation routes and async
+refusal timing; BK-448.
+
 ### P1 Driver boundary contract
 
 **Claim.** Every later driver implements the boundary between what it
 observes and what the kernel decodes, and that boundary's failures are wrong
 answers, not errors. Today the trust is partly stated (BE-032 A.8's
-obligations), partly unchecked, and partly enforced only by Memory. P1 states
-every fact, value and fault crossing it once, each as a kernel check or a
-driver obligation.
+obligations), partly unchecked, and partly enforced only by Memory, and the
+kernel decodes driver records at scattered sites: `_keys.listable` filters at
+async `kernel.py:1119, 1134, 1254, 1470-1473, 1525`, but not the `folder_stats`
+push-down at `:1277` (T13). P1 gives every item one owner and enforces it with
+one mechanism, so a new kernel operation cannot forget a check.
 
-It decides:
+Owners, each a kernel check, a driver obligation or a `Session` obligation
+(RFC-0017 D5):
 
-- **Facts the kernel takes from a driver:** a listed key lies under the listed
-  prefix and `stat(k)` names `k` (T9); `namespace` and `parents` are in their
-  domain (T10); an optional protocol presented is implemented, not inherited
-  (T2); a native aggregate applies BE-030's omission (T13); the `open_write`
-  route refuses an existing target without `overwrite` (T16); `src != dst` on
-  driver `move` and `copy`.
-- **Values the kernel hands out:** metadata in a returned `FileInfo` or
-  `WriteResult` is a copy, never the stored or the caller's mapping (T1); an empty
-  metadata echo is normalised in one place (T15).
-- **Fault policy:** one rule for exceptions from driver calls and streams,
-  where a wire error and a programming error differ by rule and not by the
-  method that met them (T4); a failing close never masks a read failure and
-  `read` agrees with `read_bytes` (T5); driver return shapes are validated or
-  propagate, by policy; `container_absent`'s scope, `unwrap` after close
-  (T11), repeated `close`, and async `connection_dead` are stated.
+| Item | Owner | Mechanism |
+|---|---|---|
+| A listed key lies under the listed prefix; `stat(k)` names `k` (T9) | kernel check | decode step |
+| Canonical-key omission (BE-030) on listings | kernel check | decode step |
+| The same omission in a native aggregate (T13) | driver obligation; the kernel cannot filter a count | stated with `SupportsFolderStats` |
+| Metadata in `FileInfo` and `WriteResult` is a copy (T1); `{}` against `None` (T15) | kernel check | decode step |
+| Driver return shapes | kernel check | decode step |
+| `namespace`, `parents` in their domain (T10); optional protocols implemented, not inherited (T2); `rename_replaces`; `ensure_parents` only with `explicit` | kernel check | declaration record |
+| `open_write` and `commit` refuse an existing target without `overwrite` (T16) | driver obligation | stated on the protocol |
+| `src != dst` on driver `move` and `copy` | kernel guarantee to the driver | stated on the protocol |
+| One caught set for `read`, `read_bytes` and the ranged read (T4) | kernel check | stream adapter |
+| A failing close never masks a read failure; async close guarded like sync (T5) | kernel check | stream adapter |
+| `container_absent` applies to untyped errors only | kernel check, stated in BE-021 | choke point |
+| `unwrap` after close (T11) | `Session` obligation for remote drivers (D5: `unwrap` goes through `run`); the kernel's closed guard for session-less ones | P0 |
+| Repeated `close`; skipping a second wait on a condemned connection | `Session` obligation; the kernel's for session-less drivers | P0, stream adapter |
+
+The mechanisms:
+
+- **(a) One decode step** that every `Entry`, `Page` and `PutResult` passes
+  before the kernel uses it: domain and shape check, mapping copy,
+  canonical-key omission, key under prefix, `stat` names its key.
+- **(b) One stream adapter** shared by `read`, `read_bytes` and the ranged
+  read: one caught set, one close policy, one cancellation path.
+- **(c) One declaration record** validated once at construction: namespace,
+  parents, capabilities, presented protocols with the body check,
+  `rename_replaces`, `ensure_parents`.
+
+The absorbed findings become the acceptance tests of (a), (b) and (c).
 
 **Absorbs:** T1, T2, T4, T5, T9, T10, T11, T13 (driver half), T15, T16; the
 lower-ranked rows on return shapes, `container_absent`, close repeatability,
@@ -723,19 +825,40 @@ runs; that both Memory drivers present `SupportsGlob`, so P2 has a real runner
 **Absorbs:** the template coverage behind T13 and BK-446; the lower-ranked row
 on MEM-tagged cells that never run on async Memory, for the async member.
 
-### P5 Capability semantics per runtime
+### P5 One meaning per capability flag, checked in each runtime
 
-**Claim.** Async drivers copy capability sets, and spec 029 defines no
-capability for an async read. P5 states, per runtime, what each flag
-promises, starting with the two T6 measured: async `LAZY_READ` is per-chunk
-pull, so a read holds at most a chunk, never the file (T6's reasoning), and
-async `SEEKABLE_READ` is withheld or given a meaning.
+**Claim.** One `CapabilitySet` crosses runtimes unchanged: the sync kernel is
+generated from the async source, and ASYNC-084 preserves a flag through the
+sync adapter. A flag that promised different things per runtime would carry a
+different promise through every adapter, so a caller checking `LAZY_READ` on an
+adapted backend could not know which holds. P5 gives each flag one meaning and
+checks it by conformance in both runtimes; where an async read cannot keep a
+flag's meaning, the async side withholds the flag rather than redefine it.
 
-It decides: the async meaning of `LAZY_READ` and `SEEKABLE_READ`; whether any
-other flag is runtime-specific; the async conformance cell that replaces the
-e2e exemption.
+It decides: `LAZY_READ` as per-chunk pull, so a read holds at most a chunk,
+never the file (T6's reasoning; CAP-007 and SIO-009 already say so for sync);
+`SEEKABLE_READ` withheld by async backends, whose read is a forward-only
+generator; whether any other flag cannot hold across runtimes; the async
+conformance cell that replaces the e2e exemption.
 
 **Absorbs:** T6.
+
+### P6 One owner per check between `Store` and kernel
+
+**Claim.** Two layers own the same checks. `Store` gates capabilities per
+operation (`_store.py:1011-1017`, 18 call sites by `rg "self._gate\(" src/remote_store/_store.py`,
+`move` at `:631`, `copy` at `:665`) and validates paths through `RemotePath`
+(`_full_path`, `:1019-1032`); the kernel also gates capabilities (BE-030; T12)
+and validates and normalises keys (BE-030). Each migrated backend inherits
+whichever split is in place. P6 assigns each check to one layer.
+
+It decides: which layer owns capability gating, path validation and
+normalisation, and error-path attribution (canonical or raw, the lower-ranked
+row); what the other layer keeps (none, or a documented fast path); BE-027's
+text once the answer is in place.
+
+**Absorbs:** T12 (prose half, BE-027); the lower-ranked row on error `path`
+spelling.
 
 ### Not proposed
 
@@ -787,3 +910,7 @@ oracle and snippet-test figures are the first pass's runs, not repeated.
 - `AsyncMemoryDriver`'s `asyncio.Lock` across two event loops (ASYNC-094).
 - The guide's redis-py claims (redis not installed) and the rendered site.
 - Alloy and Lean.
+- The `Session` layer (RFC-0017 D5). Memory has none (RFC-0017 l.497) and no
+  remote driver is on the kernel yet, so a Memory-driven audit cannot observe
+  connect, invalidate or reconnect; T20 and P0 are drawn from the design text,
+  not from measurement.
