@@ -44,6 +44,29 @@ weigh, not settled):
   cancellation. Its most detailed rows (the temporary's `NotFound` carve-out)
   decide an observable log, so they are postconditions.
 
+**A second review** (Gemini, brought by the maintainer to the same PR, filed
+here by the maintainer's choice, same decision log: "Into BK-457 and BK-450")
+raised two questions for this ADR, checked against the code on 2026-10-17:
+
+- *"Forcing flat namespaces to run ancestor stat walks before every write."*
+  Not so on the kernel: the refusal path walks ancestors only when
+  `driver.namespace` is hierarchical (`walk=not self._flat` in
+  `_write_refused`), and a flat folder operation spends one `stat` on the key
+  itself (BE-032 A.3, `_flat_item`). The S3 and Azure specs carry no ancestor
+  pre-check; SQL blob, not yet on the kernel, does (SQL-BLOB-031). The profile
+  it asks for exists as `driver.namespace` and is unnamed in the specs. Its
+  further proposal, marker objects (`key/`, zero bytes) behind an opt-in
+  strict-tree flag, writes new objects other tools would see: a design option
+  for the ADR, not a fix.
+- *"Tolerant deletes spend a speculative probe."* Accurate: BE-021 has
+  `delete(path, missing_ok=True)` on an absent key spend one `MaxKeys=1`
+  listing (the "is this a folder?" row), because type mismatch outranks
+  `missing_ok`, a verified Dafny postcondition (`Delete: IsDir → InvalidPath`
+  whatever `missing_ok`). The proposal, `NotFound` unless a strict flag is set,
+  changes behaviour (`delete(folder, missing_ok=True)` returns quietly on a
+  flat backend). Open question for the ADR: whether type strictness on tolerant
+  calls is per profile, against its wire cost.
+
 **Prescription** (advisory):
 
 - An ADR: a spec states preconditions, postconditions, observable side effects
