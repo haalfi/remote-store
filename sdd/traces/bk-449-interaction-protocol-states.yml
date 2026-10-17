@@ -257,7 +257,9 @@ phases:
       - file: scripts/mutate_scopes.py
         section: "module docstring, Scope"
         read_type: reference
-        extract: "Every scope is derived; a hand-written kernel scope would break that rule"
+        extract: >-
+          Every scope is derived, and no rule reached a package directory, so the
+          kernel had no scope; a derived package rule adds core-kernel
       - file: tests/_kernel/test_protocol.py
         section: "content guard cells"
         read_type: verify
@@ -283,6 +285,8 @@ surprising_ripples:
   - tests/scripts/test_check_dafny_oracle_fresh.py
   - scripts/fast_gate.py
   - tests/scripts/test_fast_gate.py
+  - scripts/mutate_scopes.py
+  - tests/scripts/test_mutate_scopes.py
 expected_ripples:
   - sdd/backlogid.json
   - src/remote_store/_kernel/_sync/kernel.py
