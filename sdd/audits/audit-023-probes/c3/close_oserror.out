@@ -1,0 +1,4 @@
+sync read() + close(): OK b'abc'
+sync read_bytes(): remote_store._errors.RemoteStoreError: ConnectionResetError: close reset | path='f' | backend='memory'
+async read(): builtins.ConnectionResetError: close reset
+async read_bytes(): remote_store._errors.RemoteStoreError: ConnectionResetError: close reset | path='f' | backend='async-memory'

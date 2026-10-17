@@ -1,9 +1,11 @@
 # Audit 009 — Backend-Specifics Visibility in Reference
 
 **Date:** 2026-04-21
+
 **Scope:** All API reference pages under `docs-src/api/` and the docstrings
 they render from in `src/remote_store/`. Excludes guides and explanation
 pages — they are surveyed only when the reference is the source.
+
 **Method:** Walked every reference page section by section, then
 cross-checked each rendered symbol against its source for capability gates,
 backend-specific behaviour, or backend-shaped data. The reference template

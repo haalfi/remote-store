@@ -1,7 +1,9 @@
 # Audit 010: Extension Private Module Imports
 
 **Date:** 2026-04-23  
+
 **Scope:** All extension modules in `src/remote_store/ext/` and `src/remote_store/aio/ext/`  
+
 **Rule:** ADR-0008 § "Public API only" — Extensions MUST use only the public `Store` and `Backend` API.
 
 **Interpretation note:** ADR-0008 illustrates the rule with runtime attribute access (`store._backend`). This audit extends the same principle to import-time access to private modules. That extension is not literal ADR text and may warrant a dedicated ADR to formalise.

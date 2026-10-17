@@ -1,10 +1,13 @@
 # Audit 006 — Documentation List Completeness
 
 **Date:** 2026-03-30
+
 **Scope:** All `docs-src/` pages, `guides/`, and `README.md` — every list
 (including table rows and columns) that enumerates backends, extensions,
 capabilities, or Store API methods.
+
 **Branch:** `claude/docs-audit-expert-role-LUJE8`
+
 **Method:** Documentation Expert role (consumer advocate perspective). Read all
 doc source files, identified every list of items belonging to the four
 categories above, cross-checked each against the authoritative source of truth

@@ -1,7 +1,9 @@
 # Audit 003 — Documentation Quality & Spec Compliance
 
 **Date:** 2026-03-09
+
 **Scope:** Full documentation site (`docs-src/`, `guides/`, `examples/`, API docstrings) audited against `sdd/DOCUMENTATION.md` spec. Version 0.15.0, commit `62ecb61` (master HEAD at audit time).
+
 **Method:** Built docs locally with `hatch run docs-build`. Systematic cross-reference of every section in `sdd/DOCUMENTATION.md` (S1-S13) against actual site structure, content, and source files. Assessed against the 5 Documentation Goals from S1.
 
 **Finding IDs assigned:** AF-022 through AF-040.

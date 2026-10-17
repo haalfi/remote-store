@@ -1,10 +1,12 @@
 # Audit 013 — Docstring Style Compliance
 
 **Date:** 2026-05-05
+
 **Scope:** All Python docstrings in `src/`, `tests/`, and `scripts/` at
 `master` `f5c8c37`. (The one subsequent master commit before the PR base
 `ed3df448` is `#589` — a skills/config change with no Python source edits;
 the Python file set is identical between the two SHAs.)
+
 **Method:** Agent-assisted full read of every `.py` file; each docstring
 cross-checked against the three rules extracted below.
 

@@ -1,13 +1,16 @@
 # Audit 016 — Microsoft Graph Backend (ID-127) Review
 
 **Backlog item:** — (ad-hoc multi-expert review of ID-127, post-merge; follow-ups proposed at the end)
+
 **Date:** 2026-06-09
+
 **Scope:** The complete Microsoft Graph / OneDrive / SharePoint backend delivered by
 ID-127 (PRs #750–#769): `src/remote_store/aio/backends/_graph/` (~2,800 LOC across
 `backend.py`, `http.py`, `transfer.py`, `monitor.py`, `items.py`, `auth.py`,
 `utils.py`), its tests (~4,400 LOC under `tests/backends/graph/`), spec
 `044-graph-backend.md`, `rfc-0010`, ADRs 0021–0024, the 13 ID-127 traces, the
 user-facing guides/example, and the extension-ecosystem interactions.
+
 **Method:** Five domain experts (Store/Backend, Testing, SDD, Documentation,
 Extension) reviewed independently, each from a consumer-advocate stance, against
 the spec as contract. Claims were cross-checked across experts and verified

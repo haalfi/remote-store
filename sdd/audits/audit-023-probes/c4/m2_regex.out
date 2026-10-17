@@ -1,0 +1,35 @@
+PatternError is ValueError subclass: False <class 're.PatternError'>
+'a**'            regex='^a.*\\Z'                                {'ab/c.csv': True, 'abc': True} warn=[]
+'d**/c.csv'      regex='^d(?:.+/)?c\\.csv\\Z'                   {'d/e/c.csv': True, 'dx/c.csv': True} warn=[]
+'d/e**'          regex='^d/e.*\\Z'                              {'d/e/f/g.csv': True, 'd/ef': True} warn=[]
+'**x'            RAISES builtins.ValueError: '**' must be a complete path segment, got '**x' in pattern '**x'
+'x**y'           RAISES builtins.ValueError: '**' must be a complete path segment, got '**y' in pattern 'x**y'
+'d[!x]e/c.csv'   regex='^d[^x]e/c\\.csv\\Z'                     {'d/e/c.csv': True} warn=[]
+'d[/]e/c.csv'    regex='^d[/]e/c\\.csv\\Z'                      {'d/e/c.csv': True} warn=[]
+'d[^x]e'         regex='^d[^x]e\\Z'                             {'d^e': True, 'dae': True} warn=[]
+'[z-a]'          RAISES re.PatternError: bad character range z-a at position 2
+'[\\]'           RAISES re.PatternError: bad escape \Z at position 4
+'a[b'            regex='^a\\[b\\Z'                              {'a[b': True} warn=[]
+'[a&&b]'         regex='^[a&&b]\\Z'                             {} warn=['FutureWarning']
+'**'             regex='^.*\\Z'                                 {'': True, 'x': True} warn=[]
+
+'d/a.csv'      norm='d/a.csv' prefix='d' recursive=False
+'a[b/x'        norm='a[b/x' prefix='' recursive=True
+'d[/x.csv'     norm='d[/x.csv' prefix='' recursive=True
+'d/./a.csv/'   norm='d/a.csv/' prefix='d/a.csv' recursive=False
+'a/b/'         norm='a/b/' prefix='a/b' recursive=False
+'a**'            MEM=['a[b', 'ab/c.csv', 'abc']  LOC=['a[b', 'abc']   <<< DIFF
+'d**/c.csv'      MEM=['d/e/c.csv', 'dx/c.csv']  LOC=['dx/c.csv']   <<< DIFF
+'d[!x]e/c.csv'   MEM=['d/e/c.csv']  LOC=[]   <<< DIFF
+'d[/]e/c.csv'    MEM=['d/e/c.csv']  LOC=[]   <<< DIFF
+'d[^x]e'         MEM=['d^e', 'dae']  LOC=['d^e']   <<< DIFF
+'[z-a]'          MEM=re.PatternError: bad character range z-a at position 2  LOC=[]   <<< DIFF
+'[z-a]*'         MEM=re.PatternError: bad character range z-a at position 2  LOC=[]   <<< DIFF
+'a[b'            MEM=['a[b']  LOC=['a[b']
+'**x'            MEM=builtins.ValueError: '**' must be a complete path segment, got '**x' in pattern '**x'  LOC=['[z-a]x']   <<< DIFF
+'x**y'           MEM=builtins.ValueError: '**' must be a complete path segment, got '**y' in pattern 'x**y'  LOC=[]   <<< DIFF
+
+[^x]* tier1 mem: []
+d[!x]e tier1 mem: ['d^e', 'dae']
+[z-a] tier1 mem: []
+* tier1 mem: ['[z-a]x', 'a[b', 'abc', 'd^e', 'dae']

@@ -1,8 +1,11 @@
 # Audit-012: Documentation Structure — Post-ID-174 Layout
 
 **Date:** 2026-04-30
+
 **Scope:** Documentation structure, navigation, link integrity, and page-generation logic. No source code.
+
 **Reference:** BK-165
+
 **Closed:** 2026-05-02 (BK-167b). All findings resolved — see closure notes below each finding.
 
 ---

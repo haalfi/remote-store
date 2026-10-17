@@ -1,0 +1,5 @@
+[write_atomic overwrite=False onto existing (driver ignores overwrite)] OK -> WriteResult(path=RemotePath('x'), size=3, source='basic', digest=None, etag=None, version_id=None, last_modified=None, metadata=None)
+   calls: [('list_page', 'x', 1), ('open_write', 'x', False), ('commit', 'x')] value: b'new'
+[open_atomic overwrite=False onto existing] OK -> None
+   calls: [('list_page', 'x', 1), ('open_write', 'x', False), ('commit', 'x')] value: b'newer'
+[second close on a driver whose close is not repeatable] RemoteStoreError: native RuntimeError | path='' | backend='dict'

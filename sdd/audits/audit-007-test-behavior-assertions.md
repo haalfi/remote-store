@@ -1,9 +1,11 @@
 # Audit 007 — Test Behavior Assertions
 
 **Date:** 2026-03-30
+
 **Scope:** All test files in `tests/` — checked against "Assert behavior, not
 type" (Rule 2) and "Never assert on private attributes" (Rule 3) from
 `research-testing-best-practices.md` §4.1.
+
 **Method:** Systematic grep + agent-assisted sampling of all 39 test files
 (~1,045 test functions). Cross-referenced against anti-pattern counts in
 `research-testing-best-practices.md` §2.

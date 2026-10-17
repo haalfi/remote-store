@@ -1,0 +1,38 @@
+===== runtime sync =====
+[P1 namespace='Flat' typo] -> returned "constructed; write below item k succeeded; files=['k', 'k/a.txt']"
+[P1b namespace='object'] -> returned "constructed with namespace='object'"
+[P1c parents='None' typo (with remove_folder present)] -> returned "constructed with parents='None'"
+[P2 stat returns str -> exists] -> raised builtins.AttributeError: 'str' object has no attribute 'kind'
+[P3 stat returns Entry(key='zzz/other') -> get_file_info('a')] -> returned 'FileInfo.path=zzz/other name=other'
+[P4 list_page adds 'e/g' to listing of 'd' -> list_files('d')] -> returned ['d/f', 'e/g']
+[P4b list_page adds prefix 'x/y' (outside 'd') -> list_folders('d')] -> returned ['x/y']
+[P5 put returns None -> write] -> raised builtins.AttributeError: 'NoneType' object has no attribute 'size'
+[P6 typed BackendUnavailable from delete, container_absent says True -> delete(missing_ok=True)] -> raised remote_store._errors.BackendUnavailable: container gone | path='a' | backend='fake'
+[P6b untyped FakeContainerGone from delete -> delete(missing_ok=True)] -> returned 'returned cleanly'
+[P7 unwrap(int) on fake driver] -> raised builtins.TypeError: <class 'int'>
+[P8 driver native_path raises KeyError -> kernel native_path] -> raised builtins.KeyError: 'a'
+[P9 folder_stats returns 2-tuple -> get_folder_info] -> raised remote_store._errors.RemoteStoreError: not enough values to unpack (expected 3, got 2) | path='d' | backend='fake'
+[P9b folder_stats returns negative counts -> get_folder_info] -> returned FolderInfo(path=RemotePath('d'), file_count=-5, total_size=-1, modified_at=None, extra={})
+[P10 list_page returns None -> list_files] -> raised builtins.AttributeError: 'NoneType' object has no attribute 'entries'
+[P11 closed terminal: list_files('../x') at call time] -> returned 'call returned generator without raising'
+[P12 classify returns None for get failure -> read_bytes] -> raised remote_store._errors.RemoteStoreError: FakeOdd during read_bytes | path='a' | backend='fake'
+[P13 stat returns kind='dir' -> (exists,is_file,is_folder)] -> returned (True, False, True)
+===== runtime async =====
+[P1 namespace='Flat' typo] -> returned "constructed; write below item k succeeded; files=['k', 'k/a.txt']"
+[P1b namespace='object'] -> returned "constructed with namespace='object'"
+[P1c parents='None' typo (with remove_folder present)] -> returned "constructed with parents='None'"
+[P2 stat returns str -> exists] -> raised builtins.AttributeError: 'str' object has no attribute 'kind'
+[P3 stat returns Entry(key='zzz/other') -> get_file_info('a')] -> returned 'FileInfo.path=zzz/other name=other'
+[P4 list_page adds 'e/g' to listing of 'd' -> list_files('d')] -> returned ['d/f', 'e/g']
+[P4b list_page adds prefix 'x/y' (outside 'd') -> list_folders('d')] -> returned ['x/y']
+[P5 put returns None -> write] -> raised builtins.AttributeError: 'NoneType' object has no attribute 'size'
+[P6 typed BackendUnavailable from delete, container_absent says True -> delete(missing_ok=True)] -> raised remote_store._errors.BackendUnavailable: container gone | path='a' | backend='fake'
+[P6b untyped FakeContainerGone from delete -> delete(missing_ok=True)] -> returned 'returned cleanly'
+[P7 unwrap(int) on fake driver] -> raised builtins.TypeError: <class 'int'>
+[P8 driver native_path raises KeyError -> kernel native_path] -> raised builtins.KeyError: 'a'
+[P9 folder_stats returns 2-tuple -> get_folder_info] -> raised remote_store._errors.RemoteStoreError: not enough values to unpack (expected 3, got 2) | path='d' | backend='fake'
+[P9b folder_stats returns negative counts -> get_folder_info] -> returned FolderInfo(path=RemotePath('d'), file_count=-5, total_size=-1, modified_at=None, extra={})
+[P10 list_page returns None -> list_files] -> raised builtins.AttributeError: 'NoneType' object has no attribute 'entries'
+[P11 closed terminal: list_files('../x') at call time] -> returned 'call returned async_generator without raising'
+[P12 classify returns None for get failure -> read_bytes] -> raised remote_store._errors.RemoteStoreError: FakeOdd during read_bytes | path='a' | backend='fake'
+[P13 stat returns kind='dir' -> (exists,is_file,is_folder)] -> returned (True, False, True)

@@ -1,0 +1,4 @@
+[sync] closed terminal kernel: unwrap(FakeStore) returned the handle: True
+[sync] same kernel: exists('a') raised BackendUnavailable
+[async] closed terminal kernel: unwrap(FakeStore) returned the handle: True
+[async] same kernel: exists('a') raised BackendUnavailable

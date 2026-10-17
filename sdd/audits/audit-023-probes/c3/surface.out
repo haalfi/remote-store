@@ -1,0 +1,27 @@
+DriverBackend: members taken from Backend unchanged: ['close_is_terminal']
+AsyncDriverBackend: members taken from AsyncBackend unchanged: ['close_is_terminal']
+only sync kernel: ['close', 'open_atomic', 'read_seekable']
+only async kernel: ['aclose']
+  check_health: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  copy: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  delete: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  delete_folder: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  exists: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  get_file_info: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  get_folder_info: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  glob: sync=gen async=asyncgen owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  is_file: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  is_folder: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  iter_children: sync=gen async=asyncgen owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  list_files: sync=gen async=asyncgen owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  list_folders: sync=gen async=asyncgen owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  move: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  native_path: sync=plain async=plain owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  read: sync=plain async=asyncgen owner_sync=DriverBackend owner_async=AsyncDriverBackend
+  read_bytes: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  resolve: sync=plain async=plain owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  to_key: sync=plain async=plain owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  unwrap: sync=plain async=plain owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  write: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+  write_atomic: sync=plain async=coro owner_sync=_KernelCore owner_async=_AsyncKernelCore
+{"iter_children('../x')": 'InvalidPath("Path contains \'..\' segment", path=\'../x\', backend=\'async-memory\')'}

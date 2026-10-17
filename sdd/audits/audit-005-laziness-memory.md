@@ -1,8 +1,11 @@
 # Audit 005 — Laziness & Memory Efficiency
 
 **Date:** 2026-03-28
+
 **Scope:** `src/remote_store/` — all Python source files
+
 **Branch:** `claude/audit-laziness-memory-cIPJr`
+
 **Method:** Full line-by-line read of all 40 source files. Two focus areas:
 (1) missed opportunities for lazy evaluation/loading where it would genuinely help,
 (2) memory hygiene — unnecessary buffering, patterns that should stream but don't,

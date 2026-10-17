@@ -1,0 +1,11 @@
+[list w[1]] OK -> ['w[1]/y']
+[list st*r] OK -> ['st*r/z']
+[list_folders root] OK -> ['st*r', 'stXr', 'w1', 'w[1]']
+[to_key(native_path)] OK -> ['', 'a/b', '../x', 'w[1]']
+[read_seekable] OK -> b'1'
+[unwrap(int)] CapabilityNotSupported: Backend 'redis' does not expose native handle of type int. | backend='redis' | capability='unwrap'
+[delete_folder w[1] recursive] OK -> None
+[w1 still there] OK -> b'1'
+[list with wildcard prefix] OK -> ['k']
+[shadowed: list root recursive] OK -> ['a']
+[shadowed: read a/b] OK -> b'y'

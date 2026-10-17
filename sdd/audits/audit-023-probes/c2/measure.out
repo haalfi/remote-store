@@ -1,0 +1,75 @@
+== A. counters vs tree walk after op sequences ==
+sync repr: MemoryBackend(files=3, folders=5) walk: (3, 5) mismatches: [] q exists: ('ok', False)
+async repr: AsyncMemoryBackend(files=3, folders=5) walk: (3, 5) mismatches: [] q exists: ('ok', False)
+
+== A2. driver called directly: move(k, k, overwrite=True) ==
+sync driver counts: (0, 0) walk: (1, 0) stat: Entry(key='k', kind='file', size=1, modified_at=datetime.datetime(2026, 10, 17, 8, 36, 34, 566648, tzinfo=datetime.timezone.utc), digest=None, etag=None, content_type=None, metadata=None, extra={})
+
+== B. MEM-DS-003 shrink claim (100MB->1KB keeps ~100MB) ==
+sync same object: True getsizeof before: 10000057 after: 1057
+async same object: True getsizeof before: 10000057 after: 1057
+
+== C. bytearray overallocation (~12.5% claim) ==
+bytes_in len 1000000 getsizeof 1000057 bytes getsizeof 1000033
+stream_in len 1000000 getsizeof 1105982 bytes getsizeof 1000033
+
+== D. metadata aliasing through FileInfo / copy ==
+sync type: dict mutable stored after caller mutation: {'k': 'MUTATED'} | src after mutating dst's info: {'k': 'VIA_DST'} | same dict obj src/dst in tree: True
+async type: dict mutable stored after caller mutation: {'k': 'MUTATED'} | src after mutating dst's info: {'k': 'VIA_DST'} | same dict obj src/dst in tree: True
+
+== E/F. empty metadata echo vs round-trip; WriteResult aliasing caller dict ==
+sync WriteResult.metadata: {} get_file_info.metadata: None
+sync WriteResult.metadata after caller mutates own dict: {'a': 'CHANGED'} stored: {'a': '1'}
+async WriteResult.metadata: {} get_file_info.metadata: None
+async WriteResult.metadata after caller mutates own dict: {'a': 'CHANGED'} stored: {'a': '1'}
+
+== G. modified_at on move/copy; content_type ==
+sync move preserved: True copy new: True tz: UTC content_type: None
+async move preserved: True copy new: True tz: UTC content_type: None
+
+== H. read snapshot vs later overwrite ==
+sync: read() then overwrite then consume -> b'old' seekable: True
+async: read() then overwrite then consume -> [b'new'] type: async_generator has seek: False
+async read of missing: raised at first iteration: NotFound
+
+== L. async chunk count for 10 MB ==
+chunks: [10000000]
+declares: sync LAZY_READ False async LAZY_READ True async SEEKABLE_READ True
+
+== I. get_folder_info edge cases ==
+sync empty folder: 0 0 None | absent: ('err', 'NotFound', "Not found: zz | path='zz' | backend='memory'") | file: 
+async empty folder: 0 0 None | absent: ('err', 'NotFound', "Not found: zz | path='zz' | backend='async-memory'") | file: 
+
+== K. MEM-DS-004 / MEM-041 sizes ==
+FileEntry 64 DirNode 40 DirNode+dict 104 empty bytearray 56 python 3.13.16
+
+== N. sync vs async outcome matrix ==
+same read_bytes ('d',) {} ('err', 'InvalidPath', "Is a folder, not a file: d | path='d' | backend='memory'")
+same read_bytes ('f/x',) {} ('err', 'NotFound', "File not found: f/x | path='f/x' | backend='memory'")
+same read_bytes ('nope',) {} ('err', 'NotFound', "File not found: nope | path='nope' | backend='memory'")
+same get_file_info ('d',) {} ('err', 'InvalidPath', "Is a folder, not a file: d | path='d' | backend='memory'")
+same delete ('d',) {} ('err', 'InvalidPath', "Is a folder, not a file: d | path='d' | backend='memory'")
+same delete ('nope',) {} ('err', 'NotFound', "File not found: nope | path='nope' | backend='memory'")
+same delete ('f/x',) {} ('err', 'NotFound', "File not found: f/x | path='f/x' | backend='memory'")
+same delete_folder ('f',) {} ('err', 'InvalidPath', "Not a folder: f | path='f' | backend='memory'")
+same delete_folder ('nope',) {} ('err', 'NotFound', "Not found: nope | path='nope' | backend='memory'")
+same delete_folder ('d',) {'recursive': False} ('err', 'DirectoryNotEmpty', "Folder not empty: d | path='d' | backend='memory'")
+same move ('d', 'z') {} ('err', 'InvalidPath', "Is a folder, not a file: d | path='d' | backend='memory'")
+same move ('f', 'd') {} ('err', 'InvalidPath', "Is a folder, not a file: d | path='d' | backend='memory'")
+same move ('f', 'f/x') {} ('err', 'InvalidPath', "An ancestor of the path is a file: f | path='f/x' | backend='memory'")
+same copy ('f', 'd') {} ('err', 'InvalidPath', "Is a folder, not a file: d | path='d' | backend='memory'")
+same copy ('nope', 'd') {} ('err', 'NotFound', "Source not found: nope | path='nope' | backend='memory'")
+same write ('d', b'x') {} ('err', 'InvalidPath', "Is a folder, not a file: d | path='d' | backend='memory'")
+same write ('f/x', b'x') {} ('err', 'InvalidPath', "An ancestor of the path is a file: f | path='f/x' | backend='memory'")
+same write ('f', b'x') {} ('err', 'AlreadyExists', "File already exists: f | path='f' | backend='memory'")
+same write_atomic ('d', b'x') {} ('err', 'InvalidPath', "Is a folder, not a file: d | path='d' | backend='memory'")
+same get_folder_info ('f',) {} ('err', 'InvalidPath', "Is a file, not a folder: f | path='f' | backend='memory'")
+same get_folder_info ('nope',) {} ('err', 'NotFound', "Not found: nope | path='nope' | backend='memory'")
+same is_folder ('f/x',) {} ('ok', False)
+same exists ('f/x/y',) {} ('ok', False)
+DIFF list_files ('f',) {} [('ok', 'generator'), ('ok', 'list')]
+DIFF list_folders ('f',) {} [('ok', 'generator'), ('ok', 'list')]
+same write ('a\\b', b'x') {} ('err', 'InvalidPath', "Path contains a backslash | path='a\\\\b' | backend='memory'")
+same write ('a/../b', b'x') {} ('err', 'InvalidPath', "Path contains '..' segment | path='a/../b' | backend='memory'")
+same move ('f', 'd/sub/f2') {'overwrite': True} ('ok', None)
+diffs: 2 of 28

@@ -2,7 +2,9 @@
 
 **Backlog item:** ID-219 (apply the expectation-driven / DX review to the Azure
 backend; follow-ups proposed at the end).
+
 **Date:** 2026-06-16
+
 **Scope:** The Azure backend — sync `AzureBackend`
 (`src/remote_store/backends/_azure.py`), async `AsyncAzureBackend`
 (`src/remote_store/aio/backends/_azure.py`), the shared
@@ -12,6 +14,7 @@ bridge (`src/remote_store/_async_to_sync_adapter.py`), spec
 spec 003, ASYNC-094 spec 029), the user guides `docs-src/guides/backends/azure.md`
 and `azure-hns-setup.md`, and the test tiers (conformance + azurite Stage 2 +
 `azure_live` Stage 3 + the 303 committed cassettes + `tests/backends/azure/test_live_hns.py`).
+
 **Method:** the expectation-driven methodology
 ([research-expectation-driven-review.md](../research/research-expectation-driven-review.md)),
 run as a **lens-organized panel** (the eight catalog lenses across five parallel

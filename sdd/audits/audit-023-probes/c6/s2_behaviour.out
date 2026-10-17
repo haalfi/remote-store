@@ -1,0 +1,86 @@
+== A. construction
+[baseline] OK -> <remote_store._kernel.backend.DriverBackend object at 0x7fec079b82f0>
+[flat+implicit] ValueError: driver 'dict' is flat but has folder objects (parents='implicit')
+[hier implicit no remove_folder] ValueError: driver 'dict' has folder objects (parents='implicit') but no remove_folder
+[hier explicit no ensure_parents] ValueError: driver 'dict' has explicit parents but no ensure_parents
+[close_is_terminal mismatch (class default False)] ValueError: DriverBackend.close_is_terminal is False, but driver 'dict' declares close_is_terminal=True
+[inherited delete body] ValueError: driver 'dict' does not implement required primitive 'delete'
+[structural without probe] ValueError: driver 'dict' does not implement required primitive 'probe'
+[structural with probe] OK -> <remote_store._kernel.backend.DriverBackend object at 0x7fec079307c0>
+[undeclared-backed USER_METADATA/SEEKABLE/LAZY taken as declared] OK -> <remote_store._kernel.backend.DriverBackend object at 0x7fec078f6b50>
+[rename() defined, rename_replaces missing, MOVE declared] ValueError: driver 'dict' declares MOVE without a move, a rename or a copy
+ensure_parents called on implicit driver: []
+move via copy-then-delete: False b'x' ['list_page', 'copy', 'delete', 'stat', 'list_page', 'get']
+== C/D. key rule
+[read '/a'] InvalidPath: Path must not start with '/' | path='/a' | backend='dict'
+   driver calls: []
+[read 'a/../b'] InvalidPath: Path contains '..' segment | path='a/../b' | backend='dict'
+   driver calls: []
+[read 'a\x00b'] InvalidPath: Path contains null byte | path='a\x00b' | backend='dict'
+   driver calls: []
+[read 'a\\b'] InvalidPath: Path contains a backslash | path='a\\b' | backend='dict'
+   driver calls: []
+[read './a/b'] OK -> b'1'
+   driver calls: [('get', 'a/b')]
+[read 'a//b'] OK -> b'1'
+   driver calls: [('get', 'a/b')]
+[read 'a/./b/'] OK -> b'1'
+   driver calls: [('get', 'a/b')]
+[read root ''] InvalidPath: The store root is a folder, not a file | path='' | backend='dict'
+   driver calls: []
+[read root '.'] InvalidPath: The store root is a folder, not a file | path='.' | backend='dict'
+   driver calls: []
+[read root './'] InvalidPath: The store root is a folder, not a file | path='./' | backend='dict'
+   driver calls: []
+[read root '//'] InvalidPath: Path must not start with '/' | path='//' | backend='dict'
+   driver calls: []
+[native_path '../x'] OK -> 'n:../x'
+[resolve '../x'] OK -> 'n:../x'
+   driver calls: [('native_path', '../x'), ('resolve', '../x'), ('native_path', '../x'), ('native_path', '../x')]
+[native_path '/abs'] OK -> 'n:/abs'
+[resolve '/abs'] OK -> 'n:/abs'
+   driver calls: [('native_path', '/abs'), ('resolve', '/abs'), ('native_path', '/abs'), ('native_path', '/abs')]
+[native_path 'a\\b'] OK -> 'n:a\\b'
+[resolve 'a\\b'] OK -> 'n:a\\b'
+   driver calls: [('native_path', 'a\\b'), ('resolve', 'a\\b'), ('native_path', 'a\\b'), ('native_path', 'a\\b')]
+== E/F
+[read folder] InvalidPath: Is a folder, not a file: dir | path='dir' | backend='dict'
+[write over folder] InvalidPath: Is a folder, not a file: dir | path='dir' | backend='dict'
+[write under file] InvalidPath: An ancestor of the path is a file: dir/x | path='dir/x/y' | backend='dict'
+== G
+[list_files lst] OK -> ['lst/ok']
+== J
+[mid-stream ValueError without stream_catch] ValueError: mid-stream
+[mid-stream ValueError with stream_catch] RemoteStoreError: native ValueError | path='s.bin' | backend='dict'
+[mid-stream OSError] RemoteStoreError: native OSError | path='s.bin' | backend='dict'
+== I
+[classify raises] RemoteStoreError: KeyError during exists; classify raised RuntimeError: classifier broke | path='k' | backend='dict'
+[classify returns junk] RemoteStoreError: KeyError during exists | path='k' | backend='dict'
+== K
+[read ../x after close] BackendUnavailable: Backend 'dict' is closed | backend='dict'
+[exists after close] BackendUnavailable: Backend 'dict' is closed | backend='dict'
+[list_files after close] BackendUnavailable: Backend 'dict' is closed | backend='dict'
+[check_health after close] BackendUnavailable: Backend 'dict' is closed | backend='dict'
+[native_path after close] OK -> 'n:a'
+[close again] OK -> None
+   driver calls after close: [('native_path', 'a'), ('close',)]
+== L
+move overwrite, renames: [('rename', 'b.txt', '.b.txt.rs-42a153291700.tmp', False), ('rename', 'a.txt', 'b.txt', False)] {'b.txt': b'A'}
+[move overwrite with failing rename] RemoteStoreError: native OSError | path='a.txt' | backend='dict'
+   renames: [('rename', 'b.txt', '.b.txt.rs-691222cea6e5.tmp', False), ('rename', 'a.txt', 'b.txt', False), ('rename', '.b.txt.rs-691222cea6e5.tmp', 'b.txt', False)] state: {'a.txt': b'A2', '.b.txt.rs-691222cea6e5.tmp': b'A'}
+== M
+[get_folder_info] OK -> (2, 5)
+[read_seekable seekable] OK -> (True, b'12')
+[delete_folder recursive] OK -> None
+   left: {}
+== O
+[Store.write on read-only] CapabilityNotSupported: Capability 'write' is not supported. Supported: ['metadata', 'read'] | backend='dict' | capability='write'
+[Store.glob without GLOB] OK -> <generator object Store.glob at 0x7fec07932790>
+   driver calls: []
+== S
+[CAPABILITIES disagrees with driver] OK -> ['DELETE', 'LIST', 'METADATA', 'READ', 'WRITE']
+== H
+[is_folder h] OK -> True
+   list_page limits seen: [('list_page', 'h', 1)]
+WARNING:remote_store._kernel:dict: omitted 1 listed key(s) under 'lst' that the key rule refuses or rewrites, or that lie below a listed file, e.g. 'lst/a\\b'
+WARNING:remote_store._kernel:dict: move to 'b.txt' failed and the displaced file could not be put back; it lies at '.b.txt.rs-691222cea6e5.tmp': rename failed

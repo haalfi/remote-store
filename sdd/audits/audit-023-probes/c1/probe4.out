@@ -1,0 +1,2 @@
+[construction + copy('src','dst')] -> returned "copy returned; 'dst' in store: False"
+[construction + delete_folder('d')] -> returned "delete_folder returned; folder 'd' still present: True; is_folder('d')=True"

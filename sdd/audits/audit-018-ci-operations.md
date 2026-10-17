@@ -2,7 +2,9 @@
 
 **Backlog item:** — (ad-hoc operational audit prompted by the weekend mutation
 failure; follow-ups proposed at the end)
+
 **Date:** 2026-06-09
+
 **Scope:** The nine workflows under `.github/workflows/` and `.github/dependabot.yml`,
 viewed through one question: *when a scheduled or automated guard finds something,
 how does a maintainer (human or agent) learn there is a TODO, and what tells them
@@ -11,6 +13,7 @@ how to action it?* Specifically the **scheduled-maintenance family** — `drift-
 the `dependabot-auto-merge` automation and the absence of a CI-operations handbook.
 Out of scope: the internal correctness of `ci.yml`'s test matrix, coverage gates,
 and the formal-verification lanes (those are gating, not maintenance).
+
 **Method:** Read every workflow trigger and notification path; compared the one
 guard that produces an actionable, deduplicated TODO (`drift-guard` → rolling
 GitHub Issue → `/drift` skill) against the rest. Evidence is `file:line` in the

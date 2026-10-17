@@ -1,0 +1,36 @@
+write 'f.txt'                                           -> None
+write 'd/a.csv'                                         -> None
+write 'd/e/c.csv'                                       -> None
+write 'A.csv'                                           -> None
+write 'a.csv'                                           -> None
+write 'é.csv'                                           -> None
+write 'é.csv'                                          -> None
+write 'nl\n.csv'                                        -> None
+write '.'                                               -> InvalidPath: Path must not be empty or root for file operations | path='.'
+write 'd/.x'                                            -> None
+list_files root                                         -> ['f.txt', 'A.csv', 'a.csv', 'é.csv', 'é.csv', 'nl\n.csv']
+list_files root recursive                               -> ['f.txt', 'A.csv', 'a.csv', 'é.csv', 'é.csv', 'nl\n.csv', 'd/a.csv', 'd/.x', 'd/e/c.csv']
+list_files item f.txt                                   -> []
+list_files through item f.txt/x                         -> []
+list_folders item f.txt                                 -> []
+iter_children item                                      -> []
+get_folder_info item                                    -> InvalidPath: Is a file, not a folder: f.txt | path='f.txt' | backend='memory'
+get_folder_info absent                                  -> NotFound: Not found: nope | path='nope' | backend='memory'
+list_files absent                                       -> []
+write below item f.txt/x (A.4)                          -> InvalidPath: An ancestor of the path is a file: f.txt | path='f.txt/x' | backend='memory'
+write item over folder d (A.4)                          -> InvalidPath: Is a folder, not a file: d | path='d' | backend='memory'
+move onto folder d                                      -> InvalidPath: Is a folder, not a file: d | path='d' | backend='memory'
+copy below item                                         -> InvalidPath: An ancestor of the path is a file: f.txt | path='f.txt/y' | backend='memory'
+exists A.csv / a.csv distinct                           -> ["b'x'", 'True']
+NFC vs NFD both listed (exact equality)                 -> ["'A.csv'", "'a.csv'", "'\\xe9.csv'", "'e\\u0301.csv'", "'nl\\n.csv'"]
+is_folder root '' / exists ''                           -> ['True', 'True']
+list_files max_depth=0 root                             -> ['f.txt', 'A.csv', 'a.csv', 'é.csv', 'é.csv', 'nl\n.csv']
+list_files max_depth=1 root                             -> ['f.txt', 'A.csv', 'a.csv', 'é.csv', 'é.csv', 'nl\n.csv', 'd/a.csv', 'd/.x']
+list_folders max_depth=1                                -> ['d', 'd/e']
+delete d/e/c.csv then is_folder d/e (A.6)               -> True
+glob_files '**' after empty folder                      -> ['f.txt', 'A.csv', 'a.csv', 'é.csv', 'é.csv', 'nl\n.csv', 'd/a.csv', 'd/.x']
+list_folders d (empty folder e present)                 -> ['d/e']
+tier1 '*.CSV' posix                                     -> []
+tier1 '*.CSV' with ntpath normcase (Windows sim)        -> ['A.csv', 'a.csv', 'é.csv', 'é.csv', 'nl\n.csv']
+tier3 '*.CSV' (regex, exact)                            -> []
+async glob -> CapabilityNotSupported Capability 'glob' is not supported. Supported: ['atomic_move', 'atomic_write', 'copy', 'delete', 'lazy_read', 'list', 'metadata', 'move', 'read', 'seekable_read', 'user_metadata', 'write', 'write_result_native'] | backend='async-memory' | capability='glob'

@@ -1,0 +1,63 @@
+name: memory | async-memory
+caps only sync: []
+caps only async: ['lazy_read']
+SAME write a/b.txt: ('WriteResult', {'path': "RemotePath('a/b.txt')", 'size': 5, 'source': 'native', 'digest': None, 'etag': None, 'version_id': None, 'last_modified': '<time>', 'metadata': None})
+SAME write dup: ('EXC', 'AlreadyExists', "File already exists: a/b.txt | path='a/b.txt' | backend='memory'", 'a/b.txt', 'memory')
+SAME write folder: ('EXC', 'InvalidPath', "Is a folder, not a file: a | path='a' | backend='memory'", 'a', 'memory')
+SAME write under file: ('EXC', 'InvalidPath', "An ancestor of the path is a file: a/b.txt | path='a/b.txt/c' | backend='memory'", 'a/b.txt/c', 'memory')
+SAME write root: ('EXC', 'InvalidPath', "Cannot write to the store root | path='' | backend='memory'", '', 'memory')
+SAME write dotdot: ('EXC', 'InvalidPath', "Path contains '..' segment | path='../x' | backend='memory'", '../x', 'memory')
+SAME write meta: ('WriteResult', {'path': "RemotePath('m.txt')", 'size': 1, 'source': 'native', 'digest': None, 'etag': None, 'version_id': None, 'last_modified': '<time>', 'metadata': {'k': 'v'}})
+SAME write bad meta: ('EXC', 'ValueError', 'metadata must be a mapping, not list', None, '')
+SAME write bytearray: ('WriteResult', {'path': "RemotePath('ba.txt')", 'size': 2, 'source': 'native', 'digest': None, 'etag': None, 'version_id': None, 'last_modified': '<time>', 'metadata': None})
+SAME write memoryview: ('WriteResult', {'path': "RemotePath('mv.txt')", 'size': 2, 'source': 'native', 'digest': None, 'etag': None, 'version_id': None, 'last_modified': '<time>', 'metadata': None})
+DIFF write str
+   sync : ('EXC', 'TypeError', 'content must be bytes or a readable binary stream, not str', None, '')
+   async: ('EXC', 'TypeError', 'content must be bytes or an async iterator of bytes, not str', None, '')
+DIFF write list
+   sync : ('EXC', 'TypeError', 'content must be bytes or a readable binary stream, not list', None, '')
+   async: ('EXC', 'TypeError', 'content must be bytes or an async iterator of bytes, not list', None, '')
+SAME write_atomic: ('WriteResult', {'path': "RemotePath('wa.txt')", 'size': 6, 'source': 'native', 'digest': None, 'etag': None, 'version_id': None, 'last_modified': '<time>', 'metadata': None})
+SAME write_atomic dup: ('EXC', 'AlreadyExists', "File already exists: wa.txt | path='wa.txt' | backend='memory'", 'wa.txt', 'memory')
+SAME read_bytes: b'hello'
+SAME read_bytes missing: ('EXC', 'NotFound', "File not found: nope | path='nope' | backend='memory'", 'nope', 'memory')
+SAME read_bytes folder: ('EXC', 'InvalidPath', "Is a folder, not a file: a | path='a' | backend='memory'", 'a', 'memory')
+SAME read_bytes root: ('EXC', 'InvalidPath', "The store root is a folder, not a file | path='' | backend='memory'", '', 'memory')
+SAME get_file_info: ('FileInfo', {'path': "RemotePath('m.txt')", 'name': 'm.txt', 'size': 1, 'modified_at': '<time>', 'digest': None, 'etag': None, 'content_type': None, 'metadata': {'k': 'v'}, 'extra': {}})
+SAME get_file_info folder: ('EXC', 'InvalidPath', "Is a folder, not a file: a | path='a' | backend='memory'", 'a', 'memory')
+SAME get_folder_info: ('FolderInfo', {'path': "RemotePath('a')", 'file_count': 1, 'total_size': 5, 'modified_at': '<time>', 'extra': {}})
+SAME get_folder_info file: ('EXC', 'InvalidPath', "Is a file, not a folder: a/b.txt | path='a/b.txt' | backend='memory'", 'a/b.txt', 'memory')
+SAME get_folder_info missing: ('EXC', 'NotFound', "Not found: zz | path='zz' | backend='memory'", 'zz', 'memory')
+SAME exists folder: True
+SAME is_file: True
+SAME is_folder: False
+SAME list_files rec: [('FileInfo', {'path': "RemotePath('m.txt')", 'name': 'm.txt', 'size': 1, 'modified_at': '<time>', 'digest': None, 'etag': None, 'content_type': None, 'metadata': {'k': 'v'}, 'extra': {}}), ('FileInfo', {'path': "RemotePath('ba.txt')", 'name': 'ba.txt', 'size': 2, 'modified_at': '<time>', 'digest': None, 'etag': None, 'content_type': None, 'metadata': None, 'extra': {}}), ('FileInfo', {'path': "RemotePath('mv.txt')", 'name': 'mv.txt', 'size': 2, 'modified_at': '<time>', 'digest': None, 'etag': None, 'content_type': None, 'metadata': None, 'extra': {}}), ('FileInfo', {'path': "RemotePath('wa.txt')", 'name': 'wa.txt', 'size': 6, 'modified_at': '<time>', 'digest': None, 'etag': None, 'content_type': None, 'metadata': None, 'extra': {}}), ('FileInfo', {'path': "RemotePath('a/b.txt')", 'name': 'b.txt', 'size': 5, 'modified_at': '<time>', 'digest': None, 'etag': None, 'content_type': None, 'metadata': None, 'extra': {}})]
+SAME list_files file: []
+SAME list_files missing: []
+SAME list_folders: [('FolderEntry', {'path': "RemotePath('a')", 'name': 'a'})]
+SAME iter_children: [('FileInfo', {'path': "RemotePath('m.txt')", 'name': 'm.txt', 'size': 1, 'modified_at': '<time>', 'digest': None, 'etag': None, 'content_type': None, 'metadata': {'k': 'v'}, 'extra': {}}), ('FileInfo', {'path': "RemotePath('ba.txt')", 'name': 'ba.txt', 'size': 2, 'modified_at': '<time>', 'digest': None, 'etag': None, 'content_type': None, 'metadata': None, 'extra': {}}), ('FileInfo', {'path': "RemotePath('mv.txt')", 'name': 'mv.txt', 'size': 2, 'modified_at': '<time>', 'digest': None, 'etag': None, 'content_type': None, 'metadata': None, 'extra': {}}), ('FileInfo', {'path': "RemotePath('wa.txt')", 'name': 'wa.txt', 'size': 6, 'modified_at': '<time>', 'digest': None, 'etag': None, 'content_type': None, 'metadata': None, 'extra': {}}), ('FolderEntry', {'path': "RemotePath('a')", 'name': 'a'})]
+SAME glob: ('EXC', 'CapabilityNotSupported', "Backend 'memory' does not support glob. Use list_files(pattern=...) for name filtering or ext.glob.glob_files() for full glob. | backend='memory' | capability='glob'", None, 'memory')
+SAME move missing->blocked: ('EXC', 'NotFound', "Source not found: nope | path='nope' | backend='memory'", 'nope', 'memory')
+SAME copy: None
+SAME copy dup: ('EXC', 'AlreadyExists', "Destination already exists: c.txt | path='c.txt' | backend='memory'", 'c.txt', 'memory')
+SAME move self: None
+SAME move: None
+SAME delete missing: ('EXC', 'NotFound', "File not found: nope | path='nope' | backend='memory'", 'nope', 'memory')
+SAME delete missing ok: None
+SAME delete folder: ('EXC', 'InvalidPath', "Is a folder, not a file: a | path='a' | backend='memory'", 'a', 'memory')
+SAME delete_folder nonempty: ('EXC', 'DirectoryNotEmpty', "Folder not empty: a | path='a' | backend='memory'", 'a', 'memory')
+SAME delete_folder file: ('EXC', 'InvalidPath', "Not a folder: a/b.txt | path='a/b.txt' | backend='memory'", 'a/b.txt', 'memory')
+SAME delete_folder missing: ('EXC', 'NotFound', "Not found: zz | path='zz' | backend='memory'", 'zz', 'memory')
+SAME delete_folder rec: None
+SAME unwrap: ('EXC', 'CapabilityNotSupported', "Backend 'memory' does not expose native handle of type dict. | backend='memory' | capability='unwrap'", None, 'memory')
+SAME native_path: /x//y/
+SAME native_path refused: ../x
+SAME to_key: x/y
+SAME resolve: ('ResolutionPlan', {'kind': 'memory', 'backend': 'memory', 'key': 'x//y', 'native_path': 'x/y', 'details': 'mappingproxy(mappingproxy({}))'})
+SAME check_health: None
+DIFF COUNT: 2
+async BinaryIO: ('EXC', 'TypeError', 'content must be bytes or an async iterator of bytes, not BytesIO', None, '')
+sync async-iter: ('EXC', 'TypeError', 'content must be bytes or a readable binary stream, not async_generator', None, '')
+sync after close: b'hello'
+async after close: b'hello'
+sync has aclose? False async has close? False

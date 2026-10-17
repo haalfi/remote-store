@@ -1,0 +1,3 @@
+sync Store: stored metadata after mutating returned infos: {'k': 'VIA_STORE_INFO', 'k2': 'VIA_LIST'}
+async Store: stored metadata after mutating returned info: {'k': 'VIA_STORE_INFO'}
+MEM-015: folder modified_at == max: True size: 5 count: 2

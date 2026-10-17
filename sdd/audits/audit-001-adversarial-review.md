@@ -1,7 +1,9 @@
 # Audit 001 — Adversarial Review of v0.5.0
 
 **Date:** 2026-02-24
+
 **Scope:** Full codebase, master branch at commit `fee322b` (v0.5.0)
+
 **Method:** Four parallel AI agents performed independent deep audits of: (1) source code security, (2) test suite gaps, (3) API design anti-patterns, (4) CI/packaging/docs quality. Human consolidated and deduplicated findings.
 
 **Verification note:** Findings were produced by AI agents and then spot-checked against actual code. Each finding includes a verification status: **confirmed** (verified against code), **partial** (issue exists but severity/framing overstated), **design-intent** (intentional behavior per spec), or **unverified** (not yet spot-checked). Line references are point-in-time for commit `fee322b`.

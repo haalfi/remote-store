@@ -1,0 +1,3 @@
+sync Store write(metadata={}).metadata: {}
+async Store write(metadata={}).metadata: {}
+no-USER_METADATA subclass: declares False WriteResult.metadata: {} is not None: True

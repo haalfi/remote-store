@@ -1,0 +1,119 @@
+== __all__ count 30
+resolves AsyncDriver remote_store._kernel._async.driver
+resolves AsyncDriverBackend remote_store._kernel.aio_backend
+resolves AsyncSupportsAtomicMove remote_store._kernel._async.driver
+resolves AsyncSupportsCopy remote_store._kernel._async.driver
+resolves AsyncSupportsDeleteTree remote_store._kernel._async.driver
+resolves AsyncSupportsEnsureParents remote_store._kernel._async.driver
+resolves AsyncSupportsFolderStats remote_store._kernel._async.driver
+resolves AsyncSupportsGlob remote_store._kernel._async.driver
+resolves AsyncSupportsOpenWrite remote_store._kernel._async.driver
+resolves AsyncSupportsRangeRead remote_store._kernel._async.driver
+resolves AsyncSupportsRemoveFolder remote_store._kernel._async.driver
+resolves AsyncSupportsRename remote_store._kernel._async.driver
+resolves AsyncWriteHandle remote_store._kernel._async.driver
+resolves Driver remote_store._kernel._sync.driver
+resolves DriverBackend remote_store._kernel.backend
+resolves Entry remote_store._kernel._model
+resolves Op remote_store._kernel._model
+resolves Page remote_store._kernel._model
+resolves PutResult remote_store._kernel._model
+resolves SupportsAtomicMove remote_store._kernel._sync.driver
+resolves SupportsCopy remote_store._kernel._sync.driver
+resolves SupportsDeleteTree remote_store._kernel._sync.driver
+resolves SupportsEnsureParents remote_store._kernel._sync.driver
+resolves SupportsFolderStats remote_store._kernel._sync.driver
+resolves SupportsGlob remote_store._kernel._sync.driver
+resolves SupportsOpenWrite remote_store._kernel._sync.driver
+resolves SupportsRangeRead remote_store._kernel._sync.driver
+resolves SupportsRemoveFolder remote_store._kernel._sync.driver
+resolves SupportsRename remote_store._kernel._sync.driver
+resolves WriteHandle remote_store._kernel._sync.driver
+== mkdocstrings refs 30
+in __all__ but not in drivers.md: []
+in drivers.md but not in __all__: []
+== Driver
+ methods 14 ['stat', 'get', 'put', 'delete', 'list_page', 'probe', 'close', 'classify', 'container_absent', 'connection_dead', 'unwrap', 'native_path', 'to_key', 'resolve']
+ annotations ['name', 'namespace', 'parents', 'capabilities', 'put_is_atomic', 'close_is_terminal']
+   stat (self, key: 'str', *, follow_links: 'bool' = True) -> 'Entry | None' 
+   get (self, key: 'str') -> 'ReadStream' 
+   put (self, key: 'str', content: 'Content', *, overwrite: 'bool', metadata: 'Mapping[str, str] | None') -> 'PutResult' 
+   delete (self, key: 'str') -> 'None' 
+   list_page (self, prefix: 'str', *, delimiter: 'str | None', cursor: 'object | None' = None, limit: 'int | None' = None, follow_links: 'bool' = True) -> 'Page' 
+   probe (self) -> 'None' 
+   close (self) -> 'None' 
+   classify (self, exc: 'Exception', *, op: 'Op', key: 'str') -> 'RemoteStoreError' 
+   container_absent (self, exc: 'BaseException', *, op: 'Op') -> 'bool' 
+   connection_dead (self, exc: 'BaseException') -> 'bool' 
+   unwrap (self, type_hint: 'type[T]') -> 'T' 
+   native_path (self, key: 'str') -> 'str' 
+   to_key (self, native_path: 'str') -> 'str' 
+   resolve (self, key: 'str') -> 'ResolutionPlan' 
+== AsyncDriver
+ methods 14 ['stat', 'get', 'put', 'delete', 'list_page', 'probe', 'aclose', 'classify', 'container_absent', 'connection_dead', 'unwrap', 'native_path', 'to_key', 'resolve']
+ annotations ['name', 'namespace', 'parents', 'capabilities', 'put_is_atomic', 'close_is_terminal']
+   stat (self, key: 'str', *, follow_links: 'bool' = True) -> 'Entry | None' coroutine
+   get (self, key: 'str') -> 'ReadStream' coroutine
+   put (self, key: 'str', content: 'Content', *, overwrite: 'bool', metadata: 'Mapping[str, str] | None') -> 'PutResult' coroutine
+   delete (self, key: 'str') -> 'None' coroutine
+   list_page (self, prefix: 'str', *, delimiter: 'str | None', cursor: 'object | None' = None, limit: 'int | None' = None, follow_links: 'bool' = True) -> 'Page' coroutine
+   probe (self) -> 'None' coroutine
+   aclose (self) -> 'None' coroutine
+   classify (self, exc: 'Exception', *, op: 'Op', key: 'str') -> 'RemoteStoreError' 
+   container_absent (self, exc: 'BaseException', *, op: 'Op') -> 'bool' 
+   connection_dead (self, exc: 'BaseException') -> 'bool' 
+   unwrap (self, type_hint: 'type[T]') -> 'T' 
+   native_path (self, key: 'str') -> 'str' 
+   to_key (self, native_path: 'str') -> 'str' 
+   resolve (self, key: 'str') -> 'ResolutionPlan' 
+AsyncSupportsAtomicMove move (self, src: 'str', dst: 'str', *, overwrite: 'bool') -> 'None'
+AsyncSupportsAtomicMove annotations []
+AsyncSupportsCopy copy (self, src: 'str', dst: 'str', *, overwrite: 'bool') -> 'None'
+AsyncSupportsCopy annotations []
+AsyncSupportsDeleteTree delete_tree (self, key: 'str') -> 'None'
+AsyncSupportsDeleteTree annotations []
+AsyncSupportsEnsureParents ensure_parents (self, key: 'str') -> 'None'
+AsyncSupportsEnsureParents annotations []
+AsyncSupportsFolderStats folder_stats (self, prefix: 'str') -> 'tuple[int, int, datetime | None]'
+AsyncSupportsFolderStats annotations []
+AsyncSupportsGlob glob (self, pattern: 'str') -> 'AsyncIterator[Entry]'
+AsyncSupportsGlob annotations []
+AsyncSupportsOpenWrite open_write (self, key: 'str', *, overwrite: 'bool', metadata: 'Mapping[str, str] | None') -> 'AsyncWriteHandle'
+AsyncSupportsOpenWrite annotations []
+AsyncSupportsRangeRead get_range (self, key: 'str', offset: 'int', length: 'int') -> 'bytes'
+AsyncSupportsRangeRead annotations []
+AsyncSupportsRemoveFolder remove_folder (self, key: 'str') -> 'None'
+AsyncSupportsRemoveFolder annotations []
+AsyncSupportsRename rename (self, src: 'str', dst: 'str', *, replace: 'bool') -> 'None'
+AsyncSupportsRename annotations ['rename_replaces']
+AsyncWriteHandle write (self, data: 'bytes') -> 'None'
+AsyncWriteHandle commit (self) -> 'PutResult'
+AsyncWriteHandle abort (self) -> 'None'
+AsyncWriteHandle annotations []
+SupportsAtomicMove move (self, src: 'str', dst: 'str', *, overwrite: 'bool') -> 'None'
+SupportsAtomicMove annotations []
+SupportsCopy copy (self, src: 'str', dst: 'str', *, overwrite: 'bool') -> 'None'
+SupportsCopy annotations []
+SupportsDeleteTree delete_tree (self, key: 'str') -> 'None'
+SupportsDeleteTree annotations []
+SupportsEnsureParents ensure_parents (self, key: 'str') -> 'None'
+SupportsEnsureParents annotations []
+SupportsFolderStats folder_stats (self, prefix: 'str') -> 'tuple[int, int, datetime | None]'
+SupportsFolderStats annotations []
+SupportsGlob glob (self, pattern: 'str') -> 'Iterator[Entry]'
+SupportsGlob annotations []
+SupportsOpenWrite open_write (self, key: 'str', *, overwrite: 'bool', metadata: 'Mapping[str, str] | None') -> 'WriteHandle'
+SupportsOpenWrite annotations []
+SupportsRangeRead get_range (self, key: 'str', offset: 'int', length: 'int') -> 'bytes'
+SupportsRangeRead annotations []
+SupportsRemoveFolder remove_folder (self, key: 'str') -> 'None'
+SupportsRemoveFolder annotations []
+SupportsRename rename (self, src: 'str', dst: 'str', *, replace: 'bool') -> 'None'
+SupportsRename annotations ['rename_replaces']
+WriteHandle write (self, data: 'bytes') -> 'None'
+WriteHandle commit (self) -> 'PutResult'
+WriteHandle abort (self) -> 'None'
+WriteHandle annotations []
+AsyncBackend has read_seekable: False
+AsyncBackend has open_atomic: False
+Backend abstract methods: ['capabilities', 'copy', 'delete', 'delete_folder', 'exists', 'get_file_info', 'get_folder_info', 'is_file', 'is_folder', 'list_files', 'list_folders', 'move', 'name', 'open_atomic', 'read', 'read_bytes', 'write', 'write_atomic']

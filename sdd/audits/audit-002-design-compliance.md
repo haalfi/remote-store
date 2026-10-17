@@ -1,7 +1,9 @@
 # Audit 002 — Design & Spec Compliance Review
 
 **Date:** 2026-03-05
+
 **Scope:** Full codebase against all SDD specs (`sdd/specs/001`–`021`), BACKLOG, CHANGELOG, and DEVELOPMENT_STORY.md. Version 0.13.0 + unreleased work toward 0.13.1.
+
 **Method:** Systematic cross-reference of source (`src/`), tests (`tests/`), and all documentation against the ripple-check table in `sdd/CLAUDE-REFERENCE.md`. No uncommitted changes present at audit time.
 
 **Finding IDs assigned:** AF-016 through AF-021.

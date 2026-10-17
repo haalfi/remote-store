@@ -1,0 +1,2 @@
+sync WriteResult.metadata after caller mutates its dict: {'k': 'CALLER'} | is caller's: True
+async WriteResult.metadata after caller mutates its dict: {'k': 'CALLER'} | is caller's: True

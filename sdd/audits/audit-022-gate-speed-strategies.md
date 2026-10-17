@@ -1,11 +1,13 @@
 # Audit 022 — Gate speed: what to run, and when
 
 **Date:** 2026-10-03
+
 **Scope:** The local pre-commit gate (`hatch run all`) and the per-PR `ci.yml`
 gate at `d74445c`. The question is strategic: which work each gate should run
 at which point of a change's life, not how to make a single test faster.
 `ci-full.yml`, `drift-guard.yml` and `mutation.yml` are in scope only as the
 backstop a narrower gate would lean on.
+
 **Predecessors on the same gates:**
 - [audit-017](audit-017-dev-process-gate-topology.md) R3: one definition of
   "what validates a change", and at most one thin fast-iteration target.
@@ -15,6 +17,7 @@ backstop a narrower gate would lean on.
   notification surfaces. It does not cover the durations duty.
 
 P2 and P5 below are weighed against these.
+
 **Method:**
 - **CI figures** are per-job timings from the Actions `list_workflow_jobs` API,
   for two runs on PR #1054 (BL-011):

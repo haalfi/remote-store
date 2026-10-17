@@ -1,0 +1,4 @@
+invalid list_files('f.txt/x') -> []
+invalid glob('f.txt/x/*') -> InvalidPath Not a directory: f.txt/x | path='f.txt/x' | backend='memory'
+denied list_files('f.txt/x') -> []
+denied glob('f.txt/x/*') -> PermissionDenied denied: f.txt/x | path='f.txt/x' | backend='memory'

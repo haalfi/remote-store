@@ -1,0 +1,53 @@
+[ok] sync read(): OK b'xxx'
+   log: ['sync-close']
+[ok] sync read_bytes(): OK b'xxx'
+   log: ['sync-close']
+[ok] async read(): OK b'xxx'
+   log: ['async-aclose']
+[ok] async read_bytes(): OK b'xxx'
+   log: ['async-aclose']
+[mid] sync read(): remote_store._errors.RemoteStoreError: OSError: wire dropped | path='f' | backend='memory' | cause=OSError | context=OSError
+   log: ['sync-close']
+[mid] sync read_bytes(): remote_store._errors.RemoteStoreError: OSError: wire dropped | path='f' | backend='memory' | cause=OSError | context=OSError
+   log: ['sync-close']
+[mid] async read(): remote_store._errors.RemoteStoreError: OSError: wire dropped | path='f' | backend='async-memory' | cause=OSError | context=OSError
+   log: ['async-aclose']
+[mid] async read_bytes(): remote_store._errors.RemoteStoreError: OSError: wire dropped | path='f' | backend='async-memory' | cause=OSError | context=OSError
+   log: ['async-aclose']
+[close] sync read(): OK b'xxx'
+   log: ['sync-close']
+[close] sync read_bytes(): remote_store._errors.RemoteStoreError: RuntimeError: close boom | path='f' | backend='memory' | cause=RuntimeError | context=RuntimeError
+   log: ['sync-close']
+[close] async read(): builtins.RuntimeError: close boom | cause=None | context=None
+   log: ['async-aclose']
+[close] async read_bytes(): remote_store._errors.RemoteStoreError: RuntimeError: close boom | path='f' | backend='async-memory' | cause=RuntimeError | context=RuntimeError
+   log: ['async-aclose']
+[mid+close] sync read(): remote_store._errors.RemoteStoreError: OSError: wire dropped | path='f' | backend='memory' | cause=OSError | context=OSError
+   log: ['sync-close']
+[mid+close] sync read_bytes(): remote_store._errors.RemoteStoreError: RuntimeError: close boom | path='f' | backend='memory' | cause=RuntimeError | context=RuntimeError
+   log: ['sync-close']
+[mid+close] async read(): builtins.RuntimeError: close boom | cause=None | context=RemoteStoreError
+   log: ['async-aclose']
+[mid+close] async read_bytes(): remote_store._errors.RemoteStoreError: RuntimeError: close boom | path='f' | backend='async-memory' | cause=RuntimeError | context=RuntimeError
+   log: ['async-aclose']
+[aiter] async read(): builtins.OSError: aiter dropped | cause=None | context=None
+   log: []
+[aiter] async read_bytes(): remote_store._errors.RemoteStoreError: OSError: aiter dropped | path='f' | backend='async-memory' | cause=OSError | context=OSError
+   log: ['async-aclose']
+sync read('nope') call: remote_store._errors.NotFound: File not found: nope | path='nope' | backend='memory' | cause=None | context=None
+async read('nope') call (no iteration): OK <async_generator object AsyncDriverBackend.read at 0x7f7b1bf8ad40>
+async read('nope') first anext: remote_store._errors.NotFound: File not found: nope | path='nope' | backend='async-memory' | cause=None | context=None
+sync write content error: builtins.ValueError: caller content broke | cause=None | context=None
+async write content error: builtins.ValueError: caller content broke | cause=None | context=None
+sync write_atomic content error: builtins.ValueError: caller content broke | cause=None | context=None
+async write_atomic content error: builtins.ValueError: caller content broke | cause=None | context=None
+sync w exists: OK False
+async w exists: OK False
+sync write content OSError: builtins.OSError: caller disk | cause=None | context=None
+async write content OSError: builtins.OSError: caller disk | cause=None | context=None
+cancel write: OK ('cancelled', False)
+cancel write_atomic: OK ('cancelled', False)
+cancel mid-read: OK 'cancelled'
+   log: ['driver-stream-finally']
+abandon (aclose) mid-read: OK None
+   log: ['driver-stream-finally']

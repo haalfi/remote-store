@@ -1,0 +1,12 @@
+metadata={} echo
+  MemoryBackend.write: {}
+  Store(MemoryBackend).write: {}
+  Store(MemoryBackend).write_atomic: {}
+  Store(Oracle).write: None
+  AsyncMemoryBackend.write: {}
+  async list_files('a', recursive): ['a/ok']  get_folder_info('a'): 2 5
+oracle nested folders
+  [oracle] list_folders('ic'): ['ic/sub', 'ic/sub/deep']
+  [oracle] iter_children('ic'): ['ic/a.txt', 'ic/sub', 'ic/sub/deep']
+  [kernel] list_folders('ic'): ['ic/sub']
+  [kernel] iter_children('ic'): ['ic/a.txt', 'ic/sub']
