@@ -1,7 +1,9 @@
 # Audit NNN — <Title>
 
 **Date:** YYYY-MM-DD
+
 **Scope:** What was reviewed (e.g. "Full codebase, master at commit `abc1234`").
+
 **Method:** How the review was conducted (manual, automated, agent-assisted, etc.).
 
 ---

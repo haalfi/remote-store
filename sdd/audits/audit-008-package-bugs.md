@@ -1,8 +1,10 @@
 # Audit 008 — Package Bugs (User-Facing)
 
 **Date:** 2026-04-02
+
 **Scope:** All source code under `src/remote_store/` — core store, backends,
 extensions, async API, configuration.
+
 **Method:** Systematic code review of all 52 source files, followed by
 executable reproduction scripts for each candidate bug. Only findings
 with confirmed failing reproductions are included.

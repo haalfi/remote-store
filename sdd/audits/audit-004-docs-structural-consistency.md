@@ -1,8 +1,11 @@
 # Audit 004 — Documentation Structural Consistency
 
 **Date:** 2026-03-15
+
 **Scope:** All files rendered to GH Pages / RTD (`docs-src/`, `guides/`), master branch at commit `526673c` (v0.17.0). Excludes `sdd/` internal docs.
+
 **Method:** Five parallel AI agents audited the full doc surface for: (1) duplicated content within pages, (2) broken/missing links, (3) style/representation inconsistencies, (4) dash/em-dash handling, (5) table value representations. Human consolidated, spot-checked, and verified against a full `hatch run docs-build` (strict mode, zero warnings).
+
 **Focus:** Structure, visual consistency, and link integrity. NOT content correctness or accuracy (covered by Audit 003).
 
 **Finding IDs assigned:** AF-041 through AF-050, AF-052. (AF-051 was a false positive — see below.)

@@ -1,8 +1,11 @@
 # Audit 015 — Spec-to-Test Traceability
 
 **Backlog item:** BK-250
+
 **Date:** 2026-06-01
+
 **Scope:** All 48 spec files in `sdd/specs/` — every numbered spec ID in every file.
+
 **Method:** For each spec file, all invariant IDs were extracted by reading the file.
 Each ID was then searched across the entire `tests/` tree for a matching
 `@pytest.mark.spec("ID")` decorator. Findings fall into four categories:

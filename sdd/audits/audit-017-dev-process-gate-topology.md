@@ -1,7 +1,9 @@
 # Audit 017 — Dev-process gate topology (commit / push / lint / PR / CI in sync)
 
 **Backlog item:** — (ad-hoc audit of the change-validation machinery; follow-ups proposed at the end)
+
 **Date:** 2026-06-09
+
 **Scope:** The whole gate topology that validates a change before it reaches
 master: the pre-commit / pre-push hooks (`.pre-commit-config.yaml`), the
 `hatch run` script layer (`pyproject.toml` `[tool.hatch.envs.default.scripts]`),
@@ -11,6 +13,7 @@ skills, and the authority docs (`CONTRIBUTING.md`, `CLAUDE.md`,
 `sdd/CLAUDE-REFERENCE.md`). The concern is **over-specialization and drift**:
 each surface encodes its own per-change-type gate logic, the logic overlaps and
 diverges, and some change types reach CI with no meaningful local gate.
+
 **Method:** Read every real source (no assumptions). Built a change-type ×
 enforcement-point matrix from the actual filters and script lists, then assessed
 each gate on three axes — value, redundancy, drift/sync. This is a

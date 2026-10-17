@@ -1,9 +1,12 @@
 # Audit 014 — `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list
 
 **Backlog item:** BK-191
+
 **Date:** 2026-05-13
+
 **Scope:** The seven `tests/test_*.py` files grandfathered into the TEST-003
 placement exception via `scripts/check_test_placement.py::_BACKEND_AT_ROOT_GRANDFATHERED`.
+
 **Method:** AST-level enumeration of every `from remote_store.backends._<x>` / `import remote_store.backends._<x>` / `from remote_store.backends import <Name>` site (top-level and function-local). Each test was read in context to determine whether its assertions are per-backend, cross-backend, or example-driven.
 
 ---

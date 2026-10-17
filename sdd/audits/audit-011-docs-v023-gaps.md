@@ -1,7 +1,9 @@
 # Audit-011: Handwritten Docs, v0.23.0+ Gaps
 
 **Date:** 2026-04-23
+
 **Scope:** Handwritten guides, tutorials, and example snippets. Auto-generated API reference excluded.
+
 **Reference:** BK-159
 
 ---

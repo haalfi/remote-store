@@ -2,7 +2,9 @@
 
 **Backlog item:** BK-313 (cut SFTP per-operation metadata round-trips; PR #910,
 branch `claude/bk-313-sftp-roundtrips-pgx7n2`). Follow-ups proposed at the end.
+
 **Date:** 2026-07-18
+
 **Scope:** The SFTP backend code logic only — `src/remote_store/backends/_sftp.py`
 (the 292-line BK-313 diff and the paths it touches) plus the lazy-read error
 wrapper it depends on, `src/remote_store/_stream.py`. Specs and tests were read as
@@ -10,6 +12,7 @@ wrapper it depends on, `src/remote_store/_stream.py`. Specs and tests were read 
 covered), not as audit targets. Adjacent changed files (`_capabilities.py`,
 `_backend.py`, `_models.py`) were out of scope except where the SFTP path depends
 on them.
+
 **Method:** line-by-line read of the file and the full `master...HEAD` diff; two
 scoped expert sub-agents (one on the connection-liveness / staleness / reconnect
 layer, one on the file-vs-directory classification and error-code mapping);

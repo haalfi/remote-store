@@ -1,11 +1,13 @@
 # Audit 021 — Where the backend contract is implemented, read from six releases of bugs
 
 **Date:** 2026-09-28
+
 **Scope:** Every user-impacting defect from v0.28.0 (2026-06-15) through the
 `[Unreleased]` stub at `8fa22d6`, plus the open `BUG-`/`BL-` items in
 `sdd/BACKLOG.md`, read against `src/remote_store/` at the same commit. The
 question is BK-366's, asked one level up: not whether the bug share rose, but
 whether the package's design produces the bugs.
+
 **Method:** Every `[x]` entry in `sdd/BACKLOG-DONE.md` lines 242 to 7931 (the
 seven sections Unreleased through v0.28.0) and every open header in
 `sdd/BACKLOG.md` was read and tabulated: 77 `BUG-` headers (52 closed in that
