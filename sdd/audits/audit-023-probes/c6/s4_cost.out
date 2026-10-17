@@ -1,0 +1,3 @@
+flat write a/b/c.txt calls: [('stat', 'a'), ('stat', 'a/b'), ('list_page', 'a/b/c.txt', 1), ('put', 'a/b/c.txt')]
+flat overwrite calls: [('stat', 'a'), ('stat', 'a/b'), ('list_page', 'a/b/c.txt', 1), ('put', 'a/b/c.txt')]
+hier write a/b/c.txt calls: [('put', 'a/b/c.txt')]

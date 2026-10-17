@@ -1,0 +1,11 @@
+===== runtime sync =====
+[read: mid-stream FakeDown (a wire error, not in stream_catch)] -> raised tests._kernel._fake.FakeDown: dropped
+[read_bytes: mid-stream FakeDown (a wire error, not in stream_catch)] -> raised remote_store._errors.BackendUnavailable: dropped | path='big' | backend='fake'
+[read: mid-stream AttributeError (programming error)] -> raised builtins.AttributeError: bug in stream
+[read_bytes: mid-stream AttributeError (programming error)] -> raised remote_store._errors.RemoteStoreError: bug in stream | path='big' | backend='fake'
+===== runtime async =====
+[read: mid-stream FakeDown (a wire error, not in stream_catch)] -> raised tests._kernel._fake.FakeDown: dropped
+[read_bytes: mid-stream FakeDown (a wire error, not in stream_catch)] -> raised remote_store._errors.BackendUnavailable: dropped | path='big' | backend='fake'
+[read: mid-stream AttributeError (programming error)] -> raised builtins.AttributeError: bug in stream
+[read_bytes: mid-stream AttributeError (programming error)] -> raised remote_store._errors.RemoteStoreError: bug in stream | path='big' | backend='fake'
+[LocalBackend.list_files('../x') at call time] -> returned 'call returned generator without raising'

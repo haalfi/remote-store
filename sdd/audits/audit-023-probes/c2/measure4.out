@@ -1,0 +1,1 @@
+overwrite of 10000000 B: same bytearray object: True; tracemalloc peak during write: 10000733 B (1.00x content)

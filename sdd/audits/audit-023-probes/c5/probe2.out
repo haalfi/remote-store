@@ -1,0 +1,36 @@
+[kernel]
+  list_folders(''): OK ['a']
+  list_folders('a'): OK ['a/b']
+  list_folders('') names: OK ['a']
+  list_files('', recursive=False): OK []
+  after delete: is_folder('a/b'): OK True
+  after delete: get_folder_info('a/b'): OK (0,)
+  delete_folder('a', recursive=False): DirectoryNotEmpty path='a' Folder not empty: a | path='a' | backend='memory'
+  delete_folder('a', recursive=True): OK None
+  exists('a'): OK False
+  copy('m','m2'): OK None
+  get_file_info('m2').metadata: OK {'k': 'v'}
+  move('m2','m3'): OK None
+  get_file_info('m3').metadata: OK {'k': 'v'}
+  write metadata={} -> WriteResult.metadata: OK {}
+  get_file_info('e').metadata: OK None
+  write source: OK 'native'
+  close then exists: OK True
+[oracle]
+  list_folders(''): OK ['a', 'a/b']
+  list_folders('a'): OK ['a/b']
+  list_folders('') names: OK ['a', 'b']
+  list_files('', recursive=False): OK []
+  after delete: is_folder('a/b'): OK True
+  after delete: get_folder_info('a/b'): OK (0,)
+  delete_folder('a', recursive=False): DirectoryNotEmpty path='a'  | path='a' | backend='dafny-oracle'
+  delete_folder('a', recursive=True): OK None
+  exists('a'): OK False
+  copy('m','m2'): OK None
+  get_file_info('m2').metadata: OK {'k': 'v'}
+  move('m2','m3'): OK None
+  get_file_info('m3').metadata: OK {'k': 'v'}
+  write metadata={} -> WriteResult.metadata: OK None
+  get_file_info('e').metadata: OK None
+  write source: OK 'native'
+  close then exists: OK True

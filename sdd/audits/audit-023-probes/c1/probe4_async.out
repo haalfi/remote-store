@@ -1,0 +1,2 @@
+async copy returned; 'dst' in store: False
+async delete_folder returned; 'd' still a folder: True True

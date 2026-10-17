@@ -1,0 +1,6 @@
+sync stored after mutating info: {'k': 'MUTATED'}
+sync src after mutating dst info: {'k': 'VIA_DST'}
+sync write metadata={} -> WriteResult.metadata {} | info None
+async stored after mutating info: {'k': 'MUTATED'}
+async write metadata={} -> {}
+driver attrs: ['_abc_impl', '_is_protocol', '_is_runtime_protocol', '_lock', '_tree', 'capabilities', 'classify', 'close', 'close_is_terminal', 'connection_dead', 'container_absent', 'copy', 'counts', 'delete', 'delete_tree', 'folder_stats', 'get', 'list_page', 'move', 'name', 'namespace', 'native_path', 'open_write', 'parents', 'probe', 'put', 'put_is_atomic', 'remove_folder', 'resolve', 'stat', 'to_key', 'unwrap']

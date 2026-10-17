@@ -1,0 +1,9 @@
+read('../x') call: returned async_generator (no exception)
+   first anext: InvalidPath: Path contains '..' segment | path='../x' | backend='async-memory'
+read('') call: returned async_generator (no exception)
+   first anext: InvalidPath: The store root is a folder, not a file | path='' | backend='async-memory'
+read('nope') call: returned async_generator (no exception)
+   first anext: NotFound: File not found: nope | path='nope' | backend='async-memory'
+closed terminal read() call: returned async_generator
+   first anext: BackendUnavailable Backend 'async-memory' is closed | backend='async-memory'
+LAZY_READ declared=True; file=4194304 chunks=1 first_chunk=4194304

@@ -1,0 +1,90 @@
+
+=== 1. non-canonical stored key below a folder (planted via driver), kernel Memory
+  list_files('a', recursive=True): OK ['a/ok.txt']
+  list_folders('a'): OK []
+  get_folder_info('a') (folder_stats push-down): OK [3, 6]
+  get_folder_info('') : OK [3, 6]
+  sum over list_files('', recursive): OK 2
+
+=== 1b. same, kernel listing-fallback aggregate (driver without folder_stats)
+  has folder_stats push-down: False
+  get_folder_info('a') (listing fallback): OK [1, 2]
+
+=== 2. non-canonical caller keys: kernel Memory vs Dafny oracle
+ [kernel]
+  write('d//f'): OK 'd/f'
+  exists('d/f'): OK True
+  exists('d//f'): OK True
+  is_folder('d/'): OK True
+  list_files('d'): OK ['d/f']
+  write('e/./g'): OK 'e/g'
+  is_folder('e/.'): OK True
+  list_folders(''): OK ['d', 'e']
+  write('h\\i') backslash: InvalidPath path='h\\i' Path contains a backslash | path='h\\i' | backend='memory'
+  write('/lead'): InvalidPath path='/lead' Path must not start with '/' | path='/lead' | backend='memory'
+  write('p/../q'): InvalidPath path='p/../q' Path contains '..' segment | path='p/../q' | backend='memory'
+  read_bytes('./d/f'): OK b'x'
+  delete_folder('./'): InvalidPath path='./' Cannot delete the store root | path='./' | backend='memory'
+  move src './d/f' -> 'z': OK None
+ [oracle]
+  write('d//f'): OK 'd/f'
+  exists('d/f'): OK False
+  exists('d//f'): OK True
+  is_folder('d/'): OK True
+  list_files('d'): OK []
+  write('e/./g'): OK 'e/g'
+  is_folder('e/.'): OK True
+  list_folders(''): OK ['d', 'e', 'd', 'e']
+  write('h\\i') backslash: OK 'h/i'
+  write('/lead'): OK 'lead'
+  write('p/../q'): InvalidPath path='p/../q' Path contains '..' segment | path='p/../q'
+  read_bytes('./d/f'): NotFound path='./d/f'  | path='./d/f' | backend='dafny-oracle'
+  delete_folder('./'): NotFound path='./'  | path='./' | backend='dafny-oracle'
+  move src './d/f' -> 'z': NotFound path='./d/f'  | path='./d/f' | backend='dafny-oracle'
+
+=== 3. negative max_depth
+  [kernel] list_files('x', recursive=True, max_depth=-1): OK []
+  [kernel] list_files('x', recursive=True, max_depth=None): OK ['x/a', 'x/y/b']
+  [oracle] list_files('x', recursive=True, max_depth=-1): OK ['x/a', 'x/y/b']
+  [oracle] list_files('x', recursive=True, max_depth=None): OK ['x/a', 'x/y/b']
+
+=== 4. MOVE/COPY gate vs closed guard on a terminal backend without MOVE/COPY (kernel)
+  open, no MOVE: move('s','d'): CapabilityNotSupported path='s' Backend 'memory' cannot move | path='s' | backend='memory' | capability='move'
+  open, no COPY: copy('s','d'): CapabilityNotSupported path='s' Backend 'memory' cannot copy | path='s' | backend='memory' | capability='copy'
+  closed terminal, no MOVE: move('s','d'): CapabilityNotSupported path='s' Backend 'memory' cannot move | path='s' | backend='memory' | capability='move'
+  closed terminal, no COPY: copy('s','d'): CapabilityNotSupported path='s' Backend 'memory' cannot copy | path='s' | backend='memory' | capability='copy'
+  closed terminal: exists('s'): BackendUnavailable path=None Backend 'memory' is closed | backend='memory'
+
+=== 5. self-move with spellings differing only by normalisation
+  [kernel] move('k/f','k//f'): OK None
+  [kernel] exists('k/f') after: OK True
+  [kernel] list_files('k'): OK ['k/f']
+  [oracle] move('k/f','k//f'): OK None
+  [oracle] exists('k/f') after: OK False
+  [oracle] list_files('k'): OK []
+
+=== 6. delete_folder root and file-ancestor writes
+  [kernel] delete_folder(''): InvalidPath path='' Cannot delete the store root | path='' | backend='memory'
+  [kernel] delete_folder('', recursive=True): InvalidPath path='' Cannot delete the store root | path='' | backend='memory'
+  [kernel] write('f/x'): InvalidPath path='f/x' An ancestor of the path is a file: f | path='f/x' | backend='memory'
+  [kernel] exists('f/x'): OK False
+  [kernel] get_folder_info('f'): InvalidPath path='f' Is a file, not a folder: f | path='f' | backend='memory'
+  [kernel] get_folder_info('f/x'): NotFound path='f/x' Not found: f/x | path='f/x' | backend='memory'
+  [kernel] list_files('f/x'): OK []
+  [kernel] delete_folder('f/x'): NotFound path='f/x' Not found: f/x | path='f/x' | backend='memory'
+  [kernel] delete('f/x'): NotFound path='f/x' File not found: f/x | path='f/x' | backend='memory'
+  [kernel] read_bytes('f/x'): NotFound path='f/x' File not found: f/x | path='f/x' | backend='memory'
+  [kernel] move('f','f/y'): InvalidPath path='f/y' An ancestor of the path is a file: f | path='f/y' | backend='memory'
+  [kernel] copy('f','f/y'): InvalidPath path='f/y' An ancestor of the path is a file: f | path='f/y' | backend='memory'
+  [oracle] delete_folder(''): InvalidPath path='.'  | path='.' | backend='dafny-oracle'
+  [oracle] delete_folder('', recursive=True): InvalidPath path='.'  | path='.' | backend='dafny-oracle'
+  [oracle] write('f/x'): InvalidPath path='f/x'  | path='f/x' | backend='dafny-oracle'
+  [oracle] exists('f/x'): OK False
+  [oracle] get_folder_info('f'): InvalidPath path='f'  | path='f' | backend='dafny-oracle'
+  [oracle] get_folder_info('f/x'): NotFound path='f/x'  | path='f/x' | backend='dafny-oracle'
+  [oracle] list_files('f/x'): OK []
+  [oracle] delete_folder('f/x'): NotFound path='f/x'  | path='f/x' | backend='dafny-oracle'
+  [oracle] delete('f/x'): NotFound path='f/x'  | path='f/x' | backend='dafny-oracle'
+  [oracle] read_bytes('f/x'): NotFound path='f/x'  | path='f/x' | backend='dafny-oracle'
+  [oracle] move('f','f/y'): InvalidPath path='f/y'  | path='f/y' | backend='dafny-oracle'
+  [oracle] copy('f','f/y'): InvalidPath path='f/y'  | path='f/y' | backend='dafny-oracle'
