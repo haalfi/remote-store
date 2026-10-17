@@ -81,7 +81,8 @@ no predicate release unconditionally, and this clause makes no claim about them.
 Supplying one is optional by design, not an omission each backend is expected to
 correct: it is worth the parameter only where a close on a dead connection
 blocks, which is a property of the transport, not of every stream.
-`SFTPBackend` is the only backend that supplies one.
+Among the backends not on the kernel, `SFTPBackend` is the only one that supplies
+one (`rg -n 'is_fatal=' src` names it and the kernel's `DriverBackend.read`).
 **Postconditions:** A backend that can recognise **a failure leaving its
 connection unusable** supplies `_ErrorMappingStream` with an `is_fatal`
 predicate over the raised exception.

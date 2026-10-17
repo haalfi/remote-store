@@ -8,16 +8,18 @@
 // Hypothesis twin: `tests/_kernel/test_protocol_stateful.py`.
 //
 // A call is reduced to what decides the protocol: whether it is `close`, and
-// for a live call the exit it takes. `KernelExit` maps every exit the kernel
-// observes onto the resources' states after its cleanup, and the lemmas are
-// BE-033's invariants:
-//   I1  TerminalCloseAbsorbs:   after a terminal close every call but close is
+// for a live call the exit it takes. A `LiveCall` is a call the closed guard
+// covers, a live operation past its capability gates or `unwrap`; the
+// addressing members are never refused and are not modelled. `KernelExit` maps
+// every exit the kernel observes onto the resources' states after its cleanup,
+// and the lemmas are BE-033's invariants:
+//   I1  TerminalCloseAbsorbs:   after a terminal close every LiveCall is
 //                               Unavailable and the state stays Closed;
 //   I2  CloseIsForwardedAndIdempotent: close twice is close once in state, and
 //                               the driver sees every call;
 //   I3  CleanupOnEveryExit:     no handle open, no stream open unless its
 //                               failure condemned the connection, no caller
-//                               iterator suspended, on every exit.
+//                               iterator with `aclose` suspended, on every exit.
 
 datatype ClosePosture = Reusable | Terminal
 datatype KernelBackendState = BOpen | BClosed
@@ -111,8 +113,9 @@ datatype KernelResources = KernelResources(stream: KernelStreamState, handle: Wr
 
 // Each party's state after the kernel's cleanup, for each exit. The abort's
 // own failure is logged, not modelled: the handle leaves HOpen either way, and
-// the write's error is the one raised.
-method KernelExit(exit: KernelExitPath, before: KernelResources) returns (after: KernelResources)
+// the write's error is the one raised. `closable` is whether the caller's
+// iterator has `aclose`: one without it is left where the kernel stopped.
+method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool) returns (after: KernelResources)
   requires before.stream in {SOpen, SClosed}
   requires exit == GateRefused ==> before.handle == HNone && before.iter == IUnstarted
   ensures before.stream == SOpen ==>
@@ -121,7 +124,9 @@ method KernelExit(exit: KernelExitPath, before: KernelResources) returns (after:
   ensures after.handle != HOpen
   ensures exit != Success && before.handle == HOpen ==> after.handle == HAborted
   ensures exit == GateRefused ==> after.iter == IUnstarted   // the caller's still
-  ensures exit != GateRefused ==> after.iter in {IExhausted, IClosed}
+  ensures exit == Success ==> after.iter == IExhausted
+  ensures exit != GateRefused && closable ==> after.iter in {IExhausted, IClosed}
+  ensures exit !in {Success, GateRefused} && !closable ==> after.iter == before.iter
   // @spec BE-033
 {
   var stream := before.stream;
@@ -133,25 +138,28 @@ method KernelExit(exit: KernelExitPath, before: KernelResources) returns (after:
     handle := if exit == Success then HCommitted else HAborted;
   }
   var iter := before.iter;
-  if exit != GateRefused && iter != IExhausted {
-    // A write that succeeded exhausted it; any other exit closes it.
-    iter := if exit == Success then IExhausted else IClosed;
+  if exit == Success {
+    iter := IExhausted;   // a write that succeeded took every chunk
+  } else if exit != GateRefused && closable && iter != IExhausted {
+    iter := IClosed;
   }
   after := KernelResources(stream, handle, iter);
 }
 
 // I3: no exit leaves a resource the kernel opened or took open, except a stream
-// whose failure condemned the connection, released without a second wait.
-predicate KernelClean(r: KernelResources)
+// whose failure condemned the connection, released without a second wait, and
+// a caller iterator without `aclose`, which stays the caller's to finish.
+predicate KernelClean(r: KernelResources, closable: bool)
 {
-  r.stream != SOpen && r.handle != HOpen && r.iter != ISuspended
+  r.stream != SOpen && r.handle != HOpen && (closable ==> r.iter != ISuspended)
 }
 
-method CleanupOnEveryExit(exit: KernelExitPath, before: KernelResources) returns (after: KernelResources)
+method CleanupOnEveryExit(exit: KernelExitPath, before: KernelResources, closable: bool)
+  returns (after: KernelResources)
   requires before.stream in {SOpen, SClosed}
   requires exit == GateRefused ==> before.handle == HNone && before.iter == IUnstarted
-  ensures KernelClean(after)
+  ensures KernelClean(after, closable)
   // @spec BE-033
 {
-  after := KernelExit(exit, before);
+  after := KernelExit(exit, before, closable);
 }

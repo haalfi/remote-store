@@ -2007,7 +2007,7 @@ measures the error-path probes; these are the determinants this section adds):
 states tabled below, a call means what the transition table says in each state,
 and every exit, failure and cancellation included, has one owner who closes,
 aborts or releases what is open. Three invariants hold on every path: a terminal
-close absorbs every later call but `close` (I1), every `close` reaches the
+close absorbs every later call the closed guard covers (I1), every `close` reaches the
 driver, so a repeated one is the driver's to make idempotent (I2), and the
 kernel cleans up every exit it observes (I3). The other clauses of this spec
 state each call; this one states the states between them. The decisions behind
@@ -2088,22 +2088,27 @@ ASYNC-006 points here for the async gap.
 **Invariants**, each a lemma of `sdd/formal/KernelProtocol.dfy`:
 
 1. **I1, terminal absorption** (`TerminalCloseAbsorbs`): from Closed under
-   `close_is_terminal = True`, every call but `close` answers
-   `BackendUnavailable` and the state stays Closed. A non-terminal backend is
-   never refused for being closed (`ReusableNeverRefuses`).
+   `close_is_terminal = True`, every live operation and `unwrap` answers
+   `BackendUnavailable`, past any capability gate BE-030 ranks ahead of the
+   guard, and the state stays Closed. `close` and the addressing members are
+   not refused (the transition table). A non-terminal backend is never refused
+   for being closed (`ReusableNeverRefuses`).
 2. **I2, `close ∘ close = close`** (`CloseIsForwardedAndIdempotent`): two closes
    leave the backend as one does, and the driver sees each.
 3. **I3, cleanup on every exit the kernel observes** (`CleanupOnEveryExit`, over
    `KernelExit`): after any exit, no write handle is Open, no read stream is Open
    unless its failure condemned the connection, and no caller iterator the
-   kernel took is Suspended.
+   kernel took is Suspended if it has `aclose`. One without `aclose` is left
+   where the kernel stopped taking it, the caller's to finish.
 
 **Guard order.** BE-030 orders the capability gates ahead of the closed guard
 for `glob`, `write_atomic` and `open_atomic`, and this clause keeps that order.
 
-**Conformance:** `tests/_kernel/test_protocol.py`, a cell per transition and
-exit over the fake driver, both runtimes; `tests/_kernel/test_protocol_stateful.py`,
-a Hypothesis state machine checking I1 to I3 under random interleavings, per
+**Conformance:** `tests/_kernel/test_protocol.py`, a cell per kernel- and
+caller-owned row of the tables above over the fake driver, both runtimes
+(the `Session`, driver and *not yet met* rows excepted, below); `tests/_kernel/test_protocol_stateful.py`,
+a Hypothesis state machine checking I1 to I3 under random interleavings of
+`write` and the wire-temporary `write_atomic` route, reads and closes, per
 runtime and posture; Memory's rows in `tests/backends/memory/test_kernel_cells.py`;
 and the repeated-close cell in both close-posture lanes
 (`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling). The

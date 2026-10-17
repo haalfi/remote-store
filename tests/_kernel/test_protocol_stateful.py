@@ -1,8 +1,10 @@
 """BE-033's invariants under random interleavings: a state machine over the fake driver.
 
-Rules open and read streams, write through every route with a failure or a
-cancel injected or none, close the backend and ``unwrap`` it, in any order,
-on both runtimes and both close postures. After every rule:
+Rules open and read streams, write through ``write`` (the ``put`` route) and
+``write_atomic`` (the wire-temporary route, the fake's default) with a failure
+or a cancel injected or none, close the backend and ``unwrap`` it, in any
+order, on both runtimes and both close postures; the atomic-put and
+temp-and-rename routes are ``test_protocol.py``'s cells. After every rule:
 
 - I1: after a terminal close every operation but ``close`` is
   ``BackendUnavailable`` and reaches no wire primitive;

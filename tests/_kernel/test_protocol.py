@@ -17,7 +17,7 @@ from typing import Any
 import pytest
 
 from remote_store._errors import BackendUnavailable, CapabilityNotSupported, RemoteStoreError
-from tests._kernel._fake import RUNTIMES, FakeDenied, FakeDown, FakeOdd, FakeStore, make_kernel
+from tests._kernel._fake import RUNTIMES, FakeDenied, FakeDown, FakeOdd, FakeStore, make_kernel, run_async
 
 # write: put; the three write_atomic routes: atomic put, wire temporary, temp and rename.
 _ROUTES = {
@@ -61,6 +61,18 @@ def test_unwrap_after_a_non_terminal_close_is_the_drivers_answer(runtime: str) -
     assert run.unwrap(FakeStore) is run.store
     with pytest.raises(CapabilityNotSupported):
         run.unwrap(int)
+
+
+@pytest.mark.spec("BE-033", "BE-025", "BE-030")
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_addressing_is_answered_after_a_terminal_close(runtime: str) -> None:
+    run = make_kernel(runtime, _store(), close_is_terminal=True)
+    run.close()
+    assert run.kernel.name == "fake"
+    assert run.kernel.capabilities is run.driver.capabilities
+    assert run.native_path("d//f") == "fake://d/f"
+    assert run.to_key("fake://d/f") == "d/f"
+    assert run.resolve("d/f").native_path == "fake://d/f"
 
 
 @pytest.mark.spec("BE-033", "BE-020")
@@ -125,6 +137,49 @@ def test_a_stream_whose_failure_left_the_connection_alive_is_closed(runtime: str
     assert store.called("stream.close") == [("stream.close", "f")]
 
 
+@pytest.mark.spec("BE-033", "SIO-010")
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_a_connection_dead_that_raises_propagates_in_both_runtimes(runtime: str) -> None:
+    # The predicate is pure inspection, so one that raises is a driver bug; the
+    # sync stream lets it propagate (_ErrorMappingStream), and so must the async read.
+    store = FakeStore().add("f", data=b"0123")
+    run = make_kernel(runtime, store, protocols=("remove_folder",))
+    bug = ZeroDivisionError("predicate bug")
+
+    def broken(exc: BaseException) -> bool:
+        raise bug
+
+    run.driver.connection_dead = broken
+    store.fault("stream.read", FakeDenied("denied"), key="f")
+    with pytest.raises(ZeroDivisionError) as caught:
+        run.read("f")
+    assert caught.value is bug
+
+
+@pytest.mark.spec("BE-033", "SIO-001")
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_a_read_after_close_raises_or_ends(runtime: str) -> None:
+    # Sync: ValueError, never data; async: an iterator its caller closed ends.
+    run = make_kernel(runtime, FakeStore().add("f", data=b"0123"), protocols=("remove_folder",))
+    if runtime == "sync":
+        stream = run.kernel.read("f")
+        stream.close()
+        with pytest.raises(ValueError, match="closed"):
+            stream.read()
+        return
+
+    async def read_close_read() -> bytes:
+        chunks = run.kernel.read("f")
+        first = await chunks.__anext__()
+        await chunks.aclose()
+        with pytest.raises(StopAsyncIteration):
+            await chunks.__anext__()
+        return first
+
+    assert run_async(read_close_read()) == b"01"
+    assert run.store.called("stream.close") == [("stream.close", "f")]
+
+
 @pytest.mark.spec("BE-033")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_stream_read_to_its_end_is_closed_once(runtime: str) -> None:
@@ -132,6 +187,65 @@ def test_a_stream_read_to_its_end_is_closed_once(runtime: str) -> None:
     run = make_kernel(runtime, store, protocols=("remove_folder",))
     assert run.read("f") == b"01234"
     assert store.called("stream.close") == [("stream.close", "f")]
+
+
+# --- the listing: Not started, Paging, Done, Failed ------------------------------
+
+
+def _paged() -> FakeStore:
+    return FakeStore(page_size=2).add("d/a", "d/b", "d/c", "d/e")
+
+
+@pytest.mark.spec("BE-033", "BE-014")
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_a_listing_pages_to_done(runtime: str) -> None:
+    store = _paged()
+    run = make_kernel(runtime, store)
+    assert sorted(str(f.path) for f in run.list_files("d", recursive=True)) == ["d/a", "d/b", "d/c", "d/e"]
+    assert store.called("list_page") == [("list_page", "d")] * 2  # two pages of two, then Done
+
+
+@pytest.mark.spec("BE-033", "BE-020")
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_a_listing_on_a_terminally_closed_backend_fails_at_its_first_page(runtime: str) -> None:
+    store = _paged()
+    run = make_kernel(runtime, store, close_is_terminal=True)
+    run.close()
+    store.calls.clear()
+    listing = run.kernel.list_files("d", recursive=True)  # Not started: nothing refused yet
+    with pytest.raises(BackendUnavailable):
+        _first(runtime, listing)
+    assert store.calls == []
+
+
+@pytest.mark.spec("BE-033", "BE-032")
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_a_refusal_while_paging_fails_the_listing_after_its_first_page(runtime: str) -> None:
+    # A.9: after the first page a refusal propagates; what was yielded stays yielded.
+    store = _paged()
+    run = make_kernel(runtime, store)
+    store.fault("list_page", FakeDenied("no"), nth=2)
+    seen: list[str] = []
+    with pytest.raises(RemoteStoreError):
+        _drain(runtime, run.kernel.list_files("d", recursive=True), seen)
+    assert seen == ["d/a", "d/b"]
+
+
+def _first(runtime: str, listing: Any) -> Any:
+    return next(listing) if runtime == "sync" else run_async(listing.__anext__())
+
+
+def _drain(runtime: str, listing: Any, seen: list[str]) -> None:
+    """Record each listed path into *seen* as it arrives, so a later failure keeps them."""
+    if runtime == "sync":
+        seen.extend(str(item.path) for item in listing)
+        return
+
+    async def drain() -> None:
+        async for item in listing:
+            seen.append(str(item.path))
+
+    run_async(drain())
 
 
 # --- the write handle: abort on every failure, a failed abort logged -------------

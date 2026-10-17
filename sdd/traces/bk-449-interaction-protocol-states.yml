@@ -241,5 +241,3 @@ expected_ripples:
   - sdd/backlogid.json
   - src/remote_store/_kernel/_sync/kernel.py
   - src/remote_store/_kernel/_sync/driver.py
-co_shipped_items:
-  - BK-448

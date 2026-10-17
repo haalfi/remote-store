@@ -57,15 +57,11 @@ class AsyncDriverBackend(_AsyncKernelCore, AsyncBackend):
                 except StopAsyncIteration:
                     return
                 except caught as exc:
-                    condemned = self._condemns(exc)
+                    # Unguarded, as the sync stream calls is_fatal: a predicate that
+                    # raises is a driver bug, and its error propagates.
+                    condemned = bool(self._driver.connection_dead(exc))
                     raise self._mapped(exc, Op.READ, key) from exc
                 yield chunk
         finally:
             if not condemned:
                 await _io.close_stream(stream)
-
-    def _condemns(self, exc: BaseException) -> bool:
-        try:
-            return bool(self._driver.connection_dead(exc))
-        except Exception:  # noqa: BLE001 - a predicate that cannot answer says no
-            return False

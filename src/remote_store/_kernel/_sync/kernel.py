@@ -818,7 +818,8 @@ class _KernelCore:
         self._require_metadata(metadata, key)
         content = _io.take_content(content)  # converted or refused ahead of any I/O (BE-030 § Content)
         target = RemotePath(key)  # built before the driver commits (BE-030 step 5)
-        # Past the gates the kernel owns the caller's iterator until it returns (BE-033).
+        # Past the gates the kernel holds the caller's content until it returns, and
+        # release_content closes an async iterator it abandoned (BE-033).
         content = _io.guard_content(content)  # the caller's own errors pass verbatim (ASYNC-091)
         try:
             self._prepare_write(Op.WRITE, key)
