@@ -269,7 +269,15 @@ phases:
           aclose, non-iterator passthrough) were protocol code; three cells kill them
           (rerun on _io.py: 20/20). The 14 left, per the first run's JSON report,
           are non-protocol backend.py code
-          (_RangeReader, _HandleStream, _SPOOL_MAX); kernel.py was not mutated
+          (_RangeReader, _HandleStream, _SPOOL_MAX).
+          _async/kernel.py (310 gremlins): two runs over all of tests/_kernel hit
+          the 15-minute deadline at 194 and 227; against the protocol and kernel
+          files alone, 205 zapped, 104 survived, 1 timeout. Grouped by enclosing
+          function, most survivors are delete_folder and store-tree code whose
+          suites that run left out. The protocol ones: _cleanup_failed's
+          unanswerable verdict (a cell kills it, checked by hand), and two
+          equivalents, __exit__ returning None for False and overwrite on a fresh
+          temporary. The weekly core-kernel scope runs the whole suite
       - file: scripts/gen_python_support.py
         section: "module docstring, assert_renderable"
         read_type: reference

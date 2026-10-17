@@ -306,6 +306,27 @@ def test_a_failed_abort_is_logged_and_the_commit_error_raised(
 
 @pytest.mark.spec("BE-033")
 @pytest.mark.parametrize("runtime", RUNTIMES)
+def test_a_verdict_that_cannot_be_reached_is_logged_as_alive(runtime: str, caplog: pytest.LogCaptureFixture) -> None:
+    # A predicate that raises on a cleanup failure says no: the cleanup never raises.
+    store = _store()
+    run = make_kernel(runtime, store)
+
+    def broken(exc: BaseException) -> bool:
+        raise ZeroDivisionError("predicate bug")
+
+    run.driver.connection_dead = broken
+    commit_failure = FakeOdd("commit refused")
+    store.fault("handle.commit", commit_failure)
+    store.fault("handle.abort", FakeDown("gone"))
+    with caplog.at_level("WARNING", logger="remote_store._kernel"), pytest.raises(RemoteStoreError) as caught:
+        run.write_atomic("g", b"G")
+    assert caught.value.__cause__ is commit_failure
+    (warning,) = _abort_warnings(caplog)
+    assert "connection dead: False" in warning
+
+
+@pytest.mark.spec("BE-033")
+@pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_failed_temporary_delete_is_logged_and_the_rename_error_raised(
     runtime: str, caplog: pytest.LogCaptureFixture
 ) -> None:
