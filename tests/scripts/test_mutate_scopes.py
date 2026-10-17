@@ -103,6 +103,26 @@ def test_only_ssh_scopes_need_the_sftp_container() -> None:
     assert any("sftp" in s.needs for s in scopes.values()), "no scope covers sftp_docker at all"
 
 
+@pytest.mark.spec("TEST-004")
+def test_every_private_package_module_is_a_mutation_target_of_its_package_scope() -> None:
+    """A module added under ``src/remote_store/_<x>/`` is mutated against ``tests/_<x>/``.
+
+    The kernel had no scope at all: no core, ext or backend rule reaches a
+    package directory.
+    """
+    scopes = _load_manifest().SCOPES
+    src = _REPO_ROOT / "src" / "remote_store"
+    packages = sorted(p.parent for p in src.glob("_*/__init__.py") if (_REPO_ROOT / "tests" / p.parent.name).is_dir())
+    assert packages, "no private package with a test suite: the guard checks nothing"
+    for pkg in packages:
+        scope = scopes[f"core-{pkg.name.lstrip('_')}"]
+        modules = {p.relative_to(_REPO_ROOT).as_posix() for p in pkg.rglob("*.py") if p.name != "__init__.py"}
+        assert set(scope.targets) == modules
+        assert scope.tests == [f"tests/{pkg.name}/"]
+        assert scope.needs == []
+    assert "src/remote_store/_kernel/_async/kernel.py" in scopes["core-kernel"].targets
+
+
 # Tests in transport-split topics that no leg selects, predating BUG-303's
 # split of listing/metadata/streaming (which drops none): parametrized by
 # backend name rather than fixture name, or by no backend at all. Tracked as

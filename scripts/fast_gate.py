@@ -71,11 +71,14 @@ FULL = "FULL"
 CONFORMANCE = "tests/backends/conformance/"
 E2E = "tests/e2e/"
 # The directories outside src/ and scripts/ a test puts on sys.path, by every
-# `sys.path.insert` under tests/ (grepped 2026-10-11): this one
-# (tests/backends/dafny/_helpers.py), and sdd/research/token-usage/
-# (tests/scripts/test_tokkit.py, test_token_kit_cuts.py), whose changes reach
-# tests/scripts/ through select_tests' last branch.
+# `sys.path.insert` under tests/ (grepped 2026-10-17): these two
+# (tests/backends/dafny/_helpers.py, tests/_kernel/test_protocol_oracle.py), and
+# sdd/research/token-usage/ (tests/scripts/test_tokkit.py,
+# test_token_kit_cuts.py, test_deliveries.py), whose changes reach tests/scripts/ through
+# select_tests' last branch.
 DAFNY_ORACLE_DIR = "sdd/formal/MemoryBackend-py/"
+KERNEL_ORACLE_DIR = "sdd/formal/KernelProtocol-py/"
+KERNEL_ORACLE_TESTS = "tests/_kernel/test_protocol_oracle.py"
 SCRIPTS_TESTS = "tests/scripts/"
 # A selection above this share of the suite's estimated time runs the suite.
 CUTOFF = 0.5
@@ -474,6 +477,8 @@ def select_tests(repo: Repo, changes: list[tuple[str, str]], pyproject_keys: set
         else:
             if p.startswith(DAFNY_ORACLE_DIR):
                 add_backends({"dafny"} & repo.backend_sources.keys(), f"{p}: compiled Dafny oracle")
+            if p.startswith(KERNEL_ORACLE_DIR):
+                sel.add(KERNEL_ORACLE_TESTS, f"{p}: compiled protocol oracle")
             # scripts/, docs, specs, skills, CI files: read by tests/scripts/.
             sel.add(SCRIPTS_TESTS, f"{p}: tests/scripts reads it")
     return sel

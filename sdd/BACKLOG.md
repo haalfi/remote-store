@@ -335,14 +335,6 @@ failure it was.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-- [ ] **BK-449 — No interaction protocol with states joins `Store`, kernel, driver and `Session`**
-  spec: BE-020, BE-030, ASYNC-088 · effort: L · audience: library.maintainer, user.api
-  The contract is stated call by call; no artifact states the parties' states, the calls legal
-  in each, or who owns each exit (close, abort, invalidate) on failure and cancellation
-  (audit-023 T20). The `Session` lands at RFC-0017 D3 step 2 as an interface without states
-  (D5). Due before step 2. Open decision: the state sets, each call per state, the exit owners.
-  Detail: [dossier](backlog/bk-449-interaction-protocol-states.md)
-
 - [ ] **BK-450 — The driver boundary has no single enforcement point, so each kernel site re-checks a driver by hand**
   spec: BE-021, BE-027, BE-030, BE-032, CAP-007 · effort: L · audience: user.api, library.maintainer
   The kernel takes driver records, streams and declarations at scattered sites: metadata handed
@@ -351,6 +343,22 @@ no clause of the contract ships unexercised.
   checks owned by both `Store` and kernel (P6). Due before D3 step 2, after BK-449. Open
   decision: the mechanisms, and each item's owner (kernel, driver or `Session`).
   Detail: [dossier](backlog/bk-450-driver-boundary-enforcement.md)
+
+- [ ] **BK-455 — The `Session` has obligations in BE-033 but no state set, and its close/run race no model**
+  spec: BE-033, BE-028 · effort: M · audience: library.maintainer
+  BE-033 names the `Session`'s exits (`invalidate` closes the client at once, a cancel never
+  invalidates, `unwrap` goes through `run`, a `close` racing in-flight calls) and marks each
+  *not yet met*: no `Session` exists, so nothing has states or a cell. Due at RFC-0017 D3
+  step 2, with the first remote driver, after BK-450. Open decision: the state set, and
+  whether the close/run race gets a TLA+ model beside `sdd/formal/tla/` or cells only.
+
+- [ ] **BK-454 — A refusal surfaces at the call in one layer and at the first iteration in another**
+  spec: BE-033, ASYNC-006 · effort: M · audience: user.api
+  BE-033's rule puts pure refusals at the call and a stream's I/O refusal at open, through a
+  read handle (`with`/`async with store.read(...)`); its **Refusal timing** table measures four
+  layers that meet it in no column alike. Moving sync listing refusals to the call changes
+  behaviour. Open decision: the handle's shape, and whether bare `async for` stays lazy.
+  Detail: [dossier](backlog/bk-454-refusal-timing-read-handle.md)
 
 - [ ] **BK-451 — `glob` has no definition in tree terms and no single pattern dialect**
   spec: GLOB-007, GLOB-011, GLOB-014, BE-032 · effort: M · audience: user.api, library.maintainer
@@ -816,6 +824,22 @@ give them a way to absorb.
 **Promise:** the artifacts maintainers coordinate through — this file, the
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
+
+- [ ] **BK-457 — Specs prescribe how a check runs where they should state what the caller observes**
+  spec: — · effort: M · audience: library.maintainer, contributor.process
+  Spec 003 mandates mechanisms (BE-032's probe set and probe table, BE-021's per-backend
+  remapping) beside its boundary invariants, and nothing says which a spec owes. An ADR
+  fixes it: postconditions and error precedence, not recipes; named profiles; wire counts
+  as a per-profile cost; a Dafny lemma governs where one exists (Rule 7 extended). BK-456
+  follows it. Detail: [dossier](backlog/bk-457-declarative-spec-adr.md)
+
+- [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split by layer**
+  spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
+  Most of the spec sits in BE-021, BE-029, BE-032 and BE-033 (sizes: dossier); PR #1159's
+  rounds kept finding one section contradicting another. Split into four files (003, error
+  mapping, root path, contract kernel; IDs keep their BE- prefix), each then pruned against
+  BK-457's ADR. After BK-449 and BK-457. Open decision: the new numbers.
+  Detail: [dossier](backlog/bk-456-split-spec-003.md)
 
 - [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**
   spec: DOCFRAME-004 · effort: S · audience: contributor.process

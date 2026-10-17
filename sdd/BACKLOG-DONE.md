@@ -300,6 +300,18 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-449 — No interaction protocol with states joins `Store`, kernel, driver and `Session`**
+  spec: BE-033, BE-020, BE-022, SIO-010, ASYNC-006 · effort: L · audience: library.maintainer, user.api
+  Spec 003 BE-033 states the parties' states, each call per state, every exit's
+  owner and the refusal-timing rule with today's gap, and invariants I1 to I3,
+  proved in `sdd/formal/KernelProtocol.dfy`. The kernel's `unwrap` refuses after a
+  terminal close, the async `read` skips a condemned stream's close, a failed
+  `abort` or temporary delete is logged with its `connection_dead` verdict, and
+  an abandoned async content iterator is closed (was BK-448). Remainder: BK-454
+  (timing, read handle), BK-455 (`Session` states), a BK-450 row. Detail:
+  [dossier](backlog/bk-449-interaction-protocol-states.md). Trace:
+  [bk-449](traces/bk-449-interaction-protocol-states.yml).
+
 - [x] **BUG-336 — pytest-gremlins 1.11.4's coverage pre-scan dies on `filterwarnings = error`, so every gremlin runs its full scope**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
   1.11.4 starts the pre-scan via `-m pytest_gremlins.coverage.prescan_main`; pytest finds
@@ -314,8 +326,9 @@ if evidence changes; these are retired.
   `test_a_none_read_is_refused_on_every_write_route[async]` (#1148) abandoned
   `_none_mid_chunks` suspended once the kernel refused its `None`; its finalizer
   later failed an unrelated `sync` cell as `PytestUnraisableExceptionWarning`
-  (runs 39013016059 and 39014490746, a different cell each). The cell now
-  `aclose()`s it. Whether the kernel should: BK-448. Trace:
+  (runs 39013016059 and 39014490746, a different cell each). The cell
+  `aclose()`d it until BK-449 made the kernel close it; the cell now asserts
+  that. Whether the kernel should: BK-448, absorbed into BK-449. Trace:
   [bug-335](traces/bug-335-none-read-agen-gc-flake.yml).
 
 - [x] **BK-405 — `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier**

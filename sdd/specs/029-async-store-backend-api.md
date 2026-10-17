@@ -43,6 +43,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 **Invariant:** `async def read(path) -> AsyncIterator[bytes]`. Returns an async iterator of byte chunks for the file content.
 **Raises:** `NotFound` if the file does not exist.
+**When a refusal surfaces:** at the first `__anext__` on a class on the kernel, every refusal included; the rule that moves the pure ones to the call, and today's timing per layer, are [BE-033](003-backend-adapter-contract.md#be-033-interaction-protocol-on-the-kernel)'s **Refusal timing**.
 **See also:** [BE-006](003-backend-adapter-contract.md), ASYNC-020.
 
 ### ASYNC-007: read_bytes()
@@ -611,7 +612,8 @@ record at `WARNING` level with message stem
 is reaped by process exit.  Passing `timeout=None` waits indefinitely.
 `__exit__` delegates to `close()`.
 **See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
-§ Lifecycle.
+§ Lifecycle; for a wrapped class on the kernel, the states its `aclose()`
+moves through are [BE-033](003-backend-adapter-contract.md#be-033-interaction-protocol-on-the-kernel)'s.
 
 ### ASYNC-089: Concurrent-callers No-deadlock Invariant
 

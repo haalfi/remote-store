@@ -42,11 +42,14 @@ class AsyncDriverBackend(_AsyncKernelCore, AsyncBackend):
         The caught set is the sync ``_ErrorMappingStream``'s, ``OSError``,
         ``EOFError`` and the driver's ``stream_catch``, so a stream error is
         typed alike in both runtimes; outside it an exception propagates, as
-        it does there.
+        it does there. A caught error the driver's ``connection_dead``
+        condemns skips the stream's close, as the sync stream's ``is_fatal``
+        does, so no second wait falls on a dead connection.
         """
         key, stream = await self._open(path, Op.READ)
         caught = (OSError, EOFError, *tuple(getattr(self._driver, "stream_catch", ())))
         chunks = stream.__aiter__()
+        condemned = False
         try:
             while True:
                 try:
@@ -54,7 +57,11 @@ class AsyncDriverBackend(_AsyncKernelCore, AsyncBackend):
                 except StopAsyncIteration:
                     return
                 except caught as exc:
+                    # Unguarded, as the sync stream calls is_fatal: a predicate that
+                    # raises is a driver bug, and its error propagates.
+                    condemned = bool(self._driver.connection_dead(exc))
                     raise self._mapped(exc, Op.READ, key) from exc
                 yield chunk
         finally:
-            await _io.close_stream(stream)
+            if not condemned:
+                await _io.close_stream(stream)

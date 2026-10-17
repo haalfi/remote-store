@@ -73,7 +73,10 @@ class Driver(Protocol):
         """Open the file at *key* for reading.
 
         Refuses an absent key, or one that is no file, in whatever shape the
-        wire has; the kernel types the refusal.
+        wire has; the kernel types the refusal. The stream ends where the
+        client's own read reports the end of data, after any length or
+        checksum check the client makes there, never at a byte count the
+        driver keeps: a check that fails at the end is then a stream error.
         """
         ...
 
@@ -85,7 +88,11 @@ class Driver(Protocol):
         overwrite: bool,
         metadata: Mapping[str, str] | None,
     ) -> PutResult:
-        """Write the file at *key*; refuse an existing one unless *overwrite*."""
+        """Write the file at *key*; refuse an existing one unless *overwrite*.
+
+        The refusal is one step on the wire where the wire has a conditional
+        write, never a check followed by the write.
+        """
         ...
 
     def delete(self, key: str) -> None:
@@ -139,7 +146,10 @@ class Driver(Protocol):
         return None
 
     def close(self) -> None:
-        """Release the driver's resources."""
+        """Release the driver's resources.
+
+        Idempotent: the kernel forwards every call, a repeated one included.
+        """
         ...
 
     def classify(self, exc: Exception, *, op: Op, key: str) -> RemoteStoreError:
@@ -153,8 +163,10 @@ class Driver(Protocol):
     def connection_dead(self, exc: BaseException) -> bool:
         """Whether *exc* says the connection is dead.
 
-        Pure inspection of *exc*, no I/O: the sync ``read`` stream passes it as
-        ``is_fatal`` and skips the close of a stream it condemned.
+        Pure inspection of *exc*, no I/O: a ``read`` stream skips the close of
+        a stream it condemned, and a failed cleanup is logged with its verdict.
+        True only for transport-level death, the socket or session gone, never
+        for an error the next request on the same connection survives.
         """
         ...
 
@@ -184,11 +196,19 @@ class WriteHandle(Protocol):
         ...
 
     def commit(self) -> PutResult:
-        """Promote the temporary to its key."""
+        """Promote the temporary to its key.
+
+        Opened without ``overwrite``, a file at the key is refused here, as one
+        step on the wire where the wire has a conditional write.
+        """
         ...
 
     def abort(self) -> None:
-        """Discard the temporary; the key is untouched."""
+        """Discard the temporary; the key is untouched.
+
+        Legal after a failed ``commit`` and idempotent. What it raises the
+        kernel logs, never raises: the write's own error stands.
+        """
         ...
 
 

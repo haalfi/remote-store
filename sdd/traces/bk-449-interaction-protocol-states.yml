@@ -1,0 +1,522 @@
+id: BK-449
+title: "No interaction protocol with states joins `Store`, kernel, driver and `Session`"
+trigger: >-
+  Audit 023 (T20, P0) found the contract stated call by call only: no artifact
+  named the parties' states, the calls legal in each, or the owner of each exit
+  (close, abort, invalidate) on failure and cancellation, and RFC-0017 D5's
+  `Session` was an interface without states, due at D3 step 2.
+source_items:
+  - BK-449
+audience:
+  - library.maintainer
+  - user.api
+decisions:
+  - sdd/decisions/ad497154-50c4-54f3-9b47-d86d1878741d.jsonl
+orient:
+  - items: [BK-450]
+    verdict: constrains
+    evidence: >-
+      Dossier: "every part takes its owners from BK-449's states" and "re-derive
+      it against BK-449's outcome before acting"; its stream-adapter part owns
+      T5's mechanism ("one caught set, a close failure never masking a read
+      failure, `__aiter__` inside the guard"). So BK-449 states the close and
+      fault rules and BK-450 builds the one adapter; the overwrite-conflict
+      mapping to `AlreadyExists` (decided here) is a new row for its
+      driver-duties part. Due after BK-449, before D3 step 2.
+  - items: [BUG-310]
+    verdict: constrains
+    evidence: >-
+      Dossier § Prescription states the read-stream Closed row already:
+      "`read`, `readinto` and `readline` on a closed stream ... raise
+      `ValueError`, and so do `seek` and `tell` ... never a `RemoteStoreError`
+      and never empty data", in spec 006. BK-449's read-stream state table
+      takes that clause rather than a second one; BUG-310 keeps the legacy
+      adapter fixes and its guard-placement decision.
+  - items: [BUG-266, BK-390]
+    verdict: constrains
+    evidence: >-
+      BUG-266 asks for SFTP's failure-to-arm map, placed at D3 step 6; BK-390
+      maps "SFTP-010's connection tiers become D5's `Session`" to step 6. Both
+      bind the deferred `Session` state set and decision 7's transport-level
+      `connection_dead`, not this item's session-less scope.
+  - items: [BUG-293]
+    verdict: unrelated
+    evidence: >-
+      Index entry: Azure's legacy arms re-type an already-typed error; a
+      classifier pass-through, no state or exit owner changes.
+  - items: [BK-446, BK-438]
+    verdict: unrelated
+    evidence: >-
+      BK-446 is `glob` driver coverage and BK-438 flat-key decoding (index
+      entries); both share BE-030's key rule, not its closed guard or any
+      lifecycle.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-449-interaction-protocol-states.md
+        section: "(full)"
+        read_type: gate
+        extract: "State sets, call-by-state meanings, exit owners, where stated and checked"
+      - file: sdd/audits/audit-023-kernel-migration-readiness.md
+        section: "T5, T11, T20, P0, P1, Lower-ranked"
+        read_type: gate
+        extract: "Measured symptoms per transition and P1's owner table that leans on P0"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D3, D5"
+        read_type: gate
+        extract: "Session lands at step 2 with S3Boto3; interface is run, invalidate, connect_context"
+        outcome: unclear
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-020, BE-022"
+        read_type: reference
+        extract: "Close posture is a class declaration; non-terminal stays usable; unwrap states no closed posture"
+      - file: sdd/backlog/bk-450-driver-boundary-enforcement.md
+        section: "(full)"
+        read_type: gate
+        extract: "Which parts BK-450 builds on BK-449's owners"
+      - file: sdd/backlog/bug-310-closed-stream-read.md
+        section: "Prescription (advisory)"
+        read_type: reference
+        extract: "Read-after-close clause to adopt for the stream Closed state"
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "write route (commit/abort), aclose, _guard"
+        read_type: reference
+        extract: >-
+          Commit failure already aborts (BaseException); the abort's own failure is
+          suppressed without a log; `_closed` never resets
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-028, Contract kernel intro, BE-030 step 1"
+        read_type: gate
+        extract: "SFTP is single_connection, narrowing the close race; BE-030 owns the guard order"
+      - file: src/remote_store/aio/_async_store.py
+        section: "read, list_files"
+        read_type: reference
+        extract: >-
+          AsyncStore refuses capability and path at the call while sync Store
+          listings and every kernel listing refuse at iteration: the timing rule is
+          multi-site, so its implementation moved to the handle item
+      - file: src/remote_store/_kernel/_async/_io.py
+        section: "_marked, guard_content, feed"
+        read_type: reference
+        extract: "Caller iterator is never aclosed; sync content is a stream, not an iterator"
+      - file: src/remote_store/_kernel/aio_backend.py
+        section: "read"
+        read_type: reference
+        extract: "No connection_dead on the async read, unlike backend.py:64"
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "§1, §3"
+        read_type: reference
+        extract: "Handle and connection lifecycles of the pre-kernel classes; § 5 goes after them"
+      - file: tests/_kernel/_fake.py
+        section: "_SyncBase, _FaultyStream, Fault"
+        read_type: reference
+        extract: "Fault injection per primitive; unwrap raises TypeError, not CapabilityNotSupported"
+  - id: tests
+    name: Failing cells
+    steps:
+      - file: sdd/backlog/bk-449-interaction-protocol-states.md
+        section: "Plan (approved 2026-10-17)"
+        read_type: gate
+        extract: "Decisions 1 to 12, the subject list and build steps 1 to 9 the build session implements"
+      - file: tests/_kernel/test_kernel.py
+        section: "_WRITE_ROUTES, test_a_none_read_is_refused_on_every_write_route"
+        read_type: reference
+        extract: >-
+          The four write routes to cross, and BUG-335's aclose workaround, which
+          the kernel's own close replaces with an assertion
+      - file: tests/_kernel/test_backend.py
+        section: "test_a_stream_whose_failure_condemned_the_connection_is_not_closed_again"
+        read_type: reference
+        extract: >-
+          The sync SIO-010 cell to mirror in both runtimes; the async fake's
+          generator stream had no observable close, so it became a class
+      - file: tests/backends/memory/test_kernel_cells.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Memory's cell pattern. The first iterator cell passed before the fix
+          because asyncio.run's shutdown finalises leftover generators; the
+          rewritten cell looks inside the loop and failed as it should
+  - id: implement
+    name: Kernel fixes
+    steps:
+      - file: scripts/gen_sync_kernel.py
+        section: "_FIXED, generate"
+        read_type: gate
+        extract: >-
+          A name the async kernel calls on _io must exist in the hand-written
+          sync _io: release_content is a no-op there
+      - file: src/remote_store/_kernel/_sync/_io.py
+        section: "guard_content, feed"
+        read_type: reference
+        extract: "Sync content is a caller stream behind a proxy; nothing to close"
+      - file: src/remote_store/_kernel/_async/driver.py
+        section: "AsyncDriver, AsyncWriteHandle"
+        read_type: reference
+        extract: "Where the five driver duties go; the generated sync twin carries them"
+      - file: tests/aio/test_async_pbt_stateful.py
+        section: "AsyncBackendModel, TestCase markers"
+        read_type: reference
+        extract: >-
+          State-machine pattern and why markers go on the generated TestCase;
+          the protocol machine reuses the fake's loop instead of its own
+  - id: spec
+    name: Spec, model and links
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-020, BE-022, BE-028, BE-030 pipeline and Addressing stays total, BE-032 A.3"
+        read_type: gate
+        extract: "Clauses BE-033 links from in one line; unwrap stays reachable while open, so A.2 and A.3 hold"
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010"
+        read_type: reference
+        extract: "Scoped to a supplied is_fatal; the kernel now honours it in both runtimes"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-006, ASYNC-088"
+        read_type: reference
+        extract: "Where the async timing gap and the adapter's aclose point at BE-033"
+      - file: sdd/backlog/bug-310-closed-stream-read.md
+        section: "Prescription (advisory)"
+        read_type: reference
+        extract: "The ValueError rule is prescribed, not yet in spec 006; BE-033 cites BUG-310 as its owner"
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "§1 to §4"
+        read_type: reference
+        extract: >-
+          Planned home of § 5. BackendContract.dfy includes it, so § 5's names
+          clashed with § 2 (Failed) and its members compiled into the oracle;
+          the model moved to KernelProtocol.dfy, which nothing includes
+      - file: scripts/check_formal_trace.py
+        section: "module docstring (F1 to F3)"
+        read_type: gate
+        extract: >-
+          A Dafny-tagged ID needs a conformance-lane marker: the repeated-close
+          cell in both close-posture lanes supplies it
+      - file: sdd/formal/README.md
+        section: "Operations / Files"
+        read_type: reference
+        extract: "Row for KernelProtocol.dfy"
+  - id: docs
+    name: Guide and backlog
+    steps:
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Steps 5, 6, 8, 9"
+        read_type: reference
+        extract: "Driver duties in behavioural prose, no tracker IDs"
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: >-
+          Partly done: BK-449 to done, the rest under new IDs, linked both ways;
+          gen-backlogid --check --remote found BK-453 on a pushed branch
+      - file: sdd/backlog/bk-450-driver-boundary-enforcement.md
+        section: "Parts"
+        read_type: reference
+        extract: "Where the overwrite-conflict row and the close-failure rule land"
+  - id: verify
+    name: Ripple-check and gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Spec section, New test file, Tracker ID in published prose, Backlog item touched, CHANGELOG entry"
+        read_type: verify
+        extract: >-
+          CHANGELOG stub is the title alone; spec IDs in private kernel
+          docstrings fail check_no_tracker_refs too, so they were removed from the
+          docstrings; # comments keep theirs
+  - id: oracle
+    name: Model as oracle, and mutation
+    steps:
+      - file: scripts/check_dafny_oracle_fresh.py
+        section: "module docstring, main"
+        read_type: gate
+        extract: >-
+          Assumed one committed oracle; generalised to the wrapper's default FILES
+          list, read from dafny_translate.sh rather than restated
+      - file: scripts/dafny_translate.sh
+        section: "FILES default, build loop"
+        read_type: reference
+        extract: "The loop already builds each entry with $f/$stem; only the default list changes"
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate"
+        read_type: reference
+        extract: "Where the second oracle and the direction it serves (kernel against model) are stated"
+      - file: .github/workflows/ci.yml
+        section: "verify-formal, FORMAL_PAT"
+        read_type: reference
+        extract: >-
+          An sdd-only regeneration reaches only verify-formal, so the oracle suite
+          runs there too
+      - file: scripts/fast_gate.py
+        section: "DAFNY_ORACLE_DIR, select_tests"
+        read_type: reference
+        extract: "A KernelProtocol-py/ change selects the oracle suite"
+      - file: scripts/mutate_scopes.py
+        section: "module docstring, Scope"
+        read_type: reference
+        extract: >-
+          Every scope is derived, and no rule reached a package directory, so the
+          kernel had no scope; a derived package rule adds core-kernel
+      - file: tests/_kernel/test_protocol.py
+        section: "content guard cells"
+        read_type: verify
+        extract: >-
+          pytest tests/_kernel --gremlins --gremlin-targets=_io.py,aio_backend.py,backend.py:
+          45/62 zapped. Three survivors in _async/_io.py (chunk bytes(), double
+          aclose, non-iterator passthrough) were protocol code; three cells kill them
+          (rerun on _io.py: 20/20). The 14 left, per the first run's JSON report,
+          are non-protocol backend.py code
+          (_RangeReader, _HandleStream, _SPOOL_MAX).
+          _async/kernel.py (310 gremlins): two runs over all of tests/_kernel hit
+          the 15-minute deadline at 194 and 227; against the protocol and kernel
+          files alone, 205 zapped, 104 survived, 1 timeout. Grouped by enclosing
+          function, most survivors are delete_folder and store-tree code whose
+          suites that run left out. The protocol ones: _cleanup_failed's
+          unanswerable verdict (a cell kills it, checked by hand), and two
+          equivalents, __exit__ returning None for False and overwrite on a fresh
+          temporary. The weekly core-kernel scope runs the whole suite
+      - file: scripts/gen_python_support.py
+        section: "module docstring, assert_renderable"
+        read_type: reference
+        extract: >-
+          The house shape for a generated Mermaid block: --check in preflight and
+          docs-gate, no bare %% line, and a parse is no proof of a render
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-033 generated kernel_protocol block, rendered with mermaid 11.4.1 in Chromium"
+        read_type: verify
+        extract: >-
+          Every fence parsed, yet a screenshot showed `;` in a merged label drawn as
+          stray states; labels now join with <br/> and the generator refuses `;`
+discovery_followups:
+  - BK-454
+  - BK-455
+  - BK-456
+  - BK-457
+surprising_ripples:
+  - sdd/formal/KernelProtocol.dfy
+  - scripts/dafny_verify.sh
+  - .github/workflows/ci.yml
+  - tests/backends/conformance/test_close_posture.py
+  - tests/backends/conformance/aio/test_close_posture.py
+  - sdd/BACKLOG-DONE.md
+  - sdd/formal/KernelProtocol-py/
+  - scripts/check_dafny_oracle_fresh.py
+  - tests/scripts/test_check_dafny_oracle_fresh.py
+  - scripts/fast_gate.py
+  - tests/scripts/test_fast_gate.py
+  - scripts/mutate_scopes.py
+  - tests/scripts/test_mutate_scopes.py
+  - scripts/gen_protocol_diagram.py
+  - tests/scripts/test_gen_protocol_diagram.py
+  - pyproject.toml
+expected_ripples:
+  - sdd/backlogid.json
+  - src/remote_store/_kernel/_sync/kernel.py
+  - src/remote_store/_kernel/_sync/driver.py
+review:
+  # Derived by `hatch run ship-report 1159 --trace-block-only` at head 53f85f7.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1159 --trace-block-only"
+  pr: 1159
+  review_rounds: 23
+  submissions: 14
+  findings: 45
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.17
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.01
+    - round: 3
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 4
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 5
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 6
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 7
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.33
+    - round: 8
+      findings: 19
+      origin: {loop-introduced: 8, original: 10, pre-existing: 1}
+      triage: {must-fix: 18, refuted: 1}
+      duration_hours: 3.09
+    - round: 9
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.44
+    - round: 10
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.36
+    - round: 11
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 1.18
+    - round: 12
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.96
+    - round: 13
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.34
+    - round: 14
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.14
+  by_file:
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 14
+    - path: "sdd/formal/KernelProtocol.dfy"
+      findings: 4
+    - path: ".github/workflows/ci.yml"
+      findings: 3
+    - path: "sdd/formal/README.md"
+      findings: 3
+    - path: "scripts/gen_protocol_diagram.py"
+      findings: 2
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+    - path: "src/remote_store/_kernel/_async/kernel.py"
+      findings: 2
+    - path: "tests/_kernel/test_protocol_oracle.py"
+      findings: 2
+    - path: "docs-src/guides/custom-backend-guide.md"
+      findings: 1
+    - path: "scripts/check_dafny_oracle_fresh.py"
+      findings: 1
+    - path: "scripts/fast_gate.py"
+      findings: 1
+    - path: "sdd/backlog/bk-449-interaction-protocol-states.md"
+      findings: 1
+    - path: "sdd/specs/006-streaming-io.md"
+      findings: 1
+    - path: "src/remote_store/_kernel/_async/_io.py"
+      findings: 1
+    - path: "src/remote_store/_kernel/_sync/kernel.py"
+      findings: 1
+    - path: "src/remote_store/_kernel/aio_backend.py"
+      findings: 1
+    - path: "tests/_kernel/test_protocol.py"
+      findings: 1
+    - path: "tests/_kernel/test_protocol_stateful.py"
+      findings: 1
+    - path: "tests/backends/conformance/aio/test_close_posture.py"
+      findings: 1
+    - path: "tests/backends/memory/test_kernel_cells.py"
+      findings: 1
+    - path: "tests/scripts/test_gen_protocol_diagram.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "pyproject.toml"
+    - "scripts/dafny_translate.sh"
+    - "scripts/dafny_verify.sh"
+    - "scripts/mutate_scopes.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlog/bk-450-driver-boundary-enforcement.md"
+    - "sdd/backlog/bk-454-refusal-timing-read-handle.md"
+    - "sdd/backlog/bk-456-split-spec-003.md"
+    - "sdd/backlog/bk-457-declarative-spec-adr.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/062e5181-cc50-5b17-963f-e9da78bad8ee.jsonl"
+    - "sdd/decisions/ad497154-50c4-54f3-9b47-d86d1878741d.jsonl"
+    - "sdd/formal/KernelProtocol-py/KernelProtocol-py.dtr"
+    - "sdd/formal/KernelProtocol-py/KernelProtocol.py"
+    - "sdd/formal/KernelProtocol-py/System_/__init__.py"
+    - "sdd/formal/KernelProtocol-py/__main__.py"
+    - "sdd/formal/KernelProtocol-py/_dafny/__init__.py"
+    - "sdd/formal/KernelProtocol-py/module_.py"
+    - "sdd/specs/029-async-store-backend-api.md"
+    - "sdd/traces/bk-449-interaction-protocol-states.yml"
+    - "src/remote_store/_kernel/_async/driver.py"
+    - "src/remote_store/_kernel/_sync/_io.py"
+    - "src/remote_store/_kernel/_sync/driver.py"
+    - "src/remote_store/_kernel/backend.py"
+    - "tests/_kernel/_fake.py"
+    - "tests/_kernel/test_kernel.py"
+    - "tests/backends/conformance/test_close_posture.py"
+    - "tests/scripts/test_check_dafny_oracle_fresh.py"
+    - "tests/scripts/test_fast_gate.py"
+    - "tests/scripts/test_mutate_scopes.py"
+  review_driven_commits:
+    - sha: "759ff36"
+      subject: "BK-449: Round 1 fixes: async connection_dead propagates; I1, I3 and SIO-010 narrowed; listing, addressing and read-after-close cells"
+    - sha: "ad17a5b"
+      subject: "BK-449: Round 2 fixes: an unstarted caller iterator stays the caller's; AsyncStore closed-guard timing; guide narrowed to write cleanups"
+    - sha: "909fab9"
+      subject: "Merge origin/master into bk-449-interaction-protocol-states"
+    - sha: "b590c22"
+      subject: "BK-449: The kernel against the compiled BE-033 model, over the whole exit space"
+    - sha: "9191fcf"
+      subject: "BK-449: Import the protocol oracle without leaving Dafny's stub module_ for a later import"
+    - sha: "84d8fac"
+      subject: "BK-449: Cells killing the three surviving mutants in the async content guard"
+    - sha: "4d4eaf1"
+      subject: "BK-449: Trace records the mutation run on the protocol code"
+    - sha: "26a25c9"
+      subject: "BK-449: Derived mutation scope for private packages adds core-kernel"
+    - sha: "79d0499"
+      subject: "BK-449: Spec 003 BE-033 draws the protocol from the compiled model"
+    - sha: "ff8cf47"
+      subject: "BK-449: Cell for a cleanup verdict the predicate cannot reach"
+    - sha: "9274db6"
+      subject: "BK-449: Round 3 fixes: oracle sees every leaked handle; diagram domain derived; BE-033 wording matches code and lemmas"
+    - sha: "8f7f7c2"
+      subject: "BK-449: Round 4 fixes: a temporary in a vanished container is no failed cleanup; no exit starts from a closed iterator; Released tabled"
+    - sha: "49d3619"
+      subject: "BK-449: Round 5 fixes: read_bytes releases a condemned stream; the exit domain closed by enumeration; cleanup asks as the write"
+    - sha: "f622af1"
+      subject: "BK-449: File BK-456, splitting spec 003 by layer after this PR"
+    - sha: "42249c4"
+      subject: "BK-449: Round 6 fixes: a success moves no iterator; the drawn-edge test compares labels and skips placeholders; its claims narrowed to edges"
+    - sha: "53f11e1"
+      subject: "BK-449: File BK-457, a spec ADR from recipes to declarative invariants, ahead of BK-456"
+    - sha: "e9cca68"
+      subject: "BK-449: File Gemini's review into BK-457 and BK-450"
+    - sha: "8500728"
+      subject: "BK-449: Trace records the review loop at close"
+    - sha: "f3d4cab"
+      subject: "BK-449: Closing-round fixes: a success closes an iterator its driver left suspended; oracle coverage enumerated; BK-456 figures re-measured"
+    - sha: "8dec5a0"
+      subject: "BK-449: BK-450 records the unstated duty that a successful put consumed all content"
+    - sha: "e887a48"
+      subject: "BK-449: Narrow-round fixes: oracle coverage points at its case builders; last whole-space claims narrowed; BK-456 shares left to the dossier"
+    - sha: "08827e1"
+      subject: "BK-449: BK-456 gives the sizing command instead of copied line counts"
+    - sha: "53f85f7"
+      subject: "BK-449: Final-pass fix: CI comment names the case builders; BK-456 and BK-457 give commands, not copied counts"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
