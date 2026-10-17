@@ -12048,7 +12048,7 @@ prepends <code>root_path</code> before delegating to <code>Backend.glob()</code>
 and <code>.</code> segments are dropped (PATH-004 to PATH-006). Three departures from
 spec 004: a trailing <code>/</code> is kept, since in a pattern it selects folders only; a
 <code>\</code> is kept as written rather than turned into <code>/</code> (PATH-002; open under
-BK-447); and a pattern that normalises to the root yields nothing, without
+BK-451); and a pattern that normalises to the root yields nothing, without
 reaching the backend, rather than raising (PATH-008). Returned <code>FileInfo.path</code>
 values are rebased to store-relative (same as <code>list_files</code>).
 <strong>Raises:</strong> <code>InvalidPath</code> for a <code>..</code> segment or a null byte (PATH-003,
