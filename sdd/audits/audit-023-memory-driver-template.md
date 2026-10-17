@@ -1,0 +1,578 @@
+# Audit 023 — The Memory drivers as the template for later drivers
+
+**Date:** 2026-10-17
+**Scope:** The RFC-0017 contract kernel (`src/remote_store/_kernel/`, async
+source and generated sync twin), `MemoryDriver` and `AsyncMemoryDriver`
+(`backends/_memory.py`, `backends/_memory_tree.py`,
+`aio/backends/_memory.py`) and the public `remote_store.drivers`, at
+`52448e0`. Read against spec 003 (BE-0xx, BE-032 Appendix A), 013, 018, 029,
+045, 051, the driver docs (`docs-src/reference/api/drivers.md`,
+`docs-src/guides/custom-backend-guide.md`), the formal model
+(`BackendContract.dfy`, `MemoryBackend.dfy`, `RootPath.dfy`, `StoreTree.dfy`)
+and the tests under `tests/_kernel/`, `tests/backends/memory/` and the
+conformance cells Memory runs. The question: what would a later driver copy
+(RFC-0017 D3 steps 2 to 8) that spec, code, tests and model disagree on, or
+that no clause or test pins.
+**Excluded, already filed:** BK-439, BK-438, BK-446, BK-447, BUG-334,
+BK-436, BK-435, BK-390, BK-345. A finding below touches one of them only
+where it says so.
+**Method:** six read-only passes, one per cluster: kernel contract, Memory
+drivers, async parity, glob and tree, formal model, driver docs. Each
+behavioural claim was measured with a probe script on `52448e0` (`hatch run
+python`), most against a subclass of `MemoryDriver` or the kernel test fake
+`tests/_kernel/_fake.py` with one primitive overridden; the probe and its
+output are quoted under each finding. Every finding was then re-checked by a
+second reader: the probe re-run, or the cited line opened. Tool state at the
+audit: `dafny 4.11.0`, `dafny verify` on the four files 1953 verified and 0
+errors; `hatch run check-dafny-oracle-fresh` fresh; `hatch run
+gen-sync-kernel-check` "up to date"; `hatch run lint` exit 0. This is a
+**report-only** audit; nothing was modified. Dispositions are advisory.
+
+**Severity key:** 🔴 High · 🟠 Medium · 🟡 Low.
+
+---
+
+## Summary
+
+**The kernel's pipeline is sound; what it trusts from a driver is not
+pinned.** The BE-030 order, addressing, the choke point, BE-031, BE-017 and
+BE-029 match the spec and are pinned by named tests (§ Checked clean). The 19
+findings T1 to T19 sit where the kernel takes a driver's word without a clause
+or a check: a mapping it hands out uncopied (T1), a protocol body it never
+looks behind (T2), keys and declarations it does not validate (T9, T10), and
+stream errors it maps three ways (T4, T5). The formal model trails the kernel
+in four places (T3, T12, T13, T14), one of which would fail a correct test.
+
+**Decision recorded at triage:** all of T1 to T19 land before D3 step 2, so
+the second driver copies a consistent template. T7 stays open (§ Open
+questions). The rows under § Lower-ranked are recorded here and not gated.
+
+| Severity | Count | Findings |
+|---|---|---|
+| 🔴 High | 3 | T1, T2, T3 |
+| 🟠 Medium | 16 | T4 to T19 |
+| 🟡 Low | 27 | § Lower-ranked |
+
+Counts are of the finding sections and the § Lower-ranked table rows in this
+document, after merging findings that two passes reported separately.
+
+---
+
+## Findings
+
+### T1 🔴 `FileInfo.metadata` is the live stored dict
+
+**Kind:** contradiction. **Clause:** `FileInfo` "Immutable snapshot"
+(`_models.py:82`), BE-019.
+Mutating a returned info's `metadata` mutates the stored file's, and `copy`
+leaves source and destination sharing one dict.
+
+- Code: `_memory_tree.py:58` (`metadata=node.metadata`), `:212` (copy stores
+  `entry.metadata`); the kernel's `_file_info` passes it uncopied
+  (`_kernel/_async/kernel.py:635`, sync `:619`) while it copies `extra`.
+- Probe: write `a.txt` with `{"k": "v"}`, mutate `get_file_info("a.txt")`,
+  copy to `b.txt`, mutate `b.txt`'s info.
+  ```
+  sync stored after mutating info: {'k': 'MUTATED'}
+  sync src after mutating dst info: {'k': 'VIA_DST'}
+  async stored after mutating info: {'k': 'MUTATED'}
+  ```
+- Predates the kernel: `git grep metadata 107a5a1 --
+  src/remote_store/backends/_memory.py` shows the same at lines 459 and 619.
+- No MEM clause or test covers isolation.
+
+**Template impact:** the kernel never copies `Entry.metadata`, so every driver
+that returns its own mapping inherits it. **Disposition:** copy (or wrap
+read-only) in `_file_info` and in `MemoryTree.copy`; a conformance cell in both
+runtimes.
+
+### T2 🔴 An optional protocol's own body passes construction and no-ops
+
+**Kind:** spec-gap, untested. **Clause:** BE-030 (construction refusals).
+A driver that subclasses `SupportsCopy` and `SupportsRemoveFolder` without
+overriding them constructs, and `copy` and `delete_folder` return success
+having done nothing.
+
+- Code: `_check_construction` refuses an inherited body only for
+  `_PRIMITIVE_BODIES`, built from `vars(AsyncDriver)`
+  (`_kernel/_async/kernel.py:116-130`); optional protocols are detected by
+  `isinstance` alone (`:325-336`, sync `_sync/kernel.py:310-321`).
+- Probe (`class Forgetful(_SyncBase, SupportsCopy, SupportsRemoveFolder)`,
+  declares `COPY`):
+  ```
+  copy returned; 'dst' in store: False
+  delete_folder returned; folder 'd' still present: True
+  ```
+- Spec 003 l.1435-1438 refuses an inherited body "for a primitive"; whether an
+  optional member is one is unstated.
+  `test_the_body_checked_set_is_every_protocol_method_but_probe`
+  (`tests/_kernel/test_kernel.py:1590`) pins the narrow set.
+
+**Template impact:** `MemoryDriver(Driver)` (`backends/_memory.py:29`) teaches
+subclassing the protocol classes. **Disposition:** run the body check over
+every optional protocol presented and over `WriteHandle`; state it in BE-030.
+
+### T3 🔴 The model's `ListFolders` lists every nested folder
+
+**Kind:** model-gap. **Clause:** BE-015.
+`BackendContract.dfy`'s soundness and completeness clauses for `ListFolders`
+use `IsChildOf`, which is any depth, while BE-015 and the kernel list
+immediate subfolders.
+
+- `IsChildOf` (`BackendContract.dfy:256-264`) checks prefix and `/`, no depth;
+  the clauses at `:1034-1043` say "immediate" in the comment only.
+  `MemoryBackend.dfy:862` refines the same. BE-015 (spec 003 l.630) says
+  immediate.
+- Probe, after writing `a/b/c.txt`:
+  ```
+  [kernel] list_folders(''): ['a']
+  [oracle] list_folders(''): ['a', 'a/b']
+  ```
+- The oracle lane is green because the BE-015 cells seed one level
+  (`tests/backends/conformance/test_listing.py:75, :333-343`).
+
+Rule 7: prose and kernel agree; the model is the stale side. A correct
+grandchild cell would fail on the oracle, which the formal README reads as the
+test's bug. **Disposition:** add a depth bound to both clauses and the
+refinement, regenerate the oracle, add a grandchild cell.
+
+### T4 🟠 One stream fault, three answers by method
+
+**Kind:** contradiction. **Clause:** BE-021 kernel row, SIO-012.
+`read` maps only `(OSError, EOFError, *stream_catch)`, while `read_bytes` and a
+ranged `read_seekable` map any `Exception` through the choke point.
+
+- Code: `_kernel/backend.py:58-67`, `aio_backend.py:48-57` (`read`);
+  `kernel.py:716-720` (`read_bytes` under `_choke`); `backend.py:117-121`
+  (ranged read under `_choke`).
+- Probe, `stream_catch=()`, both runtimes alike:
+  ```
+  read:       mid-stream FakeDown       -> raw FakeDown
+  read_bytes: mid-stream FakeDown       -> BackendUnavailable
+  read:       mid-stream AttributeError -> raw AttributeError
+  read_bytes: mid-stream AttributeError -> RemoteStoreError
+  ```
+- BE-021's kernel row (spec 003 l.767) has no stream carve-out, and
+  `stream_catch` is in no spec-003 clause (`rg "stream_catch|SIO-012"
+  sdd/specs` hits 006 and 009 only). SIO-012 (006 l.299-333) names "one fault,
+  two answers depending on which method the caller used" as the defect BK-358
+  fixed. `test_a_streams_caught_set_is_the_same_in_both_runtimes`
+  (`test_kernel.py:629`) covers `read` only.
+
+**Disposition:** one caught set for all three, stated with `stream_catch` in
+BE-021's driver column; cells for `read_bytes` and the ranged read.
+
+### T5 🟠 A failing stream close: swallowed, leaked, or masking
+
+**Kind:** contradiction, undecided under Rule 7. **Clause:** ASYNC-024,
+BE-021.
+When the driver stream's close raises, sync `read` suppresses it, async `read`
+leaks it raw, and `read_bytes` maps it but lets it replace an earlier read
+error.
+
+- Code: sync suppresses in `_stream.py:238-245`; async closes in a `finally`
+  outside the mapping (`aio_backend.py:59-60`) and calls `stream.__aiter__()`
+  before the `try` (`:49`); `_io.read_all` closes in a `finally`
+  (`_sync/_io.py:29-34`, `_async/_io.py:25-30`).
+- Probe, close raises `ConnectionResetError`:
+  ```
+  sync read() + close():  OK b'abc'
+  sync read_bytes():      RemoteStoreError: ConnectionResetError: close reset
+  async read():           builtins.ConnectionResetError: close reset
+  async read_bytes():     RemoteStoreError: ConnectionResetError: close reset
+  ```
+  With a mid-stream error and a close error, `read_bytes` reports the close
+  error in both runtimes; the wire error survives only as `__context__`.
+- No test faults a stream close: the fake's async stream (`_fake.py:685`) has
+  no close fault.
+
+**Disposition:** state that a close failure never masks a read failure and
+that `read` and `read_bytes` agree; move `__aiter__` inside the guarded block;
+add a close fault to the fake.
+
+### T6 🟠 `AsyncMemoryBackend` declares `LAZY_READ` and `SEEKABLE_READ`
+
+**Kind:** contradiction (prose against prose), spec-gap. **Clause:** MEM-003
+against BE-003; spec 029.
+MEM-003 has the async class declare `LAZY_READ` for "its one-chunk read stream
+being lazy"; BE-003 says in-memory, pre-loading backends do not declare it.
+
+- MEM-003: spec 013 l.229-232. BE-003: spec 003 l.55. ASYNC-084 (spec 029
+  l.526) preserves the flag through the sync adapter, citing ASYNC-080.
+- `AsyncMemoryDriver.get` copies the whole value under the lock and yields it
+  once (`aio/backends/_memory.py:67-71`). Probe:
+  `LAZY_READ declared=True; file=4194304 chunks=1 first_chunk=4194304`.
+- The async class also declares `SEEKABLE_READ` (`set(Capability) - {GLOB}`,
+  `aio/backends/_memory.py:26`) with a forward-only async generator; BE-003
+  defines the flag by `stream.seekable()`.
+- The only async laziness test exempts it:
+  `tests/e2e/test_async_streaming_integrity.py:8-10, 302-308` ("capability
+  vs. behavior diverge"). `hatch run backlog-find LAZY_READ` finds no item.
+
+**Disposition, with the reasoning asked for at triage.** `LAZY_READ` should
+mean per-chunk pull: memory held by a read is bounded by the chunk size, not
+the file size, so a caller reading a prefix of a large object never holds the
+whole of it. That is the promise BE-003 and SIO-009 make ("pulled as the
+caller reads"), and the one a caller checks the flag for. The alternative,
+"nothing is fetched before the first iteration", states only timing: a driver
+that buffers a 10 GB object into one chunk on the first `__anext__` would
+satisfy it, so the flag would stop protecting memory exactly where an async
+driver over S3 or Azure needs it. Memory holds the bytes already, so it has
+no fetch to defer; per BE-003 neither Memory class declares `LAZY_READ`, and
+the async one also withholds `SEEKABLE_READ`. Spec 029 then defines both flags
+for an async read, and an async conformance cell replaces the e2e exemption.
+MEM-003 is amended to match.
+
+### T7 🟠 Kernel `glob` through an item raises where listings answer empty
+
+**Kind:** contradiction between spec prose and a test. **Clause:** BE-032 A.5,
+A.8.
+BE-032 A.5 puts `glob` in the folder-read family "over its pattern's literal
+prefix", and A.8 rule 4 replaces a listing's refusal by the probe when the row
+holds nothing; the kernel's `glob` catches only `NotFound`, and a test asserts
+that every other refusal propagates.
+
+- Spec 003 l.1808 (A.5 family row), l.1894-1900 (A.8 rule 4). A.3 l.1756
+  defers glob's omissions and `stat` to BK-439, not A.8's refusal handling.
+- Code: `_sync/kernel.py:1215, 1227` (async `1232, 1244`) against the
+  listings' `_holds_nothing` (`_sync/kernel.py:624-647`).
+- Test: `tests/_kernel/test_condition_space.py:7-9, 42-63`, over every driver
+  shape in `DRIVERS`, hierarchical included.
+- Probe, a `MemoryDriver` whose `glob` refuses a pattern through the item
+  `f.txt`, as A.8 allows a wire's ENOTDIR to arrive:
+  ```
+  InvalidPath:      list_files('f.txt/x') -> []   glob('f.txt/x/*') -> InvalidPath
+  PermissionDenied: list_files('f.txt/x') -> []   glob('f.txt/x/*') -> PermissionDenied
+  ```
+
+Rule 7: the test asserts the code's behaviour, so the prose is not
+automatically right; which side moves is open (§ Open questions). BK-439
+covers flat drivers only.
+
+### T8 🟠 The shared glob regex differs from a Unix glob
+
+**Kind:** contradiction, undecided under Rule 7. **Clause:** GLOB-014, GLOB-011.
+`pattern_to_regex` accepts a `**` that ends a segment and matches across `/`;
+its character classes can match `/`; `[^x]` is negation there and literal in
+`fnmatch`; a malformed class raises `re.PatternError`, not a `ValueError`.
+
+- Code: `_glob.py:92-102` checks only the character after `**`.
+- Probe, Memory (fallback, no `GLOB`) against Local (native) on one tree:
+  ```
+  'a**'          Memory ['a[b','ab/c.csv','abc']   Local ['a[b','abc']
+  'd**/c.csv'    Memory ['d/e/c.csv','dx/c.csv']   Local ['dx/c.csv']
+  'd[!x]e/c.csv' Memory ['d/e/c.csv']              Local []
+  'd[/]e/c.csv'  Memory ['d/e/c.csv']              Local []
+  'd[^x]e'       Memory ['d^e','dae']              Local ['d^e']
+  '[z-a]'        Memory re.PatternError            Local []
+  ```
+  `issubclass(re.PatternError, ValueError)` is `False`; Tier 1
+  `list_files("", pattern="[^x]*")` answers `[]`.
+- GLOB-014 (spec 018 l.190-192) says a `**` inside a segment raises
+  `ValueError`; only the leading form is tested (`tests/test_glob.py:406-408`).
+- Shared by `_s3_base.py:666`, `_s3_boto3.py:809`, `_azure.py:1347`,
+  `aio/backends/_azure.py:1221`, `_sqlalchemy.py:1383, 1821`
+  (`rg pattern_to_regex src/`), and the natural helper for a Memory
+  `SupportsGlob` (BK-446).
+
+**Disposition:** decide the dialect in GLOB-014 (a class never matches `/`;
+the meaning of `^`; the error type), then cells comparing fallback and native.
+
+### T9 🟠 A driver's listed and `stat`ed keys are trusted
+
+**Kind:** spec-gap. **Clause:** BE-014, BE-015, BE-032 A.8 (what drivers owe).
+The kernel neither checks that a listed key lies under the listed prefix nor
+that `stat(k)` returns key `k`.
+
+- Code: `_files_of`, `_folders_of` (`kernel.py:1108-1141`) filter only by
+  `_keys.listable` and A.3; `_file_info` takes the path from `entry.key`
+  (`:626-637`).
+- Probe:
+  ```
+  stat('a') returns Entry('zzz/other') -> get_file_info('a').path == 'zzz/other'
+  list_page('d') also returns 'e/g'    -> list_files('d') == ['d/f', 'e/g']
+  list_page('d') also returns 'x/y'/   -> list_folders('d') == ['x/y']
+  ```
+- A.8's driver obligations (spec 003 l.1950-1974) state neither.
+
+**Template impact:** a flat driver listing `d` instead of `d/` leaks `dx/...`.
+**Disposition:** add both to the obligations with a cell, or have the kernel
+omit and log such keys as BE-030 does.
+
+### T10 🟠 `namespace` and `parents` are not checked against their domain
+
+**Kind:** spec-gap, untested. **Clause:** BE-032 A.2, BE-030.
+`self._flat = driver.namespace == "flat"` (`kernel.py:322`), so any other
+string is hierarchical, and `parents` is compared only to `"none"` and
+`"explicit"`.
+
+- Probe, both runtimes: `namespace="Flat"` constructs, and writing `k/a.txt`
+  below the item `k` succeeds (`files=['k', 'k/a.txt']`), a state A.4 rules
+  out; `namespace="object"` and `parents="None"` construct.
+- `test_a_driver_whose_declarations_its_protocols_cannot_back_is_refused`
+  (`test_condition_space.py:250`) crosses only valid values.
+
+**Disposition:** refuse an out-of-domain value at construction; one cell.
+
+### T11 🟠 `unwrap` bypasses the closed guard
+
+**Kind:** spec-gap. **Clause:** BE-020, BE-022, BE-030 step 1.
+`unwrap` is forwarded with no closed guard and no choke point
+(`kernel.py:350-352`); BE-030 exempts only the addressing members.
+
+- Probe: on a closed kernel with `close_is_terminal=True`, `unwrap(FakeStore)`
+  returns the handle while `exists("a")` raises `BackendUnavailable`; both
+  runtimes.
+- `S3Backend` refuses today: its accessor calls `_raise_if_closed`
+  (`backends/_s3.py:542-546, 573-574`).
+- The kernel fake's `unwrap(int)` raises `TypeError`
+  (`tests/_kernel/_fake.py:600-603`), not BE-022's `CapabilityNotSupported`;
+  Memory's driver is right (`backends/_memory.py:122-127`).
+
+**Template impact:** the first terminal driver (S3, Azure, Graph) would hand
+out a client after close. **Disposition:** state `unwrap`'s posture in BE-030;
+state BE-022's refusal in the driver protocol; fix the fake.
+
+### T12 🟠 Capability gate before the closed guard: model and BE-020/027 disagree
+
+**Kind:** model-gap, doc-drift. **Clause:** BE-030 § Gates, BE-020, BE-027.
+The kernel refuses an undeclared `MOVE` or `COPY` with
+`CapabilityNotSupported` before the closed guard, pinned by
+`test_condition_space.py:164-233`; the model and two prose clauses say a
+closed backend answers first.
+
+- Probe, closed terminal backend without `MOVE`/`COPY`:
+  `move('s','d'): CapabilityNotSupported`, `copy('s','d'):
+  CapabilityNotSupported`.
+- Model: `Move` ensures `!old(Live()) ==> r == Err(BackendUnavailable(name))`
+  unconditionally (`BackendContract.dfy:1110-1111`); `Copy` the same (`:1229`);
+  no `CapMove` or `CapCopy` clause (`rg "in capabilities"
+  sdd/formal/BackendContract.dfy`). The comment at `:554-561` and BE-020's
+  formal note (spec 003 l.725) say closed answers "ahead of every other
+  clause".
+- BE-027 (spec 003 l.1322, 1336): "Backend has no runtime `_gate()`
+  equivalent"; enforcement "by `Store._gate()`". Stale on the kernel.
+- `sdd/formal/README.md:282` claims "all operation pre/postconditions"; the
+  trait has no `write_atomic`, `open_atomic`, `iter_children`,
+  `read_seekable` or `check_health`.
+
+Rule 7: the test decides; model and prose are stale. Latent for Memory, which
+declares both. **Disposition:** add the gate to `Move` and `Copy` ranked first;
+amend BE-020's note, BE-027 and the README sentence.
+
+### T13 🟠 The aggregate push-down skips BE-030's omission
+
+**Kind:** contradiction, model-gap. **Clause:** BE-030, BE-017.
+BE-030 omits non-canonical keys from listings and aggregates and says a native
+aggregate "owes the same omission"; `MemoryTree.folder_stats` counts every
+node, and the model guards only `DeleteFolder` with `CanonicalUnder`.
+
+- Spec 003 l.1533-1544. Code `_memory_tree.py:252-272`. Model
+  `BackendContract.dfy:936-956`; the listing and aggregate completeness clauses
+  (`:1006-1011`, `:1041-1043`, `:1078-1081`) count every key.
+- Probe, `a/ok` (2 B) written, `a/./hidden` (3 B) and `a/sl\ash` (1 B) planted
+  through the driver:
+  ```
+  list_files('a', recursive=True)            -> ['a/ok.txt']
+  get_folder_info('a'), folder_stats push-down -> (3, 6)
+  get_folder_info('a'), listing fallback       -> (1, 2)
+  ```
+- Unreachable on Memory through the public API
+  (`tests/_kernel/test_encoding_observations.py:51-64` says so); reachable on
+  S3, SFTP and Azure, which hold keys other tools write.
+
+**Disposition:** filter `folder_stats` with `_keys.listable`; add the
+`Canonical` guard to the model's listing and aggregate clauses; a push-down
+omission cell for the first driver that can hold such keys.
+
+### T14 🟠 The oracle runs keys outside the domain it was proven for
+
+**Kind:** model-gap. **Clause:** BE-030 key rule; the formal README's
+compiled-oracle principle.
+`tests/backends/dafny/_helpers.py:76-79` maps only `""` and `"."`, and the
+compiled Python does not check `WellFormedPath`.
+
+- Probe:
+  ```
+  write('d//f'); exists('d/f')     kernel True        oracle False
+  list_folders('') after d//f, e/./g kernel ['d','e']  oracle ['d','e','d','e']
+  write('h\\i')                    kernel InvalidPath oracle stores 'h/i'
+  move('k/f','k//f'); exists('k/f') kernel True        oracle False
+  ```
+- No conformance cell uses such keys today (`rg` for `//"`, `"./`, `/./` and
+  `\\` in `tests/backends/conformance` finds only root spellings), so it is
+  latent; it blocks any BE-030 conformance cell.
+
+**Disposition:** route adapter calls through a verified raw-key entry, as
+`RootPath.dfy` § 5 does for root spellings, or refuse such keys in the
+adapter.
+
+### T15 🟠 `metadata={}` comes back as `{}`, stored as `None`
+
+**Kind:** contradiction, undecided under Rule 7. **Clause:** WR-012 (WR-010,
+WR-011).
+`write(..., metadata={})` returns `WriteResult.metadata == {}` while the
+stored file has `None`; the model says `None`.
+
+- Code: `_memory_tree.py:133` stores `None`, `:145` returns
+  `PutResult(metadata=metadata)`; the kernel copies it through.
+- Model: `BackendContract.dfy:829-833` with `HasUserMetadata` non-empty
+  (`:170-173`).
+- Probe: sync and async `{}`; oracle `None`. On a subclass without
+  `USER_METADATA` the field is still `{}`, which BK-239's populated-field check
+  never sees (`test_atomic.py:362` passes `None`).
+- Prose: spec 045 l.348 "passed: verbatim" against WR-011 (l.339-342) `{}`
+  equivalent to `None`. No test asserts the `{}` echo.
+
+**Disposition:** decide in WR-012 and normalise in one place (the kernel);
+one cell.
+
+### T16 🟠 The `open_write` route's overwrite duty is unstated
+
+**Kind:** spec-gap (driver docs). **Clause:** `SupportsOpenWrite`,
+`WriteHandle`.
+Who refuses an existing target under `overwrite=False` is stated for `put`
+only (`_sync/driver.py:88`); `open_write` (`:208-216`) and `commit`
+(`:186-188`) are silent, and the kernel makes no existence check on that
+route.
+
+- Probe, flat driver whose handle ignores `overwrite`:
+  ```
+  write_atomic onto existing, overwrite=False -> OK, value b'new'
+  calls: list_page x limit=1, open_write x False, commit x
+  ```
+- Memory refuses at open and at commit (`backends/_memory.py:142-150,
+  187-188`), undocumented. Conformance `test_atomic.py:61, :146` catch it
+  for registered fixtures only.
+
+**Disposition:** state the duty on `open_write` and `commit`.
+
+### T17 🟠 CONTRIBUTING sends new backends to the `Backend` ABC
+
+**Kind:** doc-drift. `CONTRIBUTING.md:84-85` calls the guide "a full
+walkthrough of the `Backend` contract", and step 2 (`:88`) says "Implement
+`Backend` ABC". The guide calls a driver "the documented route" (guide
+l.53-58) and links back to that step (guide l.577). Every in-repo backend
+starts from this checklist. **Disposition:** rewrite steps 2 and 3 as a driver
+plus a `DriverBackend` subclass, linking the guide.
+
+### T18 🟠 Memory's counters are unpinned, and two clauses misstate them
+
+**Kind:** untested-clause, doc-drift. **Clause:** MEM-004, MEM-014, MEM-016,
+MEM-016b.
+MEM-016 says `file_count` "is unchanged" on move (spec 013 l.391) and MEM-016b
+"increments by 1" on copy (l.409); the code correctly decrements or skips when
+the destination is replaced (`_memory_tree.py:197-198, 206-207`).
+
+- Counter assertions (`rg "files=\d+, folders=\d+|\.counts\b" tests`):
+  `test_coverage.py:476, 483, 498`, `aio/test_copying.py:27`,
+  `aio/test_driver_open_write.py:45, 93`. None follows a `delete`, a
+  `delete_folder`, or a replacing move or copy.
+- A 16-operation sequence in both runtimes matched a tree walk, so the
+  behaviour is right today.
+
+**Disposition:** a counters-against-walk invariant in the stateful property
+test, both runtimes; fix the two sentences.
+
+### T19 🟠 mtime on move, copy and folders is unpinned and unmodelled
+
+**Kind:** untested-clause, model-gap. **Clause:** MEM-015, MEM-016, MEM-016b.
+Move keeps `modified_at`, copy sets a new one, a folder's is the maximum; the
+behaviour holds in both runtimes, but tests assert only `is not None`.
+
+- `rg "modified_at\s*(==|>|!=|<|is None)" tests` outside other backends'
+  directories: `test_folder_info_depth.py:108`, `_kernel/test_kernel.py:938`,
+  both `is None`. The MEM-016b cell (`test_atomic.py:524-530`) checks bytes
+  only.
+- Model: copy sets `last_modified` to `None` (`MemoryBackend.dfy:1219-1220`);
+  `FolderInfo` has no time field (`BackendContract.dfy:153`).
+
+**Disposition:** pin the three clauses in both runtimes; decide whether the
+contract owns copy and move mtime.
+
+---
+
+## Open questions
+
+**T7: which side moves.** (a) The kernel gives `glob` the listings' first-page
+probe over its literal prefix and `test_condition_space.py` is amended, so
+`glob` through an item answers empty like every listing; this could widen
+BK-439 beyond flat drivers. (b) BE-032 A.5 is narrowed to say only the listing
+bound applies to `glob`, and code and test stay. Left open at triage.
+
+---
+
+## Lower-ranked
+
+Recorded, not gated. Each was measured or read as its evidence column says.
+
+| Finding | Kind | Evidence |
+|---|---|---|
+| Async `connection_dead` is required but never called | spec-gap | Required through `vars(AsyncDriver)` (`_async/kernel.py:116-130`); `rg connection_dead src/remote_store/_kernel` hits the two protocol definitions and `backend.py:64` (sync) only; no async SIO-010 counterpart |
+| Driver return shapes are not validated, and fail inconsistently | spec-gap | `stat` returning `str`, `put` returning `None`, `list_page` returning `None` raise raw `AttributeError`; a 2-tuple from `folder_stats` is mapped (inside the choke); negative counts are accepted; `kind="dir"` reads as a folder (`kernel.py:472`) |
+| `container_absent` applies only to untyped errors, unstated in BE-021 | spec-gap | `kernel.py:399-401`; BE-021 kernel row l.772; asserted by `test_kernel.py:498`; a typed `BackendUnavailable` from `delete` defeats `missing_ok` |
+| `ensure_parents` used only with `parents="explicit"`; `SupportsRename` needs `rename_replaces` | doc-drift | `_sync/kernel.py:317-319`; guide l.344-345 "define the method, and the kernel uses it"; the MOVE refusal message names no missing member |
+| MEM-020's invalid-path row is not the kernel's alone | spec-gap | `MemoryTree` raises `InvalidPath` at `_memory_tree.py` 101, 117, 135, 156, 160, 168, 178, 188, 223 (`rg "raise InvalidPath"`); the table has no wrong-type row |
+| Async `read` refusals surface on the first iteration | spec-gap | `read('nope')`, `read('../x')` and a closed terminal `read` return an async generator; the error comes at `__anext__`; ASYNC-006 states no timing |
+| Kernel `write_atomic` cancellation routes untested | untested-clause | Correct on the handle and temp-plus-rename routes when measured; `tests/aio/test_async_cancellation.py` covers Memory's `put` route only |
+| Error `path` is canonical after normalisation, raw on refusal | spec-gap | `read_bytes('x//missing')` gives `NotFound` with `path='x/missing'`; `read_bytes('a/../b')` gives `InvalidPath` with the raw path; ERR-001 and ERR-002 do not say which |
+| Driver `move`/`copy` precondition `src != dst` unstated | spec-gap | `MemoryDriver.move("k", "k", overwrite=True)` leaves counts `(0, 0)` against a walk's `(1, 0)`; the kernel short-circuits (`kernel.py:961-964`) |
+| `Op.IDENTITY` and `Op.MONITOR` never reach `classify` | doc-drift | Only the enum (`_model.py:47-48`) and `_CLASSIFY_DECIDES` (sync `kernel.py:63`, async `:76`) |
+| Driver `close` must tolerate repeats, unstated | untested-clause | A second `Backend.close()` reaches the driver; a non-idempotent driver close gives `RemoteStoreError: native RuntimeError`; spec 003 l.725 says close stays callable |
+| Negative `max_depth` at the backend: model unlimited, kernel empty | spec-gap | `BackendContract.dfy:963, 1000`; kernel `list_files('x', recursive=True, max_depth=-1)` gives `[]`, oracle every file; DEPTH-003 silent |
+| `StoreTree` names admit `.`, `..`, `\`, NUL | model-gap | `StoreTree.dfy:55`; "Not modelled" list `:42-46` names empty segments only |
+| BE-030 and BE-031 cannot carry an `@spec` tag | doc-drift | `scripts/check_formal_trace.py:10-11, 604` count markers under `tests/backends/conformance/` only; the cells live in `tests/_kernel/` |
+| Tier-1 `list_files(pattern=)` folds case on Windows | spec-gap | `_store.py:497, 551` use `fnmatch.fnmatch` (`normcase`); spec 051 compares names exactly; measured by simulating `ntpath` only |
+| GLOB-012 prose against its test for an all-literal pattern | doc-drift | Prose gives `data/file.csv`; `tests/test_glob.py:332` asserts `"data"` |
+| GLOB-015 has no spec-marked test | untested-clause | `tests/ext/test_glob.py:200-202` "exercised implicitly" |
+| The glob guide's native-glob list omits the SQL backends | doc-drift | `docs-src/guides/glob-pattern-matching.md:86-88, 164`; `_sqlalchemy.py:49` declares `GLOB` |
+| MEM-DS-003, MEM-DS-004, MEM-041 figures | doc-drift | A 10 MB buffer overwritten with 1 KB shrinks (10000057 to 1057 B by `sys.getsizeof`); overwrite peak is 1.00x content (`tracemalloc`); per-entry sizes on CPython 3.13.16 differ from the 3.12 figures |
+| MEM-030 "56-test conformance suite" | doc-drift | Spec 013 l.520; `pytest tests/backends/conformance -k "memory and not async and not dafny" -rs` gave 316 passed, 8 skipped, every skip capability or opt-in gated |
+| `content_type` is a dead field in Memory | spec-gap | Set only at `_memory_tree.py:31, 57, 211`, never supplied; MEM-016b's "copied" is vacuous |
+| MEM-tagged conformance cells never run on async Memory | untested-clause | `pytest --collect-only -k memory_async` over the MEM-tagged files collects none; async snapshot timing differs (first iteration, not call) |
+| The generated sync twin drops the contract prose | doc-drift | `scripts/gen_sync_kernel.py:88-94` replaces each module docstring; the "addressing members must stay total" sentence is in the async source only |
+| Guide: "nothing checks that the two agree" | doc-drift | ID-159 (`tests/backends/conformance/test_identity.py:44-48`) checks instance capabilities against `CAPABILITIES`; construction checks nothing |
+| Guide: `size_probe` typed only as "callable" | doc-drift | The real contract is `(inner_stream) -> int` (`_stream.py:123-125, 217`) |
+| Guide: `store.glob()` "raises" | doc-drift | It raises at iteration; the call returns a generator |
+| Guide: a typed driver error "passes through unchanged" | doc-drift | A driver `PermissionDenied` for an absent key surfaces as `NotFound`; the kernel's probes re-type it |
+
+---
+
+## Checked clean
+
+- **Generated sync kernel:** `gen-sync-kernel-check` up to date; a word diff
+  of async against sync `driver.py` and `kernel.py` shows token renames, import
+  order and the docstring headers only. The `_io.py` size gap is specified by
+  BE-030 § Content.
+- **Kernel pipeline:** BE-030 order (gates, closed guard, refusal,
+  normalisation, root, WR-010, content), addressing totality, BE-020
+  construction posture, the choke point on a classifier returning `None` or
+  raising, `BaseException` passthrough, caller-content passthrough, BE-031,
+  BE-017 empty-aggregate typing, BE-029 root probes; read against spec 003 and
+  pinned by tests in `test_kernel.py` and `test_condition_space.py`.
+- **Memory parity:** 48 of 50 operations identical across runtimes in results,
+  info fields, error types, messages and `path`; the two differences are
+  `TypeError` wording.
+- **Memory tree against spec 051 and BE-032:** A.4 write refusals, A.5 folder
+  reads on and through an item, A.6 empty folders, name equality (case, NFC
+  against NFD), the root.
+- **Glob:** whole-segment `**`, leading `/`, `""`, `.` and `/`, dot files,
+  absent and file prefixes, newline keys; fallback and native agree.
+- **Driver docs:** the 30 `::: remote_store.drivers.X` references equal
+  `drivers.__all__`; 14 required primitives and 6 attributes; the construction
+  refusals in `drivers.md`; the key rule; write cost; the guide's Redis driver
+  (35 snippet tests).
+- **Formal:** Dafny verifies; the oracle is fresh; 546 oracle tests pass;
+  `RootPath.dfy` tags cite existing IDs; the `folder_stats` differential
+  (`tests/test_pbt_folder_info_aggregates.py`) is green.
+
+## Not verified
+
+- Real SDK behaviour when an async stream's `aclose` or `__aiter__` fails; T5
+  was measured on fake streams.
+- T8 on the S3, Azure and SQL native globs, which need live services; inferred
+  from the shared helper.
+- Windows case folding, simulated with `ntpath`.
+- `AsyncMemoryDriver`'s `asyncio.Lock` across two event loops (ASYNC-094).
+- The guide's redis-py claims (redis not installed) and the rendered site.
+- Alloy and Lean.
