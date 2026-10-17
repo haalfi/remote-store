@@ -517,7 +517,9 @@ jobs:
       # runs (it importorskips the plugin): those tests are the only automated
       # gate that _scope_has_no_mutation_candidates still imports the right
       # pytest-gremlins internals and agrees with the plugin's own gremlin count
-      # (BUG-215). Without the plugin they silently skip.
+      # (BUG-215). TestPrescanStartsUnderProjectFilterwarnings needs it too: it
+      # imports the plugin before pytest, as the coverage pre-scan does
+      # (BUG-336). Without the plugin they silently skip.
       - run: uv pip install -e ".[dev,mutate]"
       - run: pytest tests/scripts/ -q
 

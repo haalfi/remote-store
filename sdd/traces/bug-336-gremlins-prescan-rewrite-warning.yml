@@ -28,14 +28,17 @@ orient:
 decisions:
   - sdd/decisions/7945eb96-26d2-54e0-8539-54e7105de289.jsonl
 expected_ripples:
-  - pyproject.toml
-  - tests/scripts/test_run_mutate.py
   - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+discovery_followups:
+  # Owner review of PR #1158: nothing flags a pre-scan that records no data.
+  - BK-453
 surprising_ripples:
-  # The bump to 1.11.4 needed no edit here: the `mutate` pin `>=1.11.0,<1.12`
-  # admits patch releases, and the 1.11.4 change is upstream's (#485, node ids
-  # moved into a file via a new pre-scan entry module).
-  - pyproject.toml
+  # tooling-tests installs [mutate] for BUG-215's tests only; the new test
+  # depends on that install too, so its rationale comment had to name it.
+  - .github/workflows/ci.yml
+  # BK-413's open decision rests on an ERROR count this bug inflated.
+  - sdd/BACKLOG.md
 phases:
   - id: orient
     name: Orient
@@ -91,3 +94,7 @@ phases:
         section: "core-path on unpatched 1.11.4 with the ignore"
         read_type: verify
         extract: "No 'returned no data' warning; 23 zapped / 3 survived, as on 1.11.3"
+      - file: pyproject.toml
+        section: "mutate extra"
+        read_type: reference
+        extract: "The pin >=1.11.0,<1.12 admits patch releases, so 1.11.4 arrived with no edit here; upstream's change is #485 (node ids in a file, via a new pre-scan entry module)"

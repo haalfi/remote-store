@@ -189,7 +189,8 @@ class TestPrescanStartsUnderProjectFilterwarnings:
     with no coverage and every gremlin ran its scope's full test set. The
     plugin discards the pre-scan's output, so only "Coverage collection
     returned no data" reached the log. This drives the same import order
-    against ``pyproject.toml``, so it holds whichever entry point upstream uses.
+    against ``pyproject.toml``: it pins this one failure, whichever module
+    triggers it, not that the pre-scan records coverage (BK-453).
     """
 
     _ROOT = Path(__file__).resolve().parents[2]
