@@ -241,8 +241,8 @@ def test_glob_suffix_clause_never_excludes_a_match() -> None:
     The real clause runs against SQLite, so this pins the SQL ``glob()`` issues,
     not a Python model of it. Enumerated rather than sampled: every pattern of
     up to three tokens against every key of up to four characters, so ``**/``
-    (which matches zero directories), classes, stray brackets and the trailing
-    newline the regex's ``$`` admits meet each other in every order.
+    (which matches zero directories), classes, stray brackets and newlines,
+    which every wildcard crosses, meet each other in every order.
     """
     patterns = {"".join(p) for n in range(1, 4) for p in itertools.product(_TOKENS, repeat=n)}
     keys = ["".join(k) for n in range(1, 5) for k in itertools.product(_KEY_CHARS, repeat=n)]
@@ -272,7 +272,8 @@ def test_glob_suffix_clause_never_excludes_a_match() -> None:
 GLOBS = [
     pytest.param("**/*.csv", {"a.csv", "d/b.csv"}, id="double_star_root"),
     pytest.param("**/a.csv", {"a.csv"}, id="double_star_literal_tail"),
-    pytest.param("*.txt", {"t.txt\n"}, id="trailing_newline_admitted_by_regex"),
+    pytest.param("*.txt", set(), id="trailing_newline_refused_by_regex"),  # BUG-298
+    pytest.param("*.txt*", {"t.txt\n"}, id="star_crosses_newline"),
     pytest.param("*_b/x.txt", {"a_b/x.txt"}, id="underscore_in_tail"),
     pytest.param("*\\b/s.txt", {"a\\b/s.txt"}, id="backslash_in_tail"),
     pytest.param("a_b/*", {"a_b/x.txt"}, id="underscore_literal"),

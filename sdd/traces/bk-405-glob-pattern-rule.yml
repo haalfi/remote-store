@@ -1,0 +1,114 @@
+id: BK-405
+title: "One glob pattern rule across tiers, anchored at the true end"
+trigger: "Maintainer: make the kernel/driver Memory backend the template for later drivers, closing the spec gaps it exposes; BK-405 and BUG-298 are the two open wrong-answer items on Memory (both reproduced on master 2026-10-17)"
+source_items:
+  - BK-405
+  - BUG-298
+audience:
+  - user.api
+  - library.maintainer
+co_shipped_items:
+  - BUG-298
+discovery_followups:
+  - BK-446
+  - BK-447
+decisions:
+  - sdd/decisions/9544a854-7eb5-5697-83fe-2504ff9fec13.jsonl
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/specs/018-glob.md
+  - sdd/specs/001-store-api.md
+  - sdd/specs/029-async-store-backend-api.md
+  - docs-src/guides/glob-pattern-matching.md
+surprising_ripples:
+  - tests/backends/sqlblob/test_like_prefix.py
+  - tests/scripts/test_run_mutate.py
+  - sdd/backlog/bk-389-kernel-step-1-memory.md
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+orient:
+  - items: [BK-439]
+    verdict: unrelated
+    evidence: "BACKLOG.md BK-439: the kernel's flat `glob` skips BE-032 A.3/A.5; due 'before the first flat driver with `GLOB` moves onto the kernel'. Memory is hierarchical and declares no GLOB (backends/_memory.py:26), and the fix here lives in ext.glob's fallback and _glob.pattern_to_regex, not the kernel's glob."
+  - items: [BK-438]
+    verdict: unrelated
+    evidence: "BACKLOG.md BK-438: decoding of flat raw keys with an empty segment (`a/`), 'before any flat driver (S3, Azure, SQLAlchemy) moves onto the kernel'. Concerns stored keys, not pattern normalisation."
+  - items: [BK-390, BK-345]
+    verdict: unrelated
+    evidence: "BK-390 maps RFC-0017 amendments to D3 steps 2+ (s3fs at step 2, SFTP-010 at step 6); BK-345's gate starts 'from D3 step 2'. Neither names GLOB-0xx nor _glob.py."
+  - items: [BK-436, BK-435]
+    verdict: unrelated
+    evidence: "Spec 051 tree observation and StoreTree.dfy tags (TREE-001 -- TREE-012); no glob clause."
+  - items: [BUG-300]
+    verdict: unrelated
+    evidence: "SQLBlob write of `\\\\`, fixed when SQLBlob migrates at D3 step 3; shares only the Memory-half history (BUG-297)."
+  - items: [BK-405, BUG-298]
+    verdict: constrains
+    evidence: "Co-shipped pair. BK-405 dossier § Advisory prescription: normalise the fallback 'by decision 6's rule' before extract_prefix; that rule is already code in _kernel/_keys.py (pattern_refusal, canonical_pattern), which the kernel's glob applies (_kernel/_sync/kernel.py:1204-1207). BUG-298's regex is the one the fallback compiles (ext/glob.py:65), so both land in one change to the fallback path and pattern_to_regex. SFTP and Graph also lack GLOB (FEATURES.md), so the fallback stays load-bearing beyond Memory."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Orient"
+        read_type: gate
+        extract: "Find by spec and file, cluster, read dossiers, judge, record, recommend in one dialog"
+        outcome: ok
+      - file: sdd/backlog/bk-405-ext-glob-fallback-tier-split.md
+        section: "whole"
+        read_type: reference
+        extract: "Tier table, leading-`/` decision (refuse / strip / change GLOB-007), advisory: normalise by decision 6's rule"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D3, D8"
+        read_type: reference
+        extract: "Step 1 (Memory) done via BK-389/BK-394; later steps own their own cell changes; nothing in D3 owns ext.glob's fallback"
+        outcome: ok
+      - file: src/remote_store/_kernel/_keys.py
+        section: "pattern_refusal, canonical_pattern"
+        read_type: reference
+        extract: "The kernel's pattern rule exists as reusable functions; refusal() refuses a leading `/` at the backend boundary"
+        outcome: ok
+  - id: decide
+    name: Decide the leading-slash rule
+    steps:
+      - file: sdd/specs/051-store-tree.md
+        section: "TREE-007, TREE-009, TREE-011; Layering"
+        read_type: reference
+        extract: "No Key has a leading `/`, empty or `.` segment; spec 004 maps input strings onto Keys, so a pattern spelling with them names only what the canonical one names"
+        outcome: ok
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-002 to PATH-007"
+        read_type: reference
+        extract: "Paths strip a leading `/`, collapse `//`, drop `.`, refuse `..` and NUL, convert `\\` (the last left to BK-447 for patterns)"
+        outcome: ok
+      - file: sdd/specs/018-glob.md
+        section: "GLOB-007, GLOB-011, GLOB-014"
+        read_type: gate
+        extract: "GLOB-007 joined the raw pattern to the root, which made the answer root-dependent; GLOB-014 stated `^...$`"
+        outcome: misleading
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "decision 6, Later drivers"
+        read_type: reference
+        extract: "Measured Store.glob('/d/*.csv') split by root_path; prescribed root-dependent cells per GLOB driver step, now void (dated correction added)"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index; Detailed checklist rows Store method, Public method signature, Bug fix, Extension, Spec section"
+        read_type: verify
+        extract: "Docstring Raises, guide, spec-marked tests, CHANGELOG stub, BACKLOG; no new method or export"
+        outcome: ok
+      - file: tests/backends/sqlblob/test_like_prefix.py
+        section: "GLOBS"
+        read_type: verify
+        extract: "A cell pinned the bug (`trailing_newline_admitted_by_regex`); inverted, and a newline-crossing cell added"
+        outcome: ok
+      - file: tests/scripts/test_run_mutate.py
+        section: "TestScopeCandidateDiscovery"
+        read_type: verify
+        extract: "Uses ext/glob.py as the zero-mutation-candidate fixture, so an `if not pattern` guard there broke it; the guard was dropped as redundant"
+        outcome: ok

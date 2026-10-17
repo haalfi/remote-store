@@ -8,6 +8,7 @@ import pytest
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+    from pathlib import Path
 
 from datetime import UTC
 
@@ -846,6 +847,33 @@ class TestAsyncStoreGlobInner:
             results = [f async for f in store.glob("*.csv")]
             assert len(results) == 1
             assert results[0].name == "a.csv"
+
+    @pytest.mark.spec("GLOB-007")
+    @pytest.mark.parametrize("root_path", ["", "data"], ids=["empty_root", "data_root"])
+    @pytest.mark.parametrize("pattern", ["/sub/*.csv", "./sub/*.csv", "sub//*.csv"])
+    async def test_glob_normalizes_pattern(self, root_path: str, pattern: str) -> None:
+        """A pattern names Keys as a path does, under any root (sync twin in tests/test_glob.py)."""
+        import tempfile
+        from pathlib import Path
+
+        from remote_store.aio._sync_adapter import SyncBackendAdapter
+        from remote_store.backends._local import LocalBackend
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sub = Path(tmp) / root_path / "sub"
+            sub.mkdir(parents=True)
+            (sub / "a.csv").write_bytes(b"1")
+            store = AsyncStore(SyncBackendAdapter(LocalBackend(root=tmp)), root_path=root_path)
+            assert [str(f.path) async for f in store.glob(pattern)] == ["sub/a.csv"]
+
+    @pytest.mark.spec("GLOB-007")
+    async def test_glob_refuses_dotdot_eagerly(self, tmp_path: Path) -> None:
+        from remote_store.aio._sync_adapter import SyncBackendAdapter
+        from remote_store.backends._local import LocalBackend
+
+        store = AsyncStore(SyncBackendAdapter(LocalBackend(root=str(tmp_path))))
+        with pytest.raises(InvalidPath):
+            store.glob("../*.csv")  # no iteration, as for the capability check
 
 
 # ---------------------------------------------------------------------------

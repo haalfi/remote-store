@@ -51,3 +51,18 @@ it one way under any root.
 decision 6's rule (refusals, then dropping empty and `.` segments, keeping
 a literal trailing `/`) before `extract_prefix`, once the leading-`/`
 choice is made, and pin the table above as cross-tier conformance cells.
+
+**Outcome (2026-10-17).** The leading `/` is stripped, by changing GLOB-007:
+`Store.glob`, `AsyncStore.glob` and the fallback all read a pattern as spec
+004 reads a path, before the root prepend. Why strip and not refuse: a pattern
+is a predicate over Keys, no Key carries a leading `/` (spec 051 TREE-011), so
+`"/d/*.csv"` can only name what `"d/*.csv"` names, and `read`, `exists` and
+`list_files` already accept that spelling through PATH-004. The kernel's
+refusal of a leading `/` (decision 6) stays where it is, at the backend
+boundary, which `Store` now never reaches with one. Diverges from the
+prescription in one point: `..` and a null byte are refused, as PATH-003 and
+PATH-007 refuse them; a backslash is left to BK-447. Re-run of the recipe
+above on the fix's branch, under `root_path` `""` and `"r"`: all six rows
+answer `['d/a.csv']` on both tiers, 12 of 12, the last row included. The
+pinning cells are
+`tests/ext/test_glob.py::TestGlobFiles::test_tiers_agree_on_pattern_spelling`.
