@@ -303,7 +303,10 @@ if evidence changes; these are retired.
   `Store.glob`, `AsyncStore.glob` and the fallback read a pattern as spec 004
   reads a path (`_glob.normalize_pattern`): a leading `/`, `//` and `.` mean
   the canonical spelling under every root, and `..` or a null byte is
-  `InvalidPath`. Spec 018 GLOB-007, GLOB-011; STORE-018, ASYNC-053. Cross-tier
+  `InvalidPath`. Breaking where those matched nothing (a null byte anywhere; a
+  leading `..` on a `GLOB` store with no root, measured against master in the
+  trace); the migration guide's v0.33.0 to v0.34.0 section says so. Spec 018
+  GLOB-007, GLOB-011; STORE-018, ASYNC-053. Cross-tier
   cells in `tests/ext/test_glob.py`. Co-shipped: BUG-298. Detail:
   [dossier](backlog/bk-405-ext-glob-fallback-tier-split.md). Trace:
   [bk-405](traces/bk-405-glob-pattern-rule.yml).

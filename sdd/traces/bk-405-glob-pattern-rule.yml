@@ -130,3 +130,8 @@ phases:
         read_type: verify
         extract: "Runs `-m os_sensitive`; the conformance `[local]` parameters carry that mark through the fixture registry, so a Grep of the conformance files for the mark under-reported. The newline cell failed on Windows (raw OSError, BUG-334) and was dropped"
         outcome: misleading
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v0.34.0"
+        read_type: verify
+        extract: "Review round 2: the section treats 'returned empty, now raises' as Breaking (listings, metadata=[]). Measured on an origin/master worktree (PYTHONPATH=tmp/master-wt/src, Store/AsyncStore/glob_files over Local and Memory, roots '' and 'r'): a NUL pattern answered [] on every entry point; a leading `..` answered [] only under an empty root on the GLOB tier, InvalidPath elsewhere; `d/../` already raised. Stub marked Breaking with a migration paragraph"
+        outcome: ok

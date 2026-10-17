@@ -113,10 +113,11 @@ as GLOB-004.
 
 **Invariant:** Store reads the pattern as spec 004 reads a path, then
 prepends `root_path` before delegating to `Backend.glob()`. Leading `/`, empty
-and `.` segments are dropped (PATH-004 to PATH-006). Two departures: a
-trailing `/` is kept, since in a pattern it selects folders only, and a `\` is
-kept as written rather than turned into `/` (PATH-002; open under BK-447). A pattern that normalises to the
-root yields nothing without reaching the backend. Returned `FileInfo.path`
+and `.` segments are dropped (PATH-004 to PATH-006). Three departures from
+spec 004: a trailing `/` is kept, since in a pattern it selects folders only; a
+`\` is kept as written rather than turned into `/` (PATH-002; open under
+BK-447); and a pattern that normalises to the root yields nothing, without
+reaching the backend, rather than raising (PATH-008). Returned `FileInfo.path`
 values are rebased to store-relative (same as `list_files`).
 **Raises:** `InvalidPath` for a `..` segment or a null byte (PATH-003,
 PATH-007).
@@ -192,8 +193,8 @@ Patterns like `**error` where `**` is embedded within a segment raise
 
 The regex is anchored at both ends (`^...\Z`, never `$`, which also matches
 before one final newline) and matched against the full store-relative path of
-each `FileInfo`. A newline is an ordinary key character: `.` crosses it, so
-`*`, `**` and `?` match it as any other non-separator character.
+each `FileInfo`. A newline is an ordinary key character: `*` and `?` match
+it through `[^/]`, and `**` through `.`, which is compiled to cross newlines.
 
 ### GLOB-015: No Backend Coupling
 
