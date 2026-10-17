@@ -335,6 +335,31 @@ failure it was.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
+- [ ] **BK-449 — No interaction protocol with states joins `Store`, kernel, driver and `Session`**
+  spec: BE-020, BE-030, ASYNC-088 · effort: L · audience: library.maintainer, user.api
+  The contract is stated call by call; no artifact states the parties' states, the calls legal
+  in each, or who owns each exit (close, abort, invalidate) on failure and cancellation
+  (audit-023 T20). The `Session` lands at RFC-0017 D3 step 2 as an interface without states
+  (D5). Due before step 2. Open decision: the state sets, each call per state, the exit owners.
+  Detail: [dossier](backlog/bk-449-interaction-protocol-states.md)
+
+- [ ] **BK-450 — The driver boundary has no single enforcement point, so each kernel site re-checks a driver by hand**
+  spec: BE-021, BE-027, BE-030, BE-032, CAP-007 · effort: L · audience: user.api, library.maintainer
+  The kernel takes driver records, streams and declarations at scattered sites: metadata handed
+  out live (audit-023 T1, a defect today), keys and declarations unchecked (T2, T9, T10), one
+  stream fault mapped three ways (T4, T5), flags meaning different things per runtime (T6),
+  checks owned by both `Store` and kernel (P6). Due before D3 step 2, after BK-449. Open
+  decision: the mechanisms, and each item's owner (kernel, driver or `Session`).
+  Detail: [dossier](backlog/bk-450-driver-boundary-enforcement.md)
+
+- [ ] **BK-451 — `glob` has no definition in tree terms and no single pattern dialect**
+  spec: GLOB-007, GLOB-011, GLOB-014, BE-032 · effort: M · audience: user.api, library.maintainer
+  BE-032 A.5 approximates `glob` as a folder read over its literal prefix, so the kernel's `glob`
+  raises where listings answer empty (audit-023 T7), and the shared `pattern_to_regex` lets `**`
+  and classes cross `/` where native glob does not (T8). Due before RFC-0017 D3 step 2. Open
+  decision: the defining clause, then the dialect, `\` included. BK-439 overlaps.
+  Detail: [dossier](backlog/bk-451-glob-tree-definition.md)
+
 - [ ] **BK-446 — No driver exercises the kernel's `glob`, because `MemoryDriver` declares no `GLOB`**
   spec: BE-024, BE-030, GLOB-010 · effort: M · audience: library.maintainer, user.api
   The kernel's `glob` (pattern rule, choke points, listing bound) runs only
@@ -343,20 +368,14 @@ no clause of the contract ships unexercised.
   Open decision: give both Memory drivers `SupportsGlob`, which needs another
   non-`GLOB` fixture for the fallback cells, or leave it to SFTP or Graph's step.
 
-- [ ] **BK-447 — A glob pattern reads `\` unlike a path: `exists("d\\a.csv")` is `True`, `glob("d\\*.csv")` is `[]`**
-  spec: GLOB-007, PATH-002, BE-030 · effort: S · audience: user.api
-  PATH-002 turns `\` into `/` in a path, but GLOB-007's normalisation keeps it,
-  so both tiers answer `[]` (measured on Local and Memory), and a kernel
-  `GLOB` driver would raise `InvalidPath` (BE-030's pattern rule). In a glob
-  `\` is also a natural escape. Open decision: convert, refuse, or escape.
-
-- [ ] **BK-448 — The async kernel leaves a caller's content iterator suspended when it refuses a chunk or the write fails**
-  spec: BE-030, ASYNC-091 · effort: S · audience: user.api, library.maintainer
-  `_marked` (`_kernel/_async/_io.py`) raises on a non-bytes chunk without
-  `aclose()` on the caller's iterator, so its `finally` runs only at GC, on
-  whatever loop is then current (BUG-335: 4 of 4 write routes). No spec covers
-  caller-supplied content; the nearest, SEEK-011, closes a stream the library
-  consumed. Open decision: the kernel closes what it abandons, or BE-030 says the caller owns it.
+- [ ] **BK-452 — The template is Memory alone: no flat reference driver, unpinned Memory clauses, a stale checklist**
+  spec: BE-032, MEM-004, MEM-015, MEM-016, MEM-016b · effort: L · audience: library.maintainer, contributor.process
+  Both Memory drivers are hierarchical, so flat decoding and BE-032 A.3/A.4 run only against the
+  test fake (audit-023 P4); Memory's counter and mtime clauses are unpinned and two misstate
+  overwrites (T18, T19); CONTRIBUTING sends new backends to the `Backend` ABC (T17). Flat driver
+  due before RFC-0017 D3 step 2, the rest before step 8. Open decision: the reference set's
+  members and the cells each runs. BK-446 overlaps.
+  Detail: [dossier](backlog/bk-452-template-reference-set.md)
 
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
   spec: RES-100 · effort: M · audience: user.api
@@ -460,11 +479,13 @@ no clause of the contract ships unexercised.
   `mutate_scopes.py`, or splitting the scope.
 
 - [ ] **BK-434 — RFC-0021's encodings are verified in `StoreTree.dfy` alone, so the trait's operations are not refined against them**
-  spec: BE-008, BE-013, BE-014, BE-021 · effort: L · audience: library.maintainer
+  spec: BE-008, BE-013, BE-014, BE-015, BE-021 · effort: L · audience: library.maintainer
   `StoreTree.dfy` proves a flat encoding's `decode` and RFC-0021's refusal rule (A.8) on its
   own types; `BackendContract.dfy`'s operations still range over `map<Path, Entry>` and never
-  see an encoding (RFC-0021 D10 names the wiring as a follow-up). Open decision: refinement
-  lemmas per encoding, or one encoding-parametric trait. After BK-432.
+  see an encoding (RFC-0021 D10 names the wiring as a follow-up). Audit-023 P3 widens it: the
+  model drifts from the kernel (T3, T12, T13, T14) and should gate driver acceptance. Open
+  decision: refinement lemmas per encoding, or one encoding-parametric trait. After BK-432.
+  Detail: [dossier](backlog/bk-434-trait-refinement-against-storetree.md)
 
 - [~] **BK-435 — Spec 051's store tree is not yet tied to the store's operations, and `StoreTree.dfy` §12 carries no `@spec` tags**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
