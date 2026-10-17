@@ -80,119 +80,6 @@ document, after merging findings that two passes reported separately.
 
 ---
 
-## Proposals
-
-Advisory, per CLAUDE.md § Audits: the diagnosis below is the audit's
-authority, and whoever implements a proposal re-weighs it against the
-findings it cites. Each proposal is required because a later driver inherits
-the gap it closes; none adds a tree axiom, since the tree came back clean.
-
-### P1 Driver boundary contract
-
-**Claim.** Every later driver implements the boundary between what it
-observes and what the kernel decodes, and that boundary's failures are wrong
-answers, not errors. Today the trust is partly stated (BE-032 A.8's
-obligations), partly unchecked, and partly enforced only by Memory. P1 states
-every fact, value and fault crossing it once, each as a kernel check or a
-driver obligation.
-
-It decides:
-
-- **Facts the kernel takes from a driver:** a listed key lies under the listed
-  prefix and `stat(k)` names `k` (T9); `namespace` and `parents` are in their
-  domain (T10); an optional protocol presented is implemented, not inherited
-  (T2); a native aggregate applies BE-030's omission (T13); the `open_write`
-  route refuses an existing target without `overwrite` (T16); `src != dst` on
-  driver `move` and `copy`.
-- **Values the kernel hands out:** metadata in a returned `FileInfo` or
-  `WriteResult` is a copy, never the stored or the caller's mapping (T1); an empty
-  metadata echo is normalised in one place (T15).
-- **Fault policy:** one rule for exceptions from driver calls and streams,
-  where a wire error and a programming error differ by rule and not by the
-  method that met them (T4); a failing close never masks a read failure and
-  `read` agrees with `read_bytes` (T5); driver return shapes are validated or
-  propagate, by policy; `container_absent`'s scope, `unwrap` after close
-  (T11), repeated `close`, and async `connection_dead` are stated.
-
-**Absorbs:** T1, T2, T4, T5, T9, T10, T11, T13 (driver half), T15, T16; the
-lower-ranked rows on return shapes, `container_absent`, close repeatability,
-the self-move precondition and async `connection_dead`.
-
-### P2 Glob in tree terms
-
-**Claim.** `glob` is the one folder read that names no key, so BE-032 can only
-approximate it ("over its pattern's literal prefix"), and fallback and native
-already disagree on one tree (T8). P2 defines `glob(p)` as the files of the
-tree whose path matches `p`, makes the kernel's prefix listing and probes
-optimisations judged against that, and fixes one pattern dialect.
-
-It decides: the defining clause and how A.5 cites it (which decides T7's open
-question); whether a character class may match `/`; what `^` means in a
-class; `**` as a whole segment only; the error type of a malformed pattern;
-what `\` means (BK-447).
-
-**Absorbs:** T7, T8, BK-439, BK-447; the lower-ranked rows on GLOB-012's prose,
-GLOB-015, and Tier-1 case folding.
-
-### P3 One formal truth
-
-**Claim.** `StoreTree.dfy` states the tree; `BackendContract.dfy`, which the
-compiled oracle runs, still ranges over a path map and never sees an encoding
-(BK-434). Two models of one store drift: T3, T12, T13, T14, T19's model half
-and the `StoreTree` name gap are that drift. In T3, T12 and T14 the model, not
-the kernel, was wrong; in T13 both were. Recommended at triage: the model gates driver acceptance, so
-`BackendContract` is refined against `StoreTree`, with BE-030's key rule
-inside its domain.
-
-It decides: BK-434's open choice (refinement lemmas per encoding, or one
-encoding-parametric trait); how the oracle adapter reaches the key rule
-instead of passing raw keys (T14); the trait methods the model lacks
-(`write_atomic`, `open_atomic`, `iter_children`, `read_seekable`,
-`check_health`, T12); where kernel-only cells count for traceability.
-
-**Absorbs:** T3, T12, T13 (model half), T14, T19 (whether the contract owns
-copy and move mtime); the lower-ranked rows on
-`StoreTree` names, negative `max_depth`, and BE-030/031 traceability.
-
-### P4 The template is a set: Memory and a flat reference driver
-
-**Claim.** Both Memory drivers are hierarchical with implicit parents
-(`backends/_memory.py:43-44`, `aio/backends/_memory.py:39-40`) and hold the
-tree directly, so flat decoding, the `list_page` byte-order obligation, A.3's
-shadow omission and `stat`, and A.4's ancestor checks run only against the
-kernel's test fake (`tests/_kernel/_cells.py:37-42`, shape `flat-none`). The
-flat drivers of D3 (S3, Azure, SQLAlchemy) would have no reference to copy,
-and the first of them would become the template by accident. P4 makes the
-template a reference set with a flat member.
-
-It decides: the members of the set; which kernel and conformance cells each
-runs; that both Memory drivers present `SupportsGlob`, so P2 has a real runner
-(BK-446).
-
-**Absorbs:** the template coverage behind T13 and BK-446; the lower-ranked row
-on MEM-tagged cells that never run on async Memory, for the async member.
-
-### P5 Capability semantics per runtime
-
-**Claim.** Async drivers copy capability sets, and spec 029 defines no
-capability for an async read. P5 states, per runtime, what each flag
-promises, starting with the two T6 measured: async `LAZY_READ` is per-chunk
-pull, so a read holds at most a chunk, never the file (T6's reasoning), and
-async `SEEKABLE_READ` is withheld or given a meaning.
-
-It decides: the async meaning of `LAZY_READ` and `SEEKABLE_READ`; whether any
-other flag is runtime-specific; the async conformance cell that replaces the
-e2e exemption.
-
-**Absorbs:** T6.
-
-### Not proposed
-
-More tree axioms: the tree came back clean. T17, T18, T19's test half and the
-doc-drift rows: each is a direct fix with no open choice.
-
----
-
 ## Findings
 
 ### T1 🔴 `FileInfo.metadata` is the live stored dict
@@ -682,17 +569,6 @@ contract owns copy and move mtime.
 
 ---
 
-## Open questions
-
-**T7: which side moves.** (a) The kernel gives `glob` the listings' first-page
-probe over its literal prefix and `test_condition_space.py` is amended, so
-`glob` through an item answers empty like every listing; this could widen
-BK-439 beyond flat drivers. (b) BE-032 A.5 is narrowed to say only the listing
-bound applies to `glob`, and code and test stay. Left open at triage; P2's
-defining clause is where it is decided.
-
----
-
 ## Lower-ranked
 
 Recorded, not gated. Each was measured or read as its evidence column says.
@@ -726,6 +602,130 @@ Recorded, not gated. Each was measured or read as its evidence column says.
 | Guide: `size_probe` typed only as "callable" | doc-drift | The real contract is `(inner_stream) -> int` (`_stream.py:123-125, 217`) | guide line opened; `_stream.py` lines first pass only |
 | Guide: `store.glob()` "raises" | doc-drift | It raises at iteration; the call returns a generator | `c6/s2_behaviour.py`, `c6/s3_more.py` |
 | Guide: a typed driver error "passes through unchanged" | doc-drift | A driver `PermissionDenied` for an absent key surfaces as `NotFound`; the kernel's probes re-type it | `c6/s3_more.py` |
+
+---
+
+## Open questions
+
+**T7: which side moves.** (a) The kernel gives `glob` the listings' first-page
+probe over its literal prefix and `test_condition_space.py` is amended, so
+`glob` through an item answers empty like every listing; this could widen
+BK-439 beyond flat drivers. (b) BE-032 A.5 is narrowed to say only the listing
+bound applies to `glob`, and code and test stay. Left open at triage; P2's
+defining clause is where it is decided.
+
+---
+
+## Proposals
+
+Advisory, per CLAUDE.md § Audits: the diagnosis above is the audit's
+authority, and whoever implements a proposal re-weighs it against the
+findings it cites. Each proposal is required because a later driver inherits
+the gap it closes; none adds a tree axiom, since the tree came back clean.
+
+### P1 Driver boundary contract
+
+**Claim.** Every later driver implements the boundary between what it
+observes and what the kernel decodes, and that boundary's failures are wrong
+answers, not errors. Today the trust is partly stated (BE-032 A.8's
+obligations), partly unchecked, and partly enforced only by Memory. P1 states
+every fact, value and fault crossing it once, each as a kernel check or a
+driver obligation.
+
+It decides:
+
+- **Facts the kernel takes from a driver:** a listed key lies under the listed
+  prefix and `stat(k)` names `k` (T9); `namespace` and `parents` are in their
+  domain (T10); an optional protocol presented is implemented, not inherited
+  (T2); a native aggregate applies BE-030's omission (T13); the `open_write`
+  route refuses an existing target without `overwrite` (T16); `src != dst` on
+  driver `move` and `copy`.
+- **Values the kernel hands out:** metadata in a returned `FileInfo` or
+  `WriteResult` is a copy, never the stored or the caller's mapping (T1); an empty
+  metadata echo is normalised in one place (T15).
+- **Fault policy:** one rule for exceptions from driver calls and streams,
+  where a wire error and a programming error differ by rule and not by the
+  method that met them (T4); a failing close never masks a read failure and
+  `read` agrees with `read_bytes` (T5); driver return shapes are validated or
+  propagate, by policy; `container_absent`'s scope, `unwrap` after close
+  (T11), repeated `close`, and async `connection_dead` are stated.
+
+**Absorbs:** T1, T2, T4, T5, T9, T10, T11, T13 (driver half), T15, T16; the
+lower-ranked rows on return shapes, `container_absent`, close repeatability,
+the self-move precondition and async `connection_dead`.
+
+### P2 Glob in tree terms
+
+**Claim.** `glob` is the one folder read that names no key, so BE-032 can only
+approximate it ("over its pattern's literal prefix"), and fallback and native
+already disagree on one tree (T8). P2 defines `glob(p)` as the files of the
+tree whose path matches `p`, makes the kernel's prefix listing and probes
+optimisations judged against that, and fixes one pattern dialect.
+
+It decides: the defining clause and how A.5 cites it (which decides T7's open
+question); whether a character class may match `/`; what `^` means in a
+class; `**` as a whole segment only; the error type of a malformed pattern;
+what `\` means (BK-447).
+
+**Absorbs:** T7, T8, BK-439, BK-447; the lower-ranked rows on GLOB-012's prose,
+GLOB-015, and Tier-1 case folding.
+
+### P3 One formal truth
+
+**Claim.** `StoreTree.dfy` states the tree; `BackendContract.dfy`, which the
+compiled oracle runs, still ranges over a path map and never sees an encoding
+(BK-434). Two models of one store drift: T3, T12, T13, T14, T19's model half
+and the `StoreTree` name gap are that drift. In T3, T12 and T14 the model, not
+the kernel, was wrong; in T13 both were. Recommended at triage: the model gates driver acceptance, so
+`BackendContract` is refined against `StoreTree`, with BE-030's key rule
+inside its domain.
+
+It decides: BK-434's open choice (refinement lemmas per encoding, or one
+encoding-parametric trait); how the oracle adapter reaches the key rule
+instead of passing raw keys (T14); the trait methods the model lacks
+(`write_atomic`, `open_atomic`, `iter_children`, `read_seekable`,
+`check_health`, T12); where kernel-only cells count for traceability.
+
+**Absorbs:** T3, T12, T13 (model half), T14, T19 (whether the contract owns
+copy and move mtime); the lower-ranked rows on
+`StoreTree` names, negative `max_depth`, and BE-030/031 traceability.
+
+### P4 The template is a set: Memory and a flat reference driver
+
+**Claim.** Both Memory drivers are hierarchical with implicit parents
+(`backends/_memory.py:43-44`, `aio/backends/_memory.py:39-40`) and hold the
+tree directly, so flat decoding, the `list_page` byte-order obligation, A.3's
+shadow omission and `stat`, and A.4's ancestor checks run only against the
+kernel's test fake (`tests/_kernel/_cells.py:37-42`, shape `flat-none`). The
+flat drivers of D3 (S3, Azure, SQLAlchemy) would have no reference to copy,
+and the first of them would become the template by accident. P4 makes the
+template a reference set with a flat member.
+
+It decides: the members of the set; which kernel and conformance cells each
+runs; that both Memory drivers present `SupportsGlob`, so P2 has a real runner
+(BK-446).
+
+**Absorbs:** the template coverage behind T13 and BK-446; the lower-ranked row
+on MEM-tagged cells that never run on async Memory, for the async member.
+
+### P5 Capability semantics per runtime
+
+**Claim.** Async drivers copy capability sets, and spec 029 defines no
+capability for an async read. P5 states, per runtime, what each flag
+promises, starting with the two T6 measured: async `LAZY_READ` is per-chunk
+pull, so a read holds at most a chunk, never the file (T6's reasoning), and
+async `SEEKABLE_READ` is withheld or given a meaning.
+
+It decides: the async meaning of `LAZY_READ` and `SEEKABLE_READ`; whether any
+other flag is runtime-specific; the async conformance cell that replaces the
+e2e exemption.
+
+**Absorbs:** T6.
+
+### Not proposed
+
+More tree axioms: the tree came back clean. T17, T18, T19's test half and the
+doc-drift rows: each is a direct fix with no open choice.
 
 ---
 
