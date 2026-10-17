@@ -720,7 +720,7 @@ drops metadata fails to verify. Verified in `MemoryBackend.dfy`. See BK-196.
 - `close_is_terminal = True`: `close()` / `aclose()` is **terminal** — the flag flips at the *start* of `close()` and every lazy client accessor guards on it, so a subsequent operation raises `BackendUnavailable` rather than silently re-opening resources the caller cannot observe. The posture of `AzureBackend` (AZ-029), the three S3 backends (S3-019), and `GraphBackend` (GR-051).
 
 The use-after-close conformance lane (`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling) gates on this attribute, asserting the terminal error for terminal backends and re-initialisation for the rest.
-**On the kernel:** the closed guard is the kernel's, [BE-030](#be-030-key-rule-on-the-kernel)'s step 1, and the posture is the driver's `close_is_terminal`. The class's own `close_is_terminal`, which the lane above reads, must match the driver's; the kernel refuses to construct over one that differs. `MemoryBackend` and `AsyncMemoryBackend` are on the kernel, and their drivers declare `close_is_terminal = False`.
+**On the kernel:** the closed guard is the kernel's, [BE-030](#be-030-key-rule-on-the-kernel)'s step 1, and the posture is the driver's `close_is_terminal`. The class's own `close_is_terminal`, which the lane above reads, must match the driver's; the kernel refuses to construct over one that differs. `MemoryBackend` and `AsyncMemoryBackend` are on the kernel, and their drivers declare `close_is_terminal = False`. The states either posture passes through, and who owns each exit, are [BE-033](#be-033-interaction-protocol-on-the-kernel)'s.
 **Rationale:** A terminal close turns a use-after-close (a likely bug) into a clear typed error instead of a silent resource reopen, while leaving stateless/cheap backends freely reusable.
 **Formal coverage:** since BK-388, `sdd/formal/BackendContract.dfy` models the posture as `closeIsTerminal`, `closed` and `Live()`, with a `Close()` that sets `closed` and promises nothing about the store's contents. Every operation that returns a result, except `RequireCapability`, answers `BackendUnavailable` when `!Live()`, ahead of every other clause and with `fs` unchanged. `Close()` returns nothing and stays callable after a terminal close, and `DropContainer()` models the environment rather than an operation, so neither carries the guard; every other postcondition the other formal-coverage notes in this spec quote holds under `Live()`. `MemoryBackendMinimal` is the close-terminal witness in `MemoryBackend.dfy`.
 
@@ -1285,6 +1285,7 @@ follow them, as `LocalBackend`'s do.
 
 **Invariant:** `unwrap(type_hint)` returns the native backend handle if it matches the requested type.
 **Raises:** `CapabilityNotSupported` if the backend cannot provide the requested type.
+**On the kernel:** `unwrap` takes the closed guard, so after a terminal close it raises `BackendUnavailable` ([BE-033](#be-033-interaction-protocol-on-the-kernel)).
 **Rationale:** See [ADR-0003](../adrs/0003-fsspec-is-implementation-detail.md).
 
 ### BE-023: to_key()
@@ -1383,7 +1384,8 @@ concurrency conformance lane tests against.
 
 **See also:** [001-store-api.md](001-store-api.md) (STORE-007),
 [013-memory-backend.md](013-memory-backend.md) (MEM-025/026),
-[029-async-store-backend-api.md](029-async-store-backend-api.md) (ASYNC-094).
+[029-async-store-backend-api.md](029-async-store-backend-api.md) (ASYNC-094);
+a `close` racing in-flight calls on the kernel, [BE-033](#be-033-interaction-protocol-on-the-kernel).
 
 ---
 
@@ -1416,7 +1418,8 @@ total** below.
 
 1. The closed guard (BE-020), when the driver declares `close_is_terminal`. The
    class's own `close_is_terminal` must be the driver's; the kernel refuses to
-   construct over one that differs.
+   construct over one that differs. `unwrap` takes it too, and the states
+   around it are [BE-033](#be-033-interaction-protocol-on-the-kernel)'s.
 2. Refusals, raising `InvalidPath`: a key starting with `/`, a `..` segment, a
    null byte, a backslash.
 3. Normalisation: empty and `.` segments are dropped, so `//`, `/./` and a
@@ -1997,3 +2000,113 @@ measures the error-path probes; these are the determinants this section adds):
 | `get`, `delete`, a source, refused | flat | — | one `stat`, then on a miss one `list_page(limit=1)` |
 | `delete(path, missing_ok=True)` on an absent key | flat | — | one `stat` and one `list_page(limit=1)`, where a class not on the kernel spends the listing alone (BE-021) |
 | a listing's first page refused in the probe set | hierarchical | — | one `stat` |
+
+### BE-033: Interaction Protocol on the Kernel
+
+**Invariant:** a class on the kernel, its driver and the caller pass through the
+states tabled below, a call means what the transition table says in each state,
+and every exit, failure and cancellation included, has one owner who closes,
+aborts or releases what is open. Three invariants hold on every path: a terminal
+close absorbs every later call but `close` (I1), every `close` reaches the
+driver, so a repeated one is the driver's to make idempotent (I2), and the
+kernel cleans up every exit it observes (I3). The other clauses of this spec
+state each call; this one states the states between them. The decisions behind
+it are BK-449's dossier § Plan.
+
+**Scope.** The session-less classes on the kernel: `MemoryBackend` and
+`AsyncMemoryBackend` today. A `Session` (RFC-0017 D5) has an interface here and
+no states yet; its row is fixed with the first remote driver, at D3 step 2
+(BK-455), and its obligations below are stated now so that row has them to
+meet. A row marked *not yet met* names the item that builds it.
+
+**States.**
+
+| Party | States | Leaves a state by |
+|---|---|---|
+| backend | Open, Closed | `close`/`aclose`; under `close_is_terminal = False` Closed re-initialises lazily on the next call (BE-020) |
+| read stream | Open, Exhausted, Failed, Closed | reading to the end, a mapped stream error, `close`/`aclose` |
+| write handle (`open_write`) | Open, Committed, Aborted | `commit`; `abort` on any exception |
+| listing | Not started, Paging, Done, Failed | the first `next`, the last page, a refusal |
+| caller's async content iterator | Unstarted, Suspended, Exhausted, Closed | each chunk the kernel takes; its end; the kernel's `aclose` |
+| `Session` | fixed at D3 step 2 (BK-455) | — |
+
+A sync caller's content is a stream, not an iterator, and has no row: it stays
+the caller's in every state (below).
+
+**Transitions.** Per call, in the backend's state:
+
+| Call | Open | Closed, `close_is_terminal = False` | Closed, `close_is_terminal = True` |
+|---|---|---|---|
+| a live operation (every member BE-030's pipeline runs) | its own clause | as Open, the driver re-initialising | `BackendUnavailable`, after the capability gates BE-030 orders ahead of it; no driver call |
+| `unwrap` | the driver's handle, or BE-022's `CapabilityNotSupported` | as Open | `BackendUnavailable` |
+| `close`/`aclose` | to Closed; forwarded | forwarded again | forwarded again |
+| `name`, `capabilities`, `native_path`, `to_key`, `resolve` | answered | answered | answered, never refused (BE-030's **Addressing stays total**) |
+
+For a read stream: reading to the end leaves it Exhausted, and its close is the
+kernel's (async) or the caller's (sync, the `BinaryIO` it was handed). A mapped
+stream error leaves it Failed; a Failed stream is closed unless the driver's
+`connection_dead` condemns the error, and then it is released without a close,
+so no second wait falls on a dead connection (SIO-010), in both runtimes. Read
+after close: the sync stream raises `ValueError`, and an async iterator closed
+by its caller ends. BUG-310 states the `ValueError` rule for every backend in
+spec 006 and owns the legacy adapters that break it.
+
+**Exit owners.**
+
+| Exit | Owner | What it does |
+|---|---|---|
+| a repeated `close` | the driver | is idempotent; the kernel forwards every call and short-circuits none |
+| a read stream's close that fails after a successful read | the kernel's stream adapter; *not yet met* (BK-450) | the close failure is logged, never raised, and fed to `connection_dead`; a read failure outranks a close failure |
+| end of data | the driver | exhaustion is the client's own end-of-data read, after any length or checksum check the client makes there, never a byte count the driver keeps |
+| a write handle on any exception, cancellation included | the kernel | calls `abort`; an `abort` that fails is logged on `remote_store._kernel` at `WARNING` with its `connection_dead` verdict, and the write's own error is raised |
+| a temporary of the temp-and-rename write | the kernel | deleted on any exception; a failed delete is logged as a failed `abort` is |
+| `abort` after a failed `commit` | the driver | is legal and idempotent |
+| an overwrite conflict without `overwrite` | the driver | refuses in one step on the wire where the wire has a conditional write; the conflict surfaces at `commit` for a handle, at the call for `put`; its typing as `AlreadyExists` is a driver duty BK-450 enforces |
+| a caller's async content iterator the kernel stops taking (a refused chunk, a driver or handle failure, a cancel) | the kernel | calls its `aclose`, when it has one, before the call returns; what that raises is logged and never replaces the write's error. An exhausted one needs nothing. The gates (closed guard, key, metadata, content shape) refuse before the kernel takes it, and leave it the caller's |
+| a sync caller's content stream | the caller | the kernel never closes it, on any exit: the caller may seek it or retry with it |
+| a connection a failure condemns | the `Session`; *not yet met* (BK-455) | `invalidate` closes the client at once, and a stream on it fails mapped at its next read. `connection_dead` means transport-level death, the socket or session gone, never an error the next request on the same connection survives. A cancel never invalidates |
+| `unwrap` on a `Session` driver | the `Session`; *not yet met* (BK-455) | goes through `run`, so after `invalidate` it reconnects |
+| a `close` racing in-flight calls on a `thread_safe` class (BE-028) | the `Session`; *not yet met* (BK-455) | creating and tearing down the client is atomic against the closed flag, under a lock held around the accessor alone, never over I/O, and async re-checks after its connect await; `close` waits for no in-flight call, and the teardown wakes blocked calls, which fail mapped. On a `single_connection` class concurrent `close` is already the caller's misuse |
+
+**Refusal timing.** The rule: a pure refusal (the closed guard, a capability
+gate, `InvalidPath` for a malformed key) surfaces at the call; a stream's I/O
+refusal (`NotFound`, `InvalidPath` for a file-versus-folder mismatch) surfaces
+when the stream opens, through a handle (`with`/`async with store.read(...)`);
+a listing's I/O stays lazy, at its first page. The rule is stated here and not
+yet met. Today's timing, measured on Memory and the fake driver:
+
+| Layer | `read`: pure refusal | `read`: I/O refusal | listing: pure refusal | `glob`: capability |
+|---|---|---|---|---|
+| sync kernel class | call | call | first `next` | first `next` |
+| async kernel class | first `__anext__` | first `__anext__` | first `__anext__` | first `__anext__` |
+| `Store` | call | call | first `next` | first `next` |
+| `AsyncStore` | call | first `__anext__` | call | call |
+
+BK-454 builds the handle and moves the refusals the rule places at the call;
+ASYNC-006 points here for the async gap.
+
+**Invariants**, each a lemma of `sdd/formal/KernelProtocol.dfy`:
+
+1. **I1, terminal absorption** (`TerminalCloseAbsorbs`): from Closed under
+   `close_is_terminal = True`, every call but `close` answers
+   `BackendUnavailable` and the state stays Closed. A non-terminal backend is
+   never refused for being closed (`ReusableNeverRefuses`).
+2. **I2, `close ∘ close = close`** (`CloseIsForwardedAndIdempotent`): two closes
+   leave the backend as one does, and the driver sees each.
+3. **I3, cleanup on every exit the kernel observes** (`CleanupOnEveryExit`, over
+   `KernelExit`): after any exit, no write handle is Open, no read stream is Open
+   unless its failure condemned the connection, and no caller iterator the
+   kernel took is Suspended.
+
+**Guard order.** BE-030 orders the capability gates ahead of the closed guard
+for `glob`, `write_atomic` and `open_atomic`, and this clause keeps that order.
+
+**Conformance:** `tests/_kernel/test_protocol.py`, a cell per transition and
+exit over the fake driver, both runtimes; `tests/_kernel/test_protocol_stateful.py`,
+a Hypothesis state machine checking I1 to I3 under random interleavings, per
+runtime and posture; Memory's rows in `tests/backends/memory/test_kernel_cells.py`;
+and the repeated-close cell in both close-posture lanes
+(`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling). The
+`Session` rows have no cell until a `Session` exists. The driver's rows are
+duties its protocols' docstrings state (`remote_store._kernel._async.driver`)
+and nothing checks yet; BK-450 enforces them.

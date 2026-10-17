@@ -1667,9 +1667,7 @@ def test_a_none_read_is_refused_on_every_write_route(runtime: str, route: str) -
     with pytest.raises(TypeError, match="NoneType, not bytes"):
         getattr(run, method)("f", content, overwrite=True)
     if runtime == "async":
-        # The kernel leaves the refused generator suspended (BK-449); left to GC,
-        # its finalizer fires in a later test and fails that one (BUG-335).
-        run_async(content.aclose())
+        assert content.ag_frame is None  # closed by the kernel, not left to GC (BE-033, BUG-335)
     assert sorted(run.store.files) == ["d/f", "f"]  # no temporary left behind
     assert run.store.files["f"].data == b"F"
 

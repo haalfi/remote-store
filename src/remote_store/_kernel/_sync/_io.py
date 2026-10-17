@@ -296,6 +296,14 @@ def guard_content(content: Content) -> Content:
     return cast("BinaryIO", _proxy_type(content)(content))
 
 
+def release_content(content: Content) -> None:
+    """Nothing: sync content is the caller's stream, which the caller may seek or retry with.
+
+    The async twin closes a caller's iterator the kernel abandons; a stream is
+    never the kernel's to close.
+    """
+
+
 def feed(handle: _Writable, content: Content) -> None:
     """Write all of *content* into an open write handle."""
     if isinstance(content, bytes):

@@ -19,6 +19,7 @@ import pytest
 
 from remote_store._capabilities import Capability
 from remote_store._errors import BackendUnavailable
+from remote_store._kernel.aio_backend import AsyncDriverBackend
 from tests.backends.conformance._helpers import _require
 
 if TYPE_CHECKING:
@@ -126,6 +127,20 @@ async def test_close_posture_outranks_root_write_rejection(async_backend: AsyncB
         except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
             error = exc
         assert "is closed" not in str(error)
+
+
+@pytest.mark.spec("BE-033")
+async def test_a_repeated_aclose_keeps_the_posture(async_backend: AsyncBackend) -> None:
+    """Async twin of the sync cell of the same name; another class than one on the kernel is skipped."""
+    if not isinstance(async_backend, AsyncDriverBackend):
+        pytest.skip("BE-033 binds classes on the kernel")
+    await async_backend.aclose()
+    await async_backend.aclose()
+    if async_backend.close_is_terminal:
+        with pytest.raises(BackendUnavailable, match="is closed"):
+            await async_backend.exists(_PROBE)
+    else:
+        assert await async_backend.exists(_PROBE) is False
 
 
 # Every root-reaching read operation, enumerated rather than sampled. See the

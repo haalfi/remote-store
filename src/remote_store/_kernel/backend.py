@@ -204,18 +204,22 @@ class _HandleWriter:
         handle, self._handle = self._handle, None
         assert handle is not None
         if exc is not None:
-            with contextlib.suppress(Exception):
-                handle.abort()
+            self._abort(handle)
             return
         try:
             with self._core._choke(Op.OPEN_ATOMIC, self._key):
                 handle.commit()
         except BaseException as err:
-            with contextlib.suppress(Exception):
-                handle.abort()
+            self._abort(handle)
             if isinstance(err, RemoteStoreError):
                 self._core._write_refused(err, Op.OPEN_ATOMIC, self._key, self._overwrite)
             raise
+
+    def _abort(self, handle: WriteHandle) -> None:
+        try:
+            handle.abort()
+        except Exception as failure:  # noqa: BLE001 - a failed cleanup never masks the first error (BE-033)
+            self._core._cleanup_failed("abort", self._key, failure)
 
 
 class _SpoolThenWrite:

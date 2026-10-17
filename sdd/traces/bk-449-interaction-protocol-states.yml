@@ -115,3 +115,131 @@ phases:
         section: "_SyncBase, _FaultyStream, Fault"
         read_type: reference
         extract: "Fault injection per primitive; unwrap raises TypeError, not CapabilityNotSupported"
+  - id: tests
+    name: Failing cells
+    steps:
+      - file: sdd/backlog/bk-449-interaction-protocol-states.md
+        section: "Plan (approved 2026-10-17)"
+        read_type: gate
+        extract: "Decisions 1 to 12, the subject list and build steps 1 to 9 the build session implements"
+      - file: tests/_kernel/test_kernel.py
+        section: "_WRITE_ROUTES, test_a_none_read_is_refused_on_every_write_route"
+        read_type: reference
+        extract: >-
+          The four write routes to cross, and BUG-335's aclose workaround, which
+          the kernel's own close replaces with an assertion
+      - file: tests/_kernel/test_backend.py
+        section: "test_a_stream_whose_failure_condemned_the_connection_is_not_closed_again"
+        read_type: reference
+        extract: >-
+          The sync SIO-010 cell to mirror in both runtimes; the async fake's
+          generator stream had no observable close, so it became a class
+      - file: tests/backends/memory/test_kernel_cells.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Memory's cell pattern. The first iterator cell passed before the fix
+          because asyncio.run's shutdown finalises leftover generators; the
+          rewritten cell looks inside the loop and failed as it should
+  - id: implement
+    name: Kernel fixes
+    steps:
+      - file: scripts/gen_sync_kernel.py
+        section: "_FIXED, generate"
+        read_type: gate
+        extract: >-
+          A name the async kernel calls on _io must exist in the hand-written
+          sync _io: release_content is a no-op there
+      - file: src/remote_store/_kernel/_sync/_io.py
+        section: "guard_content, feed"
+        read_type: reference
+        extract: "Sync content is a caller stream behind a proxy; nothing to close"
+      - file: src/remote_store/_kernel/_async/driver.py
+        section: "AsyncDriver, AsyncWriteHandle"
+        read_type: reference
+        extract: "Where the five driver duties go; the generated sync twin carries them"
+      - file: tests/aio/test_async_pbt_stateful.py
+        section: "AsyncBackendModel, TestCase markers"
+        read_type: reference
+        extract: >-
+          State-machine pattern and why markers go on the generated TestCase;
+          the protocol machine reuses the fake's loop instead of its own
+  - id: spec
+    name: Spec, model and links
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-020, BE-022, BE-028, BE-030 pipeline and Addressing stays total, BE-032 A.3"
+        read_type: gate
+        extract: "Clauses BE-033 links from in one line; unwrap stays reachable while open, so A.2 and A.3 hold"
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010"
+        read_type: reference
+        extract: "Scoped to a supplied is_fatal; the kernel now honours it in both runtimes"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-006, ASYNC-088"
+        read_type: reference
+        extract: "Where the async timing gap and the adapter's aclose point at BE-033"
+      - file: sdd/backlog/bug-310-closed-stream-read.md
+        section: "Prescription (advisory)"
+        read_type: reference
+        extract: "The ValueError rule is prescribed, not yet in spec 006; BE-033 cites BUG-310 as its owner"
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "§1 to §4"
+        read_type: reference
+        extract: >-
+          Planned home of § 5. BackendContract.dfy includes it, so § 5's names
+          clashed with § 2 (Failed) and its members compiled into the oracle;
+          the model moved to KernelProtocol.dfy, which nothing includes
+      - file: scripts/check_formal_trace.py
+        section: "module docstring (F1 to F3)"
+        read_type: gate
+        extract: >-
+          A Dafny-tagged ID needs a conformance-lane marker: the repeated-close
+          cell in both close-posture lanes supplies it
+      - file: sdd/formal/README.md
+        section: "Operations / Files"
+        read_type: reference
+        extract: "Row for KernelProtocol.dfy"
+  - id: docs
+    name: Guide and backlog
+    steps:
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Steps 5, 6, 8, 9"
+        read_type: reference
+        extract: "Driver duties in behavioural prose, no tracker IDs"
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: >-
+          Partly done: BK-449 to done, the rest under new IDs, linked both ways;
+          gen-backlogid --check --remote found BK-453 on a pushed branch
+      - file: sdd/backlog/bk-450-driver-boundary-enforcement.md
+        section: "Parts"
+        read_type: reference
+        extract: "Where the overwrite-conflict row and the close-failure rule land"
+  - id: verify
+    name: Ripple-check and gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Spec section, New test file, Tracker ID in published prose, Backlog item touched, CHANGELOG entry"
+        read_type: verify
+        extract: >-
+          CHANGELOG stub is the title alone; spec IDs in private kernel
+          docstrings fail check_no_tracker_refs too, so they were removed from the
+          docstrings; # comments keep theirs
+discovery_followups:
+  - BK-454
+  - BK-455
+surprising_ripples:
+  - sdd/formal/KernelProtocol.dfy
+  - scripts/dafny_verify.sh
+  - .github/workflows/ci.yml
+  - tests/backends/conformance/test_close_posture.py
+  - tests/backends/conformance/aio/test_close_posture.py
+  - sdd/BACKLOG-DONE.md
+expected_ripples:
+  - sdd/backlogid.json
+  - src/remote_store/_kernel/_sync/kernel.py
+  - src/remote_store/_kernel/_sync/driver.py
+co_shipped_items:
+  - BK-448

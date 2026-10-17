@@ -7,8 +7,11 @@ imports the driver module, which imports them.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from typing import Protocol, cast
+
+_log = logging.getLogger("remote_store._kernel")
 
 #: What ``get`` returns: the async driver streams chunks.
 ReadStream = AsyncIterator[bytes]
@@ -51,32 +54,61 @@ def _mark(exc: BaseException) -> None:
     exc.__dict__[_FROM_CONTENT] = True
 
 
-async def _marked(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
-    try:
-        iterator = chunks.__aiter__()
-    except Exception as exc:
-        _mark(exc)
-        raise
-    while True:
+class _Marked:
+    """The caller's iterator, its errors marked, each chunk checked; ``aclose`` closes the caller's.
+
+    A class, not a generator: one never started has no ``finally`` to run, and
+    the kernel closes a caller's iterator it abandons before the first chunk too.
+    """
+
+    __slots__ = ("_chunks", "_ended", "_iterator")
+
+    def __init__(self, chunks: AsyncIterator[bytes]) -> None:
+        self._chunks = chunks
+        self._iterator: AsyncIterator[bytes] | None = None
+        self._ended = False
+
+    def __aiter__(self) -> _Marked:
+        return self
+
+    async def __anext__(self) -> bytes:
+        if self._ended:
+            raise StopAsyncIteration
+        if self._iterator is None:
+            try:
+                self._iterator = self._chunks.__aiter__()
+            except Exception as exc:
+                _mark(exc)
+                raise
         try:
-            chunk = await iterator.__anext__()
+            chunk: object = await self._iterator.__anext__()
         except StopAsyncIteration:
-            return
+            self._ended = True
+            raise
         except Exception as exc:
             _mark(exc)
             raise
         if isinstance(chunk, bytearray | memoryview):
             try:
-                chunk = bytes(chunk)
+                return bytes(chunk)
             except Exception as exc:  # a buffer that cannot be read, such as a released memoryview
                 _mark(exc)
                 raise
-        elif not isinstance(chunk, bytes):
+        if not isinstance(chunk, bytes):
             # Not binary: the caller's error, passed through verbatim, never one about the target.
             err = TypeError(f"content iterator yielded {type(chunk).__name__}, not bytes")
             _mark(err)
             raise err
-        yield chunk
+        return chunk
+
+    async def aclose(self) -> None:
+        """Close the caller's iterator unless it was exhausted; one without ``aclose`` is left as it is."""
+        if self._ended:
+            return
+        self._ended = True
+        aclose = getattr(self._iterator if self._iterator is not None else self._chunks, "aclose", None)
+        if aclose is not None:
+            await aclose()
 
 
 def take_content(content: object) -> Content:
@@ -108,7 +140,23 @@ def guard_content(content: Content) -> Content:
     """
     if isinstance(content, bytes | bytearray | memoryview) or not callable(getattr(content, "__aiter__", None)):
         return content
-    return _marked(content)
+    return _Marked(content)
+
+
+async def release_content(content: Content) -> None:
+    """Close the caller's iterator behind *content* if the kernel did not exhaust it.
+
+    Called on every exit of a write route, so a refused chunk, a failed write
+    or a cancel never leaves the caller's iterator suspended for GC to
+    finalise on whatever loop is then current. What its ``aclose`` raises is
+    logged, never raised: it must not replace the error the write raised.
+    """
+    if not isinstance(content, _Marked):
+        return
+    try:
+        await content.aclose()
+    except Exception as exc:  # noqa: BLE001 - logged; the write's own outcome stands
+        _log.warning("cleanup failed: closing the caller's content iterator raised %r", exc)
 
 
 async def feed(handle: _Writable, content: Content) -> None:

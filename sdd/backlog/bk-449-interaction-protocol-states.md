@@ -105,6 +105,30 @@ item; the `Session` state set is fixed in the D3 step-2 PR.
 8. **CHANGELOG** `[Unreleased]`: `- BK-449: ...` (kernel `unwrap` refuses after a terminal close; async caller iterators are closed when abandoned).
 9. **Trace**: a step per read; the `review:` block only at the close, from `hatch run ship-report <PR> --trace-block-only`.
 
+### As built (2026-10-17)
+
+Where the build left the plan above, and why:
+
+- Step 5's model is `sdd/formal/KernelProtocol.dfy`, not `ResourceSafety.dfy`
+  § 5. `BackendContract.dfy` includes `ResourceSafety.dfy`, so § 5 shared the
+  trait's namespace and compiled into the Dafny oracle (`check_dafny_oracle_fresh.py`
+  failed, its `module_.py` diff reporting "444 more diff lines" past those it
+  printed). A file nothing includes adds
+  nothing to the oracle; `scripts/dafny_verify.sh` and CI verify it.
+- Step 3's `_marked` became a class, `_Marked`, with its own `aclose`, not a
+  generator with a `try`/`finally`: a generator never started has no `finally`
+  to run, so it could not close a caller's iterator abandoned before its first
+  chunk (an `open_write` refused, say).
+- The gates (closed guard, key, metadata, content shape) refuse before the
+  kernel takes the caller's iterator, and leave it the caller's; `write` now
+  guards its content before its write checks, as `write_atomic` did, so both
+  routes own the iterator from the same point.
+- Step 7's IDs: BK-453 was already on a pushed branch (`gen-backlogid --check
+  --remote`), so the timing item is BK-454 and the `Session` item BK-455.
+- BE-033's conformance includes a repeated-close cell in both close-posture
+  lanes, scoped to classes on the kernel, so the Dafny tags have a conformance
+  citation (`check_formal_trace.py` F1).
+
 ### Verification
 
 - Step 2's cells fail before step 3 and pass after (`tests/_kernel`, `tests/backends/memory`).
