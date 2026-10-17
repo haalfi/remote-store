@@ -1,0 +1,87 @@
+id: BK-449
+title: "No interaction protocol with states joins `Store`, kernel, driver and `Session`"
+trigger: >-
+  Audit 023 (T20, P0) found the contract stated call by call only: no artifact
+  named the parties' states, the calls legal in each, or the owner of each exit
+  (close, abort, invalidate) on failure and cancellation, and RFC-0017 D5's
+  `Session` was an interface without states, due at D3 step 2.
+source_items:
+  - BK-449
+audience:
+  - library.maintainer
+  - user.api
+decisions:
+  - sdd/decisions/ad497154-50c4-54f3-9b47-d86d1878741d.jsonl
+orient:
+  - items: [BK-450]
+    verdict: constrains
+    evidence: >-
+      Dossier: "every part takes its owners from BK-449's states" and "re-derive
+      it against BK-449's outcome before acting"; its stream-adapter part owns
+      T5's mechanism ("one caught set, a close failure never masking a read
+      failure, `__aiter__` inside the guard"). So BK-449 states the close and
+      fault rules and BK-450 builds the one adapter; the overwrite-conflict
+      mapping to `AlreadyExists` (decided here) is a new row for its
+      driver-duties part. Due after BK-449, before D3 step 2.
+  - items: [BUG-310]
+    verdict: constrains
+    evidence: >-
+      Dossier § Prescription states the read-stream Closed row already:
+      "`read`, `readinto` and `readline` on a closed stream ... raise
+      `ValueError`, and so do `seek` and `tell` ... never a `RemoteStoreError`
+      and never empty data", in spec 006. BK-449's read-stream state table
+      takes that clause rather than a second one; BUG-310 keeps the legacy
+      adapter fixes and its guard-placement decision.
+  - items: [BUG-266, BK-390]
+    verdict: constrains
+    evidence: >-
+      BUG-266 asks for SFTP's failure-to-arm map, placed at D3 step 6; BK-390
+      maps "SFTP-010's connection tiers become D5's `Session`" to step 6. Both
+      bind the deferred `Session` state set and decision 7's transport-level
+      `connection_dead`, not this item's session-less scope.
+  - items: [BUG-293]
+    verdict: unrelated
+    evidence: >-
+      Index entry: Azure's legacy arms re-type an already-typed error; a
+      classifier pass-through, no state or exit owner changes.
+  - items: [BK-446, BK-438]
+    verdict: unrelated
+    evidence: >-
+      BK-446 is `glob` driver coverage and BK-438 flat-key decoding (index
+      entries); both share BE-030's key rule, not its closed guard or any
+      lifecycle.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-449-interaction-protocol-states.md
+        section: "(full)"
+        read_type: gate
+        extract: "State sets, call-by-state meanings, exit owners, where stated and checked"
+      - file: sdd/audits/audit-023-kernel-migration-readiness.md
+        section: "T5, T11, T20, P0, P1, Lower-ranked"
+        read_type: gate
+        extract: "Measured symptoms per transition and P1's owner table that leans on P0"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D3, D5"
+        read_type: gate
+        extract: "Session lands at step 2 with S3Boto3; interface is run, invalidate, connect_context"
+        outcome: unclear
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-020, BE-022"
+        read_type: reference
+        extract: "Close posture is a class declaration; non-terminal stays usable; unwrap states no closed posture"
+      - file: sdd/backlog/bk-450-driver-boundary-enforcement.md
+        section: "(full)"
+        read_type: gate
+        extract: "Which parts BK-450 builds on BK-449's owners"
+      - file: sdd/backlog/bug-310-closed-stream-read.md
+        section: "Prescription (advisory)"
+        read_type: reference
+        extract: "Read-after-close clause to adopt for the stream Closed state"
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "write route (commit/abort), aclose, _guard"
+        read_type: reference
+        extract: >-
+          Commit failure already aborts (BaseException); the abort's own failure is
+          suppressed without a log; `_closed` never resets
