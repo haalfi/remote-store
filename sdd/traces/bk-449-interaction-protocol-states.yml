@@ -270,6 +270,18 @@ phases:
           (rerun on _io.py: 20/20). The 14 left, per the first run's JSON report,
           are non-protocol backend.py code
           (_RangeReader, _HandleStream, _SPOOL_MAX); kernel.py was not mutated
+      - file: scripts/gen_python_support.py
+        section: "module docstring, assert_renderable"
+        read_type: reference
+        extract: >-
+          The house shape for a generated Mermaid block: --check in preflight and
+          docs-gate, no bare %% line, and a parse is no proof of a render
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-033 generated kernel_protocol block, rendered with mermaid 11.4.1 in Chromium"
+        read_type: verify
+        extract: >-
+          Every fence parsed, yet a screenshot showed `;` in a merged label drawn as
+          stray states; labels now join with <br/> and the generator refuses `;`
 discovery_followups:
   - BK-454
   - BK-455
@@ -287,6 +299,9 @@ surprising_ripples:
   - tests/scripts/test_fast_gate.py
   - scripts/mutate_scopes.py
   - tests/scripts/test_mutate_scopes.py
+  - scripts/gen_protocol_diagram.py
+  - tests/scripts/test_gen_protocol_diagram.py
+  - pyproject.toml
 expected_ripples:
   - sdd/backlogid.json
   - src/remote_store/_kernel/_sync/kernel.py

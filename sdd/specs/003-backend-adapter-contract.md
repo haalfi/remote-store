@@ -2117,6 +2117,60 @@ what the compiled `KernelExit` or `KernelStep` computes from the state at the
 exit, so I1 to I3 hold of the code to the extent that suite's stated mapping
 from the fake driver's records onto the model's states is faithful.
 
+**The model drawn.** The diagrams below are enumerated from the same compiled
+model, over its whole input space; `hatch run gen-protocol-diagram` rewrites
+them after the oracle is rebuilt, and `preflight` fails while they are stale.
+
+<!-- BEGIN_GENERATED:kernel_protocol -->
+Generated from the compiled model by `scripts/gen_protocol_diagram.py`; do not edit by hand.
+
+The backend under `KernelStep`, each edge a call / its answer:
+
+```mermaid
+stateDiagram-v2
+  state Reusable {
+    [*] --> Reusable_BOpen
+    Reusable_BOpen --> Reusable_BClosed : CloseCall / Done
+    Reusable_BOpen --> Reusable_BOpen : LiveCall / Done
+    Reusable_BClosed --> Reusable_BClosed : CloseCall / Done<br/>LiveCall / Done
+  }
+  state Terminal {
+    [*] --> Terminal_BOpen
+    Terminal_BOpen --> Terminal_BClosed : CloseCall / Done
+    Terminal_BOpen --> Terminal_BOpen : LiveCall / Done
+    Terminal_BClosed --> Terminal_BClosed : CloseCall / Done<br/>LiveCall / Unavailable
+  }
+```
+
+Each resource under `KernelExit`, each edge labelled with the exits that make it; an exit not drawn
+leaves the resource as it was:
+
+Stream:
+
+```mermaid
+stateDiagram-v2
+  SOpen --> SClosed : Success, GateRefused, Faulted(dead=False), Cancelled
+  SOpen --> SReleased : Faulted(dead=True)
+```
+
+Handle:
+
+```mermaid
+stateDiagram-v2
+  HOpen --> HAborted : Faulted(dead=False), Faulted(dead=True), Cancelled
+  HOpen --> HCommitted : Success
+```
+
+Iterator:
+
+```mermaid
+stateDiagram-v2
+  ISuspended --> IClosed : Faulted(dead=False), Faulted(dead=True), Cancelled with aclose
+  ISuspended --> IExhausted : Success
+  IUnstarted --> IExhausted : Success
+```
+<!-- END_GENERATED:kernel_protocol -->
+
 **Conformance:** `tests/_kernel/test_protocol.py`, a cell per kernel- and
 caller-owned row of the tables above over the fake driver, both runtimes
 (the `Session`, driver and *not yet met* rows excepted, below); `tests/_kernel/test_protocol_stateful.py`,

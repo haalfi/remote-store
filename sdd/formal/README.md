@@ -535,7 +535,10 @@ beside it, and `KernelProtocol.py` imports it; on `sys.path` or cached in
 `sys.modules`, that stub shadows the first oracle's `module_` for any later
 import. So the suite puts `KernelProtocol-py/` on `sys.path` for its own import
 only, then removes it and restores `sys.modules["module_"]`, and a cell pins
-both.
+both. `scripts/gen_protocol_diagram.py` imports it the same way to draw spec
+003 BE-033's state diagrams from `KernelStep` and `KernelExit`, so after
+rebuilding this oracle run `hatch run gen-protocol-diagram` too, or
+`preflight` fails on the stale block.
 
 **Regenerating the compiled output.** Ghost-only changes (lemmas,
 invariants, ghost variables, postconditions) erase at compile time and
