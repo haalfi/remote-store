@@ -317,14 +317,14 @@ expected_ripples:
   - src/remote_store/_kernel/_sync/kernel.py
   - src/remote_store/_kernel/_sync/driver.py
 review:
-  # Derived by `hatch run ship-report 1159 --trace-block-only` at head e9cca68.
+  # Derived by `hatch run ship-report 1159 --trace-block-only` at head 53f85f7.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1159 --trace-block-only"
   pr: 1159
-  review_rounds: 17
-  submissions: 11
-  findings: 37
+  review_rounds: 23
+  submissions: 14
+  findings: 45
   by_round:
     - round: 1
       findings: 1
@@ -381,21 +381,38 @@ review:
       origin: {loop-introduced: 3}
       triage: {must-fix: 3}
       duration_hours: 1.18
+    - round: 12
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.96
+    - round: 13
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.34
+    - round: 14
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.14
   by_file:
     - path: "sdd/specs/003-backend-adapter-contract.md"
-      findings: 12
+      findings: 14
     - path: "sdd/formal/KernelProtocol.dfy"
+      findings: 4
+    - path: ".github/workflows/ci.yml"
+      findings: 3
+    - path: "sdd/formal/README.md"
       findings: 3
     - path: "scripts/gen_protocol_diagram.py"
       findings: 2
-    - path: "sdd/formal/README.md"
+    - path: "sdd/BACKLOG.md"
       findings: 2
     - path: "src/remote_store/_kernel/_async/kernel.py"
       findings: 2
     - path: "tests/_kernel/test_protocol_oracle.py"
       findings: 2
-    - path: ".github/workflows/ci.yml"
-      findings: 1
     - path: "docs-src/guides/custom-backend-guide.md"
       findings: 1
     - path: "scripts/check_dafny_oracle_fresh.py"
@@ -429,7 +446,6 @@ review:
     - "scripts/dafny_verify.sh"
     - "scripts/mutate_scopes.py"
     - "sdd/BACKLOG-DONE.md"
-    - "sdd/BACKLOG.md"
     - "sdd/GATE-INVENTORY.md"
     - "sdd/backlog/bk-450-driver-boundary-enforcement.md"
     - "sdd/backlog/bk-454-refusal-timing-read-handle.md"
@@ -491,4 +507,16 @@ review:
       subject: "BK-449: File BK-457, a spec ADR from recipes to declarative invariants, ahead of BK-456"
     - sha: "e9cca68"
       subject: "BK-449: File Gemini's review into BK-457 and BK-450"
+    - sha: "8500728"
+      subject: "BK-449: Trace records the review loop at close"
+    - sha: "f3d4cab"
+      subject: "BK-449: Closing-round fixes: a success closes an iterator its driver left suspended; oracle coverage enumerated; BK-456 figures re-measured"
+    - sha: "8dec5a0"
+      subject: "BK-449: BK-450 records the unstated duty that a successful put consumed all content"
+    - sha: "e887a48"
+      subject: "BK-449: Narrow-round fixes: oracle coverage points at its case builders; last whole-space claims narrowed; BK-456 shares left to the dossier"
+    - sha: "08827e1"
+      subject: "BK-449: BK-456 gives the sizing command instead of copied line counts"
+    - sha: "53f85f7"
+      subject: "BK-449: Final-pass fix: CI comment names the case builders; BK-456 and BK-457 give commands, not copied counts"
   ci: {verdict: GREEN, failed: 0, pending: 0}
