@@ -15,13 +15,13 @@ specification; and the kernel protocol scoped to lifecycles. The maintainer's
 choices, recorded in `sdd/decisions/062e5181-cc50-5b17-963f-e9da78bad8ee.jsonl`:
 "ADR first, then BK-456", and "Lemma governs where it exists".
 
-**Evidence, measured at BK-449's branch head, 2026-10-17.**
+**Evidence, checked at BK-449's branch head, 2026-10-17.**
 
 - Mechanism in the spec: `git grep -n -i "probe set" sdd/specs/003-backend-adapter-contract.md`
-  hits BE-032 (lines 1605 to 2002 at that head), which prescribes the probe set,
-  what follows a refusal in it per call, and a table of which `stat` runs when.
-  BE-021 is 557 lines, much of it per-backend remapping that is each driver's
-  `classify`.
+  hits BE-032, which prescribes the probe set, what follows a refusal in it per
+  call, and a table of which `stat` runs when. BE-021, one of the spec's largest
+  sections (BK-456 gives the sizing command), is mostly per-backend remapping
+  that is each driver's `classify`.
 - Profiles exist unnamed: BE-032's probe table has a hierarchical / flat
   column, and the kernel branches on `_flat`.
 - The authority order today: `sdd/000-process.md` Rule 3 ("Specs are

@@ -19,13 +19,13 @@ The Store Tree on the Kernel and BE-033 Interaction Protocol on the Kernel,
 then BE-030, BE-008 and BE-031; the CAP- sections and most BE- operation
 sections are short.
 
-**The ripple, measured the same day.** `git grep -l
-"003-backend-adapter-contract"` outside `sdd/decisions`, `sdd/traces` and
-`sdd/research` names 45 files (specs, RFCs, ADRs, the custom-backend guide,
-`scripts/gen_graph.py` and `scripts/gen_protocol_diagram.py`, two `src/`
-modules, `docs-src/_data/graph/graph.json`). Anchored links
-(`003-backend-adapter-contract.md#`) sit in 15 of them. Re-run both before
-planning: the split must move every anchor a section takes with it.
+**The ripple.** `git grep -l "003-backend-adapter-contract"` outside
+`sdd/decisions`, `sdd/traces` and `sdd/research` names the files that cite the
+spec: specs, RFCs, ADRs, the custom-backend guide, `scripts/gen_graph.py` and
+`scripts/gen_protocol_diagram.py`, `src/` modules and
+`docs-src/_data/graph/graph.json`. `git grep -l
+"003-backend-adapter-contract.md#"` narrows them to anchored links. Run both
+before planning: the split must move every anchor a section takes with it.
 
 **Order.** BK-457's ADR first (the maintainer's choice, same decision log:
 "ADR first, then BK-456"), then this split, then a prune of each new file

@@ -764,7 +764,8 @@ jobs:
       - name: Run the compiled oracle's tests and conformance lanes
         run: pytest tests/backends/dafny tests/backends/conformance -k dafny -q
       # The second oracle, sdd/formal/KernelProtocol-py/, drives the kernel through
-      # the exits BE-033 names, and spec 003's diagrams are drawn from it;
+      # the exits its case builders enumerate (spec 003 BE-033), and spec 003's
+      # diagrams are drawn from it;
       # same reason as above (BK-449): an sdd/-only rebuild reaches only this job.
       - name: Run the kernel against the compiled protocol oracle
         run: pytest tests/_kernel/test_protocol_oracle.py tests/scripts/test_gen_protocol_diagram.py -q
