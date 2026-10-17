@@ -825,13 +825,20 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
+- [ ] **BK-457 — Specs prescribe how a check runs where they should state what the caller observes**
+  spec: — · effort: M · audience: library.maintainer, contributor.process
+  Spec 003 mandates mechanisms (BE-032's probe set and probe table, BE-021's per-backend
+  remapping) beside its boundary invariants, and nothing says which a spec owes. An ADR
+  fixes it: postconditions and error precedence, not recipes; named profiles; wire counts
+  as a per-profile cost; a Dafny lemma governs where one exists (Rule 7 extended). BK-456
+  follows it. Detail: [dossier](backlog/bk-457-declarative-spec-adr.md)
+
 - [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split by layer**
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
-  2,191 lines over 46 sections; BE-021, BE-029, BE-032 and BE-033 hold 63% of them, and
-  PR #1159's review rounds kept finding clauses of one section contradicting another. Split,
-  move-only, into four files: 003 keeps the capabilities and the per-operation contract, and
-  error mapping (BE-021), root path (BE-029) and the contract kernel (BE-030 to BE-033) get
-  their own; IDs keep their BE- prefix. After BK-449 merges. Open decision: the new numbers.
+  2,191 lines over 46 sections, 63% in BE-021, BE-029, BE-032 and BE-033; PR #1159's
+  rounds kept finding one section contradicting another. Split into four files (003, error
+  mapping, root path, contract kernel; IDs keep their BE- prefix), each then pruned against
+  BK-457's ADR. After BK-449 and BK-457. Open decision: the new numbers.
   Detail: [dossier](backlog/bk-456-split-spec-003.md)
 
 - [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**
