@@ -764,6 +764,12 @@ filterwarnings = [
   # third-party deprecation, not a first-party one; message-scoped because the
   # raising module varies by the sshfs version pip resolves. BUG-230.
   "ignore:datetime.datetime.utcfromtimestamp:DeprecationWarning",
+  # pytest-gremlins 1.11.4 starts its coverage pre-scan through its own module,
+  # so pytest finds the plugin already imported and cannot rewrite its asserts.
+  # Fatal here, that warning left the pre-scan with no coverage and every gremlin
+  # ran its scope's full test set. Scoped to that one module; pinned by
+  # tests/scripts/test_run_mutate.py. BUG-336.
+  "ignore:Module already imported so cannot be rewritten; pytest_gremlins$:pytest.PytestAssertRewriteWarning",
 ]
 asyncio_mode = "auto"
 markers = [
