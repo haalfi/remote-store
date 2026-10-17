@@ -474,7 +474,7 @@ Requires `Capability.GLOB`.
 
 Parameters:
 
-- **`pattern`** (`str`) – Glob pattern (e.g. "data/\*\*/\*.parquet").
+- **`pattern`** (`str`) – Glob pattern (e.g. "data/\*\*/\*.parquet"), read as a path is: "/data/\*.csv" and "./data//\*.csv" mean "data/\*.csv".
 
 Returns:
 
@@ -483,6 +483,7 @@ Returns:
 Raises:
 
 - `CapabilityNotSupported` – If the backend lacks GLOB.
+- `InvalidPath` – If pattern holds a .. segment or a null byte.
 
 Requires `Capability.GLOB`
 

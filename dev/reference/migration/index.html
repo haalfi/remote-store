@@ -11807,6 +11807,21 @@ including an object that only has <code>.items()</code>. Called directly,
 directly, outside a <code>Store</code>,
 are unchanged. Pass <code>None</code> (the default) or <code>{}</code> for no metadata, and a
 <code>dict</code> or another mapping otherwise.</p>
+<p><strong>A glob pattern is read the way a path is:</strong></p>
+<p><code>Store.glob()</code>, <code>AsyncStore.glob()</code> and <code>ext.glob.glob_files()</code> read a pattern
+as they read a path, so <code>"/data/*.csv"</code>, <code>"./data/*.csv"</code> and <code>"data//*.csv"</code>
+all match what <code>"data/*.csv"</code> matches, on every backend and under every
+<code>root_path</code>. A pattern holding a <code>..</code> segment or a null byte now raises
+<code>InvalidPath</code> on every backend, before anything is listed. What such a
+pattern did before depended on the backend, the <code>root_path</code> and where in the
+pattern the segment sat: some matched nothing (for example <code>"*/../a.csv"</code>, or
+<code>"../*.csv"</code> on <code>LocalBackend</code>), some already raised <code>InvalidPath</code>, and on
+<code>LocalBackend</code> a null byte could raise Python's own <code>ValueError</code>, which
+<code>InvalidPath</code> is not a subclass of. If you pass user-supplied patterns and
+treated an empty result as "no match", validate them first or catch
+<code>InvalidPath</code>; replace an <code>except ValueError</code> around <code>glob</code> with
+<code>except InvalidPath</code>. Separately, <code>"*.csv"</code> no longer matches a key that ends
+in a newline after <code>.csv</code>.</p>
 <p><strong>For backend authors: a backend is now written as a driver:</strong></p>
 <p><code>remote_store.drivers</code> is new. A custom backend is now documented as a
 <em>driver</em>, a class implementing your storage system's primitives, wrapped in

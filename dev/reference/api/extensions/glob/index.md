@@ -39,6 +39,10 @@ Returns:
 
 - `Iterator[FileInfo]` – Iterator of matching FileInfo objects.
 
+Raises:
+
+- `InvalidPath` – If pattern holds a .. segment or a null byte.
+
 ## See also
 
 - [Glob Pattern Matching](https://docs.remotestore.dev/stable/guides/glob-pattern-matching/index.md) — guide to portable glob patterns

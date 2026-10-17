@@ -2715,6 +2715,8 @@ When the backend supports `Capability.GLOB`, `glob_files` delegates to the nativ
 
 `**` must be a complete path segment (`**/`, `/**`, or the entire pattern). Patterns like `**error` where `**` is embedded within a segment raise `ValueError`.
 
+A pattern is read the way a path is, on every backend: `"/data/*.csv"`, `"./data/*.csv"` and `"data//*.csv"` all mean `"data/*.csv"`, and a `..` segment raises `InvalidPath`. Unlike a path, a pattern keeps a backslash as written instead of turning it into `/`, and a pattern that names the store root (`""`, `"/"`, `"."`) matches nothing instead of raising. Wildcards treat a newline in a key as an ordinary character, so `"*.csv"` matches `"a.csv"` but not `"a.csv\n"`.
+
 ## Works with Store.child()
 
 All glob operations work correctly through `Store.child()` path scoping:
@@ -12303,7 +12305,7 @@ Requires `Capability.GLOB`.
 
 Parameters:
 
-- **`pattern`** (`str`) – Glob pattern (e.g. "data/\*\*/\*.parquet").
+- **`pattern`** (`str`) – Glob pattern (e.g. "data/\*\*/\*.parquet"), read as a path is: "/data/\*.csv" and "./data//\*.csv" mean "data/\*.csv".
 
 Returns:
 
@@ -12312,6 +12314,7 @@ Returns:
 Raises:
 
 - `CapabilityNotSupported` – If the backend lacks GLOB.
+- `InvalidPath` – If pattern holds a .. segment or a null byte.
 
 Requires `Capability.GLOB`
 
@@ -14271,7 +14274,7 @@ Requires `Capability.GLOB`. Validation (capability check) happens eagerly on cal
 
 Parameters:
 
-- **`pattern`** (`str`) – Glob pattern (e.g. "data/\*\*/\*.parquet").
+- **`pattern`** (`str`) – Glob pattern (e.g. "data/\*\*/\*.parquet"), read as a path is: "/data/\*.csv" and "./data//\*.csv" mean "data/\*.csv".
 
 Returns:
 
@@ -14280,6 +14283,7 @@ Returns:
 Raises:
 
 - `CapabilityNotSupported` – If the backend lacks GLOB.
+- `InvalidPath` – If pattern holds a .. segment or a null byte.
 
 Requires `Capability.GLOB`
 
@@ -18938,6 +18942,10 @@ Returns:
 
 - `Iterator[FileInfo]` – Iterator of matching FileInfo objects.
 
+Raises:
+
+- `InvalidPath` – If pattern holds a .. segment or a null byte.
+
 ## See also
 
 - [Glob Pattern Matching](https://docs.remotestore.dev/stable/guides/glob-pattern-matching/index.md) — guide to portable glob patterns
@@ -20331,6 +20339,10 @@ When the folder could not be read, `list_files()`, `list_folders()` and `iter_ch
 **`metadata=` must be `None` or a mapping:**
 
 Every `Store` and `AsyncStore` call that takes `metadata=`, such as `write()`, `write_atomic()` and `write_text()`, and `write_with_hash()` and `open_atomic_with_hash()`, took an empty non-mapping such as `[]`, `()`, `0` or `""` for no metadata and wrote the file. They now raise `ValueError` and write nothing, for every value that is not a `collections.abc.Mapping`, including an object that only has `.items()`. Called directly, `MemoryBackend` and `AsyncMemoryBackend` also stored a list of pairs such as `[("k", "v")]` as a dict; they refuse it too, as does a backend you build on `DriverBackend` or `AsyncDriverBackend`. Other backend classes called directly, outside a `Store`, are unchanged. Pass `None` (the default) or `{}` for no metadata, and a `dict` or another mapping otherwise.
+
+**A glob pattern is read the way a path is:**
+
+`Store.glob()`, `AsyncStore.glob()` and `ext.glob.glob_files()` read a pattern as they read a path, so `"/data/*.csv"`, `"./data/*.csv"` and `"data//*.csv"` all match what `"data/*.csv"` matches, on every backend and under every `root_path`. A pattern holding a `..` segment or a null byte now raises `InvalidPath` on every backend, before anything is listed. What such a pattern did before depended on the backend, the `root_path` and where in the pattern the segment sat: some matched nothing (for example `"*/../a.csv"`, or `"../*.csv"` on `LocalBackend`), some already raised `InvalidPath`, and on `LocalBackend` a null byte could raise Python's own `ValueError`, which `InvalidPath` is not a subclass of. If you pass user-supplied patterns and treated an empty result as "no match", validate them first or catch `InvalidPath`; replace an `except ValueError` around `glob` with `except InvalidPath`. Separately, `"*.csv"` no longer matches a key that ends in a newline after `.csv`.
 
 **For backend authors: a backend is now written as a driver:**
 

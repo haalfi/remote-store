@@ -12015,9 +12015,23 @@ as GLOB-004.</p>
 <strong>Parameters:</strong> <code>pattern</code> is a glob pattern relative to the store root.
 <strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend lacks <code>Capability.GLOB</code>.</p>
 <h3 id="glob-007-storeglob-path-scoping">GLOB-007: Store.glob() Path Scoping<a class="headerlink" href="#glob-007-storeglob-path-scoping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Store prepends <code>root_path</code> to the pattern before delegating to
-<code>Backend.glob()</code>. Returned <code>FileInfo.path</code> values are rebased to store-relative
-(same as <code>list_files</code>).</p>
+<p><strong>Invariant:</strong> Store reads the pattern as spec 004 reads a path, then
+prepends <code>root_path</code> before delegating to <code>Backend.glob()</code>. Leading <code>/</code>, empty
+and <code>.</code> segments are dropped (PATH-004 to PATH-006). Three departures from
+spec 004: a trailing <code>/</code> is kept, since in a pattern it selects folders only; a
+<code>\</code> is kept as written rather than turned into <code>/</code> (PATH-002; open under
+BK-447); and a pattern that normalises to the root yields nothing, without
+reaching the backend, rather than raising (PATH-008). Returned <code>FileInfo.path</code>
+values are rebased to store-relative (same as <code>list_files</code>).
+<strong>Raises:</strong> <code>InvalidPath</code> for a <code>..</code> segment or a null byte (PATH-003,
+PATH-007).
+<strong>Rationale:</strong> A pattern is a predicate over Keys, and no Key has a leading
+<code>/</code> or an empty segment (spec 051 TREE-011), so those spellings name only what
+the canonical one names. Spec 051 admits <code>.</code> as a name; dropping a <code>.</code> segment
+is spec 004's input reading (PATH-006), which spec 051 § Layering assigns the
+mapping from input strings to Keys. Normalising here makes <code>"/d/*.csv"</code>
+mean <code>"d/*.csv"</code> under every <code>root_path</code>, as <code>read</code> and <code>list_files</code> already
+do; joining the raw pattern made the answer depend on the root (BK-405).</p>
 <h3 id="glob-008-storeglob-capability-gating">GLOB-008: Store.glob() Capability Gating<a class="headerlink" href="#glob-008-storeglob-capability-gating" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>Store.glob()</code> calls <code>capabilities.require(Capability.GLOB)</code>
 before delegating. If the backend lacks GLOB, the caller should use
@@ -12033,9 +12047,11 @@ relative to the store root.</p>
 <code>glob_files</code> delegates entirely to <code>store.glob(pattern)</code>.</p>
 <h3 id="glob-011-client-side-fallback">GLOB-011: Client-Side Fallback<a class="headerlink" href="#glob-011-client-side-fallback" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When <code>store.supports(Capability.GLOB)</code> is <code>False</code>,
-<code>glob_files</code> extracts the longest non-wildcard directory prefix from the
-pattern, calls <code>store.list_files(prefix, recursive=...)</code>, and filters
-results client-side against the compiled pattern.</p>
+<code>glob_files</code> normalises the pattern as GLOB-007 does, raising the same
+<code>InvalidPath</code>, then extracts the longest non-wildcard directory prefix from
+it, calls <code>store.list_files(prefix, recursive=...)</code>, and filters results
+client-side against the compiled pattern. Both tiers therefore answer one
+pattern spelling alike.</p>
 <h3 id="glob-012-prefix-extraction">GLOB-012: Prefix Extraction<a class="headerlink" href="#glob-012-prefix-extraction" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The prefix is the longest sequence of leading path segments
 that contain no wildcard characters (<code>*</code>, <code>?</code>, <code>[</code>). For <code>data/2024/*.csv</code>
@@ -12061,8 +12077,10 @@ directory levels.</p>
 <p><code>**</code> must be a complete path segment (<code>**/</code>, <code>/**</code>, or the entire pattern).
 Patterns like <code>**error</code> where <code>**</code> is embedded within a segment raise
 <code>ValueError</code>.</p>
-<p>The regex is anchored (<code>^...$</code>) and matched against the full store-relative
-path of each <code>FileInfo</code>.</p>
+<p>The regex is anchored at both ends (<code>^...\Z</code>, never <code>$</code>, which also matches
+before one final newline) and matched against the full store-relative path of
+each <code>FileInfo</code>. A newline is an ordinary key character: <code>*</code> and <code>?</code> match
+it through <code>[^/]</code>, and <code>**</code> through <code>.</code>, which is compiled to cross newlines.</p>
 <h3 id="glob-015-no-backend-coupling">GLOB-015: No Backend Coupling<a class="headerlink" href="#glob-015-no-backend-coupling" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>glob_files</code> operates exclusively through the public <code>Store</code>
 API (<code>supports</code>, <code>glob</code>, <code>list_files</code>). It never accesses <code>store._backend</code>

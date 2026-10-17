@@ -11668,6 +11668,12 @@ client-side using a regex compiled from the pattern.</p>
 <p><code>**</code> must be a complete path segment (<code>**/</code>, <code>/**</code>, or the entire pattern).
 Patterns like <code>**error</code> where <code>**</code> is embedded within a segment raise
 <code>ValueError</code>.</p>
+<p>A pattern is read the way a path is, on every backend: <code>"/data/*.csv"</code>,
+<code>"./data/*.csv"</code> and <code>"data//*.csv"</code> all mean <code>"data/*.csv"</code>, and a <code>..</code>
+segment raises <code>InvalidPath</code>. Unlike a path, a pattern keeps a backslash as
+written instead of turning it into <code>/</code>, and a pattern that names the store
+root (<code>""</code>, <code>"/"</code>, <code>"."</code>) matches nothing instead of raising. Wildcards treat a newline in a key as an
+ordinary character, so <code>"*.csv"</code> matches <code>"a.csv"</code> but not <code>"a.csv\n"</code>.</p>
 <h2 id="works-with-storechild">Works with Store.child()<a class="headerlink" href="#works-with-storechild" title="Permanent link">&para;</a></h2>
 <p>All glob operations work correctly through <code>Store.child()</code> path scoping:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">MemoryBackend</span><span class="p">())</span>
