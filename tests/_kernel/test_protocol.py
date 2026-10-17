@@ -355,6 +355,25 @@ def test_a_temporary_never_written_is_no_failed_cleanup(runtime: str, caplog: py
     assert sorted(store.files) == ["f"]
 
 
+@pytest.mark.spec("BE-033", "BE-021")
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_a_temporary_in_a_vanished_container_is_no_failed_cleanup(
+    runtime: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    # The container goes with the failed put: the delete's error is one container_absent answers yes for.
+    store = _store()
+    run = make_kernel(runtime, store, **_ROUTES["write_atomic-rename"])
+
+    def vanish() -> None:
+        store.container = False
+
+    store.fault("put", FakeOdd("refused"), hook=vanish)
+    with caplog.at_level("WARNING", logger="remote_store._kernel"), pytest.raises(RemoteStoreError):
+        run.write_atomic("g", b"G")
+    assert store.called("delete")  # the cleanup ran and met the absent container
+    assert _abort_warnings(caplog) == []
+
+
 @pytest.mark.spec("BE-033")
 @pytest.mark.parametrize("failure", ["body", "commit"])
 def test_open_atomic_logs_a_failed_abort_and_raises_the_first_error(

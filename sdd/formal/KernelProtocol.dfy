@@ -130,6 +130,7 @@ datatype KernelResources = KernelResources(stream: KernelStreamState, handle: Wr
 // leaves it IUnstarted, the caller's to retry with.
 method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool) returns (after: KernelResources)
   requires before.stream in {SOpen, SClosed}
+  requires before.iter != IClosed   // only the kernel's own aclose, after the exit, closes it
   requires exit == GateRefused ==> before.handle == HNone && before.iter == IUnstarted
   ensures before.stream == SOpen ==>
             after.stream == (if exit == Faulted(true) then SReleased else SClosed)
@@ -172,6 +173,7 @@ predicate KernelClean(r: KernelResources, closable: bool)
 method CleanupOnEveryExit(exit: KernelExitPath, before: KernelResources, closable: bool)
   returns (after: KernelResources)
   requires before.stream in {SOpen, SClosed}
+  requires before.iter != IClosed
   requires exit == GateRefused ==> before.handle == HNone && before.iter == IUnstarted
   ensures KernelClean(after, closable)
   // @spec BE-033

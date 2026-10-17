@@ -131,7 +131,7 @@ def _resources(kp) -> dict[str, list[str]]:
     # KernelExit's `requires`, restated: the compiled Python does not check them.
     streams = [s for s in _constructors(kp.KernelStreamState) if _name(s) in ("SOpen", "SClosed")]
     handles = _constructors(kp.WriteHandleState)
-    iters = _constructors(kp.CallerIterState)
+    iters = [i for i in _constructors(kp.CallerIterState) if _name(i) != "IClosed"]
     # (resource, before, after) -> exit label -> the `closable` values that take the edge
     edges: dict[tuple[str, str, str], dict[str, set[bool]]] = {}
     for exit_path in _exits(kp):

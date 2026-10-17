@@ -71,14 +71,16 @@ def test_the_resource_edges_are_the_models_cleanup(gen):
 
 
 def test_the_domain_is_every_constructor_the_preconditions_admit(gen):
-    """Derived from the compiled datatypes, not hand-listed: a closed iterator a write then
-    exhausts is an admitted input, and its edge is drawn."""
+    """Derived from the compiled datatypes, not hand-listed, then filtered by KernelExit's requires:
+    an exhausted iterator is an admitted before-state, a closed one is not (only the kernel's own
+    aclose, after the exit, closes it)."""
     kp = gen._oracle()
     states = {type(value).__name__ for value in gen._constructors(kp.CallerIterState)}
     assert states == {f"CallerIterState_{s}" for s in ("IUnstarted", "ISuspended", "IExhausted", "IClosed")}
     assert len(gen._exits(kp)) == 5  # Success, GateRefused, Faulted(False), Faulted(True), Cancelled
-    lines = {line.strip() for line in gen.render().splitlines()}
-    assert "IClosed --> IExhausted : Success" in lines
+    lines = [line.strip() for line in gen.render().splitlines()]
+    assert not [line for line in lines if line.startswith("IClosed -->")]
+    assert "ISuspended --> IExhausted : Success" in lines
 
 
 def test_a_semicolon_in_a_line_is_refused(gen):

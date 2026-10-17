@@ -2027,7 +2027,7 @@ meet. A row marked *not yet met* names the item that builds it.
 | Party | States | Leaves a state by |
 |---|---|---|
 | backend | Open, Closed | `close`/`aclose`; nothing leaves Closed: under `close_is_terminal = False` the driver re-initialises on the next call and the backend stays Closed (BE-020) |
-| read stream | Open, Exhausted, Failed, Closed | reading to the end, a mapped stream error, `close`/`aclose` |
+| read stream | Open, Exhausted, Failed, Closed, Released | reading to the end, a mapped stream error, `close`/`aclose`; a Failed stream whose error `connection_dead` condemns is Released, let go without a close (the model's `SReleased`) |
 | write handle (`open_write`) | Open, Committed, Aborted | `commit`; `abort` on any exception |
 | listing | Not started, Paging, Done, Failed | the first `next`, the last page, a refusal |
 | caller's async content iterator | Unstarted, Suspended, Exhausted, Closed | each chunk the kernel takes; its end; the kernel's `aclose` |
@@ -2172,7 +2172,6 @@ Iterator:
 
 ```mermaid
 stateDiagram-v2
-  IClosed --> IExhausted : Success
   ISuspended --> IClosed : Faulted(dead=False), Faulted(dead=True), Cancelled with aclose
   ISuspended --> IExhausted : Success
   IUnstarted --> IExhausted : Success
