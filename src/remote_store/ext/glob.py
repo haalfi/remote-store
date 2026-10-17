@@ -27,6 +27,7 @@ from remote_store import Capability
 from remote_store._glob import (  # private: _glob is the implementation module; ext.glob is its public face
     extract_prefix,
     needs_recursive,
+    normalize_pattern,
     pattern_to_regex,
 )
 
@@ -54,12 +55,17 @@ def glob_files(store: Store, pattern: str) -> Iterator[FileInfo]:
 
     Returns:
         Iterator of matching ``FileInfo`` objects.
+
+    Raises:
+        InvalidPath: If *pattern* holds a ``..`` segment or a null byte.
     """
     if store.supports(Capability.GLOB):
         yield from store.glob(pattern)
         return
 
-    # Fallback: list + client-side filter
+    # Fallback: list + client-side filter, over the pattern Store.glob would see.
+    # A root pattern normalises to "", whose regex no file key matches.
+    pattern = normalize_pattern(pattern)
     prefix = extract_prefix(pattern)
     recursive = needs_recursive(pattern)
     compiled = pattern_to_regex(pattern)

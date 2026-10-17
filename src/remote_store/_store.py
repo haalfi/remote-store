@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath, NotFound
+from remote_store._glob import normalize_pattern
 from remote_store._models import FolderEntry, FolderInfo, WriteResult, _known_modified_at
 from remote_store._path import RemotePath
 
@@ -581,17 +582,23 @@ class Store:
         Requires ``Capability.GLOB``.
 
         Args:
-            pattern: Glob pattern (e.g. ``"data/**/*.parquet"``).
+            pattern: Glob pattern (e.g. ``"data/**/*.parquet"``), read as a
+                path is: ``"/data/*.csv"`` and ``"./data//*.csv"`` mean
+                ``"data/*.csv"``.
 
         Returns:
             Iterator of ``FileInfo`` with store-relative paths.
 
         Raises:
             CapabilityNotSupported: If the backend lacks ``GLOB``.
+            InvalidPath: If *pattern* holds a ``..`` segment or a null byte.
         """
         log.debug("glob pattern=%r", pattern, extra={"op": "glob", "path": pattern, "backend": self._backend.name})
         self._gate("glob")
-        full_pattern = f"{self._root}/{pattern}" if self._root else pattern
+        canon = normalize_pattern(pattern)
+        if not canon:
+            return  # the root is a folder, and glob yields only files
+        full_pattern = f"{self._root}/{canon}" if self._root else canon
         for info in self._backend.glob(full_pattern):
             yield self._rebase_file_info(info)
 

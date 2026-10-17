@@ -52,6 +52,23 @@ directly, outside a `Store`,
 are unchanged. Pass `None` (the default) or `{}` for no metadata, and a
 `dict` or another mapping otherwise.
 
+**A glob pattern is read the way a path is:**
+
+`Store.glob()`, `AsyncStore.glob()` and `ext.glob.glob_files()` read a pattern
+as they read a path, so `"/data/*.csv"`, `"./data/*.csv"` and `"data//*.csv"`
+all match what `"data/*.csv"` matches, on every backend and under every
+`root_path`. A pattern holding a `..` segment or a null byte now raises
+`InvalidPath` on every backend, before anything is listed. What such a
+pattern did before depended on the backend, the `root_path` and where in the
+pattern the segment sat: some matched nothing (for example `"*/../a.csv"`, or
+`"../*.csv"` on `LocalBackend`), some already raised `InvalidPath`, and on
+`LocalBackend` a null byte could raise Python's own `ValueError`, which
+`InvalidPath` is not a subclass of. If you pass user-supplied patterns and
+treated an empty result as "no match", validate them first or catch
+`InvalidPath`; replace an `except ValueError` around `glob` with
+`except InvalidPath`. Separately, `"*.csv"` no longer matches a key that ends
+in a newline after `.csv`.
+
 **For backend authors: a backend is now written as a driver:**
 
 `remote_store.drivers` is new. A custom backend is now documented as a

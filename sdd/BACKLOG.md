@@ -268,6 +268,14 @@ failure it was.
   3.11; not 3.14). Open decision: map it here, or leave it to RFC-0017's kernel (D3 step 5).
   Detail: [dossier](backlog/bug-319-local-single-path-stat-leaks.md)
 
+- [ ] **BUG-334 — `LocalBackend.write` of a name Windows refuses leaks a raw `OSError`**
+  spec: BE-021 · effort: S · audience: user.api
+  `write("gn/b.csv\n")` on Windows raises `OSError: [Errno 22] Invalid argument`
+  from `write_bytes` (CI `test-cross-platform (windows-latest)`, PR #1154, run
+  39010222112, Python 3.13.16); `write` maps only directory and permission
+  errors. Other Windows-invalid names (`:`, `?`, `<`) and `write_atomic`, `move`
+  and `copy` are unmeasured. Open decision: `InvalidPath` here, or at D3 step 5.
+
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
   spec: BE-008, BE-010 · effort: S · audience: user.api
   `write("a/../b.txt", b"x")` and `write_atomic("a/../c.txt", b"x")` raise
@@ -327,14 +335,20 @@ failure it was.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-- [ ] **BK-405 — `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier**
-  spec: GLOB-007, GLOB-010, GLOB-011, GLOB-012, GLOB-014 · effort: S · audience: user.api, library.maintainer
-  On master, `glob_files` matches `d/a.csv` for `"./d/*.csv"`, `"d//*.csv"`
-  and `"d/*/."` on a `GLOB` store (Local) but answers `[]` on the raw-pattern
-  fallback (Memory). The kernel's pattern rule (BE-030) keeps the `GLOB` side. Open
-  decision: a leading `/`, which `Store.glob`'s root prepend (GLOB-007) makes
-  depend on `root_path` on the `GLOB` side; refuse, strip, or change GLOB-007.
-  Detail: [dossier](backlog/bk-405-ext-glob-fallback-tier-split.md)
+- [ ] **BK-446 — No driver exercises the kernel's `glob`, because `MemoryDriver` declares no `GLOB`**
+  spec: BE-024, BE-030, GLOB-010 · effort: M · audience: library.maintainer, user.api
+  The kernel's `glob` (pattern rule, choke points, listing bound) runs only
+  against the fake driver in `tests/_kernel/`; Memory, the template later
+  drivers copy, declares no `GLOB`, so `glob_files` takes the fallback.
+  Open decision: give both Memory drivers `SupportsGlob`, which needs another
+  non-`GLOB` fixture for the fallback cells, or leave it to SFTP or Graph's step.
+
+- [ ] **BK-447 — A glob pattern reads `\` unlike a path: `exists("d\\a.csv")` is `True`, `glob("d\\*.csv")` is `[]`**
+  spec: GLOB-007, PATH-002, BE-030 · effort: S · audience: user.api
+  PATH-002 turns `\` into `/` in a path, but GLOB-007's normalisation keeps it,
+  so both tiers answer `[]` (measured on Local and Memory), and a kernel
+  `GLOB` driver would raise `InvalidPath` (BE-030's pattern rule). In a glob
+  `\` is also a natural escape. Open decision: convert, refuse, or escape.
 
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
   spec: RES-100 · effort: M · audience: user.api
@@ -404,14 +418,6 @@ no clause of the contract ships unexercised.
   passed the whole suite. Open decision: a flat-namespace gate in the
   registry, or per-backend seeding; hierarchical backends cannot hold the state.
   Detail: [dossier](backlog/bk-382-ancestor-gate-overwrite-path.md)
-
-- [ ] **BUG-298 — `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`**
-  spec: GLOB-014, BE-024 · effort: S · audience: user.api
-  Python's `$` also matches before one final `\n`, so `pattern_to_regex("*.csv")`
-  accepts `"a.csv\n"`: `SQLBlobBackend.glob` and `ext.glob` over `MemoryBackend`
-  return it (measured); the S3, Azure and async Azure native globs share the
-  regex (read only). Open decision: anchor with `\Z` on every backend, or state
-  the newline rule in GLOB-014.
 
 - [ ] **BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`**
   spec: SIO-001, SEEK-006 · effort: M · audience: user.api

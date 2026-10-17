@@ -298,6 +298,30 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-405 — `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier**
+  spec: GLOB-007, GLOB-010, GLOB-011, GLOB-012, GLOB-014 · effort: S · audience: user.api, library.maintainer
+  `Store.glob`, `AsyncStore.glob` and the fallback read a pattern as spec 004
+  reads a path (`_glob.normalize_pattern`): a leading `/`, `//` and `.` mean
+  the canonical spelling under every root, and `..` or a null byte is
+  `InvalidPath` on every backend. Breaking: on master such a pattern matched
+  nothing, raised `InvalidPath` or, on Local with a null byte, raised a raw
+  `ValueError`, by backend, root and position (measured in the trace); the
+  migration guide's v0.33.0 to v0.34.0 section says so. Spec 018
+  GLOB-007, GLOB-011; STORE-018, ASYNC-053. Cross-tier
+  cells in `tests/ext/test_glob.py`. Co-shipped: BUG-298. Detail:
+  [dossier](backlog/bk-405-ext-glob-fallback-tier-split.md). Trace:
+  [bk-405](traces/bk-405-glob-pattern-rule.yml).
+
+- [x] **BUG-298 — `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`**
+  spec: GLOB-014, BE-024 · effort: S · audience: user.api
+  `pattern_to_regex` anchors with `\Z` and compiles with `re.DOTALL`, so no
+  wildcard stops at a newline and none matches past the end. Its callers
+  follow (`git grep 'pattern_to_regex(' -- src/`): `SQLBlobBackend` and
+  `SQLQueryBackend` `glob`, S3 (`_s3_base`, `_s3_boto3`), sync and async
+  Azure, and `ext.glob`; SQLBlob's `LIKE` narrowing drops its trailing-newline
+  alternative (SQL-BLOB-033). Spec 018 GLOB-014. Trace:
+  [bk-405](traces/bk-405-glob-pattern-rule.yml).
+
 - [x] **BK-444 — Three repo traps cost sessions retries that a check would catch before commit**
   spec: — · effort: S · audience: contributor.tooling, internal.style
   `scripts/check_repo_traps.py`, in `lint` and `docs-gate`, refuses 24 invisible code points in

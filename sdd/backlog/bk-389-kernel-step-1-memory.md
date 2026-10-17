@@ -209,6 +209,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
    side's answers; the measurement and the open decision are BK-405's
    [dossier](bk-405-ext-glob-fallback-tier-split.md). This decision adds
    nothing else to D3's list.
+   *Corrected 2026-10-17 (BK-405):* `Store` and `AsyncStore` now normalise
+   the pattern before the prepend (GLOB-007), so a leading `/` matches under
+   every root and the kernel never sees it from `Store`; a `GLOB` driver's
+   step owes no `root_path`-dependent `Store.glob` cells.
 
    **Decided in BK-395** (2026-10-03, the maintainer through the interview,
    the recommended option each time; measurements and recipe in its
