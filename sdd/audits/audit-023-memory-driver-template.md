@@ -43,9 +43,19 @@ looks behind (T2), keys and declarations it does not validate (T9, T10), and
 stream errors it maps three ways (T4, T5). The formal model trails the kernel
 in four places (T3, T12, T13, T14), one of which would fail a correct test.
 
-**Decision recorded at triage:** all of T1 to T19 land before D3 step 2, so
+**The gaps are bindings, not concepts.** The tree itself came back clean
+(§ Checked clean); the findings sit where existing concepts are not yet wired
+to the driver boundary, to glob, to the formal model, to a flat template, or
+to the async runtime. Five proposals (§ Proposals) close those bindings, and
+T1 to T16 and T19 each name the one that absorbs them; T17, T18 and most
+lower-ranked rows are direct fixes with their decision already made.
+
+**Decisions recorded at triage:** all of T1 to T19 land before D3 step 2, so
 the second driver copies a consistent template. T7 stays open (§ Open
 questions). The rows under § Lower-ranked are recorded here and not gated.
+The formal model gates driver acceptance (P3). Effort was ruled out as an
+argument for or against a proposal; each is judged by whether later drivers
+need it and what it prevents.
 
 | Severity | Count | Findings |
 |---|---|---|
@@ -58,11 +68,123 @@ document, after merging findings that two passes reported separately.
 
 ---
 
+## Proposals
+
+Advisory, per CLAUDE.md § Audits: the diagnosis below is the audit's
+authority, and whoever implements a proposal re-weighs it against the
+findings it cites. Each proposal is required because a later driver inherits
+the gap it closes; none adds a tree axiom, since the tree came back clean.
+
+### P1 Driver boundary contract
+
+**Claim.** Every later driver implements the boundary between what it
+observes and what the kernel decodes, and that boundary's failures are wrong
+answers, not errors. Today the trust is partly stated (BE-032 A.8's
+obligations), partly unchecked, and partly enforced only by Memory. P1 states
+every fact, value and fault crossing it once, each as a kernel check or a
+driver obligation.
+
+It decides:
+
+- **Facts the kernel takes from a driver:** a listed key lies under the listed
+  prefix and `stat(k)` names `k` (T9); `namespace` and `parents` are in their
+  domain (T10); an optional protocol presented is implemented, not inherited
+  (T2); a native aggregate applies BE-030's omission (T13); the `open_write`
+  route refuses an existing target without `overwrite` (T16); `src != dst` on
+  driver `move` and `copy`.
+- **Values the kernel hands out:** returned metadata is a copy (T1); an empty
+  metadata echo is normalised in one place (T15).
+- **Fault policy:** one rule for exceptions from driver calls and streams,
+  where a wire error and a programming error differ by rule and not by the
+  method that met them (T4); a failing close never masks a read failure and
+  `read` agrees with `read_bytes` (T5); driver return shapes are validated or
+  propagate, by policy; `container_absent`'s scope, `unwrap` after close
+  (T11), repeated `close`, and async `connection_dead` are stated.
+
+**Absorbs:** T1, T2, T4, T5, T9, T10, T11, T13 (driver half), T15, T16; the
+lower-ranked rows on return shapes, `container_absent`, close repeatability,
+the self-move precondition and async `connection_dead`.
+
+### P2 Glob in tree terms
+
+**Claim.** `glob` is the one folder read that names no key, so BE-032 can only
+approximate it ("over its pattern's literal prefix"), and fallback and native
+already disagree on one tree (T8). P2 defines `glob(p)` as the files of the
+tree whose path matches `p`, makes the kernel's prefix listing and probes
+optimisations judged against that, and fixes one pattern dialect.
+
+It decides: the defining clause and how A.5 cites it (which decides T7's open
+question); whether a character class may match `/`; what `^` means in a
+class; `**` as a whole segment only; the error type of a malformed pattern;
+what `\` means (BK-447).
+
+**Absorbs:** T7, T8, BK-439, BK-447; the lower-ranked rows on GLOB-012's prose,
+GLOB-015, and Tier-1 case folding.
+
+### P3 One formal truth
+
+**Claim.** `StoreTree.dfy` states the tree; `BackendContract.dfy`, which the
+compiled oracle runs, still ranges over a path map and never sees an encoding
+(BK-434). Two models of one store drift: T3, T12, T13, T14, T19's model half
+and the `StoreTree` name gap are that drift. In T3, T12 and T14 the model, not
+the kernel, was wrong; in T13 both were. Decided at triage: the model gates driver acceptance, so
+`BackendContract` is refined against `StoreTree`, with BE-030's key rule
+inside its domain.
+
+It decides: BK-434's open choice (refinement lemmas per encoding, or one
+encoding-parametric trait); how the oracle adapter reaches the key rule
+instead of passing raw keys (T14); the trait methods the model lacks
+(`write_atomic`, `open_atomic`, `iter_children`, `read_seekable`,
+`check_health`, T12); where kernel-only cells count for traceability.
+
+**Absorbs:** T3, T12, T13 (model half), T14, T19 (whether the contract owns
+copy and move mtime); the lower-ranked rows on
+`StoreTree` names, negative `max_depth`, and BE-030/031 traceability.
+
+### P4 The template is a set: Memory and a flat reference driver
+
+**Claim.** Both Memory drivers are hierarchical with implicit parents
+(`backends/_memory.py:43-44`, `aio/backends/_memory.py:39-40`) and hold the
+tree directly, so flat decoding, the `list_page` byte-order obligation, A.3's
+shadow omission and `stat`, and A.4's ancestor checks run only against the
+kernel's test fake (`tests/_kernel/_cells.py:37-42`, shape `flat-none`). The
+flat drivers of D3 (S3, Azure, SQLAlchemy) would have no reference to copy,
+and the first of them would become the template by accident. P4 makes the
+template a reference set with a flat member.
+
+It decides: the members of the set; which kernel and conformance cells each
+runs; that both Memory drivers present `SupportsGlob`, so P2 has a real runner
+(BK-446).
+
+**Absorbs:** the template coverage behind T13 and BK-446; the lower-ranked row
+on MEM-tagged cells that never run on async Memory, for the async member.
+
+### P5 Capability semantics per runtime
+
+**Claim.** Async drivers copy capability sets, and spec 029 defines no
+capability for an async read. P5 states, per runtime, what each flag
+promises, starting with the two T6 measured: async `LAZY_READ` is per-chunk
+pull, so a read holds at most a chunk, never the file (T6's reasoning), and
+async `SEEKABLE_READ` is withheld or given a meaning.
+
+It decides: the async meaning of `LAZY_READ` and `SEEKABLE_READ`; whether any
+other flag is runtime-specific; the async conformance cell that replaces the
+e2e exemption.
+
+**Absorbs:** T6.
+
+### Not proposed
+
+More tree axioms: the tree came back clean. T17, T18, T19's test half and the
+doc-drift rows: each is a direct fix whose decision is already made.
+
+---
+
 ## Findings
 
 ### T1 🔴 `FileInfo.metadata` is the live stored dict
 
-**Kind:** contradiction. **Clause:** `FileInfo` "Immutable snapshot"
+**Proposal:** P1. **Kind:** contradiction. **Clause:** `FileInfo` "Immutable snapshot"
 (`_models.py:82`), BE-019.
 Mutating a returned info's `metadata` mutates the stored file's, and `copy`
 leaves source and destination sharing one dict.
@@ -88,7 +210,7 @@ runtimes.
 
 ### T2 🔴 An optional protocol's own body passes construction and no-ops
 
-**Kind:** spec-gap, untested. **Clause:** BE-030 (construction refusals).
+**Proposal:** P1. **Kind:** spec-gap, untested. **Clause:** BE-030 (construction refusals).
 A driver that subclasses `SupportsCopy` and `SupportsRemoveFolder` without
 overriding them constructs, and `copy` and `delete_folder` return success
 having done nothing.
@@ -114,7 +236,7 @@ every optional protocol presented and over `WriteHandle`; state it in BE-030.
 
 ### T3 🔴 The model's `ListFolders` lists every nested folder
 
-**Kind:** model-gap. **Clause:** BE-015.
+**Proposal:** P3. **Kind:** model-gap. **Clause:** BE-015.
 `BackendContract.dfy`'s soundness and completeness clauses for `ListFolders`
 use `IsChildOf`, which is any depth, while BE-015 and the kernel list
 immediate subfolders.
@@ -138,7 +260,7 @@ refinement, regenerate the oracle, add a grandchild cell.
 
 ### T4 🟠 One stream fault, three answers by method
 
-**Kind:** contradiction. **Clause:** BE-021 kernel row, SIO-012.
+**Proposal:** P1. **Kind:** contradiction. **Clause:** BE-021 kernel row, SIO-012.
 `read` maps only `(OSError, EOFError, *stream_catch)`, while `read_bytes` and a
 ranged `read_seekable` map any `Exception` through the choke point.
 
@@ -164,7 +286,7 @@ BE-021's driver column; cells for `read_bytes` and the ranged read.
 
 ### T5 🟠 A failing stream close: swallowed, leaked, or masking
 
-**Kind:** contradiction, undecided under Rule 7. **Clause:** ASYNC-024,
+**Proposal:** P1. **Kind:** contradiction, undecided under Rule 7. **Clause:** ASYNC-024,
 BE-021.
 When the driver stream's close raises, sync `read` suppresses it, async `read`
 leaks it raw, and `read_bytes` maps it but lets it replace an earlier read
@@ -192,7 +314,7 @@ add a close fault to the fake.
 
 ### T6 🟠 `AsyncMemoryBackend` declares `LAZY_READ` and `SEEKABLE_READ`
 
-**Kind:** contradiction (prose against prose), spec-gap. **Clause:** MEM-003
+**Proposal:** P5. **Kind:** contradiction (prose against prose), spec-gap. **Clause:** MEM-003
 against BE-003; spec 029.
 MEM-003 has the async class declare `LAZY_READ` for "its one-chunk read stream
 being lazy"; BE-003 says in-memory, pre-loading backends do not declare it.
@@ -225,7 +347,7 @@ MEM-003 is amended to match.
 
 ### T7 🟠 Kernel `glob` through an item raises where listings answer empty
 
-**Kind:** contradiction between spec prose and a test. **Clause:** BE-032 A.5,
+**Proposal:** P2. **Kind:** contradiction between spec prose and a test. **Clause:** BE-032 A.5,
 A.8.
 BE-032 A.5 puts `glob` in the folder-read family "over its pattern's literal
 prefix", and A.8 rule 4 replaces a listing's refusal by the probe when the row
@@ -251,7 +373,7 @@ covers flat drivers only.
 
 ### T8 🟠 The shared glob regex differs from a Unix glob
 
-**Kind:** contradiction, undecided under Rule 7. **Clause:** GLOB-014, GLOB-011.
+**Proposal:** P2. **Kind:** contradiction, undecided under Rule 7. **Clause:** GLOB-014, GLOB-011.
 `pattern_to_regex` accepts a `**` that ends a segment and matches across `/`;
 its character classes can match `/`; `[^x]` is negation there and literal in
 `fnmatch`; a malformed class raises `re.PatternError`, not a `ValueError`.
@@ -280,7 +402,7 @@ the meaning of `^`; the error type), then cells comparing fallback and native.
 
 ### T9 🟠 A driver's listed and `stat`ed keys are trusted
 
-**Kind:** spec-gap. **Clause:** BE-014, BE-015, BE-032 A.8 (what drivers owe).
+**Proposal:** P1. **Kind:** spec-gap. **Clause:** BE-014, BE-015, BE-032 A.8 (what drivers owe).
 The kernel neither checks that a listed key lies under the listed prefix nor
 that `stat(k)` returns key `k`.
 
@@ -301,7 +423,7 @@ omit and log such keys as BE-030 does.
 
 ### T10 🟠 `namespace` and `parents` are not checked against their domain
 
-**Kind:** spec-gap, untested. **Clause:** BE-032 A.2, BE-030.
+**Proposal:** P1. **Kind:** spec-gap, untested. **Clause:** BE-032 A.2, BE-030.
 `self._flat = driver.namespace == "flat"` (`kernel.py:322`), so any other
 string is hierarchical, and `parents` is compared only to `"none"` and
 `"explicit"`.
@@ -316,7 +438,7 @@ string is hierarchical, and `parents` is compared only to `"none"` and
 
 ### T11 🟠 `unwrap` bypasses the closed guard
 
-**Kind:** spec-gap. **Clause:** BE-020, BE-022, BE-030 step 1.
+**Proposal:** P1. **Kind:** spec-gap. **Clause:** BE-020, BE-022, BE-030 step 1.
 `unwrap` is forwarded with no closed guard and no choke point
 (`kernel.py:350-352`); BE-030 exempts only the addressing members.
 
@@ -335,7 +457,7 @@ state BE-022's refusal in the driver protocol; fix the fake.
 
 ### T12 🟠 Capability gate before the closed guard: model and BE-020/027 disagree
 
-**Kind:** model-gap, doc-drift. **Clause:** BE-030 § Gates, BE-020, BE-027.
+**Proposal:** P3. **Kind:** model-gap, doc-drift. **Clause:** BE-030 § Gates, BE-020, BE-027.
 The kernel refuses an undeclared `MOVE` or `COPY` with
 `CapabilityNotSupported` before the closed guard, pinned by
 `test_condition_space.py:164-233`; the model and two prose clauses say a
@@ -362,7 +484,7 @@ amend BE-020's note, BE-027 and the README sentence.
 
 ### T13 🟠 The aggregate push-down skips BE-030's omission
 
-**Kind:** contradiction, model-gap. **Clause:** BE-030, BE-017.
+**Proposal:** P1, P3. **Kind:** contradiction, model-gap. **Clause:** BE-030, BE-017.
 BE-030 omits non-canonical keys from listings and aggregates and says a native
 aggregate "owes the same omission"; `MemoryTree.folder_stats` counts every
 node, and the model guards only `DeleteFolder` with `CanonicalUnder`.
@@ -387,7 +509,7 @@ omission cell for the first driver that can hold such keys.
 
 ### T14 🟠 The oracle runs keys outside the domain it was proven for
 
-**Kind:** model-gap. **Clause:** BE-030 key rule; the formal README's
+**Proposal:** P3. **Kind:** model-gap. **Clause:** BE-030 key rule; the formal README's
 compiled-oracle principle.
 `tests/backends/dafny/_helpers.py:76-79` maps only `""` and `"."`, and the
 compiled Python does not check `WellFormedPath`.
@@ -409,7 +531,7 @@ adapter.
 
 ### T15 🟠 `metadata={}` comes back as `{}`, stored as `None`
 
-**Kind:** contradiction, undecided under Rule 7. **Clause:** WR-012 (WR-010,
+**Proposal:** P1. **Kind:** contradiction, undecided under Rule 7. **Clause:** WR-012 (WR-010,
 WR-011).
 `write(..., metadata={})` returns `WriteResult.metadata == {}` while the
 stored file has `None`; the model says `None`.
@@ -429,7 +551,7 @@ one cell.
 
 ### T16 🟠 The `open_write` route's overwrite duty is unstated
 
-**Kind:** spec-gap (driver docs). **Clause:** `SupportsOpenWrite`,
+**Proposal:** P1. **Kind:** spec-gap (driver docs). **Clause:** `SupportsOpenWrite`,
 `WriteHandle`.
 Who refuses an existing target under `overwrite=False` is stated for `put`
 only (`_sync/driver.py:88`); `open_write` (`:208-216`) and `commit`
@@ -476,7 +598,7 @@ test, both runtimes; fix the two sentences.
 
 ### T19 🟠 mtime on move, copy and folders is unpinned and unmodelled
 
-**Kind:** untested-clause, model-gap. **Clause:** MEM-015, MEM-016, MEM-016b.
+**Proposal:** P3 (model half). **Kind:** untested-clause, model-gap. **Clause:** MEM-015, MEM-016, MEM-016b.
 Move keeps `modified_at`, copy sets a new one, a folder's is the maximum; the
 behaviour holds in both runtimes, but tests assert only `is not None`.
 
@@ -498,7 +620,8 @@ contract owns copy and move mtime.
 probe over its literal prefix and `test_condition_space.py` is amended, so
 `glob` through an item answers empty like every listing; this could widen
 BK-439 beyond flat drivers. (b) BE-032 A.5 is narrowed to say only the listing
-bound applies to `glob`, and code and test stay. Left open at triage.
+bound applies to `glob`, and code and test stay. Left open at triage; P2's
+defining clause is where it is decided.
 
 ---
 
