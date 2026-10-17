@@ -1,6 +1,7 @@
 # Audit 023 — What must close before backends move onto the contract kernel
 
 **Date:** 2026-10-17
+
 **Motivation:** RFC-0017 moves every backend onto one contract kernel, a new
 interaction between `Store`, kernel and driver (D3 steps 2 to 8). That move is
 sound only once the specs and open design issues the kernel rests on are
@@ -8,6 +9,7 @@ closed; otherwise each migration re-decides them, differently. The Memory
 drivers are the means of this audit, not its subject: they are the only drivers
 on the kernel today, so what they and the kernel leave unspecified, unpinned or
 contradictory is what every migrated backend would inherit.
+
 **Scope:** The RFC-0017 contract kernel (`src/remote_store/_kernel/`, async
 source and generated sync twin), `MemoryDriver` and `AsyncMemoryDriver`
 (`backends/_memory.py`, `backends/_memory_tree.py`,
@@ -20,9 +22,11 @@ and the tests under `tests/_kernel/`, `tests/backends/memory/` and the
 conformance cells Memory runs. The question: where spec, code, tests and
 model disagree, or a clause is unspecified or unpinned, that must be closed
 before backends migrate.
+
 **Excluded, already filed:** BK-439, BK-438, BK-446, BK-447, BUG-334,
 BK-436, BK-435, BK-390, BK-345. A finding below touches one of them only
 where it says so.
+
 **Method:** six read-only passes, one per cluster: kernel contract, Memory
 drivers, async parity, glob and tree, formal model, driver docs. Each
 behavioural claim was measured with a probe script on `52448e0` (`hatch run
@@ -32,17 +36,20 @@ under each finding. A second reader then re-checked each finding and records
 how on its **Checked:** line (or in the § Lower-ranked *Checked* column): the
 probe re-run, the cited line opened, a grep or command run, or "first pass
 only" where it was not repeated.
+
 **Probes:** committed in [`audit-023-probes/`](audit-023-probes/), one
 directory per pass (`c1` kernel to `c6` docs) plus the second reader's
 `lead_v_meta.py` and `lead_v_write_alias.py`. `hatch run python sdd/audits/audit-023-probes/run_all.py`,
 from the repo root, runs all 32 and records each output beside it as
 `<probe>.out`; the committed `.out` files are the run this audit quotes, at
 `52448e0` on CPython 3.13.16. Timestamps, temp names and object addresses
-differ between runs. Tool state at the
-audit: `dafny 4.11.0`, `dafny verify` on the four files 1953 verified and 0
+differ between runs.
+
+**Tool state at the audit:** `dafny 4.11.0`, `dafny verify` on the four files 1953 verified and 0
 errors; `hatch run check-dafny-oracle-fresh` fresh; `hatch run
-gen-sync-kernel-check` "up to date"; `hatch run lint` exit 0. This is a
-**report-only** audit; nothing was modified. Dispositions are advisory.
+gen-sync-kernel-check` "up to date"; `hatch run lint` exit 0.
+
+This is a **report-only** audit; nothing was modified. Dispositions are advisory.
 
 **Severity key:** 🔴 High · 🟠 Medium · 🟡 Low.
 
