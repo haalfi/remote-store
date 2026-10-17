@@ -11,14 +11,13 @@ recorded in `sdd/decisions/062e5181-cc50-5b17-963f-e9da78bad8ee.jsonl` ("When
 should spec 003 be split?": "Separate PR after BK-449"; "Which split shape
 should the work follow?": "By layer, 4 files").
 
-**Measured at BK-449's last fix pass, 2026-10-17** (lines per `##`/`###`
-section of `sdd/specs/003-backend-adapter-contract.md`, counted from each such
-heading to the next): 2,197 lines and 45 sections in all. The largest: BE-021
-Error Mapping 557, BE-029 Root Path 339, BE-032 The Store Tree on the Kernel
-327, BE-033 Interaction Protocol on the Kernel 194 (the four: 1,417 lines,
-64.5%), BE-030 Key Rule on the Kernel 162, BE-008 write() 123, BE-031
-`delete_folder` on the Kernel 107. Every CAP- section and most BE- operation
-sections are under 30 lines.
+**Section sizes.** Not copied here, since every edit to the spec moves them:
+re-run `rg -n '^##+ ' sdd/specs/003-backend-adapter-contract.md` before
+planning and take each section's size as the gap to the next heading. At
+PR #1159 the four largest were BE-021 Error Mapping, BE-029 Root Path, BE-032
+The Store Tree on the Kernel and BE-033 Interaction Protocol on the Kernel,
+then BE-030, BE-008 and BE-031; the CAP- sections and most BE- operation
+sections are short.
 
 **The ripple, measured the same day.** `git grep -l
 "003-backend-adapter-contract"` outside `sdd/decisions`, `sdd/traces` and
