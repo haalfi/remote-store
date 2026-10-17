@@ -1,6 +1,13 @@
-# Audit 023 — The Memory drivers as the template for later drivers
+# Audit 023 — What must close before backends move onto the contract kernel
 
 **Date:** 2026-10-17
+**Motivation:** RFC-0017 moves every backend onto one contract kernel, a new
+interaction between `Store`, kernel and driver (D3 steps 2 to 8). That move is
+sound only once the specs and open design issues the kernel rests on are
+closed; otherwise each migration re-decides them, differently. The Memory
+drivers are the means of this audit, not its subject: they are the only drivers
+on the kernel today, so what they and the kernel leave unspecified, unpinned or
+contradictory is what every migrated backend would inherit.
 **Scope:** The RFC-0017 contract kernel (`src/remote_store/_kernel/`, async
 source and generated sync twin), `MemoryDriver` and `AsyncMemoryDriver`
 (`backends/_memory.py`, `backends/_memory_tree.py`,
@@ -10,9 +17,9 @@ source and generated sync twin), `MemoryDriver` and `AsyncMemoryDriver`
 `docs-src/guides/custom-backend-guide.md`), the formal model
 (`BackendContract.dfy`, `MemoryBackend.dfy`, `RootPath.dfy`, `StoreTree.dfy`)
 and the tests under `tests/_kernel/`, `tests/backends/memory/` and the
-conformance cells Memory runs. The question: what would a later driver copy
-(RFC-0017 D3 steps 2 to 8) that spec, code, tests and model disagree on, or
-that no clause or test pins.
+conformance cells Memory runs. The question: where spec, code, tests and
+model disagree, or a clause is unspecified or unpinned, that must be closed
+before backends migrate.
 **Excluded, already filed:** BK-439, BK-438, BK-446, BK-447, BUG-334,
 BK-436, BK-435, BK-390, BK-345. A finding below touches one of them only
 where it says so.
@@ -59,8 +66,8 @@ to the async runtime. Five proposals (§ Proposals) close those bindings, and
 T1 to T16 and T19 each name the one that absorbs them; T17, T18 and most
 lower-ranked rows are direct fixes with no open choice.
 
-**Recommendations from triage:** all of T1 to T19 land before D3 step 2, so
-the second driver copies a consistent template; the formal model gates driver
+**Recommendations from triage:** all of T1 to T19 close before D3 step 2, so
+the migration starts on settled specs and a consistent template; the formal model gates driver
 acceptance (P3); T7 stays open (§ Open questions); the rows under
 § Lower-ranked are recorded, not gated. Effort was ruled out as an argument for
 or against a proposal; each is judged by whether later drivers need it and
@@ -140,7 +147,8 @@ having done nothing.
   delete_folder returned; folder 'd' still present: True
   ```
 - Spec 003 l.1435-1438 refuses an inherited body "for a primitive"; whether an
-  optional member is one is unstated.
+  optional member is one is unstated. BK-441 (done) added that refusal for the
+  required primitives; this is the optional half it left.
   `test_the_body_checked_set_is_every_protocol_method_but_probe`
   (`tests/_kernel/test_kernel.py:1590`) pins the narrow set.
 
