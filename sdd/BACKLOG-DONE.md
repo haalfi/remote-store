@@ -298,6 +298,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-335 — `CI Full Matrix` red on 3.13: the none-read cell leaves its async generator for GC**
+  spec: — · effort: S · audience: infra.test
+  `test_a_none_read_is_refused_on_every_write_route[async]` (#1148) abandoned
+  `_none_mid_chunks` suspended once the kernel refused its `None`; its finalizer
+  later failed an unrelated `sync` cell as `PytestUnraisableExceptionWarning`
+  (runs 39013016059 and 39014490746, a different cell each). The cell now
+  `aclose()`s it. Whether the kernel should: BK-448. Trace:
+  [bug-335](traces/bug-335-none-read-agen-gc-flake.yml).
+
 - [x] **BK-405 — `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier**
   spec: GLOB-007, GLOB-010, GLOB-011, GLOB-012, GLOB-014 · effort: S · audience: user.api, library.maintainer
   `Store.glob`, `AsyncStore.glob` and the fallback read a pattern as spec 004
