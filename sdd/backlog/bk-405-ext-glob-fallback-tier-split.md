@@ -60,8 +60,10 @@ is a predicate over Keys, no Key carries a leading `/` (spec 051 TREE-011), so
 `list_files` already accept that spelling through PATH-004. The kernel's
 refusal of a leading `/` (decision 6) stays where it is, at the backend
 boundary, which `Store` now never reaches with one. Diverges from the
-prescription in one point: `..` and a null byte are refused, as PATH-003 and
-PATH-007 refuse them; a backslash is left to BK-447. Re-run of the recipe
+prescription's rule (decision 6, `_kernel/_keys.py` `refusal`) in two points:
+a leading `/` is stripped, not refused, and a backslash is kept, not refused
+(left to BK-447). Its other refusals, `..` and a null byte, are kept, as
+PATH-003 and PATH-007 also refuse them. Re-run of the recipe
 above on the fix's branch, under `root_path` `""` and `"r"`: all six rows
 answer `['d/a.csv']` on both tiers, 12 of 12, the last row included. The
 pinning cells are

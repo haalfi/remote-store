@@ -244,10 +244,10 @@ regex to enforce GLOB-014 semantics (`*` = `[^/]*`, `?` = `[^/]`):
     - `extract_prefix(pattern)`, the longest literal directory prefix: keys
       under `prefix/`, by the SQL-BLOB-061 predicate.
     - The literal tail after the last `*`, `?`, `[` or `]`: escaped
-      `key LIKE '%' || tail ESCAPE '\'`, or the same followed by one `\n`,
-      because the client-side regex anchors with `$`, which also accepts one
-      trailing newline. A tail that follows `**` drops its leading `/`,
-      because `**/` also matches zero directories.
+      `key LIKE '%' || tail ESCAPE '\'`; the client-side regex anchors at the
+      true end (GLOB-014), so a matching key ends with the tail itself. A tail
+      that follows `**` drops its leading `/`, because `**/` also matches zero
+      directories.
 
     Wildcards themselves are never translated to `LIKE`: `%/` cannot match the
     zero directories `**/` can, and `[...]` has no `LIKE` form.

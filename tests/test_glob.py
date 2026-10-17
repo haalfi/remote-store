@@ -26,7 +26,10 @@ from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
+
+    from remote_store._models import FileInfo
 
 pytestmark = pytest.mark.os_sensitive
 
@@ -281,10 +284,23 @@ class TestTier2NativeGlob:
         assert sorted(str(f.path) for f in store.glob(pattern)) == ["docs/guide.md", "docs/readme.md"]
 
     @pytest.mark.spec("GLOB-007")
+    @pytest.mark.parametrize("root_path", ["", "data"], ids=["empty_root", "data_root"])
     @pytest.mark.parametrize("pattern", ["", ".", "/", "./", "//"])
-    def test_store_glob_root_pattern_yields_nothing(self, pop_local: Store, pattern: str) -> None:
-        """Every spelling of the root names a folder, and glob yields only files."""
-        assert list(pop_local.glob(pattern)) == []
+    def test_store_glob_root_pattern_yields_nothing(self, tmp_path: Path, root_path: str, pattern: str) -> None:
+        """Every spelling of the root names a folder, and glob yields only files, without asking the backend."""
+
+        class _Recording(LocalBackend):
+            seen: list[str] = []
+
+            def glob(self, pattern: str) -> Iterator[FileInfo]:
+                self.seen.append(pattern)
+                return super().glob(pattern)
+
+        backend = _Recording(root=str(tmp_path))
+        store = Store(backend=backend, root_path=root_path)
+        _populate(store)
+        assert list(store.glob(pattern)) == []
+        assert backend.seen == []
 
     @pytest.mark.spec("GLOB-007")
     @pytest.mark.parametrize("pattern", ["../*.csv", "docs/../*.csv", "*.csv\0"])

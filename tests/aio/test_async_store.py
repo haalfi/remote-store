@@ -867,6 +867,28 @@ class TestAsyncStoreGlobInner:
             assert [str(f.path) async for f in store.glob(pattern)] == ["sub/a.csv"]
 
     @pytest.mark.spec("GLOB-007")
+    @pytest.mark.parametrize("root_path", ["", "data"], ids=["empty_root", "data_root"])
+    @pytest.mark.parametrize("pattern", ["", ".", "/", "./"])
+    async def test_glob_root_pattern_skips_backend(self, tmp_path: Path, root_path: str, pattern: str) -> None:
+        """A pattern naming the root yields nothing without asking the backend (sync twin in tests/test_glob.py)."""
+        from remote_store.aio._sync_adapter import SyncBackendAdapter
+        from remote_store.backends._local import LocalBackend
+
+        class _Recording(SyncBackendAdapter):
+            seen: list[str] = []
+
+            def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
+                self.seen.append(pattern)
+                return super().glob(pattern)
+
+        (tmp_path / root_path / "sub").mkdir(parents=True)
+        (tmp_path / root_path / "a.csv").write_bytes(b"1")
+        backend = _Recording(LocalBackend(root=str(tmp_path)))
+        store = AsyncStore(backend, root_path=root_path)
+        assert [f async for f in store.glob(pattern)] == []
+        assert backend.seen == []
+
+    @pytest.mark.spec("GLOB-007")
     async def test_glob_refuses_dotdot_eagerly(self, tmp_path: Path) -> None:
         from remote_store.aio._sync_adapter import SyncBackendAdapter
         from remote_store.backends._local import LocalBackend

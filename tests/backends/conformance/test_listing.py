@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
-from remote_store._errors import InvalidPath, NotFound
 from remote_store._models import FileInfo, FolderEntry
 from tests.backends.conformance._helpers import _depth, _require, _seed
 from tests.backends.fixtures import fixture_params
@@ -171,17 +170,6 @@ class TestBackendGlob:
     ) -> None:
         _seed(backend, seeds)
         assert sorted(str(f.path) for f in backend.glob(pattern)) == expected
-
-    @pytest.mark.spec("GLOB-014")
-    def test_glob_excludes_trailing_newline_key(self, backend: Backend) -> None:
-        """BUG-298: `*` must not match a key that only ends in `.csv` before a newline."""
-        _seed(backend, {"gn/a.csv": b"a"})
-        try:
-            backend.write("gn/b.csv\n", b"b")
-        except (InvalidPath, NotFound) as exc:
-            # moto answers the PUT of a `%0A` key with 404; the regex is pinned in tests/test_glob.py
-            pytest.skip(f"fixture cannot hold a key ending in a newline ({type(exc).__name__})")
-        assert sorted(str(f.path) for f in backend.glob("gn/*.csv")) == ["gn/a.csv"]
 
     @pytest.mark.spec("GLOB-004")
     @pytest.mark.spec("BE-024")

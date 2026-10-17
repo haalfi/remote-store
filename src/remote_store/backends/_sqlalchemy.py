@@ -82,15 +82,13 @@ def _glob_suffix_clause(column: sa.ColumnElement[str], pattern: str) -> sa.Colum
     """Return a ``WHERE`` clause every key the glob *pattern* accepts satisfies, or ``None``.
 
     The clause is a necessary condition, never the match: ``glob`` still applies
-    ``pattern_to_regex`` to every row it returns. That regex anchors with ``$``,
-    which also accepts one trailing ``\\n``, so a key may end with the tail or
-    with the tail plus a newline.
+    ``pattern_to_regex`` to every row it returns. That regex anchors at the true
+    end, so a matching key ends with the tail itself.
     """
     tail = _glob_literal_suffix(pattern)
     if not tail:
         return None
-    escaped = "%" + _escape_like(tail)
-    return sa.or_(column.like(escaped, escape=_LIKE_ESCAPE), column.like(escaped + "\n", escape=_LIKE_ESCAPE))
+    return column.like("%" + _escape_like(tail), escape=_LIKE_ESCAPE)
 
 
 def _glob_literal_suffix(pattern: str) -> str:

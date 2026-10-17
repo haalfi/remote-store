@@ -311,9 +311,12 @@ if evidence changes; these are retired.
 - [x] **BUG-298 — `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`**
   spec: GLOB-014, BE-024 · effort: S · audience: user.api
   `pattern_to_regex` anchors with `\Z` and compiles with `re.DOTALL`, so no
-  wildcard stops at a newline and none matches past the end; every backend
-  sharing the regex (SQLBlob, S3, Azure, `ext.glob`) follows. Spec 018
-  GLOB-014. Trace: [bk-405](traces/bk-405-glob-pattern-rule.yml).
+  wildcard stops at a newline and none matches past the end. Its callers
+  follow (`git grep 'pattern_to_regex(' -- src/`): `SQLBlobBackend` and
+  `SQLQueryBackend` `glob`, S3 (`_s3_base`, `_s3_boto3`), sync and async
+  Azure, and `ext.glob`; SQLBlob's `LIKE` narrowing drops its trailing-newline
+  alternative (SQL-BLOB-033). Spec 018 GLOB-014. Trace:
+  [bk-405](traces/bk-405-glob-pattern-rule.yml).
 
 - [x] **BK-444 — Three repo traps cost sessions retries that a check would catch before commit**
   spec: — · effort: S · audience: contributor.tooling, internal.style

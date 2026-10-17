@@ -12,6 +12,7 @@ co_shipped_items:
 discovery_followups:
   - BK-446
   - BK-447
+  - BUG-334
 decisions:
   - sdd/decisions/9544a854-7eb5-5697-83fe-2504ff9fec13.jsonl
 expected_ripples:
@@ -28,6 +29,8 @@ surprising_ripples:
   - sdd/backlog/bk-389-kernel-step-1-memory.md
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
+  - src/remote_store/backends/_sqlalchemy.py
+  - sdd/specs/040-sql-blob-backend.md
 orient:
   - items: [BK-439]
     verdict: unrelated
@@ -77,7 +80,7 @@ phases:
       - file: sdd/specs/051-store-tree.md
         section: "TREE-007, TREE-009, TREE-011; Layering"
         read_type: reference
-        extract: "No Key has a leading `/`, empty or `.` segment; spec 004 maps input strings onto Keys, so a pattern spelling with them names only what the canonical one names"
+        extract: "No Key has a leading `/` or empty segment (TREE-011); `.` is an admissible name, so dropping a `.` segment is spec 004's (PATH-006), which § Layering makes the input-to-Key mapping"
         outcome: ok
       - file: sdd/specs/004-path-model.md
         section: "PATH-002 to PATH-007"
@@ -112,3 +115,18 @@ phases:
         read_type: verify
         extract: "Uses ext/glob.py as the zero-mutation-candidate fixture, so an `if not pattern` guard there broke it; the guard was dropped as redundant"
         outcome: ok
+      - file: sdd/specs/051-store-tree.md
+        section: "Terms (N), TREE-011"
+        read_type: verify
+        extract: "Review round 1: TREE-011 rules out a leading/trailing `/` and `//` only; `.` is a name in N. GLOB-007's rationale had cited it for `.` too; corrected"
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_glob_suffix_clause; SQL-BLOB-033"
+        read_type: verify
+        extract: "Review round 1: the LIKE narrowing carried a tail+newline alternative for the `$` anchor; dead once the regex anchors with \\Z, so removed with its spec sentence"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test-cross-platform"
+        read_type: verify
+        extract: "Runs `-m os_sensitive`; the conformance `[local]` parameters carry that mark through the fixture registry, so a Grep of the conformance files for the mark under-reported. The newline cell failed on Windows (raw OSError, BUG-334) and was dropped"
+        outcome: misleading

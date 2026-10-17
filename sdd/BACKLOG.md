@@ -268,6 +268,14 @@ failure it was.
   3.11; not 3.14). Open decision: map it here, or leave it to RFC-0017's kernel (D3 step 5).
   Detail: [dossier](backlog/bug-319-local-single-path-stat-leaks.md)
 
+- [ ] **BUG-334 — `LocalBackend.write` of a name Windows refuses leaks a raw `OSError`**
+  spec: BE-021 · effort: S · audience: user.api
+  `write("gn/b.csv\n")` on Windows raises `OSError: [Errno 22] Invalid argument`
+  from `write_bytes` (CI `test-cross-platform (windows-latest)`, PR #1154, run
+  39010222112, Python 3.13.16); `write` maps only directory and permission
+  errors. Other Windows-invalid names (`:`, `?`, `<`) and `write_atomic`, `move`
+  and `copy` are unmeasured. Open decision: `InvalidPath` here, or at D3 step 5.
+
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
   spec: BE-008, BE-010 · effort: S · audience: user.api
   `write("a/../b.txt", b"x")` and `write_atomic("a/../c.txt", b"x")` raise
