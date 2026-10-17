@@ -1,11 +1,14 @@
 """Memory's own cells for the key rule and the protocol, on both classes (spec 003 BE-030, BE-025, BE-033).
 
-None of these is reachable through ``Store``, which hands a backend a
-``RemotePath``-normalised key, so each calls the backend directly. They are the
-cells BK-389's decision 6 table marks as changing when Memory moves onto the
-contract kernel: the root spellings of ``get_folder_info``, the addressing
-column, and the backslash row. The last two are BE-033's rows on Memory: its
-non-terminal close posture and the caller's content.
+The key-rule cells are the ones BK-389's decision 6 table marks as changing when
+Memory moves onto the contract kernel: the root spellings of
+``get_folder_info``, the addressing column, and the backslash row. None of them
+is reachable through ``Store``, which hands a backend a ``RemotePath``-normalised
+key, so each calls the backend directly. The two protocol cells,
+``test_memory_stays_open_across_repeated_closes`` and
+``test_async_memory_closes_a_refused_caller_generator``, are BE-033's rows on
+Memory; they call the backend directly because BE-033 binds the class on the
+kernel.
 """
 
 from __future__ import annotations

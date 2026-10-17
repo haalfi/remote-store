@@ -74,7 +74,7 @@ E2E = "tests/e2e/"
 # `sys.path.insert` under tests/ (grepped 2026-10-17): these two
 # (tests/backends/dafny/_helpers.py, tests/_kernel/test_protocol_oracle.py), and
 # sdd/research/token-usage/ (tests/scripts/test_tokkit.py,
-# test_token_kit_cuts.py), whose changes reach tests/scripts/ through
+# test_token_kit_cuts.py, test_deliveries.py), whose changes reach tests/scripts/ through
 # select_tests' last branch.
 DAFNY_ORACLE_DIR = "sdd/formal/MemoryBackend-py/"
 KERNEL_ORACLE_DIR = "sdd/formal/KernelProtocol-py/"

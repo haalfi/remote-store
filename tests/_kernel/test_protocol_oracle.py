@@ -15,15 +15,17 @@ every call sequence up to ``_DEPTH`` calls, per runtime and close posture.
   (or, for a refused chunk, by the caller's iterator as it hands the chunk
   over). A gate refusal has no exit point: nothing is open and the iterator is
   unstarted, which is what "refused before the kernel takes it" means.
-- A write handle is the fake's last ``_Handle``: ``open``, ``committed`` or
-  ``aborted`` map onto ``HOpen``, ``HCommitted``, ``HAborted``; no handle is
-  ``HNone``.
+- A write handle is ``HOpen`` if any ``_Handle`` the fake recorded is still
+  open, else the last one's ``committed`` or ``aborted`` (``HCommitted``,
+  ``HAborted``); no handle is ``HNone``.
 - The caller's async iterator is closed (``aclose`` called), exhausted (it
   raised ``StopAsyncIteration``), suspended (it handed out a chunk and was
   neither) or unstarted. ``closable`` is whether it has ``aclose``.
 - A read stream is closed when the fake logged its explicit close, else
   released: the model's ``SReleased``, so a stream the kernel forgot to close
   reads as released and fails every cell whose model answer is ``SClosed``.
+  A sync stream's exit is its caller's close: the kernel hands it over open,
+  and the wrapper it returns closes or releases the inner stream then.
 - A write opens no stream, so its stream is ``SClosed`` throughout.
 
 **Bounds.** The sync runtime's content is a caller stream with no state in the
@@ -127,8 +129,11 @@ def _iter_state(source: _Source | None) -> Any:
 
 
 def _handle_state(store: FakeStore) -> Any:
-    handles = store.handles  # type: ignore[attr-defined]
-    return _HANDLE[handles[-1].state if handles else None]
+    # Any handle still open is HOpen, whichever was opened last: a leaked one must not hide behind a later one.
+    states = [h.state for h in store.handles]  # type: ignore[attr-defined]
+    if "open" in states:
+        return _HANDLE["open"]
+    return _HANDLE[states[-1] if states else None]
 
 
 def _observe(store: FakeStore, source: _Source | None) -> Any:
@@ -336,7 +341,13 @@ def test_every_read_exit_leaves_the_stream_the_model_computes(runtime: str, nth:
         assert store.called("get") == []  # nothing opened: no stream to model
         return
     expected = {"success": None, "cancelled": asyncio.CancelledError}.get(kind, RemoteStoreError)
-    if expected is None:
+    if expected is None and runtime == "sync":
+        # The kernel hands the stream over open; its exit is the caller's close, which the
+        # kernel's wrapper turns into the inner close or, when condemned, a release.
+        with run.kernel.read("f") as stream:
+            assert stream.read() == b"0123"
+            assert store.called("stream.close") == []
+    elif expected is None:
         assert run.read("f") == b"0123"
     else:
         with pytest.raises(expected):

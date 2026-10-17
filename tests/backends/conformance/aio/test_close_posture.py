@@ -131,7 +131,7 @@ async def test_close_posture_outranks_root_write_rejection(async_backend: AsyncB
 
 @pytest.mark.spec("BE-033")
 async def test_a_repeated_aclose_keeps_the_posture(async_backend: AsyncBackend) -> None:
-    """Async twin of the sync cell of the same name; another class than one on the kernel is skipped."""
+    """Async twin of ``test_a_repeated_close_keeps_the_posture``; another class than one on the kernel is skipped."""
     if not isinstance(async_backend, AsyncDriverBackend):
         pytest.skip("BE-033 binds classes on the kernel")
     await async_backend.aclose()

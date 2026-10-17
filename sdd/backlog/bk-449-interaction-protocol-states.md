@@ -114,7 +114,15 @@ Where the build left the plan above, and why:
   trait's namespace and compiled into the Dafny oracle (`check_dafny_oracle_fresh.py`
   failed, its `module_.py` diff reporting "444 more diff lines" past those it
   printed). A file nothing includes adds
-  nothing to the oracle; `scripts/dafny_verify.sh` and CI verify it.
+  nothing to the oracle; `scripts/dafny_verify.sh` and CI verify it, so
+  § Verification's `dafny verify` line means `KernelProtocol.dfy`.
+- That model is also an oracle of its own: `scripts/dafny_translate.sh` compiles
+  it to `sdd/formal/KernelProtocol-py/` (kept fresh by
+  `check_dafny_oracle_fresh.py`), `tests/_kernel/test_protocol_oracle.py`
+  drives the kernel against it over the whole exit space, and
+  `scripts/gen_protocol_diagram.py` draws BE-033's diagrams from it. After
+  editing the `.dfy`: `bash scripts/dafny_translate.sh`, then
+  `hatch run gen-protocol-diagram` (sdd/formal/README.md § The second oracle).
 - Step 3's `_marked` became a class, `_Marked`, with its own `aclose`, which
   `release_content` calls on every write exit; a generator wrapper's `finally`
   runs only once something closes the wrapper, so the route would have had to

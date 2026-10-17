@@ -8,16 +8,27 @@ space and writes what it computes as Mermaid ``stateDiagram-v2`` fences between
 ``KernelProtocol.dfy`` reaches the picture through the same rebuild that
 reaches the oracle suite, and a stale picture fails ``--check``.
 
-Two views. ``KernelStep`` over (posture, state) and both calls: the backend's
+Two views. ``KernelStep`` over every posture, state and call: the backend's
 machine, with each edge labelled call / answer. ``KernelExit`` over every exit,
 every resource state its preconditions admit and an iterator with and without
 ``aclose``: one diagram per resource, an edge for each before-to-after change,
 labelled with the exits that make it. An exit that leaves a resource as it was
-draws nothing.
+draws nothing. The domain is read from the compiled datatypes
+(``_constructors``), so a constructor added to the model is drawn.
 
 The fences carry no ``%%`` comment: ``gen_python_support.py`` measured a bare
 one as fatal before the diagram type, and the prose around them says what a
 comment would.
+
+**Bounds.** Mermaid is never parsed or rendered here; the refused ``;`` is the
+one mis-draw measured (mermaid 11.4.1 in Chromium), and nothing else stands
+between a label and the renderer. ``KernelExit``'s ``requires`` are restated in
+``_resources``, since the compiled Python does not check them, so a new
+precondition needs an edit there, and so does a constructor field that is not a
+``bool`` (today's one field is ``Faulted``'s ``dead``). ``--check`` compares the block with the
+committed oracle, so a stale oracle draws a stale "current" block: freshness is
+``check_dafny_oracle_fresh.py``'s, in the ``verify-formal`` CI job. Only the
+first ``kernel_protocol`` region is rewritten; a second copy is not seen.
 
 Drift-gate::
 
@@ -30,6 +41,7 @@ Drift-gate::
 from __future__ import annotations
 
 import argparse
+import itertools
 import re
 import sys
 from pathlib import Path
@@ -81,15 +93,32 @@ def _fence(lines: list[str]) -> list[str]:
     return ["```mermaid", "stateDiagram-v2", *(f"  {line}" for line in lines), "```"]
 
 
+def _constructors(datatype) -> list:
+    """Every value of a compiled Dafny datatype: one per constructor, each field over ``False`` and ``True``.
+
+    Read from the compiled classes (each constructor is a subclass), so a constructor added to
+    ``KernelProtocol.dfy`` is enumerated without an edit here. Dafny types every field ``Any``,
+    so a field's type cannot be read back: the bool assumption is a bound (module docstring).
+    """
+    values = []
+    for ctor in datatype.__subclasses__():
+        values += [ctor(*combo) for combo in itertools.product((False, True), repeat=len(ctor._fields))]
+    return values
+
+
+def _exits(kp) -> list:
+    return _constructors(kp.KernelExitPath)
+
+
 def _backend(kp) -> list[str]:
     lines: list[str] = []
-    for posture in (kp.ClosePosture_Reusable(), kp.ClosePosture_Terminal()):
+    for posture in _constructors(kp.ClosePosture):
         p = _name(posture)
         lines += [f"state {p} {{", f"  [*] --> {p}_BOpen"]
         # One edge per (from, to): Mermaid draws two self-loops on a state with one label between them.
         edges: dict[tuple[str, str], list[str]] = {}
-        for state in (kp.KernelBackendState_BOpen(), kp.KernelBackendState_BClosed()):
-            for call in (kp.KernelCall_CloseCall(), kp.KernelCall_LiveCall()):
+        for state in _constructors(kp.KernelBackendState):
+            for call in _constructors(kp.KernelCall):
                 after, answer = kp.default__.KernelStep(kp.KernelBackend_KernelBackend(posture, state, 0), call)
                 key = (f"{p}_{_name(state)}", f"{p}_{_name(after.state)}")
                 edges.setdefault(key, []).append(f"{_name(call)} / {_name(answer)}")
@@ -99,25 +128,19 @@ def _backend(kp) -> list[str]:
 
 
 def _resources(kp) -> dict[str, list[str]]:
-    exits = (
-        kp.KernelExitPath_Success(),
-        kp.KernelExitPath_GateRefused(),
-        kp.KernelExitPath_Faulted(False),
-        kp.KernelExitPath_Faulted(True),
-        kp.KernelExitPath_Cancelled(),
-    )
-    streams = (kp.KernelStreamState_SOpen(), kp.KernelStreamState_SClosed())
-    handles = (kp.WriteHandleState_HNone(), kp.WriteHandleState_HOpen())
-    iters = (kp.CallerIterState_IUnstarted(), kp.CallerIterState_ISuspended())
+    # KernelExit's `requires`, restated: the compiled Python does not check them.
+    streams = [s for s in _constructors(kp.KernelStreamState) if _name(s) in ("SOpen", "SClosed")]
+    handles = _constructors(kp.WriteHandleState)
+    iters = _constructors(kp.CallerIterState)
     # (resource, before, after) -> exit label -> the `closable` values that take the edge
     edges: dict[tuple[str, str, str], dict[str, set[bool]]] = {}
-    for exit_path in exits:
+    for exit_path in _exits(kp):
         for stream in streams:
             for handle in handles:
                 for it in iters:
                     gate = _name(exit_path) == "GateRefused"
                     if gate and (_name(handle) != "HNone" or _name(it) != "IUnstarted"):
-                        continue  # KernelExit's precondition
+                        continue
                     for closable in (True, False):
                         before = kp.KernelResources_KernelResources(stream, handle, it)
                         after = kp.default__.KernelExit(exit_path, before, closable)

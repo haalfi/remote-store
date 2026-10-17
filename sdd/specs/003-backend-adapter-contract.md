@@ -2008,8 +2008,11 @@ states tabled below, a call means what the transition table says in each state,
 and every exit, failure and cancellation included, has one owner who closes,
 aborts or releases what is open. Three invariants hold on every path: a terminal
 close absorbs every later call the closed guard covers (I1), every `close` reaches the
-driver, so a repeated one is the driver's to make idempotent (I2), and the
-kernel cleans up every exit it observes (I3). The other clauses of this spec
+driver, so a repeated one is the driver's to make idempotent (I2), and on every
+exit the kernel observes it leaves no write handle open, no read stream open
+but one a condemned connection releases, and no caller iterator with `aclose`
+suspended (I3); the temporary of a temp-and-rename write
+is the kernel's too, by the exit-owner row below, outside the model. The other clauses of this spec
 state each call; this one states the states between them. The decisions behind
 it are BK-449's dossier § Plan.
 
@@ -2023,7 +2026,7 @@ meet. A row marked *not yet met* names the item that builds it.
 
 | Party | States | Leaves a state by |
 |---|---|---|
-| backend | Open, Closed | `close`/`aclose`; under `close_is_terminal = False` Closed re-initialises lazily on the next call (BE-020) |
+| backend | Open, Closed | `close`/`aclose`; nothing leaves Closed: under `close_is_terminal = False` the driver re-initialises on the next call and the backend stays Closed (BE-020) |
 | read stream | Open, Exhausted, Failed, Closed | reading to the end, a mapped stream error, `close`/`aclose` |
 | write handle (`open_write`) | Open, Committed, Aborted | `commit`; `abort` on any exception |
 | listing | Not started, Paging, Done, Failed | the first `next`, the last page, a refusal |
@@ -2048,8 +2051,8 @@ stream error leaves it Failed; a Failed stream is closed unless the driver's
 `connection_dead` condemns the error, and then it is released without a close,
 so no second wait falls on a dead connection (SIO-010), in both runtimes. Read
 after close: the sync stream raises `ValueError`, and an async iterator closed
-by its caller ends. BUG-310 states the `ValueError` rule for every backend in
-spec 006 and owns the legacy adapters that break it.
+by its caller ends. The `ValueError` rule for every backend, and the legacy
+adapters that break it, are BUG-310's, still open.
 
 **Exit owners.**
 
@@ -2059,7 +2062,7 @@ spec 006 and owns the legacy adapters that break it.
 | a read stream's close that fails after a successful read | the kernel's stream adapter; *not yet met* (BK-450) | the close failure is logged, never raised, and fed to `connection_dead`; a read failure outranks a close failure |
 | end of data | the driver | exhaustion is the client's own end-of-data read, after any length or checksum check the client makes there, never a byte count the driver keeps |
 | a write handle on any exception, cancellation included | the kernel | calls `abort`; an `abort` that fails is logged on `remote_store._kernel` at `WARNING` with its `connection_dead` verdict, and the write's own error is raised |
-| a temporary of the temp-and-rename write | the kernel | deleted on any exception; a failed delete is logged as a failed `abort` is |
+| a temporary of the temp-and-rename write | the kernel | deleted on any exception; a failed delete is logged as a failed `abort` is, except one that maps to `NotFound` (BE-021, a `container_absent` answer included): no temporary was left, so there is nothing to clean up |
 | `abort` after a failed `commit` | the driver | is legal and idempotent |
 | an overwrite conflict without `overwrite` | the driver | refuses in one step on the wire where the wire has a conditional write; the conflict surfaces at `commit` for a handle, at the call for `put`; its typing as `AlreadyExists` is a driver duty BK-450 enforces |
 | a caller's async content iterator the kernel stops taking (a refused chunk, a driver or handle failure, a cancel) | the kernel | calls its `aclose`, when it has one, before the call returns; what that raises is logged and never replaces the write's error. An exhausted one needs nothing. The kernel takes the iterator with its first chunk: a refusal before that, at the gates (closed guard, key, metadata, content shape), a write check or the driver, leaves it unstarted and the caller's to retry with |
@@ -2097,13 +2100,16 @@ ASYNC-006 points here for the async gap.
 2. **I2, `close ∘ close = close`** (`CloseIsForwardedAndIdempotent`): two closes
    leave the backend as one does, and the driver sees each.
 3. **I3, cleanup on every exit the kernel observes** (`CleanupOnEveryExit`, over
-   `KernelExit`): after any exit, no write handle is Open, no read stream is Open
-   unless its failure condemned the connection, and no caller iterator the
-   kernel took is Suspended if it has `aclose`. One without `aclose` is left
-   where the kernel stopped taking it, the caller's to finish.
+   `KernelExit`): after any exit, no write handle is Open; every read stream is
+   closed, except one whose failure condemned the connection, which is released
+   without a close; and no caller iterator the kernel took is Suspended if it
+   has `aclose`. One without `aclose` is left where the kernel stopped taking
+   it, the caller's to finish. A sync read hands its stream to the caller
+   open, so that stream's exit is the caller's close, which the kernel's
+   wrapper turns into the close or the release.
 
-**Guard order.** BE-030 orders the capability gates ahead of the closed guard
-for `glob`, `write_atomic` and `open_atomic`, and this clause keeps that order.
+**Guard order.** Which capability gates run ahead of the closed guard is
+BE-030's **Gates around the pipeline**, and this clause keeps that order.
 
 **The model is the oracle.** `KernelProtocol.dfy` compiles to
 `sdd/formal/KernelProtocol-py/`, and `tests/_kernel/test_protocol_oracle.py`
@@ -2118,7 +2124,8 @@ exit, so I1 to I3 hold of the code to the extent that suite's stated mapping
 from the fake driver's records onto the model's states is faithful.
 
 **The model drawn.** The diagrams below are enumerated from the same compiled
-model, over its whole input space; `hatch run gen-protocol-diagram` rewrites
+model, over every value of its datatypes that `KernelExit`'s preconditions
+admit; `hatch run gen-protocol-diagram` rewrites
 them after the oracle is rebuilt, and `preflight` fails while they are stale.
 
 <!-- BEGIN_GENERATED:kernel_protocol -->
@@ -2165,6 +2172,7 @@ Iterator:
 
 ```mermaid
 stateDiagram-v2
+  IClosed --> IExhausted : Success
   ISuspended --> IClosed : Faulted(dead=False), Faulted(dead=True), Cancelled with aclose
   ISuspended --> IExhausted : Success
   IUnstarted --> IExhausted : Success

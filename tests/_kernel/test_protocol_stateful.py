@@ -12,7 +12,8 @@ temp-and-rename routes are ``test_protocol.py``'s cells. After every rule:
   kernel's (``close ∘ close = close`` is the driver's own duty);
 - I3: every exit the kernel observed was cleaned up: no write handle is left
   open, every stream opened is closed unless its failure condemned the
-  connection, every async caller iterator is exhausted or closed, and no sync
+  connection (a sync stream at its caller's close, which the read rule makes
+  and which is that read's exit), every async caller iterator is exhausted or closed, and no sync
   caller stream is closed.
 """
 

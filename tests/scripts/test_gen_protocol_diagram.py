@@ -70,6 +70,17 @@ def test_the_resource_edges_are_the_models_cleanup(gen):
     assert not [line for line in lines if " --> HOpen :" in line or " --> SOpen :" in line]
 
 
+def test_the_domain_is_every_constructor_the_preconditions_admit(gen):
+    """Derived from the compiled datatypes, not hand-listed: a closed iterator a write then
+    exhausts is an admitted input, and its edge is drawn."""
+    kp = gen._oracle()
+    states = {type(value).__name__ for value in gen._constructors(kp.CallerIterState)}
+    assert states == {f"CallerIterState_{s}" for s in ("IUnstarted", "ISuspended", "IExhausted", "IClosed")}
+    assert len(gen._exits(kp)) == 5  # Success, GateRefused, Faulted(False), Faulted(True), Cancelled
+    lines = {line.strip() for line in gen.render().splitlines()}
+    assert "IClosed --> IExhausted : Success" in lines
+
+
 def test_a_semicolon_in_a_line_is_refused(gen):
     """Measured: `a --> b : x; y` parses and draws `y` as stray states."""
     with pytest.raises(ValueError, match="stray states"):

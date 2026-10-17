@@ -25,9 +25,10 @@
 //                               Unavailable and the state stays Closed;
 //   I2  CloseIsForwardedAndIdempotent: close twice is close once in state, and
 //                               the driver sees every call;
-//   I3  CleanupOnEveryExit:     no handle open, no stream open unless its
-//                               failure condemned the connection, no caller
-//                               iterator with `aclose` suspended, on every exit.
+//   I3  CleanupOnEveryExit:     no handle open; every stream closed, or released
+//                               unclosed when its failure condemned the
+//                               connection; no caller iterator with `aclose`
+//                               suspended; on every exit.
 
 module KernelProtocol {
 

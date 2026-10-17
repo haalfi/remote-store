@@ -81,7 +81,7 @@ Bounds (Rule 7):
     say) is exit 2, never a silent pass; widen the grammar with a guard cell
     when one is needed.
   * **Outside its spans the wrapper is not checked.**  Other ``CMDS`` lines not
-    in either shape, the text after the build's ``|``, the body of an
+    in the build or ``cp`` shape, the text after the build's ``|``, the body of an
     ``echo '...'`` step (which the outer double quotes still evaluate) and what
     precedes ``cp`` can change what the wrapper produces (a post-build edit, a
     build appended after the pipe, a ``cd`` step) while this check builds as
@@ -129,10 +129,10 @@ DIFF_LINES = 40
 _PIN_RE = re.compile(r"^DAFNY_VERSION=(\S+)\s*$", re.MULTILINE)
 # Oracles: the no-argument default `FILES=(<name>.dfy ...)`; `FILES=("$@")` is not this shape.
 _FILES_RE = re.compile(r"^[ \t]*FILES=\(((?:[ \t]*[A-Za-z0-9_-]+\.dfy)+)[ \t]*\)[ \t]*$", re.MULTILINE)
-# Reading the wrapper is an allowlist grammar over two spans, not a shell parser: within the build
-# span and the cp span, anything whose meaning depends on quoting, expansion or an operator is
-# rejected rather than interpreted. Outside them only the pin line, the UTF-8 decode and the
-# exactly-one-match count are checked (docstring, Bounds).
+# Reading the wrapper is an allowlist grammar over three spans, not a shell parser: within the FILES
+# line above, the build span and the cp span, anything whose meaning depends on quoting, expansion or
+# an operator is rejected rather than interpreted. Outside them only the pin line, the UTF-8 decode
+# and the exactly-one-match count are checked (docstring, Bounds).
 # Build: a double-quoted `CMDS="$CMDS ...` line in which only `&& echo '...'` steps precede
 # `&& (/opt/dafny/dafny build <tokens> 2>&1 |`. An env prefix, `cd`, `timeout` or a single-quoted
 # CMDS piece before the `(` does not match; nothing after the `|` is checked. Tokens split on space
