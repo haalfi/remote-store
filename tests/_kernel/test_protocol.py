@@ -17,6 +17,7 @@ from typing import Any
 import pytest
 
 from remote_store._errors import BackendUnavailable, CapabilityNotSupported, RemoteStoreError
+from remote_store._kernel._async import _io as async_io
 from tests._kernel._fake import RUNTIMES, FakeDenied, FakeDown, FakeOdd, FakeStore, make_kernel, run_async
 
 # write: put; the three write_atomic routes: atomic put, wire temporary, temp and rename.
@@ -464,6 +465,45 @@ def test_a_retry_after_a_refusal_before_the_first_chunk_writes_everything(case: 
     method("g", content, overwrite=True)
     assert store.files["g"].data == b"abcd"
     assert log == ["finally"]
+
+
+@pytest.mark.spec("BE-033", "ASYNC-091")
+def test_the_guarded_iterator_hands_a_buffer_chunk_on_as_bytes() -> None:
+    guarded = async_io.guard_content(_CallerChunks(bytearray(b"ab"), memoryview(b"cd")))
+
+    async def drain() -> list[Any]:
+        return [chunk async for chunk in guarded]  # type: ignore[union-attr]
+
+    chunks = run_async(drain())
+    assert chunks == [b"ab", b"cd"]
+    assert all(type(chunk) is bytes for chunk in chunks)
+
+
+@pytest.mark.spec("BE-033", "ASYNC-091")
+def test_closing_the_guarded_iterator_twice_closes_the_callers_once() -> None:
+    calls: list[str] = []
+
+    class _Counting(_CallerChunks):
+        async def aclose(self) -> None:
+            calls.append("aclose")
+
+    source = _Counting(b"ab", b"cd")
+    guarded = async_io.guard_content(source)
+
+    async def take_one_then_release_twice() -> None:
+        await guarded.__anext__()  # type: ignore[union-attr]
+        await async_io.release_content(guarded)
+        await async_io.release_content(guarded)
+
+    run_async(take_one_then_release_twice())
+    assert calls == ["aclose"]
+
+
+@pytest.mark.spec("BE-033", "ASYNC-091")
+@pytest.mark.parametrize("content", [object(), 3, "text", b"ab"], ids=["object", "int", "str", "bytes"])
+def test_content_that_is_no_async_iterator_passes_the_guard_untouched(content: Any) -> None:
+    # take_content refuses or converts it at its own rank; the guard leaves it as it is.
+    assert async_io.guard_content(content) is content
 
 
 @pytest.mark.spec("BE-033", "ASYNC-091")
