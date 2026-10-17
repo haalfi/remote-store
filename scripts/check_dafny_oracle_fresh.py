@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Check that the committed compiled oracle is what its Dafny sources compile to (ID-263).
+"""Check that each committed compiled oracle is what its Dafny sources compile to (ID-263).
 
-``sdd/formal/MemoryBackend-py/`` is generated: ``scripts/dafny_translate.sh``
-builds ``MemoryBackend.dfy`` (and the files it includes) to Python, then
-``scripts/_dafny_classorder.py`` reorders ``module_.py``.  A non-ghost edit to
-any of those sources that is not regenerated passes ``dafny verify``, and every
-test that drives the oracle then exercises stale code.  This gate rebuilds the
-oracle the same way, with the build arguments read from the wrapper rather than
-restated here, and compares it with the committed tree, file by file.
+``sdd/formal/<stem>-py/`` is generated, one per entry of the wrapper's default
+``FILES=(...)`` list (``MemoryBackend.dfy``, ``KernelProtocol.dfy``):
+``scripts/dafny_translate.sh`` builds each entry (and the files it includes)
+to Python, then ``scripts/_dafny_classorder.py`` reorders ``module_.py``.  A
+non-ghost edit to any of those sources that is not regenerated passes
+``dafny verify``, and every test that drives the oracle then exercises stale
+code.  This gate rebuilds each oracle the same way, with the oracle list and
+the build arguments read from the wrapper rather than restated here, and
+compares it with the committed tree, file by file.
 
-Authority: the ``.dfy`` sources govern; ``MemoryBackend-py/`` is derived and is
+Authority: the ``.dfy`` sources govern; each ``<stem>-py/`` is derived and is
 fixed by regenerating, never by hand-editing (declared in
 ``sdd/formal/README.md`` § Compiled oracle).  ``DAFNY_VERSION`` in
 ``dafny_translate.sh`` is the toolchain pin: a different ``dafny`` on ``PATH``
@@ -34,7 +36,7 @@ Rule 2):
   * a file whose bytes differ, with a unified diff of the first lines,
   * a file present only in the committed tree, or only in the rebuilt one,
   * ``dafny --version`` printing a version other than the pin,
-  * a build that exits non-zero, writes no ``MemoryBackend-py/``, or writes a
+  * a build that exits non-zero, writes no ``<stem>-py/``, or writes a
     ``module_.py`` that is not UTF-8.
 
 Exit 2, setup errors never reported as drift: no ``dafny`` executable, or one
@@ -44,12 +46,14 @@ below; a non-file (a directory, a dangling link) matching the wrapper's glob,
 on which the wrapper's ``cp`` would fail; or any other OS error while copying,
 building or comparing.
 
-The grammar is an allowlist over two spans of the wrapper, not a shell parser
+The grammar is an allowlist over three spans of the wrapper, not a shell parser
 (the text passes two shell levels: the ``CMDS="..."`` assignment, then
 ``bash -c``).  It constrains only these spans; beyond the pin line, the UTF-8
 decode and the one-match count, the rest of the wrapper is not checked (see
 Bounds):
 
+  * exactly one ``FILES=(<name>.dfy ...)`` line, the no-argument default, its
+    names in ``[A-Za-z0-9_-]`` (the ``FILES=("$@")`` branch is not this shape);
   * exactly one ``cp [-p|-f|-v]... /work/<glob> /build[/]`` line, followed only
     by ``&&``, ``;``, ``|``, ``)``, ``"`` or the line end, whose glob is
     ``[A-Za-z0-9_*?[]-]*.dfy`` without ``**``;
@@ -62,9 +66,11 @@ The offending token, or the shape and how often it was found, is named.
 
 Bounds (Rule 7):
 
-  * **Only ``MemoryBackend.dfy``'s oracle.**  It is the one compiled artifact
-    committed; the other ``.dfy`` files have no oracle of their own, and those
-    ``MemoryBackend.dfy`` includes are covered through its build.
+  * **Only the oracles the default ``FILES`` list names.**  They are the
+    compiled artifacts committed; the other ``.dfy`` files have no oracle of
+    their own, and those ``MemoryBackend.dfy`` includes are covered through its
+    build.  The oracles build one after another in one copy of the sources, as
+    the wrapper's loop does.
   * **Freshness, not correctness.**  A regenerated oracle that is wrong is
     the conformance suite's to catch, which ``verify-formal`` runs after this.
   * **Working tree, not the index.**  The committed side is read from disk, so
@@ -98,7 +104,7 @@ Usage::
 Drift-gate::
 
     kind:       pair
-    compares:   sdd/formal/*.dfy (built by the pinned Dafny) ↔ sdd/formal/MemoryBackend-py/
+    compares:   sdd/formal/*.dfy (built by the pinned Dafny) ↔ sdd/formal/<stem>-py/, per default FILES entry
     domain:     intent-formalized
 """
 
@@ -118,11 +124,11 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from _dafny_classorder import reorder  # noqa: E402
 
-ENTRY = "MemoryBackend.dfy"
-STEM = "MemoryBackend"
-OUT_DIR = f"{STEM}-py"
+ENTRY = "MemoryBackend.dfy"  # the first oracle, and the binding read_build_args defaults to
 DIFF_LINES = 40
 _PIN_RE = re.compile(r"^DAFNY_VERSION=(\S+)\s*$", re.MULTILINE)
+# Oracles: the no-argument default `FILES=(<name>.dfy ...)`; `FILES=("$@")` is not this shape.
+_FILES_RE = re.compile(r"^[ \t]*FILES=\(((?:[ \t]*[A-Za-z0-9_-]+\.dfy)+)[ \t]*\)[ \t]*$", re.MULTILINE)
 # Reading the wrapper is an allowlist grammar over two spans, not a shell parser: within the build
 # span and the cp span, anything whose meaning depends on quoting, expansion or an operator is
 # rejected rather than interpreted. Outside them only the pin line, the UTF-8 decode and the
@@ -140,7 +146,6 @@ _BUILD_RE = re.compile(
 _COPY_RE = re.compile(r"\bcp((?:[ \t]+-[pfv]+)*)[ \t]+/work/(\S+)[ \t]+/build/?[ \t]*(?=&&|;|\||\)|\"|$)", re.MULTILINE)
 # `$f`, `${f}`, `$stem`, `${stem}` as whole names: `$file` or `$stem_out` stay unbound and are rejected.
 _VAR_RE = re.compile(r"\$(?:\{(f|stem)\}|(f|stem)(?![A-Za-z0-9_]))")
-_BINDINGS = {"f": ENTRY, "stem": STEM}
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_./:=,+-]+")  # a build token after binding
 # A `.dfy` glob in one directory, without `**`: bash and Path.glob read it alike, dotfiles aside.
 _GLOB_RE = re.compile(r"(?!.*\*\*)[A-Za-z0-9_*?\[\]-]*\.dfy")
@@ -179,16 +184,25 @@ def read_source_glob(translate_script: Path) -> str:
     return glob
 
 
-def read_build_args(translate_script: Path) -> list[str]:
-    """The wrapper's build arguments with its loop variables bound to the oracle.
+def read_oracles(translate_script: Path) -> list[str]:
+    """The ``.dfy`` entries the wrapper translates with no arguments: one committed oracle each."""
+    names = _single(_FILES_RE, translate_script, "FILES=(<name>.dfy ...)").group(1).split()
+    if len(set(names)) != len(names):
+        raise WrapperError(f"{translate_script}: FILES lists an entry twice: {' '.join(names)}")
+    return names
+
+
+def read_build_args(translate_script: Path, entry: str = ENTRY) -> list[str]:
+    """The wrapper's build arguments with its loop variables bound to *entry*.
 
     Read rather than restated, so a flag the wrapper gains reaches this check
     (``sdd/DRIFT-RULES.md`` Rule 3).
     """
+    bindings = {"f": entry, "stem": entry.removesuffix(".dfy")}
     raw = _single(_BUILD_RE, translate_script, "dafny build ... 2>&1").group(1)
     args = []
     for tok in re.split(r"[ \t]+", raw.strip(" \t")):
-        bound = _VAR_RE.sub(lambda m: _BINDINGS[m.group(1) or m.group(2)], tok)
+        bound = _VAR_RE.sub(lambda m: bindings[m.group(1) or m.group(2)], tok)
         if not _TOKEN_RE.fullmatch(bound):
             raise WrapperError(f"{translate_script}: build token `{tok}` is outside the grammar this check reproduces")
         args.append(bound)
@@ -247,7 +261,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: no DAFNY_VERSION= line in {args.translate_script}", file=sys.stderr)
         return 2
     try:
-        build_args = read_build_args(args.translate_script)
+        oracles = read_oracles(args.translate_script)
+        builds = {entry: read_build_args(args.translate_script, entry) for entry in oracles}
         source_glob = read_source_glob(args.translate_script)
     except WrapperError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -292,42 +307,48 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
-    committed = args.formal_dir / OUT_DIR
+    stale = False
     try:
         with tempfile.TemporaryDirectory(prefix="oracle-fresh-") as tmp:
             work = Path(tmp)
             for src in sources:
                 shutil.copy2(src, work / src.name)
-            build = subprocess.run(
-                [dafny, *build_args], cwd=work, capture_output=True, encoding="utf-8", errors="replace", check=False
-            )
-            rebuilt = work / OUT_DIR
-            if build.returncode != 0 or not rebuilt.is_dir():
-                print(
-                    f"FAIL: `dafny {' '.join(build_args)}` exited {build.returncode}"
-                    + ("" if rebuilt.is_dir() else f" and wrote no {OUT_DIR}/")
+            for entry, build_args in builds.items():
+                out_dir = f"{entry.removesuffix('.dfy')}-py"
+                committed = args.formal_dir / out_dir
+                build = subprocess.run(
+                    [dafny, *build_args], cwd=work, capture_output=True, encoding="utf-8", errors="replace", check=False
                 )
-                print((build.stdout + build.stderr).strip()[-4000:])
-                return 1
-            module = rebuilt / "module_.py"
-            if module.is_file():
-                try:
-                    module.write_text(reorder(module.read_text(encoding="utf-8")), encoding="utf-8", newline="\n")
-                except UnicodeDecodeError as exc:
-                    print(f"FAIL: the rebuilt {OUT_DIR}/module_.py is not UTF-8 ({exc}); the build is broken")
+                rebuilt = work / out_dir
+                if build.returncode != 0 or not rebuilt.is_dir():
+                    print(
+                        f"FAIL: `dafny {' '.join(build_args)}` exited {build.returncode}"
+                        + ("" if rebuilt.is_dir() else f" and wrote no {out_dir}/")
+                    )
+                    print((build.stdout + build.stderr).strip()[-4000:])
                     return 1
-            report = compare_trees(committed, rebuilt)
+                module = rebuilt / "module_.py"
+                if module.is_file():
+                    try:
+                        module.write_text(reorder(module.read_text(encoding="utf-8")), encoding="utf-8", newline="\n")
+                    except UnicodeDecodeError as exc:
+                        print(f"FAIL: the rebuilt {out_dir}/module_.py is not UTF-8 ({exc}); the build is broken")
+                        return 1
+                report = compare_trees(committed, rebuilt)
+                if report:
+                    stale = True
+                    print(f"FAIL: {committed} is not what its sources compile to ({len(report)} path(s)):")
+                    for line in report:
+                        print(f"  {line}")
+                else:
+                    print(f"OK: {committed} matches a fresh dafny {pin} build of {entry}.")
     except OSError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
-    if report:
-        print(f"FAIL: {committed} is not what its sources compile to ({len(report)} path(s)):")
-        for entry in report:
-            print(f"  {entry}")
-        print("Fix: bash scripts/dafny_translate.sh, then commit sdd/formal/MemoryBackend-py/.")
+    if stale:
+        print("Fix: bash scripts/dafny_translate.sh, then commit the sdd/formal/<stem>-py/ it names.")
         return 1
-    print(f"OK: {committed} matches a fresh dafny {pin} build of {ENTRY}.")
     return 0
 
 

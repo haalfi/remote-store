@@ -89,8 +89,8 @@ jobs:
           # FORMAL_PAT gates the Dafny job. Exclude the TLA, Alloy and Lean
           # subtrees so changes confined to them do not trigger Dafny: none is
           # a Dafny input, and verify-tla has its own filter. The three scripts produce or
-          # check the compiled oracle (ID-263): an edit to any of them changes
-          # what MemoryBackend-py/ must be, so it reaches verify-formal too.
+          # check the compiled oracles (ID-263): an edit to any of them changes
+          # what each sdd/formal/<stem>-py/ must be, so it reaches verify-formal too.
           FORMAL_PAT='^sdd/(formal|specs)/|^scripts/(check_dafny_oracle_fresh\.py|_dafny_classorder\.py|dafny_translate\.sh)$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -vE '^sdd/formal/(tla|alloy|lean)/' | grep -qE "$FORMAL_PAT"; then echo "formal=true" >> "$GITHUB_OUTPUT"
           else echo "formal=false" >> "$GITHUB_OUTPUT"; fi
@@ -742,10 +742,11 @@ jobs:
       # system python3 suffices.
       - name: Check Dafny twin parity
         run: python3 scripts/check_dafny_twin_parity.py
-      # The compiled oracle (sdd/formal/MemoryBackend-py/) is generated from
-      # MemoryBackend.dfy and its includes. Rebuild it with the dafny installed
-      # above and fail if the committed tree differs, so the tests below never
-      # run stale compiled code (ID-263). Stdlib-only; system python3 suffices.
+      # The compiled oracles (sdd/formal/MemoryBackend-py/, KernelProtocol-py/)
+      # are generated from their .dfy entries and includes. Rebuild them with the
+      # dafny installed above and fail if a committed tree differs, so the tests
+      # below never run stale compiled code (ID-263). Stdlib-only; system
+      # python3 suffices.
       - name: Check the compiled oracle matches its Dafny sources
         run: python3 scripts/check_dafny_oracle_fresh.py
       # The compiled oracle is exercised only by pytest, and the test jobs are
@@ -762,6 +763,10 @@ jobs:
       - run: uv pip install -e ".[dev]"
       - name: Run the compiled oracle's tests and conformance lanes
         run: pytest tests/backends/dafny tests/backends/conformance -k dafny -q
+      # The second oracle, sdd/formal/KernelProtocol-py/, drives the kernel over
+      # BE-033's whole exit space; same reason as above (BK-449).
+      - name: Run the kernel against the compiled protocol oracle
+        run: pytest tests/_kernel/test_protocol_oracle.py -q
 
   # INFORMATIONAL: TLA+ model checks for the live informal layer under
   # sdd/formal/tla/. Not in the gate below by design — see

@@ -321,6 +321,19 @@ def test_a_failed_temporary_delete_is_logged_and_the_rename_error_raised(
 
 
 @pytest.mark.spec("BE-033")
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_a_temporary_never_written_is_no_failed_cleanup(runtime: str, caplog: pytest.LogCaptureFixture) -> None:
+    # The put fails before the temporary exists: the delete's NotFound is nothing to clean up.
+    store = _store()
+    run = make_kernel(runtime, store, **_ROUTES["write_atomic-rename"])
+    store.fault("put", FakeOdd("refused"))
+    with caplog.at_level("WARNING", logger="remote_store._kernel"), pytest.raises(RemoteStoreError):
+        run.write_atomic("g", b"G")
+    assert _abort_warnings(caplog) == []
+    assert sorted(store.files) == ["f"]
+
+
+@pytest.mark.spec("BE-033")
 @pytest.mark.parametrize("failure", ["body", "commit"])
 def test_open_atomic_logs_a_failed_abort_and_raises_the_first_error(
     failure: str, caplog: pytest.LogCaptureFixture

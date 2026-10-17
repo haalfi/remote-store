@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import stat
 import sys
 import textwrap
@@ -31,6 +32,7 @@ RAW_MODULE = "import _dafny\n\nclass MemoryBackend(Backend):\n    pass\n\nclass 
 # The pin, the source copy and the build line, shaped as scripts/dafny_translate.sh writes them.
 WRAPPER = (
     "#!/bin/bash\nDAFNY_VERSION=4.11.0\nDAFNY_SHA256=abc\n"
+    'if [ $# -eq 0 ]; then\n  FILES=(MemoryBackend.dfy)\nelse\n  FILES=("$@")\nfi\n'
     'CMDS="$CMDS && mkdir -p /build && cp /work/*.dfy /build/ && cd /build"\n'
     "  CMDS=\"$CMDS && echo '==> Translating $f' && (/opt/dafny/dafny build -t py $f --output:$stem 2>&1"
     " | grep -v 'Unable to start python3' || true)\"\n"
@@ -85,12 +87,16 @@ def env(tmp_path: Path, mod, monkeypatch):
                     sys.exit(0)
                 print(os.environ.get("FAKE_DAFNY_VERSION", "4.11.0+deadbeef"))
                 sys.exit(0)
-            Path({str(log)!r}).write_text(json.dumps({{
+            call = json.dumps({{
                 "argv": sys.argv[1:],
-                "cwd_files": sorted(os.listdir(".")),
-            }}))
+                "cwd_files": sorted(f for f in os.listdir(".") if f.endswith(".dfy")),
+            }})
+            Path({str(log)!r}).write_text(call)  # the last call
+            with open({str(log)!r} + "l", "a") as every:  # every call, one line each
+                every.write(call + "\\n")
+            stem = next(a for a in sys.argv if a.startswith("--output:")).removeprefix("--output:")
             if os.environ.get("FAKE_DAFNY_WRITE", "1") == "1":
-                shutil.copytree({str(build_out)!r}, "MemoryBackend-py")
+                shutil.copytree({str(build_out)!r}, stem + "-py")
             sys.exit(int(os.environ.get("FAKE_DAFNY_EXIT", "0")))
             """
         )
@@ -242,6 +248,43 @@ class TestFreshness:
         assert env["run"]() == 1
         assert "wrote no MemoryBackend-py/" in capsys.readouterr().out
 
+    def _two_oracles(self, env) -> Path:
+        """A wrapper whose default FILES names a second oracle, committed fresh beside the first."""
+        env["translate"].write_text(
+            WRAPPER.replace("FILES=(MemoryBackend.dfy)", "FILES=(MemoryBackend.dfy KernelProtocol.dfy)"),
+            encoding="utf-8",
+        )
+        (env["formal"] / "KernelProtocol.dfy").write_text("// KernelProtocol.dfy\n")
+        second = env["formal"] / "KernelProtocol-py"
+        shutil.copytree(env["committed"], second)
+        return second
+
+    def test_every_oracle_the_default_files_list_names_is_built_and_compared(self, env, capsys):
+        self._two_oracles(env)
+        assert env["run"]() == 0
+        out = capsys.readouterr().out
+        assert "MemoryBackend-py matches" in out
+        assert "KernelProtocol-py matches" in out
+        calls = [json.loads(line)["argv"] for line in Path(str(env["log"]) + "l").read_text().splitlines()]
+        assert calls == [
+            ["build", "-t", "py", "MemoryBackend.dfy", "--output:MemoryBackend"],
+            ["build", "-t", "py", "KernelProtocol.dfy", "--output:KernelProtocol"],
+        ]
+
+    def test_a_stale_second_oracle_fails_and_is_named(self, env, capsys):
+        second = self._two_oracles(env)
+        (second / "module_.py").write_text("stale\n")
+        assert env["run"]() == 1
+        out = capsys.readouterr().out
+        assert "MemoryBackend-py matches" in out  # the first is still reported fresh
+        assert f"FAIL: {second} is not what its sources compile to" in out
+
+    def test_a_missing_second_oracle_fails(self, env, capsys):
+        second = self._two_oracles(env)
+        shutil.rmtree(second)
+        assert env["run"]() == 1
+        assert "only in rebuilt tree: module_.py" in capsys.readouterr().out
+
 
 class TestSetupErrors:
     def test_missing_dafny_exits_2(self, env, capsys):
@@ -254,7 +297,7 @@ class TestSetupErrors:
         assert "DAFNY_VERSION" in capsys.readouterr().err
 
     def test_wrapper_without_build_line_exits_2(self, env, capsys):
-        env["translate"].write_text("#!/bin/bash\nDAFNY_VERSION=4.11.0\n", encoding="utf-8")
+        env["translate"].write_text("#!/bin/bash\nDAFNY_VERSION=4.11.0\nFILES=(MemoryBackend.dfy)\n", encoding="utf-8")
         assert env["run"]() == 2
         assert "dafny build" in capsys.readouterr().err
 
@@ -275,6 +318,18 @@ class TestSetupErrors:
         env["translate"].write_bytes(WRAPPER.encode() + "# café\n".encode("latin-1"))
         assert env["run"]() == 2
         assert "cannot read" in capsys.readouterr().err
+
+    def test_wrapper_without_a_default_files_list_exits_2(self, env, capsys):
+        env["translate"].write_text(WRAPPER.replace("FILES=(MemoryBackend.dfy)", "true"), encoding="utf-8")
+        assert env["run"]() == 2
+        assert "FILES=(<name>.dfy ...)" in capsys.readouterr().err
+        assert not env["log"].exists()
+
+    def test_wrapper_listing_an_oracle_twice_exits_2(self, env, capsys):
+        twice = WRAPPER.replace("FILES=(MemoryBackend.dfy)", "FILES=(MemoryBackend.dfy MemoryBackend.dfy)")
+        env["translate"].write_text(twice, encoding="utf-8")
+        assert env["run"]() == 2
+        assert "twice" in capsys.readouterr().err
 
     def test_wrapper_with_two_source_copies_exits_2(self, env):
         copy_line = next(line for line in WRAPPER.splitlines() if "cp /work/" in line)
@@ -407,6 +462,14 @@ def test_real_wrapper_carries_a_readable_pin(mod):
     pin = mod.read_pin(SCRIPTS / "dafny_translate.sh")
     assert pin is not None
     assert pin.count(".") == 2
+
+
+def test_real_wrapper_names_both_committed_oracles(mod):
+    """Each name is an oracle under sdd/formal/; dropping one from FILES would stop checking it."""
+    oracles = mod.read_oracles(SCRIPTS / "dafny_translate.sh")
+    assert oracles == ["MemoryBackend.dfy", "KernelProtocol.dfy"]
+    for entry in oracles:
+        assert (ROOT / "sdd" / "formal" / f"{entry.removesuffix('.dfy')}-py").is_dir()
 
 
 def test_real_wrapper_source_copy_parses(mod):

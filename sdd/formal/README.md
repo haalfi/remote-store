@@ -283,7 +283,7 @@ that must move — see [`000-process.md` Rule
 | `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle, together with the files it includes (§ Compiled oracle lists them) |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
-| `KernelProtocol.dfy` | BE-033's interaction protocol on the kernel, standalone (nothing includes it): the close posture as a transition function, with terminal absorption (`TerminalCloseAbsorbs`, I1) and every close forwarded (`CloseIsForwardedAndIdempotent`, I2); `KernelExit` over every exit the kernel observes, leaving no write handle open, no stream open unless its failure condemned the connection, and no caller iterator with `aclose` suspended (`CleanupOnEveryExit`, I3). I1 covers the calls the closed guard covers; the addressing members are not modelled. The `Session` states are not modelled |
+| `KernelProtocol.dfy` | BE-033's interaction protocol on the kernel, standalone (nothing includes it) and compiled to an oracle of its own (§ Compiled oracle): the close posture as a transition function, with terminal absorption (`TerminalCloseAbsorbs`, I1) and every close forwarded (`CloseIsForwardedAndIdempotent`, I2); `KernelExit` over every exit the kernel observes, leaving no write handle open, no stream open unless its failure condemned the connection, and no caller iterator with `aclose` suspended (`CleanupOnEveryExit`, I3). I1 covers the calls the closed guard covers; the addressing members are not modelled. The `Session` states are not modelled |
 | `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
 | `StoreTree.dfy` | RFC-0021's model, a sketch not yet wired into the trait. Its header lists §1 to §12: the store as a tree over spec 051's names (TREE-007), whose distinct Keys never join to the same string (TREE-010); a flat encoding's partial `decode`; agreement between a flat driver's lookups, listings, recursive `delete_folder` walk and `move`/`copy` and the tree; D4's write checks; that a flat encoding holds no empty folder; A.8's refusal rule for every call, namespace and row; and that a valid tree is the pair of spec 051's lemma L6, for finite stores only |
 
@@ -517,16 +517,30 @@ the test itself has a bug and must be fixed.
 | `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
 | `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
 | `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |
+| `sdd/formal/KernelProtocol.dfy` | The second translation entry point: BE-033's interaction protocol, one named `module KernelProtocol`, including nothing and included by nothing |
+| `sdd/formal/KernelProtocol-py/KernelProtocol.py` | Its compiled Python: `KernelExit`, `KernelStep`, `KernelRun` and their datatypes (`module_.py` beside it is Dafny's stub entry, not this module) |
+| `tests/_kernel/test_protocol_oracle.py` | Drives the kernel over BE-033's whole finite exit space and compares the state it leaves with `KernelExit`'s and `KernelRun`'s answer |
+
+**The second oracle.** `KernelProtocol-py/` serves a different direction from
+`MemoryBackend-py/`: not "a test the oracle passes is a correct test", but "the
+kernel leaves the state the proved model computes". Its suite enumerates every
+combination rather than sampling, maps what the fake driver observed onto the
+model's datatypes, and asks the compiled model for the expected state, so a
+lemma about `KernelExit` is a claim about the kernel only as far as that
+mapping is faithful. The mapping is the suite's `_observe` functions; read them
+before trusting a pass. Both oracles share the Dafny runtime (`_dafny/`,
+`System_/`), byte-identical under the one pin, and the named module keeps the
+second off the first's `module_` on a shared `sys.path`.
 
 **Regenerating the compiled output.** Ghost-only changes (lemmas,
 invariants, ghost variables, postconditions) erase at compile time and
 produce no Python output — regeneration is not needed. Non-ghost changes
 (method bodies, datatype definitions, function implementations) do require
 regeneration, in any of the source files above, not only
-`MemoryBackend.dfy`. The sources govern: `MemoryBackend-py/` is derived, and a
+`MemoryBackend.dfy`. The sources govern: each `<stem>-py/` is derived, and a
 difference is fixed by regenerating, never by editing the output.
 `scripts/check_dafny_oracle_fresh.py` holds that in CI's `verify-formal` job: it
-rebuilds the oracle with the pinned Dafny and fails, naming each differing file
+rebuilds each oracle with the pinned Dafny and fails, naming each differing file
 and line, when the committed tree is not what the sources compile to. Its
 docstring states what it does not catch. After it, the same job runs
 `tests/backends/dafny` and the oracle's conformance lanes (`-k dafny`) against
@@ -539,7 +553,9 @@ bash scripts/dafny_translate.sh                    # translate + reorder
 ```
 
 The translate wrapper uses the same Dafny release and SHA-256 pin as
-`dafny_verify.sh`, writes `sdd/formal/MemoryBackend-py/`, and calls
+`dafny_verify.sh`, writes `sdd/formal/MemoryBackend-py/` and
+`sdd/formal/KernelProtocol-py/` (its default `FILES` list, which the freshness
+check reads), and calls
 `scripts/_dafny_classorder.py` on the output so classes are emitted in
 importable order (ADT types → `Backend` → `default__` → `MemoryBackend` →
 `MemoryBackendMinimal`).
@@ -559,7 +575,8 @@ python -c "import sys; sys.path.insert(0, 'sdd/formal/MemoryBackend-py'); import
 pytest tests/backends/dafny tests/backends/conformance -k dafny -q
 ```
 
-The same command `verify-formal` runs. All tests should pass or self-skip
+`verify-formal` runs it, and then `pytest tests/_kernel/test_protocol_oracle.py`
+for the second oracle. All tests should pass or self-skip
 (an opt-in the fixture leaves off, a capability the oracle does not declare,
 or a cell aimed at non-declaring backends). A conformance failure indicates a
 conformance suite bug; a failure under `tests/backends/dafny` is the adapter's.

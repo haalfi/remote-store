@@ -3,9 +3,16 @@
 // The parties' states as spec 003 BE-033 tables them, for the session-less
 // kernel classes (`DriverBackend`, `AsyncDriverBackend`); the `Session` row is
 // fixed at RFC-0017 D3 step 2 and is not modelled. `ResourceSafety.dfy` §1 and
-// §3 model the classes before the kernel. This file stands alone: nothing
-// includes it, so it adds nothing to the Dafny oracle's compiled module.
-// Hypothesis twin: `tests/_kernel/test_protocol_stateful.py`.
+// §3 model the classes before the kernel. Nothing includes this file, so it
+// adds nothing to MemoryBackend.dfy's oracle; it compiles to an oracle of its
+// own, `sdd/formal/KernelProtocol-py/`, which
+// `tests/_kernel/test_protocol_oracle.py` drives against the kernel over the
+// whole finite exit space (sdd/formal/README.md § Compiled oracle). Hypothesis
+// twin: `tests/_kernel/test_protocol_stateful.py`.
+//
+// One named module, so the compiled Python is `KernelProtocol.py` beside
+// `module_.py` rather than a second `module_` that would shadow the other
+// oracle's on a shared `sys.path`.
 //
 // A call is reduced to what decides the protocol: whether it is `close`, and
 // for a live call the exit it takes. A `LiveCall` is a call the closed guard
@@ -20,6 +27,8 @@
 //   I3  CleanupOnEveryExit:     no handle open, no stream open unless its
 //                               failure condemned the connection, no caller
 //                               iterator with `aclose` suspended, on every exit.
+
+module KernelProtocol {
 
 datatype ClosePosture = Reusable | Terminal
 datatype KernelBackendState = BOpen | BClosed
@@ -167,3 +176,5 @@ method CleanupOnEveryExit(exit: KernelExitPath, before: KernelResources, closabl
 {
   after := KernelExit(exit, before, closable);
 }
+
+}  // module KernelProtocol

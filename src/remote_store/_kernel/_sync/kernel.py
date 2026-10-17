@@ -920,7 +920,9 @@ class _KernelCore:
             try:
                 self._driver.delete(temp)
             except Exception as failure:  # noqa: BLE001 - a failed cleanup never masks the write's error
-                self._cleanup_failed(f"delete of the temporary {temp!r}", key, failure)
+                # A put that failed before writing left nothing: its NotFound is no failure.
+                if not isinstance(self._mapped(failure, Op.WRITE_ATOMIC, temp), NotFound):
+                    self._cleanup_failed(f"delete of the temporary {temp!r}", key, failure)
             raise
         return result
 

@@ -227,6 +227,37 @@ phases:
           CHANGELOG stub is the title alone; spec IDs in private kernel
           docstrings fail check_no_tracker_refs too, so they were removed from the
           docstrings; # comments keep theirs
+  - id: oracle
+    name: Model as oracle, and mutation
+    steps:
+      - file: scripts/check_dafny_oracle_fresh.py
+        section: "module docstring, main"
+        read_type: gate
+        extract: >-
+          Assumed one committed oracle; generalised to the wrapper's default FILES
+          list, read from dafny_translate.sh rather than restated
+      - file: scripts/dafny_translate.sh
+        section: "FILES default, build loop"
+        read_type: reference
+        extract: "The loop already builds each entry with $f/$stem; only the default list changes"
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate"
+        read_type: reference
+        extract: "Where the second oracle and the direction it serves (kernel against model) are stated"
+      - file: .github/workflows/ci.yml
+        section: "verify-formal, FORMAL_PAT"
+        read_type: reference
+        extract: >-
+          An sdd-only regeneration reaches only verify-formal, so the oracle suite
+          runs there too
+      - file: scripts/fast_gate.py
+        section: "DAFNY_ORACLE_DIR, select_tests"
+        read_type: reference
+        extract: "A KernelProtocol-py/ change selects the oracle suite"
+      - file: scripts/mutate_scopes.py
+        section: "module docstring, Scope"
+        read_type: reference
+        extract: "Every scope is derived; a hand-written kernel scope would break that rule"
 discovery_followups:
   - BK-454
   - BK-455
@@ -237,6 +268,11 @@ surprising_ripples:
   - tests/backends/conformance/test_close_posture.py
   - tests/backends/conformance/aio/test_close_posture.py
   - sdd/BACKLOG-DONE.md
+  - sdd/formal/KernelProtocol-py/
+  - scripts/check_dafny_oracle_fresh.py
+  - tests/scripts/test_check_dafny_oracle_fresh.py
+  - scripts/fast_gate.py
+  - tests/scripts/test_fast_gate.py
 expected_ripples:
   - sdd/backlogid.json
   - src/remote_store/_kernel/_sync/kernel.py

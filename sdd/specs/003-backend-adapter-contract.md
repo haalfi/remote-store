@@ -2105,6 +2105,18 @@ ASYNC-006 points here for the async gap.
 **Guard order.** BE-030 orders the capability gates ahead of the closed guard
 for `glob`, `write_atomic` and `open_atomic`, and this clause keeps that order.
 
+**The model is the oracle.** `KernelProtocol.dfy` compiles to
+`sdd/formal/KernelProtocol-py/`, and `tests/_kernel/test_protocol_oracle.py`
+drives the kernel to every exit in the finite space the model admits: each
+write route (and sync `open_atomic`), each driver step it reaches, each exit
+kind (success, a gate refusal, a refused chunk, a failure with either
+`connection_dead` verdict, a cancel), both runtimes, an iterator with and
+without `aclose`; every read exit; and every call sequence up to four calls,
+per runtime and posture. Each cell requires the state the kernel left to equal
+what the compiled `KernelExit` or `KernelStep` computes from the state at the
+exit, so I1 to I3 hold of the code to the extent that suite's stated mapping
+from the fake driver's records onto the model's states is faithful.
+
 **Conformance:** `tests/_kernel/test_protocol.py`, a cell per kernel- and
 caller-owned row of the tables above over the fake driver, both runtimes
 (the `Session`, driver and *not yet met* rows excepted, below); `tests/_kernel/test_protocol_stateful.py`,
