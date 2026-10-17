@@ -354,9 +354,9 @@ no clause of the contract ships unexercised.
   spec: BE-030, ASYNC-091 · effort: S · audience: user.api, library.maintainer
   `_marked` (`_kernel/_async/_io.py`) raises on a non-bytes chunk without
   `aclose()` on the caller's iterator, so its `finally` runs only at GC, on
-  whatever loop is then current (measured in BUG-335: 4 of 4 write routes). No
-  spec clause says who closes it. Open decision: the kernel closes what it
-  abandons, or BE-030 states that the caller owns it, as spec 036 does for reads.
+  whatever loop is then current (BUG-335: 4 of 4 write routes). No spec covers
+  caller-supplied content; the nearest, SEEK-011, closes a stream the library
+  consumed. Open decision: the kernel closes what it abandons, or BE-030 says the caller owns it.
 
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
   spec: RES-100 · effort: M · audience: user.api
