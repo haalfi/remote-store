@@ -57,20 +57,17 @@ in four places (T3, T12, T13, T14), one of which would fail a correct test.
 to the driver boundary, to glob, to the formal model, to a flat template, or
 to the async runtime. Five proposals (§ Proposals) close those bindings, and
 T1 to T16 and T19 each name the one that absorbs them; T17, T18 and most
-lower-ranked rows are direct fixes with their decision already made.
+lower-ranked rows are direct fixes with no open choice.
 
-**Decisions recorded at triage:** all of T1 to T19 land before D3 step 2, so
-the second driver copies a consistent template. T7 stays open (§ Open
-questions). The rows under § Lower-ranked are recorded here and not gated.
-The formal model gates driver acceptance (P3). Effort was ruled out as an
-argument for or against a proposal; each is judged by whether later drivers
-need it and what it prevents.
-
-**These decisions do not bind from here.** An audit's prescription is advisory
-(CLAUDE.md § Audits), so the step-2 gate and the model's role need a home with
-authority. Recommended: a new ADR recording both, with a backlog item carrying
-the step-2 gate, the way BACKLOG already carries "due before" gates (BK-439).
-Neither is filed by this audit.
+**Recommendations from triage:** all of T1 to T19 land before D3 step 2, so
+the second driver copies a consistent template; the formal model gates driver
+acceptance (P3); T7 stays open (§ Open questions); the rows under
+§ Lower-ranked are recorded, not gated. Effort was ruled out as an argument for
+or against a proposal; each is judged by whether later drivers need it and
+what it prevents. Like everything in an audit these are advisory
+(CLAUDE.md § Audits). Suggested home if adopted: a new ADR for the step-2 gate
+and the model's role, with a backlog item carrying the gate, the way BACKLOG
+already carries "due before" gates (BK-439).
 
 | Severity | Count | Findings |
 |---|---|---|
@@ -143,8 +140,7 @@ GLOB-015, and Tier-1 case folding.
 compiled oracle runs, still ranges over a path map and never sees an encoding
 (BK-434). Two models of one store drift: T3, T12, T13, T14, T19's model half
 and the `StoreTree` name gap are that drift. In T3, T12 and T14 the model, not
-the kernel, was wrong; in T13 both were. Decided at triage, to be recorded by the ADR § Summary recommends: the model
-gates driver acceptance, so
+the kernel, was wrong; in T13 both were. Recommended at triage: the model gates driver acceptance, so
 `BackendContract` is refined against `StoreTree`, with BE-030's key rule
 inside its domain.
 
@@ -193,7 +189,7 @@ e2e exemption.
 ### Not proposed
 
 More tree axioms: the tree came back clean. T17, T18, T19's test half and the
-doc-drift rows: each is a direct fix whose decision is already made.
+doc-drift rows: each is a direct fix with no open choice.
 
 ---
 
