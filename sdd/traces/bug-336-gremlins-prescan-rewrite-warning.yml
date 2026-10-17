@@ -98,3 +98,35 @@ phases:
         section: "mutate extra"
         read_type: reference
         extract: "The pin >=1.11.0,<1.12 admits patch releases, so 1.11.4 arrived with no edit here; upstream's change is #485 (node ids in a file, via a new pre-scan entry module)"
+review:
+  # Derived by `hatch run ship-report 1158 --trace-block-only` at head e3ab0cb.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1158 --trace-block-only"
+  pr: 1158
+  review_rounds: 1
+  submissions: 1
+  findings: 5
+  by_round:
+    - round: 1
+      findings: 5
+      origin: {original: 5}
+      triage: {must-fix: 5}
+      duration_hours: 0.1
+  by_file:
+    - path: "sdd/traces/bug-336-gremlins-prescan-rewrite-warning.yml"
+      findings: 2
+    - path: "tests/scripts/test_run_mutate.py"
+      findings: 2
+    - path: "pyproject.toml"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/7945eb96-26d2-54e0-8539-54e7105de289.jsonl"
+  review_driven_commits:
+    - sha: "e3ab0cb"
+      subject: "BUG-336: Address review: BK-413 re-measure pointer, BK-453 for an unflagged dead pre-scan"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
