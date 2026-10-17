@@ -119,7 +119,7 @@ Where the build left the plan above, and why:
 - That model is also an oracle of its own: `scripts/dafny_translate.sh` compiles
   it to `sdd/formal/KernelProtocol-py/` (kept fresh by
   `check_dafny_oracle_fresh.py`), `tests/_kernel/test_protocol_oracle.py`
-  drives the kernel against it over the whole exit space, and
+  drives the kernel against it over the exits BE-033 enumerates, and
   `scripts/gen_protocol_diagram.py` draws BE-033's diagrams from it. After
   editing the `.dfy`: `bash scripts/dafny_translate.sh`, then
   `hatch run gen-protocol-diagram` (sdd/formal/README.md § The second oracle).

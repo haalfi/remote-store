@@ -1,13 +1,14 @@
-"""The kernel against the compiled BE-033 model, over the protocol's whole finite exit space.
+"""The kernel against the compiled BE-033 model, over an enumerated set of the protocol's exits.
 
 ``sdd/formal/KernelProtocol-py/`` is ``KernelProtocol.dfy`` compiled by Dafny,
 so ``KernelExit`` and ``KernelStep`` here are the verified functions whose
 lemmas are BE-033's invariants, not a transcription of them. Each cell drives
 the kernel over the fake driver to one exit, maps what the fake recorded onto
 the model's datatypes, and requires the state the kernel left to equal the
-state the model computes from the state at the exit. Nothing is sampled: every
-write route, fault point, exit kind, runtime and iterator shape is a cell, and
-every call sequence up to ``_DEPTH`` calls, per runtime and close posture.
+state the model computes from the state at the exit. Nothing is sampled: the
+cells are the products the case builders below enumerate, and every call
+sequence up to ``_DEPTH`` calls, per runtime and close posture. Which exits
+they leave out is spec 003 BE-033's "The model is the oracle".
 
 **The mapping is what a pass is worth**, so it is stated here once:
 
@@ -49,7 +50,7 @@ from typing import Any
 import pytest
 
 from remote_store._errors import BackendUnavailable, InvalidPath, RemoteStoreError
-from tests._kernel._fake import RUNTIMES, FakeDown, FakeOdd, FakeStore, make_kernel, run_async
+from tests._kernel._fake import RUNTIMES, FakeDown, FakeOdd, FakeStore, _AsyncBase, make_kernel, run_async
 
 # Imported without leaving a trace a later import could find. The directory holds
 # Dafny's stub `module_.py`, and `KernelProtocol.py` runs `import module_` (and never uses
@@ -248,6 +249,27 @@ def test_every_async_write_exit_leaves_the_state_the_model_computes(
     route: str, point: str | None, kind: str, closable: bool
 ) -> None:
     before, after, model = _run_write("async", route, point, kind, closable)
+    assert after == model, f"before {before}: kernel left {after}, model {model}"
+
+
+# The routes whose driver is handed the caller's iterator; on `open_write` the kernel feeds it itself.
+_UNDRAINED_ROUTES = ("write", "write_atomic-put", "write_atomic-rename")
+
+
+@pytest.mark.spec("BE-033")
+@pytest.mark.parametrize("closable", [True, False], ids=["aclose", "no-aclose"])
+@pytest.mark.parametrize("route", _UNDRAINED_ROUTES)
+def test_a_success_whose_driver_left_the_iterator_suspended_leaves_the_state_the_model_computes(
+    route: str, closable: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A driver `put` that takes one chunk and returns: the success exit meets a suspended iterator.
+    async def put_one_chunk(self: Any, key: str, content: Any, *, overwrite: bool, metadata: Any) -> Any:
+        chunk = await anext(aiter(content))
+        return self.store.put(key, chunk, overwrite=overwrite, metadata=metadata)
+
+    monkeypatch.setattr(_AsyncBase, "put", put_one_chunk)  # make_kernel builds a fresh subclass per call
+    before, after, model = _run_write("async", route, _POINTS[route][-1], "success", closable)
+    assert before.iter_ == KP.CallerIterState_ISuspended()
     assert after == model, f"before {before}: kernel left {after}, model {model}"
 
 

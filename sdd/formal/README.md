@@ -519,7 +519,7 @@ the test itself has a bug and must be fixed.
 | `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |
 | `sdd/formal/KernelProtocol.dfy` | The second translation entry point: BE-033's interaction protocol, one named `module KernelProtocol`, including nothing and included by nothing |
 | `sdd/formal/KernelProtocol-py/KernelProtocol.py` | Its compiled Python: `KernelExit`, `KernelStep`, `KernelRun` and their datatypes (`module_.py` beside it is Dafny's stub entry, not this module) |
-| `tests/_kernel/test_protocol_oracle.py` | Drives the kernel over BE-033's whole finite exit space and compares the state it leaves with `KernelExit`'s and `KernelStep`'s answer |
+| `tests/_kernel/test_protocol_oracle.py` | Drives the kernel through the exits BE-033's "The model is the oracle" enumerates and compares the state it leaves with `KernelExit`'s and `KernelStep`'s answer |
 
 **The second oracle.** `KernelProtocol-py/` serves a different direction from
 `MemoryBackend-py/`: not "a test the oracle passes is a correct test", but "the

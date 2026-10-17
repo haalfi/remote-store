@@ -7,7 +7,7 @@
 // adds nothing to MemoryBackend.dfy's oracle; it compiles to an oracle of its
 // own, `sdd/formal/KernelProtocol-py/`, which
 // `tests/_kernel/test_protocol_oracle.py` drives against the kernel over the
-// whole finite exit space (sdd/formal/README.md § Compiled oracle). Hypothesis
+// exits spec 003 BE-033 enumerates (sdd/formal/README.md § Compiled oracle). Hypothesis
 // twin: `tests/_kernel/test_protocol_stateful.py`.
 //
 // One named module, so the compiled Python is `KernelProtocol.py`. Dafny still
@@ -130,8 +130,8 @@ datatype KernelResources = KernelResources(stream: KernelStreamState, handle: Wr
 //    `__anext__` and is IExhausted to the kernel; only the kernel's own `aclose`,
 //    at the exit, closes one.
 //  - A gate refusal comes before anything is opened or taken.
-//  - A success meets an iterator the driver drained, or none: never one
-//    suspended mid-stream.
+// A success may meet a suspended iterator: a driver whose `put` returns before
+// draining it, which the kernel closes as on any other exit.
 // The bound on this predicate is edge-level: `tests/scripts/test_gen_protocol_diagram.py`
 // holds every edge BE-033's diagram draws from it equal to an edge the oracle
 // suite drives the kernel through, so a drawn edge no exit takes fails a test. A
@@ -142,7 +142,6 @@ predicate AtAnExit(exit: KernelExitPath, before: KernelResources)
   && before.stream in {SOpen, SClosed}
   && before.iter != IClosed
   && (exit == GateRefused ==> before.stream == SClosed && before.handle == HNone && before.iter == IUnstarted)
-  && (exit == Success ==> before.iter != ISuspended)
 }
 
 // Each party's state after the kernel's cleanup, for each exit. The abort's
@@ -150,8 +149,9 @@ predicate AtAnExit(exit: KernelExitPath, before: KernelResources)
 // the write's error is the one raised. `closable` is whether the caller's
 // iterator has `aclose`: one without it is left where the kernel stopped. The
 // kernel takes the iterator with its first chunk, so a failure before that
-// leaves it IUnstarted, the caller's to retry with. A success changes no
-// iterator: the driver drained it before the exit, or there was none.
+// leaves it IUnstarted, the caller's to retry with. On every exit past the
+// gates, success included, a suspended iterator with `aclose` is closed; any
+// other iterator is left as it was.
 method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool) returns (after: KernelResources)
   requires AtAnExit(exit, before)
   ensures before.stream == SOpen ==>
@@ -160,11 +160,8 @@ method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool)
   ensures after.handle != HOpen
   ensures exit != Success && before.handle == HOpen ==> after.handle == HAborted
   ensures exit == GateRefused ==> after.iter == IUnstarted   // the caller's still
-  ensures exit == Success ==> after.iter == before.iter
-  ensures exit != Success && before.iter == IUnstarted ==> after.iter == IUnstarted
-  ensures exit !in {Success, GateRefused} && closable && before.iter != IUnstarted ==>
-            after.iter in {IExhausted, IClosed}
-  ensures exit !in {Success, GateRefused} && !closable ==> after.iter == before.iter
+  ensures closable && before.iter == ISuspended ==> after.iter == IClosed
+  ensures !(closable && before.iter == ISuspended) ==> after.iter == before.iter
   // @spec BE-033
 {
   var stream := before.stream;
@@ -176,7 +173,7 @@ method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool)
     handle := if exit == Success then HCommitted else HAborted;
   }
   var iter := before.iter;
-  if exit !in {Success, GateRefused} && closable && iter == ISuspended {
+  if closable && iter == ISuspended {
     iter := IClosed;
   }
   after := KernelResources(stream, handle, iter);

@@ -63,10 +63,9 @@ def test_the_resource_edges_are_the_models_cleanup(gen):
     lines = {line.strip() for line in gen.render().splitlines()}
     assert "SOpen --> SReleased : Faulted(dead=True)" in lines
     assert "HOpen --> HCommitted : Success" in lines
-    assert "ISuspended --> IClosed : Faulted(dead=False), Faulted(dead=True), Cancelled with aclose" in lines
-    # The kernel moves an iterator only by closing one it abandoned: no other iterator edge is drawn.
+    # The kernel moves an iterator only by closing one it left suspended, on any exit past the gates.
     assert [line for line in lines if line.startswith("I") and " --> I" in line] == [
-        "ISuspended --> IClosed : Faulted(dead=False), Faulted(dead=True), Cancelled with aclose"
+        "ISuspended --> IClosed : Success, Faulted(dead=False), Faulted(dead=True), Cancelled with aclose"
     ]
     # No exit leaves a handle open or reopens a stream.
     assert not [line for line in lines if " --> HOpen :" in line or " --> SOpen :" in line]
@@ -74,8 +73,8 @@ def test_the_resource_edges_are_the_models_cleanup(gen):
 
 def test_the_domain_is_every_constructor_the_preconditions_admit(gen):
     """Derived from the compiled datatypes, not hand-listed, then filtered by the model's AtAnExit:
-    a closed iterator is no before-state (KernelProtocol.dfy says why), and a success, which meets
-    an iterator drained or none, moves none."""
+    a closed iterator is no before-state (KernelProtocol.dfy says why), and a gate refusal, which
+    meets an iterator unstarted, moves none."""
     kp = gen._oracle()
     states = {type(value).__name__ for value in gen._constructors(kp.CallerIterState)}
     assert states == {f"CallerIterState_{s}" for s in ("IUnstarted", "ISuspended", "IExhausted", "IClosed")}
@@ -83,7 +82,10 @@ def test_the_domain_is_every_constructor_the_preconditions_admit(gen):
     admitted = gen._admitted(kp)
     assert not [b for _, b, _ in admitted if type(b.iter_).__name__ == "CallerIterState_IClosed"]
     edges = gen._edges(kp, admitted)
-    assert not [k for k, by_exit in edges.items() if k[0] == "iterator" and "Success" in by_exit]
+    assert not [k for k, by_exit in edges.items() if k[0] == "iterator" and "GateRefused" in by_exit]
+    assert [k for k, by_exit in edges.items() if k[0] == "iterator" and "Success" in by_exit] == [
+        ("iterator", "ISuspended", "IClosed")
+    ]
 
 
 def _reached(gen, monkeypatch) -> tuple[list[tuple], list[tuple]]:
@@ -104,6 +106,12 @@ def _reached(gen, monkeypatch) -> tuple[list[tuple], list[tuple]]:
         for case in om._write_cases():
             for closable in (True, False):
                 om.test_every_async_write_exit_leaves_the_state_the_model_computes(*case.values, closable)
+        for route in om._UNDRAINED_ROUTES:
+            for closable in (True, False):
+                with pytest.MonkeyPatch.context() as undrained:  # its driver patch ends with the cell
+                    om.test_a_success_whose_driver_left_the_iterator_suspended_leaves_the_state_the_model_computes(
+                        route, closable, undrained
+                    )
         with_iterator = list(calls)
         calls.clear()
         for case in om._write_cases():

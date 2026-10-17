@@ -2066,7 +2066,7 @@ adapters that break it, are BUG-310's, still open.
 | a temporary of the temp-and-rename write | the kernel | deleted on any exception; a failed delete is logged as a failed `abort` is, except one that maps to `NotFound` (BE-021, a `container_absent` answer included): no temporary was left, so there is nothing to clean up |
 | `abort` after a failed `commit` | the driver | is legal and idempotent |
 | an overwrite conflict without `overwrite` | the driver | refuses in one step on the wire where the wire has a conditional write; the conflict surfaces at `commit` for a handle, at the call for `put`; its typing as `AlreadyExists` is a driver duty BK-450 enforces |
-| a caller's async content iterator the kernel stops taking (a refused chunk, a driver or handle failure, a cancel) | the kernel | calls its `aclose`, when it has one, before the call returns; what that raises is logged and never replaces the write's error. An exhausted one needs nothing. The kernel takes the iterator with its first chunk: a refusal before that, at the gates (closed guard, key, metadata, content shape), a write check or the driver, leaves it unstarted and the caller's to retry with |
+| a caller's async content iterator the kernel stops taking (a refused chunk, a driver or handle failure, a cancel, or a success whose driver returned before its end) | the kernel | calls its `aclose`, when it has one, before the call returns; what that raises is logged and never replaces the write's error. An exhausted one needs nothing. The kernel takes the iterator with its first chunk: a refusal before that, at the gates (closed guard, key, metadata, content shape), a write check or the driver, leaves it unstarted and the caller's to retry with |
 | a sync caller's content stream | the caller | the kernel never closes it, on any exit: the caller may seek it or retry with it |
 | a connection a failure condemns | the `Session`; *not yet met* (BK-455) | `invalidate` closes the client at once, and a stream on it fails mapped at its next read. `connection_dead` means transport-level death, the socket or session gone, never an error the next request on the same connection survives. A cancel never invalidates |
 | `unwrap` on a `Session` driver | the `Session`; *not yet met* (BK-455) | goes through `run`, so after `invalidate` it reconnects |
@@ -2114,16 +2114,24 @@ BE-030's **Gates around the pipeline**, and this clause keeps that order.
 
 **The model is the oracle.** `KernelProtocol.dfy` compiles to
 `sdd/formal/KernelProtocol-py/`, and `tests/_kernel/test_protocol_oracle.py`
-drives the kernel to every exit the fake driver can produce, not to every state
-the model admits (most admitted states pair resources no single exit holds): each
-write route (and sync `open_atomic`), each driver step it reaches, each exit
-kind (success, a gate refusal, a refused chunk, a failure with either
-`connection_dead` verdict, a cancel), both runtimes, an iterator with and
-without `aclose`; every exit of `read` and `read_bytes`; and every call sequence up to four calls,
-per runtime and posture. Each cell requires the state the kernel left to equal
-what the compiled `KernelExit` or `KernelStep` computes from the state at the
-exit, so I1 to I3 hold of the code to the extent that suite's stated mapping
-from the fake driver's records onto the model's states is faithful.
+drives the kernel through an enumerated set of exits, not every exit and not
+every state the model admits (most admitted states pair resources no single exit
+holds). For the writes: each route (and sync `open_atomic`) on a hierarchical
+namespace with `overwrite=True`, both runtimes, an iterator with and without
+`aclose`, exiting by success (and, on the routes that hand the driver the
+iterator, a success that leaves it suspended), the closed guard, the key gate, a
+refused chunk, or a fault at each driver step the suite's `_POINTS` names, with
+either `connection_dead` verdict or a cancel. For `read` and `read_bytes`:
+success and a fault at each stream read after the open. And every call sequence
+up to four calls, per runtime and posture. Not driven: a refused open of a read,
+the metadata, content-shape and capability gates, `overwrite=False` and the
+probes after its refusal, a flat namespace, and a failed delete of the
+temporary (pinned in `test_protocol.py` instead). Each of these cells but the
+read's closed guard, which asserts that nothing reached the driver, requires the
+state the kernel left to equal what the compiled `KernelExit` or `KernelStep`
+computes from the state at the exit, so I1 to I3 hold of the code on these exits
+to the extent that suite's stated mapping from the fake driver's records onto
+the model's states is faithful.
 
 **The model drawn.** The diagrams below are enumerated from the same compiled
 model, over every value of its datatypes that `KernelExit`'s preconditions
@@ -2175,7 +2183,7 @@ Iterator:
 
 ```mermaid
 stateDiagram-v2
-  ISuspended --> IClosed : Faulted(dead=False), Faulted(dead=True), Cancelled with aclose
+  ISuspended --> IClosed : Success, Faulted(dead=False), Faulted(dead=True), Cancelled with aclose
 ```
 <!-- END_GENERATED:kernel_protocol -->
 

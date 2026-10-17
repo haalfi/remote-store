@@ -68,7 +68,7 @@ class default__:
 
     @staticmethod
     def AtAnExit(exit, before):
-        return (((((before).stream) in (_dafny.Set({KernelStreamState_SOpen(), KernelStreamState_SClosed()}))) and (((before).iter_) != (CallerIterState_IClosed()))) and (not ((exit) == (KernelExitPath_GateRefused())) or (((((before).stream) == (KernelStreamState_SClosed())) and (((before).handle) == (WriteHandleState_HNone()))) and (((before).iter_) == (CallerIterState_IUnstarted()))))) and (not ((exit) == (KernelExitPath_Success())) or (((before).iter_) != (CallerIterState_ISuspended())))
+        return ((((before).stream) in (_dafny.Set({KernelStreamState_SOpen(), KernelStreamState_SClosed()}))) and (((before).iter_) != (CallerIterState_IClosed()))) and (not ((exit) == (KernelExitPath_GateRefused())) or (((((before).stream) == (KernelStreamState_SClosed())) and (((before).handle) == (WriteHandleState_HNone()))) and (((before).iter_) == (CallerIterState_IUnstarted()))))
 
     @staticmethod
     def KernelExit(exit, before, closable):
@@ -89,7 +89,7 @@ class default__:
                 d_1_handle_ = WriteHandleState_HAborted()
         d_2_iter_: CallerIterState
         d_2_iter_ = (before).iter_
-        if (((exit) not in (_dafny.Set({KernelExitPath_Success(), KernelExitPath_GateRefused()}))) and (closable)) and ((d_2_iter_) == (CallerIterState_ISuspended())):
+        if (closable) and ((d_2_iter_) == (CallerIterState_ISuspended())):
             d_2_iter_ = CallerIterState_IClosed()
         after = KernelResources_KernelResources(d_0_stream_, d_1_handle_, d_2_iter_)
         return after
