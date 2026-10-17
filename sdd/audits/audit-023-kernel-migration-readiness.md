@@ -451,7 +451,7 @@ closed backend answers first.
   `read_seekable`, `write_atomic`, `open_atomic`, `iter_children`, `glob`
   and `check_health`; `unwrap`, `to_key`, `native_path` and `resolve` are
   absent too (`rg -n "^    def [a-z]" src/remote_store/_backend.py` against
-  `rg -n "^\s*method " sdd/formal/BackendContract.dfy`, 15 methods).
+  `rg -n "^\s*method " sdd/formal/BackendContract.dfy`, 16 methods).
 - `glob`'s exclusion rests on a premise the kernel no longer meets:
   `BackendContract.dfy:89-92` says it "delegates to ListFiles + pattern
   matching", but the kernel's `glob` calls the driver's `SupportsGlob.glob`
@@ -561,9 +561,11 @@ route.
 **Kind:** doc-drift. `CONTRIBUTING.md:84-85` calls the guide "a full
 walkthrough of the `Backend` contract", and step 2 (`:88`) says "Implement
 `Backend` ABC". The guide calls a driver "the documented route" (guide
-l.53-58) and links back to that step (guide l.577). Every in-repo backend
-starts from this checklist. **Disposition:** rewrite steps 2 and 3 as a driver
-plus a `DriverBackend` subclass, linking the guide.
+l.53-58) and points into the same checklist for its fixture step 3 (guide
+l.576-577). Every in-repo backend starts from this checklist.
+**Disposition:** rewrite the intro (`:84-85`) and step 2 (`:88`) as a driver
+plus a `DriverBackend` subclass, linking the guide; step 3 (`:89`, the fixture)
+stays.
 
 **Checked:** `CONTRIBUTING.md:84-88` opened; guide lines first pass only.
 
