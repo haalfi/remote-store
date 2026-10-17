@@ -300,6 +300,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-336 — pytest-gremlins 1.11.4's coverage pre-scan dies on `filterwarnings = error`, so every gremlin runs its full scope**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  1.11.4 starts the pre-scan via `-m pytest_gremlins.coverage.prescan_main`; pytest finds
+  the plugin imported and warns `PytestAssertRewriteWarning`, fatal here, so the pre-scan
+  exits 1 with no coverage (output discarded; the log shows only "returned no data").
+  Runs 38016030800 to 38989738880, mutate step: backends-ssh 139 to 340 min, 48 survivors to 0.
+  A message-scoped `filterwarnings` ignore; `TestPrescanStartsUnderProjectFilterwarnings`
+  drives the import order. Trace: [bug-336](traces/bug-336-gremlins-prescan-rewrite-warning.yml).
+
 - [x] **BUG-335 — `CI Full Matrix` red on 3.13: the none-read cell leaves its async generator for GC**
   spec: — · effort: S · audience: infra.test
   `test_a_none_read_is_refused_on_every_write_route[async]` (#1148) abandoned

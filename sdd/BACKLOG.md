@@ -475,8 +475,17 @@ no clause of the contract ships unexercised.
   spec: — · effort: S · audience: infra.ci
   Run 50 (BUG-307's validation): 26 ERRORs, each a timeout whose unmutated
   selection ran past 60 s, half the limit; every other scope fits. The leg took
-  139.7 min. Open decision: faster sftp test selections, a per-scope timeout in
-  `mutate_scopes.py`, or splitting the scope.
+  139.7 min. Re-measure on the first run after BUG-336 before choosing: run
+  38989738880's 77 ERRORs ran with a dead pre-scan. Open decision: faster sftp
+  test selections, a per-scope timeout in `mutate_scopes.py`, or splitting the scope.
+
+- [ ] **BK-453 — A coverage pre-scan that records nothing goes unflagged, so every gremlin silently runs its full scope**
+  spec: — · effort: S · audience: infra.ci
+  BUG-303 (`PYTEST_ADDOPTS`) surfaced only at the 6 h cap; BUG-336 (`filterwarnings`)
+  ran green from run 38016030800 to 38989738880: the plugin discards the pre-scan's
+  output, `mutation.yml` shows "Coverage collection returned no data" as `default`,
+  and the outcome record never sees it. Open decision: fail the leg or flag it;
+  BK-407's `-async-extended-graph`, whose tests never run its target, is the known exception.
 
 - [ ] **BK-434 — RFC-0021's encodings are verified in `StoreTree.dfy` alone, so the trait's operations are not refined against them**
   spec: BE-008, BE-013, BE-014, BE-015, BE-021 · effort: L · audience: library.maintainer
