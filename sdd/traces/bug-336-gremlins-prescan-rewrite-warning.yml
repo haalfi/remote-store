@@ -1,0 +1,93 @@
+id: BUG-336
+title: "pytest-gremlins 1.11.4's coverage pre-scan dies on filterwarnings = error, so every gremlin runs its full scope"
+trigger: >
+  The maintainer asked why the weekly mutation run went from minutes to hours.
+  The step to hours was BUG-303/BUG-307 (pytest-gremlins 1.10 and 1.11, early
+  October); the run then grew again from 203 min (run 38016030800, Oct 10) to
+  343 min (run 38989738880, Oct 17), with backends-ssh at 340 of the 360 min job cap.
+source_items:
+  - BUG-336
+  - BUG-303
+  - BUG-307
+audience:
+  - infra.ci
+  - contributor.tooling
+orient:
+  - items: [BK-413]
+    verdict: constrains
+    evidence: >
+      BACKLOG.md BK-413: 26 backends-ssh ERRORs from run 50, whose pre-scan
+      worked. Job log 117269285262 (run 38989738880) shows 77 ERRORs with the
+      pre-scan dead, so BK-413 is judged on the first run after this fix.
+  - items: [BK-407]
+    verdict: unrelated
+    evidence: >
+      BACKLOG.md BK-407: its pre-scan "no data" is a scope whose tests never
+      run the mutated file (-async-extended-graph); here the pre-scan never
+      started a test (rc=1 before collection).
+decisions:
+  - sdd/decisions/7945eb96-26d2-54e0-8539-54e7105de289.jsonl
+expected_ripples:
+  - pyproject.toml
+  - tests/scripts/test_run_mutate.py
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  # The bump to 1.11.4 needed no edit here: the `mutate` pin `>=1.11.0,<1.12`
+  # admits patch releases, and the 1.11.4 change is upstream's (#485, node ids
+  # moved into a file via a new pre-scan entry module).
+  - pyproject.toml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: "GitHub Actions: list_workflow_runs mutation.yml"
+        section: "run_started_at to updated_at per run"
+        read_type: verify
+        extract: "Jun to Sep 26: 1 to 39 min; Oct 3: 367 min (failed); Oct 7 run 50: 233; Oct 10: 203; Oct 17: 343"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-303, BUG-307"
+        read_type: reference
+        extract: "1.10 runs one pytest subprocess per gremlin; 1.11 confirms timeouts serially at mutant_timeout 120"
+      - file: "GitHub Actions: list_workflow_jobs for runs 37544206380, 38016030800, 38989738880"
+        section: "Run mutate step duration per scope (python)"
+        read_type: verify
+        extract: "Oct 10 to Oct 17: backends-ssh 139.2 to 340.4 min, backends-http 84.0 to 197.3; other scopes moved less"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Bug fix row: BACKLOG, CHANGELOG stub, failing test first; infra.ci audience skips CHANGELOG per _schema.yml"
+  - id: diagnose
+    name: Diagnose
+    steps:
+      - file: "GitHub Actions: job logs 114106383009 vs 117269285262 (backends-ssh), 114106383159 vs 117269285293 (backends-http)"
+        section: "install step, plugins line, warnings summary"
+        read_type: verify
+        extract: "Only Oct 17 has 'Coverage collection returned no data'; pytest-gremlins 1.11.3 to 1.11.4 and pytest-timeout newly installed; pre-scan gap ~150 s to ~3 s"
+      - file: "GitHub Actions: job log blob download"
+        section: "curl of logs_url"
+        read_type: verify
+        extract: "Proxy denied the blob host (CONNECT 403); full logs read via the API in a subagent instead"
+        outcome: unclear
+      - file: scripts/run_mutate.py
+        section: "core-path, local, PYTEST_ADDOPTS=--no-cov, 4 workers"
+        read_type: verify
+        extract: "1.11.4: warning; 1.11.4 with -p no:timeout: warning (pytest-timeout ruled out); 1.11.3: no warning"
+      - file: "pytest_gremlins 1.11.3 vs 1.11.4 wheels"
+        section: "plugin.py _launch_prescan, coverage/prescan_main.py"
+        read_type: reference
+        extract: "Pre-scan now runs 'coverage run -m pytest_gremlins.coverage.prescan_main'; output captured and discarded (capture_output, check=False)"
+      - file: "pytest_gremlins 1.11.4 plugin.py, locally patched to print the pre-scan result"
+        section: "_launch_prescan"
+        read_type: verify
+        extract: "rc=1; PytestAssertRewriteWarning: Module already imported so cannot be rewritten; pytest_gremlins, raised by filterwarnings = error; CoverageWarning no-data-collected"
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_run_mutate.py
+        section: "TestPrescanStartsUnderProjectFilterwarnings"
+        read_type: gate
+        extract: "Failed first with the same PytestAssertRewriteWarning traceback; 15 passed after the ignore"
+      - file: scripts/run_mutate.py
+        section: "core-path on unpatched 1.11.4 with the ignore"
+        read_type: verify
+        extract: "No 'returned no data' warning; 23 zapped / 3 survived, as on 1.11.3"

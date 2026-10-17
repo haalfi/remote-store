@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -175,6 +177,34 @@ class TestWorkflowKeepsGremlinsFlagsOffAddopts:
         assert "sftp-scopes" in workers
         assert "'1'" in workers
         assert '--gremlin-workers="$WORKERS"' in step["run"]
+
+
+class TestPrescanStartsUnderProjectFilterwarnings:
+    """BUG-336: the coverage pre-scan must start under the project's ini.
+
+    pytest-gremlins 1.11.4 launches its pre-scan through
+    ``-m pytest_gremlins.coverage.prescan_main``, which imports the plugin
+    before pytest parses its config. pytest then cannot rewrite the plugin and
+    warns; ``filterwarnings = error`` made that fatal, so the pre-scan exited 1
+    with no coverage and every gremlin ran its scope's full test set. The
+    plugin discards the pre-scan's output, so only "Coverage collection
+    returned no data" reached the log. This drives the same import order
+    against ``pyproject.toml``, so it holds whichever entry point upstream uses.
+    """
+
+    _ROOT = Path(__file__).resolve().parents[2]
+
+    def test_pytest_starts_after_the_plugin_is_imported(self, tmp_path):
+        pytest.importorskip("pytest_gremlins")
+        (tmp_path / "test_probe.py").write_text("def test_probe():\n    pass\n", encoding="utf-8")
+        env = {k: v for k, v in os.environ.items() if k != "PYTEST_ADDOPTS"}
+        script = "import sys, pytest_gremlins, pytest; sys.exit(int(pytest.main(sys.argv[1:])))"
+        argv = [sys.executable, "-c", script, "-c", str(self._ROOT / "pyproject.toml")]
+        argv += ["--rootdir", str(self._ROOT), "-p", "no:gremlins", "-p", "no:cacheprovider"]
+        argv += ["-q", str(tmp_path / "test_probe.py")]
+        result = subprocess.run(argv, capture_output=True, text=True, env=env, cwd=self._ROOT, check=False)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "1 passed" in result.stdout
 
 
 class TestScopeCandidateDiscovery:
