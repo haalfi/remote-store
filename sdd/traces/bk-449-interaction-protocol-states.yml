@@ -258,6 +258,16 @@ phases:
         section: "module docstring, Scope"
         read_type: reference
         extract: "Every scope is derived; a hand-written kernel scope would break that rule"
+      - file: tests/_kernel/test_protocol.py
+        section: "content guard cells"
+        read_type: verify
+        extract: >-
+          pytest tests/_kernel --gremlins --gremlin-targets=_io.py,aio_backend.py,backend.py:
+          45/62 zapped. Three survivors in _async/_io.py (chunk bytes(), double
+          aclose, non-iterator passthrough) were protocol code; three cells kill them
+          (rerun on _io.py: 20/20). The 14 left, per the first run's JSON report,
+          are non-protocol backend.py code
+          (_RangeReader, _HandleStream, _SPOOL_MAX); kernel.py was not mutated
 discovery_followups:
   - BK-454
   - BK-455
