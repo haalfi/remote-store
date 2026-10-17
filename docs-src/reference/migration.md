@@ -57,13 +57,17 @@ are unchanged. Pass `None` (the default) or `{}` for no metadata, and a
 `Store.glob()`, `AsyncStore.glob()` and `ext.glob.glob_files()` read a pattern
 as they read a path, so `"/data/*.csv"`, `"./data/*.csv"` and `"data//*.csv"`
 all match what `"data/*.csv"` matches, on every backend and under every
-`root_path`. Two patterns that used to match nothing now raise `InvalidPath`:
-one holding a null byte, on every backend, and one starting with `..` on a
-store with no `root_path` whose backend has native glob, such as
-`LocalBackend` (elsewhere such a pattern already raised). If you pass
-user-supplied patterns and treated an empty result as "no match", validate
-them first or catch `InvalidPath`. Separately, `"*.csv"` no longer matches a
-key that ends in a newline after `.csv`.
+`root_path`. A pattern holding a `..` segment or a null byte now raises
+`InvalidPath` on every backend, before anything is listed. What such a
+pattern did before depended on the backend, the `root_path` and where in the
+pattern the segment sat: some matched nothing (for example `"*/../a.csv"`, or
+`"../*.csv"` on `LocalBackend`), some already raised `InvalidPath`, and on
+`LocalBackend` a null byte could raise Python's own `ValueError`, which
+`InvalidPath` is not a subclass of. If you pass user-supplied patterns and
+treated an empty result as "no match", validate them first or catch
+`InvalidPath`; replace an `except ValueError` around `glob` with
+`except InvalidPath`. Separately, `"*.csv"` no longer matches a key that ends
+in a newline after `.csv`.
 
 **For backend authors: a backend is now written as a driver:**
 
