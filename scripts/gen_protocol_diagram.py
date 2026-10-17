@@ -22,10 +22,12 @@ comment would.
 
 **Bounds.** Mermaid is never parsed or rendered here; the refused ``;`` is the
 one mis-draw measured (mermaid 11.4.1 in Chromium), and nothing else stands
-between a label and the renderer. ``KernelExit``'s ``requires`` are restated in
-``_resources``, since the compiled Python does not check them, so a new
-precondition needs an edit there, and so does a constructor field that is not a
-``bool`` (today's one field is ``Faulted``'s ``dead``). ``--check`` compares the block with the
+between a label and the renderer. The domain is filtered by the model's
+compiled ``AtAnExit``, ``KernelExit``'s precondition, so a new precondition
+needs no edit here; a constructor field that is not a ``bool`` does (today's one
+field is ``Faulted``'s ``dead``). ``tests/scripts/test_gen_protocol_diagram.py``
+holds the drawn edges equal to those the oracle suite drives the kernel
+through, so an admitted state no exit meets fails a test. ``--check`` compares the block with the
 committed oracle, so a stale oracle draws a stale "current" block: freshness is
 ``check_dafny_oracle_fresh.py``'s, in the ``verify-formal`` CI job. Only the
 first ``kernel_protocol`` region is rewritten; a second copy is not seen.
@@ -127,31 +129,38 @@ def _backend(kp) -> list[str]:
     return _fence(lines)
 
 
-def _resources(kp) -> dict[str, list[str]]:
-    # KernelExit's `requires`, restated: the compiled Python does not check them.
-    streams = [s for s in _constructors(kp.KernelStreamState) if _name(s) in ("SOpen", "SClosed")]
-    handles = _constructors(kp.WriteHandleState)
-    iters = [i for i in _constructors(kp.CallerIterState) if _name(i) != "IClosed"]
-    # (resource, before, after) -> exit label -> the `closable` values that take the edge
-    edges: dict[tuple[str, str, str], dict[str, set[bool]]] = {}
+def _admitted(kp) -> list[tuple]:
+    """Every (exit, before, closable) the model's own ``AtAnExit`` admits: ``KernelExit``'s precondition,
+    compiled, so the domain is the model's and nothing here restates it."""
+    out = []
     for exit_path in _exits(kp):
-        for stream in streams:
-            for handle in handles:
-                for it in iters:
-                    gate = _name(exit_path) == "GateRefused"
-                    if gate and (_name(handle) != "HNone" or _name(it) != "IUnstarted"):
-                        continue
-                    for closable in (True, False):
-                        before = kp.KernelResources_KernelResources(stream, handle, it)
-                        after = kp.default__.KernelExit(exit_path, before, closable)
-                        for resource, b, a in (
-                            ("stream", stream, after.stream),
-                            ("handle", handle, after.handle),
-                            ("iterator", it, after.iter_),
-                        ):
-                            if b != a:
-                                key = (resource, _name(b), _name(a))
-                                edges.setdefault(key, {}).setdefault(_exit_label(exit_path), set()).add(closable)
+        for stream in _constructors(kp.KernelStreamState):
+            for handle in _constructors(kp.WriteHandleState):
+                for it in _constructors(kp.CallerIterState):
+                    before = kp.KernelResources_KernelResources(stream, handle, it)
+                    if kp.default__.AtAnExit(exit_path, before):
+                        out += [(exit_path, before, closable) for closable in (True, False)]
+    return out
+
+
+def _edges(kp, cases) -> dict[tuple[str, str, str], dict[str, set[bool]]]:
+    """(resource, before, after) -> exit label -> the ``closable`` values that take the edge, over *cases*."""
+    edges: dict[tuple[str, str, str], dict[str, set[bool]]] = {}
+    for exit_path, before, closable in cases:
+        after = kp.default__.KernelExit(exit_path, before, closable)
+        for resource, b, a in (
+            ("stream", before.stream, after.stream),
+            ("handle", before.handle, after.handle),
+            ("iterator", before.iter_, after.iter_),
+        ):
+            if b != a:
+                key = (resource, _name(b), _name(a))
+                edges.setdefault(key, {}).setdefault(_exit_label(exit_path), set()).add(closable)
+    return edges
+
+
+def _resources(kp) -> dict[str, list[str]]:
+    edges = _edges(kp, _admitted(kp))
     out: dict[str, list[str]] = {"stream": [], "handle": [], "iterator": []}
     for (resource, b, a), by_exit in sorted(edges.items()):
         # Only the iterator's edges depend on `aclose`; group the exits by the condition, stated once.

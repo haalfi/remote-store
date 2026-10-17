@@ -25,12 +25,9 @@ class _Writable(Protocol):
     async def write(self, data: bytes) -> None: ...
 
 
-async def read_all(stream: ReadStream) -> bytes:
-    """Drain *stream* into one ``bytes`` and close it."""
-    try:
-        return b"".join([chunk async for chunk in stream])
-    finally:
-        await close_stream(stream)
+async def drain(stream: ReadStream) -> bytes:
+    """Drain *stream* into one ``bytes``; closing it is the caller's, who knows whether a failure condemned it."""
+    return b"".join([chunk async for chunk in stream])
 
 
 async def close_stream(stream: object) -> None:

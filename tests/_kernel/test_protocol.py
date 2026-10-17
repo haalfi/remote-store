@@ -18,6 +18,7 @@ import pytest
 
 from remote_store._errors import BackendUnavailable, CapabilityNotSupported, RemoteStoreError
 from remote_store._kernel._async import _io as async_io
+from remote_store._kernel._model import Op
 from tests._kernel._fake import RUNTIMES, FakeDenied, FakeDown, FakeOdd, FakeStore, make_kernel, run_async
 
 # write: put; the three write_atomic routes: atomic put, wire temporary, temp and rename.
@@ -116,31 +117,46 @@ def test_a_terminal_close_absorbs_every_later_operation(runtime: str) -> None:
 # --- the read stream (SIO-010 in both runtimes) ----------------------------------
 
 
+def _read_whole(run: Any, path: str, how: str) -> bytes:
+    """``read`` drained by the caller, or the kernel's own ``read_bytes``."""
+    if how == "read":
+        return run.read(path)
+    if run.runtime == "sync":
+        return run.kernel.read_bytes(path)
+    return run_async(run.kernel.read_bytes(path))
+
+
+_READS = ["read", "read_bytes"]
+
+
 @pytest.mark.spec("BE-033", "SIO-010")
+@pytest.mark.parametrize("how", _READS)
 @pytest.mark.parametrize("runtime", RUNTIMES)
-def test_a_stream_its_failure_condemned_is_not_closed_again(runtime: str) -> None:
+def test_a_stream_its_failure_condemned_is_not_closed_again(runtime: str, how: str) -> None:
     store = FakeStore().add("f", data=b"0123")
     run = make_kernel(runtime, store, protocols=("remove_folder",))
     store.fault("stream.read", FakeDown("dead"), key="f")  # connection_dead says yes
     with pytest.raises(BackendUnavailable):
-        run.read("f")
+        _read_whole(run, "f", how)
     assert ("stream.close", "f") not in store.calls
 
 
 @pytest.mark.spec("BE-033", "SIO-010")
+@pytest.mark.parametrize("how", _READS)
 @pytest.mark.parametrize("runtime", RUNTIMES)
-def test_a_stream_whose_failure_left_the_connection_alive_is_closed(runtime: str) -> None:
+def test_a_stream_whose_failure_left_the_connection_alive_is_closed(runtime: str, how: str) -> None:
     store = FakeStore().add("f", data=b"0123")
     run = make_kernel(runtime, store, protocols=("remove_folder",))
     store.fault("stream.read", FakeDenied("denied"), key="f")
     with pytest.raises(RemoteStoreError):
-        run.read("f")
+        _read_whole(run, "f", how)
     assert store.called("stream.close") == [("stream.close", "f")]
 
 
 @pytest.mark.spec("BE-033", "SIO-010")
+@pytest.mark.parametrize("how", _READS)
 @pytest.mark.parametrize("runtime", RUNTIMES)
-def test_a_connection_dead_that_raises_propagates_in_both_runtimes(runtime: str) -> None:
+def test_a_connection_dead_that_raises_propagates_in_both_runtimes(runtime: str, how: str) -> None:
     # The predicate is pure inspection, so one that raises is a driver bug; the
     # sync stream lets it propagate (_ErrorMappingStream), and so must the async read.
     store = FakeStore().add("f", data=b"0123")
@@ -153,7 +169,7 @@ def test_a_connection_dead_that_raises_propagates_in_both_runtimes(runtime: str)
     run.driver.connection_dead = broken
     store.fault("stream.read", FakeDenied("denied"), key="f")
     with pytest.raises(ZeroDivisionError) as caught:
-        run.read("f")
+        _read_whole(run, "f", how)
     assert caught.value is bug
 
 
@@ -340,6 +356,10 @@ def test_a_failed_temporary_delete_is_logged_and_the_rename_error_raised(
     assert caught.value.__cause__ is rename_failure
     (warning,) = _abort_warnings(caplog)
     assert "connection dead: True" in warning
+    # The cleanup asks as the operation that asked: the write, not a delete of its own.
+    asked = {(name, op) for name, op, _ in run.driver.classified}
+    assert ("FakeDown", Op.WRITE_ATOMIC) in asked
+    assert Op.DELETE not in {op for _, op in asked}
 
 
 @pytest.mark.spec("BE-033")

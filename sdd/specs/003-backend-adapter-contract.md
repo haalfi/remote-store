@@ -2049,7 +2049,8 @@ For a read stream: reading to the end leaves it Exhausted, and its close is the
 kernel's (async) or the caller's (sync, the `BinaryIO` it was handed). A mapped
 stream error leaves it Failed; a Failed stream is closed unless the driver's
 `connection_dead` condemns the error, and then it is released without a close,
-so no second wait falls on a dead connection (SIO-010), in both runtimes. Read
+so no second wait falls on a dead connection (SIO-010), in both runtimes, for
+`read` and for `read_bytes`, which drains and closes its stream itself. Read
 after close: the sync stream raises `ValueError`, and an async iterator closed
 by its caller ends. The `ValueError` rule for every backend, and the legacy
 adapters that break it, are BUG-310's, still open.
@@ -2117,7 +2118,7 @@ drives the kernel to every exit in the finite space the model admits: each
 write route (and sync `open_atomic`), each driver step it reaches, each exit
 kind (success, a gate refusal, a refused chunk, a failure with either
 `connection_dead` verdict, a cancel), both runtimes, an iterator with and
-without `aclose`; every read exit; and every call sequence up to four calls,
+without `aclose`; every exit of `read` and `read_bytes`; and every call sequence up to four calls,
 per runtime and posture. Each cell requires the state the kernel left to equal
 what the compiled `KernelExit` or `KernelStep` computes from the state at the
 exit, so I1 to I3 hold of the code to the extent that suite's stated mapping
@@ -2156,7 +2157,7 @@ Stream:
 
 ```mermaid
 stateDiagram-v2
-  SOpen --> SClosed : Success, GateRefused, Faulted(dead=False), Cancelled
+  SOpen --> SClosed : Success, Faulted(dead=False), Cancelled
   SOpen --> SReleased : Faulted(dead=True)
 ```
 
@@ -2173,7 +2174,6 @@ Iterator:
 ```mermaid
 stateDiagram-v2
   ISuspended --> IClosed : Faulted(dead=False), Faulted(dead=True), Cancelled with aclose
-  ISuspended --> IExhausted : Success
   IUnstarted --> IExhausted : Success
 ```
 <!-- END_GENERATED:kernel_protocol -->

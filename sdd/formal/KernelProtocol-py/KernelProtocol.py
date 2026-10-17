@@ -67,6 +67,10 @@ class default__:
                 break
 
     @staticmethod
+    def AtAnExit(exit, before):
+        return (((((before).stream) in (_dafny.Set({KernelStreamState_SOpen(), KernelStreamState_SClosed()}))) and (((before).iter_) != (CallerIterState_IClosed()))) and (not ((exit) == (KernelExitPath_GateRefused())) or (((((before).stream) == (KernelStreamState_SClosed())) and (((before).handle) == (WriteHandleState_HNone()))) and (((before).iter_) == (CallerIterState_IUnstarted()))))) and (not ((exit) == (KernelExitPath_Success())) or (((before).iter_) != (CallerIterState_ISuspended())))
+
+    @staticmethod
     def KernelExit(exit, before, closable):
         after: KernelResources = KernelResources.default()()
         d_0_stream_: KernelStreamState

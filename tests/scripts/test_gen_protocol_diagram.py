@@ -71,16 +71,53 @@ def test_the_resource_edges_are_the_models_cleanup(gen):
 
 
 def test_the_domain_is_every_constructor_the_preconditions_admit(gen):
-    """Derived from the compiled datatypes, not hand-listed, then filtered by KernelExit's requires:
-    an exhausted iterator is an admitted before-state, a closed one is not (only the kernel's own
-    aclose, after the exit, closes it)."""
+    """Derived from the compiled datatypes, not hand-listed, then filtered by the model's AtAnExit:
+    a closed iterator is no before-state (KernelProtocol.dfy says why), and a success meets one
+    unstarted or exhausted, never suspended."""
     kp = gen._oracle()
     states = {type(value).__name__ for value in gen._constructors(kp.CallerIterState)}
     assert states == {f"CallerIterState_{s}" for s in ("IUnstarted", "ISuspended", "IExhausted", "IClosed")}
     assert len(gen._exits(kp)) == 5  # Success, GateRefused, Faulted(False), Faulted(True), Cancelled
     lines = [line.strip() for line in gen.render().splitlines()]
     assert not [line for line in lines if line.startswith("IClosed -->")]
-    assert "ISuspended --> IExhausted : Success" in lines
+    assert [line for line in lines if line.endswith("--> IExhausted : Success")] == [
+        "IUnstarted --> IExhausted : Success"
+    ]
+
+
+def _reached(gen, monkeypatch) -> list[tuple]:
+    """Every (exit, before, closable) the oracle suite passes the model, by running its cells."""
+    from tests._kernel import test_protocol_oracle as om
+
+    calls: list[tuple] = []
+    exit_fn = om._MODEL.KernelExit
+
+    def record(exit_path, before, closable):
+        calls.append((exit_path, before, closable))
+        return exit_fn(exit_path, before, closable)
+
+    with monkeypatch.context() as patched:  # undone before the caller asks the model itself
+        patched.setattr(om._MODEL, "KernelExit", staticmethod(record))
+        for case in om._write_cases():
+            for closable in (True, False):
+                om.test_every_async_write_exit_leaves_the_state_the_model_computes(*case.values, closable)
+            om.test_every_sync_write_exit_leaves_the_handle_the_model_computes(*case.values)
+        for case in om._open_atomic_cases():
+            om.test_every_open_atomic_exit_leaves_the_handle_the_model_computes(*case.values)
+        for case in om._read_cases():
+            om.test_every_read_exit_leaves_the_stream_the_model_computes(*case.values)
+    return calls
+
+
+def test_every_drawn_edge_is_one_the_kernel_reaches(gen, monkeypatch):
+    """The admitted domain, closed by enumeration: an edge the oracle suite never drives the kernel
+    through (a before-state no exit meets) fails here instead of reaching the diagram."""
+    kp = gen._oracle()
+    reached = _reached(gen, monkeypatch)
+    assert reached, "the oracle suite drove no exit"
+    drawn = gen._edges(kp, gen._admitted(kp))
+    by_kernel = gen._edges(kp, reached)
+    assert {k: sorted(v) for k, v in drawn.items()} == {k: sorted(v) for k, v in by_kernel.items()}
 
 
 def test_a_semicolon_in_a_line_is_refused(gen):

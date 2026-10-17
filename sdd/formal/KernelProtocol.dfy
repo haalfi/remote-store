@@ -128,10 +128,27 @@ datatype KernelResources = KernelResources(stream: KernelStreamState, handle: Wr
 // iterator has `aclose`: one without it is left where the kernel stopped. The
 // kernel takes the iterator with its first chunk, so a failure before that
 // leaves it IUnstarted, the caller's to retry with.
+// The states an exit can meet, which is the domain `KernelExit` is stated over.
+// `tests/scripts/test_gen_protocol_diagram.py` holds it equal, edge for edge, to
+// the states the oracle suite drives the kernel through, so a state admitted
+// here that no exit meets fails a test rather than reaching BE-033's diagram.
+//  - A stream at an exit is open, or closed already (a write opens none).
+//  - A caller iterator is never IClosed: one its caller closed ends at its first
+//    `__anext__` and is IExhausted to the kernel; only the kernel's own `aclose`,
+//    at the exit, closes one.
+//  - A gate refusal comes before anything is opened or taken.
+//  - A success has taken every chunk, or has not yet handed the iterator to the
+//    driver step that drains it; it never meets one suspended mid-stream.
+predicate AtAnExit(exit: KernelExitPath, before: KernelResources)
+{
+  && before.stream in {SOpen, SClosed}
+  && before.iter != IClosed
+  && (exit == GateRefused ==> before.stream == SClosed && before.handle == HNone && before.iter == IUnstarted)
+  && (exit == Success ==> before.iter != ISuspended)
+}
+
 method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool) returns (after: KernelResources)
-  requires before.stream in {SOpen, SClosed}
-  requires before.iter != IClosed   // only the kernel's own aclose, after the exit, closes it
-  requires exit == GateRefused ==> before.handle == HNone && before.iter == IUnstarted
+  requires AtAnExit(exit, before)
   ensures before.stream == SOpen ==>
             after.stream == (if exit == Faulted(true) then SReleased else SClosed)
   ensures before.stream == SClosed ==> after.stream == SClosed
@@ -172,9 +189,7 @@ predicate KernelClean(r: KernelResources, closable: bool)
 
 method CleanupOnEveryExit(exit: KernelExitPath, before: KernelResources, closable: bool)
   returns (after: KernelResources)
-  requires before.stream in {SOpen, SClosed}
-  requires before.iter != IClosed
-  requires exit == GateRefused ==> before.handle == HNone && before.iter == IUnstarted
+  requires AtAnExit(exit, before)
   ensures KernelClean(after, closable)
   // @spec BE-033
 {

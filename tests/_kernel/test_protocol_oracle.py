@@ -26,6 +26,8 @@ every call sequence up to ``_DEPTH`` calls, per runtime and close posture.
   reads as released and fails every cell whose model answer is ``SClosed``.
   A sync stream's exit is its caller's close: the kernel hands it over open,
   and the wrapper it returns closes or releases the inner stream then.
+  ``read_bytes`` drains its stream and closes or releases it before it returns,
+  in both runtimes.
 - A write opens no stream, so its stream is ``SClosed`` throughout.
 
 **Bounds.** The sync runtime's content is a caller stream with no state in the
@@ -47,7 +49,7 @@ from typing import Any
 import pytest
 
 from remote_store._errors import BackendUnavailable, InvalidPath, RemoteStoreError
-from tests._kernel._fake import RUNTIMES, FakeDown, FakeOdd, FakeStore, make_kernel
+from tests._kernel._fake import RUNTIMES, FakeDown, FakeOdd, FakeStore, make_kernel, run_async
 
 # Imported without leaving a trace a later import could find. The directory holds
 # Dafny's stub `module_.py`, and `KernelProtocol.py` runs `import module_` (and never uses
@@ -319,39 +321,53 @@ def test_every_open_atomic_exit_leaves_the_handle_the_model_computes(point: str 
 
 
 def _read_cases() -> list[Any]:
-    cases = [pytest.param(runtime, None, "success", id=f"{runtime}-success") for runtime in RUNTIMES]
-    for runtime in RUNTIMES:
-        for nth in (1, 2) if runtime == "async" else (1,):  # the sync stream is read in one call
-            cases += [pytest.param(runtime, nth, fault, id=f"{runtime}-read{nth}-{fault}") for fault in _FAULTS]
-    cases += [pytest.param(runtime, None, "gate-closed", id=f"{runtime}-gate-closed") for runtime in RUNTIMES]
+    cases = []
+    for how in ("read", "read_bytes"):
+        cases += [pytest.param(r, how, None, "success", id=f"{r}-{how}-success") for r in RUNTIMES]
+        for runtime in RUNTIMES:
+            for nth in (1, 2) if runtime == "async" else (1,):  # the sync stream is read in one call
+                cases += [
+                    pytest.param(runtime, how, nth, fault, id=f"{runtime}-{how}{nth}-{fault}") for fault in _FAULTS
+                ]
+        cases += [pytest.param(r, how, None, "gate-closed", id=f"{r}-{how}-gate-closed") for r in RUNTIMES]
     return cases
 
 
+def _read_bytes(run: Any, path: str) -> bytes:
+    if run.runtime == "sync":
+        return run.kernel.read_bytes(path)
+    return run_async(run.kernel.read_bytes(path))
+
+
 @pytest.mark.spec("BE-033", "SIO-010")
-@pytest.mark.parametrize(("runtime", "nth", "kind"), _read_cases())
-def test_every_read_exit_leaves_the_stream_the_model_computes(runtime: str, nth: int | None, kind: str) -> None:
+@pytest.mark.parametrize(("runtime", "how", "nth", "kind"), _read_cases())
+def test_every_read_exit_leaves_the_stream_the_model_computes(
+    runtime: str, how: str, nth: int | None, kind: str
+) -> None:
+    # `read` hands the stream on; `read_bytes` drains and closes (or releases) it inside the kernel.
     store = FakeStore().add("f", data=b"0123")
     run = make_kernel(runtime, store, protocols=("remove_folder",), close_is_terminal=kind == "gate-closed")
+    read = run.read if how == "read" else (lambda path: _read_bytes(run, path))
     if nth is not None:
         store.fault("stream.read", _FAULTS[kind][0]("boom"), key="f", nth=nth)  # type: ignore[misc]
     if kind == "gate-closed":
         run.close()
         with pytest.raises(BackendUnavailable):
-            run.read("f")
+            read("f")
         assert store.called("get") == []  # nothing opened: no stream to model
         return
     expected = {"success": None, "cancelled": asyncio.CancelledError}.get(kind, RemoteStoreError)
-    if expected is None and runtime == "sync":
+    if expected is None and runtime == "sync" and how == "read":
         # The kernel hands the stream over open; its exit is the caller's close, which the
         # kernel's wrapper turns into the inner close or, when condemned, a release.
         with run.kernel.read("f") as stream:
             assert stream.read() == b"0123"
             assert store.called("stream.close") == []
     elif expected is None:
-        assert run.read("f") == b"0123"
+        assert read("f") == b"0123"
     else:
         with pytest.raises(expected):
-            run.read("f")
+            read("f")
     after_stream = KP.KernelStreamState_SClosed() if store.called("stream.close") else KP.KernelStreamState_SReleased()
     before = KP.KernelResources_KernelResources(KP.KernelStreamState_SOpen(), _HANDLE[None], _UNSTARTED)
     exit_path = KP.KernelExitPath_Success() if kind == "success" else _FAULTS[kind][1]

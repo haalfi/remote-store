@@ -715,10 +715,26 @@ class _AsyncKernelCore:
         return key, stream
 
     async def read_bytes(self, path: str) -> bytes:
-        """The whole content of the file at *path*."""
+        """The whole content of the file at *path*.
+
+        A stream error the driver's ``connection_dead`` condemns skips the
+        close, as ``read`` does. The verdict is taken outside the choke, so a
+        predicate that raises propagates there too.
+        """
+        # SIO-010, BE-033: no second wait on a connection the failure condemned.
         key, stream = await self._open(path, Op.READ_BYTES)
-        with self._choke(Op.READ_BYTES, key):
-            return await _io.read_all(stream)
+        condemned = False
+        try:
+            try:
+                return await _io.drain(stream)
+            except Exception as exc:
+                condemned = bool(self._driver.connection_dead(exc))
+                with self._choke(Op.READ_BYTES, key):
+                    raise
+        finally:
+            if not condemned:
+                with self._choke(Op.READ_BYTES, key):
+                    await _io.close_stream(stream)
 
     async def get_file_info(self, path: str) -> FileInfo:
         """The file's metadata; a folder is ``InvalidPath``, absence ``NotFound``."""
@@ -936,9 +952,10 @@ class _AsyncKernelCore:
             try:
                 await self._driver.delete(temp)
             except Exception as failure:  # noqa: BLE001 - a failed cleanup never masks the write's error
-                # A put that failed before writing left nothing: its NotFound is no failure.
-                # Mapped as the delete it is, so BE-021's container_absent answer counts too.
-                if not isinstance(self._mapped(failure, Op.DELETE, temp), NotFound):
+                # A put that failed before writing left nothing: its NotFound is no failure, and
+                # nor is an absent container (BE-021), asked here since WRITE_ATOMIC's classify decides.
+                absent = not isinstance(failure, RemoteStoreError) and self._absent(failure, Op.WRITE_ATOMIC)
+                if not absent and not isinstance(self._mapped(failure, Op.WRITE_ATOMIC, temp), NotFound):
                     self._cleanup_failed(f"delete of the temporary {temp!r}", key, failure)
             raise
         return result
