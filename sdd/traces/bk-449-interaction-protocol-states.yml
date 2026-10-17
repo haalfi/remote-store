@@ -85,3 +85,33 @@ phases:
         extract: >-
           Commit failure already aborts (BaseException); the abort's own failure is
           suppressed without a log; `_closed` never resets
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-028, Contract kernel intro, BE-030 step 1"
+        read_type: gate
+        extract: "SFTP is single_connection, narrowing the close race; BE-030 owns the guard order"
+      - file: src/remote_store/aio/_async_store.py
+        section: "read, list_files"
+        read_type: reference
+        extract: >-
+          AsyncStore refuses capability and path at the call while sync Store
+          listings and every kernel listing refuse at iteration: the timing rule is
+          multi-site, so its implementation moved to the handle item
+      - file: src/remote_store/_kernel/_async/_io.py
+        section: "_marked, guard_content, feed"
+        read_type: reference
+        extract: "Caller iterator is never aclosed; sync content is a stream, not an iterator"
+      - file: src/remote_store/_kernel/aio_backend.py
+        section: "read"
+        read_type: reference
+        extract: "No connection_dead on the async read, unlike backend.py:64"
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "§1, §3"
+        read_type: reference
+        extract: "Handle and connection lifecycles of the pre-kernel classes; § 5 goes after them"
+      - file: tests/_kernel/_fake.py
+        section: "_SyncBase, _FaultyStream, Fault"
+        read_type: reference
+        extract: "Fault injection per primitive; unwrap raises TypeError, not CapabilityNotSupported"
