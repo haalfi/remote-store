@@ -122,23 +122,21 @@ datatype CallerIterState = IUnstarted | ISuspended | IExhausted | IClosed
 
 datatype KernelResources = KernelResources(stream: KernelStreamState, handle: WriteHandleState, iter: CallerIterState)
 
-// Each party's state after the kernel's cleanup, for each exit. The abort's
-// own failure is logged, not modelled: the handle leaves HOpen either way, and
-// the write's error is the one raised. `closable` is whether the caller's
-// iterator has `aclose`: one without it is left where the kernel stopped. The
-// kernel takes the iterator with its first chunk, so a failure before that
-// leaves it IUnstarted, the caller's to retry with.
-// The states an exit can meet, which is the domain `KernelExit` is stated over.
-// `tests/scripts/test_gen_protocol_diagram.py` holds it equal, edge for edge, to
-// the states the oracle suite drives the kernel through, so a state admitted
-// here that no exit meets fails a test rather than reaching BE-033's diagram.
+// The states an exit can meet: the domain `KernelExit` is stated over. A state
+// with no iterator in play (a read, a sync write's caller stream) carries
+// IUnstarted.
 //  - A stream at an exit is open, or closed already (a write opens none).
 //  - A caller iterator is never IClosed: one its caller closed ends at its first
 //    `__anext__` and is IExhausted to the kernel; only the kernel's own `aclose`,
 //    at the exit, closes one.
 //  - A gate refusal comes before anything is opened or taken.
-//  - A success has taken every chunk, or has not yet handed the iterator to the
-//    driver step that drains it; it never meets one suspended mid-stream.
+//  - A success meets an iterator the driver drained, or none: never one
+//    suspended mid-stream.
+// The bound on this predicate is edge-level: `tests/scripts/test_gen_protocol_diagram.py`
+// holds every edge BE-033's diagram draws from it equal to an edge the oracle
+// suite drives the kernel through, so a drawn edge no exit takes fails a test. A
+// state admitted here that no exit meets, whose edges other states draw too, is
+// not caught there; the lemmas below hold over all of it.
 predicate AtAnExit(exit: KernelExitPath, before: KernelResources)
 {
   && before.stream in {SOpen, SClosed}
@@ -147,6 +145,13 @@ predicate AtAnExit(exit: KernelExitPath, before: KernelResources)
   && (exit == Success ==> before.iter != ISuspended)
 }
 
+// Each party's state after the kernel's cleanup, for each exit. The abort's
+// own failure is logged, not modelled: the handle leaves HOpen either way, and
+// the write's error is the one raised. `closable` is whether the caller's
+// iterator has `aclose`: one without it is left where the kernel stopped. The
+// kernel takes the iterator with its first chunk, so a failure before that
+// leaves it IUnstarted, the caller's to retry with. A success changes no
+// iterator: the driver drained it before the exit, or there was none.
 method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool) returns (after: KernelResources)
   requires AtAnExit(exit, before)
   ensures before.stream == SOpen ==>
@@ -155,7 +160,7 @@ method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool)
   ensures after.handle != HOpen
   ensures exit != Success && before.handle == HOpen ==> after.handle == HAborted
   ensures exit == GateRefused ==> after.iter == IUnstarted   // the caller's still
-  ensures exit == Success ==> after.iter == IExhausted
+  ensures exit == Success ==> after.iter == before.iter
   ensures exit != Success && before.iter == IUnstarted ==> after.iter == IUnstarted
   ensures exit !in {Success, GateRefused} && closable && before.iter != IUnstarted ==>
             after.iter in {IExhausted, IClosed}
@@ -171,9 +176,7 @@ method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool)
     handle := if exit == Success then HCommitted else HAborted;
   }
   var iter := before.iter;
-  if exit == Success {
-    iter := IExhausted;   // a write that succeeded took every chunk
-  } else if exit != GateRefused && closable && iter == ISuspended {
+  if exit !in {Success, GateRefused} && closable && iter == ISuspended {
     iter := IClosed;
   }
   after := KernelResources(stream, handle, iter);

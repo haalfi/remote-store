@@ -392,6 +392,9 @@ def test_a_temporary_in_a_vanished_container_is_no_failed_cleanup(
         run.write_atomic("g", b"G")
     assert store.called("delete")  # the cleanup ran and met the absent container
     assert _abort_warnings(caplog) == []
+    # Asked as the operation that asked, the write, as classify is.
+    assert ("FakeContainerGone", Op.WRITE_ATOMIC) in run.driver.absent_asked
+    assert Op.DELETE not in {op for _, op in run.driver.absent_asked}
 
 
 @pytest.mark.spec("BE-033")

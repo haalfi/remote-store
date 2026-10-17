@@ -557,6 +557,7 @@ class _SyncBase:
         self.rename_replaces = rename_replaces
         self.stream_catch: tuple[type[Exception], ...] = (FakeWireError,)
         self.classified: list[tuple[str, Op, str]] = []
+        self.absent_asked: list[tuple[str, Op]] = []
 
     def stat(self, key: str, *, follow_links: bool = True) -> Entry | None:
         return _flat_stat(self, self.store.stat(key, follow_links=follow_links))
@@ -594,6 +595,7 @@ class _SyncBase:
         return cls(str(exc))
 
     def container_absent(self, exc: BaseException, *, op: Op) -> bool:
+        self.absent_asked.append((type(exc).__name__, op))
         return isinstance(exc, FakeContainerGone)
 
     def connection_dead(self, exc: BaseException) -> bool:

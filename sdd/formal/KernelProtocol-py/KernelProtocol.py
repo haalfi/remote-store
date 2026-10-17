@@ -89,9 +89,7 @@ class default__:
                 d_1_handle_ = WriteHandleState_HAborted()
         d_2_iter_: CallerIterState
         d_2_iter_ = (before).iter_
-        if (exit) == (KernelExitPath_Success()):
-            d_2_iter_ = CallerIterState_IExhausted()
-        elif (((exit) != (KernelExitPath_GateRefused())) and (closable)) and ((d_2_iter_) == (CallerIterState_ISuspended())):
+        if (((exit) not in (_dafny.Set({KernelExitPath_Success(), KernelExitPath_GateRefused()}))) and (closable)) and ((d_2_iter_) == (CallerIterState_ISuspended())):
             d_2_iter_ = CallerIterState_IClosed()
         after = KernelResources_KernelResources(d_0_stream_, d_1_handle_, d_2_iter_)
         return after

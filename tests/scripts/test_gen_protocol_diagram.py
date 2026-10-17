@@ -64,29 +64,32 @@ def test_the_resource_edges_are_the_models_cleanup(gen):
     assert "SOpen --> SReleased : Faulted(dead=True)" in lines
     assert "HOpen --> HCommitted : Success" in lines
     assert "ISuspended --> IClosed : Faulted(dead=False), Faulted(dead=True), Cancelled with aclose" in lines
-    # A failure leaves an unstarted iterator where it was: no edge out of IUnstarted but Success.
-    assert [line for line in lines if line.startswith("IUnstarted -->")] == ["IUnstarted --> IExhausted : Success"]
+    # The kernel moves an iterator only by closing one it abandoned: no other iterator edge is drawn.
+    assert [line for line in lines if line.startswith("I") and " --> I" in line] == [
+        "ISuspended --> IClosed : Faulted(dead=False), Faulted(dead=True), Cancelled with aclose"
+    ]
     # No exit leaves a handle open or reopens a stream.
     assert not [line for line in lines if " --> HOpen :" in line or " --> SOpen :" in line]
 
 
 def test_the_domain_is_every_constructor_the_preconditions_admit(gen):
     """Derived from the compiled datatypes, not hand-listed, then filtered by the model's AtAnExit:
-    a closed iterator is no before-state (KernelProtocol.dfy says why), and a success meets one
-    unstarted or exhausted, never suspended."""
+    a closed iterator is no before-state (KernelProtocol.dfy says why), and a success, which meets
+    an iterator drained or none, moves none."""
     kp = gen._oracle()
     states = {type(value).__name__ for value in gen._constructors(kp.CallerIterState)}
     assert states == {f"CallerIterState_{s}" for s in ("IUnstarted", "ISuspended", "IExhausted", "IClosed")}
     assert len(gen._exits(kp)) == 5  # Success, GateRefused, Faulted(False), Faulted(True), Cancelled
-    lines = [line.strip() for line in gen.render().splitlines()]
-    assert not [line for line in lines if line.startswith("IClosed -->")]
-    assert [line for line in lines if line.endswith("--> IExhausted : Success")] == [
-        "IUnstarted --> IExhausted : Success"
-    ]
+    admitted = gen._admitted(kp)
+    assert not [b for _, b, _ in admitted if type(b.iter_).__name__ == "CallerIterState_IClosed"]
+    edges = gen._edges(kp, admitted)
+    assert not [k for k, by_exit in edges.items() if k[0] == "iterator" and "Success" in by_exit]
 
 
-def _reached(gen, monkeypatch) -> list[tuple]:
-    """Every (exit, before, closable) the oracle suite passes the model, by running its cells."""
+def _reached(gen, monkeypatch) -> tuple[list[tuple], list[tuple]]:
+    """Every (exit, before, closable) the oracle suite passes the model, by running its cells: those
+    whose iterator is a real caller iterator (the async writes), and those whose iterator component
+    is a placeholder the cell never compares (sync writes, ``open_atomic``, reads)."""
     from tests._kernel import test_protocol_oracle as om
 
     calls: list[tuple] = []
@@ -101,23 +104,41 @@ def _reached(gen, monkeypatch) -> list[tuple]:
         for case in om._write_cases():
             for closable in (True, False):
                 om.test_every_async_write_exit_leaves_the_state_the_model_computes(*case.values, closable)
+        with_iterator = list(calls)
+        calls.clear()
+        for case in om._write_cases():
             om.test_every_sync_write_exit_leaves_the_handle_the_model_computes(*case.values)
         for case in om._open_atomic_cases():
             om.test_every_open_atomic_exit_leaves_the_handle_the_model_computes(*case.values)
         for case in om._read_cases():
             om.test_every_read_exit_leaves_the_stream_the_model_computes(*case.values)
-    return calls
+    return with_iterator, list(calls)
+
+
+def _shape(edges: dict) -> dict:
+    """An edge's drawn label: its exits, and for the iterator, which take it with or without aclose."""
+    return {
+        key: {label: sorted(c) for label, c in by_exit.items()} if key[0] == "iterator" else sorted(by_exit)
+        for key, by_exit in edges.items()
+    }
 
 
 def test_every_drawn_edge_is_one_the_kernel_reaches(gen, monkeypatch):
-    """The admitted domain, closed by enumeration: an edge the oracle suite never drives the kernel
-    through (a before-state no exit meets) fails here instead of reaching the diagram."""
+    """Every edge the diagram draws, label included, is one an oracle cell drives the kernel through,
+    and the reverse: a drawn edge no exit takes fails here. The bound is edge-level: a state the model
+    admits but no exit meets, whose edges other states draw too, passes (KernelProtocol.dfy says so)."""
     kp = gen._oracle()
-    reached = _reached(gen, monkeypatch)
-    assert reached, "the oracle suite drove no exit"
+    with_iterator, placeholder = _reached(gen, monkeypatch)
+    assert with_iterator, "the oracle suite drove no async write exit"
+    assert placeholder, "the oracle suite drove no other exit"
+    by_kernel = gen._edges(kp, with_iterator)
+    # A placeholder iterator is no observation: those cells count for stream and handle edges only.
+    for key, by_exit in gen._edges(kp, placeholder).items():
+        if key[0] != "iterator":
+            for label, closables in by_exit.items():
+                by_kernel.setdefault(key, {}).setdefault(label, set()).update(closables)
     drawn = gen._edges(kp, gen._admitted(kp))
-    by_kernel = gen._edges(kp, reached)
-    assert {k: sorted(v) for k, v in drawn.items()} == {k: sorted(v) for k, v in by_kernel.items()}
+    assert _shape(drawn) == _shape(by_kernel)
 
 
 def test_a_semicolon_in_a_line_is_refused(gen):

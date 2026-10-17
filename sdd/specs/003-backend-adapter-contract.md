@@ -2114,7 +2114,8 @@ BE-030's **Gates around the pipeline**, and this clause keeps that order.
 
 **The model is the oracle.** `KernelProtocol.dfy` compiles to
 `sdd/formal/KernelProtocol-py/`, and `tests/_kernel/test_protocol_oracle.py`
-drives the kernel to every exit in the finite space the model admits: each
+drives the kernel to every exit the fake driver can produce, not to every state
+the model admits (most admitted states pair resources no single exit holds): each
 write route (and sync `open_atomic`), each driver step it reaches, each exit
 kind (success, a gate refusal, a refused chunk, a failure with either
 `connection_dead` verdict, a cancel), both runtimes, an iterator with and
@@ -2126,7 +2127,8 @@ from the fake driver's records onto the model's states is faithful.
 
 **The model drawn.** The diagrams below are enumerated from the same compiled
 model, over every value of its datatypes that `KernelExit`'s preconditions
-admit; `hatch run gen-protocol-diagram` rewrites
+admit, and a test holds every drawn edge, label included, to one the oracle
+suite drives the kernel through; `hatch run gen-protocol-diagram` rewrites
 them after the oracle is rebuilt, and `preflight` fails while they are stale.
 
 <!-- BEGIN_GENERATED:kernel_protocol -->
@@ -2174,7 +2176,6 @@ Iterator:
 ```mermaid
 stateDiagram-v2
   ISuspended --> IClosed : Faulted(dead=False), Faulted(dead=True), Cancelled with aclose
-  IUnstarted --> IExhausted : Success
 ```
 <!-- END_GENERATED:kernel_protocol -->
 

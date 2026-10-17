@@ -26,8 +26,10 @@ between a label and the renderer. The domain is filtered by the model's
 compiled ``AtAnExit``, ``KernelExit``'s precondition, so a new precondition
 needs no edit here; a constructor field that is not a ``bool`` does (today's one
 field is ``Faulted``'s ``dead``). ``tests/scripts/test_gen_protocol_diagram.py``
-holds the drawn edges equal to those the oracle suite drives the kernel
-through, so an admitted state no exit meets fails a test. ``--check`` compares the block with the
+holds the drawn edges, labels included, equal to those the oracle suite drives
+the kernel through, so a drawn edge no exit takes fails a test; an admitted
+state no exit meets, whose edges other states draw too, does not (the bound is
+edge-level). ``--check`` compares the block with the
 committed oracle, so a stale oracle draws a stale "current" block: freshness is
 ``check_dafny_oracle_fresh.py``'s, in the ``verify-formal`` CI job. Only the
 first ``kernel_protocol`` region is rewritten; a second copy is not seen.
