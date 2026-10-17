@@ -519,12 +519,12 @@ the test itself has a bug and must be fixed.
 | `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |
 | `sdd/formal/KernelProtocol.dfy` | The second translation entry point: BE-033's interaction protocol, one named `module KernelProtocol`, including nothing and included by nothing |
 | `sdd/formal/KernelProtocol-py/KernelProtocol.py` | Its compiled Python: `KernelExit`, `KernelStep`, `KernelRun` and their datatypes (`module_.py` beside it is Dafny's stub entry, not this module) |
-| `tests/_kernel/test_protocol_oracle.py` | Drives the kernel through the exits BE-033's "The model is the oracle" enumerates and compares the state it leaves with `KernelExit`'s and `KernelStep`'s answer |
+| `tests/_kernel/test_protocol_oracle.py` | Drives the kernel through the exits its case builders enumerate (BE-033's "The model is the oracle") and compares the state it leaves with `KernelExit`'s and `KernelStep`'s answer |
 
 **The second oracle.** `KernelProtocol-py/` serves a different direction from
 `MemoryBackend-py/`: not "a test the oracle passes is a correct test", but "the
-kernel leaves the state the proved model computes". Its suite enumerates every
-combination rather than sampling, maps what the fake driver observed onto the
+kernel leaves the state the proved model computes". Its suite runs the products
+its case builders enumerate rather than sampling, maps what the fake driver observed onto the
 model's datatypes, and asks the compiled model for the expected state, so a
 lemma about `KernelExit` is a claim about the kernel only as far as that
 mapping is faithful. The mapping is stated in the suite's module docstring;

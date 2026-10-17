@@ -835,7 +835,7 @@ CHANGELOG the release body is built from — say what is actually true.
 
 - [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split by layer**
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
-  2,200 lines over 45 `##`/`###` sections, 64% in BE-021, BE-029, BE-032 and BE-033; PR #1159's
+  2,197 lines over 45 `##`/`###` sections, most in BE-021, BE-029, BE-032 and BE-033; PR #1159's
   rounds kept finding one section contradicting another. Split into four files (003, error
   mapping, root path, contract kernel; IDs keep their BE- prefix), each then pruned against
   BK-457's ADR. After BK-449 and BK-457. Open decision: the new numbers.

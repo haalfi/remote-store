@@ -7,7 +7,7 @@
 // adds nothing to MemoryBackend.dfy's oracle; it compiles to an oracle of its
 // own, `sdd/formal/KernelProtocol-py/`, which
 // `tests/_kernel/test_protocol_oracle.py` drives against the kernel over the
-// exits spec 003 BE-033 enumerates (sdd/formal/README.md § Compiled oracle). Hypothesis
+// exits its case builders enumerate (spec 003 BE-033; sdd/formal/README.md § Compiled oracle). Hypothesis
 // twin: `tests/_kernel/test_protocol_stateful.py`.
 //
 // One named module, so the compiled Python is `KernelProtocol.py`. Dafny still

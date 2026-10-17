@@ -2114,24 +2114,21 @@ BE-030's **Gates around the pipeline**, and this clause keeps that order.
 
 **The model is the oracle.** `KernelProtocol.dfy` compiles to
 `sdd/formal/KernelProtocol-py/`, and `tests/_kernel/test_protocol_oracle.py`
-drives the kernel through an enumerated set of exits, not every exit and not
-every state the model admits (most admitted states pair resources no single exit
-holds). For the writes: each route (and sync `open_atomic`) on a hierarchical
-namespace with `overwrite=True`, both runtimes, an iterator with and without
-`aclose`, exiting by success (and, on the routes that hand the driver the
-iterator, a success that leaves it suspended), the closed guard, the key gate, a
-refused chunk, or a fault at each driver step the suite's `_POINTS` names, with
-either `connection_dead` verdict or a cancel. For `read` and `read_bytes`:
-success and a fault at each stream read after the open. And every call sequence
-up to four calls, per runtime and posture. Not driven: a refused open of a read,
-the metadata, content-shape and capability gates, `overwrite=False` and the
-probes after its refusal, a flat namespace, and a failed delete of the
-temporary (pinned in `test_protocol.py` instead). Each of these cells but the
-read's closed guard, which asserts that nothing reached the driver, requires the
-state the kernel left to equal what the compiled `KernelExit` or `KernelStep`
-computes from the state at the exit, so I1 to I3 hold of the code on these exits
-to the extent that suite's stated mapping from the fake driver's records onto
-the model's states is faithful.
+drives the kernel through the exits its case builders enumerate (`_write_cases`,
+`_UNDRAINED_ROUTES`, `_open_atomic_cases`, `_read_cases`, `_sequences`; that file
+is the list), not every exit and not every state the model admits (most admitted
+states pair resources no single exit holds). The writes run on a hierarchical
+namespace with `overwrite=True` and an unnested key, and fault only the driver
+steps the builders name; a step reached but never faulted, and an exit never
+reached, is outside the suite: for example a failed `abort` or a failed delete
+of the temporary (both pinned in `test_protocol.py` instead), the probes after a
+refusal, `ensure_parents`, the metadata, content-shape and capability gates, a
+refused open of a read, or a flat namespace. Each cell but the read's closed
+guard, which asserts that no stream was opened, requires the state the kernel
+left to equal what the compiled `KernelExit` or `KernelStep` computes from the
+state at the exit, so I1 to I3 hold of the code on these exits to the extent
+that suite's stated mapping from the fake driver's records onto the model's
+states is faithful.
 
 **The model drawn.** The diagrams below are enumerated from the same compiled
 model, over every value of its datatypes that `KernelExit`'s preconditions

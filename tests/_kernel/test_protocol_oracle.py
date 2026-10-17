@@ -7,8 +7,8 @@ the kernel over the fake driver to one exit, maps what the fake recorded onto
 the model's datatypes, and requires the state the kernel left to equal the
 state the model computes from the state at the exit. Nothing is sampled: the
 cells are the products the case builders below enumerate, and every call
-sequence up to ``_DEPTH`` calls, per runtime and close posture. Which exits
-they leave out is spec 003 BE-033's "The model is the oracle".
+sequence up to ``_DEPTH`` calls, per runtime and close posture. Spec 003
+BE-033's "The model is the oracle" names kinds of exit they leave out.
 
 **The mapping is what a pass is worth**, so it is stated here once:
 

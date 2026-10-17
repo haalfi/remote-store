@@ -13,9 +13,9 @@ should the work follow?": "By layer, 4 files").
 
 **Measured at BK-449's last fix pass, 2026-10-17** (lines per `##`/`###`
 section of `sdd/specs/003-backend-adapter-contract.md`, counted from each such
-heading to the next): 2,200 lines and 45 sections in all. The largest: BE-021
+heading to the next): 2,197 lines and 45 sections in all. The largest: BE-021
 Error Mapping 557, BE-029 Root Path 339, BE-032 The Store Tree on the Kernel
-327, BE-033 Interaction Protocol on the Kernel 197 (the four: 1,420 lines,
+327, BE-033 Interaction Protocol on the Kernel 194 (the four: 1,417 lines,
 64.5%), BE-030 Key Rule on the Kernel 162, BE-008 write() 123, BE-031
 `delete_folder` on the Kernel 107. Every CAP- section and most BE- operation
 sections are under 30 lines.
