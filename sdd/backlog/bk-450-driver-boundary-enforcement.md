@@ -49,7 +49,11 @@ separate PRs under this ID.
   owners), is typed `AlreadyExists`, which nothing checks. BE-033's other driver
   rows (idempotent `close`, `abort` after a failed `commit`, end of data at the
   client's own end-of-data read, transport-level `connection_dead`) are stated
-  on the protocol docstrings and unchecked too.
+  on the protocol docstrings and unchecked too. One more, unstated anywhere: a
+  `put` that returns success has consumed all of the caller's async content.
+  A driver that returns early has truncated the write; the kernel closes the
+  iterator it left suspended (BE-033's exit-owner row) and reports success.
+  Found by PR #1159's closing measuring pass.
 - **One meaning per capability flag, checked in each runtime** (P5, T6):
   `LAZY_READ` as per-chunk pull, `SEEKABLE_READ` withheld by async backends,
   async Memory withdrawing both, an async cell replacing the e2e exemption.
