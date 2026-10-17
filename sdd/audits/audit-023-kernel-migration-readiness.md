@@ -64,8 +64,9 @@ findings cluster where the kernel takes a driver's word without a clause or a
 check: a mapping it hands out uncopied (T1), a protocol body it never looks
 behind (T2), keys and declarations it does not validate (T9, T10), and stream
 errors it maps three ways (T4, T5). Around those calls, no protocol states who
-may call what in which state (T20). The formal model trails the kernel in four
-places (T3, T12, T13, T14), one of which would fail a correct test.
+may call what in which state (T20). The formal model trails the kernel where
+P3 collects it: T3, T12, T13, T14, T19's model half, and the lower-ranked
+`StoreTree` names and negative `max_depth` rows; T3 would fail a correct test.
 
 **The tree concepts are sound; the boundary lacks three.** The tree came back
 clean (§ Checked clean). The boundary between `Store`, kernel, driver and
@@ -567,7 +568,7 @@ l.576-577). Every in-repo backend starts from this checklist.
 plus a `DriverBackend` subclass, linking the guide; step 3 (`:89`, the fixture)
 stays.
 
-**Checked:** `CONTRIBUTING.md:84-88` opened; guide lines first pass only.
+**Checked:** `CONTRIBUTING.md:84-89` and guide l.574-577 opened; guide l.53-58 first pass only.
 
 ### T18 🟠 Memory's counters are unpinned, and two clauses misstate them
 
@@ -805,8 +806,8 @@ GLOB-015, and Tier-1 case folding.
 
 **Claim.** `StoreTree.dfy` states the tree; `BackendContract.dfy`, which the
 compiled oracle runs, still ranges over a path map and never sees an encoding
-(BK-434). Two models of one store drift: T3, T12, T13, T14, T19's model half
-and the `StoreTree` name gap are that drift. In T3, T12 and T14 the model, not
+(BK-434). Two models of one store drift: T3, T12, T13, T14, T19's model half,
+the `StoreTree` name gap and the negative `max_depth` row are that drift. In T3, T12 and T14 the model, not
 the kernel, was wrong; in T13 both were. Recommended at triage: the model gates driver acceptance, so
 `BackendContract` is refined against `StoreTree`, with BE-030's key rule
 inside its domain.
