@@ -350,6 +350,14 @@ no clause of the contract ships unexercised.
   `GLOB` driver would raise `InvalidPath` (BE-030's pattern rule). In a glob
   `\` is also a natural escape. Open decision: convert, refuse, or escape.
 
+- [ ] **BK-448 — The async kernel leaves a caller's content iterator suspended when it refuses a chunk or the write fails**
+  spec: BE-030, ASYNC-091 · effort: S · audience: user.api, library.maintainer
+  `_marked` (`_kernel/_async/_io.py`) raises on a non-bytes chunk without
+  `aclose()` on the caller's iterator, so its `finally` runs only at GC, on
+  whatever loop is then current (measured in BUG-335: 4 of 4 write routes). No
+  spec clause says who closes it. Open decision: the kernel closes what it
+  abandons, or BE-030 states that the caller owns it, as spec 036 does for reads.
+
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
   spec: RES-100 · effort: M · audience: user.api
   `ext.cache` keys entries on `(operation, path)` with nothing naming the

@@ -1,0 +1,72 @@
+id: BUG-335
+title: "CI Full Matrix red on 3.13: the none-read cell leaves its async generator for GC"
+trigger: >
+  CI Full Matrix failed test-full (3.13) on master after #1154 (run 39014490746)
+  and in the scheduled run on the commit before it (run 39013016059), each with
+  one PytestUnraisableExceptionWarning naming the async generator
+  _none_mid_chunks, attributed to a different sync cell of
+  test_a_none_read_is_refused_on_every_write_route. 3.11, 3.12, 3.14 green.
+source_items:
+  - BUG-335
+audience:
+  - infra.test
+# Clusters from `hatch run backlog-find` on BE-030, ASYNC-091 and test_kernel
+# (open hits only, BK-448 excluded as born here).
+orient:
+  - items: [BK-446, BK-447]
+    verdict: unrelated
+    evidence: >
+      BACKLOG.md § 2: both concern the kernel's glob (MemoryDriver declares no
+      GLOB; `\` in a pattern). The leak is in write content, _marked in
+      _kernel/_async/_io.py, which neither item touches.
+  - items: [BK-438]
+    verdict: unrelated
+    evidence: >
+      BACKLOG.md: decoding a flat raw key with an empty segment (S3 folder
+      marker). Key resolution, not content consumption.
+decisions:
+  - sdd/decisions/f9f4dbc6-0cb9-5303-a3e8-e9fa7f443df9.jsonl
+discovery_followups:
+  - BK-448
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/_kernel/test_kernel.py
+        section: "test_a_none_read_is_refused_on_every_write_route"
+        read_type: gate
+        extract: "Async cell passes _none_mid_chunks and never closes it after the kernel raises"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/_io.py
+        section: "_marked"
+        read_type: gate
+        extract: "Raises the caller-marked TypeError on a None chunk without aclose() on the caller's iterator"
+        outcome: ok
+      - file: tests/_kernel/_fake.py
+        section: "run_async"
+        read_type: reference
+        extract: "One loop per process, so the finalizer's aclose lands on a later run or a closed loop"
+        outcome: ok
+      - file: tmp/repro_agen.py
+        section: "scratch repro, not committed"
+        read_type: verify
+        extract: "4 of 4 routes leave ag_frame alive; closing the loop warns 'aclose was never awaited'. Isolated pytest run passes: GC timing"
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: tests/_kernel/test_kernel.py
+        section: "test_a_none_read_is_refused_on_every_write_route"
+        read_type: reference
+        extract: "Async cell awaits content.aclose(); with --fixed the repro shows ag_frame None on all 4 routes and no warning"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-224, BUG-239"
+        read_type: reference
+        extract: "Precedent GC-time test flakes: infra.test audience, no CHANGELOG entry"
+        outcome: ok
