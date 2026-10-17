@@ -24,6 +24,8 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
+- [x] **BK-448 — The async kernel leaves a caller's content iterator suspended when it refuses a chunk or the write fails** → **BK-449**, whose exit owners include it (the kernel closes what it abandons, or the caller owns it). Filed by BUG-335 (PR #1156); absorbed when audit-023's items were filed. Dossier: [BK-449](backlog/bk-449-interaction-protocol-states.md).
+- [x] **BK-447 — A glob pattern reads `\` unlike a path: `exists("d\\a.csv")` is `True`, `glob("d\\*.csv")` is `[]`** → **BK-451**, one row of its dialect decision. Absorbed when audit-023's items were filed. Dossier: [BK-451](backlog/bk-451-glob-tree-definition.md).
 - [x] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`** → **BK-394**, its Memory half, and **BUG-300**, its SQLBlob half, each carrying the marker. Filed by BL-011 (PR #1054), absorbed into BK-395 in BK-389's planning PR (#1055) at the maintainer's request; BK-395 decided the fix (the kernel refuses a backslash before the driver) and closed in PR #1061, which moved the open work to those two hosts.
 - [x] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly** → **BK-389**, as fake-driver cells over an absent container. Dossier: [ID-261](backlog/id-261-root-order-unobservable.md).
 - [x] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps** → **BK-394**, which rewrites the guide as a driver. Dossier: [BK-325](backlog/bk-325-custom-backend-guide-gaps.md).

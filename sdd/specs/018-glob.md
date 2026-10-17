@@ -116,7 +116,7 @@ prepends `root_path` before delegating to `Backend.glob()`. Leading `/`, empty
 and `.` segments are dropped (PATH-004 to PATH-006). Three departures from
 spec 004: a trailing `/` is kept, since in a pattern it selects folders only; a
 `\` is kept as written rather than turned into `/` (PATH-002; open under
-BK-447); and a pattern that normalises to the root yields nothing, without
+BK-451); and a pattern that normalises to the root yields nothing, without
 reaching the backend, rather than raising (PATH-008). Returned `FileInfo.path`
 values are rebased to store-relative (same as `list_files`).
 **Raises:** `InvalidPath` for a `..` segment or a null byte (PATH-003,
