@@ -34,7 +34,7 @@
   list_files('d'): OK []
   write('e/./g'): OK 'e/g'
   is_folder('e/.'): OK True
-  list_folders(''): OK ['d', 'e', 'd', 'e']
+  list_folders(''): OK ['d', 'e', 'e', 'd']
   write('h\\i') backslash: OK 'h/i'
   write('/lead'): OK 'lead'
   write('p/../q'): InvalidPath path='p/../q' Path contains '..' segment | path='p/../q'
@@ -45,8 +45,8 @@
 === 3. negative max_depth
   [kernel] list_files('x', recursive=True, max_depth=-1): OK []
   [kernel] list_files('x', recursive=True, max_depth=None): OK ['x/a', 'x/y/b']
-  [oracle] list_files('x', recursive=True, max_depth=-1): OK ['x/a', 'x/y/b']
-  [oracle] list_files('x', recursive=True, max_depth=None): OK ['x/a', 'x/y/b']
+  [oracle] list_files('x', recursive=True, max_depth=-1): OK ['x/y/b', 'x/a']
+  [oracle] list_files('x', recursive=True, max_depth=None): OK ['x/y/b', 'x/a']
 
 === 4. MOVE/COPY gate vs closed guard on a terminal backend without MOVE/COPY (kernel)
   open, no MOVE: move('s','d'): CapabilityNotSupported path='s' Backend 'memory' cannot move | path='s' | backend='memory' | capability='move'

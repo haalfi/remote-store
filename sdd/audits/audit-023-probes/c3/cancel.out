@@ -1,4 +1,4 @@
 HandleDriver ('cancelled', [], ['handle-abort'])
 HandleDriver wait_for ('timeout', [], ['handle-abort'])
-RenameDriver ('cancelled', [], ['partial-put d/.target.txt.rs-3ba268e8e005.tmp', 'delete d/.target.txt.rs-3ba268e8e005.tmp'])
-RenameDriver wait_for ('timeout', [], ['partial-put .t.txt.rs-96b47221981a.tmp', 'delete .t.txt.rs-96b47221981a.tmp'])
+RenameDriver ('cancelled', [], ['partial-put d/.target.txt.rs-350a34f1f641.tmp', 'delete d/.target.txt.rs-350a34f1f641.tmp'])
+RenameDriver wait_for ('timeout', [], ['partial-put .t.txt.rs-c6ad3dc387c0.tmp', 'delete .t.txt.rs-c6ad3dc387c0.tmp'])

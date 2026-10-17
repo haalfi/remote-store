@@ -35,7 +35,7 @@
 [aiter] async read_bytes(): remote_store._errors.RemoteStoreError: OSError: aiter dropped | path='f' | backend='async-memory' | cause=OSError | context=OSError
    log: ['async-aclose']
 sync read('nope') call: remote_store._errors.NotFound: File not found: nope | path='nope' | backend='memory' | cause=None | context=None
-async read('nope') call (no iteration): OK <async_generator object AsyncDriverBackend.read at 0x7fd30ff26d40>
+async read('nope') call (no iteration): OK <async_generator object AsyncDriverBackend.read at 0x7f7b1bf8ad40>
 async read('nope') first anext: remote_store._errors.NotFound: File not found: nope | path='nope' | backend='async-memory' | cause=None | context=None
 sync write content error: builtins.ValueError: caller content broke | cause=None | context=None
 async write content error: builtins.ValueError: caller content broke | cause=None | context=None

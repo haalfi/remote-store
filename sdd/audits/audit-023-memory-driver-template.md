@@ -27,8 +27,8 @@ probe re-run, the cited line opened, a grep or command run, or "first pass
 only" where it was not repeated.
 **Probes:** committed in [`audit-023-probes/`](audit-023-probes/), one
 directory per pass (`c1` kernel to `c6` docs) plus the second reader's
-`lead_v_meta.py`. `hatch run python sdd/audits/audit-023-probes/run_all.py`,
-from the repo root, runs all 31 and records each output beside it as
+`lead_v_meta.py` and `lead_v_write_alias.py`. `hatch run python sdd/audits/audit-023-probes/run_all.py`,
+from the repo root, runs all 32 and records each output beside it as
 `<probe>.out`; the committed `.out` files are the run this audit quotes, at
 `52448e0` on CPython 3.13.16. Timestamps, temp names and object addresses
 differ between runs. Tool state at the
@@ -66,10 +66,16 @@ The formal model gates driver acceptance (P3). Effort was ruled out as an
 argument for or against a proposal; each is judged by whether later drivers
 need it and what it prevents.
 
+**These decisions do not bind from here.** An audit's prescription is advisory
+(CLAUDE.md § Audits), so the step-2 gate and the model's role need a home with
+authority. Recommended: a new ADR recording both, with a backlog item carrying
+the step-2 gate, the way BACKLOG already carries "due before" gates (BK-439).
+Neither is filed by this audit.
+
 | Severity | Count | Findings |
 |---|---|---|
-| 🔴 High | 3 | T1, T2, T3 |
-| 🟠 Medium | 16 | T4 to T19 |
+| 🔴 High | 2 | T1, T3 |
+| 🟠 Medium | 17 | T2, T4 to T19 |
 | 🟡 Low | 27 | § Lower-ranked |
 
 Counts are of the finding sections and the § Lower-ranked table rows in this
@@ -101,7 +107,8 @@ It decides:
   (T2); a native aggregate applies BE-030's omission (T13); the `open_write`
   route refuses an existing target without `overwrite` (T16); `src != dst` on
   driver `move` and `copy`.
-- **Values the kernel hands out:** returned metadata is a copy (T1); an empty
+- **Values the kernel hands out:** metadata in a returned `FileInfo` or
+  `WriteResult` is a copy, never the stored or the caller's mapping (T1); an empty
   metadata echo is normalised in one place (T15).
 - **Fault policy:** one rule for exceptions from driver calls and streams,
   where a wire error and a programming error differ by rule and not by the
@@ -136,7 +143,8 @@ GLOB-015, and Tier-1 case folding.
 compiled oracle runs, still ranges over a path map and never sees an encoding
 (BK-434). Two models of one store drift: T3, T12, T13, T14, T19's model half
 and the `StoreTree` name gap are that drift. In T3, T12 and T14 the model, not
-the kernel, was wrong; in T13 both were. Decided at triage: the model gates driver acceptance, so
+the kernel, was wrong; in T13 both were. Decided at triage, to be recorded by the ADR § Summary recommends: the model
+gates driver acceptance, so
 `BackendContract` is refined against `StoreTree`, with BE-030's key rule
 inside its domain.
 
@@ -196,13 +204,14 @@ doc-drift rows: each is a direct fix whose decision is already made.
 **Proposal:** P1. **Kind:** contradiction. **Clause:** `FileInfo` "Immutable snapshot"
 (`_models.py:82`), BE-019.
 Mutating a returned info's `metadata` mutates the stored file's, and `copy`
-leaves source and destination sharing one dict.
+leaves source and destination sharing one dict. On the write side,
+`WriteResult.metadata` is the caller's own dict.
 
-**Checked:** probes `lead_v_meta.py` and `c2/measure.py` § D re-run; cited lines opened.
+**Checked:** probes `lead_v_meta.py`, `lead_v_write_alias.py` and `c2/measure.py` § D, § F re-run; cited lines opened.
 
 - Code: `_memory_tree.py:58` (`metadata=node.metadata`), `:212` (copy stores
   `entry.metadata`); the kernel's `_file_info` passes it uncopied
-  (`_kernel/_async/kernel.py:635`, sync `:619`) while it copies `extra`.
+  (`_kernel/_async/kernel.py:635`, sync `:620`) while it copies `extra`.
 - Probe: write `a.txt` with `{"k": "v"}`, mutate `get_file_info("a.txt")`,
   copy to `b.txt`, mutate `b.txt`'s info.
   ```
@@ -210,16 +219,25 @@ leaves source and destination sharing one dict.
   sync src after mutating dst info: {'k': 'VIA_DST'}
   async stored after mutating info: {'k': 'MUTATED'}
   ```
+- Write side: `MemoryTree.put` returns `PutResult(metadata=metadata)`, the
+  caller's mapping (`_memory_tree.py:145`; only the stored copy at `:133` is
+  copied); the kernel's `_write_result` passes it on (`_async/kernel.py:149`,
+  sync `:134`). Probe: write with `m = {"k": "v"}`, then mutate `m`:
+  ```
+  sync WriteResult.metadata after caller mutates its dict: {'k': 'CALLER'} | is caller's: True
+  async WriteResult.metadata after caller mutates its dict: {'k': 'CALLER'} | is caller's: True
+  ```
 - Predates the kernel: `git grep metadata 107a5a1 --
   src/remote_store/backends/_memory.py` shows the same at lines 459 and 619.
 - No MEM clause or test covers isolation.
 
 **Template impact:** the kernel never copies `Entry.metadata`, so every driver
-that returns its own mapping inherits it. **Disposition:** copy (or wrap
-read-only) in `_file_info` and in `MemoryTree.copy`; a conformance cell in both
-runtimes.
+that returns its own mapping inherits it, and every driver that echoes the
+caller's in `PutResult`. **Disposition:** copy (or wrap read-only) in
+`_file_info`, `_write_result` and `MemoryTree.copy`; a conformance cell in both
+runtimes for each direction.
 
-### T2 🔴 An optional protocol's own body passes construction and no-ops
+### T2 🟠 An optional protocol's own body passes construction and no-ops
 
 **Proposal:** P1. **Kind:** spec-gap, untested. **Clause:** BE-030 (construction refusals).
 A driver that subclasses `SupportsCopy` and `SupportsRemoveFolder` without
@@ -243,8 +261,15 @@ having done nothing.
   `test_the_body_checked_set_is_every_protocol_method_but_probe`
   (`tests/_kernel/test_kernel.py:1590`) pins the narrow set.
 
-**Template impact:** `MemoryDriver(Driver)` (`backends/_memory.py:29`) teaches
-subclassing the protocol classes. **Disposition:** run the body check over
+**Template impact:** none copied today: Memory subclasses only the required
+`Driver` (`backends/_memory.py:29`), whose bodies the check covers, and presents
+its optional protocols structurally, as the guide teaches ("define the method,
+and the kernel uses it", guide l.344-345); no class in `src/`, `docs-src/`,
+`examples/` or `tests/_kernel/` subclasses a `Supports*` protocol (grep
+`class \w+\(.*Supports`). The exposure is that the protocols are public,
+runtime-checkable classes in `drivers.__all__`, so subclassing one is a natural
+author's move, and the failure is a silent no-op. Ranked 🟠 on that
+likelihood. **Disposition:** run the body check over
 every optional protocol presented and over `WriteHandle`; state it in BE-030.
 
 ### T3 🔴 The model's `ListFolders` lists every nested folder
@@ -334,19 +359,19 @@ add a close fault to the fake.
 ### T6 🟠 `AsyncMemoryBackend` declares `LAZY_READ` and `SEEKABLE_READ`
 
 **Proposal:** P5. **Kind:** contradiction (prose against prose), spec-gap. **Clause:** MEM-003
-against BE-003; spec 029.
+against CAP-007; spec 029.
 MEM-003 has the async class declare `LAZY_READ` for "its one-chunk read stream
-being lazy"; BE-003 says in-memory, pre-loading backends do not declare it.
+being lazy"; CAP-007 says in-memory, pre-loading backends do not declare it.
 
-**Checked:** probes `c3/lazy.py` and `c2/measure.py` § L re-run; MEM-003, BE-003 and ASYNC-084 opened.
+**Checked:** probes `c3/lazy.py` and `c2/measure.py` § L re-run; MEM-003, CAP-007 and ASYNC-084 opened.
 
-- MEM-003: spec 013 l.229-232. BE-003: spec 003 l.55. ASYNC-084 (spec 029
+- MEM-003: spec 013 l.229-232. CAP-007: spec 003 l.55. ASYNC-084 (spec 029
   l.526) preserves the flag through the sync adapter, citing ASYNC-080.
 - `AsyncMemoryDriver.get` copies the whole value under the lock and yields it
   once (`aio/backends/_memory.py:67-71`). Probe:
   `LAZY_READ declared=True; file=4194304 chunks=1 first_chunk=4194304`.
 - The async class also declares `SEEKABLE_READ` (`set(Capability) - {GLOB}`,
-  `aio/backends/_memory.py:26`) with a forward-only async generator; BE-003
+  `aio/backends/_memory.py:26`) with a forward-only async generator; CAP-007
   defines the flag by `stream.seekable()`.
 - The only async laziness test exempts it:
   `tests/e2e/test_async_streaming_integrity.py:8-10, 302-308` ("capability
@@ -355,13 +380,13 @@ being lazy"; BE-003 says in-memory, pre-loading backends do not declare it.
 **Disposition, with the reasoning asked for at triage.** `LAZY_READ` should
 mean per-chunk pull: memory held by a read is bounded by the chunk size, not
 the file size, so a caller reading a prefix of a large object never holds the
-whole of it. That is the promise BE-003 and SIO-009 make ("pulled as the
+whole of it. That is the promise CAP-007 and SIO-009 make ("pulled as the
 caller reads"), and the one a caller checks the flag for. The alternative,
 "nothing is fetched before the first iteration", states only timing: a driver
 that buffers a 10 GB object into one chunk on the first `__anext__` would
 satisfy it, so the flag would stop protecting memory exactly where an async
 driver over S3 or Azure needs it. Memory holds the bytes already, so it has
-no fetch to defer; per BE-003 neither Memory class declares `LAZY_READ`, and
+no fetch to defer; per CAP-007 neither Memory class declares `LAZY_READ`, and
 the async one also withholds `SEEKABLE_READ`. Spec 029 then defines both flags
 for an async read, and an async conformance cell replaces the e2e exemption.
 MEM-003 is amended to match.

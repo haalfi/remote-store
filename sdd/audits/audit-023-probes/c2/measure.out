@@ -3,7 +3,7 @@ sync repr: MemoryBackend(files=3, folders=5) walk: (3, 5) mismatches: [] q exist
 async repr: AsyncMemoryBackend(files=3, folders=5) walk: (3, 5) mismatches: [] q exists: ('ok', False)
 
 == A2. driver called directly: move(k, k, overwrite=True) ==
-sync driver counts: (0, 0) walk: (1, 0) stat: Entry(key='k', kind='file', size=1, modified_at=datetime.datetime(2026, 10, 17, 8, 27, 1, 694456, tzinfo=datetime.timezone.utc), digest=None, etag=None, content_type=None, metadata=None, extra={})
+sync driver counts: (0, 0) walk: (1, 0) stat: Entry(key='k', kind='file', size=1, modified_at=datetime.datetime(2026, 10, 17, 8, 36, 34, 566648, tzinfo=datetime.timezone.utc), digest=None, etag=None, content_type=None, metadata=None, extra={})
 
 == B. MEM-DS-003 shrink claim (100MB->1KB keeps ~100MB) ==
 sync same object: True getsizeof before: 10000057 after: 1057

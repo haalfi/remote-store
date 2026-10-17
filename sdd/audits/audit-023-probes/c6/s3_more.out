@@ -1,7 +1,7 @@
 [list(Store.glob('*')) without GLOB] CapabilityNotSupported: Capability 'glob' is not supported. Supported: ['list', 'read'] | backend='dict' | capability='glob'
    driver calls: []
 [move overwrite, rename fails] RemoteStoreError: native OSError | path='a.txt' | backend='dict'
-   renames: [('rename', 'b.txt', '.b.txt.rs-c791e8e7a4fb.tmp', False), ('rename', 'a.txt', 'b.txt', False), ('rename', '.b.txt.rs-c791e8e7a4fb.tmp', 'b.txt', False)] state: {'a.txt': b'A', 'b.txt': b'B'}
+   renames: [('rename', 'b.txt', '.b.txt.rs-d784df2f40c2.tmp', False), ('rename', 'a.txt', 'b.txt', False), ('rename', '.b.txt.rs-d784df2f40c2.tmp', 'b.txt', False)] state: {'a.txt': b'A', 'b.txt': b'B'}
 [driver raises PermissionDenied on absent key] NotFound: Not found: nothing | path='nothing' | backend='dict'
 [driver raises PermissionDenied on existing file] PermissionDenied: driver says denied | path='f' | backend='dict'
 [put raises NotFound, dst exists, overwrite False] AlreadyExists: Already exists: exists.txt | path='exists.txt' | backend='dict'
