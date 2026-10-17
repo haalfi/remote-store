@@ -114,7 +114,9 @@ datatype KernelResources = KernelResources(stream: KernelStreamState, handle: Wr
 // Each party's state after the kernel's cleanup, for each exit. The abort's
 // own failure is logged, not modelled: the handle leaves HOpen either way, and
 // the write's error is the one raised. `closable` is whether the caller's
-// iterator has `aclose`: one without it is left where the kernel stopped.
+// iterator has `aclose`: one without it is left where the kernel stopped. The
+// kernel takes the iterator with its first chunk, so a failure before that
+// leaves it IUnstarted, the caller's to retry with.
 method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool) returns (after: KernelResources)
   requires before.stream in {SOpen, SClosed}
   requires exit == GateRefused ==> before.handle == HNone && before.iter == IUnstarted
@@ -125,7 +127,9 @@ method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool)
   ensures exit != Success && before.handle == HOpen ==> after.handle == HAborted
   ensures exit == GateRefused ==> after.iter == IUnstarted   // the caller's still
   ensures exit == Success ==> after.iter == IExhausted
-  ensures exit != GateRefused && closable ==> after.iter in {IExhausted, IClosed}
+  ensures exit != Success && before.iter == IUnstarted ==> after.iter == IUnstarted
+  ensures exit !in {Success, GateRefused} && closable && before.iter != IUnstarted ==>
+            after.iter in {IExhausted, IClosed}
   ensures exit !in {Success, GateRefused} && !closable ==> after.iter == before.iter
   // @spec BE-033
 {
@@ -140,7 +144,7 @@ method KernelExit(exit: KernelExitPath, before: KernelResources, closable: bool)
   var iter := before.iter;
   if exit == Success {
     iter := IExhausted;   // a write that succeeded took every chunk
-  } else if exit != GateRefused && closable && iter != IExhausted {
+  } else if exit != GateRefused && closable && iter == ISuspended {
     iter := IClosed;
   }
   after := KernelResources(stream, handle, iter);

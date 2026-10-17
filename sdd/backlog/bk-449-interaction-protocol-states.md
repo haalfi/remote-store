@@ -115,14 +115,16 @@ Where the build left the plan above, and why:
   failed, its `module_.py` diff reporting "444 more diff lines" past those it
   printed). A file nothing includes adds
   nothing to the oracle; `scripts/dafny_verify.sh` and CI verify it.
-- Step 3's `_marked` became a class, `_Marked`, with its own `aclose`, not a
-  generator with a `try`/`finally`: a generator never started has no `finally`
-  to run, so it could not close a caller's iterator abandoned before its first
-  chunk (an `open_write` refused, say).
-- The gates (closed guard, key, metadata, content shape) refuse before the
-  kernel takes the caller's iterator, and leave it the caller's; `write` now
-  guards its content before its write checks, as `write_atomic` did, so both
-  routes own the iterator from the same point.
+- Step 3's `_marked` became a class, `_Marked`, with its own `aclose`, which
+  `release_content` calls on every write exit; a generator wrapper's `finally`
+  runs only once something closes the wrapper, so the route would have had to
+  close it anyway.
+- The kernel takes the caller's iterator with its first chunk. A refusal
+  before that (the gates, a write check, an `open_write` refused, an occupied
+  target on temp and rename) leaves it unstarted and the caller's: closing it
+  made a retry with the same iterator write an empty file over the target
+  (round 2 of PR #1159, measured against `ad56f9a8b`), and an unstarted
+  generator has no suspended frame to protect.
 - Step 7's IDs: BK-453 was already on a pushed branch (`gen-backlogid --check
   --remote`), so the timing item is BK-454 and the `Session` item BK-455.
 - BE-033's conformance includes a repeated-close cell in both close-posture

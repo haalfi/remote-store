@@ -316,7 +316,8 @@ twin's chunk iterator too.
 **`connection_dead()`** says whether an exception means the connection is gone,
 from the exception alone and without I/O; the kernel then skips closing the
 stream it condemned rather than wait on a dead connection a second time, and
-logs its answer beside any cleanup that fails. Answer `True` only when the
+logs its answer beside a failed write cleanup (an `abort`, a temporary's
+delete). Answer `True` only when the
 transport itself is gone, the socket or session, never for an error the next
 request on the same connection survives.
 
@@ -346,7 +347,8 @@ raises `CapabilityNotSupported` otherwise.
 **What the kernel cleans up for you.** When a write fails or is cancelled, the
 kernel calls your write handle's `abort()` (from `open_write`), deletes a
 temporary it wrote, and closes the caller's async content iterator if it
-stopped short of the end. A cleanup that fails is logged, never raised, so the
+started reading it and stopped short of the end. A write cleanup that fails is
+logged, never raised, so the
 caller sees why the write failed. Your `abort()` must work after a `commit()`
 that failed, and be safe to call twice.
 

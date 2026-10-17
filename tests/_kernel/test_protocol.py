@@ -386,7 +386,6 @@ _ABANDONED = {
     "refusal-rename": ("write_atomic-rename", None, TypeError),
     "handle-failure": ("write_atomic-open_write", ("handle.write", FakeOdd("boom")), RemoteStoreError),
     "cancel": ("write_atomic-open_write", ("handle.write", asyncio.CancelledError()), asyncio.CancelledError),
-    "open-refused": ("write_atomic-open_write", ("open_write", FakeOdd("boom")), RemoteStoreError),
 }
 
 
@@ -417,8 +416,41 @@ def test_an_abandoned_caller_generator_is_finalised_before_the_call_returns(case
     content = _generator(log, b"ab", "text" if refused else b"cd", b"ef")
     _abandon(case, content)
     assert content.ag_frame is None  # closed, not suspended
-    started = case != "open-refused"  # a generator never started has no finally to run
-    assert log == (["finally"] if started else [])
+    assert log == ["finally"]
+
+
+# Refusals before the kernel takes a chunk: the iterator stays the caller's, unstarted.
+_BEFORE_THE_FIRST_CHUNK = {
+    "open_write-refused": ("write_atomic-open_write", lambda s: s.fault("open_write", FakeOdd("boom"))),
+    "flat-write-check": ("write", None),
+    "temp-and-rename-occupied": ("write_atomic-rename", None),
+}
+
+
+@pytest.mark.spec("BE-033", "ASYNC-091")
+@pytest.mark.parametrize("case", sorted(_BEFORE_THE_FIRST_CHUNK))
+def test_a_retry_after_a_refusal_before_the_first_chunk_writes_everything(case: str) -> None:
+    route, arrange = _BEFORE_THE_FIRST_CHUNK[case]
+    if case == "flat-write-check":
+        store = FakeStore(parents="none").add("g/x")  # g is a folder: the flat write check refuses g
+        run = make_kernel("async", store, namespace="flat", **_ROUTES[route])
+    else:
+        store = FakeStore().add("g", data=b"old")  # an existing file, refused without overwrite
+        run = make_kernel("async", store, **_ROUTES[route])
+    if arrange is not None:
+        arrange(store)
+    log: list[str] = []
+    content = _generator(log, b"ab", b"cd")
+    method = run.write if route == "write" else run.write_atomic
+    with pytest.raises(RemoteStoreError):
+        method("g", content, overwrite=case == "open_write-refused")
+    assert content.ag_frame is not None  # never started, never closed: still the caller's
+    store.faults.clear()
+    if case == "flat-write-check":
+        store.files.clear()
+    method("g", content, overwrite=True)
+    assert store.files["g"].data == b"abcd"
+    assert log == ["finally"]
 
 
 @pytest.mark.spec("BE-033", "ASYNC-091")

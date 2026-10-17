@@ -2062,7 +2062,7 @@ spec 006 and owns the legacy adapters that break it.
 | a temporary of the temp-and-rename write | the kernel | deleted on any exception; a failed delete is logged as a failed `abort` is |
 | `abort` after a failed `commit` | the driver | is legal and idempotent |
 | an overwrite conflict without `overwrite` | the driver | refuses in one step on the wire where the wire has a conditional write; the conflict surfaces at `commit` for a handle, at the call for `put`; its typing as `AlreadyExists` is a driver duty BK-450 enforces |
-| a caller's async content iterator the kernel stops taking (a refused chunk, a driver or handle failure, a cancel) | the kernel | calls its `aclose`, when it has one, before the call returns; what that raises is logged and never replaces the write's error. An exhausted one needs nothing. The gates (closed guard, key, metadata, content shape) refuse before the kernel takes it, and leave it the caller's |
+| a caller's async content iterator the kernel stops taking (a refused chunk, a driver or handle failure, a cancel) | the kernel | calls its `aclose`, when it has one, before the call returns; what that raises is logged and never replaces the write's error. An exhausted one needs nothing. The kernel takes the iterator with its first chunk: a refusal before that, at the gates (closed guard, key, metadata, content shape), a write check or the driver, leaves it unstarted and the caller's to retry with |
 | a sync caller's content stream | the caller | the kernel never closes it, on any exit: the caller may seek it or retry with it |
 | a connection a failure condemns | the `Session`; *not yet met* (BK-455) | `invalidate` closes the client at once, and a stream on it fails mapped at its next read. `connection_dead` means transport-level death, the socket or session gone, never an error the next request on the same connection survives. A cancel never invalidates |
 | `unwrap` on a `Session` driver | the `Session`; *not yet met* (BK-455) | goes through `run`, so after `invalidate` it reconnects |
@@ -2073,14 +2073,15 @@ gate, `InvalidPath` for a malformed key) surfaces at the call; a stream's I/O
 refusal (`NotFound`, `InvalidPath` for a file-versus-folder mismatch) surfaces
 when the stream opens, through a handle (`with`/`async with store.read(...)`);
 a listing's I/O stays lazy, at its first page. The rule is stated here and not
-yet met. Today's timing, measured on Memory and the fake driver:
+yet met. Today's timing, measured on Memory and, for the closed guard, the
+fake driver with `close_is_terminal = True`:
 
 | Layer | `read`: pure refusal | `read`: I/O refusal | listing: pure refusal | `glob`: capability |
 |---|---|---|---|---|
 | sync kernel class | call | call | first `next` | first `next` |
 | async kernel class | first `__anext__` | first `__anext__` | first `__anext__` | first `__anext__` |
 | `Store` | call | call | first `next` | first `next` |
-| `AsyncStore` | call | first `__anext__` | call | call |
+| `AsyncStore` | call for a malformed key; first `__anext__` for the closed guard | first `__anext__` | call for a malformed key; first `__anext__` for the closed guard | call |
 
 BK-454 builds the handle and moves the refusals the rule places at the call;
 ASYNC-006 points here for the async gap.

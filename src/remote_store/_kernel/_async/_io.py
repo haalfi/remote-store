@@ -57,8 +57,10 @@ def _mark(exc: BaseException) -> None:
 class _Marked:
     """The caller's iterator, its errors marked, each chunk checked; ``aclose`` closes the caller's.
 
-    A class, not a generator: one never started has no ``finally`` to run, and
-    the kernel closes a caller's iterator it abandons before the first chunk too.
+    The kernel takes the caller's iterator with its first chunk. One it never
+    started is left untouched, the caller's to retry with, since closing it
+    would turn a retry into an empty write and protects nothing: an unstarted
+    generator has no suspended frame to finalise.
     """
 
     __slots__ = ("_chunks", "_ended", "_iterator")
@@ -102,11 +104,11 @@ class _Marked:
         return chunk
 
     async def aclose(self) -> None:
-        """Close the caller's iterator unless it was exhausted; one without ``aclose`` is left as it is."""
-        if self._ended:
+        """Close the caller's iterator if the kernel started and did not exhaust it, and it has ``aclose``."""
+        if self._ended or self._iterator is None:
             return
         self._ended = True
-        aclose = getattr(self._iterator if self._iterator is not None else self._chunks, "aclose", None)
+        aclose = getattr(self._iterator, "aclose", None)
         if aclose is not None:
             await aclose()
 
