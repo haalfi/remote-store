@@ -316,3 +316,179 @@ expected_ripples:
   - sdd/backlogid.json
   - src/remote_store/_kernel/_sync/kernel.py
   - src/remote_store/_kernel/_sync/driver.py
+review:
+  # Derived by `hatch run ship-report 1159 --trace-block-only` at head e9cca68.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1159 --trace-block-only"
+  pr: 1159
+  review_rounds: 17
+  submissions: 11
+  findings: 37
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.17
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.01
+    - round: 3
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 4
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 5
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 6
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 7
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.33
+    - round: 8
+      findings: 19
+      origin: {loop-introduced: 8, original: 10, pre-existing: 1}
+      triage: {must-fix: 18, refuted: 1}
+      duration_hours: 3.09
+    - round: 9
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.44
+    - round: 10
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.36
+    - round: 11
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 1.18
+  by_file:
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 12
+    - path: "sdd/formal/KernelProtocol.dfy"
+      findings: 3
+    - path: "scripts/gen_protocol_diagram.py"
+      findings: 2
+    - path: "sdd/formal/README.md"
+      findings: 2
+    - path: "src/remote_store/_kernel/_async/kernel.py"
+      findings: 2
+    - path: "tests/_kernel/test_protocol_oracle.py"
+      findings: 2
+    - path: ".github/workflows/ci.yml"
+      findings: 1
+    - path: "docs-src/guides/custom-backend-guide.md"
+      findings: 1
+    - path: "scripts/check_dafny_oracle_fresh.py"
+      findings: 1
+    - path: "scripts/fast_gate.py"
+      findings: 1
+    - path: "sdd/backlog/bk-449-interaction-protocol-states.md"
+      findings: 1
+    - path: "sdd/specs/006-streaming-io.md"
+      findings: 1
+    - path: "src/remote_store/_kernel/_async/_io.py"
+      findings: 1
+    - path: "src/remote_store/_kernel/_sync/kernel.py"
+      findings: 1
+    - path: "src/remote_store/_kernel/aio_backend.py"
+      findings: 1
+    - path: "tests/_kernel/test_protocol.py"
+      findings: 1
+    - path: "tests/_kernel/test_protocol_stateful.py"
+      findings: 1
+    - path: "tests/backends/conformance/aio/test_close_posture.py"
+      findings: 1
+    - path: "tests/backends/memory/test_kernel_cells.py"
+      findings: 1
+    - path: "tests/scripts/test_gen_protocol_diagram.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "pyproject.toml"
+    - "scripts/dafny_translate.sh"
+    - "scripts/dafny_verify.sh"
+    - "scripts/mutate_scopes.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlog/bk-450-driver-boundary-enforcement.md"
+    - "sdd/backlog/bk-454-refusal-timing-read-handle.md"
+    - "sdd/backlog/bk-456-split-spec-003.md"
+    - "sdd/backlog/bk-457-declarative-spec-adr.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/062e5181-cc50-5b17-963f-e9da78bad8ee.jsonl"
+    - "sdd/decisions/ad497154-50c4-54f3-9b47-d86d1878741d.jsonl"
+    - "sdd/formal/KernelProtocol-py/KernelProtocol-py.dtr"
+    - "sdd/formal/KernelProtocol-py/KernelProtocol.py"
+    - "sdd/formal/KernelProtocol-py/System_/__init__.py"
+    - "sdd/formal/KernelProtocol-py/__main__.py"
+    - "sdd/formal/KernelProtocol-py/_dafny/__init__.py"
+    - "sdd/formal/KernelProtocol-py/module_.py"
+    - "sdd/specs/029-async-store-backend-api.md"
+    - "sdd/traces/bk-449-interaction-protocol-states.yml"
+    - "src/remote_store/_kernel/_async/driver.py"
+    - "src/remote_store/_kernel/_sync/_io.py"
+    - "src/remote_store/_kernel/_sync/driver.py"
+    - "src/remote_store/_kernel/backend.py"
+    - "tests/_kernel/_fake.py"
+    - "tests/_kernel/test_kernel.py"
+    - "tests/backends/conformance/test_close_posture.py"
+    - "tests/scripts/test_check_dafny_oracle_fresh.py"
+    - "tests/scripts/test_fast_gate.py"
+    - "tests/scripts/test_mutate_scopes.py"
+  review_driven_commits:
+    - sha: "759ff36"
+      subject: "BK-449: Round 1 fixes: async connection_dead propagates; I1, I3 and SIO-010 narrowed; listing, addressing and read-after-close cells"
+    - sha: "ad17a5b"
+      subject: "BK-449: Round 2 fixes: an unstarted caller iterator stays the caller's; AsyncStore closed-guard timing; guide narrowed to write cleanups"
+    - sha: "909fab9"
+      subject: "Merge origin/master into bk-449-interaction-protocol-states"
+    - sha: "b590c22"
+      subject: "BK-449: The kernel against the compiled BE-033 model, over the whole exit space"
+    - sha: "9191fcf"
+      subject: "BK-449: Import the protocol oracle without leaving Dafny's stub module_ for a later import"
+    - sha: "84d8fac"
+      subject: "BK-449: Cells killing the three surviving mutants in the async content guard"
+    - sha: "4d4eaf1"
+      subject: "BK-449: Trace records the mutation run on the protocol code"
+    - sha: "26a25c9"
+      subject: "BK-449: Derived mutation scope for private packages adds core-kernel"
+    - sha: "79d0499"
+      subject: "BK-449: Spec 003 BE-033 draws the protocol from the compiled model"
+    - sha: "ff8cf47"
+      subject: "BK-449: Cell for a cleanup verdict the predicate cannot reach"
+    - sha: "9274db6"
+      subject: "BK-449: Round 3 fixes: oracle sees every leaked handle; diagram domain derived; BE-033 wording matches code and lemmas"
+    - sha: "8f7f7c2"
+      subject: "BK-449: Round 4 fixes: a temporary in a vanished container is no failed cleanup; no exit starts from a closed iterator; Released tabled"
+    - sha: "49d3619"
+      subject: "BK-449: Round 5 fixes: read_bytes releases a condemned stream; the exit domain closed by enumeration; cleanup asks as the write"
+    - sha: "f622af1"
+      subject: "BK-449: File BK-456, splitting spec 003 by layer after this PR"
+    - sha: "42249c4"
+      subject: "BK-449: Round 6 fixes: a success moves no iterator; the drawn-edge test compares labels and skips placeholders; its claims narrowed to edges"
+    - sha: "53f11e1"
+      subject: "BK-449: File BK-457, a spec ADR from recipes to declarative invariants, ahead of BK-456"
+    - sha: "e9cca68"
+      subject: "BK-449: File Gemini's review into BK-457 and BK-450"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
