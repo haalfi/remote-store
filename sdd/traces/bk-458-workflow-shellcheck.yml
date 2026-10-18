@@ -1,5 +1,5 @@
 id: BK-458
-title: "CI's actionlint runs with `-shellcheck=`, so 31 shellcheck findings in the workflows and `start-backends` go unreported"
+title: "CI's actionlint runs with `-shellcheck=`, so 31 shellcheck findings in three workflows go unreported"
 trigger: "ci.yml ran `actionlint -color -shellcheck=` with a comment deferring shellcheck until the workflows passed it; the run was never made locally (actionlint 1.7.7 + shellcheck 0.11.0: 31 findings in 3 of 11 workflows, 2026-10-18)"
 source_items:
   - BK-458

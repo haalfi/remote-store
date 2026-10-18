@@ -309,7 +309,7 @@ if evidence changes; these are retired.
   [dossier](backlog/id-150-verify-tla-revisit.md). Trace:
   [id-150](traces/id-150-verify-tla-revisit.yml).
 
-- [x] **BK-458 — CI's actionlint runs with `-shellcheck=`, so 31 shellcheck findings in the workflows and `start-backends` go unreported**
+- [x] **BK-458 — CI's actionlint runs with `-shellcheck=`, so 31 shellcheck findings in three workflows go unreported**
   spec: — · effort: S · audience: infra.ci
   actionlint 1.7.7 with shellcheck 0.11.0 reported 31 findings in `ci.yml`,
   `drift-guard.yml` and `mutation.yml` (SC2086 18, SC2034 5, SC2015 5, SC2129 3;
