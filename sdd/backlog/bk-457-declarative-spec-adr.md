@@ -75,13 +75,15 @@ writer and retry), which form a lifecycle takes (the template in
 `000-process.md` § Spec format narrates it), or which formal layer governs a
 kind of truth. Spec 051 was taken as the exemplar; its status prose was the one
 defect found and fixed. The maintainer chose to rewrite this item rather than
-file a parent, and to compile the session into an RFC that graduates to one ADR
-and one guide (decision log
+file a parent, and to compile the session into a research record (the
+analysis) and an RFC (the decisions) that graduates to one ADR and one guide
+(decision log
 `sdd/decisions/6b9890d9-f718-508d-b861-aef8c0398c78.jsonl`).
 
 **Prescription** (advisory):
 
-- [RFC-0022](../rfcs/rfc-0022-how-specs-are-designed.md) carries the proposal.
+- [RFC-0022](../rfcs/rfc-0022-how-specs-are-designed.md) carries the proposal;
+  [`research-spec-design.md`](../research/research-spec-design.md) the analysis.
   This dossier's earlier prescription (postconditions and error precedence, not
   recipes; named profiles; wire-call bounds as a per-profile cost; a lemma
   governs where one exists, Rule 7 extended, Rule 3 amended, not superseded) is

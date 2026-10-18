@@ -4,9 +4,10 @@
 
 Draft, 2026-10-18. Tracked as **BK-457**. Graduates to one ADR (D1, D3, D5,
 D6, and the Rule 3 and Rule 7 amendment) and one authoring guide (D2, D4, D7,
-D8). Derived from a maintainer working session that walked one operation, a
-streaming read, from key to bytes; the dialog decisions are in
-`sdd/decisions/6b9890d9-f718-508d-b861-aef8c0398c78.jsonl`.
+D8). The analysis behind it, a maintainer session that walked one operation,
+a streaming read, from key to bytes, is
+[`research-spec-design.md`](../research/research-spec-design.md); this RFC
+holds only the decisions.
 
 ## Summary
 
@@ -32,13 +33,13 @@ per-backend remapping) beside the boundary invariants, and PR #1159's review
 kept finding one section contradicting another (BK-456). Nothing in the repo
 says which of the two a spec owes.
 
-Three further gaps showed when one operation was walked end to end:
+Three further gaps showed when one operation was walked end to end
+([research § 2](../research/research-spec-design.md#2-one-operation-walked)):
 
 - **Where one spec ends is undecided.** A streaming read touches key
   admission, scoping, one call's outcome, a handle's lifetime, a concurrent
   writer, and retry. Each is a different kind of truth, checked by a different
-  tool. Split by component instead, each of those truths lands in several
-  specs at once.
+  tool.
 - **The form is fixed regardless of content.** The template in
   [`000-process.md` § Spec format](../000-process.md#spec-format) gives every
   section Invariant, Preconditions, Postconditions, Raises and Example. A
@@ -75,16 +76,13 @@ of steps (the qualification BK-457's dossier records).
 
 ### D2. A spec's quality is a set of properties, each with a check
 
-| Property | Means | Checked by |
-| --- | --- | --- |
-| Well founded | Every clause has a traceable reason | Axioms apart from derived properties; a countermodel per axiom where a model exists |
-| Verifiable | Every clause can fail | D1's second test; a test, model check or proof per clause |
-| Lasting | Stays true without edits as the project moves | [`CONTENT-RULES.md` Rule 1](../CONTENT-RULES.md#six-month-test); D8 |
-| Correct | Says what the system must do, and it can | The governing layer of D5 |
-| Free of contradictions | No two clauses, and no spec and its neighbour, disagree | One home per fact; the formal model has an instance |
-| No unstated gaps | Whatever is open is declared open | Explicit scope and non-scope; closed-world transitions (D4); an Assumptions section (D6) |
-| Placed | Covers only its own layer | D8; [`CONTENT-RULES.md` Rule 8](../CONTENT-RULES.md#change-details-what-it-changes) |
-| Comprehensible | Leads with its claim, in the form its content needs | [`CONTENT-RULES.md` Rule 7](../CONTENT-RULES.md#kernsatz); D4 |
+**A spec is reviewed against eight properties, each with a check that can
+fail:** well founded, verifiable, lasting, correct, free of contradictions, no
+unstated gaps, placed, comprehensible. Their meanings and checks are
+[research § 6](../research/research-spec-design.md#6-what-makes-a-spec-good);
+the guide carries them as its review checklist, linking
+[`CONTENT-RULES.md`](../CONTENT-RULES.md) Rules 1, 7 and 8 where those already
+own the check.
 
 ### D3. Specs split by kind of truth, not by component
 
@@ -195,18 +193,13 @@ it is asserted for derives from the tests' spec tags.
 
 ## Alternatives Considered
 
-- **A spec per component**, with a topology diagram and a lifecycle file
-  beside it (an external review's proposal). Rejected by D3: the properties
-  that fail in review cross components, and a topology file restates what the
-  component files say.
-- **Diagrams as illustrations only.** Rejected for lifetimes: a state diagram
-  is the clearest form for a transition set, and closed-world plus a check
-  makes it falsifiable (D4).
-- **Executable scenarios as the spec** (Gherkin). Rejected by D4: examples
-  cannot quantify.
-- **Models normative in full.** Rejected by D5: clauses without a model would
-  have no normative home.
-- **Keep the template, add guidance.** Rejected: the template's shape is what
+Weighed in [research § 4](../research/research-spec-design.md#4-an-external-review-challenged):
+
+- **A spec per component**, with a topology file: rejected by D3.
+- **Diagrams as illustrations only:** rejected for lifetimes by D4.
+- **Executable scenarios as the spec** (Gherkin): rejected by D4.
+- **Models normative in full:** rejected by D5.
+- **Keep the template, add guidance:** rejected; the template's shape is what
   invites narration for lifetimes (Motivation).
 
 ## Impact
@@ -244,6 +237,7 @@ it is asserted for derives from the tests' spec tags.
 
 ## References
 
+- Analysis: [`research-spec-design.md`](../research/research-spec-design.md)
 - Exemplar: [spec 051](../specs/051-store-tree.md)
 - Authority today: [`000-process.md` Rules 3, 5 and
   7](../000-process.md#rules), [`formal/README.md`](../formal/README.md)

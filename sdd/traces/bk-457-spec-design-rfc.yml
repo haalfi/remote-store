@@ -4,7 +4,7 @@ trigger: >-
   A maintainer session reviewing spec 051, then walking a streaming read from
   key to bytes, found that spec 003's mechanism prose was one case of a missing
   design rule for specs; the maintainer chose to rewrite BK-457 and compile the
-  session into an RFC.
+  session into a research record and an RFC.
 source_items:
   - BK-457
 audience:
@@ -110,4 +110,13 @@ phases:
         section: "Directory defaults"
         read_type: reference
         extract: "RFCs default to dual with no marker"
+        outcome: ok
+      - file: sdd/research/research-store-model-axioms.md
+        section: "header"
+        read_type: reference
+        extract: >-
+          Match a research record's header (Date, Backlog items, Status). The
+          agent first wrote the RFC alone, though the maintainer had said
+          "research or RFC"; the split into research (analysis) and RFC
+          (decisions) was the maintainer's answer when asked.
         outcome: ok
