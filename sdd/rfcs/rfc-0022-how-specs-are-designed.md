@@ -4,7 +4,10 @@
 
 Draft, 2026-10-18. Tracked as **BK-457**. Graduates to one ADR (D1, D3, D5,
 D6, and the Rule 3 and Rule 7 amendment) and one authoring guide (D2, D4, D7,
-D8). The analysis behind it, a maintainer session that walked one operation,
+D8), the new authority doc `sdd/SPEC-DESIGN.md` (Open Question 1, decided).
+The outside-evidence verdicts in [research §
+12](../research/research-spec-design.md#12-verdicts-per-rfc-decision) are not
+yet folded into D1 to D7. The analysis behind it, a maintainer session that walked one operation,
 a streaming read, from key to bytes, is
 [`research-spec-design.md`](../research/research-spec-design.md); this RFC
 holds only the decisions.
@@ -221,8 +224,9 @@ Weighed in [research § 4](../research/research-spec-design.md#4-an-external-rev
 
 ## Open Questions
 
-1. **The guide's home:** a rewrite of `000-process.md` § Spec format, or a
-   separate authoring guide that section links.
+1. **The guide's home:** decided 2026-10-18, a new authority doc
+   `sdd/SPEC-DESIGN.md` that `000-process.md` § Spec format links; research § 6
+   becomes its doctrine.
 2. **Diagram or module as source** for a lifetime: the Mermaid diagram with
    the TLA+ module checked against it, or the module with the diagram
    generated from it.
