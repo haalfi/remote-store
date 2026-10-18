@@ -5,7 +5,7 @@ Record types:
 ``SddKind``
     One row in ``SDD_KINDS``. Declarative config for each sdd subdir
     (adrs, specs, rfcs, audits, research): where to look, how to title,
-    whether entries are numbered, optional status column.
+    whether entries are numbered, optional status and date columns.
 
 ``SddEntry``
     One spec/ADR/RFC/audit/research document discovered under
@@ -35,8 +35,13 @@ from typing import TYPE_CHECKING
 
 import yaml
 
+# A sibling of the ``docs`` package: every caller imports ``docs.scan`` with
+# ``scripts/`` on ``sys.path``, so the ADR metadata parser is importable as-is.
+from gen_adr_digest import STATUSES as _ADR_STATUSES
+from gen_adr_digest import status_of as _adr_table_status
+
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
     from pathlib import Path
 
 _YAML_TAIL_RE = re.compile(r"\n---\n(see_also:.*?)\Z", re.DOTALL)
@@ -44,6 +49,92 @@ _ACRONYMS = {"Sftp": "SFTP", "Http": "HTTP", "S3": "S3", "Otel": "OTel", "Io": "
 
 # Header metadata line: "**Date:** YYYY-MM-DD" (sdd/templates/research-template.md).
 _DATE_RE = re.compile(r"^\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})")
+
+
+def _repo_root() -> Path:
+    from pathlib import Path as _Path
+
+    return _Path(__file__).resolve().parent.parent.parent
+
+
+# ---------------------------------------------------------------------------
+# Per-document status (DOCFRAME-010)
+# ---------------------------------------------------------------------------
+
+
+def _rfc_vocabulary() -> tuple[str, ...]:
+    """The RFC status terms, read from the template's ``## Status`` line.
+
+    ``sdd/templates/rfc-template.md`` spells them as
+    ``Draft | Under Review | Accepted | Rejected | Superseded by RFC-XXXX``;
+    the ``by ...`` tail is a reference, not part of the term.
+    """
+    template = _repo_root() / "sdd" / "templates" / "rfc-template.md"
+    lines = template.read_text(encoding="utf-8").splitlines()
+    try:
+        start = lines.index("## Status") + 1
+    except ValueError:
+        raise ValueError(f"{template}: no '## Status' heading to read the RFC status vocabulary from") from None
+    line = next((ln for ln in lines[start:] if ln.strip()), "")
+    terms = tuple(re.sub(r"\s+by\b.*$", "", part.strip()) for part in line.split("|"))
+    if len(terms) < 2 or not all(terms):
+        raise ValueError(f"{template}: '## Status' line {line!r} is not a '|'-separated status list")
+    return terms
+
+
+STATUS_VOCABULARY: dict[str, tuple[str, ...]] = {
+    "adrs": tuple(_ADR_STATUSES),
+    "rfcs": _rfc_vocabulary(),
+}
+
+# The older RFC header form: "**Status:** Accepted (implemented via BK-010)".
+_RFC_STATUS_LINE_RE = re.compile(r"^\*\*Status:\*\*\s*(.*)$")
+
+
+def _leading_term(text: str, vocabulary: tuple[str, ...]) -> str | None:
+    """The vocabulary term *text* opens with (bold markers ignored), or None."""
+    text = text.lstrip("*").lstrip()
+    for term in sorted(vocabulary, key=len, reverse=True):
+        if re.match(rf"{re.escape(term)}\b", text):
+            return term
+    return None
+
+
+def _rfc_status(text: str) -> str | None:
+    """The status keyword of an RFC, or None when it states none in vocabulary.
+
+    Two header forms exist: a ``**Status:**`` line in the header (up to the
+    first ``---`` rule, else the first 15 lines), and the template's
+    ``## Status`` heading whose first paragraph opens with the status. Only
+    the keyword is returned (``Superseded by ADR-0020`` reads ``Superseded``);
+    the prose after it is the RFC's, not the index's.
+    """
+    vocabulary = STATUS_VOCABULARY["rfcs"]
+    lines = text.splitlines()
+    for line in lines[:15]:
+        if line.strip() == "---":
+            break
+        match = _RFC_STATUS_LINE_RE.match(line)
+        if match:
+            return _leading_term(match.group(1), vocabulary)
+    if "## Status" in lines:
+        start = lines.index("## Status") + 1
+        first = next((ln for ln in lines[start:] if ln.strip()), "")
+        if not first.startswith("#"):
+            return _leading_term(first, vocabulary)
+    return None
+
+
+def _adr_status(text: str) -> str | None:
+    """The ADR's ``Status`` table cell when it is in vocabulary, else None."""
+    status = _adr_table_status(text)
+    return status if status in STATUS_VOCABULARY["adrs"] else None
+
+
+_STATUS_PARSERS: dict[str, Callable[[str], str | None]] = {
+    "adrs": _adr_status,
+    "rfcs": _rfc_status,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +152,7 @@ class SddKind:
     glob: str = "*.md"
     skip_stems: frozenset[str] = frozenset()
     title_prefixes: tuple[str, ...] = ()  # stripped when parsing first heading
-    status: str | None = None  # adds a status column when set
+    status: bool = False  # adds a status column, read from each document (DOCFRAME-010)
     numbered: bool = True  # False → use title in place of number
     dated: bool = False  # adds a "Date (as of)" column, newest first
 
@@ -75,10 +166,8 @@ def _load_sdd_kinds(rules_path: Path | None = None) -> tuple[SddKind, ...]:
         rules_path: Path to the YAML file. Defaults to the canonical repo
             location ``docs-src/_path_rules.yml`` relative to this module.
     """
-    from pathlib import Path as _Path
-
     if rules_path is None:
-        rules_path = _Path(__file__).resolve().parent.parent.parent / "docs-src" / "_path_rules.yml"
+        rules_path = _repo_root() / "docs-src" / "_path_rules.yml"
     try:
         text = rules_path.read_text(encoding="utf-8")
     except FileNotFoundError:
@@ -94,6 +183,18 @@ def _load_sdd_kinds(rules_path: Path | None = None) -> tuple[SddKind, ...]:
         raise ValueError(
             f"_path_rules.yml at {rules_path} has an empty 'sdd_kinds' list; at least one SDD kind must be declared"
         )
+    for item in items:
+        status = item.get("status", False)
+        if not isinstance(status, bool):
+            raise ValueError(
+                f"_path_rules.yml at {rules_path}: kind {item.get('slug')!r} has status: {status!r}; "
+                "status must be true or false, since the column is read from each document"
+            )
+        if status and item.get("slug") not in _STATUS_PARSERS:
+            raise ValueError(
+                f"_path_rules.yml at {rules_path}: kind {item.get('slug')!r} has status: true but no status "
+                f"parser in scripts/docs/scan.py (parsers exist for: {', '.join(sorted(_STATUS_PARSERS))})"
+            )
     return tuple(
         SddKind(
             slug=item["slug"],
@@ -102,7 +203,7 @@ def _load_sdd_kinds(rules_path: Path | None = None) -> tuple[SddKind, ...]:
             glob=item.get("glob", "*.md"),
             skip_stems=frozenset(item.get("skip_stems", ())),
             title_prefixes=tuple(item.get("title_prefixes", ())),
-            status=item.get("status"),
+            status=item.get("status", False),
             numbered=item.get("numbered", True),
             dated=item.get("dated", False),
         )
@@ -123,6 +224,7 @@ class SddEntry:
     source: Path
     kind: SddKind
     date: str | None = None  # ISO "YYYY-MM-DD" from the header, None when absent
+    status: str | None = None  # vocabulary term from the doc's Status, None when absent or off-vocabulary
 
 
 def _parse_header_date(text: str) -> str | None:
@@ -163,7 +265,8 @@ def _scan_kind(repo_root: Path, kind: SddKind) -> list[SddEntry]:
                 title = title[len(pfx) :].strip()
                 break
         date = _parse_header_date(text) if kind.dated else None
-        entries.append(SddEntry(number=num, slug=p.stem, title=title, source=p, kind=kind, date=date))
+        status = _STATUS_PARSERS[kind.slug](text) if kind.status else None
+        entries.append(SddEntry(number=num, slug=p.stem, title=title, source=p, kind=kind, date=date, status=status))
     return entries
 
 

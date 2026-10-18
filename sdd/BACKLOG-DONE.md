@@ -300,6 +300,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-338 — The docs site's RFC and ADR indexes print one status per kind, so every RFC reads "Proposed"**
+  spec: DOCFRAME-010 · effort: S · audience: user.site, contributor.tooling, contributor.process
+  `_index_row` printed `_path_rules.yml`'s per-kind constant: all 22 RFCs "Proposed",
+  ADR-0006/0016/0019/0032 "Accepted" though Superseded. The cell is now each document's
+  own status (ADRs via `gen_adr_digest.py`'s parser), `—` when absent; `check_sdd_index.py`
+  R3 fails a status kind's document with none in vocabulary. RFC-0003/0011/0013/0014 read
+  "Implemented" and now "Accepted"; the Research and RFC index intros were reworded.
+  Trace: [bug-338](traces/bug-338-sdd-index-status.yml).
+
 - [x] **BK-459 — The `reviewer` agent names its GitHub tools by the local server's prefix, so a cloud pass cannot post**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   A cloud `/rvw-pr` pass of PR #1162 got `Read, Grep, Glob, Bash` only: the

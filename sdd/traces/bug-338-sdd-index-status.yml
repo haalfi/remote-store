@@ -1,0 +1,114 @@
+id: BUG-338
+title: "The docs site's RFC and ADR indexes print one status per kind, so every RFC reads \"Proposed\""
+trigger: >
+  The maintainer saw every RFC listed as "Proposed" on the docs site's RFC
+  index, though most were Accepted in source. scripts/docs/render.py
+  _index_row appended SddKind.status, a per-kind constant from
+  docs-src/_path_rules.yml (Proposed for rfcs, Accepted for adrs), so the
+  four Superseded ADRs (0006, 0016, 0019, 0032) also read "Accepted".
+source_items:
+  - BUG-338
+audience:
+  - user.site
+  - contributor.tooling
+  - contributor.process
+orient:
+  - items: [BK-362]
+    verdict: constrains
+    evidence: >
+      BACKLOG.md BK-362: _scan_kind never reads a file's doc: marker. The status
+      parse lands in the same function and inherits that bound: R3, like R1,
+      requires a status of a repo-only file matching a status kind's glob.
+      Stated in check_sdd_index.py's Bounds; BK-362's fix shape is unchanged.
+  - items: [BK-384]
+    verdict: constrains
+    evidence: >
+      BACKLOG.md BK-384: RFC-0015 graduates or returns to Draft on a
+      measurement. The maintainer kept it Draft (decision log); with the
+      status read from source, BK-384's outcome reaches the index with no
+      further edit here.
+  - items: [BUG-321, BUG-322]
+    verdict: unrelated
+    evidence: >
+      Both share DOCFRAME-004 only: BUG-321 is G-08 list rendering, BUG-322 the
+      G-07 row's description. Neither touches scan.py, render.py or the index
+      templates.
+decisions:
+  - sdd/decisions/39616246-2f83-5308-a249-878959a113af.jsonl
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/GATE-INVENTORY.md
+  - sdd/specs/047-docs-framework-tooling.md
+surprising_ripples:
+  # The parse reuses gen_adr_digest's table parser, which had no public entry
+  # point; status_of() was added so scan.py does not import a private name.
+  - scripts/gen_adr_digest.py
+  # R3 makes a status-less ADR a violation, so a test seeding a bare ADR to
+  # prove R1 ignores undated kinds had to give it a Status table.
+  - tests/scripts/test_check_sdd_index.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: scripts/docs/scan.py
+        section: "SddKind, _load_sdd_kinds, _scan_kind"
+        read_type: gate
+        extract: "status is str | None from YAML and never per document; SddEntry has no status field"
+      - file: scripts/docs/render.py
+        section: "_index_row"
+        read_type: gate
+        extract: "cells.append(kind.status): the reproduction, one constant per kind"
+      - file: scripts/gen_adr_digest.py
+        section: "_table_meta, STATUSES"
+        read_type: reference
+        extract: "The ADR status parser to reuse; vocabulary Proposed | Accepted | Superseded"
+      - file: sdd/templates/rfc-template.md
+        section: "## Status"
+        read_type: reference
+        extract: "RFC vocabulary: Draft | Under Review | Accepted | Rejected | Superseded by RFC-XXXX"
+      - file: sdd/rfcs/
+        section: "## Status and **Status:** lines (rg over all RFCs)"
+        read_type: verify
+        extract: "Two forms; rfc-0007 also has body **Status: ...** verdict lines, so the header form is read only above the first ---; 0003/0011/0013/0014 say Implemented"
+      - file: scripts/check_sdd_index.py
+        section: "R1, R2, Bounds"
+        read_type: reference
+        extract: "CODE_PAT has no ^sdd/, so a live pytest control cannot run on an sdd-only diff; R3 here is what runs in docs-gate"
+      - file: sdd/BACKLOG.md
+        section: "BK-362, BK-384, BUG-321, BUG-322"
+        read_type: gate
+        extract: "Open items sharing scan.py or DOCFRAME; verdicts in orient"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Bug fix, Spec section, cross-artifact check"
+        read_type: gate
+        extract: "BACKLOG, CHANGELOG, failing test first; spec marks; DRIFT-RULES for the R3 change"
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/047-docs-framework-tooling.md
+        section: "DOCFRAME-001 to DOCFRAME-009, Tests"
+        read_type: gate
+        extract: "No clause covers index rendering; added DOCFRAME-010 for the status column"
+      - file: sdd/000-process.md
+        section: "Rules 1, 2, 6"
+        read_type: gate
+        extract: "A testable contract needs a section ID; bug fix order BACKLOG, CHANGELOG, failing TEST, FIX"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_render_sdd_indexes.py
+        section: "status column tests, live controls"
+        read_type: gate
+        extract: "Before the fix: 30 failed, 33 passed across the three test files; after the code fix only the two live controls failed, naming exactly rfc-0003/0011/0013/0014"
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-031, ID-146, ID-178, ID-208"
+        read_type: verify
+        extract: "The implementing IDs kept in the four normalized RFC status lines"
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 3, 7"
+        read_type: verify
+        extract: "R3 names the file, enumerates from SDD_KINDS, vocabularies derived not copied; Bounds and Drift-gate block updated"
