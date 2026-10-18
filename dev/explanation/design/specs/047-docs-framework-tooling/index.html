@@ -11364,6 +11364,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#docframe-010-sdd-index-status-column" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DOCFRAME-010: SDD Index Status Column
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tests" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11644,6 +11655,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#docframe-010-sdd-index-status-column" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DOCFRAME-010: SDD Index Status Column
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tests" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11691,7 +11713,8 @@ narrows ADR-0007's "build hook" tier to one bridge mechanism.</p>
 applies the framework and closes the remaining audit-012 findings.
 <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-171</a> collapses link validation into a single on-disk
 gate (DOCFRAME-008). <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">BK-236</a> extends the gate to
-docs-site links (DOCFRAME-009).</p>
+docs-site links (DOCFRAME-009). <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">BUG-338</a> reads the
+index Status column from each document (DOCFRAME-010).</p>
 <hr />
 <h2 id="docframe-001-single-bridge-mechanism">DOCFRAME-001: Single Bridge Mechanism<a class="headerlink" href="#docframe-001-single-bridge-mechanism" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Exactly one mechanism in <code>scripts/docs/</code> discovers the
@@ -11934,6 +11957,24 @@ offline could have caught them. Closing the loop for the project's own
 docs host costs one extra source-map scan and keeps the README — the
 package's PyPI long description — honest.</p>
 <hr />
+<h2 id="docframe-010-sdd-index-status-column">DOCFRAME-010: SDD Index Status Column<a class="headerlink" href="#docframe-010-sdd-index-status-column" title="Permanent link">&para;</a></h2>
+<p><strong>Scope:</strong> BUG-338.</p>
+<p><strong>Invariant:</strong> A kind declared with <code>status: true</code> in
+<code>docs-src/_path_rules.yml</code> gets a Status column in its generated index
+table, and each row's cell is that document's own status: an ADR's
+<code>Status</code> cell in its <code>## Status</code> metadata table, read by the parser
+<code>scripts/gen_adr_digest.py</code> uses for <code>DIGEST.md</code>; an RFC's opening status
+term, from its <code>## Status</code> paragraph or a <code>**Status:**</code> header line. Only
+the term from the kind's vocabulary is rendered (<code>Superseded by ...</code> reads
+<code>Superseded</code>). The vocabularies are <code>gen_adr_digest.STATUSES</code> and the
+<code>## Status</code> line of <code>sdd/templates/rfc-template.md</code>. A missing or
+off-vocabulary status renders <code>—</code>.</p>
+<p><strong>Postcondition:</strong> <code>scripts/check_sdd_index.py</code> (R3) exits non-zero, naming
+the file, for any document of a status kind with no vocabulary status, so
+the <code>—</code> fallback is never what a live document renders. A <code>status:</code> value
+that is not a boolean, or <code>status: true</code> on a kind with no parser, fails
+<code>_load_sdd_kinds</code>.</p>
+<hr />
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
 <p><code>tests/scripts/test_docs_framework.py</code> (parser and scanner — DOCFRAME-001..003):</p>
 <table>
@@ -12100,6 +12141,95 @@ package's PyPI long description — honest.</p>
 <td><code>test_load_sdd_kinds_empty_list_raises</code></td>
 <td>DOCFRAME-008</td>
 <td>empty sdd_kinds list: ValueError</td>
+</tr>
+<tr>
+<td><code>test_load_sdd_kinds_rejects_a_constant_status</code></td>
+<td>DOCFRAME-010</td>
+<td><code>status: Proposed</code>: ValueError</td>
+</tr>
+<tr>
+<td><code>test_load_sdd_kinds_rejects_status_kind_without_a_parser</code></td>
+<td>DOCFRAME-010</td>
+<td><code>status: true</code> with no parser: ValueError</td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/scripts/test_render_sdd_indexes.py</code> (index status column — DOCFRAME-010):</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Spec ref</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_rfc_status_reads_the_status_keyword</code></td>
+<td>DOCFRAME-010</td>
+<td>both RFC header forms; keyword only</td>
+</tr>
+<tr>
+<td><code>test_adr_status_reads_the_metadata_table</code></td>
+<td>DOCFRAME-010</td>
+<td>off-vocabulary or no table: None</td>
+</tr>
+<tr>
+<td><code>test_scan_kind_reads_each_documents_own_status</code></td>
+<td>DOCFRAME-010</td>
+<td>per-document, not per-kind</td>
+</tr>
+<tr>
+<td><code>test_index_row_renders_each_documents_status</code></td>
+<td>DOCFRAME-010</td>
+<td>the BUG-338 reproduction; <code>—</code> fallback</td>
+</tr>
+<tr>
+<td><code>test_rfc_vocabulary_is_the_templates</code></td>
+<td>DOCFRAME-010</td>
+<td>derived from the RFC template</td>
+</tr>
+<tr>
+<td><code>test_adr_vocabulary_is_the_digests</code></td>
+<td>DOCFRAME-010</td>
+<td>derived from <code>gen_adr_digest.STATUSES</code></td>
+</tr>
+<tr>
+<td><code>test_live_status_kinds_carry_a_vocabulary_status</code></td>
+<td>DOCFRAME-010</td>
+<td>live repo</td>
+</tr>
+<tr>
+<td><code>test_live_adr_statuses_match_the_digest</code></td>
+<td>DOCFRAME-010</td>
+<td>live repo: index agrees with <code>DIGEST.md</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/scripts/test_check_sdd_index.py</code> (R3 — DOCFRAME-010 Postcondition):</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Spec ref</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_r3_flags_rfc_with_off_vocabulary_status</code></td>
+<td>DOCFRAME-010</td>
+<td><code>Implemented</code></td>
+</tr>
+<tr>
+<td><code>test_r3_flags_adr_without_status_table</code></td>
+<td>DOCFRAME-010</td>
+<td></td>
+</tr>
+<tr>
+<td><code>test_r3_passes_vocabulary_statuses</code></td>
+<td>DOCFRAME-010</td>
+<td>positive control</td>
 </tr>
 </tbody>
 </table>

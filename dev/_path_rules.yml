@@ -10,6 +10,10 @@
 #
 # Destination: every entry renders at explanation/design/<slug>/<stem>.md.
 #
+# Index columns: `status: true` adds a Status column filled from each
+# document's own status (a kind needs a parser in scan.py's _STATUS_PARSERS);
+# `dated: true` adds a "Date (as of)" column from each **Date:** header.
+#
 # Loaded by scripts/docs/scan.py:_load_sdd_kinds.
 # Spec: DOCFRAME-008.
 
@@ -19,7 +23,9 @@ sdd_kinds:
     nav_label: ADRs
     title_prefixes:
       - "ADR-{num}: "
-    status: Accepted
+    # Status column, read from each ADR's metadata table (the parser
+    # scripts/gen_adr_digest.py uses for DIGEST.md).
+    status: true
     # DIGEST.md is a generated cross-ADR summary (scripts/gen_adr_digest.py),
     # not an ADR — keep it out of the numbered ADR nav and dual-render bridge.
     skip_stems:
@@ -37,7 +43,9 @@ sdd_kinds:
     source_dir: sdd/rfcs
     nav_label: RFCs
     glob: "rfc-*.md"
-    status: Proposed
+    # Status column, read from each RFC's "## Status" paragraph or
+    # "**Status:**" header line; vocabulary from sdd/templates/rfc-template.md.
+    status: true
 
   - slug: audits
     source_dir: sdd/audits
