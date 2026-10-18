@@ -23,6 +23,7 @@ surprising_ripples:
   - .claude/skills/pr/SKILL.md
 decisions:
   - sdd/decisions/24401ae0-db37-5e90-9ff9-012315717f99.jsonl
+  - sdd/decisions/0c74c5e6-1542-520b-af35-e28d57d03a40.jsonl
 orient:
   - items: [BK-445]
     verdict: constrains
