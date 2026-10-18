@@ -33,7 +33,8 @@ Repo: `haalfi/remote-store`.
 
 1. **Locate the issue.** If `$ARGUMENTS` is an issue number, use it. Otherwise
    find the single open rolling issue by title prefix:
-   `gh issue list --repo haalfi/remote-store --state open --search '[mutation] in:title'`.
+   `gh api "repos/haalfi/remote-store/issues?state=open&per_page=100" --jq '.[] | select(.pull_request == null and (.title | startswith("[mutation]"))) | [.number, .title] | @tsv'`
+   (REST: a cloud session refuses `gh issue`; page on at 100).
    None open → the run is healthy, nothing to do; stop and say so.
 
 2. **Parse the body.** Extract the failing scopes with their reasons, any

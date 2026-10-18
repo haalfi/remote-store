@@ -11,6 +11,14 @@
 # rationale in PR history). It allows the call and surfaces a reminder via
 # additionalContext (aimed at the model) and stderr (transcript). If you are
 # already running /pr, ignore it.
+#
+# The MCP matcher is exact; the Bash `if:` also fires on commands it cannot
+# parse, so a Bash call is re-checked first (command-check.sh).
+HOOK_INPUT=$(cat)
+source "$(dirname "$0")/command-check.sh"
+if [ "$(printf '%s' "$HOOK_INPUT" | jq -r '.tool_name // empty' 2>/dev/null)" = "Bash" ]; then
+  command_mentions gh pr create || exit 0
+fi
 REASON="Direct PR creation detected. If you are not already running the /pr skill, prefer it: /pr runs the testing, docs, coverage, trace, and freshness gates before opening the PR, instead of working around them. Proceeding with creation."
 echo "$REASON" >&2
 cat <<EOF

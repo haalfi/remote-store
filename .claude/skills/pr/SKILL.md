@@ -11,7 +11,8 @@ Throughout this skill, **`<BASE>`** is `$ARGUMENTS` if provided, else `master`.
 Substitute it in every command and reference below.
 
 For all GitHub API calls in this skill, use the configured GitHub MCP server.
-Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
+Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution
+(local only: cloud refuses GraphQL).
 
 ## Steps
 

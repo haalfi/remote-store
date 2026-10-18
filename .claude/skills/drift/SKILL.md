@@ -55,7 +55,8 @@ target can actually load the drifted package; where it cannot, say so and name
 whatever real evidence you do have.
 
 GitHub reads via `gh` CLI; writes (PR) via the configured GitHub MCP server,
-falling back to `gh` for GraphQL-only flows. Repo: `haalfi/remote-store`.
+falling back to `gh` for GraphQL-only flows (local only: a cloud session
+refuses GraphQL). Repo: `haalfi/remote-store`.
 Two `gh` paths do not work from a sandboxed session, and both are policy, not
 transient — switch tool, do not retry: job logs (`gh run view --log-failed`
 fetches from a results host outside `api.github.com`, denied like the artifact
@@ -67,7 +68,8 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
 
 1. **Locate the issue.** If `$ARGUMENTS` is an issue number, use it. Otherwise
    find the single open rolling issue by title prefix (it carries no label):
-   `gh issue list --repo haalfi/remote-store --state open --search '[drift-guard] in:title'`.
+   `gh api "repos/haalfi/remote-store/issues?state=open&per_page=100" --jq '.[] | select(.pull_request == null and (.title | startswith("[drift-guard]"))) | [.number, .title] | @tsv'`
+   (REST: a cloud session refuses `gh issue`; page on at 100).
    None open → drift has cleared, nothing to do; stop and say so.
 
 2. **Parse the body.** Extract: the drifted extras and their per-package

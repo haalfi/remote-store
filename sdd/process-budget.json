@@ -8,29 +8,29 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 298254,
+  "total": 300460,
   "files": {
     "CLAUDE.md": 17528,
     ".claude/output-styles/interview.md": 2105,
     ".claude/skills/audit/SKILL.md": 1355,
-    ".claude/skills/drift/SKILL.md": 23728,
-    ".claude/skills/fix-pr/SKILL.md": 14545,
-    ".claude/skills/mutation/SKILL.md": 5984,
+    ".claude/skills/drift/SKILL.md": 23927,
+    ".claude/skills/fix-pr/SKILL.md": 14155,
+    ".claude/skills/mutation/SKILL.md": 6137,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5425,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
-    ".claude/skills/rvw-pr/SKILL.md": 21827,
+    ".claude/skills/rvw-pr/SKILL.md": 22877,
     ".claude/skills/rvw-pr/measuring.md": 5482,
-    ".claude/skills/rvw-pr/posting.md": 5030,
-    ".claude/skills/ship/SKILL.md": 54143,
+    ".claude/skills/rvw-pr/posting.md": 5182,
+    ".claude/skills/ship/SKILL.md": 54286,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
-    ".claude/agents/reviewer.md": 755,
+    ".claude/agents/reviewer.md": 970,
     ".claude/agents/sdd-expert.md": 1726,
     ".claude/agents/store-backend-expert.md": 1820,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64036,
+    "sdd/CLAUDE-REFERENCE.md": 64720,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [
@@ -87,6 +87,12 @@
       "from": 298097,
       "to": 298254,
       "reason": "Local toolchain gains a lean row (sdd/formal/lean/); its fallback links to sdd/formal/README.md, where the setup steps live"
+    },
+    {
+      "item": "BK-459",
+      "from": 298254,
+      "to": 300460,
+      "reason": "Reviewer tool lists name both GitHub MCP server prefixes plus ToolSearch; rvw-pr gains a no-posting-tool guard; the I/O split records cloud gh's missing GraphQL once, skills point at it"
     }
   ]
 }

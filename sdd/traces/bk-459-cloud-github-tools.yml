@@ -1,0 +1,252 @@
+id: BK-459
+title: "The `reviewer` agent names its GitHub tools by the local server's prefix, so a cloud pass cannot post"
+trigger: >-
+  In a claude.ai/code session, `/rvw-pr 1162` finished its review and posted
+  nothing: it reported that `pull_request_review_write` and
+  `add_comment_to_pending_review` were not available, and returned three
+  findings unposted.
+source_items:
+  - BK-459
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - .github/workflows/ci.yml
+surprising_ripples:
+  - .claude/hooks/gate-commit.sh
+  - .claude/hooks/gate-push.sh
+  - .claude/hooks/deny-bare-runner.sh
+  - .claude/hooks/warn-direct-pr.sh
+  - .claude/skills/drift/SKILL.md
+  - .claude/skills/mutation/SKILL.md
+  - .claude/skills/pr/SKILL.md
+decisions:
+  - sdd/decisions/24401ae0-db37-5e90-9ff9-012315717f99.jsonl
+  - sdd/decisions/0c74c5e6-1542-520b-af35-e28d57d03a40.jsonl
+orient:
+  - items: [BK-445]
+    verdict: constrains
+    evidence: >-
+      BK-445's route lives in rvw-pr/SKILL.md § Review root, a paragraph this
+      change does not touch; its open decision is about Claude Code's
+      worktree-isolation guard on `env -C`, a different harness filter from
+      the `tools:` resolution and `if:` hook evaluation fixed here. Same file,
+      no shared fix surface.
+  - items: [BUG-306]
+    verdict: constrains
+    evidence: >-
+      BUG-306 lists `.claude/skills/*` and `.claude/agents/*` among files no CI
+      class pattern reaches. This change adds a test reading reviewer.md and
+      rvw-pr/SKILL.md, so HOOKS_PAT gains those two paths per the ripple row
+      for a test whose subject is outside src/; BUG-306's per-file decision for
+      the other files stays open.
+  - items: [BK-363]
+    verdict: unrelated
+    evidence: >-
+      BK-363 is /pr's trace gate demanding a trace for filing-only diffs; this
+      item implements work and ships its trace.
+phases:
+  - id: reproduce
+    name: Reproduce the missing tools and the cloud gh surface
+    steps:
+      - file: .claude/agents/reviewer.md
+        section: "tools:"
+        read_type: gate
+        extract: >-
+          Six GitHub tools, all `mcp__MCP_DOCKER__*`. A `reviewer` subagent
+          spawned in the cloud session listed Read, Grep, Glob, Bash and no
+          ToolSearch; a general-purpose control loaded mcp__github__pull_request_read
+          through ToolSearch and read PR #1162
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter comment (line 8)"
+        read_type: reference
+        extract: >-
+          Claimed a pass gets the agent's tools "plus harness tools such as
+          ToolSearch"; the cloud probe got no ToolSearch
+        outcome: misleading
+      - file: sdd/traces/bk-431-scoped-reviewer-input.yml
+        section: "(probe) reviewer agent at commit 2b89e4a9b"
+        read_type: reference
+        extract: >-
+          Locally a reviewer did load mcp__MCP_DOCKER__pull_request_read
+          through ToolSearch, so the grant depends on the environment
+        outcome: ok
+      - file: sdd/adrs/0046-review-tools-come-from-the-agent.md
+        section: "Context, Decision, Consequences (Neutral)"
+        read_type: reference
+        extract: >-
+          The agent's tools: is the restriction; its probe measured one build,
+          which this cloud result fits rather than reverses
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "GitHub PR I/O split"
+        read_type: gate
+        extract: >-
+          Said to fall back to MCP "when gh is absent (e.g. claude.ai/code)";
+          gh is present there and REST works (gh api pulls/1162), but GraphQL
+          returns HTTP 403, so gh pr view, gh pr checks, gh issue list and
+          gh api graphql all fail
+        outcome: misleading
+      - file: .claude/hooks/session-init.sh
+        section: "Tool availability"
+        read_type: reference
+        extract: >-
+          Printed "use MCP_DOCKER" in the cloud, from a `gh auth status` that
+          fails on the proxy-injected token, before the gh install block ran
+        outcome: misleading
+  - id: orient
+    name: Related open work
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-445, BK-363, BUG-306"
+        read_type: gate
+        extract: "Per-cluster verdicts in orient:"
+        outcome: ok
+  - id: design
+    name: Decide the fix and the hook misfire
+    steps:
+      - file: .claude/settings.json
+        section: "PreToolUse Bash if: hooks"
+        read_type: reference
+        extract: >-
+          Probes: `ls -d "${HOME}"`, `"$PWD"` and `"$HTTPS_PROXY"` fired every
+          if:-gated hook (echo deny blocked them, the gh pr create advisory
+          fired); `"$HOME"`, `$(pwd)`, `"a{b}"` did not. The hooks reference
+          documents it: an undeterminable command runs the hook regardless of
+          the pattern. Fix: each hook re-checks tool_input.command
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 3, 4, 7"
+        read_type: gate
+        extract: >-
+          The tool-list test localizes missing entries, enumerates from the
+          governing list, declares reviewer.md as authority in rvw-pr's
+          frontmatter comment, and states its bounds
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Test whose subject is outside src/ or scripts/"
+        read_type: gate
+        extract: "Widen HOOKS_PAT and the local mechanical-gate list for the two frontmatter files"
+        outcome: ok
+  - id: implement
+    name: Lists, guard, REST reads, hook re-check
+    steps:
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 1, Step 4"
+        read_type: reference
+        extract: >-
+          MCP get_review_comments already returns thread ids (PRRT_...) with
+          is_resolved and is_outdated (PR #1151), so the GraphQL thread query
+          goes and resolve_review_thread resolves
+        outcome: ok
+  - id: verify
+    name: Tests seen failing on master's files
+    steps:
+      - file: tests/scripts/test_hook_command_check.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          26 pass; against master's four hooks the 8 allow-direction cases
+          fail. Mutating the helper's fail-closed returns fails the 3
+          unreadable-payload cases
+        outcome: ok
+      - file: tests/scripts/test_reviewer_tools.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          4 pass; against master's lists the both-servers and ToolSearch cases
+          fail naming the six missing github tools. Dropping ToolSearch from
+          allowed-tools alone fails the equality case. The live grant is not
+          measurable in this session: agent definitions load at session start
+          (a new agent type written mid-session was "not found")
+        outcome: ok
+      - file: .claude/agents/reviewer.md
+        section: "(probe) reviewer agent in a fresh cloud session at 021a172dd"
+        read_type: verify
+        extract: >-
+          Tools Read, Grep, Glob, Bash, ToolSearch; the six mcp__github__ tools
+          deferred and all three posting/read schemas loaded; it read PR #1162
+          (open). ToolSearch for unlisted merge_pull_request and push_files
+          returned no match, so ToolSearch widens nothing. No Edit, Write or Agent
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "(run) /rvw-pr 1162 in a fresh cloud session on this branch"
+        read_type: verify
+        extract: >-
+          Sent as the session's first prompt, the fork had Read, Grep, Glob,
+          Bash and no ToolSearch, and the guard returned 2 findings unposted.
+          Re-invoked in the same session after ToolSearch had loaded a github
+          schema, it posted review 5563791671 (comments 2 -> 3, ci.yml:175).
+          So a fork started before the github MCP server connects gets no MCP
+          tools; recorded in the guard
+        outcome: ok
+  - id: fix
+    name: Review round on PR #1163
+    steps:
+      - file: .claude/hooks/command-check.sh
+        section: "command_runs (review thread on line 20)"
+        read_type: verify
+        extract: >-
+          My re-check tried to prove a command runs its target and missed it
+          after keywords, wrappers and git options, so `git -C "$PWD" commit`
+          on master passed a gate that used to block it. Inverted to
+          command_mentions: clear a command only when the target words are
+          absent. 7 new cases failed first; dropping the between-words group
+          fails 3. The resolve_review_thread finding did not reproduce: the
+          tool loads from the cloud github server
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1163 --trace-block-only` at head 983a838.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1163 --trace-block-only"
+  pr: 1163
+  review_rounds: 1
+  submissions: 2
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {unknown: 1}
+      duration_hours: 2.53
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.01
+  by_file:
+    - path: ".claude/hooks/command-check.sh"
+      findings: 1
+    - path: ".claude/skills/fix-pr/SKILL.md"
+      findings: 1
+  untouched_files:
+    - ".claude/agents/reviewer.md"
+    - ".claude/hooks/deny-bare-runner.sh"
+    - ".claude/hooks/gate-commit.sh"
+    - ".claude/hooks/gate-push.sh"
+    - ".claude/hooks/session-init.sh"
+    - ".claude/hooks/warn-direct-pr.sh"
+    - ".claude/skills/drift/SKILL.md"
+    - ".claude/skills/mutation/SKILL.md"
+    - ".claude/skills/pr/SKILL.md"
+    - ".claude/skills/rvw-pr/SKILL.md"
+    - ".claude/skills/rvw-pr/posting.md"
+    - ".claude/skills/ship/SKILL.md"
+    - ".github/workflows/ci.yml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/0c74c5e6-1542-520b-af35-e28d57d03a40.jsonl"
+    - "sdd/decisions/24401ae0-db37-5e90-9ff9-012315717f99.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/traces/bk-459-cloud-github-tools.yml"
+    - "tests/scripts/test_hook_command_check.py"
+    - "tests/scripts/test_reviewer_tools.py"
+  review_driven_commits:
+    - sha: "983a838"
+      subject: "fix: address PR #1163 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
