@@ -31,9 +31,8 @@ not derived here. Found by the ADR-0040 § 6 conversion.
 
 ## Revisit, 2026-10-18: re-deferred
 
-Decision: **re-defer**; successor **ID-270**, due 2027-04-19, or after 10
-amendments to TLA-backed sections, or with the first bridged TLA+ module,
-whichever first. Derivations, run on master at `e9580cf`:
+Decision: **re-defer**; successor **ID-270**, due 2027-04-19 or in the PR
+that first bridges a TLA+ module to code, whichever first. Derivations, run on master at `e9580cf`:
 
 - **What runs.** `ci.yml` `verify-tla` runs TLC on `MC3` (`EXTENDS Observer`)
   against the seven invariants in `MC3.cfg`, which model spec 019's dispatch
@@ -51,9 +50,11 @@ whichever first. Derivations, run on master at `e9580cf`:
 - **Cadence.** `git rev-list --count --no-merges --since=2026-04-19 HEAD --
   <paths>` gives 2 commits on `sdd/formal/tla/` and the tlc scripts, 144 on
   `sdd/specs/`, and 5 on spec 019 plus `ext/observe.py`, #460 itself among
-  them. The literal "10 spec
-  amendments" fired in April without anyone acting on it. Rule 3 now counts
-  amendments to TLA-backed sections.
+  them. The literal "10 spec amendments" fired in April without anyone
+  acting on it: nothing derives the count, and none can be derived for
+  TLA-backed sections, since no module under `sdd/formal/tla/` carries an
+  `@spec` tag (`rg '@spec' sdd/formal/tla`). Rule 3 drops the count and
+  keeps the calendar, with the first bridge as the second trigger.
 
 Why not promote: gating the job without a bridge proves only that the model
 agrees with itself; under RFC-0022 D5 it governs no clause either way. Why not

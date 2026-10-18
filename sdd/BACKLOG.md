@@ -942,9 +942,9 @@ CHANGELOG the release body is built from — say what is actually true.
 - [ ] **ID-270 — Revisit informational `verify-tla` CI status (2027-04-19)**
   spec: OBS-003, OBS-009 · effort: S · audience: library.maintainer, infra.ci
   ID-150 re-deferred `verify-tla`: TLC checks `Observer.tla` with no bridge
-  to code, so no code regression can turn it red. Due 2027-04-19, after 10
-  amendments to TLA-backed sections, or with the first bridged TLA+ module
-  (BK-455's race), whichever first. Open decision: promote, remove or
+  to code, so no code regression can turn it red. Due 2027-04-19, or in the
+  PR that first bridges a TLA+ module to code (BK-455's race is the likely
+  one), whichever first. Open decision: promote, remove or
   re-defer, and RFC-0019's `merge-gate` job set; evidence in ID-150's dossier.
 
 - [ ] **ID-267 — Trace-outcome report revisit at the next release**

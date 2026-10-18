@@ -230,10 +230,10 @@ age worse than the qualitative one.
    the abstract is not.
 3. **CI informational** until a TLA+ check catches a real regression.
    Seeded breaks validate the tool; only a live catch validates the
-   workflow. Once an informational check lands, revisit the status at
-   a fixed cadence (every 6 months, or after every 10 amendments to
-   spec sections a live TLA+ module models, whichever first) and
-   explicitly promote, remove, or re-defer. "Informational" must not
+   workflow. Once an informational check lands, revisit the status
+   every 6 months, or in the PR that first bridges a TLA+ module to
+   code, whichever comes first, and explicitly promote, remove, or
+   re-defer. "Informational" must not
    silently become "unrun." Each revisit is tracked as a BACKLOG entry
    recording the decision (promote / remove / re-defer) — a calendar
    without a ticket is the same as no calendar. The first `verify-tla`

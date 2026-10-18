@@ -121,3 +121,13 @@ phases:
         read_type: reference
         extract: "Precedent for a revisit closed with a named successor"
         outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1, 3"
+        read_type: gate
+        extract: >-
+          Read after the maintainer flagged the counted cadence. Narrowing the
+          count to TLA-backed sections kept a trigger nothing can derive (no
+          @spec tags under sdd/formal/tla/), so it would fire unnoticed as the
+          broad count did. Replaced by the calendar plus the first bridge;
+          my own miss, not the rule's
+        outcome: ok

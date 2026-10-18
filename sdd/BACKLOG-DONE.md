@@ -304,8 +304,8 @@ if evidence changes; these are retired.
   spec: — · effort: S · audience: library.maintainer, infra.ci
   Re-deferred 2026-10-18: no catch, and none is reachable, since TLC checks
   `Observer.tla` against itself and no bridge ties it to `ext/observe.py`.
-  Gating follows the bridge (RFC-0022 Open Question 3); rule 3's cadence now
-  counts TLA-backed amendments. Successor: **ID-270**. Detail:
+  Gating follows the bridge (RFC-0022 Open Question 3); rule 3's cadence
+  trades its amendment count for the first bridge. Successor: **ID-270**. Detail:
   [dossier](backlog/id-150-verify-tla-revisit.md). Trace:
   [id-150](traces/id-150-verify-tla-revisit.yml).
 
