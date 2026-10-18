@@ -102,7 +102,9 @@ Two external AI reviews of this record were weighed on 2026-10-18.
 bridge taxonomy (Perplexity), reordered because its "trace validation strong
 for lifecycles" contradicts MongoDB's record and CCF's cost; the governance
 ladder and bounded liveness (Perplexity, matching Gemini's "binding levels");
-the evidence-quality table (Perplexity).
+the evidence-quality table (Perplexity); "agents do not need more prose; they
+need tighter feedback loops" (Gemini), qualified with "refereed by the spec"
+and leading the Conclusion.
 
 **Recorded as candidates for the RFC or guide, not research findings:** a
 bridge acceptance checklist (observable interface, encoding of runtime values
@@ -122,6 +124,16 @@ which concerns how agents read specs rather than how specs are designed, and
 which the repo's lookup commands already serve.
 
 ## Conclusion
+
+**Agents do not need more prose; they need tighter feedback loops, refereed by
+the spec.** Three findings carry it: natural-language text added to a formal
+spec did not improve verified-code success (vericoding, **[corroborated]**);
+tests used to clarify intent raised accuracy sharply (TiCoder, simulated users);
+and agents game tests that contradict the spec (ImpossibleBench,
+**[corroborated]**), so a loop works only where the spec decides between a test
+and the code. The wording sharpens one line of Gemini's review (§ External
+reviews considered); for the RFC it joins D1 (fewer, falsifiable clauses), D5
+(bridges are the loop) and D7 ("tested against" names the loop).
 
 The evidence moves RFC-0022 from asserting authority by layer to making authority depend on a bridge. On its own, "the layer that can prove it governs it" is what Elastic and Datadog practise, and their models drift. Cedar and CCF show that "governs once bound, to the extent of the bound" is what actually holds. This changes what the RFC can promise today. Dafny already governs single-call semantics. TLA+ lifecycles can govern once an ITF replayer and the diagram equality check exist. TLA+ concurrency and liveness clauses should be labelled informational, which matches the current non-gating TLC run in CI. The rest of the RFC (contract-only specs, kinds of truth, a single short skeleton) is consistent with both industrial practice and the agent evidence. It needs sharper wording, not reversal.
 
