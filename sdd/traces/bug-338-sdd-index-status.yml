@@ -112,3 +112,39 @@ phases:
         section: "Rules 2, 3, 7"
         read_type: verify
         extract: "R3 names the file, enumerates from SDD_KINDS, vocabularies derived not copied; Bounds and Drift-gate block updated"
+review:
+  # Derived by `hatch run ship-report 1164 --trace-block-only` at head 9861b43.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1164 --trace-block-only"
+  pr: 1164
+  review_rounds: 0
+  submissions: 0
+  findings: 0
+  by_round: []
+  by_file: []
+  untouched_files:
+    - "CHANGELOG.md"
+    - "docs-src/_path_rules.yml"
+    - "docs-src/explanation/design/research/_index.tmpl"
+    - "docs-src/explanation/design/rfcs/_index.tmpl"
+    - "scripts/check_sdd_index.py"
+    - "scripts/docs/render.py"
+    - "scripts/docs/scan.py"
+    - "scripts/gen_adr_digest.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/39616246-2f83-5308-a249-878959a113af.jsonl"
+    - "sdd/rfcs/rfc-0003-s3-pyarrow-read-optimization.md"
+    - "sdd/rfcs/rfc-0011-write-result.md"
+    - "sdd/rfcs/rfc-0013-list-folders-pattern.md"
+    - "sdd/rfcs/rfc-0014-dagster-compute-log-manager.md"
+    - "sdd/specs/047-docs-framework-tooling.md"
+    - "sdd/traces/bug-338-sdd-index-status.yml"
+    - "tests/scripts/test_check_sdd_index.py"
+    - "tests/scripts/test_render_sdd_indexes.py"
+    - "tests/scripts/test_scan_sdd_kinds.py"
+  review_driven_commits:
+    []
+  ci: {verdict: PENDING, failed: 0, pending: 10}
