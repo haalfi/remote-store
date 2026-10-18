@@ -161,9 +161,16 @@ jobs:
       # outdated runner labels, and expression-syntax errors. Pinned
       # binary download (no third-party action wrapper).
       #
-      # shellcheck is preinstalled on ubuntu-latest and actionlint runs it
-      # on every `run:` block of .github/workflows/, so shell style nits fail
-      # this job too. Composite actions under .github/actions/ are not linted.
+      # actionlint runs shellcheck on every `run:` block of .github/workflows/,
+      # so shell style nits fail this job too. Composite actions under
+      # .github/actions/ are not linted. shellcheck is pinned and passed by
+      # path: actionlint skips it without failing when none is on PATH, and
+      # the runner image's own version is whatever the image ships.
+      - name: Install shellcheck
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/shellcheck.tar.xz" https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz
+          tar -xJf "$RUNNER_TEMP/shellcheck.tar.xz" -C "$RUNNER_TEMP" --strip-components=1 shellcheck-v0.11.0/shellcheck
+          "$RUNNER_TEMP/shellcheck" --version
       - name: Install actionlint
         run: |
           # Pin both the binary version (1.7.7) AND the downloader script
@@ -172,7 +179,7 @@ jobs:
           # job, defeating the purpose of pinning the binary.
           bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7 "$RUNNER_TEMP"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
-      - run: actionlint -color
+      - run: actionlint -color -shellcheck="$RUNNER_TEMP/shellcheck"
       # Single source of truth for "lint": delegate to the hatch script lists
       # (preflight + lint + format-check in pyproject.toml) rather than
       # re-listing every command here, so adding a checker to a hatch target

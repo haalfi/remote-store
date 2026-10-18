@@ -57,6 +57,11 @@ phases:
         read_type: verify
         extract: "mutation and drift-guard run on schedule/workflow_dispatch only, so PR CI never executes them; ran every rewritten start step with stubbed docker/nc/wget/sleep: probe succeeding on call 3 gives rc 0 after 4 probe calls, never succeeding gives rc 1 and the ::error:: line after 31 (tmp/run_service_steps.py, not committed)"
         outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "lint job, Install shellcheck / actionlint step"
+        read_type: verify
+        extract: "found in review: actionlint skips shellcheck silently when none is on PATH, and also when an explicit -shellcheck= path does not exist (a bad workflow stayed green in both); so shellcheck 0.11.0 is downloaded with curl -f and passed by path, and a bad release URL fails the step (curl rc 22)"
+        outcome: ok
       - file: .github/actions/start-backends/action.yml
         section: "run blocks under shellcheck"
         read_type: verify
