@@ -8096,6 +8096,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0022-how-specs-are-designed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0022: RFC-0022: How specs are designed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -9492,6 +9520,34 @@
     
   
     SFTPGo — Comparison and Design Insights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/research-spec-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How a spec should be designed (BK-457)
   
 
     
@@ -11719,19 +11775,14 @@ input strings: <code>RemotePath</code> maps an accepted input onto a Key or reje
 the library addresses a subset of the Keys this spec admits. Spec 003's
 BE-032 (The Store Tree on the Kernel) states how a backend encodes the tree and
 points here for its structure.</p>
-<p><strong>Not bound to backends yet.</strong> The sections are tested against a reference
-model of the axioms (<code>tests/test_store_tree.py</code>). A flat backend can hold a raw
-state in which a key is an item and has keys below it, which no tree gives;
-spec 003's BE-032 makes such a state undecodable and has a class on the kernel
-refuse the write that creates it, and no backend runs on the kernel yet.
-Conformance of each backend's observed tree to this spec follows that work
-(BK-436).</p>
+<p><strong>Tested against.</strong> The sections are tested against a reference model of the
+axioms (<code>tests/test_store_tree.py</code>).</p>
 <p><strong>Name equality.</strong> Names compare exactly, with no case folding and no Unicode
 normalization; this spec fixes no normalization form, since one would make
 differently spelled names aliases of one entity. A backend whose own name
 equality is coarser, such as a case-insensitive or normalizing file system,
 represents only the stores whose sibling names stay distinct under that
-equality; which backends compare names how is open under BK-436.</p>
+equality.</p>
 <p><strong>Terms.</strong> Σ is an alphabet that contains <code>/</code> and at least one other symbol.
 Σ* is the set of finite words over Σ, and ε the empty word. N, the names, are
 the non-empty words over Σ in which <code>/</code> does not occur; names compare as words,

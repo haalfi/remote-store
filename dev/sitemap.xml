@@ -565,6 +565,10 @@
          <lastmod>2026-10-18</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/research/research-spec-design/</loc>
+         <lastmod>2026-10-18</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/research/research-spec-kit-comparison/</loc>
          <lastmod>2026-10-18</lastmod>
     </url>
@@ -690,6 +694,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/rfcs/rfc-0021-key-resolution-model/</loc>
+         <lastmod>2026-10-18</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/rfcs/rfc-0022-how-specs-are-designed/</loc>
          <lastmod>2026-10-18</lastmod>
     </url>
     <url>
