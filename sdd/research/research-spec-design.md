@@ -14,6 +14,14 @@ independently reproducible review; unverified figures stay marked.
 **Scope:** What makes a spec good, where one spec ends, which form and which
 formal layer fit which kind of truth, worked on one operation: a streaming
 read. Decision log: `sdd/decisions/6b9890d9-f718-508d-b861-aef8c0398c78.jsonl`.
+**Related:**
+[`research-id-147b-tla-poc.md`](research-id-147b-tla-poc.md),
+[`research-id-147-tla-augmentation.md`](research-id-147-tla-augmentation.md),
+[`research-inconsistency-detection-multi-artifact.md`](research-inconsistency-detection-multi-artifact.md),
+[`research-id-232-detail-placement-durability.md`](research-id-232-detail-placement-durability.md),
+[`research-appropriate-level-of-detail.md`](research-appropriate-level-of-detail.md),
+[`research-backend-contract-completeness.md`](research-backend-contract-completeness.md),
+[`research-spec-kit-comparison.md`](research-spec-kit-comparison.md).
 
 **Method and its limits.** Part A reasoned from [spec
 051](../specs/051-store-tree.md), the README and `CLAUDE.md` only, on purpose:
@@ -67,8 +75,10 @@ obligation?*:
 What remained: the layering paragraph carried time-bound status ("yet"), a
 backlog ID, and spec 003's detail about flat backends. A backlog item points
 to the spec it serves; a spec pointing back at the item goes stale when the
-item closes and copies a relation the backlog already records. The sentence
-worth keeping was what the sections are tested against. That fix shipped
+item closes and copies a relation the backlog already records. It is a case of
+placing detail by how fast it changes, the thesis of
+[`research-id-232-detail-placement-durability.md`](research-id-232-detail-placement-durability.md).
+The sentence worth keeping was what the sections are tested against. That fix shipped
 beside this record.
 
 ## 2. One operation, walked
@@ -206,7 +216,11 @@ traceability to *well founded*.
 **A candidate split: where the kind of truth changes.** It is a plausible
 design, not a shown optimum: the evidence (§ 11) does not establish cutting by
 property, and the alternative of one operation contract with linked lifecycle
-and consistency models is not yet compared (§ 15).
+and consistency models is not yet compared (§ 15). The repo has one precedent
+for cutting by claim: ID-147b's TLA+ spike found that WR-018's single Markdown
+paragraph held four distinct claims, three of them independently breakable,
+and argued for a spec item mapping one-to-one to a named invariant
+([`research-id-147b-tla-poc.md`](research-id-147b-tla-poc.md) § 3.2).
 
 | Spec | Subject | Kind | Authority |
 | --- | --- | --- | --- |
@@ -329,7 +343,7 @@ Published spec inventories are cut by **algorithm or guarantee, not by service**
 
 On authority, no company publishes a general rule for resolving conflicts; authority is implicit in the workflow. Cosmos DB's public docs point to the TLA+ repository as the precise definition, and the spec corrected two documentation errors ([Microsoft Learn](https://learn.microsoft.com/azure/cosmos-db/consistency-levels)). Cedar gates releases on its model. Elastic, by contrast, warns that its models "can differ to their implementations in substantial ways", and Datadog's model was not guaranteed to stay aligned with the code ([Datadog](https://datadoghq.com/blog/engineering/formal-modeling-and-simulation)). A model governs only where it is bound to the code. Woodcock and Larsen's 2026 critical evaluation says the public AWS evidence is selective and keeping specs current is a challenge ([ACM DL](https://dl.acm.org/doi/10.1145/3815784)); its detail was not read.
 
-For agents, the strongest datum is the vericoding benchmark: **12,504 formal specs**, with LLMs producing verified code for about **82% of the Dafny specs**, and **adding natural-language descriptions did not significantly improve results** ([arXiv 2509.22908](https://arxiv.org/pdf/2509.22908)) **[corroborated]**. Over one year of model progress, pure-Dafny success rose from 68% to 96% in the arXiv abstract and to 97% in an OpenReview version; quote the version of record. A single thesis reports that explicit pre/postconditions raise pass@k over natural-language descriptions ([ERAU](https://commons.erau.edu/edt/927/)), weak evidence. Spec-kit, Kiro and Tessl all separate the *what* from the *how* and move the *how* into a plan or design document ([Böckeler](https://www.martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html); [Thoughtworks Radar](https://www.thoughtworks.com/radar/techniques/spec-driven-development)). They relocate it rather than delete it, and step plans measurably help generation: self-planning gives up to **+25.4% relative pass@1 [verify]** ([arXiv 2303.06689](https://arxiv.org/pdf/2303.06689)). EARS, Kiro's syntax for acceptance criteria, has **no measured accuracy evidence** for agents ([Wikipedia](https://en.wikipedia.org/wiki/Easy_Approach_to_Requirements_Syntax)).
+For agents, the strongest datum is the vericoding benchmark: **12,504 formal specs**, with LLMs producing verified code for about **82% of the Dafny specs**, and **adding natural-language descriptions did not significantly improve results** ([arXiv 2509.22908](https://arxiv.org/pdf/2509.22908)) **[corroborated]**. Over one year of model progress, pure-Dafny success rose from 68% to 96% in the arXiv abstract and to 97% in an OpenReview version; quote the version of record. A single thesis reports that explicit pre/postconditions raise pass@k over natural-language descriptions ([ERAU](https://commons.erau.edu/edt/927/)), weak evidence. Spec-kit (compared with this repo's process earlier in [`research-spec-kit-comparison.md`](research-spec-kit-comparison.md)), Kiro and Tessl all separate the *what* from the *how* and move the *how* into a plan or design document ([Böckeler](https://www.martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html); [Thoughtworks Radar](https://www.thoughtworks.com/radar/techniques/spec-driven-development)). They relocate it rather than delete it, and step plans measurably help generation: self-planning gives up to **+25.4% relative pass@1 [verify]** ([arXiv 2303.06689](https://arxiv.org/pdf/2303.06689)). EARS, Kiro's syntax for acceptance criteria, has **no measured accuracy evidence** for agents ([Wikipedia](https://en.wikipedia.org/wiki/Easy_Approach_to_Requirements_Syntax)).
 
 Examples cut both ways. TiCoder's test-driven clarification raised pass@1 by roughly **22 to 54 points** under simulated users **[verify]** ([arXiv 2208.05950](https://arxiv.org/pdf/2208.05950)). Models also pattern-match examples ([arXiv 2411.06774](https://arxiv.org/html/2411.06774)), and they cheat on tests that contradict the spec: GPT-5 exploited contradictory tests in **76%** of Oneoff-SWEbench tasks but only **2.9%** of Oneoff-LiveCodeBench tasks **[corroborated]** ([ImpossibleBench, arXiv 2510.20270](https://arxiv.org/pdf/2510.20270)), and stricter prompts cut the rate substantially. That supports keeping the normative claim in one place and tracing tests to it, with agents pointed at those tests. On structure, adherence falls as the number of instructions grows: the best models reach about **68% at 500 instructions**, with a bias towards earlier instructions **[verify]** ([IFScale, arXiv 2507.11538](https://arxiv.org/html/2507.11538v1)), and accuracy drops for content placed mid-context ([Lost in the Middle, arXiv 2307.03172](https://arxiv.org/abs/2307.03172)). Neither benchmark measures code. Practitioners name spec verbosity and review burden as the main failure of spec-driven development tooling ([Thoughtworks Radar](https://www.thoughtworks.com/radar/techniques/spec-driven-development)).
 
@@ -463,7 +477,13 @@ were checked against the lines cited. Figures and their derivations are in
 **What the test showed about the framework.** D7 and D8 were the cheapest to
 check and the most decisive. The one false alarm is instructive: "serialised by
 the kernel" (BE-028) meant the operating system, in a spec where "the kernel"
-is a defined term, which is the case D7's Terms section exists for.
+is a defined term, which is the case D7's Terms section exists for. The
+contradictions are of the kind an earlier record found no gate reaches: the
+repo's cross-artifact checks enumerate claims at identifier granularity (spec
+IDs, capability names), not clauses inside a section
+([`research-inconsistency-detection-multi-artifact.md`](research-inconsistency-detection-multi-artifact.md)).
+One invariant per section (D7) would give each such clause its own ID, the
+granularity the checks already reach; that is an inference, not yet tested.
 
 ## Sources
 
