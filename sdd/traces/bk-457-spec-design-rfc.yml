@@ -1,0 +1,175 @@
+id: BK-457
+title: "No rule says what a spec owes, where it ends, which form it takes, or which layer governs it"
+trigger: >-
+  A maintainer session reviewing spec 051, then walking a streaming read from
+  key to bytes, found that spec 003's mechanism prose was one case of a missing
+  design rule for specs; the maintainer chose to rewrite BK-457 and compile the
+  session into a research record and an RFC.
+source_items:
+  - BK-457
+audience:
+  - contributor.process
+  - library.maintainer
+decisions:
+  - sdd/decisions/6b9890d9-f718-508d-b861-aef8c0398c78.jsonl
+discovery_followups:
+  - BUG-337
+expected_ripples:
+  - sdd/backlog/bk-457-declarative-spec-adr.md
+orient:
+  - items: [BK-456]
+    verdict: constrains
+    evidence: >-
+      BK-456 index: spec 003 is split "into four files (003, error mapping, root
+      path, contract kernel)", "each then pruned against BK-457's ADR". RFC-0022
+      D3 splits by kind of truth, so where a layer file mixes kinds the split
+      changes; the RFC names BK-456 as follow-up and its order as Open Question 5.
+  - items: [BK-454, BK-455]
+    verdict: constrains
+    evidence: >-
+      BK-455 index: the Session has "no state set" and the open decision is
+      "whether the close/run race gets a TLA+ model ... or cells only"; BK-454
+      adds the read handle. Both are lifetimes, the first candidates for D4's
+      closed-world diagram and D5's TLA+ authority; BE-033 (BK-449, done) is the
+      existing lifecycle-scoped home, so the RFC's stream example stays
+      illustrative.
+  - items: [ID-150]
+    verdict: constrains
+    evidence: >-
+      ID-150 index: verify-tla "has been informational since 2026-04-19", open
+      decision "promote, remove or re-defer". D5 makes TLA+ govern only where its
+      check gates, so ID-150's outcome bounds D5; recorded as Open Question 3.
+  - items: [BK-435, BK-436]
+    verdict: constrains
+    evidence: >-
+      BK-435 index: spec 051 is "not yet tied to the store's operations"; BK-436:
+      "No backend's observed tree is checked against spec 051". They become D3's
+      single-call kind and D6's assumptions checked by conformance.
+  - items: [BK-450]
+    verdict: unrelated
+    evidence: >-
+      BK-450 index: where the kernel enforces the driver boundary ("each kernel
+      site re-checks a driver by hand"); code enforcement points, not what a spec
+      states. Shared only through the Gemini review filed into both.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/051-store-tree.md
+        section: "(full)"
+        read_type: gate
+        extract: "Take the exemplar: one invariant per section, axioms apart from lemmas, scope stated; status prose was the one defect"
+        outcome: ok
+      - file: sdd/backlog/bk-457-declarative-spec-adr.md
+        section: "(full)"
+        read_type: gate
+        extract: "Keep the evidence and the qualifications (error precedence is contract, models not normative in full)"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-456, BK-450, BK-435, BK-436, BK-454, BK-455, ID-150 (item)"
+        read_type: gate
+        extract: "Judge each related cluster for the orient note"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "Item scope and item authority: diagnosis in the index, dossier evidence not rewritten, prescription corrected in the same commit"
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Document types; Spec format; Attribution inside the intent domain"
+        read_type: reference
+        extract: "Choose RFC over research by the decision rule; find the template D7 replaces and the Rule 7 item D5 extends"
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Layers at a glance"
+        read_type: reference
+        extract: "Confirm the formal layers already exist, so the RFC assigns kinds to them instead of proposing tools"
+        outcome: ok
+      - file: sdd/research/research-id-147-tla-augmentation.md
+        section: "Scope boundaries"
+        read_type: reference
+        extract: "Prior TLA+ scope augments Markdown specs and supersedes none; D5 changes that only where a model governs"
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "Recommendations"
+        read_type: reference
+        extract: "No length targets; comprehension is Rule 7's, so D2 links it rather than restating"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/templates/rfc-template.md
+        section: "(full)"
+        read_type: gate
+        extract: "Use the RFC section order"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0021-key-resolution-model.md
+        section: "Status; Summary; Motivation"
+        read_type: reference
+        extract: "Match a recent RFC's status line and lead-with-the-claim style"
+        outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: reference
+        extract: "RFCs default to dual with no marker"
+        outcome: ok
+      - file: sdd/research/research-store-model-axioms.md
+        section: "header"
+        read_type: reference
+        extract: >-
+          Match a research record's header (Date, Backlog items, Status). The
+          agent first wrote the RFC alone, though the maintainer had said
+          "research or RFC"; the split into research (analysis) and RFC
+          (decisions) was the maintainer's answer when asked.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1160 --trace-block-only` at head 68d9ad8.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1160 --trace-block-only"
+  pr: 1160
+  review_rounds: 8
+  submissions: 2
+  findings: 5
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {unclassifiable-file: 2}
+      triage: {must-fix: 1, unknown: 1}
+      duration_hours: 0.23
+    - round: 2
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 1.04
+  by_file:
+    - path: "sdd/rfcs/rfc-0022-how-specs-are-designed.md"
+      findings: 3
+    - path: "sdd/research/research-spec-design.md"
+      findings: 2
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-456-split-spec-003.md"
+    - "sdd/backlog/bk-457-declarative-spec-adr.md"
+    - "sdd/backlog/bug-337-spec-003-contradictions.md"
+    - "sdd/decisions/6b9890d9-f718-508d-b861-aef8c0398c78.jsonl"
+    - "sdd/specs/051-store-tree.md"
+    - "sdd/traces/bk-457-spec-design-rfc.yml"
+  review_driven_commits:
+    - sha: "f2839a3"
+      subject: "BK-457: Address the ChatGPT and Gemini reviews of PR #1160"
+    - sha: "9d2f0fe"
+      subject: "BK-457: Fix three review findings on RFC-0022 and the research record"
+    - sha: "73f9226"
+      subject: "BK-457: File BUG-337 and extend BK-456 from the spec 003 assessment"
+    - sha: "6958812"
+      subject: "BK-457: decision log"
+    - sha: "9e52074"
+      subject: "BK-457: decision log"
+    - sha: "7b5d709"
+      subject: "BK-457: Add spec 003 as a test case to the research record"
+    - sha: "180bddd"
+      subject: "BK-457: Fix the last review round on the backlog items and cross-links"
+    - sha: "68d9ad8"
+      subject: "BK-457: Link the spec-design research to the repo's prior research"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

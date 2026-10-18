@@ -1,4 +1,4 @@
-# BK-457 — Specs prescribe how a check runs where they should state what the caller observes
+# BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it
 <!-- doc: repo-only -->
 
 The index entry holds the current diagnosis; this file is evidence and
@@ -67,14 +67,31 @@ raised two questions for this ADR, checked against the code on 2026-10-17:
   flat backend). Open question for the ADR: whether type strictness on tolerant
   calls is per profile, against its wire cost.
 
+**Scope widened, 2026-10-18.** A maintainer session walked one operation, a
+streaming read, from key to bytes, and found the spec-003 symptom is one case
+of a missing design rule: nothing says where one spec ends (the read crosses
+key admission, scoping, one call's outcome, a handle's lifetime, a concurrent
+writer and retry), which form a lifecycle takes (the template in
+`000-process.md` § Spec format narrates it), or which formal layer governs a
+kind of truth. Spec 051 was taken as the exemplar; its status prose was the one
+defect found and fixed. The maintainer chose to rewrite this item rather than
+file a parent, and to compile the session into a research record (the
+analysis) and an RFC (the decisions) that graduates to one ADR and one guide
+(decision log
+`sdd/decisions/6b9890d9-f718-508d-b861-aef8c0398c78.jsonl`).
+
+**Spec 003 measured against RFC-0022, 2026-10-18.** Verdicts per decision:
+[research § 16](../research/research-spec-design.md#16-spec-003-as-a-test-case);
+figures and their derivations: BK-456's dossier; contradictions: BUG-337.
+
 **Prescription** (advisory):
 
-- An ADR: a spec states preconditions, postconditions, observable side effects
-  and error precedence; a sentence that tells a driver how to reach an outcome
-  is moved to the driver or deleted. Behavioural profiles are named and declared
-  (a capability, or the kernel's existing flag); the contract is universal and
-  the profile decides when it is validated. Wire-call bounds become a cost
-  statement per profile. A lemma governs where one exists (Rule 7 extended, Rule
-  3 amended, not superseded).
-- Then BK-456 splits spec 003 and prunes each file against it, a file per PR so
-  each prune is reviewable on its own.
+- [RFC-0022](../rfcs/rfc-0022-how-specs-are-designed.md) carries the proposal;
+  [`research-spec-design.md`](../research/research-spec-design.md) the analysis.
+  This dossier's earlier prescription (postconditions and error precedence, not
+  recipes; named profiles; wire-call bounds as a per-profile cost; a lemma
+  governs where one exists, Rule 7 extended, Rule 3 amended, not superseded) is
+  its D1, D5 and D6.
+- Then BK-456 splits spec 003 (by layer or by kind of truth, RFC-0022 D3, its
+  open decision) and prunes each file against D1, a file per PR so each prune
+  is reviewable on its own.
