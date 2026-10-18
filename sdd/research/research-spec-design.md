@@ -4,7 +4,8 @@
 **Backlog items:** BK-457
 **Status:** Point-in-time record. Part A is the analysis of one maintainer
 working session; Part B tests it against outside evidence; Part C records the
-verdicts, the reviews weighed and what is open. The proposal it leads to is
+verdicts, the reviews weighed, what is open, and the framework applied to
+spec 003. The proposal it leads to is
 [RFC-0022](../rfcs/rfc-0022-how-specs-are-designed.md), where the decisions
 live. § 6 is to become doctrine in `sdd/SPEC-DESIGN.md` (maintainer's choice,
 decision log below). **Completion standard** (maintainer's choice): an
@@ -334,7 +335,7 @@ Examples cut both ways. TiCoder's test-driven clarification raised pass@1 by rou
 
 ---
 
-**Part C: Verdicts, reviews and open questions (§§ 12–15)**
+**Part C: Verdicts, reviews, open questions and a test case (§§ 12–16)**
 
 ## 12. Verdicts per RFC decision
 
@@ -437,6 +438,32 @@ in detail; the current Python feature table for Dafny not retrieved; Alloy
 barely covered; Python linearizability checkers not researched. The
 decision-relevant **[verify]** figures left are CCF's one-day and 400-line
 costs.
+
+## 16. Spec 003 as a test case
+
+**Applied to the spec BK-457 started from, the framework finds real, actionable
+defects and one false alarm; spec 003 meets none of D3, D7 and D8.** Measured
+once at master `32a5653`: an agent read the whole spec, and the headline claims
+were checked against the lines cited. Figures and their derivations are in
+[BK-456's dossier](../backlog/bk-456-split-spec-003.md); the contradictions are
+[BUG-337](../backlog/bug-337-spec-003-contradictions.md).
+
+| Test | Verdict | What decided it |
+| --- | --- | --- |
+| D1 contract only | Partly met | Error precedence stated explicitly in places; named helpers, call order and probe sequences mandated in others |
+| D3 one kind per spec | Not met | Every kind but liveness, and store, kernel, driver and tooling rules, in one file |
+| D4 form per kind | Partly met | Outcome tables in BE-021, BE-029 to BE-031 and A.5; BE-033's states drawn from the Dafny model and checked against its oracle; BE-020's lifecycle narrated |
+| D5 authority through a bridge | Partly met | Dafny cited throughout, with the oracle as bridge; no TLA+; several rules marked as checked by nothing |
+| D6 profiles and environment | Partly met | Namespace, parents and links declared as a profile; a cost table per encoding; elsewhere "flat namespace" defined by example, and no Assumptions section |
+| D7 skeleton | Not met | No scope, terms, assumptions or "tested against"; four sections hold most of the file |
+| D8 no project state | Not met | Backlog IDs, "not yet" and history inside normative sections |
+| Free of contradictions (§ 6) | Not met | Four confirmed (BUG-337) |
+| Well founded, verifiable (§ 6) | Mostly met | Formal-coverage notes name the model clause and the test they rely on |
+
+**What the test showed about the framework.** D7 and D8 were the cheapest to
+check and the most decisive. The one false alarm is instructive: "serialised by
+the kernel" (BE-028) meant the operating system, in a spec where "the kernel"
+is a defined term, which is the case D7's Terms section exists for.
 
 ## Sources
 
