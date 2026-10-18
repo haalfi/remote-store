@@ -11818,7 +11818,8 @@
 <h1 id="rfc-0022-how-specs-are-designed">RFC-0022: How specs are designed<a class="headerlink" href="#rfc-0022-how-specs-are-designed" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Draft, 2026-10-18. Tracked as <strong>BK-457</strong>. Graduates to one ADR (D1, D3, D5,
-D6, and the Rule 3 and Rule 7 amendment) and one authoring guide (D2, D4, D7,
+D6, the Rule 3 and Rule 7 amendment, and <code>formal/README.md</code> rule 3's gating
+bar per Open Question 3) and one authoring guide (D2, D4, D7,
 D8), the new authority doc <code>sdd/SPEC-DESIGN.md</code> (Open Question 1, decided).
 The analysis behind it, a maintainer session that walked one operation, a
 streaming read, from key to bytes, tested against outside evidence, is
@@ -12083,7 +12084,7 @@ layers are adopted one kind at a time, Dafny for single calls first since its
 bridge exists.</p>
 <p>A clause governed by a model whose check does not gate is not governed. TLA+
 authority therefore needs <code>verify-tla</code> to gate for the clauses it governs,
-which is ID-150's open decision.</p>
+which Open Question 3 settles: per module, from the PR that adds its bridge.</p>
 <h3 id="d6-profiles-and-environment-are-declared-not-implied">D6. Profiles and environment are declared, not implied<a class="headerlink" href="#d6-profiles-and-environment-are-declared-not-implied" title="Permanent link">&para;</a></h3>
 <p><strong>A behaviour that differs by backend is a named profile, declared by a
 capability or a driver flag.</strong> The contract stays universal; the profile
@@ -12137,7 +12138,8 @@ and §§ 9 to 11:</p>
 <li><strong>Process:</strong> <code>000-process.md</code> Rule 3 and Rule 7 change through the ADR;
   § Spec format is replaced by the guide <code>sdd/SPEC-DESIGN.md</code>, which it then
   links (D7, Open Question 1); <code>formal/README.md</code> § Layers at a glance gains the
-  kind each layer governs.</li>
+  kind each layer governs, and its § Authoring rules rule 3 trades the
+  catch-first bar for the bridge (Open Question 3).</li>
 <li><strong>Testing:</strong> each lifecycle diagram needs the edge-equality check against
   its TLA+ model, and generated lifecycle tests need a Python ITF replayer,
   which no tool provides today; each Assumptions line needs a conformance test
@@ -12154,8 +12156,14 @@ and §§ 9 to 11:</p>
    becomes its doctrine.</li>
 <li><strong>Diagram or module as source</strong> for a lifetime: decided 2026-10-18 by the
    research, the TLA+ module, with the diagram a checked view (D4).</li>
-<li><strong><code>verify-tla</code> gating</strong> (ID-150): D5 needs it to gate for every clause it
-   governs. If ID-150 decides against, lifetime clauses stay prose-governed.</li>
+<li><strong><code>verify-tla</code> gating:</strong> decided 2026-10-18 by ID-150. Gating follows the
+   bridge, per module: a TLA+ module gates from the PR that adds its bridge,
+   and an unbridged one stays informational, since gating it would prove only
+   that the model agrees with itself. <code>Observer.tla</code> has no bridge, so it
+   stays informational under the successor revisit, ID-270. Until a bridged
+   module lands, lifetime clauses stay prose-governed. The ADR replaces
+   <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md#authoring-rules"><code>formal/README.md</code> § Authoring rules</a>
+   rule 3's catch-first bar with this rule.</li>
 <li><strong>Type strictness on tolerant calls per profile</strong> (BK-457's dossier): D6
    makes it expressible; whether <code>delete(folder, missing_ok=True)</code> stays strict
    on flat backends against its wire cost is still open.</li>
