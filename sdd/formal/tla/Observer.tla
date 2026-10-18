@@ -50,7 +50,7 @@
   to alter `visible_outcomes`. I4 and I5 verify the structural
   property `visible == inner` on each path; a faithful OBS-009
   behavioural check is deferred as a follow-up once a real regression
-  motivates the model extension (ID-150 revisit).
+  motivates the model extension (ID-270 revisit).
 ***************************************************************************)
 
 EXTENDS Naturals, Sequences, FiniteSets, TLC

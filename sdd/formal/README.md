@@ -228,17 +228,20 @@ age worse than the qualitative one.
 2. **Target demonstrated bundling**, not abstract layers. WR-018's
    four-in-one paragraph is a target; "capability gate ordering" in
    the abstract is not.
-3. **CI informational** until a TLA+ check catches a real regression
-   on a production branch. Seeded breaks validate the tool; only a
-   live catch validates the workflow. Once an informational check
-   lands, revisit the status at a fixed cadence (every 6 months, or
-   after every 10 spec amendments, whichever first) and explicitly
-   promote, remove, or re-defer. "Informational" must not silently
-   become "unrun." Each revisit is tracked as a BACKLOG entry recording
-   the decision (promote / remove / re-defer) — a calendar without a
-   ticket is the same as no calendar. The first `verify-tla` job
-   landed under ID-147 on 2026-04-19; the first revisit is tracked as
-   ID-150.
+3. **CI informational** until a TLA+ check catches a real regression.
+   Seeded breaks validate the tool; only a live catch validates the
+   workflow. Once an informational check lands, revisit the status at
+   a fixed cadence (every 6 months, or after every 10 amendments to
+   spec sections a live TLA+ module models, whichever first) and
+   explicitly promote, remove, or re-defer. "Informational" must not
+   silently become "unrun." Each revisit is tracked as a BACKLOG entry
+   recording the decision (promote / remove / re-defer) — a calendar
+   without a ticket is the same as no calendar. The first `verify-tla`
+   job landed under ID-147 on 2026-04-19; ID-150 re-deferred it on
+   2026-10-18 and the next revisit is tracked as ID-270.
+   [RFC-0022 Open Question 3](../rfcs/rfc-0022-how-specs-are-designed.md#open-questions)
+   proposes replacing the catch bar with a bridge: a module gates from
+   the PR that ties it to code.
 4. **Live TLA+ modules live under `sdd/formal/tla/`.** The
    `sdd/research/tla-poc/` tree is the frozen 2026-04 PoC that
    established the spec-decomposition discipline (see

@@ -199,7 +199,7 @@ bridge exists.
 
 A clause governed by a model whose check does not gate is not governed. TLA+
 authority therefore needs `verify-tla` to gate for the clauses it governs,
-which is ID-150's open decision.
+which Open Question 3 settles: per module, from the PR that adds its bridge.
 
 ### D6. Profiles and environment are declared, not implied
 
@@ -278,8 +278,14 @@ and §§ 9 to 11:
    becomes its doctrine.
 2. **Diagram or module as source** for a lifetime: decided 2026-10-18 by the
    research, the TLA+ module, with the diagram a checked view (D4).
-3. **`verify-tla` gating** (ID-150): D5 needs it to gate for every clause it
-   governs. If ID-150 decides against, lifetime clauses stay prose-governed.
+3. **`verify-tla` gating:** decided 2026-10-18 by ID-150. Gating follows the
+   bridge, per module: a TLA+ module gates from the PR that adds its bridge,
+   and an unbridged one stays informational, since gating it would prove only
+   that the model agrees with itself. `Observer.tla` has no bridge, so it
+   stays informational under the successor revisit, ID-270. Until a bridged
+   module lands, lifetime clauses stay prose-governed. The ADR replaces
+   [`formal/README.md` § Authoring rules](../formal/README.md#authoring-rules)
+   rule 3's catch-first bar with this rule.
 4. **Type strictness on tolerant calls per profile** (BK-457's dossier): D6
    makes it expressible; whether `delete(folder, missing_ok=True)` stays strict
    on flat backends against its wire cost is still open.

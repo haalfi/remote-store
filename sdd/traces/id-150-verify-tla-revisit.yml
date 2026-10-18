@@ -1,0 +1,123 @@
+id: ID-150
+title: "Revisit informational `verify-tla` CI status (2026-10-19)"
+trigger: >-
+  The first six-month revisit of the informational verify-tla job came due on
+  2026-10-19. RFC-0022, drafted the day before, left Open Question 3 and D5's
+  TLA+ authority bounded by this item's decision.
+source_items:
+  - ID-150
+audience:
+  - library.maintainer
+  - infra.ci
+discovery_followups:
+  - ID-270
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/BACKLOG-DONE.md
+decisions:
+  - sdd/decisions/95e1d7e4-542e-51e8-a54f-17776f29bc4b.jsonl
+orient:
+  - items: [BK-457]
+    verdict: constrains
+    evidence: >-
+      RFC-0022 D5: "A clause governed by a model whose check does not gate is
+      not governed", and "A model governs code only through a bridge". Open
+      Question 3 made TLA+ authority wait on this item. Rule 3 of
+      formal/README.md § Authoring rules gates only after a catch, which an
+      unbridged model cannot produce, so the two rules deadlock until one
+      yields. Resolved here as OQ3's answer, with rule 3's rewrite left to
+      the RFC's ADR.
+  - items: [BK-455, BK-454]
+    verdict: constrains
+    evidence: >-
+      BK-455's open decision is "whether the close/run race gets a TLA+ model
+      beside sdd/formal/tla/", the first candidate for a bridged TLA+ module;
+      BK-454 is the other lifetime RFC-0022's Follow-up work names for D4's
+      form. Removing verify-tla would strand them, so the successor's trigger
+      includes the first bridged module.
+  - items: [BK-333]
+    verdict: constrains
+    evidence: >-
+      BK-333's index: verify-tla "runs the TLA check without gate needing it".
+      Promotion would have closed that bullet; re-deferral leaves BK-333 as
+      filed, with no change to its scope.
+phases:
+  - id: orient
+    name: Read the item, its authority, and what bounds it
+    steps:
+      - file: sdd/backlog/id-150-verify-tla-revisit.md
+        section: "(dossier)"
+        read_type: gate
+        extract: >-
+          Exit criteria (decision in the close note, successor linked) and the
+          2026-09-28 correction: the README's cadence is any 10 spec
+          amendments, the promote bar is a catch "on a production branch",
+          and the amendment count was never derived
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Authoring rules (3)"
+        read_type: gate
+        extract: >-
+          Catch-first promotion bar, 6-month or 10-amendment cadence, a ticket
+          per revisit
+        outcome: ok
+      - file: sdd/rfcs/rfc-0022-how-specs-are-designed.md
+        section: "D5, Open Questions 3"
+        read_type: gate
+        extract: >-
+          Authority only through a bridge and a gating check; the TLA+ bridge
+          (ITF replay) does not exist yet
+        outcome: ok
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "Open questions 6"
+        read_type: reference
+        extract: >-
+          The revisit should also reconsider merge-gate's job set; unchanged
+          since the status did not change, carried to ID-270
+        outcome: ok
+  - id: measure
+    name: Derive what the job checks, its history and its cost
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "setup TLA_PAT, verify-tla, gate"
+        read_type: verify
+        extract: >-
+          TLC on MC3 only; runs on TLA_PAT diffs (sdd/formal/tla/, tlc
+          scripts, ci.yml); absent from gate's needs
+        outcome: ok
+      - file: sdd/formal/tla/MC3.cfg
+        section: "INVARIANTS"
+        read_type: verify
+        extract: >-
+          Seven invariants over Observer.tla (spec 019 OBS-003, OBS-009); no
+          replay against ext/observe.py, so no code regression reaches it
+        outcome: ok
+      - file: "(git history)"
+        section: "git rev-list --count --no-merges --since=2026-04-19 HEAD -- <paths>"
+        read_type: verify
+        extract: >-
+          Needed git fetch --unshallow first: the session clone was shallow
+          and gave 1 commit. Then 2 on the TLA paths (#460, #544), 144 on
+          sdd/specs/, 5 on spec 019 plus ext/observe.py
+        outcome: ok
+      - file: "(GitHub Actions run 39100922614)"
+        section: "jobs"
+        read_type: verify
+        extract: "verify-tla success in 9 s at 32a5653"
+        outcome: ok
+  - id: implement
+    name: Close as re-deferred, open the successor, answer OQ3
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work, Assigning a new ID"
+        read_type: gate
+        extract: >-
+          Short done entry linking the dossier; ID-270 from gen-backlogid-check
+          "Next safe IDs"; a Detail: link resolves to the item's own dossier, so
+          ID-270 names ID-150's dossier in prose instead
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) ID-259"
+        read_type: reference
+        extract: "Precedent for a revisit closed with a named successor"
+        outcome: ok
