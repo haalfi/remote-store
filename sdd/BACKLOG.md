@@ -939,14 +939,13 @@ CHANGELOG the release body is built from — say what is actually true.
   decision: the divergence table's input, whose clause half has no form.
   Detail: [dossier](backlog/id-245-derived-inventories.md)
 
-- [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
-  spec: — · effort: S · audience: library.maintainer
-  `verify-tla` has been informational since 2026-04-19 and is due its first
-  revisit on 2026-10-19; the item narrows the README's cadence of 10 spec
-  amendments to TLA-backed sections and drops "on a production branch"
-  (dossier correction). No catch is recorded. Open decision: promote,
-  remove or re-defer, with a successor ticket.
-  Detail: [dossier](backlog/id-150-verify-tla-revisit.md)
+- [ ] **ID-270 — Revisit informational `verify-tla` CI status (2027-04-19)**
+  spec: OBS-003, OBS-003a · effort: S · audience: library.maintainer, infra.ci
+  ID-150 re-deferred `verify-tla`: TLC checks `Observer.tla` with no bridge
+  to code, so no code regression can turn it red. Due 2027-04-19, or in the
+  PR that first bridges a TLA+ module to code (BK-455's race is the likely
+  one), whichever first. Open decision: promote, remove or
+  re-defer, and RFC-0019's `merge-gate` job set; evidence in ID-150's dossier.
 
 - [ ] **ID-267 — Trace-outcome report revisit at the next release**
   spec: — · effort: S · audience: contributor.process
