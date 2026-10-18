@@ -12,7 +12,9 @@ Every scope is derived. Backend scopes read
 with prefix-matching top-level tests at ``tests/test_<x>*.py``. Ext
 scopes pair each ``src/remote_store/ext/<x>.py`` with the single file at
 ``tests/ext/test_<x>.py`` (BK-189 collapsed the prior dual ``test_ext_``
-/ bare-named matching). Top-level tests with no matching src by prefix
+/ bare-named matching). Package scopes pair every module under a
+``src/remote_store/_<x>/`` package (generated sync twins included, so a
+cell only one runtime runs still shows) with ``tests/_<x>/``. Top-level tests with no matching src by prefix
 roll into ``core-misc``; ``tests/ext/test_*.py`` files with no matching
 ext source (e.g., the namespace-wide ``test_contract.py``) roll into
 ``ext-misc``. One value is hand-written: ``conformance-sync-adapter``'s
@@ -261,6 +263,21 @@ def _build() -> dict[str, Scope]:
     for p in sorted((_SRC_ROOT / "backends").glob("_*.py")):
         if p.name != "__init__.py":
             _add_core_scope(p, f"core-{p.stem.lstrip('_')}", f"src/remote_store/backends/{p.name}")
+
+    # Package scopes: each ``src/remote_store/_<x>/`` package with a
+    # ``tests/_<x>/`` suite (today only ``_kernel``).
+    for pkg in sorted(p.parent for p in _SRC_ROOT.glob("_*/__init__.py")):
+        if not (_TESTS_ROOT / pkg.name).is_dir():
+            continue
+        scope_name = f"core-{pkg.name.lstrip('_')}"
+        if scope_name in out:
+            raise ValueError(f"mutate scope name collision: {scope_name!r} (package={pkg.name!r})")
+        out[scope_name] = Scope(
+            targets=[
+                p.relative_to(_REPO_ROOT).as_posix() for p in sorted(pkg.rglob("*.py")) if p.name != "__init__.py"
+            ],
+            tests=[f"tests/{pkg.name}/"],
+        )
 
     # Orphan-catch: top-level test files matching no src by prefix
     # (test_open_atomic, test_ping, test_pbt_*, test_snippets, ...). These

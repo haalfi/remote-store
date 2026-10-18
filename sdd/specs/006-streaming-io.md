@@ -81,7 +81,8 @@ no predicate release unconditionally, and this clause makes no claim about them.
 Supplying one is optional by design, not an omission each backend is expected to
 correct: it is worth the parameter only where a close on a dead connection
 blocks, which is a property of the transport, not of every stream.
-`SFTPBackend` is the only backend that supplies one.
+Among the backends not on the kernel, `SFTPBackend` is the only one that supplies
+one (`rg -n 'is_fatal=' src` names it and the kernel's `DriverBackend.read`).
 **Postconditions:** A backend that can recognise **a failure leaving its
 connection unusable** supplies `_ErrorMappingStream` with an `is_fatal`
 predicate over the raised exception.
@@ -89,6 +90,10 @@ Once it answers `True` for a mapped failure, the wrapper's `close()` skips the
 inner close and marks itself closed; the caller sees an ordinary `close()`. A
 backend that supplies no predicate closes unconditionally, which is the
 behaviour every backend had before this clause.
+**On the kernel:** a class on the kernel supplies its driver's `connection_dead`
+as the predicate, and the async `read` and both runtimes' `read_bytes` honour
+the same verdict, so both runtimes skip the close of a condemned stream
+([BE-033](003-backend-adapter-contract.md#be-033-interaction-protocol-on-the-kernel)).
 
 **The predicate's verdict is the scope, and it is narrower than "unusable".**
 The Invariant read "a connection the stream's own failure has already

@@ -26,12 +26,9 @@ class _Writable(Protocol):
     def write(self, data: bytes) -> None: ...
 
 
-def read_all(stream: ReadStream) -> bytes:
-    """Drain *stream* into one ``bytes`` and close it."""
-    try:
-        return stream.read()
-    finally:
-        close_stream(stream)
+def drain(stream: ReadStream) -> bytes:
+    """Drain *stream* into one ``bytes``; closing it is the caller's, who knows whether a failure condemned it."""
+    return stream.read()
 
 
 def close_stream(stream: object) -> None:
@@ -294,6 +291,14 @@ def guard_content(content: Content) -> Content:
     if isinstance(content, bytes | bytearray | memoryview) or not callable(getattr(content, "read", None)):
         return content
     return cast("BinaryIO", _proxy_type(content)(content))
+
+
+def release_content(content: Content) -> None:
+    """Nothing: sync content is the caller's stream, which the caller may seek or retry with.
+
+    The async twin closes a caller's iterator the kernel abandons; a stream is
+    never the kernel's to close.
+    """
 
 
 def feed(handle: _Writable, content: Content) -> None:

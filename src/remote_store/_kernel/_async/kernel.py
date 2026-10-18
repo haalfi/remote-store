@@ -335,7 +335,7 @@ class _AsyncKernelCore:
         self._stats: AsyncSupportsFolderStats | None = d if isinstance(d, AsyncSupportsFolderStats) else None
         self._globber: AsyncSupportsGlob | None = d if isinstance(d, AsyncSupportsGlob) else None
 
-    # region: identity and addressing (forwarded; no closed guard, never raising for the key)
+    # region: identity and addressing (forwarded, never raising for the key; only unwrap has the closed guard)
 
     @property
     def name(self) -> str:
@@ -348,7 +348,8 @@ class _AsyncKernelCore:
         return self._driver.capabilities
 
     def unwrap(self, type_hint: type[T]) -> T:
-        """The driver's native handle."""
+        """The driver's native handle; refused after a terminal close, like every live operation."""
+        self._guard()
         return self._driver.unwrap(type_hint)
 
     def _address_key(self, path: str) -> str:
@@ -714,10 +715,26 @@ class _AsyncKernelCore:
         return key, stream
 
     async def read_bytes(self, path: str) -> bytes:
-        """The whole content of the file at *path*."""
+        """The whole content of the file at *path*.
+
+        A stream error the driver's ``connection_dead`` condemns skips the
+        close, as ``read`` does. The verdict is taken outside the choke, so a
+        predicate that raises propagates there too.
+        """
+        # SIO-010, BE-033: no second wait on a connection the failure condemned.
         key, stream = await self._open(path, Op.READ_BYTES)
-        with self._choke(Op.READ_BYTES, key):
-            return await _io.read_all(stream)
+        condemned = False
+        try:
+            try:
+                return await _io.drain(stream)
+            except Exception as exc:
+                condemned = bool(self._driver.connection_dead(exc))
+                with self._choke(Op.READ_BYTES, key):
+                    raise
+        finally:
+            if not condemned:
+                with self._choke(Op.READ_BYTES, key):
+                    await _io.close_stream(stream)
 
     async def get_file_info(self, path: str) -> FileInfo:
         """The file's metadata; a folder is ``InvalidPath``, absence ``NotFound``."""
@@ -832,9 +849,15 @@ class _AsyncKernelCore:
         self._require_metadata(metadata, key)
         content = _io.take_content(content)  # converted or refused ahead of any I/O (BE-030 § Content)
         target = RemotePath(key)  # built before the driver commits (BE-030 step 5)
-        await self._prepare_write(Op.WRITE, key)
+        # Past the gates the kernel holds the caller's content until it returns, and
+        # release_content hands it back: an abandoned async iterator is closed, a sync
+        # stream is left to its caller (BE-033).
         content = _io.guard_content(content)  # the caller's own errors pass verbatim (ASYNC-091)
-        return _write_result(target, await self._put(Op.WRITE, key, content, overwrite, metadata))
+        try:
+            await self._prepare_write(Op.WRITE, key)
+            return _write_result(target, await self._put(Op.WRITE, key, content, overwrite, metadata))
+        finally:
+            await _io.release_content(content)
 
     async def write_atomic(
         self,
@@ -869,13 +892,16 @@ class _AsyncKernelCore:
             # ahead of them; its own errors then pass verbatim (ASYNC-091).
             content = _io.guard_content(content)
         target = RemotePath(key)
-        await self._prepare_write(Op.WRITE_ATOMIC, key)
-        if self._driver.put_is_atomic:
-            result = await self._put(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
-        elif self._open_write is not None:
-            result = await self._write_through_handle(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
-        else:
-            result = await self._write_temp_and_rename(key, content, overwrite, metadata)
+        try:
+            await self._prepare_write(Op.WRITE_ATOMIC, key)
+            if self._driver.put_is_atomic:
+                result = await self._put(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
+            elif self._open_write is not None:
+                result = await self._write_through_handle(Op.WRITE_ATOMIC, key, content, overwrite, metadata)
+            else:
+                result = await self._write_temp_and_rename(key, content, overwrite, metadata)
+        finally:
+            await _io.release_content(content)  # as in write (BE-033)
         return _write_result(target, result)
 
     async def _write_through_handle(
@@ -893,8 +919,10 @@ class _AsyncKernelCore:
                 await _io.feed(handle, content)
                 return await handle.commit()
         except BaseException as err:
-            with contextlib.suppress(Exception):
+            try:
                 await handle.abort()
+            except Exception as failure:  # noqa: BLE001 - a failed cleanup never masks the write's error
+                self._cleanup_failed("abort", key, failure)
             if isinstance(err, RemoteStoreError):
                 await self._write_refused(err, op, key, overwrite)
             raise
@@ -921,10 +949,29 @@ class _AsyncKernelCore:
                 raise
         except BaseException:
             # A failed put can leave a partial temporary on some wires.
-            with contextlib.suppress(Exception):
+            try:
                 await self._driver.delete(temp)
+            except Exception as failure:  # noqa: BLE001 - a failed cleanup never masks the write's error
+                # A put that failed before writing left nothing: its NotFound is no failure, and
+                # nor is an absent container (BE-021), asked here since WRITE_ATOMIC's classify decides.
+                absent = not isinstance(failure, RemoteStoreError) and self._absent(failure, Op.WRITE_ATOMIC)
+                if not absent and not isinstance(self._mapped(failure, Op.WRITE_ATOMIC, temp), NotFound):
+                    self._cleanup_failed(f"delete of the temporary {temp!r}", key, failure)
             raise
         return result
+
+    def _cleanup_failed(self, what: str, key: str, failure: Exception) -> None:
+        """A cleanup that failed on a failure exit: logged with its liveness verdict, never raised.
+
+        The verdict is what a ``Session`` will act on; a session-less driver's is
+        reported only. The predicate is pure inspection, and one that cannot
+        answer says no.
+        """
+        try:
+            dead = bool(self._driver.connection_dead(failure))
+        except Exception:  # noqa: BLE001 - a predicate that cannot answer says no
+            dead = False
+        _log.warning("cleanup failed: %s of %r raised %r (connection dead: %s)", what, key, failure, dead)
 
     def _occupied(self, entry: Entry, key: str) -> RemoteStoreError:
         if entry.kind == "folder":

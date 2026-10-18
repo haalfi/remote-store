@@ -195,6 +195,9 @@ round trip. `resolve` does no I/O.
 - **`get()`** returns a binary stream. It refuses an absent key, or one that is
   no file, in whatever shape your storage system has. Here that is `NotFound`
   for both; the kernel probes and raises `InvalidPath` when a folder is there.
+  The stream ends where your client's own read reports the end of data, so a
+  length or checksum check the client makes there still runs; never stop at a
+  byte count of your own.
 - `follow_links=False` matters only to storage with symbolic links: it is the
   view of `delete`, a `move` source and `delete_folder`, which name the link
   itself.
@@ -212,7 +215,9 @@ does not record one; the kernel reports it as unknown.
 
 - `content` is `bytes` or a binary stream. Read it in full, as here, or stream
   it to your storage system.
-- `put()` refuses an existing file unless `overwrite`. Return a
+- `put()` refuses an existing file unless `overwrite`. Where your storage system
+  has a conditional write (an `If-None-Match` header, an exclusive create), make
+  the refusal that one step rather than a check followed by the write. Return a
   [`PutResult`](../reference/api/drivers.md#remote_store.drivers.PutResult) with
   at least `size`; the kernel builds the result's path from the key before your
   driver writes, so a path that cannot be built never costs a write.
@@ -309,8 +314,12 @@ stream may, list those types in a `stream_catch` attribute (a tuple of
 exception types), or they reach the caller unmapped. This holds for the async
 twin's chunk iterator too.
 **`connection_dead()`** says whether an exception means the connection is gone,
-from the exception alone and without I/O; the sync kernel then skips closing
-the stream it condemned rather than wait on a dead connection a second time.
+from the exception alone and without I/O; the kernel then skips closing the
+stream it condemned rather than wait on a dead connection a second time, and
+logs its answer beside a failed write cleanup (an `abort`, a temporary's
+delete). Answer `True` only when the
+transport itself is gone, the socket or session, never for an error the next
+request on the same connection survives.
 
 ---
 
@@ -326,12 +335,22 @@ call that touches the storage**: Redis `PING`, a `HEAD` on an S3 bucket,
 Only a store that is always healthy, like the in-memory one, may skip it and
 inherit the protocol's no-op.
 
-`close()` releases resources. The kernel marks the backend closed first; with
-`close_is_terminal = True` it then refuses every later operation on storage
-with `BackendUnavailable`, before any key check reaches your driver.
+`close()` releases resources, and must be safe to call again: the kernel
+passes on every call, a repeated one included. The kernel marks the backend
+closed first; with `close_is_terminal = True` it then refuses every later
+operation on storage, and `unwrap()`, with `BackendUnavailable`, before any key
+check reaches your driver.
 
 `unwrap()` hands out the native client when the caller asks for its type, and
 raises `CapabilityNotSupported` otherwise.
+
+**What the kernel cleans up for you.** When a write fails or is cancelled, the
+kernel calls your write handle's `abort()` (from `open_write`), deletes a
+temporary it wrote, and closes the caller's async content iterator if it
+started reading it and stopped short of the end. A write cleanup that fails is
+logged, never raised, so the
+caller sees why the write failed. Your `abort()` must work after a `commit()`
+that failed, and be safe to call twice.
 
 ---
 

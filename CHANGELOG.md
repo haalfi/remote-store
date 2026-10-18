@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-449: No interaction protocol with states joins `Store`, kernel, driver and `Session`
 - BK-405: **Breaking**: `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier. See the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0330-to-v0340)
 - BUG-298: `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`
 - BUG-329: **Breaking**: Metadata that is not a mapping fails inside a kernel class's `put` or is stored as a dict, and `Store` takes `[]`, `0` or `""` for none; each is now `ValueError`. See the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0330-to-v0340)

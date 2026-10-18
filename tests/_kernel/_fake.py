@@ -26,6 +26,7 @@ from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
+    CapabilityNotSupported,
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
@@ -527,6 +528,7 @@ class _Handle:
         return result
 
     def abort(self) -> None:
+        self.store._hit("handle.abort", self.key)
         self.state = "aborted"
 
 
@@ -555,6 +557,7 @@ class _SyncBase:
         self.rename_replaces = rename_replaces
         self.stream_catch: tuple[type[Exception], ...] = (FakeWireError,)
         self.classified: list[tuple[str, Op, str]] = []
+        self.absent_asked: list[tuple[str, Op]] = []
 
     def stat(self, key: str, *, follow_links: bool = True) -> Entry | None:
         return _flat_stat(self, self.store.stat(key, follow_links=follow_links))
@@ -592,6 +595,7 @@ class _SyncBase:
         return cls(str(exc))
 
     def container_absent(self, exc: BaseException, *, op: Op) -> bool:
+        self.absent_asked.append((type(exc).__name__, op))
         return isinstance(exc, FakeContainerGone)
 
     def connection_dead(self, exc: BaseException) -> bool:
@@ -600,7 +604,8 @@ class _SyncBase:
     def unwrap(self, type_hint: type[Any]) -> Any:
         if type_hint is FakeStore:
             return self.store
-        raise TypeError(type_hint)
+        # BE-022's refusal, which the kernel passes through untouched.
+        raise CapabilityNotSupported(f"no native handle of type {type_hint.__name__}", capability="unwrap")
 
     def native_path(self, key: str) -> str:
         return f"fake://{key}"
@@ -659,9 +664,14 @@ class _FaultyStream(io.BytesIO):
         return super().readinto(buffer)
 
     def close(self) -> None:
-        if not self.closed:
+        if not self.closed and not getattr(self, "_finalising", False):
             self._store.calls.append(("stream.close", self._key))
         super().close()
+
+    def __del__(self) -> None:
+        # IOBase closes an unclosed stream at GC; only an explicit close is logged.
+        self._finalising = True
+        super().__del__()
 
 
 _SYNC_OPTIONAL: dict[str, dict[str, Callable[..., Any]]] = {
@@ -682,11 +692,29 @@ _SYNC_OPTIONAL: dict[str, dict[str, Callable[..., Any]]] = {
 }
 
 
-async def _chunks(store: FakeStore, key: str, data: bytes) -> AsyncIterator[bytes]:
-    for i in range(0, max(len(data), 1), 2):
-        store._hit("stream.read", key)
-        if data[i : i + 2]:
-            yield data[i : i + 2]
+class _AsyncFaultyStream:
+    """The async read stream: two-byte chunks, each read a fault point; a close is logged once."""
+
+    def __init__(self, store: FakeStore, key: str, data: bytes) -> None:
+        self._store, self._key, self._data = store, key, data
+        self._pos = 0
+        self.closed = False
+
+    def __aiter__(self) -> _AsyncFaultyStream:
+        return self
+
+    async def __anext__(self) -> bytes:
+        self._store._hit("stream.read", self._key)
+        chunk = self._data[self._pos : self._pos + 2]
+        if not chunk:
+            raise StopAsyncIteration
+        self._pos += len(chunk)
+        return chunk
+
+    async def aclose(self) -> None:
+        if not self.closed:
+            self._store.calls.append(("stream.close", self._key))
+        self.closed = True
 
 
 def _async_of(fn: Callable[..., Any]) -> Callable[..., Any]:
@@ -715,7 +743,7 @@ class _AsyncBase(_SyncBase):
         return _flat_stat(self, self.store.stat(key, follow_links=follow_links))
 
     async def get(self, key: str) -> AsyncIterator[bytes]:  # type: ignore[override]
-        return _chunks(self.store, key, self.store.get(key))
+        return _AsyncFaultyStream(self.store, key, self.store.get(key))
 
     async def put(self, key: str, content: Any, *, overwrite: bool, metadata: Any) -> PutResult:  # type: ignore[override]
         data = content if isinstance(content, bytes) else b"".join([c async for c in content])

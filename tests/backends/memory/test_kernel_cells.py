@@ -1,10 +1,14 @@
-"""Memory's own cells for the key rule, on both classes (spec 003 BE-030, BE-025).
+"""Memory's own cells for the key rule and the protocol, on both classes (spec 003 BE-030, BE-025, BE-033).
 
-None of these is reachable through ``Store``, which hands a backend a
-``RemotePath``-normalised key, so each calls the backend directly. They are the
-cells BK-389's decision 6 table marks as changing when Memory moves onto the
-contract kernel: the root spellings of ``get_folder_info``, the addressing
-column, and the backslash row.
+The key-rule cells are the ones BK-389's decision 6 table marks as changing when
+Memory moves onto the contract kernel: the root spellings of
+``get_folder_info``, the addressing column, and the backslash row. None of them
+is reachable through ``Store``, which hands a backend a ``RemotePath``-normalised
+key, so each calls the backend directly. The two protocol cells,
+``test_memory_stays_open_across_repeated_closes`` and
+``test_async_memory_closes_a_refused_caller_generator``, are BE-033's rows on
+Memory; they call the backend directly because BE-033 binds the class on the
+kernel.
 """
 
 from __future__ import annotations
@@ -15,7 +19,7 @@ from typing import Any
 
 import pytest
 
-from remote_store._errors import InvalidPath
+from remote_store._errors import CapabilityNotSupported, InvalidPath
 from remote_store._path import RemotePath
 from remote_store.aio.backends._memory import AsyncMemoryBackend
 from remote_store.backends._memory import MemoryBackend
@@ -138,3 +142,42 @@ def test_a_backslash_key_is_refused_on_the_sync_only_members(key: str, call: Any
     with pytest.raises(InvalidPath):
         call(backend, key)
     assert sorted(str(f.path) for f in backend.list_files("", recursive=True)) == ["src"]
+
+
+def _close(backend: Any) -> None:
+    _run(backend.close() if isinstance(backend, MemoryBackend) else backend.aclose())
+
+
+@pytest.mark.spec("BE-033", "BE-020", "BE-022")
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_memory_stays_open_across_repeated_closes(runtime: str) -> None:
+    # Memory's posture is non-terminal: close, reuse, close; unwrap keeps the driver's answer.
+    backend = _make(runtime)
+    _close(backend)
+    _close(backend)
+    _run(backend.write("f", b"F"))
+    assert _read(backend, "f") == b"F"
+    _close(backend)
+    with pytest.raises(CapabilityNotSupported):
+        backend.unwrap(dict)
+
+
+@pytest.mark.spec("BE-033", "ASYNC-091")
+def test_async_memory_closes_a_refused_caller_generator() -> None:
+    finalised: list[bool] = []
+
+    async def chunks() -> Any:
+        try:
+            yield b"ab"
+            yield "text"
+        finally:
+            finalised.append(True)
+
+    async def write_then_look() -> list[bool]:
+        content = chunks()
+        with pytest.raises(TypeError, match="str, not bytes"):
+            await AsyncMemoryBackend().write("f", content)
+        # Inside the loop: asyncio.run's shutdown would finalise it anyway.
+        return list(finalised)
+
+    assert asyncio.run(write_then_look()) == [True]

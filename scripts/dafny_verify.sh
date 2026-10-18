@@ -16,7 +16,7 @@ IMAGE=mcr.microsoft.com/dotnet/sdk:8.0
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 if [ $# -eq 0 ]; then
-  FILES=(BackendContract.dfy MemoryBackend.dfy DepthCounting.dfy ResourceSafety.dfy RootPath.dfy StoreTree.dfy)
+  FILES=(BackendContract.dfy MemoryBackend.dfy DepthCounting.dfy ResourceSafety.dfy RootPath.dfy StoreTree.dfy KernelProtocol.dfy)
 else
   FILES=("$@")
 fi
