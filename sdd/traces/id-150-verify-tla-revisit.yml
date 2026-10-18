@@ -12,7 +12,6 @@ audience:
 discovery_followups:
   - ID-270
 expected_ripples:
-  - sdd/backlogid.json
   - sdd/BACKLOG-DONE.md
 decisions:
   - sdd/decisions/95e1d7e4-542e-51e8-a54f-17776f29bc4b.jsonl
