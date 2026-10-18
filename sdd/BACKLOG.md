@@ -825,13 +825,13 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
-- [ ] **BK-457 — Specs prescribe how a check runs where they should state what the caller observes**
-  spec: — · effort: M · audience: library.maintainer, contributor.process
-  Spec 003 mandates mechanisms (BE-032's probe set and probe table, BE-021's per-backend
-  remapping) beside its boundary invariants, and nothing says which a spec owes. An ADR
-  fixes it: postconditions and error precedence, not recipes; named profiles; wire counts
-  as a per-profile cost; a Dafny lemma governs where one exists (Rule 7 extended). BK-456
-  follows it. Detail: [dossier](backlog/bk-457-declarative-spec-adr.md)
+- [~] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
+  spec: — · effort: L · audience: contributor.process, library.maintainer
+  Spec 003 mandates mechanisms (BE-032's probe set, BE-021's per-backend remapping) beside
+  its invariants; nothing assigns a kind of truth to a spec, a form or a formal layer, and
+  the spec template fits no lifecycle. RFC-0022 (draft) proposes the rule; it graduates to
+  one ADR and one authoring guide. BK-456 follows. Open decision: RFC-0022's open questions.
+  Detail: [dossier](backlog/bk-457-declarative-spec-adr.md)
 
 - [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split by layer**
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
