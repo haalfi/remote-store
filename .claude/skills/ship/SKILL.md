@@ -192,8 +192,8 @@ turn. Do not start Step 4 in this session.
 ### Resume at the PR
 
 `/ship resume <N>` starts in a fresh session. Read `tmp/ship-handoff-<N>.md`,
-the PR (`gh api repos/haalfi/remote-store/pulls/<N>`, which a cloud session's
-GraphQL-less `gh` also serves), the PR's diff, every changed file whole and the trace. Do not
+the PR (`gh api repos/haalfi/remote-store/pulls/<N>`, which cloud `gh` also
+serves), the PR's diff, every changed file whole and the trace. Do not
 re-read Step 1's sources unless the handoff shows a gap; a missing handoff is a
 stop-and-ask, never a reconstruction. From here this session is the
 orchestrator and the fixer of § Roles and owns the convergence judgement: run
@@ -628,8 +628,8 @@ code: the reviewer would target stale lines.
 Stage-1, no-Docker selection on one interpreter; the CI matrix runs Docker-gated
 lanes and interpreters it never touches, so a whole class of failure is invisible
 to it by construction. Read the PR's checks after each push (`pull_request_read`
-with `get_check_runs`; locally `gh pr checks <N>` too, which a cloud session
-refuses as GraphQL). **A red check is a finding for the
+with `get_check_runs`; locally also `gh pr checks <N>`, which cloud `gh`
+refuses). **A red check is a finding for the
 next round** and is triaged like any other; a still-running matrix is not a green
 one, so a round does not close on a pending check without saying so. In the third
 delivery CI went red on a rebase and stayed red across four commits and four

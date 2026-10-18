@@ -20,6 +20,7 @@ surprising_ripples:
   - .claude/hooks/deny-bare-runner.sh
   - .claude/skills/drift/SKILL.md
   - .claude/skills/mutation/SKILL.md
+  - .claude/skills/pr/SKILL.md
 decisions:
   - sdd/decisions/24401ae0-db37-5e90-9ff9-012315717f99.jsonl
 orient:
