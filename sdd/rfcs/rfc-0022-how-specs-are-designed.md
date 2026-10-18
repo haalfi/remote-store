@@ -106,6 +106,9 @@ own the check.
 | Environment | What the system relies on from outside | What a backend guarantees to an open read under a concurrent writer |
 | Liveness | That something eventually happens, or never repeats | Retry terminates; a resume neither duplicates nor skips bytes |
 
+In this RFC, a *lifecycle* is a clause of the Lifetime kind, and only that
+kind; Environment and Liveness are named as such.
+
 Components (store, kernel, driver, session, stream) are where a property is
 enforced, not where it is stated. Ownership, state and time cross components,
 so a spec per component scatters each such property over several files.
@@ -255,9 +258,10 @@ and §§ 9 to 11:
 - **Backwards compatibility:** no behaviour changes. Spec IDs stay stable;
   splitting a spec moves sections without renumbering their meaning
   (`000-process.md` Rule 5).
-- **Process:** `000-process.md` Rule 3, Rule 7 and § Spec format change through
-  the ADR; `formal/README.md` § Layers at a glance gains the kind each layer
-  governs.
+- **Process:** `000-process.md` Rule 3 and Rule 7 change through the ADR;
+  § Spec format is replaced by the guide `sdd/SPEC-DESIGN.md`, which it then
+  links (D7, Open Question 1); `formal/README.md` § Layers at a glance gains the
+  kind each layer governs.
 - **Testing:** each lifecycle diagram needs the edge-equality check against
   its TLA+ model, and generated lifecycle tests need a Python ITF replayer,
   which no tool provides today; each Assumptions line needs a conformance test

@@ -156,7 +156,7 @@ proves only a model.**
 
 | Part of the flow | Property | Tool |
 | --- | --- | --- |
-| Validator | Accepts exactly the keys spec 051 admits; no two inputs map to one key | Dafny |
+| Validator | Every accepted input maps to a spec 051 Key, and no two accepted inputs map to one Key (the library addresses a subset of spec 051's Keys) | Dafny |
 | Scope | Never escapes the root; nested scopes compose | Dafny |
 | Capability gate | No driver call for an undeclared capability | Dafny or tests |
 | Error model | Total mapping | Dafny; "no secret in a message" stays a test |
