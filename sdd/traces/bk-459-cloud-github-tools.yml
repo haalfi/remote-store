@@ -160,3 +160,12 @@ phases:
           measurable in this session: agent definitions load at session start
           (a new agent type written mid-session was "not found")
         outcome: ok
+      - file: .claude/agents/reviewer.md
+        section: "(probe) reviewer agent in a fresh cloud session at 021a172dd"
+        read_type: verify
+        extract: >-
+          Tools Read, Grep, Glob, Bash, ToolSearch; the six mcp__github__ tools
+          deferred and all three posting/read schemas loaded; it read PR #1162
+          (open). ToolSearch for unlisted merge_pull_request and push_files
+          returned no match, so ToolSearch widens nothing. No Edit, Write or Agent
+        outcome: ok
