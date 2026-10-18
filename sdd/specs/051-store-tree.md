@@ -21,20 +21,15 @@ the library addresses a subset of the Keys this spec admits. Spec 003's
 BE-032 (The Store Tree on the Kernel) states how a backend encodes the tree and
 points here for its structure.
 
-**Not bound to backends yet.** The sections are tested against a reference
-model of the axioms (`tests/test_store_tree.py`). A flat backend can hold a raw
-state in which a key is an item and has keys below it, which no tree gives;
-spec 003's BE-032 makes such a state undecodable and has a class on the kernel
-refuse the write that creates it, and no backend runs on the kernel yet.
-Conformance of each backend's observed tree to this spec follows that work
-(BK-436).
+**Tested against.** The sections are tested against a reference model of the
+axioms (`tests/test_store_tree.py`).
 
 **Name equality.** Names compare exactly, with no case folding and no Unicode
 normalization; this spec fixes no normalization form, since one would make
 differently spelled names aliases of one entity. A backend whose own name
 equality is coarser, such as a case-insensitive or normalizing file system,
 represents only the stores whose sibling names stay distinct under that
-equality; which backends compare names how is open under BK-436.
+equality.
 
 **Terms.** Σ is an alphabet that contains `/` and at least one other symbol.
 Σ\* is the set of finite words over Σ, and ε the empty word. N, the names, are
