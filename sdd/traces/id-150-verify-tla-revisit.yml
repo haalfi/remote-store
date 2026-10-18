@@ -13,6 +13,8 @@ discovery_followups:
   - ID-270
 expected_ripples:
   - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  - sdd/rfcs/rfc-0019-two-speed-test-gate.md
 decisions:
   - sdd/decisions/95e1d7e4-542e-51e8-a54f-17776f29bc4b.jsonl
 orient:

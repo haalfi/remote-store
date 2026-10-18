@@ -831,7 +831,8 @@ on CI configuration, contributor tooling and two process records.**
    design", citing `sdd/formal/README.md` § Authoring rules (3). A TLA-only
    diff therefore collapses to the full lane (D4) and posts `merge-gate`
    whatever TLC reports. This is listed only so that the revisit tracked by
-   ID-150 also reconsiders the poster's job set.
+   ID-270 also reconsiders the poster's job set; ID-150 re-deferred the job
+   without changing it.
 7. **Long-term full-lane trigger.** The label is the pilot mechanism (D1).
    Two alternatives are worth weighing: a merge queue, if the account gains
    one, and an explicit `workflow_dispatch` or comment command. Revisit at the
