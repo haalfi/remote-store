@@ -15620,6 +15620,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-449: No interaction protocol with states joins <code>Store</code>, kernel, driver and <code>Session</code></li>
 <li>BK-405: <strong>Breaking</strong>: <code>ext.glob.glob_files</code> answers a non-canonical pattern differently by capability tier. See the <a href="https://docs.remotestore.dev/stable/reference/migration/#v0330-to-v0340">migration guide</a></li>
 <li>BUG-298: <code>glob("*.csv")</code> matches a key ending in a newline, because <code>pattern_to_regex</code> anchors with <code>$</code></li>
 <li>BUG-329: <strong>Breaking</strong>: Metadata that is not a mapping fails inside a kernel class's <code>put</code> or is stored as a dict, and <code>Store</code> takes <code>[]</code>, <code>0</code> or <code>""</code> for none; each is now <code>ValueError</code>. See the <a href="https://docs.remotestore.dev/stable/reference/migration/#v0330-to-v0340">migration guide</a></li>

@@ -14025,7 +14025,10 @@ then a non-folder entry, whatever it points to.</p>
 
         <p>Open the file at <em>key</em> for reading.</p>
 <p>Refuses an absent key, or one that is no file, in whatever shape the
-wire has; the kernel types the refusal.</p>
+wire has; the kernel types the refusal. The stream ends where the
+client's own read reports the end of data, after any length or
+checksum check the client makes there, never at a byte count the
+driver keeps: a check that fails at the end is then a stream error.</p>
 
 
     </div>
@@ -14057,6 +14060,8 @@ wire has; the kernel types the refusal.</p>
     <div class="doc doc-contents ">
 
         <p>Write the file at <em>key</em>; refuse an existing one unless <em>overwrite</em>.</p>
+<p>The refusal is one step on the wire where the wire has a conditional
+write, never a check followed by the write.</p>
 
 
     </div>
@@ -14171,6 +14176,7 @@ from probing, which only a store that is always healthy may take.</p>
     <div class="doc doc-contents ">
 
         <p>Release the driver's resources.</p>
+<p>Idempotent: the kernel forwards every call, a repeated one included.</p>
 
 
     </div>
@@ -14233,8 +14239,10 @@ from probing, which only a store that is always healthy may take.</p>
     <div class="doc doc-contents ">
 
         <p>Whether <em>exc</em> says the connection is dead.</p>
-<p>Pure inspection of <em>exc</em>, no I/O: the sync <code>read</code> stream passes it as
-<code>is_fatal</code> and skips the close of a stream it condemned.</p>
+<p>Pure inspection of <em>exc</em>, no I/O: a <code>read</code> stream skips the close of
+a stream it condemned, and a failed cleanup is logged with its verdict.
+True only for transport-level death, the socket or session gone, never
+for an error the next request on the same connection survives.</p>
 
 
     </div>
@@ -14451,7 +14459,10 @@ then a non-folder entry, whatever it points to.</p>
 
         <p>Open the file at <em>key</em> for reading.</p>
 <p>Refuses an absent key, or one that is no file, in whatever shape the
-wire has; the kernel types the refusal.</p>
+wire has; the kernel types the refusal. The stream ends where the
+client's own read reports the end of data, after any length or
+checksum check the client makes there, never at a byte count the
+driver keeps: a check that fails at the end is then a stream error.</p>
 
 
     </div>
@@ -14487,6 +14498,8 @@ wire has; the kernel types the refusal.</p>
     <div class="doc doc-contents ">
 
         <p>Write the file at <em>key</em>; refuse an existing one unless <em>overwrite</em>.</p>
+<p>The refusal is one step on the wire where the wire has a conditional
+write, never a check followed by the write.</p>
 
 
     </div>
@@ -14617,6 +14630,7 @@ from probing, which only a store that is always healthy may take.</p>
     <div class="doc doc-contents ">
 
         <p>Release the driver's resources.</p>
+<p>Idempotent: the kernel forwards every call, a repeated one included.</p>
 
 
     </div>
@@ -14679,8 +14693,10 @@ from probing, which only a store that is always healthy may take.</p>
     <div class="doc doc-contents ">
 
         <p>Whether <em>exc</em> says the connection is dead.</p>
-<p>Pure inspection of <em>exc</em>, no I/O: the sync <code>read</code> stream passes it as
-<code>is_fatal</code> and skips the close of a stream it condemned.</p>
+<p>Pure inspection of <em>exc</em>, no I/O: a <code>read</code> stream skips the close of
+a stream it condemned, and a failed cleanup is logged with its verdict.
+True only for transport-level death, the socket or session gone, never
+for an error the next request on the same connection survives.</p>
 
 
     </div>
@@ -15254,6 +15270,8 @@ answers are decided per value.</p>
     <div class="doc doc-contents ">
 
         <p>Promote the temporary to its key.</p>
+<p>Opened without <code>overwrite</code>, a file at the key is refused here, as one
+step on the wire where the wire has a conditional write.</p>
 
 
     </div>
@@ -15274,6 +15292,8 @@ answers are decided per value.</p>
     <div class="doc doc-contents ">
 
         <p>Discard the temporary; the key is untouched.</p>
+<p>Legal after a failed <code>commit</code> and idempotent. What it raises the
+kernel logs, never raises: the write's own error stands.</p>
 
 
     </div>
@@ -16109,6 +16129,8 @@ no <code>open_atomic</code>, so the async kernel never calls <code>get_range</co
     <div class="doc doc-contents ">
 
         <p>Promote the temporary to its key.</p>
+<p>Opened without <code>overwrite</code>, a file at the key is refused here, as one
+step on the wire where the wire has a conditional write.</p>
 
 
     </div>
@@ -16133,6 +16155,8 @@ no <code>open_atomic</code>, so the async kernel never calls <code>get_range</co
     <div class="doc doc-contents ">
 
         <p>Discard the temporary; the key is untouched.</p>
+<p>Legal after a failed <code>commit</code> and idempotent. What it raises the
+kernel logs, never raises: the write's own error stands.</p>
 
 
     </div>

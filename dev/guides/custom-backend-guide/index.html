@@ -12634,7 +12634,10 @@ round trip. <code>resolve</code> does no I/O.</p>
   <code>InvalidPath</code>.</li>
 <li><strong><code>get()</code></strong> returns a binary stream. It refuses an absent key, or one that is
   no file, in whatever shape your storage system has. Here that is <code>NotFound</code>
-  for both; the kernel probes and raises <code>InvalidPath</code> when a folder is there.</li>
+  for both; the kernel probes and raises <code>InvalidPath</code> when a folder is there.
+  The stream ends where your client's own read reports the end of data, so a
+  length or checksum check the client makes there still runs; never stop at a
+  byte count of your own.</li>
 <li><code>follow_links=False</code> matters only to storage with symbolic links: it is the
   view of <code>delete</code>, a <code>move</code> source and <code>delete_folder</code>, which name the link
   itself.</li>
@@ -12670,7 +12673,9 @@ does not record one; the kernel reports it as unknown.</p>
 <ul>
 <li><code>content</code> is <code>bytes</code> or a binary stream. Read it in full, as here, or stream
   it to your storage system.</li>
-<li><code>put()</code> refuses an existing file unless <code>overwrite</code>. Return a
+<li><code>put()</code> refuses an existing file unless <code>overwrite</code>. Where your storage system
+  has a conditional write (an <code>If-None-Match</code> header, an exclusive create), make
+  the refusal that one step rather than a check followed by the write. Return a
   <a href="../../reference/api/drivers/#remote_store.drivers.PutResult"><code>PutResult</code></a> with
   at least <code>size</code>; the kernel builds the result's path from the key before your
   driver writes, so a path that cannot be built never costs a write.</li>
@@ -12830,8 +12835,12 @@ stream may, list those types in a <code>stream_catch</code> attribute (a tuple o
 exception types), or they reach the caller unmapped. This holds for the async
 twin's chunk iterator too.
 <strong><code>connection_dead()</code></strong> says whether an exception means the connection is gone,
-from the exception alone and without I/O; the sync kernel then skips closing
-the stream it condemned rather than wait on a dead connection a second time.</p>
+from the exception alone and without I/O; the kernel then skips closing the
+stream it condemned rather than wait on a dead connection a second time, and
+logs its answer beside a failed write cleanup (an <code>abort</code>, a temporary's
+delete). Answer <code>True</code> only when the
+transport itself is gone, the socket or session, never for an error the next
+request on the same connection survives.</p>
 <hr />
 <h2 id="step-9-lifecycle">Step 9: Lifecycle<a class="headerlink" href="#step-9-lifecycle" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">probe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -12854,11 +12863,20 @@ call that touches the storage</strong>: Redis <code>PING</code>, a <code>HEAD</c
 <code>SELECT 1</code> on a database. Its errors go through <code>classify()</code> like any other.
 Only a store that is always healthy, like the in-memory one, may skip it and
 inherit the protocol's no-op.</p>
-<p><code>close()</code> releases resources. The kernel marks the backend closed first; with
-<code>close_is_terminal = True</code> it then refuses every later operation on storage
-with <code>BackendUnavailable</code>, before any key check reaches your driver.</p>
+<p><code>close()</code> releases resources, and must be safe to call again: the kernel
+passes on every call, a repeated one included. The kernel marks the backend
+closed first; with <code>close_is_terminal = True</code> it then refuses every later
+operation on storage, and <code>unwrap()</code>, with <code>BackendUnavailable</code>, before any key
+check reaches your driver.</p>
 <p><code>unwrap()</code> hands out the native client when the caller asks for its type, and
 raises <code>CapabilityNotSupported</code> otherwise.</p>
+<p><strong>What the kernel cleans up for you.</strong> When a write fails or is cancelled, the
+kernel calls your write handle's <code>abort()</code> (from <code>open_write</code>), deletes a
+temporary it wrote, and closes the caller's async content iterator if it
+started reading it and stopped short of the end. A write cleanup that fails is
+logged, never raised, so the
+caller sees why the write failed. Your <code>abort()</code> must work after a <code>commit()</code>
+that failed, and be safe to call twice.</p>
 <hr />
 <h2 id="step-10-optional-protocols">Step 10: Optional protocols<a class="headerlink" href="#step-10-optional-protocols" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># SupportsCopy: backs Capability.COPY (Redis 6.2+ for COPY).</span>
