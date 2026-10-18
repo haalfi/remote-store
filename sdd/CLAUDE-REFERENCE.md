@@ -469,8 +469,13 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 
 When reading or writing PR data — in the main session **or** inside a forked PR
 skill (`/rvw-pr`, `/fix-pr`) — split by direction and tool availability. The
-fork-vs-main distinction does **not** change the read tool; the only axis that
-does is whether `gh` is on `PATH`. (`/pr` is out of scope here: it gathers
+fork-vs-main distinction does **not** change the read tool; the axes that do
+are whether `gh` is on `PATH` and whether it reaches GraphQL. A claude.ai/code
+session has `gh` with REST only: every `gh pr` subcommand and `gh api graphql`
+fail with HTTP 403, so content reads there use `gh api` (BK-459, measured). The
+MCP server's name differs too, `MCP_DOCKER` locally and `github` in the cloud,
+where its tools are deferred behind `ToolSearch`; the `reviewer` agent lists
+both prefixes. (`/pr` is out of scope here: it gathers
 context from local git, not the PR API, and its only GitHub call is the
 `create_pull_request` write — already on the MCP write path below.
 `/rvw-pr` uses the content-read and write rows, and the feedback row for two
@@ -488,10 +493,10 @@ reading as "the post failed" is what made pinning necessary.)
 
 | Direction | Tool |
 |-----------|------|
-| Read PR **content** (diff, changed files, body, state) | `gh` CLI (`gh pr view`, `gh pr diff`, `gh pr view --json …`) **when available**; fall back to MCP `pull_request_read` when `gh` is absent (e.g. claude.ai/code). `/rvw-pr` reads the diff without the decision log, `sdd/decisions/`, so it uses its Step 1's filtered PR-files read instead of `gh pr diff`. One local exception by design: a `/rvw-pr` pass handed a review root by `/ship` reads the diff from that worktree's git (`git -C <root> diff origin/master...HEAD -- . ':(exclude)sdd/decisions/'`), because the PR API returns the PR's current head and the root is pinned at the commit being certified |
-| Read review **feedback with resolution state** (`isResolved`/`isOutdated`) | MCP dual-fetch (`get_review_comments` + `get_comments`), or `gh api graphql` `reviewThreads` — but **not** plain `gh` content reads (`gh pr view`/`gh pr diff`), which omit resolution state |
+| Read PR **content** (diff, changed files, body, state) | `gh api repos/haalfi/remote-store/pulls/<N>[/files]` **when `gh` is available**, local or cloud; `gh pr view`/`gh pr diff` locally only; fall back to MCP `pull_request_read` when `gh` is absent or the call fails. `/rvw-pr` reads the diff without the decision log, `sdd/decisions/`, so it uses its Step 1's filtered PR-files read instead of `gh pr diff`. One local exception by design: a `/rvw-pr` pass handed a review root by `/ship` reads the diff from that worktree's git (`git -C <root> diff origin/master...HEAD -- . ':(exclude)sdd/decisions/'`), because the PR API returns the PR's current head and the root is pinned at the commit being certified |
+| Read review **feedback with resolution state** (`isResolved`/`isOutdated`) | MCP dual-fetch (`get_review_comments`, whose threads carry their node `id`, + `get_comments`), or locally `gh api graphql` `reviewThreads` — but **not** plain `gh` content reads (`gh pr view`/`gh pr diff`), which omit resolution state |
 | **Write** (post review, inline comments) | MCP (`pull_request_review_write`, `add_comment_to_pending_review`) |
-| Resolve/unresolve **threads** | MCP where available; `gh api graphql` mutation for the resolve gap |
+| Resolve/unresolve **threads** | MCP `resolve_review_thread` / `unresolve_review_thread`; locally a `gh api graphql` mutation where MCP lacks them |
 | Search **local repo code** | `Grep` / `Glob` / `Read` — never Bash, never Python. This row bounds *searching*; it does not bound *measuring* — a `/rvw-pr` measuring pass runs an allowlisted set of gates, read-only `git`, and `python` against the library, defined in that skill |
 | Read **any** PR data via Python | never |
 
@@ -535,8 +540,10 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `infra/*.py`,
-      `.claude/hooks/`, the `sdd/` scripts in CI's `HOOKS_PAT`,
-      `pyproject.toml`, or `.python-version`** → run `hatch run fast`, the
+      `.claude/hooks/`, the `sdd/` scripts in CI's `HOOKS_PAT`, the two
+      tool lists `tests/scripts/test_reviewer_tools.py` holds equal
+      (`.claude/agents/reviewer.md`, `.claude/skills/rvw-pr/SKILL.md`, also in
+      `HOOKS_PAT`), `pyproject.toml`, or `.python-version`** → run `hatch run fast`, the
       members of `all` the change can affect (`scripts/fast_gate.py`). The
       `sdd/` scripts ride with `.claude/hooks/` below: they are pinned by
       `tests/scripts/` and gated in CI by the same `hooks` output. Other

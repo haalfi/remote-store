@@ -6,6 +6,9 @@ argument-hint: "[PR number]"
 
 PR: `$ARGUMENTS`. Repo: `haalfi/remote-store`.
 
+GitHub tool names below omit the server prefix; a cloud session defers them
+behind `ToolSearch` and its `gh` has no GraphQL ([I/O split](../../../sdd/CLAUDE-REFERENCE.md#github-pr-io-split)).
+
 **No PR number provided?** Run `git branch --show-current`, then call `list_pull_requests` with `owner: "haalfi"`, `repo: "remote-store"`, `state: "OPEN"`, `head: "haalfi:<branch>"`. If exactly one PR matches, confirm with the user. If zero or multiple match, or the user declines, fall through to listing all open PRs and ask which to fix.
 
 ## Step 0: Verify PR is open
@@ -14,7 +17,7 @@ If `$ARGUMENTS` is empty, the no-args fallback above must have resolved a
 PR number first; use that resolved value below. Do not call the API with
 an empty `pullNumber`.
 
-Read the PR state via `gh pr view <resolved PR number> --repo haalfi/remote-store --json state,title` (fall back to `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"` when `gh` is unavailable). If `state` is `CLOSED` or the PR is merged, stop and ask the user — do not fix stale or typo'd PR numbers.
+Read the PR state via `gh api repos/haalfi/remote-store/pulls/<resolved PR number> --jq '{state, merged, title}'` (fall back to `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"` when `gh` is unavailable or the call fails). If `state` is `closed` or `merged` is true, stop and ask the user — do not fix stale or typo'd PR numbers.
 
 ## Step 1: Prepare branch and fetch comments
 
@@ -27,8 +30,7 @@ check](../../../sdd/CLAUDE-REFERENCE.md#branch-freshness)
 Read PR **content** (diff, files, body) via `gh` CLI when available; read review
 **feedback with resolution state** (the four comment sources below) via the
 GitHub MCP server — content-only `gh` reads miss `isResolved`/`isOutdated`. Post
-comments and resolve threads via MCP, falling back to `gh api graphql` for the
-thread-resolve gap. This split is identical in the main session and any forked
+comments and resolve threads via MCP. This split is identical in the main session and any forked
 PR skill — see [`sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split](../../../sdd/CLAUDE-REFERENCE.md#github-pr-io-split)
 (`hatch run ref-show github-pr-io-split`).
 
@@ -54,35 +56,9 @@ the input to every fix below — the same silent-ceiling shape `/rvw-pr` Step 4
 pins its own instrument against.
 
 Source 1 returns **threads**, each carrying its own comments; do not treat its
-`totalCount` as a comment count.
-
-If `gh` CLI is authenticated, also fetch thread IDs for resolution in Step 4:
-
-```bash
-gh api graphql -f query='
-  query($owner:String!, $repo:String!, $number:Int!) {
-    repository(owner:$owner, name:$repo) {
-      pullRequest(number:$number) {
-        reviewThreads(last: 100) {   # saturating: if this returns 100, page it
-          nodes {
-            id isResolved isOutdated path line
-            comments(first: 10) {
-              nodes { body author { login } originalLine line path }
-            }
-          }
-        }
-      }
-    }
-  }
-' -f owner='haalfi' -f repo='remote-store' -F number=$ARGUMENTS
-```
-
-`reviewThreads(last: 100)` is a ceiling, not a total: if it returns exactly 100,
-page it with `before`/`after` rather than assuming that is all of them. MCP
-`resolve_review_thread` covers the same gap where `gh api graphql` is
-unavailable.
-
-No gh? Skip thread IDs — tell user thread resolution will be manual.
+`totalCount` as a comment count. Each thread also carries its node `id`
+(`PRRT_…`), `is_resolved` and `is_outdated` (measured on PR #1151), which is
+what Step 4 resolves by; no separate thread-ID query is needed.
 
 ## Step 2: Triage
 
@@ -158,7 +134,9 @@ the shape:
 
 ## Step 4: Resolve threads
 
-If gh available, batch-resolve fixed threads:
+Resolve each fixed thread with `resolve_review_thread` (`owner`, `repo`,
+`threadId` = the thread's `id` from source 1). Where that tool is missing, a
+local `gh` can batch-resolve instead; GraphQL is refused in a cloud session:
 
 ```bash
 gh api graphql -f query='
@@ -169,7 +147,7 @@ gh api graphql -f query='
 '
 ```
 
-Only resolve threads you fixed. No gh? Tell user to resolve manually.
+Only resolve threads you fixed. Neither available? Tell the user to resolve manually.
 
 ## Step 5: Validate
 

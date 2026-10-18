@@ -25,13 +25,7 @@ if [ -f sdd/BACKLOG.md ]; then
   fi
 fi
 
-# --- Tool availability ---
 echo ""
-if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
-  echo "gh CLI: authenticated"
-else
-  echo "gh CLI: not available — use MCP_DOCKER for GitHub ops"
-fi
 
 # Helper: true only inside a Linux root container (claude.ai/code).
 # On-prem sessions (macOS, non-root Linux) skip auto-installs.
@@ -147,4 +141,15 @@ if ! command -v gh &>/dev/null && _is_linux_container; then
     echo "$GITHUB_TOKEN" | gh auth login --with-token
     echo "gh CLI: installed and authenticated"
   fi
+fi
+
+# --- GitHub access (after the install above, so it reports the final state) ---
+# A cloud session's proxy injects gh's token, so `gh auth status` fails there
+# while REST calls work; it is told apart by CLAUDE_CODE_REMOTE (BK-459).
+if [ "$CLAUDE_CODE_REMOTE" = "true" ]; then
+  echo "GitHub: cloud session — MCP tools are mcp__github__* (deferred: load with ToolSearch); gh reaches REST only (gh api), GraphQL and gh pr are refused"
+elif command -v gh &>/dev/null && gh auth status &>/dev/null; then
+  echo "gh CLI: authenticated"
+else
+  echo "gh CLI: not available — use the GitHub MCP server (mcp__MCP_DOCKER__* locally)"
 fi

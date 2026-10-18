@@ -2,6 +2,10 @@
 # PreToolUse gate: block commits on master + run lint (skipped for docs-only).
 # Also stages the decision log, so it travels with the work it explains
 # (RFC-0018 D2).
+# `if:` also fires on commands it cannot parse, so re-check (command-check.sh).
+HOOK_INPUT=$(cat)
+source "$(dirname "$0")/command-check.sh"
+command_runs 'git[[:space:]]+commit' || exit 0
 
 BRANCH=$(git branch --show-current 2>/dev/null)
 if [ "$BRANCH" = "master" ] || [ "$BRANCH" = "main" ]; then

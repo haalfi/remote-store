@@ -300,6 +300,16 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-459 — The `reviewer` agent names its GitHub tools by the local server's prefix, so a cloud pass cannot post**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  A cloud `/rvw-pr` pass of PR #1162 got `Read, Grep, Glob, Bash` only: the
+  `mcp__MCP_DOCKER__*` entries dropped silently and no `ToolSearch` was granted.
+  `reviewer.md` now lists each tool under both prefixes plus `ToolSearch`, held to
+  `rvw-pr`'s list by `test_reviewer_tools.py`; a pass with no posting tool returns
+  its findings. Cloud `gh` has no GraphQL, so `rvw-pr`, `fix-pr`, `ship`, `drift`
+  and `mutation` read via REST or MCP. `if:` hooks firing on unparseable commands
+  now re-check them. Trace: [bk-459](traces/bk-459-cloud-github-tools.yml).
+
 - [x] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer, infra.ci
   Re-deferred 2026-10-18: no catch, and none is reachable, since TLC checks

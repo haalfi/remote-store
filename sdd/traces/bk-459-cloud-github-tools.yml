@@ -1,0 +1,162 @@
+id: BK-459
+title: "The `reviewer` agent names its GitHub tools by the local server's prefix, so a cloud pass cannot post"
+trigger: >-
+  In a claude.ai/code session, `/rvw-pr 1162` finished its review and posted
+  nothing: it reported that `pull_request_review_write` and
+  `add_comment_to_pending_review` were not available, and returned three
+  findings unposted.
+source_items:
+  - BK-459
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - .github/workflows/ci.yml
+surprising_ripples:
+  - .claude/hooks/gate-commit.sh
+  - .claude/hooks/gate-push.sh
+  - .claude/hooks/deny-bare-runner.sh
+  - .claude/skills/drift/SKILL.md
+  - .claude/skills/mutation/SKILL.md
+decisions:
+  - sdd/decisions/24401ae0-db37-5e90-9ff9-012315717f99.jsonl
+orient:
+  - items: [BK-445]
+    verdict: constrains
+    evidence: >-
+      BK-445's route lives in rvw-pr/SKILL.md § Review root, a paragraph this
+      change does not touch; its open decision is about Claude Code's
+      worktree-isolation guard on `env -C`, a different harness filter from
+      the `tools:` resolution and `if:` hook evaluation fixed here. Same file,
+      no shared fix surface.
+  - items: [BUG-306]
+    verdict: constrains
+    evidence: >-
+      BUG-306 lists `.claude/skills/*` and `.claude/agents/*` among files no CI
+      class pattern reaches. This change adds a test reading reviewer.md and
+      rvw-pr/SKILL.md, so HOOKS_PAT gains those two paths per the ripple row
+      for a test whose subject is outside src/; BUG-306's per-file decision for
+      the other files stays open.
+  - items: [BK-363]
+    verdict: unrelated
+    evidence: >-
+      BK-363 is /pr's trace gate demanding a trace for filing-only diffs; this
+      item implements work and ships its trace.
+phases:
+  - id: reproduce
+    name: Reproduce the missing tools and the cloud gh surface
+    steps:
+      - file: .claude/agents/reviewer.md
+        section: "tools:"
+        read_type: gate
+        extract: >-
+          Six GitHub tools, all `mcp__MCP_DOCKER__*`. A `reviewer` subagent
+          spawned in the cloud session listed Read, Grep, Glob, Bash and no
+          ToolSearch; a general-purpose control loaded mcp__github__pull_request_read
+          through ToolSearch and read PR #1162
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter comment (line 8)"
+        read_type: reference
+        extract: >-
+          Claimed a pass gets the agent's tools "plus harness tools such as
+          ToolSearch"; the cloud probe got no ToolSearch
+        outcome: misleading
+      - file: sdd/traces/bk-431-scoped-reviewer-input.yml
+        section: "(probe) reviewer agent at commit 2b89e4a9b"
+        read_type: reference
+        extract: >-
+          Locally a reviewer did load mcp__MCP_DOCKER__pull_request_read
+          through ToolSearch, so the grant depends on the environment
+        outcome: ok
+      - file: sdd/adrs/0046-review-tools-come-from-the-agent.md
+        section: "Context, Decision, Consequences (Neutral)"
+        read_type: reference
+        extract: >-
+          The agent's tools: is the restriction; its probe measured one build,
+          which this cloud result fits rather than reverses
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "GitHub PR I/O split"
+        read_type: gate
+        extract: >-
+          Said to fall back to MCP "when gh is absent (e.g. claude.ai/code)";
+          gh is present there and REST works (gh api pulls/1162), but GraphQL
+          returns HTTP 403, so gh pr view, gh pr checks, gh issue list and
+          gh api graphql all fail
+        outcome: misleading
+      - file: .claude/hooks/session-init.sh
+        section: "Tool availability"
+        read_type: reference
+        extract: >-
+          Printed "use MCP_DOCKER" in the cloud, from a `gh auth status` that
+          fails on the proxy-injected token, before the gh install block ran
+        outcome: misleading
+  - id: orient
+    name: Related open work
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-445, BK-363, BUG-306"
+        read_type: gate
+        extract: "Per-cluster verdicts in orient:"
+        outcome: ok
+  - id: design
+    name: Decide the fix and the hook misfire
+    steps:
+      - file: .claude/settings.json
+        section: "PreToolUse Bash if: hooks"
+        read_type: reference
+        extract: >-
+          Probes: `ls -d "${HOME}"`, `"$PWD"` and `"$HTTPS_PROXY"` fired every
+          if:-gated hook (echo deny blocked them, the gh pr create advisory
+          fired); `"$HOME"`, `$(pwd)`, `"a{b}"` did not. The hooks reference
+          documents it: an undeterminable command runs the hook regardless of
+          the pattern. Fix: each hook re-checks tool_input.command
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 3, 4, 7"
+        read_type: gate
+        extract: >-
+          The tool-list test localizes missing entries, enumerates from the
+          governing list, declares reviewer.md as authority in rvw-pr's
+          frontmatter comment, and states its bounds
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Test whose subject is outside src/ or scripts/"
+        read_type: gate
+        extract: "Widen HOOKS_PAT and the local mechanical-gate list for the two frontmatter files"
+        outcome: ok
+  - id: implement
+    name: Lists, guard, REST reads, hook re-check
+    steps:
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 1, Step 4"
+        read_type: reference
+        extract: >-
+          MCP get_review_comments already returns thread ids (PRRT_...) with
+          is_resolved and is_outdated (PR #1151), so the GraphQL thread query
+          goes and resolve_review_thread resolves
+        outcome: ok
+  - id: verify
+    name: Tests seen failing on master's files
+    steps:
+      - file: tests/scripts/test_hook_command_check.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          26 pass; against master's four hooks the 8 allow-direction cases
+          fail. Mutating the helper's fail-closed returns fails the 3
+          unreadable-payload cases
+        outcome: ok
+      - file: tests/scripts/test_reviewer_tools.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          4 pass; against master's lists the both-servers and ToolSearch cases
+          fail naming the six missing github tools. Dropping ToolSearch from
+          allowed-tools alone fails the equality case. The live grant is not
+          measurable in this session: agent definitions load at session start
+          (a new agent type written mid-session was "not found")
+        outcome: ok

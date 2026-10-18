@@ -21,6 +21,9 @@ gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=1" --jq '
 gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=2" --jq 'length'   # only if page 1 returned exactly 100
 ```
 
+This REST read also runs in a cloud session (measured on PR #1162). Without
+`gh`, skip it and say so in Step 5; no MCP read substitutes (table below).
+
 **A page that returns exactly `per_page` means there is more, not that you are
 done** — advance `page` until a short page (or `0`) comes back, and sum. That
 loop is what makes this a count rather than a ceiling: `/ship` runs to eight
