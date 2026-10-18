@@ -2,10 +2,11 @@
 """Gate: a generated sdd index table renders what its kind declares.
 
 ``docs-src/_path_rules.yml`` declares each SDD kind's index shape with two
-optional flags: ``status:`` adds a constant status column, ``dated:`` adds a
-"Date (as of)" column filled from each document's ``**Date:**`` header. Both
-flags reach the published table through code that cannot see whether the
-inputs are there, so both fail silently:
+optional flags: ``status:`` adds a status column filled from each document's
+own status (DOCFRAME-010), ``dated:`` adds a "Date (as of)" column filled from
+each document's ``**Date:**`` header. Both flags reach the published table
+through code that cannot see whether the inputs are there, so both fail
+silently:
 
 R1 -- **Every document of a dated kind carries a parseable header date.**
      A research doc with no ``**Date:**`` header renders ``—`` and sorts to
@@ -27,7 +28,14 @@ R2 -- **Each kind's ``_index.tmpl`` header declares as many columns as
      template still has a two-column header publishes the table with no date
      column at all, green gates throughout.
 
-Both rules enumerate from ``_path_rules.yml`` via ``scan.SDD_KINDS`` (Rule 3:
+R3 -- **Every document of a status kind yields a status from its kind's
+     vocabulary** (``scan.STATUS_VOCABULARY``: ADRs from
+     ``gen_adr_digest.STATUSES``, RFCs from ``sdd/templates/rfc-template.md``).
+     A missing, unparseable or off-vocabulary status (``Implemented``)
+     renders ``—``, which the build accepts; BUG-338 is the case where every
+     status cell lied instead. Same wiring reason as R1.
+
+All three rules enumerate from ``_path_rules.yml`` via ``scan.SDD_KINDS`` (Rule 3:
 derived, not maintained beside), and every failure names the offending file
 (Rule 2). Authority is the declaration: ``_path_rules.yml`` says what the kind
 is, and the documents and template must supply it.
@@ -40,13 +48,17 @@ Bounds -- what this does not catch
   satisfies it. A header that says ``Status`` over the date column passes.
 * **R1 checks presence and shape, never correctness.** A parseable
   ``**Date:** 2019-01-01`` on a document written yesterday is a fact this
-  gate has no way to dispute.
+  gate has no way to dispute. R3 likewise: an RFC whose Status reads
+  ``Accepted`` while its work is undecided passes.
+* **R3 reads only the status keyword.** The prose after it (``Superseded by
+  ...``, an implementing ID) is not checked, and a status stated only further
+  down the body is not found.
 * **Only kinds declared in ``_path_rules.yml`` are seen.** A kind rendered
   by some other path, or a template with no ``{{ ..._rows }}`` placeholder,
   is outside the enumeration.
-* **R1 enumerates via ``_scan_kind``, which does not consult per-file
-  ``<!-- doc: -->`` markers.** A ``repo-only`` document matching a dated
-  kind's glob is still required to carry a header date, because the index
+* **R1 and R3 enumerate via ``_scan_kind``, which does not consult per-file
+  ``<!-- doc: -->`` markers.** A ``repo-only`` document matching a dated or
+  status kind's glob is still required to carry a header date or status, because the index
   and nav claim it regardless of its marker -- the BK-362 gap. That is the
   existing behaviour of the enumeration, not a rule this gate adds.
 * **The separator row is not checked.** A header/separator arity mismatch is
@@ -56,7 +68,8 @@ Drift-gate::
 
     kind:       rule
     rule:       every generated sdd index table has the columns its kind declares,
-                  and every document of a dated kind carries a header date
+                  every document of a dated kind carries a header date, and
+                  every document of a status kind carries a vocabulary status
     domain:     explanation <-> realization
 """
 
@@ -69,7 +82,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
-from docs.scan import SDD_KINDS, scan_all_sdd  # noqa: E402
+from docs.scan import SDD_KINDS, STATUS_VOCABULARY, scan_all_sdd  # noqa: E402
 
 DOCS_SRC = ROOT / "docs-src"
 
@@ -94,7 +107,7 @@ def _header_columns(tmpl: Path) -> int | None:
 
 
 def check(repo_root: Path | None = None) -> list[str]:
-    """Return one message per violation; empty when both rules hold.
+    """Return one message per violation; empty when every rule holds.
 
     *repo_root* is resolved at call time, not bound as a default, so a test
     can point the gate at a seeded tree.
@@ -111,6 +124,16 @@ def check(repo_root: Path | None = None) -> list[str]:
                     rel = _rel(entry.source, repo_root)
                     errors.append(
                         f"R1 {rel}: no parseable '**Date:** YYYY-MM-DD' in the header ({kind.slug} is a dated kind)"
+                    )
+
+        # R3: every document of a status kind has a vocabulary status.
+        if kind.status:
+            vocabulary = ", ".join(STATUS_VOCABULARY[kind.slug])
+            for entry in entries_by_kind.get(kind.slug, []):
+                if entry.status is None:
+                    rel = _rel(entry.source, repo_root)
+                    errors.append(
+                        f"R3 {rel}: Status does not open with one of {vocabulary} ({kind.slug} is a status kind)"
                     )
 
         # R2: the template header declares as many columns as a row emits.
@@ -141,9 +164,11 @@ def main() -> int:
             print(f"  {e}")
         return 1
     dated = [k.slug for k in SDD_KINDS if k.dated]
+    statused = [k.slug for k in SDD_KINDS if k.status]
     print(
         f"check_sdd_index: {len(SDD_KINDS)} kind(s) match their index template; "
-        f"dated kind(s) fully dated: {dated or 'none'}"
+        f"dated kind(s) fully dated: {dated or 'none'}; "
+        f"status kind(s) fully statused: {statused or 'none'}"
     )
     return 0
 

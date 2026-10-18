@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented
+Accepted (implemented via ID-178)
 
 ## Summary
 

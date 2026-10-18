@@ -47,7 +47,7 @@ def _index_row(kind: SddKind, e: SddEntry) -> str:
     first = e.number if kind.numbered else e.title
     cells = [first, f"[{e.title}]({e.slug}.md)"]
     if kind.status:
-        cells.append(kind.status)
+        cells.append(e.status or "—")
     if kind.dated:
         cells.append(e.date or "—")
     return "| " + " | ".join(cells) + " |"
@@ -87,8 +87,10 @@ def render_sdd_indexes(
 ) -> None:
     """Emit ``explanation/design/<kind>/index.md`` per kind, plus ``explanation/design/index.md``.
 
-    Dated kinds (``SddKind.dated``) get an extra date column and list newest
-    first; the landing page below keeps scan order for every kind.
+    Status kinds (``SddKind.status``) get a column holding each document's own
+    status (DOCFRAME-010). Dated kinds (``SddKind.dated``) get an extra date
+    column and list newest first; the landing page below keeps scan order for
+    every kind. A missing status or date renders ``—``.
     """
     for kind in SDD_KINDS:
         entries = entries_by_kind.get(kind.slug, [])

@@ -37,8 +37,9 @@ def test_load_sdd_kinds_positive(scan_mod):
     assert slugs == {"adrs", "specs", "rfcs", "audits", "research"}
     assert len(kinds) == 5
     by_slug = {k.slug: k for k in kinds}
-    assert by_slug["adrs"].status == "Accepted"
-    assert by_slug["rfcs"].status == "Proposed"
+    assert by_slug["adrs"].status is True
+    assert by_slug["rfcs"].status is True
+    assert by_slug["specs"].status is False
     assert by_slug["audits"].glob == "audit-*.md"
     assert by_slug["research"].numbered is False
 
@@ -67,3 +68,27 @@ def test_load_sdd_kinds_empty_list_raises(scan_mod, tmp_path):
     empty.write_text("sdd_kinds: []\n", encoding="utf-8")
     with pytest.raises(ValueError, match="sdd_kinds"):
         scan_mod._load_sdd_kinds(empty)
+
+
+@pytest.mark.spec("DOCFRAME-010")
+def test_load_sdd_kinds_rejects_a_constant_status(scan_mod, tmp_path):
+    """`status: Accepted` is the pre-BUG-338 constant; a string is no longer a value."""
+    bad = tmp_path / "_path_rules.yml"
+    bad.write_text(
+        "sdd_kinds:\n  - slug: rfcs\n    source_dir: sdd/rfcs\n    nav_label: RFCs\n    status: Proposed\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="rfcs.*status.*true or false"):
+        scan_mod._load_sdd_kinds(bad)
+
+
+@pytest.mark.spec("DOCFRAME-010")
+def test_load_sdd_kinds_rejects_status_kind_without_a_parser(scan_mod, tmp_path):
+    """A status column on a kind no parser reads would render `—` in every row."""
+    bad = tmp_path / "_path_rules.yml"
+    bad.write_text(
+        "sdd_kinds:\n  - slug: audits\n    source_dir: sdd/audits\n    nav_label: Audits\n    status: true\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="audits.*no status parser"):
+        scan_mod._load_sdd_kinds(bad)

@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented (ID-208). Graduated to `sdd/specs/031-ext-dagster.md`
+Accepted (implemented via ID-208). Graduated to `sdd/specs/031-ext-dagster.md`
 (DAG-021 – DAG-033).
 
 Open Questions resolved during implementation: OQ1 — v1 returns `None` for

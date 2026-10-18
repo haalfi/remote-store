@@ -1,11 +1,12 @@
 """Tests for scripts/check_sdd_index.py — the sdd index-shape gate.
 
-Both rules guard a silent failure, so each is tested by seeding the defect and
+Each rule guards a silent failure, so each is tested by seeding the defect and
 asserting the gate names the offending file (DRIFT-RULES Rule 2), not merely
 that it fails:
 
 R1  a document of a dated kind with no parseable ``**Date:**`` header
 R2  a kind's ``_index.tmpl`` header declaring fewer columns than a row emits
+R3  a document of a status kind with no status from its kind's vocabulary
 
 The gate exists because neither defect can reach pytest on the diff that
 introduces it: ``ci.yml``'s ``CODE_PAT`` has no ``^sdd/``, so a PR adding only
@@ -83,7 +84,44 @@ def test_r1_flags_unparseable_date_format(gate, tree):
 
 def test_r1_ignores_undated_kinds(gate, tree):
     """ADRs carry no `dated:` flag, so a dateless ADR is not a violation."""
-    (tree / "sdd" / "adrs" / "0001-test.md").write_text("# ADR-0001: Test\n\nNo date.\n", encoding="utf-8")
+    (tree / "sdd" / "adrs" / "0001-test.md").write_text(_ADR_OK, encoding="utf-8")
+    assert gate.check(tree) == []
+
+
+# ---------------------------------------------------------------------------
+# R3: status kinds must carry a vocabulary status (DOCFRAME-010, BUG-338)
+# ---------------------------------------------------------------------------
+
+_ADR_OK = "# ADR-0001: Test\n\n## Status\n\n| Field | Value |\n| --- | --- |\n| Status | Accepted |\n\nNo date.\n"
+
+
+@pytest.mark.spec("DOCFRAME-010")
+def test_r3_flags_rfc_with_off_vocabulary_status(gate, tree):
+    """`Implemented` is what RFC-0003/0011/0013/0014 carried; it rendered `—`."""
+    (tree / "sdd" / "rfcs" / "rfc-0099-x.md").write_text(
+        "# RFC-0099: X\n\n## Status\n\nImplemented\n", encoding="utf-8"
+    )
+    errors = gate.check(tree)
+    assert len(errors) == 1
+    assert errors[0].startswith("R3 sdd/rfcs/rfc-0099-x.md:")
+    assert "Draft, Under Review, Accepted, Rejected, Superseded" in errors[0]
+
+
+@pytest.mark.spec("DOCFRAME-010")
+def test_r3_flags_adr_without_status_table(gate, tree):
+    (tree / "sdd" / "adrs" / "0001-test.md").write_text("# ADR-0001: Test\n\nNo table.\n", encoding="utf-8")
+    errors = gate.check(tree)
+    assert len(errors) == 1
+    assert errors[0].startswith("R3 sdd/adrs/0001-test.md:")
+    assert "Proposed, Accepted, Superseded" in errors[0]
+
+
+@pytest.mark.spec("DOCFRAME-010")
+def test_r3_passes_vocabulary_statuses(gate, tree):
+    (tree / "sdd" / "adrs" / "0001-test.md").write_text(_ADR_OK, encoding="utf-8")
+    (tree / "sdd" / "rfcs" / "rfc-0099-x.md").write_text(
+        "# RFC-0099: X\n\n## Status\n\nSuperseded by RFC-0100\n", encoding="utf-8"
+    )
     assert gate.check(tree) == []
 
 
@@ -154,9 +192,9 @@ def test_expected_columns_counts_both_flags(gate):
     from docs.scan import SddKind
 
     assert gate._expected_columns(SddKind("k", "sdd/k", "K")) == 2
-    assert gate._expected_columns(SddKind("k", "sdd/k", "K", status="Accepted")) == 3
+    assert gate._expected_columns(SddKind("k", "sdd/k", "K", status=True)) == 3
     assert gate._expected_columns(SddKind("k", "sdd/k", "K", dated=True)) == 3
-    assert gate._expected_columns(SddKind("k", "sdd/k", "K", status="Accepted", dated=True)) == 4
+    assert gate._expected_columns(SddKind("k", "sdd/k", "K", status=True, dated=True)) == 4
 
 
 def test_main_reports_and_exits_nonzero_on_violation(gate, tree, monkeypatch, capsys):

@@ -23,7 +23,8 @@ narrows ADR-0007's "build hook" tier to one bridge mechanism.
 applies the framework and closes the remaining audit-012 findings.
 [BK-171](../BACKLOG.md) collapses link validation into a single on-disk
 gate (DOCFRAME-008). [BK-236](../BACKLOG-DONE.md) extends the gate to
-docs-site links (DOCFRAME-009).
+docs-site links (DOCFRAME-009). [BUG-338](../BACKLOG-DONE.md) reads the
+index Status column from each document (DOCFRAME-010).
 
 ---
 
@@ -286,6 +287,29 @@ package's PyPI long description — honest.
 
 ---
 
+## DOCFRAME-010: SDD Index Status Column
+
+**Scope:** BUG-338.
+
+**Invariant:** A kind declared with `status: true` in
+`docs-src/_path_rules.yml` gets a Status column in its generated index
+table, and each row's cell is that document's own status: an ADR's
+`Status` cell in its `## Status` metadata table, read by the parser
+`scripts/gen_adr_digest.py` uses for `DIGEST.md`; an RFC's opening status
+term, from its `## Status` paragraph or a `**Status:**` header line. Only
+the term from the kind's vocabulary is rendered (`Superseded by ...` reads
+`Superseded`). The vocabularies are `gen_adr_digest.STATUSES` and the
+`## Status` line of `sdd/templates/rfc-template.md`. A missing or
+off-vocabulary status renders `—`.
+
+**Postcondition:** `scripts/check_sdd_index.py` (R3) exits non-zero, naming
+the file, for any document of a status kind with no vocabulary status, so
+the `—` fallback is never what a live document renders. A `status:` value
+that is not a boolean, or `status: true` on a kind with no parser, fails
+`_load_sdd_kinds`.
+
+---
+
 ## Tests
 
 `tests/scripts/test_docs_framework.py` (parser and scanner — DOCFRAME-001..003):
@@ -331,6 +355,29 @@ package's PyPI long description — honest.
 | `test_load_sdd_kinds_filenotfound` | DOCFRAME-008 | missing file: friendly error |
 | `test_load_sdd_kinds_missing_required_field` | DOCFRAME-008 | missing slug: KeyError |
 | `test_load_sdd_kinds_empty_list_raises` | DOCFRAME-008 | empty sdd_kinds list: ValueError |
+| `test_load_sdd_kinds_rejects_a_constant_status` | DOCFRAME-010 | `status: Proposed`: ValueError |
+| `test_load_sdd_kinds_rejects_status_kind_without_a_parser` | DOCFRAME-010 | `status: true` with no parser: ValueError |
+
+`tests/scripts/test_render_sdd_indexes.py` (index status column — DOCFRAME-010):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_rfc_status_reads_the_status_keyword` | DOCFRAME-010 | both RFC header forms; keyword only |
+| `test_adr_status_reads_the_metadata_table` | DOCFRAME-010 | off-vocabulary or no table: None |
+| `test_scan_kind_reads_each_documents_own_status` | DOCFRAME-010 | per-document, not per-kind |
+| `test_index_row_renders_each_documents_status` | DOCFRAME-010 | the BUG-338 reproduction; `—` fallback |
+| `test_rfc_vocabulary_is_the_templates` | DOCFRAME-010 | derived from the RFC template |
+| `test_adr_vocabulary_is_the_digests` | DOCFRAME-010 | derived from `gen_adr_digest.STATUSES` |
+| `test_live_status_kinds_carry_a_vocabulary_status` | DOCFRAME-010 | live repo |
+| `test_live_adr_statuses_match_the_digest` | DOCFRAME-010 | live repo: index agrees with `DIGEST.md` |
+
+`tests/scripts/test_check_sdd_index.py` (R3 — DOCFRAME-010 Postcondition):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_r3_flags_rfc_with_off_vocabulary_status` | DOCFRAME-010 | `Implemented` |
+| `test_r3_flags_adr_without_status_table` | DOCFRAME-010 | |
+| `test_r3_passes_vocabulary_statuses` | DOCFRAME-010 | positive control |
 
 `tests/scripts/test_link.py` (build_source_map — DOCFRAME-008 Source map):
 

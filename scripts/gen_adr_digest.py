@@ -181,6 +181,16 @@ def _table_meta(text: str) -> dict | None:
     }
 
 
+def status_of(text: str) -> str | None:
+    """The ``Status`` cell of an ADR's metadata table, or None if it has none.
+
+    The docs-site ADR index (``scripts/docs/scan.py``) reads the status here, so
+    the index and this digest cannot disagree about an ADR.
+    """
+    meta = _table_meta(text)
+    return meta["status"] if meta else None
+
+
 @dataclasses.dataclass
 class Adr:
     path: Path
