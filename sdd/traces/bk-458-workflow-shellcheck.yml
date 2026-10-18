@@ -1,0 +1,55 @@
+id: BK-458
+title: "CI's actionlint runs with `-shellcheck=`, so 31 shellcheck findings in the workflows and `start-backends` go unreported"
+trigger: "ci.yml ran `actionlint -color -shellcheck=` with a comment deferring shellcheck until the workflows passed it; the run was never made locally (actionlint 1.7.7 + shellcheck 0.11.0: 31 findings in 3 of 11 workflows, 2026-10-18)"
+source_items:
+  - BK-458
+audience:
+  - infra.ci
+expected_ripples:
+  - sdd/backlogid.json
+decisions:
+  - sdd/decisions/87df5820-23a6-500f-b06a-ef384d7121d8.jsonl
+orient:
+  - items: [BUG-316]
+    verdict: unrelated
+    evidence: "sdd/BACKLOG.md BUG-316: which CI class pattern covers infra/.env and infra/docker-compose.yml. It names start-backends only as a reader of infra/.env; this change edits shell inside the action and workflows, not CI routing."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-316 (hatch run backlog-find actionlint / shellcheck / start-backends)"
+        read_type: gate
+        extract: "no open item names actionlint or shellcheck; start-backends hits are BUG-316 and done items"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "lint job, actionlint step"
+        read_type: gate
+        extract: "-shellcheck= opt-out and its comment (deferred until workflows pass shellcheck)"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/mutation.yml
+        section: "Load infra settings, Start MinIO/Azurite/SFTP"
+        read_type: reference
+        extract: "25 of the 31 findings; one retry-loop pattern copied three times"
+        outcome: ok
+      - file: .github/actions/start-backends/action.yml
+        section: "Load infra settings, Start MinIO/Azurite/SFTP"
+        read_type: reference
+        extract: "same patterns; actionlint does not lint composite actions, so it was never flagged"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: .github/workflows/drift-guard.yml
+        section: "setup lane step"
+        read_type: verify
+        extract: "ran the regrouped step locally with INPUT_LANE=floor and all: outputs lane, lanes, backend_extras, min_python unchanged"
+        outcome: ok
+      - file: .github/actions/start-backends/action.yml
+        section: "run blocks under shellcheck"
+        read_type: verify
+        extract: "only SC1091 (unfollowed source), which actionlint disables for workflows; actionlint itself reports 0 on the 11 workflows"
+        outcome: ok

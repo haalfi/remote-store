@@ -134,9 +134,11 @@ jobs:
             echo "::error::.python-version ($PRIMARY_PYTHON) is not in ALL_PYTHONS ($ALL_PYTHONS)"
             exit 1
           fi
-          echo "primary=$PRIMARY_PYTHON" >> "$GITHUB_OUTPUT"
-          echo "test-matrix=$(jq -cn --argjson a "$ALL_PYTHONS" --arg p "$PRIMARY_PYTHON" '$a - [$p]')" >> "$GITHUB_OUTPUT"
-          echo "typecheck-matrix=$(jq -cn --arg m "$MIN_PYTHON" --arg p "$PRIMARY_PYTHON" '[$m, $p]')" >> "$GITHUB_OUTPUT"
+          {
+            echo "primary=$PRIMARY_PYTHON"
+            echo "test-matrix=$(jq -cn --argjson a "$ALL_PYTHONS" --arg p "$PRIMARY_PYTHON" '$a - [$p]')"
+            echo "typecheck-matrix=$(jq -cn --arg m "$MIN_PYTHON" --arg p "$PRIMARY_PYTHON" '[$m, $p]')"
+          } >> "$GITHUB_OUTPUT"
 
   lint:
     needs: [setup]
@@ -159,13 +161,8 @@ jobs:
       # outdated runner labels, and expression-syntax errors. Pinned
       # binary download (no third-party action wrapper).
       #
-      # `-shellcheck=` disables actionlint's shellcheck integration:
-      # ubuntu-latest runners ship shellcheck preinstalled, which would
-      # otherwise surface style nits (SC2086, SC2129, ...) across the
-      # pre-existing workflows that were not authored against shellcheck.
-      # Re-enabling it is deferred — turn back on once the pre-existing
-      # workflows pass shellcheck, or move to a per-file ignore list via
-      # .github/actionlint.yaml so new workflows benefit immediately.
+      # shellcheck is preinstalled on ubuntu-latest and actionlint runs it
+      # on every `run:` block, so shell style nits fail this job too.
       - name: Install actionlint
         run: |
           # Pin both the binary version (1.7.7) AND the downloader script
@@ -174,7 +171,7 @@ jobs:
           # job, defeating the purpose of pinning the binary.
           bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7 "$RUNNER_TEMP"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
-      - run: actionlint -color -shellcheck=
+      - run: actionlint -color
       # Single source of truth for "lint": delegate to the hatch script lists
       # (preflight + lint + format-check in pyproject.toml) rather than
       # re-listing every command here, so adding a checker to a hatch target
