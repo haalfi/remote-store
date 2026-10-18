@@ -11,17 +11,10 @@ live. § 6 is to become doctrine in `sdd/SPEC-DESIGN.md` (maintainer's choice,
 decision log below). **Completion standard** (maintainer's choice): an
 evidence record adequate to decide RFC-0022, honestly graded, not an
 independently reproducible review; unverified figures stay marked.
+
 **Scope:** What makes a spec good, where one spec ends, which form and which
 formal layer fit which kind of truth, worked on one operation: a streaming
 read. Decision log: `sdd/decisions/6b9890d9-f718-508d-b861-aef8c0398c78.jsonl`.
-**Related:**
-[`research-id-147b-tla-poc.md`](research-id-147b-tla-poc.md),
-[`research-id-147-tla-augmentation.md`](research-id-147-tla-augmentation.md),
-[`research-inconsistency-detection-multi-artifact.md`](research-inconsistency-detection-multi-artifact.md),
-[`research-id-232-detail-placement-durability.md`](research-id-232-detail-placement-durability.md),
-[`research-appropriate-level-of-detail.md`](research-appropriate-level-of-detail.md),
-[`research-backend-contract-completeness.md`](research-backend-contract-completeness.md),
-[`research-spec-kit-comparison.md`](research-spec-kit-comparison.md).
 
 **Method and its limits.** Part A reasoned from [spec
 051](../specs/051-store-tree.md), the README and `CLAUDE.md` only, on purpose:
@@ -486,6 +479,15 @@ One invariant per section (D7) would give each such clause its own ID, the
 granularity the checks already reach; that is an inference, not yet tested.
 
 ## Sources
+
+**Related:**
+[`research-id-147b-tla-poc.md`](research-id-147b-tla-poc.md),
+[`research-id-147-tla-augmentation.md`](research-id-147-tla-augmentation.md),
+[`research-inconsistency-detection-multi-artifact.md`](research-inconsistency-detection-multi-artifact.md),
+[`research-id-232-detail-placement-durability.md`](research-id-232-detail-placement-durability.md),
+[`research-appropriate-level-of-detail.md`](research-appropriate-level-of-detail.md),
+[`research-backend-contract-completeness.md`](research-backend-contract-completeness.md),
+[`research-spec-kit-comparison.md`](research-spec-kit-comparison.md).
 
 **Bridges and Dafny:** [Cirstea et al., arXiv 2404.16075](https://arxiv.org/abs/2404.16075v2) · [Howard et al., NSDI'25](https://www.usenix.org/system/files/nsdi25-howard.pdf) · [Davis et al., VLDB 2020](https://www.vldb.org/pvldb/vol13/p1346-davis.pdf) · [MongoDB conformance blog](https://www.mongodb.com/company/blog/engineering/conformance-checking-at-mongodb-testing-our-code-matches-our-tla-specs) · [Schultz & Demirbas, VLDB 2025](https://www.vldb.org/pvldb/vol18/p5045-schultz.pdf) · [OmniLink, arXiv 2601.11836](https://arxiv.org/abs/2601.11836) · [Apalache ITF ADR-015](https://apalache-mc.org/docs/adr/015adr-trace.html) · [tla-connect](https://docs.rs/tla-connect) · [Hypothesis stateful testing](https://hypothesis.works/articles/rule-based-stateful-testing/) · [Dafny Reference Manual](https://dafny.org/dafny/DafnyRef/DafnyRef) · [arXiv 2501.06283](https://arxiv.org/pdf/2501.06283) · [AxDafny, arXiv 2606.32007](https://arxiv.org/pdf/2606.32007) · [AWS MPL](https://github.com/aws/aws-cryptographic-material-providers-library) · [Cedar, arXiv 2407.01688](https://arxiv.org/html/2407.01688v1) · [Cedar RFC 0032](https://github.com/cedar-policy/rfcs/blob/main/text/0032-port-formalization-to-lean.md) · [Amazon Science: Cedar](https://www.amazon.science/blog/how-we-built-cedar-with-automated-reasoning-and-differential-testing) · [Cedar paper](https://assets.amazon.science/d3/86/99db1aa142ffb6981d86dc849e4c/how-we-built-cedar-a-verification-guided-approach.pdf) · [Cedar POPL'24 SRC poster](https://bhaktishh.github.io/papers/popl-24-src-poster.pdf)
 
