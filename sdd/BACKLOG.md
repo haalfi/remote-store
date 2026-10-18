@@ -940,7 +940,7 @@ CHANGELOG the release body is built from — say what is actually true.
   Detail: [dossier](backlog/id-245-derived-inventories.md)
 
 - [ ] **ID-270 — Revisit informational `verify-tla` CI status (2027-04-19)**
-  spec: OBS-003, OBS-009 · effort: S · audience: library.maintainer, infra.ci
+  spec: OBS-003, OBS-003a · effort: S · audience: library.maintainer, infra.ci
   ID-150 re-deferred `verify-tla`: TLC checks `Observer.tla` with no bridge
   to code, so no code regression can turn it red. Due 2027-04-19, or in the
   PR that first bridges a TLA+ module to code (BK-455's race is the likely

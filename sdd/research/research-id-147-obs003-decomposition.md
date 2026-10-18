@@ -162,7 +162,7 @@ outcome is re-raised" directly. The shipped `Observer.tla` omits it —
 I4 and I5 check the structural property `visible == inner` on each
 path rather than the behavioural OBS-009 claim (see module header's
 *Scope caveat* paragraph). Adding `HookRaise` is deferred until a real
-regression motivates it (ID-150 revisit).
+regression motivates it (ID-270 revisit).
 
 See § 8 for the actual break-and-catch log populated as each invariant
 landed. Each row triggered exactly one invariant at minimum depth.

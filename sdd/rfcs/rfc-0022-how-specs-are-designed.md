@@ -3,7 +3,8 @@
 ## Status
 
 Draft, 2026-10-18. Tracked as **BK-457**. Graduates to one ADR (D1, D3, D5,
-D6, and the Rule 3 and Rule 7 amendment) and one authoring guide (D2, D4, D7,
+D6, the Rule 3 and Rule 7 amendment, and `formal/README.md` rule 3's gating
+bar per Open Question 3) and one authoring guide (D2, D4, D7,
 D8), the new authority doc `sdd/SPEC-DESIGN.md` (Open Question 1, decided).
 The analysis behind it, a maintainer session that walked one operation, a
 streaming read, from key to bytes, tested against outside evidence, is
@@ -261,7 +262,8 @@ and §§ 9 to 11:
 - **Process:** `000-process.md` Rule 3 and Rule 7 change through the ADR;
   § Spec format is replaced by the guide `sdd/SPEC-DESIGN.md`, which it then
   links (D7, Open Question 1); `formal/README.md` § Layers at a glance gains the
-  kind each layer governs.
+  kind each layer governs, and its § Authoring rules rule 3 trades the
+  catch-first bar for the bridge (Open Question 3).
 - **Testing:** each lifecycle diagram needs the edge-equality check against
   its TLA+ model, and generated lifecycle tests need a Python ITF replayer,
   which no tool provides today; each Assumptions line needs a conformance test

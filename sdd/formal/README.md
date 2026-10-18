@@ -241,7 +241,8 @@ age worse than the qualitative one.
    2026-10-18 and the next revisit is tracked as ID-270.
    [RFC-0022 Open Question 3](../rfcs/rfc-0022-how-specs-are-designed.md#open-questions)
    proposes replacing the catch bar with a bridge: a module gates from
-   the PR that ties it to code.
+   the PR that ties it to code. Until its ADR is accepted, the catch bar
+   above decides, the bridging PR's revisit included.
 4. **Live TLA+ modules live under `sdd/formal/tla/`.** The
    `sdd/research/tla-poc/` tree is the frozen 2026-04 PoC that
    established the spec-decomposition discipline (see

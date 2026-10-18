@@ -36,7 +36,8 @@ that first bridges a TLA+ module to code, whichever first. Derivations, run on m
 
 - **What runs.** `ci.yml` `verify-tla` runs TLC on `MC3` (`EXTENDS Observer`)
   against the seven invariants in `MC3.cfg`, which model spec 019's dispatch
-  (OBS-003, OBS-009). No lifetime is modelled (`sdd/formal/tla/` holds
+  (OBS-003 and OBS-003a, per the `Observer.tla` header; OBS-009 only
+  structurally, as its scope caveat says). No lifetime is modelled (`sdd/formal/tla/` holds
   `MC3.tla`, `MC3.cfg`, `Observer.tla`).
 - **Why no catch can come.** Nothing replays the model against
   `ext/observe.py`, and `TLA_PAT` only matches `sdd/formal/tla/`, the tlc
@@ -49,9 +50,11 @@ that first bridges a TLA+ module to code, whichever first. Derivations, run on m
 - **Cost.** Run 39100922614 (`32a5653`): `verify-tla` green in 9 s.
 - **Cadence.** `git rev-list --count --no-merges --since=2026-04-19 HEAD --
   <paths>` gives 2 commits on `sdd/formal/tla/` and the tlc scripts, 144 on
-  `sdd/specs/`, and 5 on spec 019 plus `ext/observe.py`, #460 itself among
-  them. The literal "10 spec amendments" fired in April without anyone
-  acting on it: nothing derives the count, and none can be derived for
+  `sdd/specs/`, and 5 on spec 019 plus `ext/observe.py`. #460 is in all
+  three. The literal "10 spec amendments" was reached on 2026-04-23 (tenth
+  line of `git log --reverse --no-merges --since=2026-04-19
+  --format='%ad %h' --date=short -- sdd/specs`, `c9b05dc`) and no one acted
+  on it: nothing derives the count, and none can be derived for
   TLA-backed sections, since no module under `sdd/formal/tla/` carries an
   `@spec` tag (`rg '@spec' sdd/formal/tla`). Rule 3 drops the count and
   keeps the calendar, with the first bridge as the second trigger.
