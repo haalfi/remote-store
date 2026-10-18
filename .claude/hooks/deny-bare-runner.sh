@@ -4,6 +4,6 @@
 # because `if:` also fires on commands it cannot parse (command-check.sh).
 HOOK_INPUT=$(cat)
 source "$(dirname "$0")/command-check.sh"
-command_runs "${1%% →*}" || exit 0
+command_mentions "${1%% →*}" || exit 0
 echo "Blocked: $1" >&2
 exit 2

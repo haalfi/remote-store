@@ -18,6 +18,7 @@ surprising_ripples:
   - .claude/hooks/gate-commit.sh
   - .claude/hooks/gate-push.sh
   - .claude/hooks/deny-bare-runner.sh
+  - .claude/hooks/warn-direct-pr.sh
   - .claude/skills/drift/SKILL.md
   - .claude/skills/mutation/SKILL.md
   - .claude/skills/pr/SKILL.md
@@ -181,4 +182,19 @@ phases:
           schema, it posted review 5563791671 (comments 2 -> 3, ci.yml:175).
           So a fork started before the github MCP server connects gets no MCP
           tools; recorded in the guard
+        outcome: ok
+  - id: fix
+    name: Review round on PR #1163
+    steps:
+      - file: .claude/hooks/command-check.sh
+        section: "command_runs (review thread on line 20)"
+        read_type: verify
+        extract: >-
+          My re-check tried to prove a command runs its target and missed it
+          after keywords, wrappers and git options, so `git -C "$PWD" commit`
+          on master passed a gate that used to block it. Inverted to
+          command_mentions: clear a command only when the target words are
+          absent. 7 new cases failed first; dropping the between-words group
+          fails 3. The resolve_review_thread finding did not reproduce: the
+          tool loads from the cloud github server
         outcome: ok

@@ -71,9 +71,14 @@ def _run(hook: str, stdin: str, *args: str, cwd: Path | None = None) -> subproce
         pytest.param("x=`echo hi`", id="in-backticks"),
         pytest.param("ls\necho hi", id="second-line"),
         pytest.param("echo", id="no-arguments"),
+        pytest.param('if [ -n "$X" ]; then echo hi; fi', id="after-keyword"),
+        pytest.param('timeout 60 echo "$X"', id="after-wrapper"),
+        # A mention the re-check cannot tell from a run keeps the gate acting.
+        pytest.param("git grep -n echo", id="mention-as-argument"),
+        pytest.param("ls ./echo", id="mention-in-path"),
     ],
 )
-def test_deny_hook_blocks_a_command_that_runs_its_runner(command: str) -> None:
+def test_deny_hook_blocks_a_command_that_mentions_its_runner(command: str) -> None:
     result = _run("deny-bare-runner.sh", _payload(command), _ECHO_HINT)
 
     assert result.returncode == 2
@@ -85,9 +90,8 @@ def test_deny_hook_blocks_a_command_that_runs_its_runner(command: str) -> None:
     [
         pytest.param('ls -d "${HOME}"', id="unparseable-expansion"),
         pytest.param('ls -d "$PWD"', id="pwd-expansion"),
-        pytest.param("git grep -n echo", id="runner-as-argument"),
         pytest.param("echoes hi", id="runner-as-prefix"),
-        pytest.param("ls ./echo", id="runner-in-path"),
+        pytest.param("printf 'my-echo'", id="runner-inside-a-word"),
     ],
 )
 def test_deny_hook_allows_a_command_that_does_not(command: str) -> None:
@@ -152,6 +156,9 @@ def repo_on_master(tmp_path: Path) -> Path:
     [
         pytest.param("gate-commit.sh", "git commit -m x", id="commit"),
         pytest.param("gate-push.sh", "git push -u origin x", id="push"),
+        pytest.param("gate-commit.sh", 'git -C "$PWD" commit -m x', id="commit-after-git-option"),
+        pytest.param("gate-push.sh", "git -c push.default=current push", id="push-after-git-option"),
+        pytest.param("gate-commit.sh", 'if true; then git commit -m "$X"; fi', id="commit-after-keyword"),
     ],
 )
 def test_gate_blocks_its_command_on_master(hook: str, command: str, repo_on_master: Path) -> None:
