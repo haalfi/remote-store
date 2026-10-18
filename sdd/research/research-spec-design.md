@@ -7,7 +7,9 @@ working session; Part B tests it against outside evidence; Part C records the
 verdicts, the reviews weighed and what is open. The proposal it leads to is
 [RFC-0022](../rfcs/rfc-0022-how-specs-are-designed.md), where the decisions
 live. § 6 is to become doctrine in `sdd/SPEC-DESIGN.md` (maintainer's choice,
-decision log below).
+decision log below). **Completion standard** (maintainer's choice): an
+evidence record adequate to decide RFC-0022, honestly graded, not an
+independently reproducible review; unverified figures stay marked.
 **Scope:** What makes a spec good, where one spec ends, which form and which
 formal layer fit which kind of truth, worked on one operation: a streaming
 read. Decision log: `sdd/decisions/6b9890d9-f718-508d-b861-aef8c0398c78.jsonl`.
@@ -22,11 +24,19 @@ failed. Markers: **[corroborated]** means a figure was checked against the
 primary source by an external review, second-hand and not by this repo;
 **[verify]** means no check yet. The source links were not opened from here.
 
-**The core claim.** Agents do not need more prose; they need tighter feedback
-loops, refereed by the spec. Natural-language text added to a formal spec did
-not improve verified-code success; tests used to clarify intent raised accuracy
-sharply; and agents game tests that contradict the spec, so a loop works only
-where the spec decides between a test and the code (§ 11).
+**The core claim, a bounded synthesis.** Agents do not need more prose; they
+need tighter feedback loops, refereed by the spec. It is a hypothesis drawn
+from three findings in different settings, not one established result (§ 11):
+
+| Finding | Setting | Compared | Outcome | Limit |
+| --- | --- | --- | --- | --- |
+| Vericoding | LLMs writing verified code from formal specs | Formal spec alone vs. with a natural-language description | No significant gain from the description **[corroborated]** | Function-level verified code, not engineering specs |
+| TiCoder | Code generation with intent clarified by tests | With vs. without clarifying tests | Pass@1 up roughly 22 to 54 points **[verify]** | Simulated users; function level |
+| ImpossibleBench | Agents given tests that contradict the spec | Cheating rate across benchmarks | 76% on Oneoff-SWEbench, 2.9% on Oneoff-LiveCodeBench **[corroborated]**; stricter prompts cut it substantially | Shows tests can be gamed, not that a spec is always right |
+
+"Refereed by the spec" means the spec is what a conflict is decided against
+after investigation, under `000-process.md` Rule 7; the spec itself can be
+wrong (§ 9).
 
 ---
 
@@ -168,13 +178,16 @@ time, Dafny for single calls first since its bridge exists, not all at once.
 
 ## 6. What makes a spec good
 
-**A spec is good when every clause can fail and every gap is declared.** Eight
-properties, each with a check:
+**A spec is good when its clauses are valid, consistent and checkable against
+a stated domain, and every gap is declared.** Being falsifiable is necessary,
+not sufficient: a testable clause can still be wrong, and a valid requirement
+that no finite test can witness is declared as an assumption rather than
+dropped. Eight properties, each with a check:
 
 | Property | Means | Checked by |
 | --- | --- | --- |
-| Well founded | Every clause has a traceable reason | Axioms apart from consequences; a countermodel per axiom |
-| Verifiable | Every clause can fail | The two tests of § 4 |
+| Well founded | Every clause has a traceable reason and an owner | Axioms apart from consequences; a countermodel per axiom |
+| Verifiable | Every clause has a defined witness of violation, or is declared an assumption | The two tests of § 4 |
 | Lasting | True without edits as the project moves | The six-month test; links point at the spec |
 | Correct | Says what the system must do, and it can | Proof or model check, through a bridge; contract tests |
 | Free of contradictions | No two clauses or neighbouring specs disagree | One home per fact; the model has an instance |
@@ -182,9 +195,17 @@ properties, each with a check:
 | Placed | Covers only its own layer | § 1's defect |
 | Comprehensible | Leads with its claim, in the form its content needs | Rule 7; § 4's diagram |
 
+An external review proposed five criteria; they map onto these: semantic
+validity to *correct*, consistency to *free of contradictions*, observability
+to *verifiable*, evidence coverage (a stated domain) to D7's "Tested against",
+traceability to *well founded*.
+
 ## 7. The streaming read, split
 
-**Split where the kind of truth changes.**
+**A candidate split: where the kind of truth changes.** It is a plausible
+design, not a shown optimum: the evidence (§ 11) does not establish cutting by
+property, and the alternative of one operation contract with linked lifecycle
+and consistency models is not yet compared (§ 15).
 
 | Spec | Subject | Kind | Authority |
 | --- | --- | --- | --- |
@@ -221,6 +242,14 @@ and Closed deliver no bytes; a session close faults its open streams and the
 owner still closes them; position never decreases. Not guaranteed: that a
 caller ever closes.
 
+**Open before it can inform implementation** (external review): who owns and
+releases a stream faulted by a session close; what a re-close does when the
+first close failed to release; whether bytes obtained before a fault may still
+be returned; which of a racing read and close wins, and whether that read may
+return partial data; whether an owner that cannot hand over can always close;
+whether a non-decreasing position defines correctness under retry, partial
+reads and range requests.
+
 **Decided in the session:** a second close is a no-op; a session close faults
 its open streams.
 
@@ -241,7 +270,7 @@ generates, and no bridge in industrial use is a proof.**
 
 Industry has converged on bridges that test agreement between model and code without proving it. **Cedar** (AWS) runs differential random testing: millions of generated inputs go to both the Rust production code and a Lean model, and any disagreement counts as a bug ([arXiv 2407.01688](https://arxiv.org/html/2407.01688v1)). Cedar does not ship a release unless its model, proofs and differential tests are all current. Its authors report **21 bugs** found by differential and property testing combined ([paper](https://assets.amazon.science/d3/86/99db1aa142ffb6981d86dc849e4c/how-we-built-cedar-a-verification-guided-approach.pdf)); a later poster reports **25** from differential random testing alone ([POPL'24 SRC poster](https://bhaktishh.github.io/papers/popl-24-src-poster.pdf)). The two counts use different boundaries **[corroborated]**. This is the same pattern as remote-store's Dafny oracle with twin parity. Dafny's Python backend is real but immature: the reference manual still calls it "still under development" ([DafnyRef](https://dafny.org/dafny/DafnyRef/DafnyRef)), generated code uses Dafny runtime types, not native ones ([arXiv 2501.06283](https://arxiv.org/pdf/2501.06283)), and its sets and maps run slower than native Python ([arXiv 2606.32007](https://arxiv.org/pdf/2606.32007)). AWS ships Python transpiled from Dafny in its Cryptographic Material Providers Library ([repo](https://github.com/aws/aws-cryptographic-material-providers-library)). For an oracle that runs only in tests these limits are acceptable; the consequences are to pin the Dafny version, regenerate in CI, and treat the adapter between runtime types and native types as unverified glue.
 
-TLA+ has two bridges, and the evidence ranks them. **Trace validation** replays logged runs through TLC. CCF's verification work found **six bugs, five safety and one liveness [corroborated]**, with logging taking about **one day** and a **400-line** trace spec **[verify]**. Adoption also drove **88 commits to the trace spec and 107 changes to the consensus spec [corroborated]**, and diagnosing mismatches was the dominant cost ([NSDI'25](https://www.usenix.org/system/files/nsdi25-howard.pdf)). MongoDB cancelled its 2020 trace checking of the server ("cost more effort than it was worth"; two engineers spent **10 weeks** without trace-checking one spec, effort largely specific to `RaftMongo.tla` **[corroborated]**), because of the gap between a highly abstract spec and multithreaded implementation state ([MongoDB blog](https://www.mongodb.com/company/blog/engineering/conformance-checking-at-mongodb-testing-our-code-matches-our-tla-specs); [VLDB 2020](https://www.vldb.org/pvldb/vol13/p1346-davis.pdf)). The same paper reports that **model-based test generation** reached **100% branch coverage [verify]** of a sequential algorithm, and MongoDB's 2025 transactions work used generation again ([VLDB 2025](https://www.vldb.org/pvldb/vol18/p5045-schultz.pdf)). The authors of the trace-validation method state that it "does not provide formal correctness guarantees" ([arXiv 2404.16075](https://arxiv.org/abs/2404.16075v2)). No Python tooling exists for either bridge: the tools are Java (Kuppe/Merz) and Rust (Quint/Apalache ITF consumers such as [tla-connect](https://docs.rs/tla-connect)). A Python ITF replayer would have to be built in-house, but ITF is plain JSON ([Apalache ADR-015](https://apalache-mc.org/docs/adr/015adr-trace.html)). For concurrent clients, OmniLink's black-box method is the closest fit: record `(op, args, result, t_start, t_end)` and check the record against a sequential model ([arXiv 2601.11836](https://arxiv.org/abs/2601.11836)), a single 2026 preprint.
+TLA+ has two bridges, and the evidence ranks them. **Trace validation** replays logged runs through TLC. CCF's verification work found **six bugs, five safety and one liveness [corroborated]**, with logging taking about **one day** and a **400-line** trace spec **[verify]**. Adoption also drove **88 commits to the trace spec and 107 changes to the consensus spec [corroborated]**, and diagnosing mismatches was the dominant cost ([NSDI'25](https://www.usenix.org/system/files/nsdi25-howard.pdf)). MongoDB cancelled its 2020 trace checking of the server ("cost more effort than it was worth"; two engineers spent **10 weeks** without trace-checking one spec, effort largely specific to `RaftMongo.tla` **[corroborated]**), because of the gap between a highly abstract spec and multithreaded implementation state ([MongoDB blog](https://www.mongodb.com/company/blog/engineering/conformance-checking-at-mongodb-testing-our-code-matches-our-tla-specs); [VLDB 2020](https://www.vldb.org/pvldb/vol13/p1346-davis.pdf)). The same paper reports that **model-based test generation** reached **100% branch coverage** of a sequential algorithm, against 21% for handwritten tests and 92% for AFL fuzzing **[corroborated]**; branch coverage is not behavioural correctness, and MongoDB's 2025 transactions work used generation again ([VLDB 2025](https://www.vldb.org/pvldb/vol18/p5045-schultz.pdf)). The authors of the trace-validation method state that it "does not provide formal correctness guarantees" ([arXiv 2404.16075](https://arxiv.org/abs/2404.16075v2)). No Python tooling exists for either bridge: the tools are Java (Kuppe/Merz) and Rust (Quint/Apalache ITF consumers such as [tla-connect](https://docs.rs/tla-connect)). A Python ITF replayer would have to be built in-house, but ITF is plain JSON ([Apalache ADR-015](https://apalache-mc.org/docs/adr/015adr-trace.html)). For concurrent clients, OmniLink's black-box method is the closest fit: record `(op, args, result, t_start, t_end)` and check the record against a sequential model ([arXiv 2601.11836](https://arxiv.org/abs/2601.11836)), a single 2026 preprint.
 
 **Liveness.** No finite trace can falsify a liveness property, so no bridge
 reaches it beyond bounded obligations. Proving liveness in TLA+ also needs
@@ -261,7 +290,7 @@ The Alloy and Lean store-tree axioms got the least attention. Their realistic br
 
 From it follows a ladder of what a clause can claim:
 
-1. **Unbridged model:** informs review; never overrides a tested behaviour.
+1. **Unbridged model:** informs review; a conflict with a test is a finding to investigate, not a win for either side.
 2. **Differential oracle:** governs single-call semantics on the generated input space.
 3. **Generated tests:** govern the generated execution space, not every behaviour.
 4. **Trace-validated:** governs that observed transitions are model-permitted.
@@ -270,6 +299,13 @@ From it follows a ladder of what a clause can claim:
 
 A clause's level changes when a bridge is built, so it is derived from the
 bridges and their tests, not written into the spec by hand.
+
+**The ladder grades verification confidence, not normative authority.** Which
+artifact states the contract, and how a conflict between contract, model, test
+and code is resolved, stays with `000-process.md` Rule 7: a test can encode a
+bug, a bridged model can rest on a mistaken contract, and a model can expose a
+contradiction before any bridge exists. A conflict triggers investigation, not
+automatic deference to either artifact.
 
 ## 10. Lifecycle as checked source: the module wins, the diagram is a checked view
 
@@ -294,7 +330,7 @@ On authority, no company publishes a general rule for resolving conflicts; autho
 
 For agents, the strongest datum is the vericoding benchmark: **12,504 formal specs**, with LLMs producing verified code for about **82% of the Dafny specs**, and **adding natural-language descriptions did not significantly improve results** ([arXiv 2509.22908](https://arxiv.org/pdf/2509.22908)) **[corroborated]**. Over one year of model progress, pure-Dafny success rose from 68% to 96% in the arXiv abstract and to 97% in an OpenReview version; quote the version of record. A single thesis reports that explicit pre/postconditions raise pass@k over natural-language descriptions ([ERAU](https://commons.erau.edu/edt/927/)), weak evidence. Spec-kit, Kiro and Tessl all separate the *what* from the *how* and move the *how* into a plan or design document ([Böckeler](https://www.martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html); [Thoughtworks Radar](https://www.thoughtworks.com/radar/techniques/spec-driven-development)). They relocate it rather than delete it, and step plans measurably help generation: self-planning gives up to **+25.4% relative pass@1 [verify]** ([arXiv 2303.06689](https://arxiv.org/pdf/2303.06689)). EARS, Kiro's syntax for acceptance criteria, has **no measured accuracy evidence** for agents ([Wikipedia](https://en.wikipedia.org/wiki/Easy_Approach_to_Requirements_Syntax)).
 
-Examples cut both ways. TiCoder's test-driven clarification raised pass@1 by roughly **22 to 54 points** under simulated users **[verify]** ([arXiv 2208.05950](https://arxiv.org/pdf/2208.05950)). Models also pattern-match examples ([arXiv 2411.06774](https://arxiv.org/html/2411.06774)), and they cheat on tests that contradict the spec: GPT-5 exploited contradictory tests in **76%** of Oneoff-SWEbench tasks but only **2.9%** of Oneoff-LiveCodeBench tasks **[corroborated]** ([ImpossibleBench, arXiv 2510.20270](https://arxiv.org/pdf/2510.20270)). That supports keeping the normative claim in one place and tracing tests to it, with agents pointed at those tests. On structure, adherence falls as the number of instructions grows: the best models reach about **68% at 500 instructions**, with a bias towards earlier instructions **[verify]** ([IFScale, arXiv 2507.11538](https://arxiv.org/html/2507.11538v1)), and accuracy drops for content placed mid-context ([Lost in the Middle, arXiv 2307.03172](https://arxiv.org/abs/2307.03172)). Neither benchmark measures code. Practitioners name spec verbosity and review burden as the main failure of spec-driven development tooling ([Thoughtworks Radar](https://www.thoughtworks.com/radar/techniques/spec-driven-development)).
+Examples cut both ways. TiCoder's test-driven clarification raised pass@1 by roughly **22 to 54 points** under simulated users **[verify]** ([arXiv 2208.05950](https://arxiv.org/pdf/2208.05950)). Models also pattern-match examples ([arXiv 2411.06774](https://arxiv.org/html/2411.06774)), and they cheat on tests that contradict the spec: GPT-5 exploited contradictory tests in **76%** of Oneoff-SWEbench tasks but only **2.9%** of Oneoff-LiveCodeBench tasks **[corroborated]** ([ImpossibleBench, arXiv 2510.20270](https://arxiv.org/pdf/2510.20270)), and stricter prompts cut the rate substantially. That supports keeping the normative claim in one place and tracing tests to it, with agents pointed at those tests. On structure, adherence falls as the number of instructions grows: the best models reach about **68% at 500 instructions**, with a bias towards earlier instructions **[verify]** ([IFScale, arXiv 2507.11538](https://arxiv.org/html/2507.11538v1)), and accuracy drops for content placed mid-context ([Lost in the Middle, arXiv 2307.03172](https://arxiv.org/abs/2307.03172)). Neither benchmark measures code. Practitioners name spec verbosity and review burden as the main failure of spec-driven development tooling ([Thoughtworks Radar](https://www.thoughtworks.com/radar/techniques/spec-driven-development)).
 
 ---
 
@@ -311,22 +347,38 @@ that authority depends on a bridge, not on a layer.**
 | D1 contract only, never mechanism | Changes how | Moderate for the what/how split (vericoding null result, framework consensus); weak for contracts beating prose (one thesis) | "A spec states only the observable contract. Mechanism is relocated to ADRs, design notes or the per-task plan, not deleted. Mechanism a caller can observe (side-effect order, visible retries) is contract and stays." |
 | D3 split by kind of truth | Changes how | Moderate, inferred from spec inventories; no rule stated anywhere and no contradiction-rate data | "Split by kind of truth first, then by interface contract (API to backend) within a kind. A property that spans kinds names one owning spec and links from the others." |
 | D4 closed-world Mermaid, examples in tests, no Gherkin | Holds; source question resolved | Strong that the executable model holds authority; weak for drift-check practice (none found); weak-moderate against Gherkin | "The TLA+ module is the source. The Mermaid diagram is a hand-written projection, checked for set equality of edges (labels = action names) against the phase projection of a small TLC config. Mermaid is limited to a declared subset parsed in-repo. Cross-object constraints stay as invariants." State the divergence from spec-kit's Given/When/Then explicitly. |
-| D5 the proving layer governs, only through a bridge | Changes how | Moderate-strong (Cedar, CCF, MongoDB, Elastic/Datadog disclaimers, Kuppe/Merz) | "A formal layer governs a clause only once a bridge binds it to tests, and only as far as § 9's ladder reaches. Until then its result is informational about the model. Liveness governs only as a bounded obligation, and fairness conditions are assumptions. An unbridged model never overrides a tested behaviour." Adopt the tools along § 5's graduation path. |
+| D5 the proving layer governs, only through a bridge | Changes how | Moderate-strong (Cedar, CCF, MongoDB, Elastic/Datadog disclaimers, Kuppe/Merz) | "A formal layer governs a clause only once a bridge binds it to tests, and only as far as § 9's ladder reaches. Until then its result is informational about the model. Liveness governs only as a bounded obligation, and fairness conditions are assumptions. The ladder grades verification confidence, not authority: a conflict between contract, model, test and code is investigated and resolved under Rule 7." Adopt the tools along § 5's graduation path. |
 | D7 one skeleton per spec | Holds, with one condition | Moderate (IFScale and lost-in-the-middle are not code-specific; TiCoder and ImpossibleBench are strong but idealised) | Condition only: "Tested against" must name runnable tests that the agent is directed to read or run, derived from the tests' spec marks rather than listed in the spec. |
 
 ## 13. Evidence quality
 
 | Class | Findings |
 | --- | --- |
-| Corroborated against a primary source (second-hand) | CCF bug and commit counts; MongoDB's ten-week outcome; vericoding headline results; AWS 2015 line counts; Cedar's bug counts and method; ImpossibleBench's split |
-| Primary source, figure unchecked | CCF's one-day and 400-line costs; MongoDB's 100% branch coverage; TiCoder, self-planning and IFScale figures; ShardStore's 1% |
-| Inferred, not observed | Industry cuts specs by property; diagram-to-model drift check; the bridge ladder itself; the graduation path |
-| Single source or preprint | Black-box history checking (OmniLink); Dafny-to-Python performance |
+| Corroborated against a primary source (second-hand) | CCF bug and commit counts; MongoDB's ten-week outcome and 100% branch coverage; vericoding headline results; AWS 2015 line counts; Cedar's bug counts and method; ImpossibleBench's split |
+| Primary source, figure unchecked | CCF's one-day and 400-line costs; TiCoder, self-planning and IFScale figures; ShardStore's 1% |
+| Inferred, not observed | Industry cuts specs by property; diagram-to-model drift check; the bridge ladder itself; the graduation path; the core claim as a synthesis |
+| Single source or preprint | Black-box history checking (OmniLink); Dafny-to-Python performance; the agent benchmarks (vericoding, ImpossibleBench, IFScale) are arXiv preprints and may change on publication |
 
 ## 14. External reviews considered
 
-**Three external AI reviews were weighed on 2026-10-18; each finding was
-adopted, deferred to the RFC or guide, or rejected with a reason.**
+**Five external AI reviews were weighed on 2026-10-18, in three rounds; each
+finding was adopted, deferred to the RFC or guide, or rejected with a reason.**
+Round one, Perplexity and Gemini on the outside evidence; round two, Gemini on
+the session analysis; round three, ChatGPT and Gemini on this merged record in
+PR #1160's review.
+
+**Adopted in round three:** the core claim recast as a bounded synthesis with
+its three findings' settings and limits (ChatGPT); falsifiability as necessary
+but not sufficient, with untestable requirements declared as assumptions
+(ChatGPT, § 6); the ladder as verification confidence, not normative
+authority, with conflicts resolved under Rule 7 (ChatGPT, § 9); § 7's split
+marked a candidate (ChatGPT); the lifecycle's open questions (ChatGPT, § 8);
+MongoDB's coverage figure corroborated by ChatGPT's own check (§ 9); preprints
+marked as such (Gemini, § 13). **Not adopted in round three:** the dependence
+on this repo's artifacts (Gemini), since this is the repo's own record and
+those links are its purpose; the missing Python tooling as a new finding
+(Gemini), already stated in § 15 and RFC-0022's Impact. Source versions could
+not be pinned, since no page could be fetched.
 
 **Adopted:** the figure checks and precision fixes (Perplexity); the bridge
 taxonomy (Perplexity), reordered because its "trace validation strong for
@@ -361,7 +413,7 @@ session.
 
 ## 15. Open questions and gaps
 
-**Five questions stay open, and the decision-relevant figures left to check are
+**Six questions stay open, and the decision-relevant figures left to check are
 few.** The first is how an unbridged TLA+ clause interacts with
 `000-process.md` Rule 7: CCF's 107 changes to its consensus spec suggest the
 spec is wrong about as often as the code once a bridge exists. The second is
@@ -373,15 +425,18 @@ checking impractical. The fourth is the Gherkin question for agents: no
 evidence shows that Given/When/Then or EARS helps or hurts accuracy, so D4
 stands on maintenance and closed-world grounds. The fifth is whether any of
 this transfers to multi-file agent work, since all spec-form evidence is at
-function or class level.
+function or class level. The sixth is whether § 7's split beats one operation
+contract with linked lifecycle and consistency models, judged by duplication,
+cross-reference burden, change propagation and test ownership; no comparison
+has been made.
 
 The gaps: no comparison of contradiction rates between cutting by property and
 by component; no experience report of a diagram-to-model drift check; the TLC
 `-dump` flags (`actionlabels`) unconfirmed; Woodcock and Larsen 2026 not read
 in detail; the current Python feature table for Dafny not retrieved; Alloy
 barely covered; Python linearizability checkers not researched. The
-decision-relevant **[verify]** figures left are CCF's one-day and 400-line costs
-and MongoDB's 100% branch coverage.
+decision-relevant **[verify]** figures left are CCF's one-day and 400-line
+costs.
 
 ## Sources
 

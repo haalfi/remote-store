@@ -18,9 +18,10 @@ in.
 states, in the form that kind needs, governed by the formal layer that can
 prove it as far as a bridge binds that layer to the code.** Everything else,
 how an implementation reaches the outcome, which work is still open, and what
-another layer decides, lives outside the spec. The research's core finding
-sets the direction: agents do not need more prose; they need tighter feedback
-loops, refereed by the spec.
+another layer decides, lives outside the spec. The research's core synthesis,
+a bounded hypothesis rather than an established result, sets the direction:
+agents do not need more prose; they need tighter feedback loops, refereed by
+the spec.
 
 The repo has the parts: formal layers for structure, functions and protocols
 ([`formal/README.md` § Layers at a
@@ -113,6 +114,10 @@ Within a kind, the second cut is an interface contract between layers (the
 store's API against the backend's), so each side can be checked on its own. A
 property that spans kinds names one owning spec, and the others link to it.
 
+This partition is a candidate, not a shown optimum: the evidence does not
+establish cutting by property, and it is not yet compared with one operation
+contract plus linked lifecycle and consistency models (Open Question 8).
+
 An existing spec that mixes kinds is split along these lines. For spec 003
 that is BK-456's work, which this changes from a split by layer to a split by
 kind where the two differ.
@@ -166,8 +171,11 @@ normative in full: every clause without one would lose its normative home
 
 **A model governs code only through a bridge, and only for the executions the
 bridge observes or generates.** No bridge in industrial use is a proof; each
-establishes agreement on what it exercises. An unbridged model informs review
-and never overrides a tested behaviour. The bridges, in order of adoption:
+establishes agreement on what it exercises. An unbridged model informs review.
+The bridge level grades verification confidence, not normative authority: a
+conflict between contract, model, test and code is a finding to investigate
+and resolve under Rule 7, since a test can encode a bug and a bridged model can
+rest on a mistaken contract. The bridges, in order of adoption:
 
 | Layer | Bridge to code | Governs |
 | --- | --- | --- |
@@ -274,14 +282,16 @@ and §§ 9 to 11:
 5. **Migration order:** BK-456 first, since spec 003 is where the
    contradictions were measured, or the new lifetimes first (BK-454, BK-455),
    since they are written fresh.
-6. **An unbridged clause against `000-process.md` Rule 7:** whether an
-   unbridged TLA+ clause may ever outrank a test that asserts the opposite.
-   D5 says it may not; Rule 7's defeaters need that stated once the ADR
-   amends them.
+6. **Conflicts under `000-process.md` Rule 7:** how the ADR amends Rule 7's
+   defeaters so that a clause's bridge level informs, but does not decide, a
+   conflict between contract, model, test and code.
 7. **A bridge acceptance checklist** for the guide (observable interface,
    encoding of runtime values into model values, generation or capture method,
    pass criterion, known blind spots, owning CI job), proposed in review
    ([research § 14](../research/research-spec-design.md#14-external-reviews-considered)).
+8. **The partition against an alternative:** whether D3's split beats one
+   operation contract with linked lifecycle and consistency models, judged by
+   duplication, cross-reference burden, change propagation and test ownership.
 
 ## References
 
