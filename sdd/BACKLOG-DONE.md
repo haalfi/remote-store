@@ -319,6 +319,15 @@ if evidence changes; these are retired.
   [dossier](backlog/id-150-verify-tla-revisit.md). Trace:
   [id-150](traces/id-150-verify-tla-revisit.yml).
 
+- [x] **BK-458 — CI's actionlint runs with `-shellcheck=`, so 31 shellcheck findings in three workflows go unreported**
+  spec: — · effort: S · audience: infra.ci
+  actionlint 1.7.7 with shellcheck 0.11.0 reported 31 findings in `ci.yml`,
+  `drift-guard.yml` and `mutation.yml` (SC2086 18, SC2034 5, SC2015 5, SC2129 3;
+  `actionlint -oneline`); the same patterns sat in the composite action, which
+  actionlint does not lint. Quoted the expansions, grouped the `>> $GITHUB_*`
+  redirects, replaced `cmd && break || sleep` with `if cmd; then break; fi`, and
+  dropped the opt-out. Trace: [bk-458](traces/bk-458-workflow-shellcheck.yml).
+
 - [x] **BK-449 — No interaction protocol with states joins `Store`, kernel, driver and `Session`**
   spec: BE-033, BE-020, BE-022, SIO-010, ASYNC-006 · effort: L · audience: library.maintainer, user.api
   Spec 003 BE-033 states the parties' states, each call per state, every exit's

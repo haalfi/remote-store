@@ -214,7 +214,8 @@ jobs:
           # the other is invisible to a per-extra check, and the body then calls
           # it clean in a lane nobody ran.
           if [ "$lane" = "all" ]; then lanes="newest,floor"; else lanes="$lane"; fi
-          echo "lanes=${lanes}" >> "$GITHUB_OUTPUT"
+          {
+          echo "lanes=${lanes}"
           # The extras whose smoke needs docker services, derived from
           # `drift_smoke_map.backends_needed` rather than restated. Both lanes
           # gate their start-backends step on this, and the cost of a third
@@ -231,8 +232,9 @@ jobs:
           from drift_check import list_extras
           from drift_smoke_map import backends_needed
           print(json.dumps([e for e in list_extras() if backends_needed(e)]))
-          ')" >> "$GITHUB_OUTPUT"
-          echo "min_python=$(python scripts/drift_check.py min-python)" >> "$GITHUB_OUTPUT"
+          ')"
+          echo "min_python=$(python scripts/drift_check.py min-python)"
+          } >> "$GITHUB_OUTPUT"
 
       - id: set-extras
         env:
@@ -297,8 +299,9 @@ jobs:
           . infra/.env
           set +a
           docker compose -f infra/docker-compose.yml up -d legacy-sftp
-          for i in $(seq 1 30); do
-            nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}" && break || sleep 1
+          for _ in $(seq 1 30); do
+            if nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}"; then break; fi
+            sleep 1
           done
           # Match the start-backends action's validation shape: fail loudly
           # if the port never came up, rather than letting the smoke fail
@@ -429,8 +432,9 @@ jobs:
           . infra/.env
           set +a
           docker compose -f infra/docker-compose.yml up -d legacy-sftp
-          for i in $(seq 1 30); do
-            nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}" && break || sleep 1
+          for _ in $(seq 1 30); do
+            if nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}"; then break; fi
+            sleep 1
           done
           nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}" || { echo "::error::legacy-sftp failed to start on port ${LEGACY_SFTP_HOST_PORT}"; exit 1; }
 
