@@ -3,7 +3,8 @@
 ## Status
 
 Draft, 2026-10-18. Tracked as **BK-457**. Graduates to one ADR (D1, D3, D5,
-D6, and the Rule 3 and Rule 7 amendment) and one authoring guide (D2, D4, D7,
+D6, the Rule 3 and Rule 7 amendment, and `formal/README.md` rule 3's gating
+bar per Open Question 3) and one authoring guide (D2, D4, D7,
 D8), the new authority doc `sdd/SPEC-DESIGN.md` (Open Question 1, decided).
 The analysis behind it, a maintainer session that walked one operation, a
 streaming read, from key to bytes, tested against outside evidence, is
@@ -199,7 +200,7 @@ bridge exists.
 
 A clause governed by a model whose check does not gate is not governed. TLA+
 authority therefore needs `verify-tla` to gate for the clauses it governs,
-which is ID-150's open decision.
+which Open Question 3 settles: per module, from the PR that adds its bridge.
 
 ### D6. Profiles and environment are declared, not implied
 
@@ -261,7 +262,8 @@ and §§ 9 to 11:
 - **Process:** `000-process.md` Rule 3 and Rule 7 change through the ADR;
   § Spec format is replaced by the guide `sdd/SPEC-DESIGN.md`, which it then
   links (D7, Open Question 1); `formal/README.md` § Layers at a glance gains the
-  kind each layer governs.
+  kind each layer governs, and its § Authoring rules rule 3 trades the
+  catch-first bar for the bridge (Open Question 3).
 - **Testing:** each lifecycle diagram needs the edge-equality check against
   its TLA+ model, and generated lifecycle tests need a Python ITF replayer,
   which no tool provides today; each Assumptions line needs a conformance test
@@ -278,8 +280,14 @@ and §§ 9 to 11:
    becomes its doctrine.
 2. **Diagram or module as source** for a lifetime: decided 2026-10-18 by the
    research, the TLA+ module, with the diagram a checked view (D4).
-3. **`verify-tla` gating** (ID-150): D5 needs it to gate for every clause it
-   governs. If ID-150 decides against, lifetime clauses stay prose-governed.
+3. **`verify-tla` gating:** decided 2026-10-18 by ID-150. Gating follows the
+   bridge, per module: a TLA+ module gates from the PR that adds its bridge,
+   and an unbridged one stays informational, since gating it would prove only
+   that the model agrees with itself. `Observer.tla` has no bridge, so it
+   stays informational under the successor revisit, ID-270. Until a bridged
+   module lands, lifetime clauses stay prose-governed. The ADR replaces
+   [`formal/README.md` § Authoring rules](../formal/README.md#authoring-rules)
+   rule 3's catch-first bar with this rule.
 4. **Type strictness on tolerant calls per profile** (BK-457's dossier): D6
    makes it expressible; whether `delete(folder, missing_ok=True)` stays strict
    on flat backends against its wire cost is still open.

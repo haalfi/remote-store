@@ -770,8 +770,8 @@ jobs:
 
   # INFORMATIONAL: TLA+ model checks for the live informal layer under
   # sdd/formal/tla/. Not in the gate below by design — see
-  # sdd/formal/README.md § Authoring rules (3). The first revisit ticket
-  # lives in sdd/BACKLOG.md (ID-150, due 2026-10-19). The historical
+  # sdd/formal/README.md § Authoring rules (3). The open revisit ticket
+  # lives in sdd/BACKLOG.md (ID-270, due 2027-04-19). The historical
   # PoC modules under sdd/research/tla-poc/ are frozen and not run here.
   verify-tla:
     needs: [setup]

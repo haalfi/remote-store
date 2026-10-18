@@ -300,6 +300,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
+  spec: — · effort: S · audience: library.maintainer, infra.ci
+  Re-deferred 2026-10-18: no catch, and none is reachable, since TLC checks
+  `Observer.tla` against itself and no bridge ties it to `ext/observe.py`.
+  Gating follows the bridge (RFC-0022 Open Question 3); rule 3's cadence
+  trades its amendment count for the first bridge. Successor: **ID-270**. Detail:
+  [dossier](backlog/id-150-verify-tla-revisit.md). Trace:
+  [id-150](traces/id-150-verify-tla-revisit.yml).
+
 - [x] **BK-458 — CI's actionlint runs with `-shellcheck=`, so 31 shellcheck findings in the workflows and `start-backends` go unreported**
   spec: — · effort: S · audience: infra.ci
   actionlint 1.7.7 with shellcheck 0.11.0 reported 31 findings in `ci.yml`,
