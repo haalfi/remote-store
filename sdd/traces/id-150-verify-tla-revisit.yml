@@ -133,3 +133,60 @@ phases:
           broad count did. Replaced by the calendar plus the first bridge;
           my own miss, not the rule's
         outcome: ok
+  - id: fix
+    name: Address the PR review
+    steps:
+      - file: "(PR #1161 issue comment 6250731957)"
+        section: "/rvw-pr findings 1-5"
+        read_type: verify
+        extract: >-
+          Five findings (four Consistency, one Ripple), posted as one issue
+          comment because the reviewing session lacked the review-write tools.
+          All five held against the source and were fixed in a719703. The
+          review: block below counts only inline review threads, so it omits
+          these five; its figures are left as derived
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1161 --trace-block-only` at head ab2abef.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1161 --trace-block-only"
+  pr: 1161
+  review_rounds: 4
+  submissions: 2
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.02
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+  by_file:
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlog/id-150-verify-tla-revisit.md"
+    - "sdd/decisions/95e1d7e4-542e-51e8-a54f-17776f29bc4b.jsonl"
+    - "sdd/formal/README.md"
+    - "sdd/formal/tla/Observer.tla"
+    - "sdd/research/research-id-147-obs003-decomposition.md"
+    - "sdd/rfcs/rfc-0019-two-speed-test-gate.md"
+    - "sdd/rfcs/rfc-0022-how-specs-are-designed.md"
+    - "sdd/traces/id-150-verify-tla-revisit.yml"
+  review_driven_commits:
+    - sha: "2fc42b8"
+      subject: "ID-150: Drop backlogid.json from the trace's expected ripples"
+    - sha: "2d4e98b"
+      subject: "ID-150: RFC-0019 open question 6 names ID-270 as the revisit carrying the job set"
+    - sha: "a719703"
+      subject: "ID-150: Address the PR #1161 review (comment 6250731957)"
+    - sha: "ab2abef"
+      subject: "ID-150: decision log"
+  ci: {verdict: PENDING, failed: 0, pending: 1}
