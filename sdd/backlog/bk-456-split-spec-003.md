@@ -1,4 +1,4 @@
-# BK-456 — Spec 003 is too long to keep free of contradictions, so it is split by layer
+# BK-456 — Spec 003 is too long to keep free of contradictions, so it is split
 <!-- doc: repo-only -->
 
 The index entry holds the current diagnosis; this file is evidence and
@@ -11,7 +11,8 @@ recorded in `sdd/decisions/062e5181-cc50-5b17-963f-e9da78bad8ee.jsonl` ("When
 should spec 003 be split?": "Separate PR after BK-449"; "Which split shape
 should the work follow?": "By layer, 4 files").
 
-**Section sizes.** Not copied here, since every edit to the spec moves them:
+**Section sizes.** Not kept current here, since every edit to the spec moves
+them (the dated figures below are a measurement, not a reference):
 re-run `rg -n '^##+ ' sdd/specs/003-backend-adapter-contract.md` before
 planning and take each section's size as the gap to the next heading. At
 PR #1159 the four largest were BE-021 Error Mapping, BE-029 Root Path, BE-032
@@ -27,19 +28,22 @@ spec: specs, RFCs, ADRs, the custom-backend guide, `scripts/gen_graph.py` and
 "003-backend-adapter-contract.md#"` narrows them to anchored links. Run both
 before planning: the split must move every anchor a section takes with it.
 
-**Order.** BK-457's ADR first (the maintainer's choice, same decision log:
-"ADR first, then BK-456"), then this split, then a prune of each new file
-against that ADR.
+**Order.** After the status-out step below (which needs no ADR), BK-457's ADR
+first (the maintainer's choice, same decision log: "ADR first, then BK-456"),
+then this split, then a prune of each new file against that ADR.
 
-**Spec 003 measured against RFC-0022, 2026-10-18** (PR #1160). The four
-largest sections held 1,417 of the file's 2,197 lines (heading-to-heading
-gaps, Python regex `^#{2,3} `, the last section closed at `wc -l`). Backlog IDs occur 84 times, 38 distinct
-(`\b(?:BK|BUG|ID)-\d+`); "not yet" occurs 10 times. An agent's line-range
-classification put roughly 380 lines of BE-021 and BE-029 in history,
-measurement and coverage narrative ("Known divergences … what ships today",
-test tallies, "this clause used to …"), and about 13% of the file in
-prescribed mechanism (named helpers, call order, probe sequences). The
-contradictions found are BUG-337.
+**Spec 003 measured against RFC-0022, 2026-10-18** (PR #1160, at master
+`32a5653`). The four largest sections held 1,417 of the file's 2,197 lines
+(heading-to-heading gaps, Python regex `^#{2,3} `, the last section closed at
+`wc -l`). Backlog IDs occur 84 times, 38 distinct (`\b(?:BK|BUG|ID)-\d+`);
+"not yet" occurs 10 times case-sensitive, 11 ignoring case. An agent's
+line-range classification, not re-derivable by a command, put these ranges in
+history, measurement and coverage narrative ("Known divergences … what ships
+today", test tallies, "this clause used to …"): BE-021 lines 941 to 1037 and
+1061 to 1216, BE-029 lines 139 to 157, 193 to 217, 295 to 339 and 386 to 426.
+It put these in prescribed mechanism (named helpers, call order, probe
+sequences): lines 219 to 232, 289 to 293, 489 to 513, 670, 789 to 835, 1262 to
+1270, 1613 to 1641 and 1869 to 1951. The contradictions found are BUG-337.
 
 **Prescription** (advisory):
 

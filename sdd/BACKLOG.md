@@ -826,11 +826,11 @@ ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
 - [ ] **BUG-337 — Spec 003 contradicts itself on a move onto an existing file and on the write precondition order**
-  spec: BE-008, BE-010, BE-018, BE-021 · effort: S · audience: library.maintainer
-  BE-021's table maps a `move`/`copy` destination that is a file to `InvalidPath`; BE-018,
-  BE-032 A.5 and `BackendContract.dfy`'s `Move` give `AlreadyExists`. BE-008's numbered
-  order omits the closed guard and the WR-010 gate its own Formal coverage ranks first, yet
-  says no later check may mask an earlier one; BE-010 restates it without the root step.
+  spec: BE-008, BE-010, BE-018, BE-021, BE-032 · effort: S · audience: library.maintainer
+  BE-021 maps a `move`/`copy` destination that is a file to `InvalidPath`; BE-018, BE-032
+  A.5 and the Dafny `Move` give `AlreadyExists`. BE-008's order omits the closed guard and
+  the WR-010 gate its Formal coverage ranks before path validity; BE-010 drops its root
+  step; BE-018's destination-directory rule lacks BE-021's hierarchical-only binding.
   Open decision: none. Detail: [dossier](backlog/bug-337-spec-003-contradictions.md)
 
 - [~] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
@@ -841,13 +841,13 @@ CHANGELOG the release body is built from — say what is actually true.
   one ADR and one authoring guide. BK-456 follows. Open decision: RFC-0022's open questions.
   Detail: [dossier](backlog/bk-457-declarative-spec-adr.md)
 
-- [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split by layer**
+- [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
   Most of the spec sits in BE-021, BE-029, BE-032 and BE-033 (sizes: dossier); PR #1159's
   rounds kept finding one section contradicting another, and project status and history
-  sit inside its normative sections. Status out first, then a split into four files (IDs
-  keep their BE- prefix), each pruned against BK-457's ADR. After BK-449 and BK-457. Open
-  decision: the new numbers; by layer as chosen, or by kind (RFC-0022 D3).
+  sit inside its normative sections. Status out first (needs no ADR); after BK-457, a split
+  (IDs keep their BE- prefix), each file pruned against its ADR. Open decision: the new
+  numbers; by layer into four files as chosen, or by kind (RFC-0022 D3).
   Detail: [dossier](backlog/bk-456-split-spec-003.md)
 
 - [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**

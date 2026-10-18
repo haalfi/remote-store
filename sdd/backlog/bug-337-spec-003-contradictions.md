@@ -16,9 +16,10 @@ the fifth was not one (below).
    `move`/`copy` dst) on a path that is a file | `InvalidPath`". Line 669
    (BE-018): "`AlreadyExists` if `dst` names an existing file, `overwrite=False`".
    Line 1817 (BE-032 A.5): an `Item` under write-file is "replaced, or
-   `AlreadyExists` without `overwrite`". `sdd/formal/BackendContract.dfy` line
-   1154 (`@spec BE-018`): `IsFile(old(fs), dst) && !overwrite && src != dst ==>
-   r == Err(AlreadyExists(dst, name))`. The verified model and two sections agree;
+   `AlreadyExists` without `overwrite`". `sdd/formal/BackendContract.dfy` lines
+   1154 to 1156 (`@spec BE-018`): `… && IsFile(old(fs), dst) && !overwrite &&
+   src != dst ==> r == Err(AlreadyExists(dst, name))`, the elided conjuncts
+   being liveness, no root at either end and a file source. The verified model and two sections agree;
    BE-021's row is the odd one out.
 2. **BE-008's order is incomplete.** Lines 445 to 452 number the order (0) root,
    (1) path validity, (2) overwrite conflict, (3) I/O, and add "No later check

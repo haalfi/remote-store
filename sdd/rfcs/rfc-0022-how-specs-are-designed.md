@@ -122,8 +122,8 @@ establish cutting by property, and it is not yet compared with one operation
 contract plus linked lifecycle and consistency models (Open Question 8).
 
 An existing spec that mixes kinds is split along these lines. For spec 003
-that is BK-456's work, which this changes from a split by layer to a split by
-kind where the two differ.
+that is BK-456's work, which this proposes changing from a split by layer to a
+split by kind where the two differ (BK-456's open decision).
 
 ### D4. Each kind takes the form it needs
 
@@ -266,7 +266,7 @@ and §§ 9 to 11:
   its TLA+ model, and generated lifecycle tests need a Python ITF replayer,
   which no tool provides today; each Assumptions line needs a conformance test
   that cites it.
-- **Follow-up work:** BK-456 splits spec 003 by kind and prunes it against D1.
+- **Follow-up work:** BK-456 splits spec 003 and prunes it against D1.
   BK-454 and BK-455 (the read handle, the `Session` state set) are the first
   lifetimes to take D4's form. BK-435 and BK-436 tie spec 051 to operations
   and backends through D3's single-call kind and D6's assumptions.
