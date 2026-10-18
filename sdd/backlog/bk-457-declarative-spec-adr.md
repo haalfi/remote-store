@@ -80,6 +80,16 @@ analysis) and an RFC (the decisions) that graduates to one ADR and one guide
 (decision log
 `sdd/decisions/6b9890d9-f718-508d-b861-aef8c0398c78.jsonl`).
 
+**Spec 003 measured against RFC-0022, 2026-10-18.** The RFC's decisions
+applied to the spec the item started from: D7 not met (no scope, terms,
+assumptions or "tested against"; the four largest sections hold 1,417 of
+2,197 lines); D8 not met (84 backlog-ID occurrences, 10 "not yet"); D3 mixed
+(every kind but liveness, and store, kernel, driver and tooling rules in one
+file); D1 partly met (explicit error precedence in places, prescribed
+mechanism in others); D5 partly met (Dafny cited throughout, no TLA+, rules
+marked unchecked). Figures and their derivations: BK-456's dossier. The
+contradictions found: BUG-337.
+
 **Prescription** (advisory):
 
 - [RFC-0022](../rfcs/rfc-0022-how-specs-are-designed.md) carries the proposal;

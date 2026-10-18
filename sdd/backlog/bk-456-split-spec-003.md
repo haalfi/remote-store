@@ -31,7 +31,27 @@ before planning: the split must move every anchor a section takes with it.
 "ADR first, then BK-456"), then this split, then a prune of each new file
 against that ADR.
 
+**Spec 003 measured against RFC-0022, 2026-10-18** (PR #1160). The four
+largest sections held 1,417 of the file's 2,197 lines (heading-to-heading
+gaps, Python regex `^#{2,3} `, the last section closed at `wc -l`). Backlog IDs occur 84 times, 38 distinct
+(`\b(?:BK|BUG|ID)-\d+`); "not yet" occurs 10 times. An agent's line-range
+classification put roughly 380 lines of BE-021 and BE-029 in history,
+measurement and coverage narrative ("Known divergences … what ships today",
+test tallies, "this clause used to …"), and about 13% of the file in
+prescribed mechanism (named helpers, call order, probe sequences). The
+contradictions found are BUG-337.
+
 **Prescription** (advisory):
+
+- **Status out first, before the ADR.** Moving project status, history and
+  measurement out of the spec into the owning dossiers and traces needs no
+  new rule (`CONTENT-RULES.md` Rules 1 and 4 already ask it), shrinks what
+  the split moves, and keeps the split PR a pure move. One PR, no clause
+  reworded; what leaves names its new home.
+- **Split by layer or by kind.** RFC-0022 D3 proposes splitting by kind of
+  truth, with interface contracts as the second cut; the four-file layer
+  split below is the maintainer's earlier choice. Decide which before the
+  split PR.
 
 - Move only in the split PR: no clause is reworded there, so its review is a
   check that text moved whole (a per-section diff of old against new is the

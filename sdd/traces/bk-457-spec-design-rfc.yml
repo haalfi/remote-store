@@ -12,6 +12,8 @@ audience:
   - library.maintainer
 decisions:
   - sdd/decisions/6b9890d9-f718-508d-b861-aef8c0398c78.jsonl
+discovery_followups:
+  - BUG-337
 expected_ripples:
   - sdd/backlog/bk-457-declarative-spec-adr.md
 orient:
