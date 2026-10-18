@@ -170,3 +170,14 @@ phases:
           (open). ToolSearch for unlisted merge_pull_request and push_files
           returned no match, so ToolSearch widens nothing. No Edit, Write or Agent
         outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "(run) /rvw-pr 1162 in a fresh cloud session on this branch"
+        read_type: verify
+        extract: >-
+          Sent as the session's first prompt, the fork had Read, Grep, Glob,
+          Bash and no ToolSearch, and the guard returned 2 findings unposted.
+          Re-invoked in the same session after ToolSearch had loaded a github
+          schema, it posted review 5563791671 (comments 2 -> 3, ci.yml:175).
+          So a fork started before the github MCP server connects gets no MCP
+          tools; recorded in the guard
+        outcome: ok

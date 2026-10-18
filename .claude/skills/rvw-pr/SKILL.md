@@ -144,7 +144,9 @@ and the one instrument that count is taken with.
 your tools and `ToolSearch` cannot load it, do not post another way (not `gh`,
 not a top-level comment): return the findings as analyze-only mode does, under
 the header `## PR #N Review — X findings returned (not posted: no posting tool)`,
-and name the missing tool. The caller posts them or re-runs where posting works.
+and name the missing tool. In the cloud, the pass started before GitHub MCP
+connected (`/rvw-pr` as a session's first prompt): re-run it later, or the
+caller posts the findings.
 
 **Never** use APPROVE or REQUEST_CHANGES (owner token can't APPROVE).
 

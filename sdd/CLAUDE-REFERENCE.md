@@ -471,11 +471,10 @@ When reading or writing PR data — in the main session **or** inside a forked P
 skill (`/rvw-pr`, `/fix-pr`) — split by direction and tool availability. The
 fork-vs-main distinction does **not** change the read tool; the axes that do
 are whether `gh` is on `PATH` and whether it reaches GraphQL. A claude.ai/code
-session has `gh` with REST only: every `gh pr` subcommand and `gh api graphql`
-fail with HTTP 403, so content reads there use `gh api` (BK-459, measured). The
-MCP server's name differs too, `MCP_DOCKER` locally and `github` in the cloud,
-where its tools are deferred behind `ToolSearch`; the `reviewer` agent lists
-both prefixes. (`/pr` is out of scope here: it gathers
+session's `gh` has REST only (`gh pr` and `gh api graphql` get HTTP 403), so
+reads use `gh api`; its MCP server is `github`, not the local `MCP_DOCKER`, with
+tools deferred behind `ToolSearch`, so `reviewer` lists both (BK-459).
+(`/pr` is out of scope here: it gathers
 context from local git, not the PR API, and its only GitHub call is the
 `create_pull_request` write — already on the MCP write path below.
 `/rvw-pr` uses the content-read and write rows, and the feedback row for two
