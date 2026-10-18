@@ -816,6 +816,12 @@ give them a way to absorb.
   API-reference parity.
   Detail: [dossier](backlog/id-225-zensical-migration.md)
 
+- [ ] **ID-270 — Nothing lints the shell in `.github/actions/*/action.yml`, so a regression there passes CI**
+  spec: — · effort: S · audience: infra.ci
+  actionlint reads workflows only. `start-backends` (4 `run:` blocks) and `drift-smoke`
+  (1) are linted by no job (`rg -c 'run:' .github/actions/*/action.yml`); BK-458 fixed the
+  former by hand. Open decision: a CI step that shellchecks their `run:` blocks, or accept it.
+
 ---
 
 <a id="repo-does-not-mislead"></a>

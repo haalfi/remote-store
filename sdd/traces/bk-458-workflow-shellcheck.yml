@@ -5,8 +5,12 @@ source_items:
   - BK-458
 audience:
   - infra.ci
+discovery_followups:
+  - ID-270
 expected_ripples:
   - sdd/backlogid.json
+surprising_ripples:
+  - "scripts/check_infra_settings.py: gate 3b's `-p\\s+\\d+:\\d+` stopped matching a literal port once shellcheck SC2086 made quoting the house style; found in PR review, fixed with tests/scripts/test_check_infra_settings.py"
 decisions:
   - sdd/decisions/87df5820-23a6-500f-b06a-ef384d7121d8.jsonl
 orient:
@@ -47,6 +51,11 @@ phases:
         section: "setup lane step"
         read_type: verify
         extract: "ran the regrouped step locally with INPUT_LANE=floor and all: outputs lane, lanes, backend_extras, min_python unchanged"
+        outcome: ok
+      - file: .github/workflows/mutation.yml
+        section: "Start MinIO/Azurite/SFTP; drift-guard.yml legacy-sftp; start-backends"
+        read_type: verify
+        extract: "mutation and drift-guard run on schedule/workflow_dispatch only, so PR CI never executes them; ran every rewritten start step with stubbed docker/nc/wget/sleep: probe succeeding on call 3 gives rc 0 after 4 probe calls, never succeeding gives rc 1 and the ::error:: line after 31 (tmp/run_service_steps.py, not committed)"
         outcome: ok
       - file: .github/actions/start-backends/action.yml
         section: "run blocks under shellcheck"

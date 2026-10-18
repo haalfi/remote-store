@@ -162,7 +162,8 @@ jobs:
       # binary download (no third-party action wrapper).
       #
       # shellcheck is preinstalled on ubuntu-latest and actionlint runs it
-      # on every `run:` block, so shell style nits fail this job too.
+      # on every `run:` block of .github/workflows/, so shell style nits fail
+      # this job too. Composite actions under .github/actions/ are not linted.
       - name: Install actionlint
         run: |
           # Pin both the binary version (1.7.7) AND the downloader script
