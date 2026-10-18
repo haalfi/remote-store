@@ -1,0 +1,112 @@
+id: BK-458
+title: "CI's actionlint runs with `-shellcheck=`, so 31 shellcheck findings in three workflows go unreported"
+trigger: "ci.yml ran `actionlint -color -shellcheck=` with a comment deferring shellcheck until the workflows passed it; the run was never made locally (actionlint 1.7.7 + shellcheck 0.11.0: 31 findings in 3 of 11 workflows, 2026-10-18)"
+source_items:
+  - BK-458
+audience:
+  - infra.ci
+discovery_followups:
+  - ID-271
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - "scripts/check_infra_settings.py: gate 3b's `-p\\s+\\d+:\\d+` stopped matching a literal port once shellcheck SC2086 made quoting the house style; found in PR review, fixed with tests/scripts/test_check_infra_settings.py"
+decisions:
+  - sdd/decisions/87df5820-23a6-500f-b06a-ef384d7121d8.jsonl
+orient:
+  - items: [BUG-316]
+    verdict: unrelated
+    evidence: "sdd/BACKLOG.md BUG-316: which CI class pattern covers infra/.env and infra/docker-compose.yml. It names start-backends only as a reader of infra/.env; this change edits shell inside the action and workflows, not CI routing."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-316 (hatch run backlog-find actionlint / shellcheck / start-backends)"
+        read_type: gate
+        extract: "no open item names actionlint or shellcheck; start-backends hits are BUG-316 and done items"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "lint job, actionlint step"
+        read_type: gate
+        extract: "-shellcheck= opt-out and its comment (deferred until workflows pass shellcheck)"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/mutation.yml
+        section: "Load infra settings, Start MinIO/Azurite/SFTP"
+        read_type: reference
+        extract: "25 of the 31 findings; one retry-loop pattern copied three times"
+        outcome: ok
+      - file: .github/actions/start-backends/action.yml
+        section: "Load infra settings, Start MinIO/Azurite/SFTP"
+        read_type: reference
+        extract: "same patterns; actionlint does not lint composite actions, so it was never flagged"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: .github/workflows/drift-guard.yml
+        section: "setup lane step"
+        read_type: verify
+        extract: "ran the regrouped step locally with INPUT_LANE=floor and all: outputs lane, lanes, backend_extras, min_python unchanged"
+        outcome: ok
+      - file: .github/workflows/mutation.yml
+        section: "Start MinIO/Azurite/SFTP; drift-guard.yml legacy-sftp; start-backends"
+        read_type: verify
+        extract: "mutation and drift-guard run on schedule/workflow_dispatch only, so PR CI never executes them; ran every rewritten start step with stubbed docker/nc/wget/sleep: probe succeeding on call 3 gives rc 0 after 4 probe calls, never succeeding gives rc 1 and the ::error:: line after 31 (tmp/run_service_steps.py, not committed)"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "lint job, Install shellcheck / actionlint step"
+        read_type: verify
+        extract: "found in review: actionlint skips shellcheck silently when none is on PATH, and also when an explicit -shellcheck= path does not exist (a bad workflow stayed green in both); so shellcheck 0.11.0 is downloaded with curl -f and passed by path, and a bad release URL fails the step (curl rc 22)"
+        outcome: ok
+      - file: .github/actions/start-backends/action.yml
+        section: "run blocks under shellcheck"
+        read_type: verify
+        extract: "only SC1091 (unfollowed source), which actionlint disables for workflows; actionlint itself reports 0 on the 11 workflows"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1162 --trace-block-only` at head c46a2fb.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1162 --trace-block-only"
+  pr: 1162
+  review_rounds: 3
+  submissions: 2
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 1.08
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 1.15
+  by_file:
+    - path: ".github/workflows/ci.yml"
+      findings: 1
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+  untouched_files:
+    - ".github/actions/start-backends/action.yml"
+    - ".github/workflows/drift-guard.yml"
+    - ".github/workflows/mutation.yml"
+    - "scripts/check_infra_settings.py"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/87df5820-23a6-500f-b06a-ef384d7121d8.jsonl"
+    - "sdd/traces/bk-458-workflow-shellcheck.yml"
+    - "tests/scripts/test_check_infra_settings.py"
+  review_driven_commits:
+    - sha: "50afc9c"
+      subject: "Merge origin/master into ci-actionlint-shellcheck"
+    - sha: "6c1e2e4"
+      subject: "fix: address PR #1162 review"
+    - sha: "c46a2fb"
+      subject: "fix: address PR #1162 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

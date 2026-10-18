@@ -69,10 +69,11 @@ _REQUIRED_KEYS = (
     "TOXIPROXY_AZURITE_PORT",
 )
 
-# Matches ``-p 9000:9000`` (literal host:container). The variable form
+# Matches ``-p 9000:9000`` and its quoted spellings ``-p "9000:9000"`` (shell
+# quoting is required by shellcheck SC2086). The variable form
 # ``-p ${MINIO_HOST_PORT}:9000`` and ``-p "${VAR}:9000"`` contains a $ and
 # is not flagged.
-_LITERAL_DASH_P = re.compile(r"-p\s+\d+:\d+")
+_LITERAL_DASH_P = re.compile(r"""-p\s+["']?\d+:\d+""")
 
 # Credential literals that must not appear in CI workflows. Each value
 # lives in infra/.env and the workflow references it as ``$VAR``. The
