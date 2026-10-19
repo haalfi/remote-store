@@ -250,6 +250,13 @@ failure it was.
   into `write`, or run it on the session-creation 404; measure first.
   Detail: [dossier](backlog/bug-253-graph-write-ancestor-by-size.md)
 
+- [ ] **BUG-339 — `GraphBackend.write` runs the user-metadata gate before the root refusal**
+  spec: BE-008, BE-029, WR-010 · effort: S · audience: user.api
+  `GraphBackend.write("", b"x", metadata={"k": "v"})` raises `CapabilityNotSupported`
+  where BE-008's order and the Dafny `Write` require `InvalidPath`: `write` calls
+  `_reject_user_metadata` before `_require_writable_key`. No test pins the live
+  root+metadata cell. Found in PR #1165's review. Open decision: none (swap the two calls).
+
 - [ ] **BUG-318 — `LocalBackend.glob` and `get_folder_info` leave out a subtree they cannot read**
   spec: BE-021 · effort: S · audience: user.api
   `glob` (`Path.glob`) and `get_folder_info` (`rglob`) swallow a denied subfolder
@@ -830,14 +837,6 @@ give them a way to absorb.
 **Promise:** the artifacts maintainers coordinate through — this file, the
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
-
-- [ ] **BUG-337 — Spec 003 contradicts itself on a move onto an existing file and on the write precondition order**
-  spec: BE-008, BE-010, BE-018, BE-021, BE-032 · effort: S · audience: library.maintainer
-  BE-021 maps a `move`/`copy` destination that is a file to `InvalidPath`; BE-018, BE-032
-  A.5 and the Dafny `Move` give `AlreadyExists`. BE-008's order omits the closed guard and
-  the WR-010 gate its Formal coverage ranks before path validity; BE-010 drops its root
-  step; BE-018's destination-directory rule lacks BE-021's hierarchical-only binding.
-  Open decision: none. Detail: [dossier](backlog/bug-337-spec-003-contradictions.md)
 
 - [~] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
   spec: — · effort: L · audience: contributor.process, library.maintainer
