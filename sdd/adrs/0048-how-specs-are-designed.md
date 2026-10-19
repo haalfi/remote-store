@@ -11,14 +11,15 @@
 
 Records the decisions of
 [RFC-0022](../rfcs/rfc-0022-how-specs-are-designed.md) (BK-457), proposed for
-the RFC's acceptance; Open Questions 4 to 8 carry the maintainer's answers of
-2026-10-19 (decision log
-`sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl`). It covers D1, D3,
-D5 and D6, the amendment of
+the RFC's acceptance: its D1, D3, D5 and D6, the amendment of
 [`000-process.md`](../000-process.md) Rules 3 and 7, the gating bar of
 [`formal/README.md`](../formal/README.md#authoring-rules) rule 3, and the
-answers to its Open Questions 4 to 8. Its D2, D4, D7 and D8 are rules of
+maintainer's answers of 2026-10-19 to Open Questions 4, 6 and 8 (decision log
+`sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl`). Its D2, D4, D7
+and D8, and Open Question 7's checklist, are rules of
 [`SPEC-DESIGN.md`](../SPEC-DESIGN.md), which this record does not restate.
+Open Question 5, the order in which existing specs are reworked, organises
+work rather than deciding design, and is BK-456's.
 
 It amends no record. A search of `sdd/adrs/` for `Specs are authoritative`,
 `spec format`, `Rule 3`, `normative`, `catch-first` and `informational until`,
@@ -95,12 +96,6 @@ with no normative home.
   on the backend is the divergence profiles exist to remove. *Reverse when*
   the type check's cost is measured dominating real callers; the remedy is
   then an opt-out the caller chooses, not a different default per profile.
-
-- **An existing spec is reshaped in steps that each do one kind of change.**
-  Project state leaves first, then the spec is split as a pure move, then each
-  new file is pruned against the rules. A spec adopts the rules when it is
-  next rewritten, not all at once. *Why:* a move kept apart from a rewrite can
-  be reviewed as a move.
 
 ## Consequences
 

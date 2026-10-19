@@ -56,12 +56,6 @@ Compiled from 48 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run
   the type check's cost is measured dominating real callers; the remedy is
   then an opt-out the caller chooses, not a different default per profile.
 
-- **An existing spec is reshaped in steps that each do one kind of change.**
-  Project state leaves first, then the spec is split as a pure move, then each
-  new file is pruned against the rules. A spec adopts the rules when it is
-  next rewritten, not all at once. *Why:* a move kept apart from a rewrite can
-  be reviewed as a move.
-
 ## Accepted
 
 ### [ADR-0001](0001-architecture-store-registry-backends.md): Architecture - Store, Registry, Backends

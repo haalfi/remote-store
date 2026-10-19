@@ -5,7 +5,7 @@
 Under Review, 2026-10-19. Drafted 2026-10-18. Tracked as **BK-457**. On
 acceptance it graduates to [ADR-0048](../adrs/0048-how-specs-are-designed.md)
 (proposed: D1, D3, D5, D6, the Rule 3 and Rule 7 amendment, `formal/README.md`
-rule 3's gating bar, and Open Questions 4 to 8) and to the authority doc
+rule 3's gating bar, and Open Questions 4, 6 and 8) and to the authority doc
 [`sdd/SPEC-DESIGN.md`](../SPEC-DESIGN.md) (D2, D4, D7, D8, and Open Question
 7's checklist), drafted in the same change. The open questions are annotated
 with the maintainer's answers.
@@ -299,7 +299,7 @@ and §§ 9 to 11:
 5. **Migration order:** BK-456 first, since spec 003 is where the
    contradictions were measured, or the new lifetimes first (BK-454, BK-455),
    since they are written fresh. *Answered 2026-10-19:* BK-456 first, in stages
-   (ADR-0048).
+   (BK-456's dossier; a work plan, so not in ADR-0048).
 6. **Conflicts under `000-process.md` Rule 7:** how the ADR amends Rule 7's
    defeaters so that a clause's bridge level informs, but does not decide, a
    conflict between contract, model, test and code. *Answered 2026-10-19:* a
