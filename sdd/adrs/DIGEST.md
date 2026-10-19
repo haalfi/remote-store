@@ -1527,10 +1527,11 @@ D5 to D7, D9 and D10 are contract or placement and live in BE-032.
 - **Where a formal model governs a clause, the model is that clause's
   spec.** A model governs a clause only where a bridge binds it to the tests,
   only as far as the bridge reaches, and only while the model's check gates
-  in CI, and a bridge counts only once it is documented: what it exercises,
-  how runtime values become model values, how runs are produced, its pass
-  criterion, its blind spots and the job that runs it, a bridge already in
-  the repo included. Everywhere else the prose governs. The prose states a
+  in CI. A bridge counts only once it is documented (what it exercises, how
+  runtime values become model values, how runs are produced, its pass
+  criterion, its blind spots) and both the model's check and the bridge's
+  tests block merges; a bridge already in the repo is no exception.
+  Everywhere else the prose governs. The prose states a
   governed clause once and links the model. *Why:* a model with no bridge
   drifts from the code, a bridged model can still be the stale side, and
   making every model normative would leave each clause without a model with

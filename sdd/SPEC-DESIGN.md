@@ -152,7 +152,8 @@ written.
     3. How executions are generated or captured.
     4. The pass criterion.
     5. Its known blind spots ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
-    6. The CI job that owns it, and whether that job gates.
+    6. That both the model's check and the bridge's tests block merges
+       ([`GATE-INVENTORY.md`](GATE-INVENTORY.md) derives where each runs).
 
 ## Guides
 
