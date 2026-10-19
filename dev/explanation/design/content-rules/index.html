@@ -5318,6 +5318,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#last-pass-three-lines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Last pass: three lines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#finding-the-documents-that-are-failing-readers" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11628,6 +11639,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#last-pass-three-lines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Last pass: three lines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#finding-the-documents-that-are-failing-readers" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11837,6 +11859,20 @@ still break rule 8, which asks whether this change owns what the sentence
 describes. When in doubt on rule 8, ask whether the diff changes that
 behaviour, exists to document it, or relies on it; if none, the sentence is a
 pointer or nothing.</p>
+<p><a id="last-pass"></a></p>
+<h3 id="last-pass-three-lines">Last pass: three lines<a class="headerlink" href="#last-pass-three-lines" title="Permanent link">&para;</a></h3>
+<p>Before a durable doc ships (an ADR, authority doc, spec or skill file), its
+author reads it once more against three lines, and a reviewer ends <code>/rvw-pr</code>'s
+content-rules check with the same read.</p>
+<ol>
+<li><strong>Claim first, or you don't understand it yet</strong> (Rule 7).</li>
+<li><strong>The principle, not the list</strong> (Rule 2).</li>
+<li><strong>Detail where it belongs</strong> (Rule 4;
+   <a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#principles"><code>CLAUDE.md</code> principle 8</a>): a record that restates
+   its sibling's rules says what twice.</li>
+</ol>
+<p>Both reads are needed: if you check your own text, you tend to read what you
+meant rather than what you wrote.</p>
 <h3 id="finding-the-documents-that-are-failing-readers">Finding the documents that are failing readers<a class="headerlink" href="#finding-the-documents-that-are-failing-readers" title="Permanent link">&para;</a></h3>
 <p>Agent traces tag any read that did not deliver (<code>sdd/traces/_schema.yml</code>
 <code>outcome</code>). <code>hatch run report-trace-outcomes</code> aggregates those tags into a
