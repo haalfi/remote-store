@@ -196,12 +196,12 @@ phases:
         extract: "Completing work, item scope, new IDs from gen-backlogid-check"
         outcome: ok
 review:
-  # Derived by `hatch run ship-report 1166 --trace-block-only` at head 3b141a4.
+  # Derived by `hatch run ship-report 1166 --trace-block-only` at head 695f810.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1166 --trace-block-only"
   pr: 1166
-  review_rounds: 11
+  review_rounds: 14
   submissions: 2
   findings: 14
   by_round:
@@ -269,4 +269,10 @@ review:
       subject: "BK-457: SPEC-DESIGN defines governs, scopes the diagram check, and warns reviewers off form-only passes"
     - sha: "3b141a4"
       subject: "BK-457: ADR-0048 gives the why for stating an empty skeleton heading"
-  ci: {verdict: GREEN, failed: 0, pending: 0}
+    - sha: "b2fa3c3"
+      subject: "BK-457: Regenerate the trace review block at 3b141a4"
+    - sha: "971cb90"
+      subject: "BK-457: Prune ADR-0048's Decision to choice, why and reverse; lead SPEC-DESIGN Rules 2 and 4 with their claim"
+    - sha: "695f810"
+      subject: "BK-457: Link every doc ADR-0048 names"
+  ci: {verdict: PENDING, failed: 0, pending: 1}
