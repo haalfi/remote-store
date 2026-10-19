@@ -1509,8 +1509,9 @@ D5 to D7, D9 and D10 are contract or placement and live in BE-032.
   postconditions, observable side effects, error precedence, and a lifetime's
   states and transitions. A sentence that two correct implementations could
   not both satisfy prescribes mechanism, and mechanism belongs in an ADR, a
-  design note or a plan, never in a spec. Ordering a caller can observe is
-  contract, stated as error precedence. *Why:* mechanism written beside
+  design note or a plan, never in a spec. An order of side effects a caller
+  can observe is contract and stays a clause; which refusal wins when two hold
+  is stated as error precedence, never as an order of steps. *Why:* mechanism written beside
   invariants is where specs contradict themselves, while callers rely only on
   outcomes. *Reverse when* relocated mechanism proves to be what callers rely
   on.
@@ -1524,14 +1525,34 @@ D5 to D7, D9 and D10 are contract or placement and live in BE-032.
   show more duplication or cross-linking than one operation contract with
   linked lifecycle and consistency models would.
 
+- **Each kind takes the form that can state it, and examples are not
+  specs.** A lifetime's source is its TLA+ module; its state diagram is a
+  view a check holds equal to the model, and a diagram without that check
+  states nothing. A single call is an invariant with an outcome table.
+  Examples and scenarios live in the test tier, each traced to its section.
+  *Why:* one field template for every section can only narrate a lifecycle; a
+  diagram notation such as Mermaid has no execution semantics; and a scenario
+  is one trace, which cannot say that every undrawn transition is forbidden.
+  *Reverse when* a diagram notation with checked semantics is adopted, or
+  scenario tests are shown to catch what invariants miss.
+
+- **Every spec has one skeleton, carries no project state, and declares what
+  varies.** Overview, terms, sections, assumptions, notes and what it is
+  tested against, in that order; no status, backlog ID or "yet"; a behaviour
+  that differs by backend is a named profile with each outcome it allows
+  stated. *Why:* a fixed order lets every reader and review check a spec the
+  same way; project state changes with every backlog move, so a spec that
+  carries it goes stale between its own edits (spec 003 held 84 backlog-ID
+  occurrences at `32a5653`, BK-456's dossier); and variation implied by an example backend is
+  where per-backend contradictions hide. *Reverse when* the skeleton forces
+  empty sections on most specs.
+
 - **Where a formal model governs a clause, the model is that clause's
   spec.** A model governs a clause only where a bridge binds it to the tests,
-  only as far as the bridge reaches, and only while the model's check gates
-  in CI. A bridge counts only once it is documented (what it exercises, how
-  runtime values become model values, how runs are produced, its pass
-  criterion, its blind spots) and both the model's check and the bridge's
-  tests block merges; a bridge already in the repo is no exception.
-  Everywhere else the prose governs. The prose states a
+  and only as far as the bridge reaches. A bridge counts only once it is
+  documented against `SPEC-DESIGN.md` Rule 8's checklist, which includes that
+  both the model's check and the bridge's tests block merges; a bridge
+  already in the repo is no exception. Everywhere else the prose governs. The prose states a
   governed clause once and links the model. *Why:* a model with no bridge
   drifts from the code, a bridged model can still be the stale side, and
   making every model normative would leave each clause without a model with
