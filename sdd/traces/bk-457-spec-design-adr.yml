@@ -196,12 +196,12 @@ phases:
         extract: "Completing work, item scope, new IDs from gen-backlogid-check"
         outcome: ok
 review:
-  # Derived by `hatch run ship-report 1166 --trace-block-only` at head 3965e3a.
+  # Derived by `hatch run ship-report 1166 --trace-block-only` at head b2b68aa.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1166 --trace-block-only"
   pr: 1166
-  review_rounds: 2
+  review_rounds: 8
   submissions: 2
   findings: 14
   by_round:
@@ -251,4 +251,16 @@ review:
       subject: "fix: address PR #1166 review"
     - sha: "3965e3a"
       subject: "BK-457: Accept RFC-0022 and ADR-0048; address the second review of PR #1166"
-  ci: {verdict: GREEN, failed: 0, pending: 0}
+    - sha: "6cc3f1f"
+      subject: "BK-457: Trace review block for PR #1166"
+    - sha: "d1cff3c"
+      subject: "BK-457: Take the backend-behaviour decision out of ADR-0048"
+    - sha: "9daded1"
+      subject: "BK-457: Rule 8 asks that a bridge gates, not which CI job runs it"
+    - sha: "18f050e"
+      subject: "BK-457: Make ADR-0048 the why for every SPEC-DESIGN rule, and consistent with it"
+    - sha: "6cd5738"
+      subject: "BK-457: SPEC-DESIGN tells an author when a spec is ready and a reviewer what each property means"
+    - sha: "b2b68aa"
+      subject: "BK-457: Address the scoped review of ADR-0048, RFC-0022 and SPEC-DESIGN.md"
+  ci: {verdict: PENDING, failed: 0, pending: 4}
