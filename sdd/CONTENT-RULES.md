@@ -160,6 +160,23 @@ describes. When in doubt on rule 8, ask whether the diff changes that
 behaviour, exists to document it, or relies on it; if none, the sentence is a
 pointer or nothing.
 
+<a id="last-pass"></a>
+### Last pass: three lines
+
+On an ADR, an authority doc, a spec or a skill file, a final read against three
+lines finds what a correctness review misses: a part that says two things, says
+its claim late, or says it in another document's place. Each line compresses a
+rule, and a finding cites the rule, never the line.
+
+1. **Claim first, or you don't understand it yet** (Rule 7).
+2. **The principle, not the list** (Rule 2).
+3. **Detail where it belongs** (Rule 4;
+   [`CLAUDE.md` principle 8](../CLAUDE.md#principles)): a record that restates
+   its sibling's rules says what twice.
+
+It is the author's own check, so it adds to an independent review and never
+replaces one.
+
 ### Finding the documents that are failing readers
 
 Agent traces tag any read that did not deliver (`sdd/traces/_schema.yml`

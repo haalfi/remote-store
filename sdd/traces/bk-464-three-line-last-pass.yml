@@ -1,0 +1,44 @@
+id: BK-464
+title: "No review pass checks that a durable doc says one thing, first, in its own place"
+trigger: >-
+  On PR #1166 the maintainer reduced CONTENT-RULES Rules 7 and 2 and CLAUDE.md
+  principle 8 to three lines and had the author review ADR-0048 and
+  SPEC-DESIGN.md against them; it found restated detail and late claims that
+  four external reviews and a scoped reviewer pass had not. The maintainer
+  asked to keep it as a CONTENT-RULES guide with pointers.
+source_items:
+  - BK-464
+audience:
+  - contributor.process
+decisions:
+  - sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl
+expected_ripples:
+  - sdd/CONTENT-RULES.md
+  - .claude/skills/rvw-pr/SKILL.md
+  - sdd/process-budget.json
+orient:
+  - items: [BK-445]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-find --open "CONTENT-RULES|Kernsatz|exit gate|rvw-pr"`
+      returns only BK-445, which is about `rvw-pr` § Review root for measuring
+      passes, not the content-rules check.
+phases:
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 2, 4, 7; Guides"
+        read_type: gate
+        extract: "The three lines cite Rules 7, 2 and 4; a guide, not a rule, so no new obligation"
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Content-rules check"
+        read_type: gate
+        extract: "One pointer; /ship panels run /rvw-pr, so a second pointer in /ship would copy it"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Exit gates"
+        read_type: reference
+        extract: "Every exit-gate pass is a /rvw-pr run, so it inherits the pointer"
+        outcome: ok

@@ -300,6 +300,13 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-464 — No review pass checks that a durable doc says one thing, first, in its own place**
+  spec: — · effort: XS · audience: contributor.process
+  A three-line last pass (Rules 7, 2, 4 and principle 8) found on PR #1166 what three
+  external reviews and a scoped reviewer pass missed: ADR-0048 restating SPEC-DESIGN, SPEC-DESIGN Rule 4 leading
+  late. Now `CONTENT-RULES.md` § Last pass, run by `/rvw-pr`'s content-rules check.
+  Trace: [bk-464](traces/bk-464-three-line-last-pass.yml).
+
 - [x] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
   spec: — · effort: L · audience: contributor.process, library.maintainer
   RFC-0022 accepted 2026-10-19 with its open questions answered; decisions in ADR-0048,
