@@ -165,9 +165,7 @@ pointer or nothing.
 
 Before a durable doc ships (an ADR, authority doc, spec or skill file), its
 author reads it once more against three lines, and a reviewer ends `/rvw-pr`'s
-content-rules check with the same read. It finds what a correctness review
-misses: a part that says two things, says its claim late, or says what another
-document owns. A finding cites the rule, never the line.
+content-rules check with the same read.
 
 1. **Claim first, or you don't understand it yet** (Rule 7).
 2. **The principle, not the list** (Rule 2).
