@@ -97,7 +97,9 @@ with no normative home.
   tested against, in that order; no status, backlog ID or "yet"; a behaviour
   that differs by backend is a named profile with each outcome it allows
   stated. *Why:* a fixed order lets every reader and review check a spec the
-  same way; project state changes with every backlog move, so a spec that
+  same way, and a heading kept with nothing under it says so, because an
+  absence that is stated is a choice a review can check while a missing
+  heading cannot be told from a forgotten one; project state changes with every backlog move, so a spec that
   carries it goes stale between its own edits; and variation implied by an
   example backend is where per-backend contradictions hide. *Reverse when* the skeleton forces
   empty sections on most specs.
