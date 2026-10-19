@@ -61,75 +61,58 @@ with no normative home.
 
 ## Decision
 
-- **A spec states only the observable contract.** It states preconditions,
-  postconditions, observable side effects, error precedence, and a lifetime's
-  states and transitions. A sentence that two correct implementations could
-  not both satisfy prescribes mechanism, and mechanism belongs in an ADR, a
-  design note or a plan, never in a spec. An order of side effects a caller
-  can observe is contract and stays a clause; which refusal wins when two hold
-  is stated as error precedence, never as an order of steps. *Why:* mechanism written beside
-  invariants is where specs contradict themselves, while callers rely only on
-  outcomes. *Reverse when* relocated mechanism proves to be what callers rely
-  on.
+- **A spec states what a caller can observe, never how it is produced.** An
+  order or a precedence a caller can observe is contract; mechanism moves to an
+  ADR, a design note or a plan, relocated rather than deleted. *Why:* mechanism
+  written beside invariants is where specs contradict themselves, while callers
+  rely only on outcomes. *Reverse when* relocated mechanism proves to be what
+  callers rely on.
 
-- **A spec is cut by kind of truth, never by component.** The kinds are
-  structure, function, single call, lifetime, environment and liveness; a
-  clause's kind is the shape of a witness that would violate it. Inside a
-  kind, a spec is cut at an interface contract between layers. *Why:*
-  ownership, state and time cross components, so a spec per component
-  scatters one property over several files. *Reverse when* specs cut by kind
-  show more duplication or cross-linking than one operation contract with
-  linked lifecycle and consistency models would.
+- **A spec is cut by kind of truth, never by component.** A clause's kind is
+  the shape of a witness that would violate it; inside a kind, specs are cut at
+  an interface between layers. *Why:* ownership, state and time cross
+  components, so a spec per component scatters one property over several
+  files. *Reverse when* specs cut by kind show more duplication or
+  cross-linking than one operation contract with linked lifecycle and
+  consistency models would.
 
-- **Each kind takes the form that can state it, and examples are not
-  specs.** A lifetime's source is its TLA+ module; its state diagram is a
-  view a check holds equal to the model, and a diagram without that check
-  states nothing. A single call is an invariant with an outcome table.
-  Examples and scenarios live in the test tier, each traced to its section.
-  *Why:* one field template for every section can only narrate a lifecycle; a
-  diagram notation such as Mermaid has no execution semantics; and a scenario
-  is one trace, which cannot say that every undrawn transition is forbidden.
+- **Each kind takes a form that can state it, and a view no check holds to its
+  model states nothing.** A lifetime's source is its TLA+ module; examples and
+  scenarios live in the test tier. *Why:* one field template can only narrate a
+  lifecycle, a diagram notation such as Mermaid has no execution semantics, and
+  a scenario is one trace, which cannot forbid every undrawn transition.
   *Reverse when* a diagram notation with checked semantics is adopted, or
   scenario tests are shown to catch what invariants miss.
 
-- **Every spec has one skeleton, carries no project state, and declares what
-  varies.** Overview, terms, sections, assumptions, notes and what it is
-  tested against, in that order; no status, backlog ID or "yet"; a behaviour
-  that differs by backend is a named profile with each outcome it allows
-  stated. *Why:* a fixed order lets every reader and review check a spec the
-  same way, and a heading kept with nothing under it says so, because an
-  absence that is stated is a choice a review can check while a missing
-  heading cannot be told from a forgotten one; project state changes with every backlog move, so a spec that
-  carries it goes stale between its own edits; and variation implied by an
-  example backend is where per-backend contradictions hide. *Reverse when* the skeleton forces
-  empty sections on most specs.
+- **A spec's shape is fixed and its content timeless.** One skeleton in one
+  order, an empty heading stated as empty, and no project state. *Why:* a fixed
+  shape lets every review check a spec the same way, and a stated absence can
+  be checked where a missing one cannot; project state changes with every
+  backlog move, so a spec carrying it goes stale between its own edits.
+  *Reverse when* the skeleton forces empty sections on most specs.
 
-- **Where a formal model governs a clause, the model is that clause's
-  spec.** A model governs a clause only where a bridge binds it to the tests,
-  and only as far as the bridge reaches. A bridge counts only once it is
-  documented against `SPEC-DESIGN.md` Rule 8's checklist, which includes that
-  both the model's check and the bridge's tests block merges; a bridge
-  already in the repo is no exception. Everywhere else the prose governs. The prose states a
-  governed clause once and links the model. *Why:* a model with no bridge
-  drifts from the code, a bridged model can still be the stale side, and
-  making every model normative would leave each clause without a model with
-  no normative home. A bridge whose interface, encoding, generation, pass
-  criterion and blind spots are unstated has no knowable reach, so "as far as
-  the bridge reaches" could not be judged; and a reach tagged by hand in a
-  spec is project state that goes stale like any other.
+- **What varies by backend is declared, never implied.** A variation is a
+  named profile with each outcome it allows. *Why:* variation implied by an
+  example backend is where per-backend contradictions hide.
+
+- **Where a bridged model governs a clause, the model is that clause's
+  spec.** It governs only as far as its bridge reaches, and only once the
+  bridge is documented to `SPEC-DESIGN.md` Rule 8, a bridge already in the
+  repo included; everywhere else the prose governs. *Why:* a model with no
+  bridge drifts from the code, a bridge whose reach is unstated cannot be
+  judged, and making every model normative would leave each clause without a
+  model with no normative home.
 
 - **A bridge grades confidence, not authority.** When contract, model, test
-  and code disagree, the disagreement is investigated and settled by the
-  attribution rules of [`000-process.md`](../000-process.md#intent-attribution),
-  whatever the bridge level. *Why:* a test can
+  and code disagree, the [`000-process.md`](../000-process.md#intent-attribution)
+  attribution rules settle it, whatever the bridge level. *Why:* a test can
   encode a bug, and a bridged model can rest on a mistaken contract.
 
-- **A TLA+ check blocks merges only once its module is bridged.** An
-  unbridged module's check still runs, without blocking. A Dafny proof blocks
-  merges whether or not its model is bridged. *Why:* model checking an
-  unbridged module proves only that the model agrees with itself, while a
-  postcondition the Dafny verifier rejects is a contradiction in the contract
-  itself.
+- **A TLA+ check blocks merges only once its module is bridged; a Dafny proof
+  always does.** An unbridged module's check still runs, without blocking.
+  *Why:* model checking an unbridged module proves only that the model agrees
+  with itself, while a postcondition the Dafny verifier rejects is a
+  contradiction in the contract itself.
 
 ## Consequences
 

@@ -40,6 +40,7 @@ written.
 
 2. <a id="kind-of-truth"></a>**One spec states one kind of truth about one
     subject.** [review-enforced]
+    A clause's kind is the shape of a witness that would violate it.
 
     | Kind | States | A witness of its violation is |
     | --- | --- | --- |
@@ -50,8 +51,7 @@ written.
     | Environment | What the system relies on from outside it | A behaviour outside the library's control |
     | Liveness | That something eventually happens, or never repeats | A run past its bound |
 
-    A clause's kind is the shape of a witness that would violate it. A clause
-    whose witness needs a behaviour outside the library's control is
+    A clause whose witness needs a behaviour outside the library's control is
     environment. Otherwise a clause whose witness fits two kinds belongs to the
     larger, in this order: liveness (a run past its bound), lifetime (a call
     sequence on one object), single call, function, structure.
@@ -75,10 +75,9 @@ written.
     **A lifetime's diagram is closed-world and checked both ways:** a
     transition it does not draw is forbidden, and a drawn transition no run
     reaches is a defect. It uses the declared Mermaid subset (flat states,
-    `[*]`, `A --> B : Action`), and a check asserts that its edges equal the
-    phase transitions of a small TLC configuration. The check holds the edges
-    equal, not the guards or what each action does; those are the module's. A diagram without that
-    check is a view and states nothing. Until a lifetime has a module, that
+    `[*]`, `A --> B : Action`), and a check holds its edges equal to the
+    module's transitions; the guards and what each action does stay the
+    module's. A diagram without that check is a view and states nothing. Until a lifetime has a module, that
     check and a bridge that counts under Rule 4, its spec states the states and
     transitions as a table, and the prose governs them.
 
@@ -87,6 +86,12 @@ written.
 
 4. <a id="governing-layer"></a>**The formal layer that can prove a kind
     governs it, through a bridge.** [review-enforced]
+    Where a model of a clause is bound to the tests by a bridge that counts
+    (Rule 8, a bridge already in the repo included) and its check gates in CI,
+    the model's clause is the clause's normative statement, as far as the
+    bridge reaches; everywhere else the prose governs, and an unbridged model
+    informs review. Governing claims nothing about the code beyond what the
+    bridge's tests check. A model of each kind is written in this layer:
 
     | Kind | Governing layer |
     | --- | --- |
@@ -95,23 +100,13 @@ written.
     | Lifetime, environment | TLA+ |
     | Liveness | TLA+, only as bounded obligations |
 
-    Where a model of a clause exists and a bridge binds it to the tests, the
-    model governs that clause as far as the bridge reaches, and the section
-    states the invariant in one sentence and links the model's clause. Governs
-    means the model's clause is the clause's normative statement; it claims
-    nothing about the code beyond what the bridge's tests check. Where no
-    model exists, or no bridge, the prose governs; an unbridged model informs
-    review. A model governs only while its own check gates in CI; when a TLA+
-    check gates is [`formal/README.md` rule 3](formal/README.md#authoring-rules)'s.
-    A conflict
+    A governed section states the invariant in one sentence and links the
+    model's clause. A bridge reaches a clause per section ID, derived from the
+    model's `@spec` tags and the tests' spec marks citing it, never tagged by
+    hand in the spec. When a TLA+ check gates is
+    [`formal/README.md` rule 3](formal/README.md#authoring-rules)'s; a conflict
     between contract, model, test and code is resolved under
-    [`000-process.md` Rule 7](000-process.md#intent-attribution). A bridge
-    reaches a clause per section ID: the model's `@spec` tags and the tests'
-    spec marks citing that ID derive it, as `scripts/check_formal_trace.py`
-    does for Dafny. A spec never tags a clause's reach by hand. A bridge counts
-    only once Rule 8's six items are stated for it, a bridge already in the
-    repo included; until then its model informs review and the prose governs.
-    The table names the layer a new model of each kind is written in.
+    [`000-process.md` Rule 7](000-process.md#intent-attribution).
 
 5. <a id="profiles-and-assumptions"></a>**Profiles and assumptions are
     declared, not implied.** [review-enforced]
