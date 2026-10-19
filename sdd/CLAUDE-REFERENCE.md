@@ -34,7 +34,7 @@ Read this before starting. One line per trigger.
 
 | Trigger                       | Ripples (at a glance) |
 |-------------------------------|-----------------------|
-| Spec section                  | Tests tagged `@pytest.mark.spec("ID")`, BACKLOG if related |
+| Spec section                  | Tests tagged `@pytest.mark.spec("ID")`, BACKLOG if related; a spec rewritten or split: [`SPEC-DESIGN.md`](SPEC-DESIGN.md) |
 | Capability                    | `003-backend-adapter-contract.md` spec, every backend's `capabilities()`, Store surface, capability matrix |
 | Error type                    | `005-error-model.md` spec, every backend's error mapping + tests, docstring "raised by", troubleshooting guide |
 
@@ -97,7 +97,8 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 
 | Trigger                    | Also check / update                                       |
 |----------------------------|-----------------------------------------------------------|
-| **Spec section**           | Tests with `@pytest.mark.spec("ID")`, BACKLOG if related  |
+| **Spec section**           | Tests with `@pytest.mark.spec("ID")`, BACKLOG if related; |
+|                            | a spec rewritten or split: [`SPEC-DESIGN.md`](SPEC-DESIGN.md) |
 | **Capability**             | `sdd/specs/003-backend-adapter-contract.md`,              |
 |                            | every backend's `capabilities()`, Store surface API,      |
 |                            | capabilities matrix page                                  |

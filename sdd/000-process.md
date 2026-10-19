@@ -3,36 +3,34 @@
 
 ## Intent & Scope
 
-Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC formats, backlog tiers, and test traceability. Governs all `sdd/` content.
+Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC formats, backlog tiers, and test traceability. Governs all `sdd/` content. What a spec states, its form and which artifact governs a clause: [`SPEC-DESIGN.md`](SPEC-DESIGN.md).
 
 <a id="rules"></a>
 ## Rules
 
 1. **No code without a spec**: every testable contract must have a spec section ID.
 2. <a id="spec-test-traceability"></a>**No spec without tests**: every spec section must have at least one test with `@pytest.mark.spec("ID")`.
-3. **Specs are authoritative**: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which [Rule 7](#intent-attribution) qualifies: that makes the claim undecided, not the code right.
+3. **The spec and its governing model are authoritative**: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which [Rule 7](#intent-attribution) qualifies: that makes the claim undecided, not the code right. Where a formal model bound to the code by a bridge governs a clause ([`SPEC-DESIGN.md` Rule 4](SPEC-DESIGN.md#governing-layer)), that model is the clause's spec, as far as the bridge reaches.
 4. **ADRs are immutable once Accepted**: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.
 5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
 6. <a id="workflows"></a>**Workflows**:
     - **Features**: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.
     - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec. The reproduction lives in the item's dossier where it has one ([§ Backlog](#backlog)).
-7. <a id="intent-attribution"></a>**Prose records the resolution; it does not win the argument**: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against a claim the conformance suite never asserted. See [§ Attribution inside the intent domain](#attribution-inside-the-intent-domain).
+7. <a id="intent-attribution"></a>**Prose records the resolution; it does not win the argument**: when spec prose, a formal model's clause and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a checked model clause or against a claim the conformance suite never asserted. See [§ Attribution inside the intent domain](#attribution-inside-the-intent-domain).
 
 ## Guides
 
 <a id="spec-format"></a>
 ### Spec format
 
-Each spec uses numbered section IDs with a module prefix declared at the top of each file:
+What a spec states, where it ends, the form and skeleton it takes and which
+artifact governs a clause are [`SPEC-DESIGN.md`](SPEC-DESIGN.md)'s; its
+template is [`templates/spec-template.md`](templates/spec-template.md). Each
+section carries a numbered ID with the module prefix declared at the top of
+the file:
 
 ```markdown
 ## <PREFIX>-NNN: <Rule Title>
-**Invariant:** <what must always be true>
-**Preconditions:** <what the caller must ensure>
-**Postconditions:** <what the callee guarantees>
-**Raises:** <error conditions>
-**Example:**
-    <short code example>
 ```
 
 Each spec declares its prefix (e.g. `STORE`, `PATH`, `ERR`, `CACHE`). A test referencing `STORE-005` traces back to section 005 in the Store API spec.
@@ -62,13 +60,14 @@ def test_double_dot_rejected():
 ### Attribution inside the intent domain
 
 Rule 3 settles intent against code. These settle the intent domain against
-itself: spec prose, the Dafny model, and the conformance suite. *Where the
+itself: spec prose, the formal models, and the conformance suite. *Where the
 resolution is written* and *which side was wrong* are two questions; answer them
 in that order.
 
 1. **The resolution is written into the prose spec.** A disagreement closed by
    editing only a postcondition, only a test, or only a backend is not closed.
-   Amend the spec section in the same change.
+   Amend the spec section in the same change, and the governing model with it
+   where one governs the clause.
 2. **Prose carries no presumption of correctness.** It is the only description in
    this domain with no mechanical counterpart, so a prose claim is evidence of
    intent and of nothing else. Four defeaters strip that presumption — two keyed on
@@ -77,8 +76,8 @@ in that order.
 
     | Defeater | What you observe | What follows |
     |---|---|---|
-    | **Unsatisfiable** | The verifier rejects the postcondition form the prose requires | Prose moves — the section contradicts itself. Owned by [`formal/README.md`](formal/README.md#layers-at-a-glance) and stated here only to complete the procedure |
-    | **Over-specified** | A postcondition *verifies* and still asserts more than the prose does — the model is stricter than the contract it formalizes | Decide which is the contract. The postcondition is not self-authorizing: a verified clause with no prose parent is the formal layer's own orphan realization. Either prose adopts the stronger form, or the postcondition weakens to what prose actually requires |
+    | **Unsatisfiable** | The model's checker rejects the form the prose requires (a Dafny postcondition, a TLA+ invariant) | Prose moves — the section contradicts itself. Owned by [`formal/README.md`](formal/README.md#layers-at-a-glance) and stated here only to complete the procedure |
+    | **Over-specified** | A model clause *checks* and still asserts more than the prose does — the model is stricter than the contract it formalizes | Decide which is the contract. The model clause is not self-authorizing: a checked clause with no prose parent is the formal layer's own orphan realization. Either prose adopts the stronger form, or the model clause weakens to what prose actually requires |
     | **Under-determined** | Prose is silent, or permits a variation, where shipped behaviour is uniform | Prose moves — state the behaviour and add the test it never had. Silence is not a licence to diverge; uniformity is not proof of intent, so where it is defensive duplication of a rule enforced elsewhere, spec it at the layer that enforces it. **Where prose *permits* rather than is silent, narrowing it retires a licence** third-party implementers of a public ABC were shipped against: that is a breaking change and takes the same path as the row below |
     | **Unenforced** | Prose demands X and no test asserts X — for the backends in question. Two axes, and both bind: [Rule 2](#spec-test-traceability)'s marker is section-level, so a marked section is not evidence the *clause* is covered; and the suite parameterizes over backends, so a clause asserted for one family is unenforced for the others. Backends diverging is how you notice, not what decides | Nothing moves yet. An unenforced claim is not a default, so decide it once. **If nothing diverges**, prose stands and the deliverable is [Rule 2](#spec-test-traceability)'s missing test. **If something diverges**, adopt it as a declared variation, or enforce X as a breaking change on the ordinary path |
 
@@ -92,9 +91,17 @@ in that order.
 5. **A divergence you keep is registered, not remembered.** Give it the **owner and
    rationale** [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated) requires, in one
    of the homes it admits.
+6. **A bridge level informs the investigation; it never decides it.** How far a
+   bridge binds a model to the code ([`SPEC-DESIGN.md` Rule
+   4](SPEC-DESIGN.md#governing-layer)) grades confidence in the model, not its
+   authority. A conflict between contract, model, test and code is settled by the
+   defeaters above, whatever the bridge level: a test can encode a bug, and a
+   bridged model can rest on a mistaken contract.
 
-**Where no defeater fires, the presumption stands and prose governs — except when
-nothing was decided in the first place.** That exception is a residue with a
+**Where no defeater fires, the clause's spec governs: its governing model where
+[`SPEC-DESIGN.md` Rule 4](SPEC-DESIGN.md#governing-layer) gives it one, otherwise
+the prose, whose presumption stands — except when nothing was decided in the
+first place.** That exception is a residue with a
 shape: shipped behaviour **non-uniform**, and prose either absent or merely
 permissive, so no defeater has an observation to fire on. Prose silence or
 permission *alone* does not qualify; paired with uniform behaviour it is the

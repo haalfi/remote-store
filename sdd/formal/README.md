@@ -228,21 +228,21 @@ age worse than the qualitative one.
 2. **Target demonstrated bundling**, not abstract layers. WR-018's
    four-in-one paragraph is a target; "capability gate ordering" in
    the abstract is not.
-3. **CI informational** until a TLA+ check catches a real regression.
-   Seeded breaks validate the tool; only a live catch validates the
-   workflow. Once an informational check lands, revisit the status
-   every 6 months, or in the PR that first bridges a TLA+ module to
-   code, whichever comes first, and explicitly promote, remove, or
-   re-defer. "Informational" must not
+3. **A TLA+ check gates per module, from the PR that bridges the
+   module to code** ([ADR-0048](../adrs/0048-how-specs-are-designed.md),
+   [`SPEC-DESIGN.md` Rule 4](../SPEC-DESIGN.md#governing-layer)). An
+   unbridged module stays informational: gating it would prove only
+   that the model agrees with itself. Gating per module needs
+   `verify-tla` split per module (BK-461). Revisit the unbridged
+   modules' informational status every 6 months, or in the PR that
+   first bridges a TLA+ module to code, whichever comes first: the
+   bridged module gates from that PR, and for each unbridged one,
+   explicitly promote, remove, or re-defer. "Informational" must not
    silently become "unrun." Each revisit is tracked as a BACKLOG entry
    recording the decision (promote / remove / re-defer) — a calendar
    without a ticket is the same as no calendar. The first `verify-tla`
    job landed under ID-147 on 2026-04-19; ID-150 re-deferred it on
    2026-10-18 and the next revisit is tracked as ID-270.
-   [RFC-0022 Open Question 3](../rfcs/rfc-0022-how-specs-are-designed.md#open-questions)
-   proposes replacing the catch bar with a bridge: a module gates from
-   the PR that ties it to code. Until its ADR is accepted, the catch bar
-   above decides, the bridging PR's revisit included.
 4. **Live TLA+ modules live under `sdd/formal/tla/`.** The
    `sdd/research/tla-poc/` tree is the frozen 2026-04 PoC that
    established the spec-decomposition discipline (see
@@ -257,14 +257,26 @@ age worse than the qualitative one.
 <a id="layers-at-a-glance"></a>
 ## Layers at a glance
 
-| Layer | Source of truth | Verified by |
-|-------|-----------------|-------------|
-| Spec (`.md`) | Human-readable requirements | Review |
-| Dafny (`.dfy`) | Machine-checkable per-operation contract | Dafny verifier |
-| TLA+ (`.tla`, under `sdd/formal/tla/`) | Cross-layer protocol properties | TLC (bounded model) |
-| Alloy (`.als`, under `sdd/formal/alloy/`) | Static store-model axioms: consistency, independence, lemmas in scope | Alloy Analyzer (bounded scope) |
-| Lean 4 (`.lean`, under `sdd/formal/lean/`) | Static store-model lemmas over an unrestricted universe | Lean 4 kernel (`lake build`) |
-| Python (`_backend.py`) | Runtime implementation | pytest + Hypothesis PBT |
+| Layer | Source of truth | Verified by | Governs, through a bridge |
+|-------|-----------------|-------------|---------------------------|
+| Spec (`.md`) | Human-readable requirements | Review | Every clause no bridged model governs |
+| Dafny (`.dfy`) | Machine-checkable per-operation contract | Dafny verifier | Function and single-call clauses |
+| TLA+ (`.tla`, under `sdd/formal/tla/`) | Cross-layer protocol properties | TLC (bounded model) | Lifetime and environment clauses; liveness as bounded obligations only |
+| Alloy (`.als`, under `sdd/formal/alloy/`) | Static store-model axioms: consistency, independence, lemmas in scope | Alloy Analyzer (bounded scope) | Structure clauses, bounded |
+| Lean 4 (`.lean`, under `sdd/formal/lean/`) | Static store-model lemmas over an unrestricted universe | Lean 4 kernel (`lake build`) | Structure clauses, unbounded |
+| Python (`_backend.py`) | Runtime implementation | pytest + Hypothesis PBT | — |
+
+The last column is [`SPEC-DESIGN.md` Rule 4](../SPEC-DESIGN.md#governing-layer):
+a layer governs a clause only where a bridge binds its model to the tests, only
+as far as that bridge reaches, and only while the layer's own check gates in
+CI. Alloy and Lean run in no CI job (§ Running the verifier), so they govern no
+clause until one does. A bridge already in the repo, such as the compiled
+oracles below, counts only once [`SPEC-DESIGN.md` Rule
+8](../SPEC-DESIGN.md#bridge-checklist)'s six items are stated for it. Dafny's
+`verify-formal` gates every `.dfy` file, bridged or not, for its own reason: a
+postcondition the verifier rejects is a contradiction in the contract itself
+([`000-process.md` Rule 7](../000-process.md#intent-attribution)'s
+Unsatisfiable row).
 
 Dafny and TLA+ are parallel specifications — not auto-generated from
 Python. When a Markdown spec item changes, the corresponding Dafny
@@ -272,7 +284,7 @@ postcondition or TLA+ invariant is updated; if the verifier rejects
 the new form, the spec has an internal contradiction.
 
 A rejected form is only the case a verifier can catch. For the
-disagreement generally — prose against a verified postcondition or
+disagreement generally — prose against a checked model clause or
 against a green conformance suite, including where prose is the side
 that must move — see [`000-process.md` Rule
 7](../000-process.md#intent-attribution).

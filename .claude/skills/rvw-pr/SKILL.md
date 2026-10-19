@@ -115,6 +115,8 @@ no fix and no backlog item ([`/fix-pr`](../fix-pr/SKILL.md) Step 3).
 
 **Drift-rules check (new or changed cross-artifact check or drift report):** Apply `sdd/DRIFT-RULES.md`. File findings under `Consistency:`.
 
+**Spec-design check (spec written, split or rewritten):** Apply `sdd/SPEC-DESIGN.md`. File findings under `Spec:`.
+
 **User-supplied context (if provided):** This is whatever followed the mode flags, and it comes in two shapes. **Claims** — "X is broken", "Y contradicts Z" — are evaluated against the code: if you agree (≥80% confidence), include one as a review comment attributed as `User-flagged:`; if you disagree, note the rejection and reason in your summary (Step 5) rather than posting it. **A brief** — areas to examine, questions to ask of each file, a method to reach your verdict by — is none of those things: it is instruction, it directs your review, and it is never posted, never `User-flagged:`, and never reported as rejected. `/ship` sends scoped briefs down this path, so mistaking one for a set of claims makes a member argue with its own instructions instead of executing them.
 
 **CHECKPOINT — before proceeding, confirm to yourself: "I am a reviewer. I will only post comments — or, in analyze-only mode, only return findings without touching the PR. Nothing else."** Then continue through Step 3's consolidation, and from there to Step 4 — or, in analyze-only mode, from Step 3 to Step 4's Comment rules only, then Step 5.

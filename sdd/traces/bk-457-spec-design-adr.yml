@@ -1,0 +1,278 @@
+id: BK-457
+title: "No rule says what a spec owes, where it ends, which form it takes, or which layer governs it"
+trigger: >-
+  RFC-0022 was merged as a draft (PR #1160) with open questions 4 to 8, ID-150
+  and BUG-337 had closed, and the maintainer asked to accept the RFC, write its
+  ADR and authoring guide, and rewrite spec 003 against them.
+source_items:
+  - BK-457
+  - BK-456
+audience:
+  - contributor.process
+  - library.maintainer
+decisions:
+  - sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl
+discovery_followups:
+  - BK-460
+  - BK-461
+  - BK-462
+  - BK-463
+expected_ripples:
+  - sdd/000-process.md
+  - sdd/formal/README.md
+  - sdd/templates/spec-template.md
+  - CLAUDE.md
+  - .claude/agents/store-backend-expert.md
+  - .claude/agents/sdd-expert.md
+  - .claude/skills/rvw-pr/SKILL.md
+  - .claude/skills/audit/SKILL.md
+  - CONTRIBUTING.md
+  - docs-src/explanation/design/_nav.yml
+  - docs-src/explanation/design/_index.tmpl
+  - sdd/CLAUDE-REFERENCE.md
+surprising_ripples:
+  # The new-authority-doc ripple row names the skills and agents to point at
+  # the doc but not the budget that pointing grows; check-process-budget
+  # failed until the growth was recorded as a raise.
+  - sdd/process-budget.json
+orient:
+  - items: [BK-456]
+    verdict: constrains
+    evidence: >-
+      BK-456 dossier: "Status out first, before the ADR", then "Move only in the
+      split PR: no clause is reworded there, so its review is a check that text
+      moved whole", then "a prune of each new file against that ADR", "a file per
+      PR". Status-out is still undone: spec 003 at 02cbafc holds 84 backlog-ID
+      occurrences, 38 distinct, and 10 "not yet" (Python regex over the file).
+      A full rewrite in one step loses the move check the dossier relies on.
+  - items: [BUG-323, BUG-293, BUG-255, BUG-257, BUG-245, BUG-253, BUG-339, BUG-318, BUG-319, BUG-334, BUG-299, BUG-292, BUG-300, BUG-260, BK-345, BK-382, ID-247, ID-262]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-find --spec BE-008 ... --spec TREE-001 --max 40`: each
+      cites BE-008, BE-010, BE-013, BE-020, BE-021 or BE-029 on its attribute
+      line. The rewrite must keep those IDs and their anchors (Rule 5), and under
+      RFC-0022 D8 the spec's links to these items move into the items, not out
+      of existence.
+  - items: [BK-450, BK-434, BK-438, BK-439, BK-446, BK-451, BK-452]
+    verdict: constrains
+    evidence: >-
+      All cite BE-030 to BE-032 or CAP-007 and carry open decisions on the
+      kernel's clauses (BK-450: "Open decision: the mechanisms, and each item's
+      owner"). The prune of the kernel sections relocates mechanism (D1) but
+      must not decide these items' open questions.
+  - items: [BK-454, BK-455]
+    verdict: constrains
+    evidence: >-
+      Lifetimes on BE-033. RFC-0022 D4 makes the TLA+ module the lifetime's
+      source with a checked diagram, and Open Question 3: "Until a bridged
+      module lands, lifetime clauses stay prose-governed". No Mermaid parser,
+      edge-equality check or ITF replayer exists, so BE-033 can be split out
+      by kind now but not put into D4's form until these items land.
+  - items: [BK-435, BK-436]
+    verdict: unrelated
+    evidence: >-
+      They tie spec 051 to operations and backends; spec 003's BE-032 already
+      points to spec 051 (BK-435 index), and the rewrite keeps that link.
+  - items: [ID-270]
+    verdict: constrains
+    evidence: >-
+      ID-150 settled RFC-0022 Open Question 3; ID-270 revisits verify-tla
+      gating. Recorded at orient as unrelated, which was wrong: this PR replaces
+      formal/README.md rule 3's catch bar with gating from the bridging PR and
+      rewrites ID-270's body to match (the bridged module gates; each unbridged
+      one is promoted, removed or re-deferred). Corrected after the
+      maintainer's second review on PR #1166.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/rfcs/rfc-0022-how-specs-are-designed.md
+        section: "(full)"
+        read_type: gate
+        extract: "Open questions 4 to 8 remain; D4 needs tooling no item builds yet"
+        outcome: ok
+      - file: sdd/backlog/bk-457-declarative-spec-adr.md
+        section: "(full)"
+        read_type: gate
+        extract: "Prescription: ADR, then BK-456 by layer or kind, a file per PR"
+        outcome: ok
+      - file: sdd/backlog/bk-456-split-spec-003.md
+        section: "(full)"
+        read_type: gate
+        extract: "Status out, pure-move split, prune per file; ripple greps for anchors"
+        outcome: ok
+      - file: sdd/backlog/bug-337-spec-003-contradictions.md
+        section: "(full)"
+        read_type: reference
+        extract: "Confirm the four contradictions are fixed (done at 02cbafc)"
+        outcome: ok
+      - file: sdd/backlog/bk-450-driver-boundary-enforcement.md
+        section: "(full)"
+        read_type: reference
+        extract: "Kernel-boundary decisions stay open; the prune must not take them"
+        outcome: ok
+      - file: sdd/research/research-spec-design.md
+        section: "16. Spec 003 as a test case"
+        read_type: reference
+        extract: "D3, D7, D8 not met; D1, D4, D5, D6 partly"
+        outcome: ok
+      - file: sdd/adrs/0047-store-tree-key-resolution.md
+        section: "Status"
+        read_type: reference
+        extract: "Pattern for an ADR recording an accepted RFC's decisions"
+        outcome: ok
+      - file: sdd/audits/audit-023-kernel-migration-readiness.md
+        section: "Summary; T12; T14; T20; Proposals P0, P1, P3, P5, P6"
+        read_type: reference
+        extract: >-
+          Read only after the maintainer asked on PR #1166 why it was missing.
+          Orient searched backlog items by spec ID and file, which reaches no
+          audit, and read BK-450's dossier, which cites it, as BK-450's evidence
+          only. It is the strongest content evidence for the rules: T20 (no
+          states), P3 with T3/T12/T14 (the model, not the kernel, was wrong),
+          P5 and P6 (profiles, one owner per check).
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/research/research-spec-design.md
+        section: "6. What makes a spec good; 9. Model-to-code bridges; 14. External reviews considered"
+        read_type: reference
+        extract: "Take the eight properties, the bridge ladder and the bridge checklist into the guide"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-012; BE-021 (error-path probe, type mismatch outranks missing_ok)"
+        read_type: reference
+        extract: "Open Question 4's consequences: the probe runs on a miss only, its cost per kernel and non-kernel class"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "Delete; DeleteFolder"
+        read_type: reference
+        extract: "IsDir outranks missing_ok as a verified postcondition, so strict is the modelled outcome"
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rules; Spec format; Attribution inside the intent domain"
+        read_type: gate
+        extract: "Rule 3 and Rule 7's items to amend; the template block SPEC-DESIGN.md replaces"
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Authoring rules; Layers at a glance"
+        read_type: gate
+        extract: "Rule 3's catch bar to replace; the layer table gains the kind each layer governs"
+        outcome: ok
+      - file: sdd/templates/adr-template.md
+        section: "(full)"
+        read_type: gate
+        extract: "Decision lifted into the digest; keep it to the choice, why and when to reverse"
+        outcome: ok
+      - file: sdd/adrs/0047-store-tree-key-resolution.md
+        section: "Status"
+        read_type: reference
+        extract: "Status paragraph naming the RFC decisions recorded and the amends search"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format"
+        read_type: gate
+        extract: "Intent & Scope, numbered Rules, optional Guides; no rationale in the doc"
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Intent & Scope; Rules"
+        read_type: reference
+        extract: "Shape of a review-enforced authority doc with siblings and anchored rules"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index; Detailed checklist (New authoritative process doc; Authority direction amended)"
+        read_type: gate
+        extract: "Ripples of a new authority doc and of amending which side governs"
+        outcome: ok
+      - file: scripts/check_process_budget.py
+        section: "module docstring"
+        read_type: reference
+        extract: "Growth of skills, agents and CLAUDE.md fails until raised under an item"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "Completing work, item scope, new IDs from gen-backlogid-check"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1166 --trace-block-only` at head 695f810.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1166 --trace-block-only"
+  pr: 1166
+  review_rounds: 14
+  submissions: 2
+  findings: 14
+  by_round:
+    - round: 1
+      findings: 8
+      origin: {original: 6, pre-existing: 2}
+      triage: {must-fix: 8}
+      duration_hours: 0.23
+    - round: 2
+      findings: 6
+      origin: {loop-introduced: 1, original: 4, unclassifiable-file: 1}
+      triage: {filed: 1, must-fix: 4, unknown: 1}
+      duration_hours: 0.84
+  by_file:
+    - path: "sdd/SPEC-DESIGN.md"
+      findings: 6
+    - path: "sdd/formal/README.md"
+      findings: 3
+    - path: "sdd/000-process.md"
+      findings: 2
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/adrs/0048-how-specs-are-designed.md"
+      findings: 1
+    - path: "sdd/traces/bk-457-spec-design-adr.yml"
+      findings: 1
+  untouched_files:
+    - ".claude/agents/sdd-expert.md"
+    - ".claude/agents/store-backend-expert.md"
+    - ".claude/skills/audit/SKILL.md"
+    - ".claude/skills/rvw-pr/SKILL.md"
+    - "CLAUDE.md"
+    - "CONTRIBUTING.md"
+    - "docs-src/explanation/design/_index.tmpl"
+    - "docs-src/explanation/design/_nav.yml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/backlog/bk-456-split-spec-003.md"
+    - "sdd/backlog/bk-457-declarative-spec-adr.md"
+    - "sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/rfcs/rfc-0022-how-specs-are-designed.md"
+    - "sdd/templates/spec-template.md"
+  review_driven_commits:
+    - sha: "e7e5537"
+      subject: "fix: address PR #1166 review"
+    - sha: "3965e3a"
+      subject: "BK-457: Accept RFC-0022 and ADR-0048; address the second review of PR #1166"
+    - sha: "6cc3f1f"
+      subject: "BK-457: Trace review block for PR #1166"
+    - sha: "d1cff3c"
+      subject: "BK-457: Take the backend-behaviour decision out of ADR-0048"
+    - sha: "9daded1"
+      subject: "BK-457: Rule 8 asks that a bridge gates, not which CI job runs it"
+    - sha: "18f050e"
+      subject: "BK-457: Make ADR-0048 the why for every SPEC-DESIGN rule, and consistent with it"
+    - sha: "6cd5738"
+      subject: "BK-457: SPEC-DESIGN tells an author when a spec is ready and a reviewer what each property means"
+    - sha: "b2b68aa"
+      subject: "BK-457: Address the scoped review of ADR-0048, RFC-0022 and SPEC-DESIGN.md"
+    - sha: "0ab6665"
+      subject: "BK-457: Regenerate the trace review block at b2b68aa"
+    - sha: "92b96b0"
+      subject: "BK-457: SPEC-DESIGN defines governs, scopes the diagram check, and warns reviewers off form-only passes"
+    - sha: "3b141a4"
+      subject: "BK-457: ADR-0048 gives the why for stating an empty skeleton heading"
+    - sha: "b2fa3c3"
+      subject: "BK-457: Regenerate the trace review block at 3b141a4"
+    - sha: "971cb90"
+      subject: "BK-457: Prune ADR-0048's Decision to choice, why and reverse; lead SPEC-DESIGN Rules 2 and 4 with their claim"
+    - sha: "695f810"
+      subject: "BK-457: Link every doc ADR-0048 names"
+  ci: {verdict: PENDING, failed: 0, pending: 1}

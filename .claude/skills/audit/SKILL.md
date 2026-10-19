@@ -21,6 +21,8 @@ Read the target files. For each finding record: `file:line`, category (Bug/Secur
 
 **Findings on cross-artifact checks and drift reports:** apply `sdd/DRIFT-RULES.md`; cite the rule number in the evidence.
 
+**`Spec` findings on a spec's own shape:** apply `sdd/SPEC-DESIGN.md`; cite the rule number in the evidence.
+
 ## Step 3: Report
 
 ```
