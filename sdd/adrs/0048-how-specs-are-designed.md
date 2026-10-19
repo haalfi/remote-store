@@ -4,14 +4,17 @@
 
 | Field         | Value    |
 | ------------- | -------- |
-| Status        | Accepted |
+| Status        | Proposed |
 | Supersedes    | —        |
 | Superseded by | —        |
 | Amends        | —        |
 
 Records the decisions of
-[RFC-0022](../rfcs/rfc-0022-how-specs-are-designed.md) (BK-457), accepted by
-the maintainer on 2026-10-19: its D1, D3, D5 and D6, the amendment of
+[RFC-0022](../rfcs/rfc-0022-how-specs-are-designed.md) (BK-457), proposed for
+the RFC's acceptance; Open Questions 4 to 8 carry the maintainer's answers of
+2026-10-19 (decision log
+`sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl`). It covers D1, D3,
+D5 and D6, the amendment of
 [`000-process.md`](../000-process.md) Rules 3 and 7, the gating bar of
 [`formal/README.md`](../formal/README.md#authoring-rules) rule 3, and the
 answers to its Open Questions 4 to 8. Its D2, D4, D7 and D8 are rules of

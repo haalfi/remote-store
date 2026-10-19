@@ -377,7 +377,7 @@ no clause of the contract ships unexercised.
 
 - [ ] **BK-461 — No TLA+ module is bridged to code, so none can gate or govern a lifetime**
   spec: — · effort: L · audience: infra.test, library.maintainer
-  ADR-0048 gates a TLA+ module from the PR that bridges it. The first bridge it names is
+  ADR-0048 (proposed) gates a TLA+ module from the PR that bridges it. The first bridge it names is
   tests generated from the model, as ITF traces replayed by pytest, and no Python ITF
   replayer exists (research-spec-design § 9). The likely first module is BK-455's
   close/run race; ID-270 revisits `verify-tla` in that PR. Open decision: which checker
@@ -854,11 +854,19 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
+- [~] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
+  spec: — · effort: L · audience: contributor.process, library.maintainer
+  Spec 003 mandates mechanisms (BE-032's probe set, BE-021's per-backend remapping) beside
+  its invariants; nothing assigns a kind of truth to a spec, a form or a formal layer. RFC-0022
+  is under review, its open questions answered; ADR-0048 (proposed) and `sdd/SPEC-DESIGN.md`
+  are drafted with it. BK-456 follows. Open decision: accepting RFC-0022 and ADR-0048.
+  Detail: [dossier](backlog/bk-457-declarative-spec-adr.md)
+
 - [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
   Most of the spec sits in BE-021, BE-029, BE-032 and BE-033 (sizes: dossier); PR #1159's
   rounds kept finding one section contradicting another, and project status and history
-  sit inside its normative sections. ADR-0048 stages it: status out, a split by kind of
+  sit inside its normative sections. ADR-0048 (proposed) stages it: status out, a split by kind of
   truth as a pure move (IDs keep their BE- prefix), then a prune per file against
   `SPEC-DESIGN.md`. Open decision: the new spec numbers and each section's kind.
   Detail: [dossier](backlog/bk-456-split-spec-003.md)

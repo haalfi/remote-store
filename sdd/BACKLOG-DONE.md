@@ -300,15 +300,6 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
-- [x] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
-  spec: — · effort: L · audience: contributor.process, library.maintainer
-  RFC-0022 accepted 2026-10-19, its open questions answered (strict `missing_ok` on every
-  profile; spec 003 first, cut by kind). Decisions in ADR-0048; rules in the new authority
-  doc `sdd/SPEC-DESIGN.md`. `000-process.md` Rules 3 and 7, § Spec format and the spec
-  template, and `formal/README.md` rule 3 follow it. D4's tooling: BK-460, BK-461.
-  Dossier: [BK-457](backlog/bk-457-declarative-spec-adr.md). Traces:
-  [rfc](traces/bk-457-spec-design-rfc.yml), [adr](traces/bk-457-spec-design-adr.yml).
-
 - [x] **BUG-337 — Spec 003 contradicts itself on a move onto an existing file and on the write precondition order**
   spec: BE-008, BE-010, BE-018, BE-021, BE-032 · effort: S · audience: library.maintainer
   Spec-only, in `003-backend-adapter-contract.md`: BE-021's table moves the `move`/`copy` destination to
