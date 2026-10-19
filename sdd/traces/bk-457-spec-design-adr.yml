@@ -195,3 +195,60 @@ phases:
         read_type: gate
         extract: "Completing work, item scope, new IDs from gen-backlogid-check"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1166 --trace-block-only` at head 3965e3a.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1166 --trace-block-only"
+  pr: 1166
+  review_rounds: 2
+  submissions: 2
+  findings: 14
+  by_round:
+    - round: 1
+      findings: 8
+      origin: {original: 6, pre-existing: 2}
+      triage: {must-fix: 8}
+      duration_hours: 0.23
+    - round: 2
+      findings: 6
+      origin: {loop-introduced: 1, original: 4, unclassifiable-file: 1}
+      triage: {filed: 1, must-fix: 4, unknown: 1}
+      duration_hours: 0.84
+  by_file:
+    - path: "sdd/SPEC-DESIGN.md"
+      findings: 6
+    - path: "sdd/formal/README.md"
+      findings: 3
+    - path: "sdd/000-process.md"
+      findings: 2
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/adrs/0048-how-specs-are-designed.md"
+      findings: 1
+    - path: "sdd/traces/bk-457-spec-design-adr.yml"
+      findings: 1
+  untouched_files:
+    - ".claude/agents/sdd-expert.md"
+    - ".claude/agents/store-backend-expert.md"
+    - ".claude/skills/audit/SKILL.md"
+    - ".claude/skills/rvw-pr/SKILL.md"
+    - "CLAUDE.md"
+    - "CONTRIBUTING.md"
+    - "docs-src/explanation/design/_index.tmpl"
+    - "docs-src/explanation/design/_nav.yml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/backlog/bk-456-split-spec-003.md"
+    - "sdd/backlog/bk-457-declarative-spec-adr.md"
+    - "sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/rfcs/rfc-0022-how-specs-are-designed.md"
+    - "sdd/templates/spec-template.md"
+  review_driven_commits:
+    - sha: "e7e5537"
+      subject: "fix: address PR #1166 review"
+    - sha: "3965e3a"
+      subject: "BK-457: Accept RFC-0022 and ADR-0048; address the second review of PR #1166"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
