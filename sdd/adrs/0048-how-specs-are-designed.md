@@ -145,4 +145,5 @@ with no normative home.
 - Neutral: the review properties and the bridge checklist live in
   `SPEC-DESIGN.md`, review-enforced like `CONTENT-RULES.md`; no gate checks
   them.
-- Neutral: until every spec has been rewritten, two spec shapes coexist.
+- Neutral: the rules bind the sections a change writes, so until every
+  section has been rewritten two shapes coexist, sometimes within one spec.

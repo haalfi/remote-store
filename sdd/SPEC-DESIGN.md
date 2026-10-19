@@ -6,8 +6,9 @@
 THE source for what a spec under `sdd/specs/` states, where one spec ends,
 which form each of its sections takes, and which artifact governs a clause.
 Applies when a spec is written, split or rewritten, and when a review judges
-one. A section edited in place keeps its spec's current form; the spec adopts
-these rules when it is next rewritten. Why each rule exists:
+one. The rules bind every section a change writes, splits, moves or rewords;
+a section the change leaves untouched keeps its current form. Why each rule
+exists:
 [ADR-0048](adrs/0048-how-specs-are-designed.md).
 
 Siblings: [`000-process.md`](000-process.md) owns section IDs, test
@@ -58,7 +59,7 @@ written.
     A component (store, kernel, driver, session, stream) is where a property is
     enforced, not where it is stated, so no spec is cut per component. The
     second cut, inside a kind, is an interface contract between layers (the
-    store's API against the backend's), so each side can be checked on its own.
+    store's API against the backend's).
     A property that spans kinds has one owning spec; the others link to it.
 
 3. <a id="form-per-kind"></a>**Each kind takes the form it needs.** [review-enforced]
@@ -157,21 +158,37 @@ written.
 
 ## Guides
 
+### Ready
+
+A spec, or the sections a change touches, is ready for review when:
+
+1. Each section has one kind (Rule 2), takes that kind's form (Rule 3), and
+   passes Rule 1's two tests.
+2. Each section has at least one test carrying its spec mark
+   ([`000-process.md` Rule 2](000-process.md#spec-test-traceability)), and
+   Tested against names what runs them.
+3. Nothing undecided is left inside: what the spec does not decide is stated
+   as out of scope with the spec that owns it, and an open question goes to a
+   backlog item, never into the spec.
+4. It carries no project state (Rule 7) and lists every assumption it relies
+   on (Rule 5).
+5. The review checklist below finds nothing.
+
 ### Review checklist
 
-A spec is reviewed against eight properties. What each means is
-[research § 6](research/research-spec-design.md#6-what-makes-a-spec-good).
+A spec is reviewed against eight properties. A finding names the rule the
+property rests on; the rule's why is in ADR-0048.
 
-| Property | Check | Rule |
-| --- | --- | --- |
-| Well founded | Each clause has a reason and an owner; axioms apart from what they imply | 6 (Notes) |
-| Verifiable | Each clause has a defined witness of violation, or is an assumption | 1, 5 |
-| Lasting | True without edits as the project moves | 7; [`CONTENT-RULES.md` Rule 1](CONTENT-RULES.md#six-month-test) |
-| Correct | Says what the system must do, and it can | 4 |
-| Free of contradictions | No two clauses or neighbouring specs disagree; one home per fact | 2 |
-| No unstated gaps | Scope and non-scope stated; open questions declared open | 3, 6 |
-| Placed | Covers only its own kind and layer | 1, 2 |
-| Comprehensible | Leads with its claim, in the form its content needs | 3, 6; [`CONTENT-RULES.md` Rules 7 and 8](CONTENT-RULES.md#kernsatz) |
+| Property | Means | Check | Rule |
+| --- | --- | --- | --- |
+| Well founded | Every clause has a reason and an owner | Axioms apart from what they imply; each derived claim names its proof in Notes | 6 |
+| Verifiable | Every clause has a defined witness of violation, or is an assumption | Rule 1's two tests | 1, 5 |
+| Lasting | True without edits as the project moves | No project state; links point at the spec, never from it | 7; [`CONTENT-RULES.md` Rule 1](CONTENT-RULES.md#six-month-test) |
+| Correct | Says what the system must do, and it can | A model check through a bridge, or a contract test | 4 |
+| Free of contradictions | No two clauses, or neighbouring specs, disagree | One home per fact; a property spanning kinds has one owning spec | 2 |
+| No unstated gaps | Nothing the spec relies on or leaves out is merely implied | Out of scope stated with its owner; assumptions listed; a lifetime's diagram closed-world | 3, 5, 6 |
+| Placed | Covers only its own kind and layer | No mechanism; no clause of another kind | 1, 2 |
+| Comprehensible | Leads with its claim, in the form its content needs | The Overview's opening sentences; Rule 3's form | 3, 6; [`CONTENT-RULES.md` Rules 7 and 8](CONTENT-RULES.md#kernsatz) |
 
 ### Exemplar
 
