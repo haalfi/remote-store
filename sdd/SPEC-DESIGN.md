@@ -33,19 +33,26 @@ written.
 
     Mechanism a caller can observe (the order of side effects, a visible retry,
     which refusal wins when two hold) is contract and stays. Ordering is stated
-    as error precedence, never as an order of steps.
+    as error precedence, never as an order of steps. So is an observable
+    quality bound (a cost, a security property, what a message must carry)
+    that a test can fail.
 
 2. <a id="kind-of-truth"></a>**One spec states one kind of truth about one
     subject.** [review-enforced]
 
-    | Kind | States |
-    | --- | --- |
-    | Structure | What holds at one instant |
-    | Function | Input to output, and totality |
-    | Single call | One operation's outcome against the state when it runs |
-    | Lifetime | The states and transitions of something that outlives a call |
-    | Environment | What the system relies on from outside it |
-    | Liveness | That something eventually happens, or never repeats |
+    | Kind | States | A witness of its violation is |
+    | --- | --- | --- |
+    | Structure | What holds at one instant | One state |
+    | Function | Input to output, and totality | One input and its output |
+    | Single call | One operation's outcome against the state when it runs | A state, one call and its result |
+    | Lifetime | The states and transitions of something that outlives a call | A sequence of calls on one object |
+    | Environment | What the system relies on from outside it | A behaviour outside the library's control |
+    | Liveness | That something eventually happens, or never repeats | A run past its bound |
+
+    A clause's kind is the shape of a witness that would violate it. A clause
+    whose witness fits two kinds belongs to the larger: a call sequence is
+    larger than one call, one call larger than an input and its output, and
+    that larger than one state.
 
     A component (store, kernel, driver, session, stream) is where a property is
     enforced, not where it is stated, so no spec is cut per component. The
@@ -92,9 +99,10 @@ written.
     review. A model whose check does not gate governs nothing
     ([`formal/README.md` rule 3](formal/README.md#authoring-rules)). A conflict
     between contract, model, test and code is resolved under
-    [`000-process.md` Rule 7](000-process.md#intent-attribution). A clause's
-    bridge level is derived from its bridges and their tests, never tagged in
-    the spec.
+    [`000-process.md` Rule 7](000-process.md#intent-attribution). A bridge
+    reaches a clause per section ID: the model's `@spec` tags and the tests'
+    spec marks citing that ID derive it, as `scripts/check_formal_trace.py`
+    does for Dafny. A spec never tags a clause's reach by hand.
 
 5. <a id="profiles-and-assumptions"></a>**Profiles and assumptions are
     declared, not implied.** [review-enforced]

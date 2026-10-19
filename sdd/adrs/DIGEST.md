@@ -15,10 +15,12 @@ Compiled from 48 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run
   *Reverse when* a relocated sentence proves to be what callers rely on.
 
 - **Specs are cut by kind of truth, then by interface contract**, never per
-  component; this answers Open Question 8 for spec 003. *Why:* ownership,
-  state and time cross components. *Reverse when* spec 003's split shows more
+  component: structure, function, single call, lifetime, environment and
+  liveness, a clause's kind being the shape of a witness that would violate
+  it. This answers Open Question 8 for spec 003. *Why:* ownership, state and
+  time cross components. *Reverse when* BK-456's split and prune show more
   duplication or cross-linking than one operation contract with linked models
-  would: the cut is a candidate, judged on its first use.
+  would.
 
 - **The spec and its governing model are authoritative.** A model bound to the
   tests by a bridge governs its clause as far as the bridge reaches, and the
@@ -32,12 +34,14 @@ Compiled from 48 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run
 
 - **A TLA+ check gates per module, from the change that bridges it** (Open
   Question 3, decided by ID-150), replacing rule 3's bar of a first live
-  catch. *Why:* gating an unbridged model proves only self-agreement.
+  catch; an unbridged module still runs, without blocking. *Why:* gating an
+  unbridged model proves only self-agreement.
 
 - **Backend differences are named profiles, and type mismatch outranks
-  `missing_ok` on every profile** (Open Question 4). *Why:* it is a verified
-  Dafny postcondition, and a quiet return on flat backends alone would make
-  one call answer differently per backend. *Reverse when* the probe is
+  `missing_ok` on every profile** (Open Question 4). *Why:* the tolerance is
+  for a missing path, not a wrong-typed one (BE-012, BE-021), and a quiet return on
+  flat backends alone would make one call answer differently per backend; the
+  Dafny model verifies the rule is consistent, not that it is right. *Reverse when* the probe is
   measured dominating a bulk delete, and then by an opt-out the caller
   chooses, not a per-profile default.
 
