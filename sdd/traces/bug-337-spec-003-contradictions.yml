@@ -1,0 +1,74 @@
+id: BUG-337
+title: "Spec 003 contradicts itself on a move onto an existing file and on the write precondition order"
+trigger: "A read of spec 003 against RFC-0022 (BK-457, PR #1160) found BE-021's table mapping a move/copy destination that is a file to InvalidPath while BE-018, BE-032 A.5 and the Dafny Move give AlreadyExists, and BE-008's numbered order omitting the closed guard and the WR-010 gate its own Formal coverage ranks first"
+source_items:
+  - BUG-337
+audience:
+  - library.maintainer
+decisions:
+  - sdd/decisions/7a7c11f9-0b2f-5bc1-9e4f-1824bc2f1ca1.jsonl
+orient:
+  - items: [BK-456]
+    verdict: constrains
+    evidence: "bk-456-split-spec-003.md § Prescription: the split PR is 'a pure move ... no clause is reworded there', and the status-out step is its own PR. So the contradictions are fixed before the split, here, and this PR moves or prunes no history or status prose."
+  - items: [BK-457]
+    verdict: constrains
+    evidence: "bk-457-declarative-spec-adr.md § Spec 003 measured against RFC-0022 hands the contradictions to BUG-337 and keeps the prune of prescribed mechanism (BE-008's ID-211 walk, BE-018's _check_no_file_ancestor sentence) for the ADR that follows RFC-0022. This PR rewords only the contradicting clauses and leaves the mechanism prose in place."
+  - items: [BK-434]
+    verdict: unrelated
+    evidence: "Its dossier line refines the trait's operations against StoreTree.dfy; this fix changes no Dafny, since BackendContract.dfy's Write and Move are the side the spec is aligned to."
+  - items: [BUG-299, BUG-253, BUG-292, BUG-300, BK-382, BUG-323, BUG-293, BUG-255, BUG-257, BUG-245, BUG-318, BUG-319, BUG-334, BK-345, BK-450, BK-443]
+    verdict: unrelated
+    evidence: "Backend implementation defects or gates under BE-008 / BE-021 as written; none depends on the rows this fix changes. The changed BE-021 row matches what every backend already does: tests/backends/conformance/test_atomic.py's move/copy-onto-a-file test asserts AlreadyExists(dst) across the registry."
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bug-337-spec-003-contradictions.md
+        section: "(full)"
+        read_type: gate
+        extract: "The four contradictions with line numbers at 32a5653, and the BE-028 wording hazard; line numbers had shifted by about ten on master"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Orient: does related open work change the fix?"
+        read_type: gate
+        extract: "Find, cluster, read, judge, record, recommend in one dialog"
+        outcome: ok
+      - file: sdd/backlog/bk-456-split-spec-003.md
+        section: "(full)"
+        read_type: reference
+        extract: "Split is a pure move after a status-out PR, so contradictions must be fixed first and no prose moved here"
+        outcome: ok
+      - file: sdd/backlog/bk-457-declarative-spec-adr.md
+        section: "Spec 003 measured against RFC-0022"
+        read_type: reference
+        extract: "Contradictions are BUG-337's; mechanism prune waits for the ADR"
+        outcome: ok
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008, BE-010, BE-018, BE-019, BE-021"
+        read_type: gate
+        extract: "Confirm each contradiction at current line numbers"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "Write, Move"
+        read_type: gate
+        extract: "Write: closed guard, root, WR-010, IsDir, file ancestor, AlreadyExists; Move: dst IsDir tagged BE-021, IsFile(dst) AlreadyExists tagged BE-018"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-030"
+        read_type: reference
+        extract: "Kernel pipeline: capability gate, closed guard, key refusals, root, WR-010 between root and driver"
+        outcome: ok
+      - file: sdd/specs/045-write-result.md
+        section: "WR-010"
+        read_type: reference
+        extract: "WR-010 is a Store-layer gate; off the kernel a backend does not run it (LocalBackend.write never reads metadata), so BE-008 can only rank it where a class runs it"
+        outcome: unclear
+      - file: tests/backends/conformance/test_atomic.py
+        section: "move/copy AlreadyExists on an existing file"
+        read_type: verify
+        extract: "The corrected BE-021 row is already pinned on every backend, so no failing test exists to write; spec-only fix"
+        outcome: ok

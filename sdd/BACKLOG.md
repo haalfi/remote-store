@@ -831,14 +831,6 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
-- [ ] **BUG-337 — Spec 003 contradicts itself on a move onto an existing file and on the write precondition order**
-  spec: BE-008, BE-010, BE-018, BE-021, BE-032 · effort: S · audience: library.maintainer
-  BE-021 maps a `move`/`copy` destination that is a file to `InvalidPath`; BE-018, BE-032
-  A.5 and the Dafny `Move` give `AlreadyExists`. BE-008's order omits the closed guard and
-  the WR-010 gate its Formal coverage ranks before path validity; BE-010 drops its root
-  step; BE-018's destination-directory rule lacks BE-021's hierarchical-only binding.
-  Open decision: none. Detail: [dossier](backlog/bug-337-spec-003-contradictions.md)
-
 - [~] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
   spec: — · effort: L · audience: contributor.process, library.maintainer
   Spec 003 mandates mechanisms (BE-032's probe set, BE-021's per-backend remapping) beside

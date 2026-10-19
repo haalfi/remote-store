@@ -300,6 +300,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-337 — Spec 003 contradicts itself on a move onto an existing file and on the write precondition order**
+  spec: BE-008, BE-010, BE-018, BE-021, BE-032 · effort: S · audience: library.maintainer
+  Spec-only, in `003-backend-adapter-contract.md`: BE-021's table moves the `move`/`copy` destination to
+  the file-operation row and names a destination file as BE-018's `AlreadyExists`; BE-008's order
+  now opens with the closed guard and ranks the WR-010 gate after the root, as the Dafny `Write`
+  does; BE-010 links to it; BE-018/BE-019 carry BE-021's destination scope; BE-028 says "operating
+  system". Dossier: [BUG-337](backlog/bug-337-spec-003-contradictions.md). Trace:
+  [bug-337](traces/bug-337-spec-003-contradictions.yml).
+
 - [x] **BUG-338 — The docs site's RFC and ADR indexes print one status per kind, so every RFC reads "Proposed"**
   spec: DOCFRAME-010 · effort: S · audience: user.site, contributor.tooling, contributor.process
   `_index_row` printed `_path_rules.yml`'s per-kind constant: all 22 RFCs "Proposed",
