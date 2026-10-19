@@ -250,6 +250,13 @@ failure it was.
   into `write`, or run it on the session-creation 404; measure first.
   Detail: [dossier](backlog/bug-253-graph-write-ancestor-by-size.md)
 
+- [ ] **BUG-339 — `GraphBackend.write` runs the user-metadata gate before the root refusal**
+  spec: BE-008, BE-029, WR-010 · effort: S · audience: user.api
+  `GraphBackend.write("", b"x", metadata={"k": "v"})` raises `CapabilityNotSupported`
+  where BE-008's order and the Dafny `Write` require `InvalidPath`: `write` calls
+  `_reject_user_metadata` before `_require_writable_key`. No test pins the live
+  root+metadata cell. Found in PR #1165's review. Open decision: none (swap the two calls).
+
 - [ ] **BUG-318 — `LocalBackend.glob` and `get_folder_info` leave out a subtree they cannot read**
   spec: BE-021 · effort: S · audience: user.api
   `glob` (`Path.glob`) and `get_folder_info` (`rglob`) swallow a denied subfolder

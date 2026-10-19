@@ -556,8 +556,8 @@ natively. The ID-211 opt-in `reject_write_under_file_ancestor` kwarg
 therefore does **not** apply to `GraphBackend`; ancestor-as-file
 rejection is delivered by Graph's own `409 nameAlreadyExists`
 (carrying a `file`-faceted ancestor in `error.details`) without an
-explicit pre-walk. BE-008's precondition order (path validity →
-overwrite conflict → I/O) applies in full; Graph's
+explicit pre-walk. [BE-008](003-backend-adapter-contract.md#be-008-write)'s
+precondition order applies in full; Graph's
 `409 nameAlreadyExists` alone is not sufficient to discriminate the
 outcomes. The backend inspects the 409 response body:
 - when `error.details` (or the returned `driveItem` on

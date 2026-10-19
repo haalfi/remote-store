@@ -440,7 +440,7 @@ cannot reach any cell that seeds through `write` (ID-244).
 
 **Invariant:** `write(path, content, *, overwrite=False, metadata=None) -> WriteResult` creates or overwrites a file and returns a `WriteResult`.
 **Preconditions:** `content` is `bytes` or `BinaryIO`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if an ancestor of `path` exists as a regular file (file-as-directory-component — see ID-209). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out — `metadata=None` and `metadata={}` are both no-ops with respect to this gate).
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if an ancestor of `path` exists as a regular file (file-as-directory-component — see ID-209). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out — `metadata=None` and `metadata={}` are both no-ops with respect to this gate), on a class that runs the gate itself; the order below says which do.
 **See also:** [045-write-result.md](045-write-result.md) (WR-001 through WR-005, WR-010 through WR-012).
 **Precondition evaluation order:** Backends MUST evaluate preconditions in this
 order: the closed guard — after a terminal close the call raises
@@ -448,10 +448,12 @@ order: the closed guard — after a terminal close the call raises
 (0) the root — if `path` is the store root, raises `InvalidPath`, decided
 from the key and before any request is issued ([BE-029](#be-029-root-path));
 the metadata gate — a non-empty `metadata` on a class without `USER_METADATA`
-raises `CapabilityNotSupported` (WR-010), here wherever the class runs the gate
-itself, as every class on the kernel does
-([BE-030](#be-030-key-rule-on-the-kernel)); off the kernel `Store` runs it
-before the backend is called;
+raises `CapabilityNotSupported` (WR-010). A class that runs the gate itself runs
+it here, as every class on the kernel does
+([BE-030](#be-030-key-rule-on-the-kernel)); `GraphBackend` runs it before the
+root instead, a divergence tracked as BUG-339. A class that leaves the gate to
+`Store` (e.g. `LocalBackend`) does not raise it, and `Store` runs it before the
+backend is called;
 (1) path validity — if `path` names an
 existing *directory* OR any slash-aligned ancestor of `path` is a regular file
 (file-as-directory-component, ID-209), raises `InvalidPath`; (2) overwrite
@@ -516,8 +518,7 @@ while the default fixtures continue to skip the gate. The async sibling
 `azurite_async_strict` covers `AsyncAzureBackend` end-to-end (the
 non-HNS opt-in path through `_acheck_no_file_ancestor` and the SDK
 `get_blob_properties` closure). For default-off flat-NS backends the
-effective order is: existence check (non-existent target treated as
-writable) → overwrite conflict → I/O.
+effective order is the order above with step (1) skipped.
 **On the kernel no backend takes this exemption.** A class on the kernel
 refuses a write below a file and a write of a file over a folder on every
 namespace, unconditionally ([BE-032](#be-032-the-store-tree-on-the-kernel)'s
@@ -558,7 +559,10 @@ method (`Write`, `Delete`, `DeleteFolder`, `Move`, `Copy`, and since BK-388
 `Close` and `DropContainer`; the read-only methods `require Valid()` too); the file-ancestor
 clause on Write is what closes the loophole that would let a successful
 write break `Valid()`. Move / Copy carry the same file-ancestor clause on
-their destination paths. Verified in `MemoryBackend.dfy`. Python backstop:
+their destination paths. Verified in `MemoryBackend.dfy`. The model states
+the WR-010 gate for every `Backend`, so for a class that leaves the gate to
+`Store` it is stricter than the order above, which binds the gate only where a
+class runs it. Python backstop:
 the WR-001a/004/005/012/013 postcondition chain is exercised against every
 backend by `tests/backends/conformance/test_atomic.py::TestWriteResultConformance`;
 the file-ancestor rejection is exercised by
@@ -573,7 +577,7 @@ ID-184, ID-209.
 ### BE-010: write_atomic()
 
 **Invariant:** `write_atomic(path, content, *, overwrite=False, metadata=None) -> WriteResult` writes via a temporary file + atomic rename and returns a `WriteResult`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out), on a class that runs the gate itself, as BE-008 scopes it.
 **Precondition order:** [BE-008](#be-008-write)'s, every step of it, from the closed guard and the root through I/O. Flat-namespace exemption from BE-008 applies, except on the kernel, where no backend takes it ([BE-032](#be-032-the-store-tree-on-the-kernel), A.4).
 **See also:** [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
 **Formal coverage:** Delegates to BE-008 — at the Backend-contract level

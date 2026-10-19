@@ -5,6 +5,11 @@ source_items:
   - BUG-337
 audience:
   - library.maintainer
+discovery_followups:
+  - BUG-339
+surprising_ripples:
+  - sdd/specs/029-async-store-backend-api.md
+  - sdd/specs/044-graph-backend.md
 decisions:
   - sdd/decisions/7a7c11f9-0b2f-5bc1-9e4f-1824bc2f1ca1.jsonl
 orient:
@@ -72,3 +77,21 @@ phases:
         read_type: verify
         extract: "The corrected BE-021 row is already pinned on every backend, so no failing test exists to write; spec-only fix"
         outcome: ok
+  - id: fix
+    name: Review fixes
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "write"
+        read_type: verify
+        extract: "Confirmed the review's finding: Graph runs the WR-010 gate before the root refusal, so 'wherever the class runs the gate' bound an off-kernel class that diverges; filed BUG-339 and named it in BE-008. My own miss: I checked only Local for who runs the gate off the kernel."
+        outcome: ok
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-008"
+        read_type: verify
+        extract: "Restated BE-008's shortened order 'verbatim'; now links. Missed by the first ripple search, which looked for the BE-021 row and 'Same as BE-008' only."
+        outcome: misleading
+      - file: sdd/specs/044-graph-backend.md
+        section: "BE-008 precondition discrimination"
+        read_type: verify
+        extract: "Restated BE-008's shortened order; now links"
+        outcome: misleading

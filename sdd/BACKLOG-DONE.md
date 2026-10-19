@@ -305,8 +305,9 @@ if evidence changes; these are retired.
   Spec-only, in `003-backend-adapter-contract.md`: BE-021's table moves the `move`/`copy` destination to
   the file-operation row and names a destination file as BE-018's `AlreadyExists`; BE-008's order
   now opens with the closed guard and ranks the WR-010 gate after the root, as the Dafny `Write`
-  does; BE-010 links to it; BE-018/BE-019 carry BE-021's destination scope; BE-028 says "operating
-  system". Dossier: [BUG-337](backlog/bug-337-spec-003-contradictions.md). Trace:
+  does, binding the gate where a class runs it (Graph's gate-before-root is BUG-339); BE-010,
+  ASYNC-008 and spec 044 link to it; BE-018/BE-019 carry BE-021's destination scope; BE-028 says
+  "operating system". Dossier: [BUG-337](backlog/bug-337-spec-003-contradictions.md). Trace:
   [bug-337](traces/bug-337-spec-003-contradictions.yml).
 
 - [x] **BUG-338 — The docs site's RFC and ADR indexes print one status per kind, so every RFC reads "Proposed"**
