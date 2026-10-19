@@ -40,7 +40,7 @@ another, and a read against RFC-0022 confirmed four such contradictions
 (BUG-337's dossier), and it held 84 backlog-ID occurrences at `32a5653`
 (BK-456's dossier). The spec template gives every section the same five
 fields, which can only narrate a lifecycle, and the formal layers exist
-(`formal/README.md` § Layers at a glance) without any rule for which of them
+([`formal/README.md` § Layers at a glance](../formal/README.md#layers-at-a-glance)) without any rule for which of them
 governs a clause, so a property could have a verified model and prose that
 still claimed authority over it.
 
@@ -97,8 +97,9 @@ with no normative home.
 
 - **Where a bridged model governs a clause, the model is that clause's
   spec.** It governs only as far as its bridge reaches, and only once the
-  bridge is documented to `SPEC-DESIGN.md` Rule 8, a bridge already in the
-  repo included; everywhere else the prose governs. *Why:* a model with no
+  bridge is documented to
+  [`SPEC-DESIGN.md` Rule 8](../SPEC-DESIGN.md#bridge-checklist), a bridge
+  already in the repo included; everywhere else the prose governs. *Why:* a model with no
   bridge drifts from the code, a bridge whose reach is unstated cannot be
   judged, and making every model normative would leave each clause without a
   model with no normative home.
@@ -121,7 +122,8 @@ with no normative home.
   layer that can govern it, so a model and the prose never both claim one
   clause.
 - Positive: one invariant per section gives each clause its own ID, the
-  granularity the repo's cross-artifact checks already reach (research § 16,
+  granularity the repo's cross-artifact checks already reach
+  ([research § 16](../research/research-spec-design.md#16-spec-003-as-a-test-case),
   an inference not yet tested).
 - Negative: a kind is model-governed only once its layer's check gates in CI,
   so adopting a layer means adopting its CI cost; a layer that runs in no CI
@@ -131,7 +133,7 @@ with no normative home.
 - Negative: splitting a spec adds files and cross-links, and every anchor
   into it moves with its section.
 - Neutral: the review properties and the bridge checklist live in
-  `SPEC-DESIGN.md`, review-enforced like `CONTENT-RULES.md`; no gate checks
-  them.
+  [`SPEC-DESIGN.md`](../SPEC-DESIGN.md), review-enforced like
+  [`CONTENT-RULES.md`](../CONTENT-RULES.md); no gate checks them.
 - Neutral: the rules bind the sections a change writes, so until every
   section has been rewritten two shapes coexist, sometimes within one spec.

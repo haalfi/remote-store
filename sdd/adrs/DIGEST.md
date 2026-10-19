@@ -1541,8 +1541,9 @@ D5 to D7, D9 and D10 are contract or placement and live in BE-032.
 
 - **Where a bridged model governs a clause, the model is that clause's
   spec.** It governs only as far as its bridge reaches, and only once the
-  bridge is documented to `SPEC-DESIGN.md` Rule 8, a bridge already in the
-  repo included; everywhere else the prose governs. *Why:* a model with no
+  bridge is documented to
+  [`SPEC-DESIGN.md` Rule 8](../SPEC-DESIGN.md#bridge-checklist), a bridge
+  already in the repo included; everywhere else the prose governs. *Why:* a model with no
   bridge drifts from the code, a bridge whose reach is unstated cannot be
   judged, and making every model normative would leave each clause without a
   model with no normative home.
