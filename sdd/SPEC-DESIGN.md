@@ -76,7 +76,8 @@ written.
     transition it does not draw is forbidden, and a drawn transition no run
     reaches is a defect. It uses the declared Mermaid subset (flat states,
     `[*]`, `A --> B : Action`), and a check asserts that its edges equal the
-    phase transitions of a small TLC configuration. A diagram without that
+    phase transitions of a small TLC configuration. The check holds the edges
+    equal, not the guards or what each action does; those are the module's. A diagram without that
     check is a view and states nothing. Until a lifetime has a module, that
     check and a bridge that counts under Rule 4, its spec states the states and
     transitions as a table, and the prose governs them.
@@ -96,7 +97,9 @@ written.
 
     Where a model of a clause exists and a bridge binds it to the tests, the
     model governs that clause as far as the bridge reaches, and the section
-    states the invariant in one sentence and links the model's clause. Where no
+    states the invariant in one sentence and links the model's clause. Governs
+    means the model's clause is the clause's normative statement; it claims
+    nothing about the code beyond what the bridge's tests check. Where no
     model exists, or no bridge, the prose governs; an unbridged model informs
     review. A model governs only while its own check gates in CI; when a TLA+
     check gates is [`formal/README.md` rule 3](formal/README.md#authoring-rules)'s.
@@ -139,7 +142,9 @@ written.
        section derives from the tests' spec marks, never from a list in the
        spec.
 
-    The template is [`templates/spec-template.md`](templates/spec-template.md).
+    A heading with nothing to state stays and says `None.`, so a reader can
+    tell a considered absence from a forgotten one. The template is
+    [`templates/spec-template.md`](templates/spec-template.md).
 
 7. <a id="no-project-state"></a>**A spec carries no project state.** [review-enforced]
     No status, no backlog IDs, no "yet", and no copy of another layer's facts.
@@ -167,9 +172,11 @@ A spec, or the sections a change touches, is ready for review when:
 
 1. Each section has one kind (Rule 2), takes that kind's form (Rule 3), and
    passes Rule 1's two tests.
-2. Each section has at least one test carrying its spec mark
-   ([`000-process.md` Rule 2](000-process.md#spec-test-traceability)), and
-   Tested against names what runs them.
+2. Each section has at least one test that carries its spec mark
+   ([`000-process.md` Rule 2](000-process.md#spec-test-traceability)) and
+   fails when the section is violated ([`TESTING.md`](TESTING.md)); a mark on
+   a test that cannot fail it is not coverage. Tested against names what runs
+   them.
 3. Nothing undecided is left inside: what the spec does not decide is stated
    as out of scope with the spec that owns it, and an open question goes to a
    backlog item, never into the spec.
@@ -181,6 +188,11 @@ A spec, or the sections a change touches, is ready for review when:
 
 A spec is reviewed against eight properties. A finding names the rule the
 property rests on; the rule's why is in ADR-0048.
+
+Form serves the contract, never the reverse. A section can follow every rule's
+form and still state a weak or wrong contract, so a review judges what a
+section claims (Verifiable, Correct, No unstated gaps) before how it is laid
+out, and a spec that passes on form alone has not been reviewed.
 
 | Property | Means | Check | Rule |
 | --- | --- | --- | --- |

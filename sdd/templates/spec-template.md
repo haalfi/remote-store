@@ -44,6 +44,8 @@ stated once, in its owning environment spec, and linked from the others.
 
 Not normative. Derived properties and the proofs behind them.
 
+A heading with nothing to state stays and says `None.`
+
 ## Tested against
 
 The reference model or suite the sections are checked against, named so a
