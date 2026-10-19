@@ -4,10 +4,10 @@
 
 Accepted, 2026-10-19, by the maintainer. Drafted 2026-10-18. Tracked as
 **BK-457**. Graduated to [ADR-0048](../adrs/0048-how-specs-are-designed.md)
-(D1, D3, D5, D6, the Rule 3 and Rule 7 amendment, `formal/README.md` rule 3's
-gating bar, and Open Questions 4, 6 and 8) and to the authority doc
-[`sdd/SPEC-DESIGN.md`](../SPEC-DESIGN.md) (D2, D4, D7, D8, and Open Question
-7's checklist), which are now the authority; this RFC stays as drafted, its
+(D1, D3, D5, the Rule 3 and Rule 7 amendment, `formal/README.md` rule 3's
+gating bar, and Open Questions 6 and 8) and to the authority doc
+[`sdd/SPEC-DESIGN.md`](../SPEC-DESIGN.md) (D2, D4, D6's writing rule, D7, D8,
+and Open Question 7's checklist), which are now the authority; this RFC stays as drafted, its
 open questions annotated with the maintainer's answers.
 The analysis behind it, a maintainer session that walked one operation, a
 streaming read, from key to bytes, tested against outside evidence, is
@@ -295,7 +295,8 @@ and §§ 9 to 11:
    makes it expressible; whether `delete(folder, missing_ok=True)` stays strict
    on flat backends against its wire cost is still open. *Answered 2026-10-19:*
    strict on every profile, the probe priced in the flat profile's cost
-   statement (ADR-0048).
+   statement. A backend-behaviour choice, not spec design, so spec 003 owns it
+   (BE-012, BE-021, which already state it), not ADR-0048.
 5. **Migration order:** BK-456 first, since spec 003 is where the
    contradictions were measured, or the new lifetimes first (BK-454, BK-455),
    since they are written fresh. *Answered 2026-10-19:* BK-456 first, in stages

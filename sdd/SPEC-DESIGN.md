@@ -111,10 +111,10 @@ written.
 
 5. <a id="profiles-and-assumptions"></a>**Profiles and assumptions are
     declared, not implied.** [review-enforced]
-    A behaviour that differs by backend is a named profile, declared by a
-    capability or a driver flag. The contract stays universal; the profile
-    decides when a clause is checked and what it costs, and a bound on wire
-    calls is a cost statement per profile, never a step order. What the spec
+    A behaviour that differs by backend is stated as a named profile, declared
+    by a capability or a driver flag, with each outcome it allows stated in the
+    clause, never implied by an example backend. A bound on wire calls is a
+    cost statement per profile, never a step order. What the spec
     relies on from outside goes in its Assumptions section. Whether a given
     backend meets an assumption is conformance, not spec: the shared contract
     tests check it, and the backend's capability declaration records it.

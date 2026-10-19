@@ -11,15 +11,18 @@
 
 Records the decisions of
 [RFC-0022](../rfcs/rfc-0022-how-specs-are-designed.md) (BK-457), accepted by
-the maintainer on 2026-10-19: its D1, D3, D5 and D6, the amendment of
+the maintainer on 2026-10-19: its D1, D3 and D5, the amendment of
 [`000-process.md`](../000-process.md) Rules 3 and 7, the gating bar of
 [`formal/README.md`](../formal/README.md#authoring-rules) rule 3, and the
-maintainer's answers of 2026-10-19 to Open Questions 4, 6 and 8 (decision log
+maintainer's answers of 2026-10-19 to Open Questions 6 and 8 (decision log
 `sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl`). Its D2, D4, D7
-and D8, and Open Question 7's checklist, are rules of
-[`SPEC-DESIGN.md`](../SPEC-DESIGN.md), which this record does not restate.
-Open Question 5, the order in which existing specs are reworked, organises
-work rather than deciding design, and is BK-456's.
+and D8, D6's rule for how a spec states a backend variation, and Open
+Question 7's checklist, are rules of [`SPEC-DESIGN.md`](../SPEC-DESIGN.md),
+which this record does not restate. Two answers are not spec design and live
+elsewhere: Open Question 4, whether a tolerant call stays strict about type on
+every backend, is backend behaviour and spec 003's (BE-012, BE-021); Open
+Question 5, the order in which existing specs are reworked, organises work and
+is BK-456's.
 
 It amends no record. A search of `sdd/adrs/` for `Specs are authoritative`,
 `spec format`, `Rule 3`, `normative`, `catch-first` and `informational until`,
@@ -102,17 +105,6 @@ with no normative home.
   postcondition the Dafny verifier rejects is a contradiction in the contract
   itself.
 
-- **A behaviour that differs by backend is a named profile, and the outcome
-  stays the same on every profile.** A profile, declared by a capability or a
-  driver flag, decides when a clause is checked and what it costs, never what
-  a caller sees. So a call that tolerates a missing path still refuses a
-  wrong-typed one on every profile: `delete(folder, missing_ok=True)` raises
-  `InvalidPath` on a flat backend as on a hierarchical one. *Why:* the
-  tolerance is for absence, not for a wrong type, and an outcome that depends
-  on the backend is the divergence profiles exist to remove. *Reverse when*
-  the type check's cost is measured dominating real callers; the remedy is
-  then an opt-out the caller chooses, not a different default per profile.
-
 ## Consequences
 
 - Positive: a review can fail a spec sentence on a stated test (two
@@ -127,8 +119,6 @@ with no normative home.
   job governs nothing, and its specs stay prose-governed.
 - Negative: a lifetime takes its full form only once a diagram-to-model check
   and a bridge exist for it; without them it is a prose-governed table.
-- Negative: on a flat backend the type check costs a probe on every miss of a
-  tolerant call; the flat profile's cost statement records it.
 - Negative: splitting a spec adds files and cross-links, and every anchor
   into it moves with its section.
 - Neutral: the review properties and the bridge checklist live in

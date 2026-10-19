@@ -1549,17 +1549,6 @@ D5 to D7, D9 and D10 are contract or placement and live in BE-032.
   postcondition the Dafny verifier rejects is a contradiction in the contract
   itself.
 
-- **A behaviour that differs by backend is a named profile, and the outcome
-  stays the same on every profile.** A profile, declared by a capability or a
-  driver flag, decides when a clause is checked and what it costs, never what
-  a caller sees. So a call that tolerates a missing path still refuses a
-  wrong-typed one on every profile: `delete(folder, missing_ok=True)` raises
-  `InvalidPath` on a flat backend as on a hierarchical one. *Why:* the
-  tolerance is for absence, not for a wrong type, and an outcome that depends
-  on the backend is the divergence profiles exist to remove. *Reverse when*
-  the type check's cost is measured dominating real callers; the remedy is
-  then an opt-out the caller chooses, not a different default per profile.
-
 ## Superseded
 
 ### [ADR-0006](0006-documentation-architecture.md): Documentation Architecture - Source of Truth and Audiences
