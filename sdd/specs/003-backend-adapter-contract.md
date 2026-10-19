@@ -450,8 +450,7 @@ from the key and before any request is issued ([BE-029](#be-029-root-path));
 the metadata gate — a non-empty `metadata` on a class without `USER_METADATA`
 raises `CapabilityNotSupported` (WR-010). A class that runs the gate itself runs
 it here, as every class on the kernel does
-([BE-030](#be-030-key-rule-on-the-kernel)); `GraphBackend` runs it before the
-root instead, a divergence tracked as BUG-339. A class that leaves the gate to
+([BE-030](#be-030-key-rule-on-the-kernel)). A class that leaves the gate to
 `Store` (e.g. `LocalBackend`) does not raise it, and `Store` runs it before the
 backend is called;
 (1) path validity — if `path` names an
