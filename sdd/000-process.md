@@ -60,7 +60,7 @@ def test_double_dot_rejected():
 ### Attribution inside the intent domain
 
 Rule 3 settles intent against code. These settle the intent domain against
-itself: spec prose, the Dafny model, and the conformance suite. *Where the
+itself: spec prose, the formal models, and the conformance suite. *Where the
 resolution is written* and *which side was wrong* are two questions; answer them
 in that order.
 
@@ -76,8 +76,8 @@ in that order.
 
     | Defeater | What you observe | What follows |
     |---|---|---|
-    | **Unsatisfiable** | The verifier rejects the postcondition form the prose requires | Prose moves — the section contradicts itself. Owned by [`formal/README.md`](formal/README.md#layers-at-a-glance) and stated here only to complete the procedure |
-    | **Over-specified** | A postcondition *verifies* and still asserts more than the prose does — the model is stricter than the contract it formalizes | Decide which is the contract. The postcondition is not self-authorizing: a verified clause with no prose parent is the formal layer's own orphan realization. Either prose adopts the stronger form, or the postcondition weakens to what prose actually requires |
+    | **Unsatisfiable** | The model's checker rejects the form the prose requires (a Dafny postcondition, a TLA+ invariant) | Prose moves — the section contradicts itself. Owned by [`formal/README.md`](formal/README.md#layers-at-a-glance) and stated here only to complete the procedure |
+    | **Over-specified** | A model clause *checks* and still asserts more than the prose does — the model is stricter than the contract it formalizes | Decide which is the contract. The model clause is not self-authorizing: a checked clause with no prose parent is the formal layer's own orphan realization. Either prose adopts the stronger form, or the model clause weakens to what prose actually requires |
     | **Under-determined** | Prose is silent, or permits a variation, where shipped behaviour is uniform | Prose moves — state the behaviour and add the test it never had. Silence is not a licence to diverge; uniformity is not proof of intent, so where it is defensive duplication of a rule enforced elsewhere, spec it at the layer that enforces it. **Where prose *permits* rather than is silent, narrowing it retires a licence** third-party implementers of a public ABC were shipped against: that is a breaking change and takes the same path as the row below |
     | **Unenforced** | Prose demands X and no test asserts X — for the backends in question. Two axes, and both bind: [Rule 2](#spec-test-traceability)'s marker is section-level, so a marked section is not evidence the *clause* is covered; and the suite parameterizes over backends, so a clause asserted for one family is unenforced for the others. Backends diverging is how you notice, not what decides | Nothing moves yet. An unenforced claim is not a default, so decide it once. **If nothing diverges**, prose stands and the deliverable is [Rule 2](#spec-test-traceability)'s missing test. **If something diverges**, adopt it as a declared variation, or enforce X as a breaking change on the ordinary path |
 
@@ -98,8 +98,10 @@ in that order.
    defeaters above, whatever the bridge level: a test can encode a bug, and a
    bridged model can rest on a mistaken contract.
 
-**Where no defeater fires, the presumption stands and prose governs — except when
-nothing was decided in the first place.** That exception is a residue with a
+**Where no defeater fires, the clause's spec governs: its governing model where
+[`SPEC-DESIGN.md` Rule 4](SPEC-DESIGN.md#governing-layer) gives it one, otherwise
+the prose, whose presumption stands — except when nothing was decided in the
+first place.** That exception is a residue with a
 shape: shipped behaviour **non-uniform**, and prose either absent or merely
 permissive, so no defeater has an observation to fire on. Prose silence or
 permission *alone* does not qualify; paired with uniform behaviour it is the

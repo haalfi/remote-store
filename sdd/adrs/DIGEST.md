@@ -30,10 +30,14 @@ Compiled from 48 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run
 - **Where a formal model governs a clause, the model is that clause's
   spec.** A model governs a clause only where a bridge binds it to the tests,
   only as far as the bridge reaches, and only while the model's check gates
-  in CI; everywhere else the prose governs. The prose states a governed
-  clause once and links the model. *Why:* a model with no bridge drifts from
-  the code, and making every model normative would leave each clause without
-  a model with no normative home.
+  in CI, and a bridge counts only once it is documented: what it exercises,
+  how runtime values become model values, how runs are produced, its pass
+  criterion, its blind spots and the job that runs it, a bridge already in
+  the repo included. Everywhere else the prose governs. The prose states a
+  governed clause once and links the model. *Why:* a model with no bridge
+  drifts from the code, a bridged model can still be the stale side, and
+  making every model normative would leave each clause without a model with
+  no normative home.
 
 - **A bridge grades confidence, not authority.** When contract, model, test
   and code disagree, the disagreement is investigated and settled by the
@@ -41,9 +45,12 @@ Compiled from 48 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run
   whatever the bridge level. *Why:* a test can
   encode a bug, and a bridged model can rest on a mistaken contract.
 
-- **A model check blocks merges only once its model is bridged.** An
-  unbridged model's check still runs, without blocking. *Why:* gating an
-  unbridged model proves only that the model agrees with itself.
+- **A TLA+ check blocks merges only once its module is bridged.** An
+  unbridged module's check still runs, without blocking. A Dafny proof blocks
+  merges whether or not its model is bridged. *Why:* model checking an
+  unbridged module proves only that the model agrees with itself, while a
+  postcondition the Dafny verifier rejects is a contradiction in the contract
+  itself.
 
 - **A behaviour that differs by backend is a named profile, and the outcome
   stays the same on every profile.** A profile, declared by a capability or a

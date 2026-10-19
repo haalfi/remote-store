@@ -50,9 +50,10 @@ written.
     | Liveness | That something eventually happens, or never repeats | A run past its bound |
 
     A clause's kind is the shape of a witness that would violate it. A clause
-    whose witness fits two kinds belongs to the larger: a call sequence is
-    larger than one call, one call larger than an input and its output, and
-    that larger than one state.
+    whose witness needs a behaviour outside the library's control is
+    environment. Otherwise a clause whose witness fits two kinds belongs to the
+    larger, in this order: liveness (a run past its bound), lifetime (a call
+    sequence on one object), single call, function, structure.
 
     A component (store, kernel, driver, session, stream) is where a property is
     enforced, not where it is stated, so no spec is cut per component. The
@@ -65,8 +66,8 @@ written.
     | Kind | Form |
     | --- | --- |
     | Structure, function | One invariant per section, one line where it fits |
-    | Single call | Invariants plus one outcome table: input state against observable result and error |
-    | Lifetime | The TLA+ module is the source; a closed-world state diagram is its checked view, plus the invariants that span states or objects |
+    | Single call | One invariant per section, with one outcome table: input state against observable result and error |
+    | Lifetime | The TLA+ module is the source; a closed-world state diagram is its checked view, plus one section per invariant that spans states or objects |
     | Environment | An Assumptions section: one line per assumption, named so a conformance test can cite it |
     | Liveness | Bounded obligations a test can fail; fairness conditions go to Assumptions |
 
@@ -103,7 +104,10 @@ written.
     [`000-process.md` Rule 7](000-process.md#intent-attribution). A bridge
     reaches a clause per section ID: the model's `@spec` tags and the tests'
     spec marks citing that ID derive it, as `scripts/check_formal_trace.py`
-    does for Dafny. A spec never tags a clause's reach by hand.
+    does for Dafny. A spec never tags a clause's reach by hand. A bridge counts
+    only once Rule 8's six items are stated for it, a bridge already in the
+    repo included; until then its model informs review and the prose governs.
+    The table names the layer a new model of each kind is written in.
 
 5. <a id="profiles-and-assumptions"></a>**Profiles and assumptions are
     declared, not implied.** [review-enforced]
@@ -121,8 +125,11 @@ written.
        at most three sentences ([`CONTENT-RULES.md` Rule 7](CONTENT-RULES.md#kernsatz)).
     2. **Terms:** every symbol and term the sections use, including any word
        the repo also uses in another sense.
-    3. **Sections:** one invariant each, under a stable ID.
-    4. **Assumptions:** only where the kind is environment or liveness.
+    3. **Sections:** one invariant each, under a stable ID, in the form Rule 3
+       gives the spec's kind.
+    4. **Assumptions:** what the spec relies on and cannot check itself, one
+       line each. An assumption several specs share has one owning environment
+       spec, and the others link to it.
     5. **Notes:** not normative; derived properties and the proofs behind them.
     6. **Tested against:** the reference model or suite the sections are
        checked against, named so a reader can run it. Which test cites which
@@ -137,8 +144,8 @@ written.
     the spec it serves, never the reverse. Which backends a clause is asserted
     for derives from the tests' spec marks.
 
-8. <a id="bridge-checklist"></a>**A bridge counts under Rule 4 only once its
-    change states six things.** [review-enforced]
+8. <a id="bridge-checklist"></a>**A bridge counts under Rule 4 only once a
+    change states six things about it.** [review-enforced]
     1. The observable interface it exercises.
     2. How runtime values are encoded into model values, and which glue between
        them is unverified.

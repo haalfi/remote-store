@@ -232,10 +232,12 @@ age worse than the qualitative one.
    module to code** ([ADR-0048](../adrs/0048-how-specs-are-designed.md),
    [`SPEC-DESIGN.md` Rule 4](../SPEC-DESIGN.md#governing-layer)). An
    unbridged module stays informational: gating it would prove only
-   that the model agrees with itself. Revisit an informational check
-   every 6 months, or in the PR that first bridges a TLA+ module to
-   code, whichever comes first, and explicitly promote, remove, or
-   re-defer. "Informational" must not
+   that the model agrees with itself. Gating per module needs
+   `verify-tla` split per module (BK-461). Revisit the unbridged
+   modules' informational status every 6 months, or in the PR that
+   first bridges a TLA+ module to code, whichever comes first: the
+   bridged module gates from that PR, and for each unbridged one,
+   explicitly promote, remove, or re-defer. "Informational" must not
    silently become "unrun." Each revisit is tracked as a BACKLOG entry
    recording the decision (promote / remove / re-defer) — a calendar
    without a ticket is the same as no calendar. The first `verify-tla`
@@ -268,7 +270,13 @@ The last column is [`SPEC-DESIGN.md` Rule 4](../SPEC-DESIGN.md#governing-layer):
 a layer governs a clause only where a bridge binds its model to the tests, only
 as far as that bridge reaches, and only while the layer's own check gates in
 CI. Alloy and Lean run in no CI job (§ Running the verifier), so they govern no
-clause until one does.
+clause until one does. A bridge already in the repo, such as the compiled
+oracles below, counts only once [`SPEC-DESIGN.md` Rule
+8](../SPEC-DESIGN.md#bridge-checklist)'s six items are stated for it. Dafny's
+`verify-formal` gates every `.dfy` file, bridged or not, for its own reason: a
+postcondition the verifier rejects is a contradiction in the contract itself
+([`000-process.md` Rule 7](../000-process.md#intent-attribution)'s
+Unsatisfiable row).
 
 Dafny and TLA+ are parallel specifications — not auto-generated from
 Python. When a Markdown spec item changes, the corresponding Dafny

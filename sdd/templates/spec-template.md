@@ -6,8 +6,10 @@ The core claim in at most three sentences: what this spec states, of which
 kind of truth, about which subject. Then the scope, and what is out of scope
 with the spec that owns it. Rules: [`SPEC-DESIGN.md`](../SPEC-DESIGN.md).
 
-**Terms.** Every symbol and term the sections use, including any word the
-repo also uses in another sense.
+## Terms
+
+Every symbol and term the sections use, including any word the repo also uses
+in another sense.
 
 ---
 
@@ -30,8 +32,9 @@ observable outcome, not how an implementation reaches it.
 
 ## Assumptions
 
-Only for an environment or liveness spec. One line each, named so a
-conformance test can cite it.
+What the spec relies on and cannot check itself, one line each, named so a
+conformance test can cite it. An assumption several specs share is stated once,
+in its owning environment spec, and linked from the others.
 
 - **<Assumption name>:** what the system relies on from outside it.
 

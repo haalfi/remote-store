@@ -116,6 +116,17 @@ phases:
         read_type: reference
         extract: "Pattern for an ADR recording an accepted RFC's decisions"
         outcome: ok
+      - file: sdd/audits/audit-023-kernel-migration-readiness.md
+        section: "Summary; T12; T14; T20; Proposals P0, P1, P3, P5, P6"
+        read_type: reference
+        extract: >-
+          Read only after the maintainer asked on PR #1166 why it was missing.
+          Orient searched backlog items by spec ID and file, which reaches no
+          audit, and read BK-450's dossier, which cites it, as BK-450's evidence
+          only. It is the strongest content evidence for the rules: T20 (no
+          states), P3 with T3/T12/T14 (the model, not the kernel, was wrong),
+          P5 and P6 (profiles, one owner per check).
+        outcome: ok
   - id: design
     name: Design
     steps:

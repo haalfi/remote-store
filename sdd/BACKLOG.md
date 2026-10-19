@@ -377,11 +377,11 @@ no clause of the contract ships unexercised.
 
 - [ ] **BK-461 — No TLA+ module is bridged to code, so none can gate or govern a lifetime**
   spec: — · effort: L · audience: infra.test, library.maintainer
-  ADR-0048 (proposed) gates a TLA+ module from the PR that bridges it. The first bridge RFC-0022 D5 names is
-  tests generated from the model, as ITF traces replayed by pytest, and no Python ITF
-  replayer exists (research-spec-design § 9). The likely first module is BK-455's
-  close/run race; ID-270 revisits `verify-tla` in that PR. Open decision: which checker
-  emits the traces, and how a model action maps onto API calls.
+  ADR-0048 (proposed) gates a TLA+ module from the PR that bridges it; RFC-0022 D5's first
+  bridge is model-generated ITF traces replayed by pytest, and no Python ITF replayer
+  exists (research-spec-design § 9). Likely first module: BK-455's close/run race, whose
+  gating splits `verify-tla` per module; ID-270 decides the rest there. Open decision:
+  which checker emits the traces, and how a model action maps onto API calls.
 
 - [ ] **BK-451 — `glob` has no definition in tree terms and no single pattern dialect**
   spec: GLOB-007, GLOB-011, GLOB-014, BE-032 · effort: M · audience: user.api, library.maintainer
@@ -544,11 +544,11 @@ no clause of the contract ships unexercised.
 
 - [ ] **BK-462 — Alloy and Lean run in no CI job, so no structure clause can be model-governed**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer, infra.ci
-  `SPEC-DESIGN.md` Rule 4 lets a model govern only while its check gates in CI; `rg -i
-  "alloy|lean" .github/workflows` finds only a path filter excluding both, and
-  `formal/README.md` records no CI job for either (maintainer decision, 2026-10-13). Spec
-  051 stays prose-governed meanwhile. Open decision: a CI job for each, at which toolchain
-  cost, or keep both review aids and say so in Rule 4's layer table.
+  `SPEC-DESIGN.md` Rule 4 lets a model govern only while its check gates in CI. `rg -n -i -w
+  "alloy|lean" .github/workflows` finds `ci.yml`'s path filter excluding both, its comment,
+  and a `benchmark.yml` comment ("lean" as an adjective); no job runs either (maintainer
+  decision, 2026-10-13), so spec 051 stays prose-governed. Open decision: a CI job for
+  each, at which toolchain cost, or keep both review aids and say so in Rule 4's table.
 
 - [ ] **BK-438 — A flat raw key with an empty segment, such as an S3 folder marker `a/`, has no decoding**
   spec: BE-017, BE-030, BE-031 · effort: M · audience: library.maintainer, user.api
@@ -970,11 +970,11 @@ CHANGELOG the release body is built from — say what is actually true.
 
 - [ ] **ID-270 — Revisit informational `verify-tla` CI status (2027-04-19)**
   spec: OBS-003, OBS-003a · effort: S · audience: library.maintainer, infra.ci
-  ID-150 re-deferred `verify-tla`: TLC checks `Observer.tla` with no bridge
-  to code, so no code regression can turn it red. Due 2027-04-19, or in the
-  PR that first bridges a TLA+ module to code (BK-455's race is the likely
-  one), whichever first. Open decision: promote, remove or
-  re-defer, and RFC-0019's `merge-gate` job set; evidence in ID-150's dossier.
+  ID-150 re-deferred `verify-tla`: TLC checks `Observer.tla` with no bridge to code, so
+  no code regression can turn it red. Due 2027-04-19, or in the PR that first bridges a
+  TLA+ module (BK-455's race is likely), whichever first; that module gates from its PR.
+  Open decision: promote, remove or re-defer each unbridged module, and RFC-0019's
+  `merge-gate` job set; evidence in ID-150's dossier.
 
 - [ ] **ID-267 — Trace-outcome report revisit at the next release**
   spec: — · effort: S · audience: contributor.process

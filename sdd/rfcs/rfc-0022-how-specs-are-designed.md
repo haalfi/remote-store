@@ -326,3 +326,6 @@ and §§ 9 to 11:
   [`research-store-model-axioms.md`](../research/research-store-model-axioms.md)
 - Evidence and the first two reviews: [BK-457's
   dossier](../backlog/bk-457-declarative-spec-adr.md)
+- Content failures from the same gaps, not weighed when this RFC was drafted:
+  [audit 023](../audits/audit-023-kernel-migration-readiness.md) (T20, P3, P5,
+  P6), weighed in ADR-0048's Context
