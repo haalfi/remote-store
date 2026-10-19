@@ -163,10 +163,11 @@ pointer or nothing.
 <a id="last-pass"></a>
 ### Last pass: three lines
 
-On an ADR, an authority doc, a spec or a skill file, a final read against three
-lines finds what a correctness review misses: a part that says two things, says
-its claim late, or says it in another document's place. Each line compresses a
-rule, and a finding cites the rule, never the line.
+Before a durable doc ships (an ADR, authority doc, spec or skill file), its
+author reads it once more against three lines, and a reviewer ends `/rvw-pr`'s
+content-rules check with the same read. It finds what a correctness review
+misses: a part that says two things, says its claim late, or says what another
+document owns. A finding cites the rule, never the line.
 
 1. **Claim first, or you don't understand it yet** (Rule 7).
 2. **The principle, not the list** (Rule 2).
@@ -174,8 +175,8 @@ rule, and a finding cites the rule, never the line.
    [`CLAUDE.md` principle 8](../CLAUDE.md#principles)): a record that restates
    its sibling's rules says what twice.
 
-It is the author's own check, so it adds to an independent review and never
-replaces one.
+Both reads are needed: if you check your own text, you tend to read what you
+meant rather than what you wrote.
 
 ### Finding the documents that are failing readers
 
