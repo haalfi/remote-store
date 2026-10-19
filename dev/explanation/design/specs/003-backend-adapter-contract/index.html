@@ -12923,11 +12923,19 @@ cannot reach any cell that seeds through <code>write</code> (ID-244).</p>
 <h3 id="be-008-write">BE-008: write()<a class="headerlink" href="#be-008-write" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write(path, content, *, overwrite=False, metadata=None) -&gt; WriteResult</code> creates or overwrites a file and returns a <code>WriteResult</code>.
 <strong>Preconditions:</strong> <code>content</code> is <code>bytes</code> or <code>BinaryIO</code>.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. <code>InvalidPath</code> if an ancestor of <code>path</code> exists as a regular file (file-as-directory-component — see ID-209). <code>CapabilityNotSupported</code> if a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend lacks <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out — <code>metadata=None</code> and <code>metadata={}</code> are both no-ops with respect to this gate).
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. <code>InvalidPath</code> if an ancestor of <code>path</code> exists as a regular file (file-as-directory-component — see ID-209). <code>CapabilityNotSupported</code> if a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend lacks <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out — <code>metadata=None</code> and <code>metadata={}</code> are both no-ops with respect to this gate), on a class that runs the gate itself; the order below says which do.
 <strong>See also:</strong> <a href="../045-write-result/">045-write-result.md</a> (WR-001 through WR-005, WR-010 through WR-012).
 <strong>Precondition evaluation order:</strong> Backends MUST evaluate preconditions in this
-order: (0) the root — if <code>path</code> is the store root, raises <code>InvalidPath</code>, decided
+order: the closed guard — after a terminal close the call raises
+<code>BackendUnavailable</code>, ahead of every step below (<a href="#be-020-close">BE-020</a>);
+(0) the root — if <code>path</code> is the store root, raises <code>InvalidPath</code>, decided
 from the key and before any request is issued (<a href="#be-029-root-path">BE-029</a>);
+the metadata gate — a non-empty <code>metadata</code> on a class without <code>USER_METADATA</code>
+raises <code>CapabilityNotSupported</code> (WR-010). A class that runs the gate itself runs
+it here, as every class on the kernel does
+(<a href="#be-030-key-rule-on-the-kernel">BE-030</a>). A class that leaves the gate to
+<code>Store</code> (e.g. <code>LocalBackend</code>) does not raise it, and <code>Store</code> runs it before the
+backend is called;
 (1) path validity — if <code>path</code> names an
 existing <em>directory</em> OR any slash-aligned ancestor of <code>path</code> is a regular file
 (file-as-directory-component, ID-209), raises <code>InvalidPath</code>; (2) overwrite
@@ -12991,8 +12999,7 @@ while the default fixtures continue to skip the gate. The async sibling
 <code>azurite_async_strict</code> covers <code>AsyncAzureBackend</code> end-to-end (the
 non-HNS opt-in path through <code>_acheck_no_file_ancestor</code> and the SDK
 <code>get_blob_properties</code> closure). For default-off flat-NS backends the
-effective order is: existence check (non-existent target treated as
-writable) → overwrite conflict → I/O.
+effective order is the order above with step (1) skipped.
 <strong>On the kernel no backend takes this exemption.</strong> A class on the kernel
 refuses a write below a file and a write of a file over a folder on every
 namespace, unconditionally (<a href="#be-032-the-store-tree-on-the-kernel">BE-032</a>'s
@@ -13033,7 +13040,10 @@ method (<code>Write</code>, <code>Delete</code>, <code>DeleteFolder</code>, <cod
 <code>Close</code> and <code>DropContainer</code>; the read-only methods <code>require Valid()</code> too); the file-ancestor
 clause on Write is what closes the loophole that would let a successful
 write break <code>Valid()</code>. Move / Copy carry the same file-ancestor clause on
-their destination paths. Verified in <code>MemoryBackend.dfy</code>. Python backstop:
+their destination paths. Verified in <code>MemoryBackend.dfy</code>. The model states
+the WR-010 gate for every <code>Backend</code>, so for a class that leaves the gate to
+<code>Store</code> it is stricter than the order above, which binds the gate only where a
+class runs it. Python backstop:
 the WR-001a/004/005/012/013 postcondition chain is exercised against every
 backend by <code>tests/backends/conformance/test_atomic.py::TestWriteResultConformance</code>;
 the file-ancestor rejection is exercised by
@@ -13044,8 +13054,8 @@ ID-184, ID-209.</p>
 <p><strong>Invariant:</strong> <code>write</code> creates any intermediate directories automatically.</p>
 <h3 id="be-010-write_atomic">BE-010: write_atomic()<a class="headerlink" href="#be-010-write_atomic" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write_atomic(path, content, *, overwrite=False, metadata=None) -&gt; WriteResult</code> writes via a temporary file + atomic rename and returns a <code>WriteResult</code>.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. <code>CapabilityNotSupported</code> if a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend lacks <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out).
-<strong>Precondition order:</strong> Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies, except on the kernel, where no backend takes it (<a href="#be-032-the-store-tree-on-the-kernel">BE-032</a>, A.4).
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. <code>CapabilityNotSupported</code> if a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend lacks <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out), on a class that runs the gate itself, as BE-008 scopes it.
+<strong>Precondition order:</strong> <a href="#be-008-write">BE-008</a>'s, every step of it, from the closed guard and the root through I/O. Flat-namespace exemption from BE-008 applies, except on the kernel, where no backend takes it (<a href="#be-032-the-store-tree-on-the-kernel">BE-032</a>, A.4).
 <strong>See also:</strong> <a href="../007-atomic-writes/">007-atomic-writes.md</a>; <a href="../045-write-result/">045-write-result.md</a> (WR-001, WR-010).
 <strong>Formal coverage:</strong> Delegates to BE-008 — at the Backend-contract level
 <code>write_atomic</code> shares the <code>Write</code> postcondition model (return type, precondition
@@ -13128,7 +13138,7 @@ discharged structurally. Verified in <code>MemoryBackend.dfy</code>. See ID-151.
 <strong>Formal coverage:</strong> <code>get_folder_info()</code> is modelled in <code>sdd/formal/BackendContract.dfy</code> as <code>GetFolderInfo</code> with postconditions <code>IsFile → InvalidPath</code>, <code>!PathExists → NotFound</code>, <code>IsDir → Ok</code>, <code>file_count == |ChildFiles(fs, path)|</code>, and <code>total_size == SumSizes(fs, ChildFiles(fs, path))</code>, each under BE-020's <code>Live()</code> guard; since BK-388 also an absent-container clause (BE-021 § Reach): the root aggregates to zero, any other path is <code>NotFound</code>. Verified in <code>MemoryBackend.dfy</code>. Property-based aggregate coverage against the compiled Dafny oracle lives in <code>tests/test_pbt_folder_info_aggregates.py</code>. See ID-130, ID-134, ID-187.</p>
 <h3 id="be-018-move">BE-018: move()<a class="headerlink" href="#be-018-move" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst, overwrite=False)</code> renames/moves a file.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, if <code>dst</code> names an existing directory (cannot overwrite a directory with a file), or if an ancestor of <code>dst</code> exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the <code>reject_write_under_file_ancestor</code> kwarg, same shape as BE-008 / ID-211). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-move on a file is a no-op (Dafny: <code>Move: src == dst → Ok</code>); self-move on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
+<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, if <code>dst</code> names an existing directory (cannot overwrite a directory with a file; binds hierarchical backends and every class on the kernel, per <a href="#be-021-error-mapping">BE-021</a>'s backend scope of the type-mismatch rows), or if an ancestor of <code>dst</code> exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the <code>reject_write_under_file_ancestor</code> kwarg, same shape as BE-008 / ID-211). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-move on a file is a no-op (Dafny: <code>Move: src == dst → Ok</code>); self-move on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
 <strong>Precondition order:</strong> <code>src</code>-NotFound takes priority over dst-side preconditions; specifically <code>move(missing_src, blocked_dst)</code> MUST raise <code>NotFound(src)</code> rather than <code>InvalidPath(dst)</code>. <code>LocalBackend.move</code> enforces this naturally (the <code>mkdir_parents</code> walk that catches the file-ancestor case runs after the src-exists check); flat-namespace backends running the ID-211 opt-in MUST defer the <code>_check_no_file_ancestor(dst)</code> walk until after the src-NotFound probe to match. Surfaced by the ID-211 review; pinned to remove the cross-backend ambiguity that existed under BE-018 alone. <strong>One dst-side check outranks src-NotFound: a <code>dst</code> that addresses the store root.</strong> <a href="#be-029-root-path">BE-029</a> decides it from the key before any request, so <code>move(missing_src, "")</code> MUST raise <code>InvalidPath(dst)</code>; a <code>src</code> that is the root is refused first, as <code>InvalidPath(src)</code>. "Is the root" there is <code>is_root</code>, the source end's floor: <a href="#be-008-write">BE-008</a>'s two-predicate paragraph lets a backend refuse a wider source spelling first, and does not require it. That is the order the backends measured for it already take (<code>MemoryBackend</code>, <code>AsyncMemoryBackend</code> and <code>LocalBackend</code>, both root spellings, <code>move</code> and <code>copy</code>; <code>SFTPBackend</code>'s is pinned by <code>test_move_and_copy_destination_cannot_reach_the_corruption</code>), and the one <code>sdd/formal/BackendContract.dfy</code> verifies (BK-388).
 <strong>On the kernel:</strong> the flat-namespace opt-in walk named here does not exist. A class on the kernel refuses a destination below a file or over a folder on every namespace, unconditionally, in BE-018's order: on a flat namespace by its own checks after the source check, on a hierarchical one by typing the wire's refusal (<a href="#be-032-the-store-tree-on-the-kernel">BE-032</a>, A.4 and A.8).
 <strong>Metadata:</strong> <code>move()</code> preserves the source file's user metadata: after a
@@ -13151,7 +13161,7 @@ both <code>fs[dst].content == old(fs)[src].content</code> and
 drops metadata fails to verify. Verified in <code>MemoryBackend.dfy</code>. See BK-232.</p>
 <h3 id="be-019-copy">BE-019: copy()<a class="headerlink" href="#be-019-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>copy(src, dst, overwrite=False)</code> duplicates a file.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, if <code>dst</code> names an existing directory, or if an ancestor of <code>dst</code> exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the <code>reject_write_under_file_ancestor</code> kwarg, same shape as BE-008 / ID-211). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021.
+<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, if <code>dst</code> names an existing directory (on the backends BE-018 names), or if an ancestor of <code>dst</code> exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the <code>reject_write_under_file_ancestor</code> kwarg, same shape as BE-008 / ID-211). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021.
 <strong>Precondition order:</strong> Same as BE-018 — <code>src</code>-NotFound takes priority over dst-side preconditions, so <code>copy(missing_src, blocked_dst)</code> MUST raise <code>NotFound(src)</code> rather than <code>InvalidPath(dst)</code>, except for a <code>dst</code> that addresses the store root, which BE-018 ranks ahead of it.
 <strong>On the kernel:</strong> the flat-namespace opt-in walk named here does not exist. A class on the kernel refuses a destination below a file or over a folder on every namespace, unconditionally, in BE-018's order: on a flat namespace by its own checks after the source check, on a hierarchical one by typing the wire's refusal (<a href="#be-032-the-store-tree-on-the-kernel">BE-032</a>, A.4 and A.8).
 <strong>Metadata:</strong> <code>copy()</code> preserves the source file's user metadata: after a
@@ -13194,11 +13204,11 @@ map to the specified error type regardless of backend:</p>
 </thead>
 <tbody>
 <tr>
-<td>File operation (e.g. <code>read</code>, <code>write</code>, <code>delete</code>, <code>get_file_info</code>, <code>move</code>/<code>copy</code> src) on a path that is a directory</td>
+<td>File operation (e.g. <code>read</code>, <code>write</code>, <code>delete</code>, <code>get_file_info</code>, <code>move</code>/<code>copy</code> src or dst) on a path that is a directory</td>
 <td><code>InvalidPath</code></td>
 </tr>
 <tr>
-<td>Directory operation (e.g. <code>delete_folder</code>, <code>move</code>/<code>copy</code> dst) on a path that is a file</td>
+<td>Directory operation (e.g. <code>delete_folder</code>, <code>get_folder_info</code>) on a path that is a file</td>
 <td><code>InvalidPath</code></td>
 </tr>
 <tr>
@@ -13219,6 +13229,7 @@ map to the specified error type regardless of backend:</p>
 </tr>
 </tbody>
 </table>
+<p>A <code>move</code>/<code>copy</code> destination that is a file is not a type mismatch: it is the overwrite conflict of <a href="#be-018-move">BE-018</a> and BE-019, <code>AlreadyExists</code> without <code>overwrite</code>. A destination below a file is the path-conflict row.</p>
 <p>The type-mismatch rule (<code>InvalidPath</code>) takes precedence over the existence rule (<code>NotFound</code>) — a directory path is not "missing", it is the wrong type. This is machine-verified in <code>sdd/formal/BackendContract.dfy</code> (<code>Read</code>, <code>Delete</code>, <code>DeleteFolder</code>, <code>GetFileInfo</code>, <code>GetFolderInfo</code>, <code>Move</code>, <code>Copy</code> postconditions).</p>
 <p><strong>Backend scope of the two type-mismatch rows.</strong> They bind every backend on the
 operations that can <em>fail</em> on a wrong-typed path: <code>read</code>, <code>read_bytes</code>,
@@ -13896,7 +13907,7 @@ one of two values:</p>
 only (MEM-026), and ordering between concurrent callers is not guaranteed.</p>
 <p><strong>Postconditions:</strong>
 - <code>thread_safe</code> is the posture of <code>LocalBackend</code> (stateless; delegates to
-  <code>os</code>/<code>shutil</code>, serialised by the kernel), <code>MemoryBackend</code> (a single
+  <code>os</code>/<code>shutil</code>, serialised by the operating system), <code>MemoryBackend</code> (a single
   <code>threading.Lock</code>, MEM-025), the cloud and SQL backends (their native clients —
   the boto3/s3fs client, the Azure SDK service clients, the SQLAlchemy
   engine/pool — are documented thread-safe for concurrent per-instance use), and
@@ -13967,8 +13978,8 @@ leaves a primitive out or inherits the protocol's own body for one, which would
 answer <code>None</code> instead of acting. <code>probe</code>'s inherited body is the one exception,
 being the exemption from probing (PING-008); a <code>probe</code> left out is refused like
 any other. WR-010's metadata gate
-on <code>write</code> and <code>write_atomic</code> comes after step 4 and before step 5, so the root
-refusal stays BE-008's first precondition and the gate stays ahead of any I/O.
+on <code>write</code> and <code>write_atomic</code> comes after step 4 and before step 5, where
+BE-008's order puts it: after the root refusal and ahead of any I/O.
 Shape comes first within it, as WR-011 orders it: <code>metadata</code> that is neither
 <code>None</code> nor a <code>Mapping</code>, a falsy one included, is refused with <code>ValueError</code>
 whatever the class declares, and only then is a non-empty mapping refused for
@@ -13976,8 +13987,8 @@ want of <code>USER_METADATA</code>.
 That ranks it ahead of BE-008's type, ancestor and overwrite checks: on a class
 without <code>USER_METADATA</code>, a write carrying metadata answers
 <code>CapabilityNotSupported</code> with a folder at the key, a file above it, or an
-existing file and <code>overwrite=False</code>, on both namespaces. Matching BE-008's order
-instead would cost every such write a <code>stat</code> on a hierarchical namespace, and on
+existing file and <code>overwrite=False</code>, on both namespaces. Ranking it after those
+checks instead would cost every such write a <code>stat</code> on a hierarchical namespace, and on
 a flat one would put I/O ahead of the gate. <code>BackendContract.dfy</code>'s <code>Write</code>
 states the same order.</p>
 <p><strong>Content.</strong> A driver receives only the types its <code>put</code> declares. A

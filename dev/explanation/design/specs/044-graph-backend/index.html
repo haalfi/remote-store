@@ -13724,8 +13724,8 @@ natively. The ID-211 opt-in <code>reject_write_under_file_ancestor</code> kwarg
 therefore does <strong>not</strong> apply to <code>GraphBackend</code>; ancestor-as-file
 rejection is delivered by Graph's own <code>409 nameAlreadyExists</code>
 (carrying a <code>file</code>-faceted ancestor in <code>error.details</code>) without an
-explicit pre-walk. BE-008's precondition order (path validity →
-overwrite conflict → I/O) applies in full; Graph's
+explicit pre-walk. <a href="../003-backend-adapter-contract/#be-008-write">BE-008</a>'s
+precondition order applies in full; Graph's
 <code>409 nameAlreadyExists</code> alone is not sufficient to discriminate the
 outcomes. The backend inspects the 409 response body:
 - when <code>error.details</code> (or the returned <code>driveItem</code> on
