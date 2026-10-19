@@ -196,12 +196,12 @@ phases:
         extract: "Completing work, item scope, new IDs from gen-backlogid-check"
         outcome: ok
 review:
-  # Derived by `hatch run ship-report 1166 --trace-block-only` at head b2b68aa.
+  # Derived by `hatch run ship-report 1166 --trace-block-only` at head 3b141a4.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1166 --trace-block-only"
   pr: 1166
-  review_rounds: 8
+  review_rounds: 11
   submissions: 2
   findings: 14
   by_round:
@@ -263,4 +263,10 @@ review:
       subject: "BK-457: SPEC-DESIGN tells an author when a spec is ready and a reviewer what each property means"
     - sha: "b2b68aa"
       subject: "BK-457: Address the scoped review of ADR-0048, RFC-0022 and SPEC-DESIGN.md"
-  ci: {verdict: PENDING, failed: 0, pending: 4}
+    - sha: "0ab6665"
+      subject: "BK-457: Regenerate the trace review block at b2b68aa"
+    - sha: "92b96b0"
+      subject: "BK-457: SPEC-DESIGN defines governs, scopes the diagram check, and warns reviewers off form-only passes"
+    - sha: "3b141a4"
+      subject: "BK-457: ADR-0048 gives the why for stating an empty skeleton heading"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
