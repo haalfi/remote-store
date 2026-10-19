@@ -32,11 +32,13 @@ observable outcome, not how an implementation reaches it.
 
 ## Assumptions
 
-What the spec relies on and cannot check itself, one line each, named so a
-conformance test can cite it. An assumption several specs share is stated once,
-in its owning environment spec, and linked from the others.
+What the spec relies on and cannot check itself, one row each, under a stable
+ID a conformance test's spec mark can cite. An assumption several specs share is
+stated once, in its owning environment spec, and linked from the others.
 
-- **<Assumption name>:** what the system relies on from outside it.
+| ID | Assumption |
+| --- | --- |
+| <PREFIX>-A01 | What the system relies on from outside it. |
 
 ## Notes
 

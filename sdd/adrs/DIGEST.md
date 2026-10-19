@@ -1542,9 +1542,8 @@ D5 to D7, D9 and D10 are contract or placement and live in BE-032.
   that differs by backend is a named profile with each outcome it allows
   stated. *Why:* a fixed order lets every reader and review check a spec the
   same way; project state changes with every backlog move, so a spec that
-  carries it goes stale between its own edits (spec 003 held 84 backlog-ID
-  occurrences at `32a5653`, BK-456's dossier); and variation implied by an example backend is
-  where per-backend contradictions hide. *Reverse when* the skeleton forces
+  carries it goes stale between its own edits; and variation implied by an
+  example backend is where per-backend contradictions hide. *Reverse when* the skeleton forces
   empty sections on most specs.
 
 - **Where a formal model governs a clause, the model is that clause's
@@ -1556,7 +1555,10 @@ D5 to D7, D9 and D10 are contract or placement and live in BE-032.
   governed clause once and links the model. *Why:* a model with no bridge
   drifts from the code, a bridged model can still be the stale side, and
   making every model normative would leave each clause without a model with
-  no normative home.
+  no normative home. A bridge whose interface, encoding, generation, pass
+  criterion and blind spots are unstated has no knowable reach, so "as far as
+  the bridge reaches" could not be judged; and a reach tagged by hand in a
+  spec is project state that goes stale like any other.
 
 - **A bridge grades confidence, not authority.** When contract, model, test
   and code disagree, the disagreement is investigated and settled by the

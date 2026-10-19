@@ -33,10 +33,10 @@ written.
       or remove it.
 
     Mechanism a caller can observe (the order of side effects, a visible retry,
-    which refusal wins when two hold) is contract and stays. Which refusal wins
-    is stated as error precedence, never as an order of steps. So is an observable
-    quality bound (a cost, a security property, what a message must carry)
-    that a test can fail.
+    which refusal wins when two hold) is contract and stays, and so is an
+    observable quality bound (a cost, a security property, what a message must
+    carry) that a test can fail. Which refusal wins is stated as error
+    precedence, never as an order of steps.
 
 2. <a id="kind-of-truth"></a>**One spec states one kind of truth about one
     subject.** [review-enforced]
@@ -69,7 +69,7 @@ written.
     | Structure, function | One invariant per section, one line where it fits |
     | Single call | One invariant per section, with one outcome table: input state against observable result and error |
     | Lifetime | The TLA+ module is the source; a closed-world state diagram is its checked view, plus one section per invariant that spans states or objects |
-    | Environment | An Assumptions section: one line per assumption, named so a conformance test can cite it |
+    | Environment | An Assumptions section: one line per assumption under a stable ID, so a conformance test can cite it |
     | Liveness | Bounded obligations a test can fail; fairness conditions go to Assumptions |
 
     **A lifetime's diagram is closed-world and checked both ways:** a
@@ -77,9 +77,9 @@ written.
     reaches is a defect. It uses the declared Mermaid subset (flat states,
     `[*]`, `A --> B : Action`), and a check asserts that its edges equal the
     phase transitions of a small TLC configuration. A diagram without that
-    check is a view and states nothing. Until a lifetime has a module and that
-    check, its spec states the states and transitions as a table, and the
-    prose governs them.
+    check is a view and states nothing. Until a lifetime has a module, that
+    check and a bridge that counts under Rule 4, its spec states the states and
+    transitions as a table, and the prose governs them.
 
     **Examples belong to the test tier**, each traced to the section it shows.
     No section is stated as a scenario (Given/When/Then).
@@ -129,8 +129,10 @@ written.
     3. **Sections:** one invariant each, under a stable ID, in the form Rule 3
        gives the spec's kind.
     4. **Assumptions:** what the spec relies on and cannot check itself, one
-       line each. An assumption several specs share has one owning environment
-       spec, and the others link to it.
+       line each, as rows of a table whose first column is `ID`, so a test's
+       spec mark can cite it ([`000-process.md` Rule 2](000-process.md#spec-test-traceability)).
+       An assumption several specs share has one owning environment spec, and
+       the others link to it.
     5. **Notes:** not normative; derived properties and the proofs behind them.
     6. **Tested against:** the reference model or suite the sections are
        checked against, named so a reader can run it. Which test cites which
@@ -145,8 +147,9 @@ written.
     the spec it serves, never the reverse. Which backends a clause is asserted
     for derives from the tests' spec marks.
 
-8. <a id="bridge-checklist"></a>**A bridge counts under Rule 4 only once a
-    change states six things about it.** [review-enforced]
+8. <a id="bridge-checklist"></a>**A bridge counts under Rule 4 only once
+    [`formal/README.md`](formal/README.md) states six things about it, under a
+    heading of the bridge's own.** [review-enforced]
     1. The observable interface it exercises.
     2. How runtime values are encoded into model values, and which glue between
        them is unverified.
@@ -183,7 +186,7 @@ property rests on; the rule's why is in ADR-0048.
 | --- | --- | --- | --- |
 | Well founded | Every clause has a reason and an owner | Axioms apart from what they imply; each derived claim names its proof in Notes | 6 |
 | Verifiable | Every clause has a defined witness of violation, or is an assumption | Rule 1's two tests | 1, 5 |
-| Lasting | True without edits as the project moves | No project state; links point at the spec, never from it | 7; [`CONTENT-RULES.md` Rule 1](CONTENT-RULES.md#six-month-test) |
+| Lasting | True without edits as the project moves | No project state; a link from a less stable artifact points at the spec, never the reverse | 7; [`CONTENT-RULES.md` Rule 1](CONTENT-RULES.md#six-month-test) |
 | Correct | Says what the system must do, and it can | A model check through a bridge, or a contract test | 4 |
 | Free of contradictions | No two clauses, or neighbouring specs, disagree | One home per fact; a property spanning kinds has one owning spec | 2 |
 | No unstated gaps | Nothing the spec relies on or leaves out is merely implied | Out of scope stated with its owner; assumptions listed; a lifetime's diagram closed-world | 3, 5, 6 |

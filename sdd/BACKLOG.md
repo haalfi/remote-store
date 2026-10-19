@@ -381,7 +381,7 @@ no clause of the contract ships unexercised.
   Rule 8's six items are stated for it; none are for the two compiled oracles
   (`formal/README.md` § Compiled oracle holds most of the facts), so prose governs every
   clause, against RFC-0022 D5's path ("Dafny for single calls first"). Open decision: one
-  statement per oracle or one for both, and where T14's unverified key glue is recorded.
+  `formal/README.md` heading per oracle or one for both; T14's key glue goes under item 2.
 
 - [ ] **BK-461 — No TLA+ module is bridged to code, so none can gate or govern a lifetime**
   spec: — · effort: L · audience: infra.test, library.maintainer

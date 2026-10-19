@@ -305,7 +305,9 @@ and §§ 9 to 11:
 6. **Conflicts under `000-process.md` Rule 7:** how the ADR amends Rule 7's
    defeaters so that a clause's bridge level informs, but does not decide, a
    conflict between contract, model, test and code. *Answered 2026-10-19:* a
-   new attribution item; the defeaters are unchanged (ADR-0048).
+   new attribution item (item 6); the four defeaters stay, with the
+   Unsatisfiable and Over-specified rows widened from a Dafny postcondition to
+   any model clause (ADR-0048).
 7. **A bridge acceptance checklist** for the guide (observable interface,
    encoding of runtime values into model values, generation or capture method,
    pass criterion, known blind spots, owning CI job), proposed in review

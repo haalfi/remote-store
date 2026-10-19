@@ -37,7 +37,8 @@ Nothing in the repo said what a spec owes, so spec 003 grew mechanism beside
 its invariants: a probe set and its order, per-backend error remapping, named
 helpers. PR #1159's review kept finding one of its sections contradicting
 another, and a read against RFC-0022 confirmed four such contradictions
-(BUG-337's dossier). The spec template gives every section the same five
+(BUG-337's dossier), and it held 84 backlog-ID occurrences at `32a5653`
+(BK-456's dossier). The spec template gives every section the same five
 fields, which can only narrate a lifecycle, and the formal layers exist
 (`formal/README.md` § Layers at a glance) without any rule for which of them
 governs a clause, so a property could have a verified model and prose that
@@ -97,9 +98,8 @@ with no normative home.
   that differs by backend is a named profile with each outcome it allows
   stated. *Why:* a fixed order lets every reader and review check a spec the
   same way; project state changes with every backlog move, so a spec that
-  carries it goes stale between its own edits (spec 003 held 84 backlog-ID
-  occurrences at `32a5653`, BK-456's dossier); and variation implied by an example backend is
-  where per-backend contradictions hide. *Reverse when* the skeleton forces
+  carries it goes stale between its own edits; and variation implied by an
+  example backend is where per-backend contradictions hide. *Reverse when* the skeleton forces
   empty sections on most specs.
 
 - **Where a formal model governs a clause, the model is that clause's
@@ -111,7 +111,10 @@ with no normative home.
   governed clause once and links the model. *Why:* a model with no bridge
   drifts from the code, a bridged model can still be the stale side, and
   making every model normative would leave each clause without a model with
-  no normative home.
+  no normative home. A bridge whose interface, encoding, generation, pass
+  criterion and blind spots are unstated has no knowable reach, so "as far as
+  the bridge reaches" could not be judged; and a reach tagged by hand in a
+  spec is project state that goes stale like any other.
 
 - **A bridge grades confidence, not authority.** When contract, model, test
   and code disagree, the disagreement is investigated and settled by the
