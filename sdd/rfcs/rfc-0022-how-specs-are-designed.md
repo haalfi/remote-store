@@ -2,10 +2,13 @@
 
 ## Status
 
-Draft, 2026-10-18. Tracked as **BK-457**. Graduates to one ADR (D1, D3, D5,
-D6, the Rule 3 and Rule 7 amendment, and `formal/README.md` rule 3's gating
-bar per Open Question 3) and one authoring guide (D2, D4, D7,
-D8), the new authority doc `sdd/SPEC-DESIGN.md` (Open Question 1, decided).
+Accepted, 2026-10-19, by the maintainer. Drafted 2026-10-18. Tracked as
+**BK-457**. Graduated to [ADR-0048](../adrs/0048-how-specs-are-designed.md)
+(D1, D3, D5, D6, the Rule 3 and Rule 7 amendment, `formal/README.md` rule 3's
+gating bar, and Open Questions 4 to 8) and to the authority doc
+[`sdd/SPEC-DESIGN.md`](../SPEC-DESIGN.md) (D2, D4, D7, D8, and Open Question
+7's checklist), which are now the authority; this RFC stays as drafted, its
+open questions annotated with their answers.
 The analysis behind it, a maintainer session that walked one operation, a
 streaming read, from key to bytes, tested against outside evidence, is
 [`research-spec-design.md`](../research/research-spec-design.md); this RFC
@@ -290,20 +293,27 @@ and §§ 9 to 11:
    rule 3's catch-first bar with this rule.
 4. **Type strictness on tolerant calls per profile** (BK-457's dossier): D6
    makes it expressible; whether `delete(folder, missing_ok=True)` stays strict
-   on flat backends against its wire cost is still open.
+   on flat backends against its wire cost is still open. *Decided 2026-10-19:*
+   strict on every profile, the probe priced in the flat profile's cost
+   statement (ADR-0048).
 5. **Migration order:** BK-456 first, since spec 003 is where the
    contradictions were measured, or the new lifetimes first (BK-454, BK-455),
-   since they are written fresh.
+   since they are written fresh. *Decided 2026-10-19:* BK-456 first, in stages
+   (ADR-0048).
 6. **Conflicts under `000-process.md` Rule 7:** how the ADR amends Rule 7's
    defeaters so that a clause's bridge level informs, but does not decide, a
-   conflict between contract, model, test and code.
+   conflict between contract, model, test and code. *Decided 2026-10-19:* a
+   new attribution item; the defeaters are unchanged (ADR-0048).
 7. **A bridge acceptance checklist** for the guide (observable interface,
    encoding of runtime values into model values, generation or capture method,
    pass criterion, known blind spots, owning CI job), proposed in review
    ([research § 14](../research/research-spec-design.md#14-external-reviews-considered)).
+   *Decided 2026-10-19:* adopted as `SPEC-DESIGN.md` Rule 8.
 8. **The partition against an alternative:** whether D3's split beats one
    operation contract with linked lifecycle and consistency models, judged by
    duplication, cross-reference burden, change propagation and test ownership.
+   *Decided 2026-10-19:* spec 003 is cut by kind, the comparison made on its
+   split (ADR-0048).
 
 ## References
 

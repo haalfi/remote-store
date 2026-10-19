@@ -5,6 +5,7 @@
 - Documentation Standards: documentation.md
 - Drift Rules: drift-rules.md
 - Process: process.md
+- Spec Design: spec-design.md
 - Testing Standards: testing.md
 - ADRs: adrs/
 - Audits: audits/

@@ -19,7 +19,9 @@ TASK: Provided in your invocation prompt. If it is missing or unclear, say so
 rather than guessing.
 
 CONSTRAINTS:
-- Specs are source of truth. Code contradicts spec → code is wrong, unless no
+- Specs, and the bridged models that govern their clauses
+  (sdd/SPEC-DESIGN.md Rule 4), are source of truth. Code contradicts spec →
+  code is wrong, unless no
   test ever asserted that clause for the backend in question, which
   sdd/000-process.md Rule 7 qualifies: that makes the claim undecided, not the
   code right.

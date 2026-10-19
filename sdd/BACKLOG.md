@@ -367,6 +367,22 @@ no clause of the contract ships unexercised.
   behaviour. Open decision: the handle's shape, and whether bare `async for` stays lazy.
   Detail: [dossier](backlog/bk-454-refusal-timing-read-handle.md)
 
+- [ ] **BK-460 — A lifetime's state diagram has no check against its TLA+ module, so no lifetime can take its spec form**
+  spec: — · effort: M · audience: contributor.tooling, library.maintainer
+  `SPEC-DESIGN.md` Rule 3 makes a lifetime's Mermaid diagram a view whose edges must equal
+  the phase transitions of a small TLC configuration, in a declared subset (flat states,
+  `[*]`, `A --> B : Action`) read by an in-repo parser. Neither the parser nor the check
+  exists, so lifetime clauses stay prose tables. Due with the first lifetime given a module
+  (BK-454 or BK-455). Open decision: phases from a named variable or a declared action map.
+
+- [ ] **BK-461 — No TLA+ module is bridged to code, so none can gate or govern a lifetime**
+  spec: — · effort: L · audience: infra.test, library.maintainer
+  ADR-0048 gates a TLA+ module from the PR that bridges it. The first bridge it names is
+  tests generated from the model, as ITF traces replayed by pytest, and no Python ITF
+  replayer exists (research-spec-design § 9). The likely first module is BK-455's
+  close/run race; ID-270 revisits `verify-tla` in that PR. Open decision: which checker
+  emits the traces, and how a model action maps onto API calls.
+
 - [ ] **BK-451 — `glob` has no definition in tree terms and no single pattern dialect**
   spec: GLOB-007, GLOB-011, GLOB-014, BE-032 · effort: M · audience: user.api, library.maintainer
   BE-032 A.5 approximates `glob` as a folder read over its literal prefix, so the kernel's `glob`
@@ -838,21 +854,13 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
-- [~] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
-  spec: — · effort: L · audience: contributor.process, library.maintainer
-  Spec 003 mandates mechanisms (BE-032's probe set, BE-021's per-backend remapping) beside
-  its invariants; nothing assigns a kind of truth to a spec, a form or a formal layer, and
-  the spec template fits no lifecycle. RFC-0022 (draft) proposes the rule; it graduates to
-  one ADR and one authoring guide. BK-456 follows. Open decision: RFC-0022's open questions.
-  Detail: [dossier](backlog/bk-457-declarative-spec-adr.md)
-
 - [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
   Most of the spec sits in BE-021, BE-029, BE-032 and BE-033 (sizes: dossier); PR #1159's
   rounds kept finding one section contradicting another, and project status and history
-  sit inside its normative sections. Status out first (needs no ADR); after BK-457, a split
-  (IDs keep their BE- prefix), each file pruned against its ADR. Open decision: the new
-  numbers; by layer into four files as chosen, or by kind (RFC-0022 D3).
+  sit inside its normative sections. ADR-0048 stages it: status out, a split by kind of
+  truth as a pure move (IDs keep their BE- prefix), then a prune per file against
+  `SPEC-DESIGN.md`. Open decision: the new spec numbers and each section's kind.
   Detail: [dossier](backlog/bk-456-split-spec-003.md)
 
 - [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**

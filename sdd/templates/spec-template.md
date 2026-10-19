@@ -2,30 +2,44 @@
 
 ## Overview
 
-One paragraph describing what this spec governs and its place in the system.
-Cross-reference the RFC that proposed it (if any) and any related ADRs.
+The core claim in at most three sentences: what this spec states, of which
+kind of truth, about which subject. Then the scope, and what is out of scope
+with the spec that owns it. Rules: [`SPEC-DESIGN.md`](../SPEC-DESIGN.md).
+
+**Terms.** Every symbol and term the sections use, including any word the
+repo also uses in another sense.
 
 ---
 
 ## <PREFIX>-001: <First Invariant Title>
 
-**Invariant:** State the invariant in one or two sentences. Present tense,
-declarative. Name the observable behavior, not the implementation.
+**Invariant:** One invariant, in one or two declarative sentences. Name the
+observable outcome, not how an implementation reaches it.
 
-## <PREFIX>-002: <Second Invariant Title>
+## <PREFIX>-002: <Single-Call Section Title>
 
 **Invariant:** ...
 
-**Raises:** List the error types and the conditions that trigger them.
+| State when the call runs | Result | Raises |
+| --- | --- | --- |
+| ... | ... | ... |
 
-**Postconditions:** Observable state after a successful call.
-
-**See also:** Cross-references to related specs or invariants.
+**See also:** the spec that owns a property this section relies on.
 
 ---
 
+## Assumptions
+
+Only for an environment or liveness spec. One line each, named so a
+conformance test can cite it.
+
+- **<Assumption name>:** what the system relies on from outside it.
+
 ## Notes
 
-Optional section for implementation guidance, edge-case clarifications, or
-links to ADRs explaining why a particular shape was chosen.
-Not normative — invariants above are the contract.
+Not normative. Derived properties and the proofs behind them.
+
+## Tested against
+
+The reference model or suite the sections are checked against, named so a
+reader can run it.

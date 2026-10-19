@@ -92,6 +92,6 @@ figures and their derivations: BK-456's dossier; contradictions: BUG-337.
   recipes; named profiles; wire-call bounds as a per-profile cost; a lemma
   governs where one exists, Rule 7 extended, Rule 3 amended, not superseded) is
   its D1, D5 and D6.
-- Then BK-456 splits spec 003 (by layer or by kind of truth, RFC-0022 D3, its
-  open decision) and prunes each file against D1, a file per PR so each prune
-  is reviewable on its own.
+- Then BK-456 splits spec 003 by kind of truth (decided 2026-10-19,
+  ADR-0048) and prunes each file against `SPEC-DESIGN.md`, a file per PR so
+  each prune is reviewable on its own.

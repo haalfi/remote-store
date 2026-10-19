@@ -52,9 +52,15 @@ sequences): lines 219 to 232, 289 to 293, 489 to 513, 670, 789 to 835, 1262 to
   new rule (`CONTENT-RULES.md` Rules 1 and 4 already ask it), shrinks what
   the split moves, and keeps the split PR a pure move. One PR, no clause
   reworded; what leaves names its new home.
-- **Split by layer or by kind.** RFC-0022 D3 proposes splitting by kind of
-  truth, with interface contracts as the second cut; the four-file layer
-  split below is the maintainer's earlier choice. Decide which before the
+- **Split by kind.** Decided 2026-10-19 (ADR-0048, decision log
+  `sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl`): by kind of
+  truth, interface contracts as the second cut, which replaces the four-file
+  layer split the bullets below still describe. A candidate cut, recorded at
+  orient: 003 keeps the single-call contract (CAP, the operation sections,
+  BE-031) with its outcome tables and error precedence; keys and paths
+  (BE-029, BE-030, BE-032's encoding) and error mapping (BE-021) become
+  function specs; BE-033 with BE-020's close the lifetime spec; BE-028 and the
+  profiles an environment spec. Re-derive against the sections before the
   split PR.
 
 - Move only in the split PR: no clause is reworded there, so its review is a

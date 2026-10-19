@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 47 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 48 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1502,6 +1502,45 @@ Section references are to RFC-0021, which carries the rationale.
   probed shape.
 
 D5 to D7, D9 and D10 are contract or placement and live in BE-032.
+
+### [ADR-0048](0048-how-specs-are-designed.md): A Spec States the Observable Contract, Cut by Kind of Truth, Governed Through a Bridge
+
+- **A spec states the observable contract; mechanism is relocated, not
+  deleted.** A sentence two correct implementations could not both satisfy
+  moves to an ADR, a design note or the plan; observable ordering stays, as
+  error precedence. *Why:* the measured contradictions sat in the mechanism.
+  *Reverse when* a relocated sentence proves to be what callers rely on.
+
+- **Specs are cut by kind of truth, then by interface contract**, never per
+  component; this answers Open Question 8 for spec 003. *Why:* ownership,
+  state and time cross components. *Reverse when* spec 003's split shows more
+  duplication or cross-linking than one operation contract with linked models
+  would: the cut is a candidate, judged on its first use.
+
+- **The spec and its governing model are authoritative.** A model bound to the
+  tests by a bridge governs its clause as far as the bridge reaches, and the
+  prose states the clause once and links it; elsewhere prose governs. Rule 3 is
+  amended, not superseded. *Why:* unbridged models drift, and models
+  normative in full orphan every clause without one.
+
+- **A bridge level informs a conflict, never decides it** (Open Question 6):
+  a new Rule 7 item; the defeaters are unchanged. *Why:* a test can encode a
+  bug and a bridged model can rest on a mistaken contract.
+
+- **A TLA+ check gates per module, from the change that bridges it** (Open
+  Question 3, decided by ID-150), replacing rule 3's bar of a first live
+  catch. *Why:* gating an unbridged model proves only self-agreement.
+
+- **Backend differences are named profiles, and type mismatch outranks
+  `missing_ok` on every profile** (Open Question 4). *Why:* it is a verified
+  Dafny postcondition, and a quiet return on flat backends alone would make
+  one call answer differently per backend. *Reverse when* the probe is
+  measured dominating a bulk delete, and then by an opt-out the caller
+  chooses, not a per-profile default.
+
+- **Spec 003 migrates first, in stages** (Open Question 5, BK-456); other specs
+  adopt the rules when next rewritten. *Why:* the contradictions were measured
+  there.
 
 ## Superseded
 

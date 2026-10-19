@@ -3,14 +3,14 @@
 
 ## Intent & Scope
 
-Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC formats, backlog tiers, and test traceability. Governs all `sdd/` content.
+Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC formats, backlog tiers, and test traceability. Governs all `sdd/` content. What a spec states, its form and which artifact governs a clause: [`SPEC-DESIGN.md`](SPEC-DESIGN.md).
 
 <a id="rules"></a>
 ## Rules
 
 1. **No code without a spec**: every testable contract must have a spec section ID.
 2. <a id="spec-test-traceability"></a>**No spec without tests**: every spec section must have at least one test with `@pytest.mark.spec("ID")`.
-3. **Specs are authoritative**: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which [Rule 7](#intent-attribution) qualifies: that makes the claim undecided, not the code right.
+3. **The spec and its governing model are authoritative**: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which [Rule 7](#intent-attribution) qualifies: that makes the claim undecided, not the code right. Where a formal model bound to the code by a bridge governs a clause ([`SPEC-DESIGN.md` Rule 4](SPEC-DESIGN.md#governing-layer)), that model is the clause's spec, as far as the bridge reaches.
 4. **ADRs are immutable once Accepted**: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.
 5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
 6. <a id="workflows"></a>**Workflows**:
@@ -23,16 +23,14 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 <a id="spec-format"></a>
 ### Spec format
 
-Each spec uses numbered section IDs with a module prefix declared at the top of each file:
+What a spec states, where it ends, the form and skeleton it takes and which
+artifact governs a clause are [`SPEC-DESIGN.md`](SPEC-DESIGN.md)'s; its
+template is [`templates/spec-template.md`](templates/spec-template.md). Each
+section carries a numbered ID with the module prefix declared at the top of
+the file:
 
 ```markdown
 ## <PREFIX>-NNN: <Rule Title>
-**Invariant:** <what must always be true>
-**Preconditions:** <what the caller must ensure>
-**Postconditions:** <what the callee guarantees>
-**Raises:** <error conditions>
-**Example:**
-    <short code example>
 ```
 
 Each spec declares its prefix (e.g. `STORE`, `PATH`, `ERR`, `CACHE`). A test referencing `STORE-005` traces back to section 005 in the Store API spec.
@@ -68,7 +66,8 @@ in that order.
 
 1. **The resolution is written into the prose spec.** A disagreement closed by
    editing only a postcondition, only a test, or only a backend is not closed.
-   Amend the spec section in the same change.
+   Amend the spec section in the same change, and the governing model with it
+   where one governs the clause.
 2. **Prose carries no presumption of correctness.** It is the only description in
    this domain with no mechanical counterpart, so a prose claim is evidence of
    intent and of nothing else. Four defeaters strip that presumption — two keyed on
@@ -92,6 +91,12 @@ in that order.
 5. **A divergence you keep is registered, not remembered.** Give it the **owner and
    rationale** [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated) requires, in one
    of the homes it admits.
+6. **A bridge level informs the investigation; it never decides it.** How far a
+   bridge binds a model to the code ([`SPEC-DESIGN.md` Rule
+   4](SPEC-DESIGN.md#governing-layer)) grades confidence in the model, not its
+   authority. A conflict between contract, model, test and code is settled by the
+   defeaters above, whatever the bridge level: a test can encode a bug, and a
+   bridged model can rest on a mistaken contract.
 
 **Where no defeater fires, the presumption stands and prose governs — except when
 nothing was decided in the first place.** That exception is a residue with a

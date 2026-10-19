@@ -8,29 +8,29 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 300460,
+  "total": 301112,
   "files": {
-    "CLAUDE.md": 17528,
+    "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2105,
-    ".claude/skills/audit/SKILL.md": 1355,
+    ".claude/skills/audit/SKILL.md": 1465,
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
     ".claude/skills/orchestrate/SKILL.md": 26099,
-    ".claude/skills/pr/SKILL.md": 5425,
+    ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
-    ".claude/skills/rvw-pr/SKILL.md": 22877,
+    ".claude/skills/rvw-pr/SKILL.md": 23090,
     ".claude/skills/rvw-pr/measuring.md": 5482,
     ".claude/skills/rvw-pr/posting.md": 5182,
-    ".claude/skills/ship/SKILL.md": 54286,
+    ".claude/skills/ship/SKILL.md": 54246,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
     ".claude/agents/reviewer.md": 970,
-    ".claude/agents/sdd-expert.md": 1726,
-    ".claude/agents/store-backend-expert.md": 1820,
+    ".claude/agents/sdd-expert.md": 1799,
+    ".claude/agents/store-backend-expert.md": 1903,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64720,
+    "sdd/CLAUDE-REFERENCE.md": 64777,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [
@@ -93,6 +93,12 @@
       "from": 298254,
       "to": 300460,
       "reason": "Reviewer tool lists name both GitHub MCP server prefixes plus ToolSearch; rvw-pr gains a no-posting-tool guard; the I/O split records cloud gh's missing GraphQL once, skills point at it"
+    },
+    {
+      "item": "BK-457",
+      "from": 300460,
+      "to": 301112,
+      "reason": "SPEC-DESIGN.md is a new review-enforced authority doc: rvw-pr and audit apply it, sdd-expert reads it, and the authority wording in CLAUDE.md and store-backend-expert names the bridged model"
     }
   ]
 }
