@@ -94,7 +94,7 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 This clause bounds *searching*, not *measuring*, and the distinction is load-bearing: a measuring pass runs the allowlisted set in [`measuring.md`](measuring.md), and this rule does not narrow it. Read as a blanket Bash ban it would forbid the only method that has ever found a false premise here — which is what it did, silently, until a review of ADR-0035 caught it.
 
-**Content-rules check (prose changes only):** Apply `sdd/CONTENT-RULES.md`. File findings under `Consistency:`.
+**Content-rules check (prose changes only):** Apply `sdd/CONTENT-RULES.md`, ending an ADR, authority doc, spec or skill file with its [last pass](../../../sdd/CONTENT-RULES.md#last-pass). File findings under `Consistency:`.
 
 **Flag detail about behaviour the PR leaves alone**, meaning it neither alters that behaviour nor exists to document it, wherever the PR writes it, such as a docstring, a spec clause, a migration note or a dossier. That breaks [`CONTENT-RULES.md` Rule 8](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes), whose remedy is deleting the detail or replacing it with a one-line pointer to the item that owns the behaviour. When such a claim is also false, the finding is still a `Bug:` or `Spec:` one. Either way, name the deletion or the pointer as the change, never a narrower restatement: a narrower claim about behaviour the PR leaves alone is the next round's finding. A premise the change relies on is not such detail: a false one is a finding against the change itself, and deleting the sentence would ship the code built on it.
 

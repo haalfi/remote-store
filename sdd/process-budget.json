@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 301112,
+  "total": 301224,
   "files": {
     "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2105,
@@ -20,7 +20,7 @@
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
-    ".claude/skills/rvw-pr/SKILL.md": 23090,
+    ".claude/skills/rvw-pr/SKILL.md": 23202,
     ".claude/skills/rvw-pr/measuring.md": 5482,
     ".claude/skills/rvw-pr/posting.md": 5182,
     ".claude/skills/ship/SKILL.md": 54246,
@@ -99,6 +99,12 @@
       "from": 300460,
       "to": 301112,
       "reason": "SPEC-DESIGN.md is a new review-enforced authority doc: rvw-pr and audit apply it, sdd-expert reads it, and the authority wording in CLAUDE.md and store-backend-expert names the bridged model"
+    },
+    {
+      "item": "BK-464",
+      "from": 301112,
+      "to": 301224,
+      "reason": "rvw-pr content-rules check points to CONTENT-RULES last pass"
     }
   ]
 }

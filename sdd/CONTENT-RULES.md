@@ -160,6 +160,22 @@ describes. When in doubt on rule 8, ask whether the diff changes that
 behaviour, exists to document it, or relies on it; if none, the sentence is a
 pointer or nothing.
 
+<a id="last-pass"></a>
+### Last pass: three lines
+
+Before a durable doc ships (an ADR, authority doc, spec or skill file), its
+author reads it once more against three lines, and a reviewer ends `/rvw-pr`'s
+content-rules check with the same read.
+
+1. **Claim first, or you don't understand it yet** (Rule 7).
+2. **The principle, not the list** (Rule 2).
+3. **Detail where it belongs** (Rule 4;
+   [`CLAUDE.md` principle 8](../CLAUDE.md#principles)): a record that restates
+   its sibling's rules says what twice.
+
+Both reads are needed: if you check your own text, you tend to read what you
+meant rather than what you wrote.
+
 ### Finding the documents that are failing readers
 
 Agent traces tag any read that did not deliver (`sdd/traces/_schema.yml`
