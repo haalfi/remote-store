@@ -15,6 +15,7 @@ decisions:
 discovery_followups:
   - BK-460
   - BK-461
+  - BK-462
 expected_ripples:
   - sdd/000-process.md
   - sdd/formal/README.md

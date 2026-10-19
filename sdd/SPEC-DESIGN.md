@@ -96,8 +96,9 @@ written.
     model governs that clause as far as the bridge reaches, and the section
     states the invariant in one sentence and links the model's clause. Where no
     model exists, or no bridge, the prose governs; an unbridged model informs
-    review. A model whose check does not gate governs nothing
-    ([`formal/README.md` rule 3](formal/README.md#authoring-rules)). A conflict
+    review. A model governs only while its own check gates in CI; when a TLA+
+    check gates is [`formal/README.md` rule 3](formal/README.md#authoring-rules)'s.
+    A conflict
     between contract, model, test and code is resolved under
     [`000-process.md` Rule 7](000-process.md#intent-attribution). A bridge
     reaches a clause per section ID: the model's `@spec` tags and the tests'

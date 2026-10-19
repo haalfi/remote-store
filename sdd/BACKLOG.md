@@ -542,6 +542,14 @@ no clause of the contract ships unexercised.
   keeps apart (its Name equality). Open decision: which listings and probes observe a backend's
   tree, how each backend's name equality is measured, and how a coarser one answers (BE-032 A.1).
 
+- [ ] **BK-462 — Alloy and Lean run in no CI job, so no structure clause can be model-governed**
+  spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer, infra.ci
+  `SPEC-DESIGN.md` Rule 4 lets a model govern only while its check gates in CI; `rg -i
+  "alloy|lean" .github/workflows` finds only a path filter excluding both, and
+  `formal/README.md` records no CI job for either (maintainer decision, 2026-10-13). Spec
+  051 stays prose-governed meanwhile. Open decision: a CI job for each, at which toolchain
+  cost, or keep both review aids and say so in Rule 4's layer table.
+
 - [ ] **BK-438 — A flat raw key with an empty segment, such as an S3 folder marker `a/`, has no decoding**
   spec: BE-017, BE-030, BE-031 · effort: M · audience: library.maintainer, user.api
   RFC-0021 Open question 1: on the kernel, BE-030's omission makes a foreign `a/` or `a//b` an

@@ -48,69 +48,79 @@ with no normative home.
 
 ## Decision
 
-- **A spec states the observable contract; mechanism is relocated, not
-  deleted.** A sentence two correct implementations could not both satisfy
-  moves to an ADR, a design note or the plan; observable ordering stays, as
-  error precedence. *Why:* the measured contradictions sat in the mechanism.
-  *Reverse when* a relocated sentence proves to be what callers rely on.
+- **A spec states only the observable contract.** It states preconditions,
+  postconditions, observable side effects, error precedence, and a lifetime's
+  states and transitions. A sentence that two correct implementations could
+  not both satisfy prescribes mechanism, and mechanism belongs in an ADR, a
+  design note or a plan, never in a spec. Ordering a caller can observe is
+  contract, stated as error precedence. *Why:* mechanism written beside
+  invariants is where specs contradict themselves, while callers rely only on
+  outcomes. *Reverse when* relocated mechanism proves to be what callers rely
+  on.
 
-- **Specs are cut by kind of truth, then by interface contract**, never per
-  component: structure, function, single call, lifetime, environment and
-  liveness, a clause's kind being the shape of a witness that would violate
-  it. This answers Open Question 8 for spec 003. *Why:* ownership, state and
-  time cross components. *Reverse when* BK-456's split and prune show more
-  duplication or cross-linking than one operation contract with linked models
-  would.
+- **A spec is cut by kind of truth, never by component.** The kinds are
+  structure, function, single call, lifetime, environment and liveness; a
+  clause's kind is the shape of a witness that would violate it. Inside a
+  kind, a spec is cut at an interface contract between layers. *Why:*
+  ownership, state and time cross components, so a spec per component
+  scatters one property over several files. *Reverse when* specs cut by kind
+  show more duplication or cross-linking than one operation contract with
+  linked lifecycle and consistency models would.
 
-- **The spec and its governing model are authoritative.** A model bound to the
-  tests by a bridge governs its clause as far as the bridge reaches, and the
-  prose states the clause once and links it; elsewhere prose governs. Rule 3 is
-  amended, not superseded. *Why:* unbridged models drift, and models
-  normative in full orphan every clause without one.
+- **Where a formal model governs a clause, the model is that clause's
+  spec.** A model governs a clause only where a bridge binds it to the tests,
+  only as far as the bridge reaches, and only while the model's check gates
+  in CI; everywhere else the prose governs. The prose states a governed
+  clause once and links the model. *Why:* a model with no bridge drifts from
+  the code, and making every model normative would leave each clause without
+  a model with no normative home.
 
-- **A bridge level informs a conflict, never decides it** (Open Question 6):
-  a new Rule 7 item; the defeaters are unchanged. *Why:* a test can encode a
-  bug and a bridged model can rest on a mistaken contract.
+- **A bridge grades confidence, not authority.** When contract, model, test
+  and code disagree, the disagreement is investigated and settled by the
+  attribution rules of [`000-process.md`](../000-process.md#intent-attribution),
+  whatever the bridge level. *Why:* a test can
+  encode a bug, and a bridged model can rest on a mistaken contract.
 
-- **A TLA+ check gates per module, from the change that bridges it** (Open
-  Question 3, decided by ID-150), replacing rule 3's bar of a first live
-  catch; an unbridged module still runs, without blocking. *Why:* gating an
-  unbridged model proves only self-agreement.
+- **A model check blocks merges only once its model is bridged.** An
+  unbridged model's check still runs, without blocking. *Why:* gating an
+  unbridged model proves only that the model agrees with itself.
 
-- **Backend differences are named profiles, and type mismatch outranks
-  `missing_ok` on every profile** (Open Question 4). *Why:* the tolerance is
-  for a missing path, not a wrong-typed one (BE-012, BE-021), and a quiet return on
-  flat backends alone would make one call answer differently per backend; the
-  Dafny model verifies the rule is consistent, not that it is right. *Reverse when* the probe is
-  measured dominating a bulk delete, and then by an opt-out the caller
-  chooses, not a per-profile default.
+- **A behaviour that differs by backend is a named profile, and the outcome
+  stays the same on every profile.** A profile, declared by a capability or a
+  driver flag, decides when a clause is checked and what it costs, never what
+  a caller sees. So a call that tolerates a missing path still refuses a
+  wrong-typed one on every profile: `delete(folder, missing_ok=True)` raises
+  `InvalidPath` on a flat backend as on a hierarchical one. *Why:* the
+  tolerance is for absence, not for a wrong type, and an outcome that depends
+  on the backend is the divergence profiles exist to remove. *Reverse when*
+  the type check's cost is measured dominating real callers; the remedy is
+  then an opt-out the caller chooses, not a different default per profile.
 
-- **Spec 003 migrates first, in stages** (Open Question 5, BK-456); other specs
-  adopt the rules when next rewritten. *Why:* the contradictions were measured
-  there.
+- **An existing spec is reshaped in steps that each do one kind of change.**
+  Project state leaves first, then the spec is split as a pure move, then each
+  new file is pruned against the rules. A spec adopts the rules when it is
+  next rewritten, not all at once. *Why:* a move kept apart from a rewrite can
+  be reviewed as a move.
 
 ## Consequences
 
 - Positive: a review can fail a spec sentence on a stated test (two
-  implementations, can fail) instead of on taste; each kind's governing layer
-  is named, so a model and the prose no longer both claim one clause.
+  implementations, can fail) instead of on taste, and each kind names the
+  layer that can govern it, so a model and the prose never both claim one
+  clause.
 - Positive: one invariant per section gives each clause its own ID, the
   granularity the repo's cross-artifact checks already reach (research § 16,
   an inference not yet tested).
-- Negative: no lifetime can take its full form yet. The Mermaid-subset parser
-  with its edge-equality check, and a Python replayer for model-generated
-  traces, do not exist; until they do, lifetime clauses stay prose-governed
-  tables. Each is a follow-up item.
-- Negative: spec 003's split adds files and cross-links, and every anchor that
-  points into it moves with its section.
-- Neutral: the eight review properties and the bridge checklist live in
+- Negative: a kind is model-governed only once its layer's check gates in CI,
+  so adopting a layer means adopting its CI cost; a layer that runs in no CI
+  job governs nothing, and its specs stay prose-governed.
+- Negative: a lifetime takes its full form only once a diagram-to-model check
+  and a bridge exist for it; without them it is a prose-governed table.
+- Negative: on a flat backend the type check costs a probe on every miss of a
+  tolerant call; the flat profile's cost statement records it.
+- Negative: splitting a spec adds files and cross-links, and every anchor
+  into it moves with its section.
+- Neutral: the review properties and the bridge checklist live in
   `SPEC-DESIGN.md`, review-enforced like `CONTENT-RULES.md`; no gate checks
   them.
-- Negative: on a flat backend the strict `missing_ok` costs a probe on every
-  miss: one prefix listing off the kernel, one `stat` and one
-  `list_page(limit=1)` on it (spec 003's BE-021 and BE-032 cost tables). It
-  becomes a line in the flat profile's cost statement.
-- Neutral: spec 003 moves in three changes, project state out, a split by kind
-  as a pure move, then a prune per file, so each is reviewed as what it is.
-- Neutral: specs other than 003 keep their current form until rewritten, so
-  for a while two shapes coexist.
+- Neutral: until every spec has been rewritten, two spec shapes coexist.

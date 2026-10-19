@@ -265,8 +265,10 @@ age worse than the qualitative one.
 | Python (`_backend.py`) | Runtime implementation | pytest + Hypothesis PBT | — |
 
 The last column is [`SPEC-DESIGN.md` Rule 4](../SPEC-DESIGN.md#governing-layer):
-a layer governs a clause only where a bridge binds its model to the tests, and
-only as far as that bridge reaches.
+a layer governs a clause only where a bridge binds its model to the tests, only
+as far as that bridge reaches, and only while the layer's own check gates in
+CI. Alloy and Lean run in no CI job (§ Running the verifier), so they govern no
+clause until one does.
 
 Dafny and TLA+ are parallel specifications — not auto-generated from
 Python. When a Markdown spec item changes, the corresponding Dafny
