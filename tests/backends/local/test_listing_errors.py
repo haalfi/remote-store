@@ -165,8 +165,8 @@ def _raised(kind: str) -> type[RemoteStoreError] | None:
 def _without(branch: str, key: str) -> set[str]:
     """What *branch* lists when *key*, and everything under it, is absent.
 
-    For ``key == "sub"`` this is the subfolder skip spec 003 lists under BE-021's
-    Known divergences (BUG-318): those cells pin what ships, not the clause.
+    For ``key == "sub"`` this is the subfolder skip BUG-318's dossier records as a
+    divergence from BE-021: those cells pin what ships, not the clause.
     """
     if not key:
         return set()
@@ -356,8 +356,8 @@ def test_a_subfolder_in_the_classic_delete_pending_state_raises(backend: LocalBa
     with ``winerror`` 5, the code a real denial carries, so the walk raises
     ``PermissionDenied`` where master skipped it. Python's own ``rmdir`` and
     ``rmtree`` delete the POSIX way and never leave this state. Pins what ships,
-    not BE-021: spec 003 lists it under BE-021's Known divergences, so the test
-    carries no spec mark.
+    not BE-021: BUG-318's dossier records it as a divergence from BE-021, so the
+    test carries no spec mark.
     """
     import ctypes
     from ctypes import wintypes

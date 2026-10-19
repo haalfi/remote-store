@@ -41,3 +41,23 @@ the classes diverging from BE-021's absent-container clause. The ADR-0040 § 1
 pilot removed it, because the list it mirrored is authoritative where it lives:
 BE-021 § Known divergences in
 [`specs/003-backend-adapter-contract.md`](../specs/003-backend-adapter-contract.md).
+
+## Moved out of spec 003, 2026-10-19
+
+Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master
+`35ea366`, links re-based to this directory, by BK-456's first stage: the
+text stated project state, which a spec does not carry
+([`SPEC-DESIGN.md` Rule 7](../SPEC-DESIGN.md#no-project-state)). A dated
+record, not kept current.
+
+BE-021 § Known divergences, this item's bullet:
+
+> - `GraphBackend` (and its sync adapter) breaches the **first-page bound** on a
+>   recursive listing, in a different way: its bound is per *HTTP request*, and a
+>   recursive walk issues one request per folder, so every subfolder listing
+>   restarts it. A folder whose `/children` 404s part-way through the walk ends
+>   that folder's listing cleanly, and the walk returns a short result as a
+>   complete one. The single-page and top-level cases are correct. Tracked as
+>   **BUG-257**. Contrast `S3Boto3Backend.list_files`, where one cursor wraps the
+>   whole breadth-first walk and a 404 on any sub-prefix propagates — that is the
+>   shape a fix takes.

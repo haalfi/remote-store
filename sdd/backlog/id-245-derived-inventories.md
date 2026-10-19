@@ -144,3 +144,36 @@ reports the file up to date. The re-point surface has moved since `959814e`:
 `BACKLOG-DONE.md` at 17 (was 9), and the § 1 class count the fourth bullet
 names no longer exists in the index. Both dependencies stand: ID-244 is open
 in § 2, and ID-207 is open above this item. Found by the ADR-0040 § 6 conversion.
+
+## Moved out of spec 003, 2026-10-19
+
+Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master
+`35ea366`, links re-based to this directory, by BK-456's first stage: the
+text stated project state, which a spec does not carry
+([`SPEC-DESIGN.md` Rule 7](../SPEC-DESIGN.md#no-project-state)). A dated
+record, not kept current.
+
+BE-029 coverage note, its table:
+
+> **Coverage note.** Two LIST-capable backends reach these cells only in part, and
+> what they do reach is measured rather than assumed:
+>
+> | Backend | Reached by the conformance cells | Pinned only in its per-backend home | Pinned nowhere |
+> |---------|----------------------------------|--------------------------------------|----------------|
+> | `SQLQueryBackend` — fixture `sqlquery` | the query rows on the empty store (`exists` / `is_folder` / `is_file`, both spellings); addressing (`native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key); and the **read half** of the file-shaped-operation row — `read`, `read_bytes`, `read_seekable`, `get_file_info`, both spellings | the populated-store rows (`get_folder_info` aggregating a non-empty store), because the conformance fixture registers an empty query mapping and the suite seeds through `write` (ID-244) | — |
+> | Graph — fixture `graph_replay` | addressing, under the fixture's `base_path`: `native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key; the `move`/`copy` source row; and a root `move`/`copy` destination refused ahead of a missing source (`test_root_destination_outranks_a_missing_source`, async, unseeded). Graph decides both from the key, so they need no cassette; with its guard removed each reaches an unrecorded request and skips instead of failing, so they measure the guard without fencing it | in `tests/backends/graph/aio/test_backend.py`: every root spelling refused as a write target, as a `move`/`copy` destination and as a `move`/`copy` source, plus the closed-state ordering across both pre-checks, and the same addressing agreement with **no** `base_path` — the conformance fixture is always rooted under one, and the bare-root arm is where both defects this clause was written from lived | the query rows, and the four file-shaped operations other than the `move`/`copy` source. **Not** the write rows: those seed through `write`, so the conformance cells skip for want of a cassette, but the per-backend cells above pin the same guards — they refuse before a request exists, so they need no recording. The close-posture cell does not seed either, and the Graph lane executes it within conformance |
+
+BE-029 coverage note, its gate paragraph:
+
+> A clause that binds every LIST-capable backend needs its coverage checked per
+> backend, not per source site — both defects this clause was written from
+> survived a source-wide sweep because no cell executed against them. Each column
+> here is a distinct gate, and the two that were structural have been closed
+> structurally: BK-340 registered the missing `sqlquery` fixture, and ID-241 made
+> the missing-cassette skip fire per unplayable request rather than per test name,
+> which is what let Graph's addressing cells — pure string work, no HTTP — move
+> into the first column. What remains in Graph's last column is not a gate but an
+> absence: the Graph data-plane cassettes those rows need have not been recorded.
+> The middle column is the gate still open, and it is a second one underneath
+> capability filtering rather than a residue of the first: a read-only backend
+> cannot reach any cell that seeds through `write` (ID-244).

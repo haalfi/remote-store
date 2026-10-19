@@ -262,7 +262,7 @@ failure it was.
   `glob` (`Path.glob`) and `get_folder_info` (`rglob`) swallow a denied subfolder
   scan, which should raise `PermissionDenied` as `list_files` does since BUG-280
   (entry stat leak: BUG-319). Every Local walk also skips a subfolder deleted
-  mid-walk (spec 003 BE-021 Known divergences). Open decision: raise or skip a
+  mid-walk, breaching BE-021 § Reach (dossier). Open decision: raise or skip a
   vanished one, since a dangling Windows junction is absent from the start.
   Detail: [dossier](backlog/bug-318-local-glob-folder-info-denied-subtree.md)
 
@@ -317,7 +317,7 @@ failure it was.
     shipped with BK-394. Evidence: BK-395's dossier.
 
 - [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
-  spec: BE-021 · effort: M · audience: infra.test
+  spec: BE-021, BE-029 · effort: M · audience: infra.test
   BE-021's absent-container rule is verified only by per-backend suites, so a
   new backend that can delete passes CI without meeting it, as `GraphBackend`
   did until BUG-248. Its kernel half landed in BK-389; what stays here is the
@@ -326,7 +326,7 @@ failure it was.
   Detail: [dossier](backlog/bk-345-absent-container-conformance.md)
 
 - [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
-  spec: SIO-008, SEEK-004, SEEK-006, PING-003, PING-004, PING-005, PING-006, PING-007, PING-011, SFTP-010, GR-039 · effort: M · audience: contributor.process
+  spec: SIO-008, SEEK-004, SEEK-006, PING-003, PING-004, PING-005, PING-006, PING-007, PING-011, SFTP-010, GR-039, BE-017 · effort: M · audience: contributor.process
   RFC-0017 § Impact lists amendments to specs 006, 008, 009, 026, 036, 044,
   the later drivers' half of 007 and 022, and the per-backend specs, each true only
   once a later D3 step lands (s3fs clauses at step 2, SFTP-010 at step 6).
@@ -343,7 +343,7 @@ failure it was.
 no clause of the contract ships unexercised.
 
 - [ ] **BK-450 — The driver boundary has no single enforcement point, so each kernel site re-checks a driver by hand**
-  spec: BE-021, BE-027, BE-030, BE-032, CAP-007 · effort: L · audience: user.api, library.maintainer
+  spec: BE-021, BE-027, BE-030, BE-032, BE-033, CAP-007 · effort: L · audience: user.api, library.maintainer
   The kernel takes driver records, streams and declarations at scattered sites: metadata handed
   out live (audit-023 T1, a defect today), keys and declarations unchecked (T2, T9, T10), one
   stream fault mapped three ways (T4, T5), flags meaning different things per runtime (T6),
@@ -354,15 +354,15 @@ no clause of the contract ships unexercised.
 - [ ] **BK-455 — The `Session` has obligations in BE-033 but no state set, and its close/run race no model**
   spec: BE-033, BE-028 · effort: M · audience: library.maintainer
   BE-033 names the `Session`'s exits (`invalidate` closes the client at once, a cancel never
-  invalidates, `unwrap` goes through `run`, a `close` racing in-flight calls) and marks each
-  *not yet met*: no `Session` exists, so nothing has states or a cell. Due at RFC-0017 D3
+  invalidates, `unwrap` goes through `run`, a `close` racing in-flight calls), but no
+  `Session` exists, so none of them has states or a cell. Due at RFC-0017 D3
   step 2, with the first remote driver, after BK-450. Open decision: the state set, and
   whether the close/run race gets a TLA+ model beside `sdd/formal/tla/` or cells only.
 
 - [ ] **BK-454 — A refusal surfaces at the call in one layer and at the first iteration in another**
   spec: BE-033, ASYNC-006 · effort: M · audience: user.api
   BE-033's rule puts pure refusals at the call and a stream's I/O refusal at open, through a
-  read handle (`with`/`async with store.read(...)`); its **Refusal timing** table measures four
+  read handle (`with`/`async with store.read(...)`); the timing measured in the dossier has four
   layers that meet it in no column alike. Moving sync listing refusals to the call changes
   behaviour. Open decision: the handle's shape, and whether bare `async for` stays lazy.
   Detail: [dossier](backlog/bk-454-refusal-timing-read-handle.md)
@@ -486,7 +486,7 @@ no clause of the contract ships unexercised.
   Detail: [dossier](backlog/bk-382-ancestor-gate-overwrite-path.md)
 
 - [ ] **BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`**
-  spec: SIO-001, SEEK-006 · effort: M · audience: user.api
+  spec: SIO-001, SEEK-006, BE-033 · effort: M · audience: user.api
   After `close()`, Azure `read_seekable()` raises `RemoteStoreError` while bytes
   remain, returns `b""` at EOF, and its `seek`/`tell` return positions. HTTP
   `read()` returns `b""` (urllib), unread bytes (httpx) or `BackendUnavailable`
@@ -559,7 +559,7 @@ no clause of the contract ships unexercised.
   each, at which toolchain cost, or keep both review aids and say so in Rule 4's table.
 
 - [ ] **BK-438 — A flat raw key with an empty segment, such as an S3 folder marker `a/`, has no decoding**
-  spec: BE-017, BE-030, BE-031 · effort: M · audience: library.maintainer, user.api
+  spec: BE-017, BE-030, BE-031, BE-032 · effort: M · audience: library.maintainer, user.api
   RFC-0021 Open question 1: on the kernel, BE-030's omission makes a foreign `a/` or `a//b` an
   empty folder `a`, which A.6 rules out; today's S3 backends differ per shape (a file named `""`,
   a phantom `a/a`, an unlistable root; its table). Open decision: how such keys decode (leaning: an
@@ -707,7 +707,7 @@ or paying for our shortcut.
   Detail: [dossier](backlog/id-121-composite-store.md)
 
 - [ ] **BK-433 — A store cannot choose how it reads links, and no capability says whether a backend has them**
-  spec: — · effort: M · audience: user.api, user.api_docs
+  spec: BE-032 · effort: M · audience: user.api, user.api_docs
   RFC-0021 D7 decides a store-level link policy (`follow_within_root` by default, or
   `no_follow`) and a driver-declared `links` property, and defers the public
   surface. Today Local and SFTP follow links on keyed calls, and SFTP hides them in
@@ -870,11 +870,11 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
-- [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
+- [~] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
   Most of the spec sits in BE-021, BE-029, BE-032 and BE-033 (sizes: dossier); PR #1159's
-  rounds kept finding one section contradicting another, and project status and history
-  sit inside its normative sections. In stages: status out, a split by kind of truth as a
+  rounds kept finding one section contradicting another, and history sits inside its
+  normative sections. In stages: status out (done), a split by kind of truth as a
   pure move (IDs keep their BE- prefix), then a prune per file against `SPEC-DESIGN.md`.
   Open decision: the new spec numbers and each section's kind.
   Detail: [dossier](backlog/bk-456-split-spec-003.md)
@@ -961,10 +961,10 @@ CHANGELOG the release body is built from — say what is actually true.
 
 - [ ] **ID-245 — Derived inventories replacing hand-maintained ones**
   spec: — · effort: M · audience: infra.test, contributor.tooling
-  Three of four inventories are not derived: spec 003's hand-counted
+  Three of four inventories are not derived: BE-029's hand-counted
   cassette-reachability table (after ID-244, § 2), a per-spec accountability
   record nothing renders (after ID-207), and BE-021's divergence counts,
-  stated in four frames that drift. The checker inventory has shipped. Open
+  stated in four frames that drift; spec 003 no longer carries the first or last. The checker inventory has shipped. Open
   decision: the divergence table's input, whose clause half has no form.
   Detail: [dossier](backlog/id-245-derived-inventories.md)
 
