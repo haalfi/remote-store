@@ -32,8 +32,8 @@ written.
       or remove it.
 
     Mechanism a caller can observe (the order of side effects, a visible retry,
-    which refusal wins when two hold) is contract and stays. Ordering is stated
-    as error precedence, never as an order of steps. So is an observable
+    which refusal wins when two hold) is contract and stays. Which refusal wins
+    is stated as error precedence, never as an order of steps. So is an observable
     quality bound (a cost, a security property, what a message must carry)
     that a test can fail.
 
@@ -175,7 +175,8 @@ A spec is reviewed against eight properties. What each means is
 ### Exemplar
 
 [Spec 051](specs/051-store-tree.md) is a structure spec that meets Rules 1, 2,
-3 and 7: one invariant per section, axioms apart from the lemmas they imply,
-the scope stated, and nothing about operations or backends. It predates Rule
-6's order, and states its Terms and what it is tested against inside its
-Overview.
+3 and 7 in its sections: one invariant each, axioms apart from the lemmas they
+imply, and nothing about operations or backends. It predates Rule 6's order:
+it states its Terms and what it is tested against inside its Overview, and its
+Name equality paragraph, which says what a coarser backend represents, is an
+environment assumption Rule 6 would put under Assumptions.

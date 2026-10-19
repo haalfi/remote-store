@@ -375,9 +375,17 @@ no clause of the contract ships unexercised.
   exists, so lifetime clauses stay prose tables. Due with the first lifetime given a module
   (BK-454 or BK-455). Open decision: phases from a named variable or a declared action map.
 
+- [ ] **BK-463 — The compiled Dafny oracles have no Rule 8 statement, so no Dafny model governs a clause**
+  spec: — · effort: S · audience: library.maintainer, infra.test
+  `SPEC-DESIGN.md` Rule 4 counts a bridge, one already in the repo included, only once
+  Rule 8's six items are stated for it; none are for the two compiled oracles
+  (`formal/README.md` § Compiled oracle holds most of the facts), so prose governs every
+  clause, against RFC-0022 D5's path ("Dafny for single calls first"). Open decision: one
+  statement per oracle or one for both, and where T14's unverified key glue is recorded.
+
 - [ ] **BK-461 — No TLA+ module is bridged to code, so none can gate or govern a lifetime**
   spec: — · effort: L · audience: infra.test, library.maintainer
-  ADR-0048 (proposed) gates a TLA+ module from the PR that bridges it; RFC-0022 D5's first
+  ADR-0048 gates a TLA+ module from the PR that bridges it; RFC-0022 D5's first
   bridge is model-generated ITF traces replayed by pytest, and no Python ITF replayer
   exists (research-spec-design § 9). Likely first module: BK-455's close/run race, whose
   gating splits `verify-tla` per module; ID-270 decides the rest there. Open decision:
@@ -861,14 +869,6 @@ give them a way to absorb.
 **Promise:** the artifacts maintainers coordinate through — this file, the
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
-
-- [~] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
-  spec: — · effort: L · audience: contributor.process, library.maintainer
-  Spec 003 mandates mechanisms (BE-032's probe set, BE-021's per-backend remapping) beside
-  its invariants; nothing assigns a kind of truth to a spec, a form or a formal layer. RFC-0022
-  is under review, its open questions answered; ADR-0048 (proposed) and `sdd/SPEC-DESIGN.md`
-  are drafted with it. BK-456 follows. Open decision: accepting RFC-0022 and ADR-0048.
-  Detail: [dossier](backlog/bk-457-declarative-spec-adr.md)
 
 - [ ] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer

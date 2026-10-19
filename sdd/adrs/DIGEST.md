@@ -4,65 +4,6 @@
 
 Compiled from 48 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
-## Proposed
-
-### [ADR-0048](0048-how-specs-are-designed.md): A Spec States the Observable Contract, Cut by Kind of Truth, Governed Through a Bridge
-
-- **A spec states only the observable contract.** It states preconditions,
-  postconditions, observable side effects, error precedence, and a lifetime's
-  states and transitions. A sentence that two correct implementations could
-  not both satisfy prescribes mechanism, and mechanism belongs in an ADR, a
-  design note or a plan, never in a spec. Ordering a caller can observe is
-  contract, stated as error precedence. *Why:* mechanism written beside
-  invariants is where specs contradict themselves, while callers rely only on
-  outcomes. *Reverse when* relocated mechanism proves to be what callers rely
-  on.
-
-- **A spec is cut by kind of truth, never by component.** The kinds are
-  structure, function, single call, lifetime, environment and liveness; a
-  clause's kind is the shape of a witness that would violate it. Inside a
-  kind, a spec is cut at an interface contract between layers. *Why:*
-  ownership, state and time cross components, so a spec per component
-  scatters one property over several files. *Reverse when* specs cut by kind
-  show more duplication or cross-linking than one operation contract with
-  linked lifecycle and consistency models would.
-
-- **Where a formal model governs a clause, the model is that clause's
-  spec.** A model governs a clause only where a bridge binds it to the tests,
-  only as far as the bridge reaches, and only while the model's check gates
-  in CI, and a bridge counts only once it is documented: what it exercises,
-  how runtime values become model values, how runs are produced, its pass
-  criterion, its blind spots and the job that runs it, a bridge already in
-  the repo included. Everywhere else the prose governs. The prose states a
-  governed clause once and links the model. *Why:* a model with no bridge
-  drifts from the code, a bridged model can still be the stale side, and
-  making every model normative would leave each clause without a model with
-  no normative home.
-
-- **A bridge grades confidence, not authority.** When contract, model, test
-  and code disagree, the disagreement is investigated and settled by the
-  attribution rules of [`000-process.md`](../000-process.md#intent-attribution),
-  whatever the bridge level. *Why:* a test can
-  encode a bug, and a bridged model can rest on a mistaken contract.
-
-- **A TLA+ check blocks merges only once its module is bridged.** An
-  unbridged module's check still runs, without blocking. A Dafny proof blocks
-  merges whether or not its model is bridged. *Why:* model checking an
-  unbridged module proves only that the model agrees with itself, while a
-  postcondition the Dafny verifier rejects is a contradiction in the contract
-  itself.
-
-- **A behaviour that differs by backend is a named profile, and the outcome
-  stays the same on every profile.** A profile, declared by a capability or a
-  driver flag, decides when a clause is checked and what it costs, never what
-  a caller sees. So a call that tolerates a missing path still refuses a
-  wrong-typed one on every profile: `delete(folder, missing_ok=True)` raises
-  `InvalidPath` on a flat backend as on a hierarchical one. *Why:* the
-  tolerance is for absence, not for a wrong type, and an outcome that depends
-  on the backend is the divergence profiles exist to remove. *Reverse when*
-  the type check's cost is measured dominating real callers; the remedy is
-  then an opt-out the caller chooses, not a different default per profile.
-
 ## Accepted
 
 ### [ADR-0001](0001-architecture-store-registry-backends.md): Architecture - Store, Registry, Backends
@@ -1561,6 +1502,63 @@ Section references are to RFC-0021, which carries the rationale.
   probed shape.
 
 D5 to D7, D9 and D10 are contract or placement and live in BE-032.
+
+### [ADR-0048](0048-how-specs-are-designed.md): A Spec States the Observable Contract, Cut by Kind of Truth, Governed Through a Bridge
+
+- **A spec states only the observable contract.** It states preconditions,
+  postconditions, observable side effects, error precedence, and a lifetime's
+  states and transitions. A sentence that two correct implementations could
+  not both satisfy prescribes mechanism, and mechanism belongs in an ADR, a
+  design note or a plan, never in a spec. Ordering a caller can observe is
+  contract, stated as error precedence. *Why:* mechanism written beside
+  invariants is where specs contradict themselves, while callers rely only on
+  outcomes. *Reverse when* relocated mechanism proves to be what callers rely
+  on.
+
+- **A spec is cut by kind of truth, never by component.** The kinds are
+  structure, function, single call, lifetime, environment and liveness; a
+  clause's kind is the shape of a witness that would violate it. Inside a
+  kind, a spec is cut at an interface contract between layers. *Why:*
+  ownership, state and time cross components, so a spec per component
+  scatters one property over several files. *Reverse when* specs cut by kind
+  show more duplication or cross-linking than one operation contract with
+  linked lifecycle and consistency models would.
+
+- **Where a formal model governs a clause, the model is that clause's
+  spec.** A model governs a clause only where a bridge binds it to the tests,
+  only as far as the bridge reaches, and only while the model's check gates
+  in CI, and a bridge counts only once it is documented: what it exercises,
+  how runtime values become model values, how runs are produced, its pass
+  criterion, its blind spots and the job that runs it, a bridge already in
+  the repo included. Everywhere else the prose governs. The prose states a
+  governed clause once and links the model. *Why:* a model with no bridge
+  drifts from the code, a bridged model can still be the stale side, and
+  making every model normative would leave each clause without a model with
+  no normative home.
+
+- **A bridge grades confidence, not authority.** When contract, model, test
+  and code disagree, the disagreement is investigated and settled by the
+  attribution rules of [`000-process.md`](../000-process.md#intent-attribution),
+  whatever the bridge level. *Why:* a test can
+  encode a bug, and a bridged model can rest on a mistaken contract.
+
+- **A TLA+ check blocks merges only once its module is bridged.** An
+  unbridged module's check still runs, without blocking. A Dafny proof blocks
+  merges whether or not its model is bridged. *Why:* model checking an
+  unbridged module proves only that the model agrees with itself, while a
+  postcondition the Dafny verifier rejects is a contradiction in the contract
+  itself.
+
+- **A behaviour that differs by backend is a named profile, and the outcome
+  stays the same on every profile.** A profile, declared by a capability or a
+  driver flag, decides when a clause is checked and what it costs, never what
+  a caller sees. So a call that tolerates a missing path still refuses a
+  wrong-typed one on every profile: `delete(folder, missing_ok=True)` raises
+  `InvalidPath` on a flat backend as on a hierarchical one. *Why:* the
+  tolerance is for absence, not for a wrong type, and an outcome that depends
+  on the backend is the divergence profiles exist to remove. *Reverse when*
+  the type check's cost is measured dominating real callers; the remedy is
+  then an opt-out the caller chooses, not a different default per profile.
 
 ## Superseded
 

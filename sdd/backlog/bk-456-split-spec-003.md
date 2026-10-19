@@ -53,8 +53,8 @@ sequences): lines 219 to 232, 289 to 293, 489 to 513, 670, 789 to 835, 1262 to
   the split moves, and keeps the split PR a pure move. One PR, no clause
   reworded; what leaves names its new home.
 - **Split by kind.** The maintainer's answer of 2026-10-19 (decision log
-  `sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl`; ADR-0048,
-  proposed): by kind of
+  `sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl`; ADR-0048): by
+  kind of
   truth, interface contracts as the second cut, which replaces the four-file
   layer split the bullets below still describe. A candidate cut, recorded at
   orient: 003 keeps the single-call contract (CAP, the operation sections,

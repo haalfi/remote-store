@@ -16,6 +16,7 @@ discovery_followups:
   - BK-460
   - BK-461
   - BK-462
+  - BK-463
 expected_ripples:
   - sdd/000-process.md
   - sdd/formal/README.md
@@ -73,10 +74,14 @@ orient:
       They tie spec 051 to operations and backends; spec 003's BE-032 already
       points to spec 051 (BK-435 index), and the rewrite keeps that link.
   - items: [ID-270]
-    verdict: unrelated
+    verdict: constrains
     evidence: >-
-      Settles RFC-0022 Open Question 3 (decided by ID-150); it revisits
-      verify-tla gating, which this work does not change.
+      ID-150 settled RFC-0022 Open Question 3; ID-270 revisits verify-tla
+      gating. Recorded at orient as unrelated, which was wrong: this PR replaces
+      formal/README.md rule 3's catch bar with gating from the bridging PR and
+      rewrites ID-270's body to match (the bridged module gates; each unbridged
+      one is promoted, removed or re-deferred). Corrected after the
+      maintainer's second review on PR #1166.
 phases:
   - id: orient
     name: Orient

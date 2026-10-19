@@ -16,7 +16,7 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 6. <a id="workflows"></a>**Workflows**:
     - **Features**: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.
     - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec. The reproduction lives in the item's dossier where it has one ([§ Backlog](#backlog)).
-7. <a id="intent-attribution"></a>**Prose records the resolution; it does not win the argument**: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against a claim the conformance suite never asserted. See [§ Attribution inside the intent domain](#attribution-inside-the-intent-domain).
+7. <a id="intent-attribution"></a>**Prose records the resolution; it does not win the argument**: when spec prose, a formal model's clause and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a checked model clause or against a claim the conformance suite never asserted. See [§ Attribution inside the intent domain](#attribution-inside-the-intent-domain).
 
 ## Guides
 

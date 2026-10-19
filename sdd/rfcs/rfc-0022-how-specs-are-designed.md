@@ -2,13 +2,13 @@
 
 ## Status
 
-Under Review, 2026-10-19. Drafted 2026-10-18. Tracked as **BK-457**. On
-acceptance it graduates to [ADR-0048](../adrs/0048-how-specs-are-designed.md)
-(proposed: D1, D3, D5, D6, the Rule 3 and Rule 7 amendment, `formal/README.md`
-rule 3's gating bar, and Open Questions 4, 6 and 8) and to the authority doc
+Accepted, 2026-10-19, by the maintainer. Drafted 2026-10-18. Tracked as
+**BK-457**. Graduated to [ADR-0048](../adrs/0048-how-specs-are-designed.md)
+(D1, D3, D5, D6, the Rule 3 and Rule 7 amendment, `formal/README.md` rule 3's
+gating bar, and Open Questions 4, 6 and 8) and to the authority doc
 [`sdd/SPEC-DESIGN.md`](../SPEC-DESIGN.md) (D2, D4, D7, D8, and Open Question
-7's checklist), drafted in the same change. The open questions are annotated
-with the maintainer's answers.
+7's checklist), which are now the authority; this RFC stays as drafted, its
+open questions annotated with the maintainer's answers.
 The analysis behind it, a maintainer session that walked one operation, a
 streaming read, from key to bytes, tested against outside evidence, is
 [`research-spec-design.md`](../research/research-spec-design.md); this RFC
