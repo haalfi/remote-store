@@ -27,12 +27,13 @@ and a stream on a condemned connection (SIO-010,
 - **Close posture**, `close_is_terminal`: as BE-020 defines them.
 - **Concurrent-use posture**, `thread_safe`, `single_connection`: as BE-028
   defines them.
-- **Closed guard**: the refusal of a live operation with `BackendUnavailable`
-  after a terminal close (BE-020); on the kernel, step 1 of
+- **Live operation**: every member of a backend except the addressing members
+  (`native_path`, `to_key`, `resolve`), `name`, `capabilities`, `close` and
+  `unwrap`.
+- **Closed guard**: after a terminal close (BE-020), the refusal with
+  `BackendUnavailable` of every live operation and, on the kernel, of `unwrap`
+  too (BE-022); on the kernel it is step 1 of
   [BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel)'s pipeline.
-- **Live operation**: an operation the closed guard covers. On the kernel,
-  every member BE-030's pipeline runs; the addressing members (`native_path`,
-  `to_key`, `resolve`), `name`, `capabilities` and `close` are not live.
 - **Condemned**: a failure the driver's `connection_dead` judges a
   transport-level death of the connection, as BE-033's exit-owner table states.
 - **`Session`**: the connection owner of a remote driver (RFC-0017 D5). BE-033
@@ -300,8 +301,8 @@ dependence on it.
   verified in `MemoryBackend.dfy`, and `sdd/formal/KernelProtocol.dfy` with its
   compiled oracle:
   `bash scripts/dafny_verify.sh BackendContract.dfy RootPath.dfy MemoryBackend.dfy KernelProtocol.dfy`.
-- The conformance lanes and the fake-driver kernel cells, both runtimes:
-  `pytest tests/backends/conformance tests/_kernel`.
+- Every test file carrying a BE-020, BE-028 or BE-033 mark, both runtimes:
+  `python scripts/run_tests.py $(rg -l 'mark\.spec\([^)]*"BE-0(20|28|33)"' tests)`.
 
 Which test or model clause checks which section derives from the tests' spec
 marks and the models' `@spec` tags.

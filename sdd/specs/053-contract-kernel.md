@@ -636,7 +636,9 @@ measures the error-path probes; these are the determinants this section adds):
 
 ## Assumptions
 
-None lifted out of the sections.
+None lifted out of the sections: BE-032's A.1, A.4 and A.8 and BE-030's
+**Content** paragraph state, in their own text, what they rely on from
+encodings, wires and caller streams.
 
 ## Notes
 
@@ -651,7 +653,7 @@ and `is_folder`, from TREE-001 and TREE-010; and the model notes in BE-031
 - The Dafny models `sdd/formal/StoreTree.dfy`, `RootPath.dfy`, and
   `BackendContract.dfy` verified in `MemoryBackend.dfy`:
   `bash scripts/dafny_verify.sh StoreTree.dfy RootPath.dfy BackendContract.dfy MemoryBackend.dfy`.
-- The fake-driver kernel cells, both runtimes, and Memory's own kernel cells:
-  `pytest tests/_kernel tests/backends/memory`.
+- Every test file carrying a BE-030, BE-031 or BE-032 mark, both runtimes:
+  `python scripts/run_tests.py $(rg -l 'mark\.spec\([^)]*"BE-03[0-2]"' tests)`.
 
 Which test checks which section derives from the tests' spec marks.
