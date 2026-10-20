@@ -604,6 +604,13 @@ no clause of the contract ships unexercised.
 **Promise:** a user gets set up, picks the right backend, writes their own, or
 copies an example, without opening an issue.
 
+- [ ] **BK-480 — A caller cannot check whether a key is portable without copying spec 054's regex**
+  spec: KEY-007 · effort: S · audience: user.api, user.api_docs
+  Spec 054 defines the portable floor by two patterns, `PORTABLE_NAME` and `PORTABLE_KEY`, which
+  every backend must admit (KEY-007); a caller who wants keys that work everywhere has only the
+  spec text. Open decision: a public helper (such as `is_portable_key(key) -> bool`) with its own
+  spec section, or a documented pattern constant, and whether it also reports why a key fails.
+
 - [ ] **BUG-321 — A list that directly follows paragraph text renders as literal dashes on the docs site**
   spec: DOCFRAME-004 · effort: S · audience: user.site
   GitHub starts a list right after a paragraph line; Python-Markdown needs a

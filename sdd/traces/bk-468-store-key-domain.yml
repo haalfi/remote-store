@@ -15,6 +15,7 @@ decisions:
 discovery_followups:
   - BK-469
   - BL-012
+  - BK-480
 expected_ripples:
   - sdd/specs/004-path-model.md
   - sdd/specs/051-store-tree.md
