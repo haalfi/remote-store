@@ -169,3 +169,84 @@ phases:
           a bare in-file link to a moved anchor, a wrapped BE-028 link put back
           on 003) each made it exit 1
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1169 --trace-block-only` at head 35e0891.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1169 --trace-block-only"
+  pr: 1169
+  review_rounds: 5
+  submissions: 2
+  findings: 7
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.16
+    - round: 2
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {must-fix: 3}
+      duration_hours: 2.76
+  by_file:
+    - path: "sdd/specs/052-backend-lifetime.md"
+      findings: 3
+    - path: "sdd/specs/053-contract-kernel.md"
+      findings: 2
+    - path: "sdd/research/bk-456-split/check_move.py"
+      findings: 1
+    - path: "sdd/traces/bk-456-spec-003-split.yml"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "pyproject.toml"
+    - "scripts/gen_protocol_diagram.py"
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/adrs/0047-store-tree-key-resolution.md"
+    - "sdd/audits/audit-024-spec-003-052-053-design.md"
+    - "sdd/backlog/bk-450-driver-boundary-enforcement.md"
+    - "sdd/backlog/bk-456-split-spec-003.md"
+    - "sdd/decisions/c7fc25a1-86c3-542e-a8f0-b02e630d3fd3.jsonl"
+    - "sdd/formal/BackendContract.dfy"
+    - "sdd/formal/KernelProtocol.dfy"
+    - "sdd/formal/MemoryBackend.dfy"
+    - "sdd/formal/README.md"
+    - "sdd/rfcs/rfc-0021-key-resolution-model.md"
+    - "sdd/specs/003-backend-adapter-contract.md"
+    - "sdd/specs/005-error-model.md"
+    - "sdd/specs/006-streaming-io.md"
+    - "sdd/specs/007-atomic-writes.md"
+    - "sdd/specs/008-s3-backend.md"
+    - "sdd/specs/009-sftp-backend.md"
+    - "sdd/specs/011-s3-pyarrow-backend.md"
+    - "sdd/specs/012-azure-backend.md"
+    - "sdd/specs/013-memory-backend.md"
+    - "sdd/specs/026-health-check.md"
+    - "sdd/specs/029-async-store-backend-api.md"
+    - "sdd/specs/032-http-backend.md"
+    - "sdd/specs/037-depth-limited-listing.md"
+    - "sdd/specs/040-sql-blob-backend.md"
+    - "sdd/specs/041-sql-query-backend.md"
+    - "sdd/specs/044-graph-backend.md"
+    - "sdd/specs/045-write-result.md"
+    - "sdd/specs/051-store-tree.md"
+    - "src/remote_store/_kernel/__init__.py"
+    - "src/remote_store/_kernel/_keys.py"
+    - "tests/_kernel/test_protocol_oracle.py"
+    - "tests/backends/conformance/test_concurrency.py"
+    - "tests/backends/memory/test_kernel_cells.py"
+    - "tests/backends/memory/test_metadata_shape.py"
+  review_driven_commits:
+    - sha: "cf75f0c"
+      subject: "fix: address PR #1169 review"
+    - sha: "d4518a2"
+      subject: "BK-456: decision log"
+    - sha: "1d03a8b"
+      subject: "BK-456: Fix the split's own skeleton text, found by audit 024"
+    - sha: "d4db422"
+      subject: "BK-456: Audit 024, specs 003, 052 and 053 against SPEC-DESIGN.md"
+    - sha: "35e0891"
+      subject: "fix: address PR #1169 review (round 2)"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
