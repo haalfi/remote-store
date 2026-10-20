@@ -107,10 +107,10 @@ profile with each outcome it allows") names no mechanism and is unchanged.
 - Spec 054: KEY-008 states the declaration and the exact rule, its table one
   row per field; the Terms' Profile and the Note recording the departure from
   Rule 5 go.
-- Spec 053: a new section, BE-034 (Key Limits on the Kernel), states D1 to D4.
+- Spec 053: a new section, BE-040 (Key Limits on the Kernel), states D1 to D4.
   BE-030 is not reworded.
 - `SPEC-DESIGN.md` Rule 5, as D6.
-- An ADR records D1, D2, D3 and D6.
+- An ADR (ADR-0050 or the next free number) records D1, D2, D3 and D6.
 
 ## Alternatives
 
