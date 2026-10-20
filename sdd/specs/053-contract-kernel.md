@@ -643,10 +643,10 @@ None.
 
 ## Tested against
 
-- The fake-driver kernel cells in `tests/_kernel/`, both runtimes, among them
-  BE-032's two generated suites, `test_tree_results.py` and
-  `test_encoding_observations.py`.
-- `sdd/formal/StoreTree.dfy`, which verifies the flat encoding's `decode`, its
-  operations and BE-032's refusal rule.
-- Memory's kernel cells, `tests/backends/memory/test_kernel_cells.py` and
-  `tests/backends/memory/test_metadata_shape.py`.
+- The Dafny models `sdd/formal/StoreTree.dfy`, and
+  `sdd/formal/BackendContract.dfy` verified in `MemoryBackend.dfy`.
+- The pytest suite under `tests/`: the fake-driver kernel cells in
+  `tests/_kernel/`, both runtimes, and Memory's own kernel cells in
+  `tests/backends/memory/`.
+
+Which test checks which section derives from the tests' spec marks.

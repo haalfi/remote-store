@@ -322,6 +322,6 @@ transport (HTTP-TR-001):
 (ASYNC-089). A `single_connection` backend wrapped by `SyncBackendAdapter` and
 driven with `asyncio.gather` is **not** safe (ASYNC-094).
 
-**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
+**See also:** [052-backend-lifetime.md](052-backend-lifetime.md)
 (BE-028), [029-async-store-backend-api.md](029-async-store-backend-api.md)
 (ASYNC-094).

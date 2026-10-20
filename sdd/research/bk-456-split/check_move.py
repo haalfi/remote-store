@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Prove BK-456 stage two moved spec 003's sections whole (a pure move).
 
-Usage: ``python sdd/research/bk-456-split/check_move.py [BASE]`` (BASE defaults to
-``origin/master``). Exit 0 when every check passes, 1 otherwise.
+Usage: ``python sdd/research/bk-456-split/check_move.py [BASE]``. BASE defaults
+to ``4694e7a``, the master commit the split was cut from (stage one's merge); a
+later master no longer holds the moved sections, so it is no base for this
+check. Exit 0 when every check passes, 1 otherwise.
 
 Checks, against spec 003 at BASE:
 
@@ -17,6 +19,9 @@ Checks, against spec 003 at BASE:
 3. Every link into the three files, from any tracked ``.md`` or ``.py`` outside
    ``sdd/decisions``, ``sdd/traces`` and ``sdd/research``, names an anchor that
    file has, so the fold in 2 cannot hide a link sent to the wrong file.
+4. No unanchored link to spec 003, in the same files, names a section that left
+   it: neither its text (``[BE-033](...003...md)``) nor a parenthesised ID right
+   after it, a line break allowed (``[003-...md](003-...md)\n(BE-028)``).
 """
 
 from __future__ import annotations
@@ -32,6 +37,7 @@ F003 = "003-backend-adapter-contract.md"
 NEW = ("052-backend-lifetime.md", "053-contract-kernel.md")
 FILES = (F003, *NEW)
 KERNEL_INTRO = "contract-kernel"
+BASE = "4694e7a"
 RETARGETS = [
     (
         "the other formal-coverage notes in this spec quote",
@@ -51,6 +57,7 @@ _HEAD = re.compile(r"#{2,3} ")
 _SECTION = re.compile(r"### ((?:CAP|BE)-\d+):")
 _FOLD = re.compile(r"\]\((?:(?:003-backend-adapter-contract|052-backend-lifetime|053-contract-kernel)\.md)?#")
 _BARE = re.compile(r"\]\(#([^)\s]+)\)")
+_UNANCHORED = re.compile(r"\[([^\]]*)\]\([^)\s#]*003-backend-adapter-contract\.md\)(?:\s*\((BE-\d+)\))?")
 _LINK = re.compile(
     r"\]\(([^)\s]*?)((?:003-backend-adapter-contract|052-backend-lifetime|053-contract-kernel)\.md)#([^)\s]+)\)"
 )
@@ -81,7 +88,7 @@ def sections(text: str) -> dict[str, str]:
 
 
 def main() -> int:
-    base = sys.argv[1] if len(sys.argv) > 1 else "origin/master"
+    base = sys.argv[1] if len(sys.argv) > 1 else BASE
     before = sections(
         subprocess.run(
             ["git", "-C", str(ROOT), "show", f"{base}:sdd/specs/{F003}"],
@@ -149,12 +156,20 @@ def main() -> int:
         text=True,
         check=True,
     ).stdout.split()
-    links = unresolved = 0
+    moved = {key for key, (f, _) in after.items() if f != F003}
+    links = unresolved = stale = 0
     for path in sorted(set(tracked) | {f"sdd/specs/{f}" for f in FILES}):
         p = ROOT / path
         if not p.exists():
             continue
-        for n, line in enumerate(p.read_text(encoding="utf-8").split("\n"), 1):
+        whole = p.read_text(encoding="utf-8")
+        for m in _UNANCHORED.finditer(whole):
+            named = {i for i in re.findall(r"BE-\d+", m.group(1)) + [m.group(2) or ""] if i in moved}
+            if named:
+                n = whole.count("\n", 0, m.start()) + 1
+                print(f"FAIL: {path}:{n} links spec 003 for {', '.join(sorted(named))}, which left it")
+                stale += 1
+        for n, line in enumerate(whole.split("\n"), 1):
             found = [(t, a) for _, t, a in _LINK.findall(line)]
             if p.parent == SPECS and p.name in FILES:
                 found += [(p.name, a) for a in _BARE.findall(line)]
@@ -163,8 +178,9 @@ def main() -> int:
                 if anchor not in anchors[target]:
                     print(f"FAIL: {path}:{n} links {target}#{anchor}, which has no such heading")
                     unresolved += 1
-    failures += unresolved
-    print(f"links into the three files: {links}, unresolved: {unresolved}")
+    failures += unresolved + stale
+    print(f"links into the three files: {links}, unresolved: {unresolved}; "
+          f"unanchored links to 003 naming a moved ID: {stale}")
     print("RESULT:", "FAIL" if failures else "PASS")
     return 1 if failures else 0
 

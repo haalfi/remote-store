@@ -17,7 +17,8 @@ expected_ripples:
   - scripts/gen_protocol_diagram.py
   - sdd/GATE-INVENTORY.md
   # The 14 anchored links into moved sections (`git grep -l
-  # "003-backend-adapter-contract.md#"`) and 4 unanchored ones naming a moved ID.
+  # "003-backend-adapter-contract.md#"`) and 10 unanchored ones naming a moved ID
+  # (4 on one line; 6 wrapped, below).
   - sdd/adrs/0047-store-tree-key-resolution.md
   - sdd/rfcs/rfc-0021-key-resolution-model.md
   - sdd/specs/005-error-model.md
@@ -32,6 +33,15 @@ expected_ripples:
   - sdd/specs/037-depth-limited-listing.md
   - sdd/specs/045-write-result.md
 surprising_ripples:
+  # Found by PR #1169's first review: `See also: [003-...md](003-...md)` with
+  # "(BE-028)" on the next line, which no line-oriented grep matches. Found by
+  # a multiline Grep; check_move.py's check 4 now fails on the shape.
+  - sdd/specs/009-sftp-backend.md
+  - sdd/specs/029-async-store-backend-api.md
+  - sdd/specs/032-http-backend.md
+  - sdd/specs/040-sql-blob-backend.md
+  - sdd/specs/041-sql-query-backend.md
+  - sdd/specs/044-graph-backend.md
   # Plain-text "spec 003 BE-03x" references, which neither of the two link greps
   # finds (`git grep -n -i -E "spec 003|\b003 (§|BE-)|003['’]s (BE|§|kernel)"`
   # over src, tests, scripts, sdd/formal, .github, pyproject.toml, sdd/*.md).
@@ -145,10 +155,12 @@ phases:
         section: "(full)"
         read_type: gate
         extract: >-
-          `python sdd/research/bk-456-split/check_move.py`: IDs 40 before, 40
-          after, sets equal; 41 of 41 blocks (40 sections and the Contract
-          kernel intro) byte-identical after folding link targets and the 3
-          "this spec" retargets; 65 links into the three files, 0 unresolved;
-          PASS. Three mutations (a reworded word, a link to the wrong file, a
-          bare in-file link to a moved anchor) each made it exit 1
+          `python sdd/research/bk-456-split/check_move.py` (base pinned to
+          4694e7a): IDs 40 before, 40 after, sets equal; 41 of 41 blocks (40
+          sections and the Contract kernel intro) byte-identical after folding
+          link targets and the 3 "this spec" retargets; 65 links into the
+          three files, 0 unresolved; 0 unanchored links to 003 naming a moved
+          ID; PASS. Four mutations (a reworded word, a link to the wrong file,
+          a bare in-file link to a moved anchor, a wrapped BE-028 link put back
+          on 003) each made it exit 1
         outcome: ok

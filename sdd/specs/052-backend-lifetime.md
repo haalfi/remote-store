@@ -279,12 +279,12 @@ None.
 
 ## Tested against
 
-- `sdd/formal/BackendContract.dfy`'s `Live()` guard, verified in
-  `MemoryBackend.dfy` (BE-020).
-- The use-after-close lane, `tests/backends/conformance/test_close_posture.py`
-  and its `aio/` sibling (BE-020, BE-033).
-- The concurrency lane, `tests/backends/conformance/test_concurrency.py`
-  (BE-028).
-- `sdd/formal/KernelProtocol.dfy`, its compiled oracle driven by
-  `tests/_kernel/test_protocol_oracle.py`, and `tests/_kernel/test_protocol.py`
-  and `tests/_kernel/test_protocol_stateful.py` (BE-033).
+- The Dafny models `sdd/formal/BackendContract.dfy` and `RootPath.dfy`,
+  verified in `MemoryBackend.dfy`, and `sdd/formal/KernelProtocol.dfy` with its
+  compiled oracle.
+- The pytest suite under `tests/`: the conformance lanes in
+  `tests/backends/conformance/` and the fake-driver kernel cells in
+  `tests/_kernel/`, both runtimes.
+
+Which test or model clause checks which section derives from the tests' spec
+marks and the models' `@spec` tags.

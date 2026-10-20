@@ -335,5 +335,5 @@ a second copy is what let this clause keep saying `QueuePool` implies
 `SQLQueryBackend`, which inherits `_SQLAlchemyBaseBackend.__init__` and so gets
 the same pool for the same URL.
 
-**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
+**See also:** [052-backend-lifetime.md](052-backend-lifetime.md)
 (BE-028).

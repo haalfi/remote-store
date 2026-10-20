@@ -732,7 +732,7 @@ async→sync *manufactures* thread-safety by funnelling through one loop. Encodi
 the asymmetry stops callers from assuming `SyncBackendAdapter` confers the
 protection `AsyncBackendSyncAdapter` does.
 
-**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
+**See also:** [052-backend-lifetime.md](052-backend-lifetime.md)
 (BE-028), ASYNC-055 (one-loop rule), ASYNC-089 (serialisation invariant),
 [009-sftp-backend.md](009-sftp-backend.md) (SFTP-029),
 [../adrs/0025-async-to-sync-backend-adapter.md](../adrs/0025-async-to-sync-backend-adapter.md).
