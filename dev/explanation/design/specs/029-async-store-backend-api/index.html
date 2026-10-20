@@ -7501,6 +7501,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-024-spec-003-052-053-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    024: Specs 003, 052 and 053 against SPEC-DESIGN.md
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12566,6 +12594,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../052-backend-lifetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    052: Backend Lifetime Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../053-contract-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    053: Contract Kernel Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -13767,7 +13851,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <h2 id="asyncbackend-abc">AsyncBackend ABC<a class="headerlink" href="#asyncbackend-abc" title="Permanent link">&para;</a></h2>
 <h3 id="async-001-abstract-base-class">ASYNC-001: Abstract Base Class<a class="headerlink" href="#async-001-abstract-base-class" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>AsyncBackend</code> is an ABC. Subclasses must implement all abstract methods.
-<strong>On the kernel:</strong> <code>AsyncDriverBackend</code> is a complete <code>AsyncBackend</code> over an <code>AsyncDriver</code> of async wire primitives, the async route of the contract kernel (<a href="../003-backend-adapter-contract/#contract-kernel">003 § Contract kernel</a>); both are public in <code>remote_store.drivers</code>. A subclass builds its driver and need implement no abstract method itself. <code>AsyncMemoryBackend</code> is the first class on it.
+<strong>On the kernel:</strong> <code>AsyncDriverBackend</code> is a complete <code>AsyncBackend</code> over an <code>AsyncDriver</code> of async wire primitives, the async route of the contract kernel (<a href="../053-contract-kernel/#contract-kernel">053 § Contract kernel</a>); both are public in <code>remote_store.drivers</code>. A subclass builds its driver and need implement no abstract method itself. <code>AsyncMemoryBackend</code> is the first class on it.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-001</a>.</p>
 <h3 id="async-002-name-property">ASYNC-002: Name Property<a class="headerlink" href="#async-002-name-property" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>name</code> property returns a unique identifier string for the backend type. Sync — no I/O.
@@ -13784,7 +13868,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <h3 id="async-006-read">ASYNC-006: read()<a class="headerlink" href="#async-006-read" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def read(path) -&gt; AsyncIterator[bytes]</code>. Returns an async iterator of byte chunks for the file content.
 <strong>Raises:</strong> <code>NotFound</code> if the file does not exist.
-<strong>When a refusal surfaces:</strong> <a href="../003-backend-adapter-contract/#be-033-interaction-protocol-on-the-kernel">BE-033</a>'s <strong>Refusal timing</strong>.
+<strong>When a refusal surfaces:</strong> <a href="../052-backend-lifetime/#be-033-interaction-protocol-on-the-kernel">BE-033</a>'s <strong>Refusal timing</strong>.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-006</a>, ASYNC-020.</p>
 <h3 id="async-007-read_bytes">ASYNC-007: read_bytes()<a class="headerlink" href="#async-007-read_bytes" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def read_bytes(path) -&gt; bytes</code>. Returns the full file content as bytes.
@@ -13850,7 +13934,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <strong>See also:</strong> <a href="../006-streaming-io/">006-streaming-io.md</a> (SIO-003).</p>
 <h3 id="async-022-aclose">ASYNC-022: aclose()<a class="headerlink" href="#async-022-aclose" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def aclose()</code> is optional (default no-op). Called for resource cleanup. Named <code>aclose</code> per Python convention (async generators, <code>asyncio.StreamWriter</code>).
-<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-020</a>.</p>
+<strong>See also:</strong> <a href="../052-backend-lifetime/">BE-020</a>.</p>
 <h3 id="async-023-async-context-manager">ASYNC-023: Async Context Manager<a class="headerlink" href="#async-023-async-context-manager" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>AsyncBackend</code> supports <code>async with</code>. <code>__aenter__</code> returns <code>self</code>. <code>__aexit__</code> calls <code>aclose()</code>.</p>
 <h3 id="async-024-error-mapping">ASYNC-024: Error Mapping<a class="headerlink" href="#async-024-error-mapping" title="Permanent link">&para;</a></h3>
@@ -14183,7 +14267,7 @@ is reaped by process exit.  Passing <code>timeout=None</code> waits indefinitely
 <code>__exit__</code> delegates to <code>close()</code>.
 <strong>See also:</strong> <a href="../../adrs/0025-async-to-sync-backend-adapter/">ADR-0025</a>
 § Lifecycle; for a wrapped class on the kernel, the states its <code>aclose()</code>
-moves through are <a href="../003-backend-adapter-contract/#be-033-interaction-protocol-on-the-kernel">BE-033</a>'s.</p>
+moves through are <a href="../052-backend-lifetime/#be-033-interaction-protocol-on-the-kernel">BE-033</a>'s.</p>
 <h3 id="async-089-concurrent-callers-no-deadlock-invariant">ASYNC-089: Concurrent-callers No-deadlock Invariant<a class="headerlink" href="#async-089-concurrent-callers-no-deadlock-invariant" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The adapter is safe for concurrent calls from multiple sync
 threads. At least <em>N = 32</em> threads issuing mixed <code>read</code> / <code>write</code> / <code>list</code> /
@@ -14288,7 +14372,7 @@ direction of the bridge determines it.</p>
 async→sync <em>manufactures</em> thread-safety by funnelling through one loop. Encoding
 the asymmetry stops callers from assuming <code>SyncBackendAdapter</code> confers the
 protection <code>AsyncBackendSyncAdapter</code> does.</p>
-<p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>
+<p><strong>See also:</strong> <a href="../052-backend-lifetime/">052-backend-lifetime.md</a>
 (BE-028), ASYNC-055 (one-loop rule), ASYNC-089 (serialisation invariant),
 <a href="../009-sftp-backend/">009-sftp-backend.md</a> (SFTP-029),
 <a href="../../adrs/0025-async-to-sync-backend-adapter/">../adrs/0025-async-to-sync-backend-adapter.md</a>.</p>

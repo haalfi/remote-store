@@ -7501,6 +7501,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-024-spec-003-052-053-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    024: Specs 003, 052 and 053 against SPEC-DESIGN.md
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11995,6 +12023,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../052-backend-lifetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    052: Backend Lifetime Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../053-contract-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    053: Contract Kernel Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12895,7 +12979,7 @@
 <strong>Originated in:</strong> BUG-190, BUG-192 (write/open_atomic), then extended by BUG-195 (get_file_info), BUG-197 (read/delete), BUG-198 (folder-API on file), BUG-200 (move/copy directory checks), BUG-203 (is_file/is_folder).</p>
 <h3 id="az-037-concurrent-use-posture">AZ-037: Concurrent-Use Posture<a class="headerlink" href="#az-037-concurrent-use-posture" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>AzureBackend</code> is <code>thread_safe</code> (the BE-028 default): a single instance is safe to share across threads. The Azure SDK service clients (<code>BlobServiceClient</code>, <code>DataLakeServiceClient</code>) are immutable after construction and documented safe for concurrent use; per-blob operations are atomic at the object level. The async sibling <code>AsyncAzureBackend</code> meets the async mirror <a href="../029-async-store-backend-api/#async-094">ASYNC-094</a>: safe for concurrent coroutines on one loop, never across loops. On non-HNS accounts <code>move</code> is a non-atomic copy-then-delete (BE-018); HNS rename is server-side but still not transactional across a concurrent racer.</p>
-<p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a> (BE-028), <a href="../029-async-store-backend-api/">029-async-store-backend-api.md</a> (ASYNC-094).</p>
+<p><strong>See also:</strong> <a href="../052-backend-lifetime/">052-backend-lifetime.md</a> (BE-028), <a href="../029-async-store-backend-api/">029-async-store-backend-api.md</a> (ASYNC-094).</p>
 
 
 

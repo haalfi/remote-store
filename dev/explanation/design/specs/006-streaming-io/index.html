@@ -7501,6 +7501,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-024-spec-003-052-053-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    024: Specs 003, 052 and 053 against SPEC-DESIGN.md
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11584,6 +11612,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../052-backend-lifetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    052: Backend Lifetime Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../053-contract-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    053: Contract Kernel Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11862,7 +11946,7 @@ behaviour every backend had before this clause.
 <strong>On the kernel:</strong> a class on the kernel supplies its driver's <code>connection_dead</code>
 as the predicate, and the async <code>read</code> and both runtimes' <code>read_bytes</code> honour
 the same verdict, so both runtimes skip the close of a condemned stream
-(<a href="../003-backend-adapter-contract/#be-033-interaction-protocol-on-the-kernel">BE-033</a>).</p>
+(<a href="../052-backend-lifetime/#be-033-interaction-protocol-on-the-kernel">BE-033</a>).</p>
 <p><strong>The predicate's verdict is the scope, and it is narrower than "unusable".</strong>
 The Invariant read "a connection the stream's own failure has already
 established is unusable", which this clause cannot deliver and, since

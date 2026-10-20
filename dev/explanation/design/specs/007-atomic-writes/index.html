@@ -7501,6 +7501,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-024-spec-003-052-053-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    024: Specs 003, 052 and 053 against SPEC-DESIGN.md
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11529,6 +11557,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../052-backend-lifetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    052: Backend Lifetime Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../053-contract-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    053: Contract Kernel Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11689,7 +11773,7 @@
 <h2 id="aw-001-atomic-write-semantics">AW-001: Atomic Write Semantics<a class="headerlink" href="#aw-001-atomic-write-semantics" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>write_atomic(path, content, overwrite=False)</code> writes content to a temporary location, then atomically renames it to the target path.
 <strong>Postconditions:</strong> From a reader's perspective, the file transitions from non-existent (or old content) to new content in a single operation. No partial content is ever visible.
-<strong>On the kernel:</strong> for a class on the contract kernel (<a href="../003-backend-adapter-contract/#contract-kernel">003</a>), <code>write_atomic</code> is the kernel's, chosen from the driver's declarations in this order: <code>put</code> where the driver declares <code>put_is_atomic</code>; else its <code>open_write</code> handle, committed; else a temporary key and the driver's <code>rename</code>, which must be able to replace. The temporary and its promotion are the kernel's; the kernel refuses to construct over a driver declaring <code>ATOMIC_WRITE</code> with none of the three. Both Memory classes take the first route: their drivers declare <code>put_is_atomic</code>, so <code>write_atomic</code> is <code>put</code> under the driver's lock, with no temporary (<a href="../013-memory-backend/">013-memory-backend.md</a> MEM-013).</p>
+<strong>On the kernel:</strong> for a class on the contract kernel (<a href="../053-contract-kernel/#contract-kernel">053</a>), <code>write_atomic</code> is the kernel's, chosen from the driver's declarations in this order: <code>put</code> where the driver declares <code>put_is_atomic</code>; else its <code>open_write</code> handle, committed; else a temporary key and the driver's <code>rename</code>, which must be able to replace. The temporary and its promotion are the kernel's; the kernel refuses to construct over a driver declaring <code>ATOMIC_WRITE</code> with none of the three. Both Memory classes take the first route: their drivers declare <code>put_is_atomic</code>, so <code>write_atomic</code> is <code>put</code> under the driver's lock, with no temporary (<a href="../013-memory-backend/">013-memory-backend.md</a> MEM-013).</p>
 <h2 id="aw-002-capability-gate">AW-002: Capability Gate<a class="headerlink" href="#aw-002-capability-gate" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>write_atomic</code> requires the <code>ATOMIC_WRITE</code> capability.
 <strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend does not declare <code>ATOMIC_WRITE</code>.

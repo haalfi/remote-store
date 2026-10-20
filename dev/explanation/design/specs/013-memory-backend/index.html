@@ -7501,6 +7501,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-024-spec-003-052-053-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    024: Specs 003, 052 and 053 against SPEC-DESIGN.md
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11912,6 +11940,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../052-backend-lifetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    052: Backend Lifetime Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../053-contract-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    053: Contract Kernel Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12456,7 +12540,7 @@ data structure. Zero runtime dependencies, no filesystem access, no network.
 Built-in (no optional extra). <code>open_atomic</code> holds its temporary in memory too,
 through the driver's <code>open_write</code> (SAW-012).</p>
 <p><code>MemoryBackend</code> is a class on the contract kernel
-(<a href="../003-backend-adapter-contract/#contract-kernel">003 § Contract kernel</a>):
+(<a href="../053-contract-kernel/#contract-kernel">053 § Contract kernel</a>):
 <code>class MemoryBackend(DriverBackend)</code>, whose zero-argument constructor builds a
 <code>MemoryDriver</code>. <code>AsyncMemoryBackend(AsyncDriverBackend)</code> builds an
 <code>AsyncMemoryDriver</code> the same way. Both drivers hold a <code>MemoryTree</code>
@@ -12637,7 +12721,7 @@ the backend validates paths before traversal. When used via <code>Store</code>, 
 <code>RemotePath</code> constructor handles normalization upstream — but the backend must
 not rely on this since direct use is a supported pattern. On the kernel the
 validation is the kernel's, by
-<a href="../003-backend-adapter-contract/#be-030-key-rule-on-the-kernel">BE-030</a>'s key
+<a href="../053-contract-kernel/#be-030-key-rule-on-the-kernel">BE-030</a>'s key
 rule, ahead of every driver call; every row below is that rule's answer.</p>
 <p>Validation rules (applied by splitting on <code>'/'</code> and inspecting segments):</p>
 <table>
@@ -12822,7 +12906,7 @@ walk is pure dict iteration without I/O.</p>
 it has no children (else <code>DirectoryNotEmpty</code>), remove from parent, decrement
 <code>folder_count</code> by 1.</p>
 <p>On the kernel the <code>recursive</code> dispatch is the kernel's
-(<a href="../003-backend-adapter-contract/#be-031-delete_folder-on-the-kernel">BE-031</a>):
+(<a href="../053-contract-kernel/#be-031-delete_folder-on-the-kernel">BE-031</a>):
 the recursive case calls the driver's <code>delete_tree</code>, the other its
 <code>remove_folder</code>, each one locked step over <code>MemoryTree</code>. The root is refused
 with <code>InvalidPath</code> before either is called.</p>

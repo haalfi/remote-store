@@ -377,6 +377,10 @@
          <lastmod>2026-10-20</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/audits/audit-024-spec-003-052-053-design/</loc>
+         <lastmod>2026-10-20</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/research/</loc>
          <lastmod>2026-10-20</lastmod>
     </url>
@@ -914,6 +918,14 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/specs/051-store-tree/</loc>
+         <lastmod>2026-10-20</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/specs/052-backend-lifetime/</loc>
+         <lastmod>2026-10-20</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/specs/053-contract-kernel/</loc>
          <lastmod>2026-10-20</lastmod>
     </url>
     <url>

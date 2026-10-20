@@ -7501,6 +7501,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-024-spec-003-052-053-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    024: Specs 003, 052 and 053 against SPEC-DESIGN.md
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11658,6 +11686,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../052-backend-lifetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    052: Backend Lifetime Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../053-contract-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    053: Contract Kernel Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11994,7 +12078,7 @@ lightweight connectivity check.
 - Must not modify backend state (no writes, no deletes).
 - Must map native exceptions through the backend's error mapper.</p>
 <p><strong>On the kernel:</strong> a class on the contract kernel
-(<a href="../003-backend-adapter-contract/#contract-kernel">003</a>) does not take the
+(<a href="../053-contract-kernel/#contract-kernel">053</a>) does not take the
 default. Its <code>check_health()</code> is the kernel's: the closed guard, then the
 driver's required <code>probe()</code>, its errors mapped by the kernel's choke point. The
 <code>Driver</code> and <code>AsyncDriver</code> protocols give <code>probe</code> a no-op body, which a driver

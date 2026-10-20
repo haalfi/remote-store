@@ -7501,6 +7501,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-024-spec-003-052-053-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    024: Specs 003, 052 and 053 against SPEC-DESIGN.md
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11885,6 +11913,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../052-backend-lifetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    052: Backend Lifetime Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../053-contract-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    053: Contract Kernel Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12619,7 +12703,7 @@ S3PA-007, S3PA-012, S3PA-021</strong>.</p>
 <p>See <a href="../008-s3-backend/#s3-027">S3-027</a>. Listing runs through the s3fs control path (S3PA-017), so the off-by-default cache applies identically; the PyArrow data path (<code>_pa_fs</code>) is unaffected.</p>
 <h3 id="s3pa-028-concurrent-use-posture">S3PA-028: Concurrent-Use Posture<a class="headerlink" href="#s3pa-028-concurrent-use-posture" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> is <code>thread_safe</code> (the BE-028 default): a single instance is safe to share across threads. The s3fs control path inherits <a href="../008-s3-backend/#s3-028">S3-028</a> verbatim. The PyArrow data path (<code>pyarrow.fs.S3FileSystem</code>, S3PA-017) is held thread-safe on the same per-instance-immutable-client basis, <strong>to be confirmed by a Tier-3 live probe</strong> — PyArrow does not pin a thread-safety guarantee for <code>S3FileSystem</code> upstream, so the declaration is the safe-by-construction default pending empirical confirmation. <code>move</code> / <code>copy</code> are non-atomic copy-then-delete (CAP-007, BE-018), independent of thread-safety.</p>
-<p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a> (BE-028).</p>
+<p><strong>See also:</strong> <a href="../052-backend-lifetime/">052-backend-lifetime.md</a> (BE-028).</p>
 
 
 
