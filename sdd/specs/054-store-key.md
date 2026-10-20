@@ -34,8 +34,14 @@ operation's own clause (spec 001, spec 003).
 - **Refused**: the operation given the input raises `InvalidPath`
   ([ERR-005](005-error-model.md#err-005-invalidpath)) carrying the input, and
   the store is unchanged.
-- **Folder-shaped**, **file-shaped**: the two lists of operations
-  [STORE-002](001-store-api.md#store-002-path-validation) gives.
+- **Folder-shaped** operation: `exists`, `is_file`, `is_folder`,
+  `iter_children`, `list_files`, `list_folders`, `get_folder_info`,
+  `native_path` and `resolve`. **File-shaped**: `read`, `read_bytes`,
+  `read_text`, `read_seekable`, `write`, `write_text`, `write_atomic`,
+  `open_atomic`, `delete`, `get_file_info`, `head`, and both keys of `move`
+  and `copy`. Each list holds the `AsyncStore` method of the same name where
+  one exists ([STORE-002](001-store-api.md#store-002-path-validation) names
+  the call-level rule).
 - **Bytes**: a string's length in bytes is that of its UTF-8 encoding.
 - **Portable name**: a name of at most 255 bytes whose code points are ASCII
   letters, digits, `.`, `_` and `-`, whose first is a letter or digit, whose

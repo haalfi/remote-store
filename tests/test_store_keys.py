@@ -122,6 +122,7 @@ def _local_room_for_floor(root: Path) -> bool:
     return sys.platform != "win32" or len(str(root)) + 1 + 255 < 260
 
 
+@pytest.mark.os_sensitive
 @pytest.mark.spec("KEY-007", "KEY-A-01")
 @pytest.mark.parametrize("key", _FLOOR_KEYS)
 @pytest.mark.parametrize("backend_name", ["memory", "local"])

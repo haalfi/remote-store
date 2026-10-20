@@ -111,13 +111,13 @@ as GLOB-004.
 
 ### GLOB-007: Store.glob() Path Scoping
 
-**Invariant:** Store reads the pattern as [spec 054](054-store-key.md) reads a key, then
-prepends `root_path` before delegating to `Backend.glob()`. Leading `/`, empty
+**Invariant:** Store reads the pattern by [spec 054](054-store-key.md)'s PATH-003 to
+PATH-007, then prepends `root_path` before delegating to `Backend.glob()`. Leading `/`, empty
 and `.` segments are dropped (PATH-004 to PATH-006). Three departures from
-spec 054: a trailing `/` is kept, since in a pattern it selects folders only; a
+how spec 054 reads a key: a trailing `/` is kept, since in a pattern it selects folders only; a
 `\` is kept as written rather than turned into `/` (PATH-002; open under
 BK-451); and a pattern that normalises to the root yields nothing, without
-reaching the backend, rather than raising (PATH-008). Returned `FileInfo.path`
+reaching the backend, rather than naming the root folder (KEY-005). Returned `FileInfo.path`
 values are rebased to store-relative (same as `list_files`).
 **Raises:** `InvalidPath` for a `..` segment or a null byte (PATH-003,
 PATH-007).
