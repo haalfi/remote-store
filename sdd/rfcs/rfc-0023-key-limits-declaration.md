@@ -89,17 +89,18 @@ Alternatives).
 
 ### D6. Rule 5 is amended
 
-`SPEC-DESIGN.md` Rule 5's first sentence becomes:
+`SPEC-DESIGN.md` Rule 5's first sentence becomes, one phrase changed:
 
 > A behaviour that differs by backend is stated as a named profile, selected
-> by a declaration the backend carries at runtime (a capability, or a field
-> of the Backend or of its driver), never by a backend's name or by prose
-> alone. Each outcome a profile allows is stated in the clause, and whether
-> the profile licenses a variation or fixes it. A declaration whose value
-> depends on the environment is derived by the backend at construction, and
-> the clause states the bound it may not cross.
+> by a declaration the backend carries at runtime, with each outcome it allows
+> stated in the clause, never implied by an example backend.
 
-Its remaining sentences stand. ADR-0048's decision ("a variation is a named
+"Selected by a declaration the backend carries at runtime" replaces "declared
+by a capability or a driver flag": it covers both and a Backend's own field,
+and rules out a declaration in prose. Whether a profile licenses or fixes an
+outcome is each clause's to state (spec 054 KEY-008, D2), and a value derived
+from the environment is this design's (D4), so neither enters the rule. Its
+remaining sentences stand. ADR-0048's decision ("a variation is a named
 profile with each outcome it allows") names no mechanism and is unchanged.
 
 ### D7. What changes on acceptance
