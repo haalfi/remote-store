@@ -83,7 +83,9 @@ declaration is fixed for the driver's lifetime.
 
 A backend not on the kernel carries no declaration, so spec 054 KEY-008 holds
 it to storing every Key in K's range; where it does not (Local today), that is
-BK-469's breakage until its migration step (RFC-0017 D3).
+BK-469's breakage until its migration step (RFC-0017 D3). That divergence is
+accepted for the migration's duration, while no release is planned (see
+Alternatives).
 
 ### D6. Rule 5 is amended
 
@@ -116,8 +118,11 @@ profile with each outcome it allows") names no mechanism and is unchanged.
   Rejected: nothing at runtime reads it, so the divergence it states is not
   removed and conformance copies it by hand.
 - **The Store checks a Backend property.** Covers every backend now. Rejected
-  by the maintainer: key rules belong to the kernel (BE-030), and a second
-  check at the store would state one rule twice.
+  by the maintainer (2026-10-20): during the migration onto the kernel the
+  existing backends, the store and the spec are allowed to diverge, and the
+  kernel and driver path is to be done properly rather than the old path
+  patched. No release is planned while they diverge, so no user meets the gap.
+  A store check would also state BE-030's rule a second time.
 - **A capability per profile.** Readable through `Store.supports`, but a
   capability carries no number, so limits would need a second channel.
 - **A licence.** A backend may refuse what it declares and still store it.
