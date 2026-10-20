@@ -159,14 +159,14 @@ phases:
   - id: build
     name: Build
     steps:
-      - file: tmp/probe_keys.py
+      - file: sdd/research/bk-468-key-probe/probe_write.py
         section: "(full)"
         read_type: verify
         extract: >-
-          `hatch run python tmp/probe_keys.py` at 7491289: Store.write of
+          `hatch run python sdd/research/bk-468-key-probe/probe_write.py` at 7491289: Store.write of
           "\ud800" ok on Memory, UnicodeEncodeError on Local; 300 x "x" ok on
           Memory, OSError [Errno 36] on Local; "./", "/" and "\\" InvalidPath
-          on both; tmp/probe_keys2.py: exists/is_folder/list_files of "./",
+          on both; probe_read.py beside it: exists/is_folder/list_files of "./",
           "/" and "\\" InvalidPath, "" and "." the root, on both
         outcome: ok
       - file: tests/test_store_keys.py
