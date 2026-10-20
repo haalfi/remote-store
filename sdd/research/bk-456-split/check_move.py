@@ -15,7 +15,9 @@ Checks, against spec 003 at BASE:
    - a link target into one of the three files, ``](NNN-name.md#a)`` or
      ``](#a)``, is folded to ``](#a)`` on both sides;
    - the ``RETARGETS`` below, each a "this spec" turned into a link to the spec
-     it meant at BASE, each required to occur exactly once.
+     it meant at BASE (the kernel intro's also drops "other", since none of
+     003's clauses is a kernel clause after the split), each required to occur
+     exactly once.
 3. Every link into the three files, from any tracked ``.md`` or ``.py`` outside
    ``sdd/decisions``, ``sdd/traces`` and ``sdd/research``, names an anchor that
    file has, so the fold in 2 cannot hide a link sent to the wrong file.
@@ -50,7 +52,7 @@ RETARGETS = [
     ),
     (
         "the other clauses of this spec leave",
-        "the other clauses of [spec 003](003-backend-adapter-contract.md) leave",
+        "the clauses of [spec 003](003-backend-adapter-contract.md) leave",
     ),
 ]
 _HEAD = re.compile(r"#{2,3} ")

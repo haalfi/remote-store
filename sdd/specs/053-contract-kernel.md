@@ -5,8 +5,9 @@
 What a class on the contract kernel answers that the Backend contract leaves to
 the backend: how it validates and normalises a key, how it removes a folder,
 and how it gives the store tree's answer from what its driver observes. These
-are single-call clauses at the interface between the kernel and its driver
-([`SPEC-DESIGN.md` Rule 2](../SPEC-DESIGN.md#kind-of-truth)).
+are single-call clauses ([`SPEC-DESIGN.md` Rule 2](../SPEC-DESIGN.md#kind-of-truth))
+at two interfaces: most state what a caller of a class on the kernel observes,
+and the driver duties state what the kernel requires of its driver.
 
 Scope: BE-030 to BE-032, binding a class on the kernel and the driver beneath
 it. Out of scope: the Backend contract every backend meets, which is
@@ -34,7 +35,7 @@ primitives, per
 [RFC-0017](../rfcs/rfc-0017-contract-kernel-over-thin-drivers.md) D1 and D2 and
 [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md). `MemoryBackend`
 and `AsyncMemoryBackend` are the first such classes. Each clause states, once,
-an answer the other clauses of [spec 003](003-backend-adapter-contract.md) leave to the backend. A backend not on
+an answer the clauses of [spec 003](003-backend-adapter-contract.md) leave to the backend. A backend not on
 the kernel is unaffected by them. The decisions behind what a key resolves to
 and how a refusal is typed are recorded in [RFC-0021](../rfcs/rfc-0021-key-resolution-model.md), which BE-032 lands.
 
@@ -639,14 +640,18 @@ None lifted out of the sections.
 
 ## Notes
 
-None.
+The sections carry their derived claims in place: BE-030's equivalence of a
+canonical `""` with BE-029's root predicate, and that a refused probe's
+`InvalidPath` leaves BE-004 unaffected; BE-032 A.1's exclusivity of `is_file`
+and `is_folder`, from TREE-001 and TREE-010; and the model notes in BE-031
+(`CanonicalUnder`) and BE-032 A.8 (`StoreTree.dfy` §11's proof of rule 4).
 
 ## Tested against
 
-- The Dafny models `sdd/formal/StoreTree.dfy`, and
-  `sdd/formal/BackendContract.dfy` verified in `MemoryBackend.dfy`.
-- The pytest suite under `tests/`: the fake-driver kernel cells in
-  `tests/_kernel/`, both runtimes, and Memory's own kernel cells in
-  `tests/backends/memory/`.
+- The Dafny models `sdd/formal/StoreTree.dfy`, `RootPath.dfy`, and
+  `BackendContract.dfy` verified in `MemoryBackend.dfy`:
+  `bash scripts/dafny_verify.sh StoreTree.dfy RootPath.dfy BackendContract.dfy MemoryBackend.dfy`.
+- The fake-driver kernel cells, both runtimes, and Memory's own kernel cells:
+  `pytest tests/_kernel tests/backends/memory`.
 
 Which test checks which section derives from the tests' spec marks.

@@ -12,7 +12,12 @@ Scope: every backend's close posture (BE-020) and concurrent-use posture
 (BE-028), and the interaction protocol of a class on the kernel (BE-033). Out
 of scope: one call's outcome against the state when it runs, which is
 [spec 003](003-backend-adapter-contract.md)'s, and the contract kernel's single
-calls, which are [spec 053](053-contract-kernel.md)'s.
+calls, which are [spec 053](053-contract-kernel.md)'s. Lifetime clauses other
+specs own: a `Store`'s sharing across threads (STORE-007,
+[spec 001](001-store-api.md)); the async posture and the sync adapter's close
+(ASYNC-094, ASYNC-083 and ASYNC-088, [spec 029](029-async-store-backend-api.md));
+and a stream on a condemned connection (SIO-010,
+[spec 006](006-streaming-io.md)).
 
 ## Terms
 
@@ -22,7 +27,16 @@ calls, which are [spec 053](053-contract-kernel.md)'s.
 - **Close posture**, `close_is_terminal`: as BE-020 defines them.
 - **Concurrent-use posture**, `thread_safe`, `single_connection`: as BE-028
   defines them.
-- **`Session`**: as BE-033's **Scope** paragraph names it.
+- **Closed guard**: the refusal of a live operation with `BackendUnavailable`
+  after a terminal close (BE-020); on the kernel, step 1 of
+  [BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel)'s pipeline.
+- **Live operation**: an operation the closed guard covers. On the kernel,
+  every member BE-030's pipeline runs; the addressing members (`native_path`,
+  `to_key`, `resolve`), `name`, `capabilities` and `close` are not live.
+- **Condemned**: a failure the driver's `connection_dead` judges a
+  transport-level death of the connection, as BE-033's exit-owner table states.
+- **`Session`**: the connection owner of a remote driver (RFC-0017 D5). BE-033
+  states its obligations and no states for it.
 
 ---
 
@@ -275,16 +289,19 @@ on from the native clients.
 
 ## Notes
 
-None.
+The sections carry their derived claims in place: BE-033's Invariants name the
+`KernelProtocol.dfy` lemma behind each of I1 to I3, its diagrams are a view
+generated from the compiled model, and BE-028's Rationale states STORE-007's
+dependence on it.
 
 ## Tested against
 
 - The Dafny models `sdd/formal/BackendContract.dfy` and `RootPath.dfy`,
   verified in `MemoryBackend.dfy`, and `sdd/formal/KernelProtocol.dfy` with its
-  compiled oracle.
-- The pytest suite under `tests/`: the conformance lanes in
-  `tests/backends/conformance/` and the fake-driver kernel cells in
-  `tests/_kernel/`, both runtimes.
+  compiled oracle:
+  `bash scripts/dafny_verify.sh BackendContract.dfy RootPath.dfy MemoryBackend.dfy KernelProtocol.dfy`.
+- The conformance lanes and the fake-driver kernel cells, both runtimes:
+  `pytest tests/backends/conformance tests/_kernel`.
 
 Which test or model clause checks which section derives from the tests' spec
 marks and the models' `@spec` tags.
