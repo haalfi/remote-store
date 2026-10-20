@@ -348,7 +348,7 @@ no clause of the contract ships unexercised.
   against KEY-002, KEY-003 and KEY-006; refuses `"./"`, `"/"`, `"\\"` on folder-shaped calls
   (KEY-005, STORE-002); Local leaks `OSError` [Errno 36] for a 300-character name (KEY-008).
   Windows Local strips a last name's trailing space or dot (KEY-009, unmeasured; BUG-334 is
-  its sibling). Open decision: whether the fixes land before or at RFC-0017 D3 step 2.
+  its sibling). Open decision: RFC-0023 (key limits as a driver declaration), then when they land.
 
 - [ ] **BK-450 — The driver boundary has no single enforcement point, so each kernel site re-checks a driver by hand**
   spec: BE-021, BE-027, BE-030, BE-032, BE-033, CAP-007 · effort: L · audience: user.api, library.maintainer

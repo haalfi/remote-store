@@ -187,4 +187,12 @@ phases:
           `a.` beside `a` were measured distinct, and skipped on Windows,
           where Win32 path handling is documented to strip them (unmeasured)
         outcome: ok
-
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rule 5"
+        read_type: gate
+        extract: >-
+          "declared by a capability or a driver flag" left a declaration in
+          prose unreadable at runtime; after three review rounds flagged
+          KEY-008 the maintainer chose a kernel-enforced driver declaration
+          with exact semantics, drafted as RFC-0023 with Rule 5's amendment
+        outcome: unclear
