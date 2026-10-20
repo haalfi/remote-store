@@ -925,7 +925,7 @@ lands, and following it alone yields the wrong answer for one path in every
 operation it names.
 
 **§ Reach's roster is twelve operations, and its siblings are not silently
-included.** The twelve are the two tolerant deletes plus the ten this paragraph
+included.** The twelve are the two tolerant deletes plus the ten § Reach
 names, counting the `move`/`copy` source as one.
 
 `read_bytes`, `read_seekable`, `iter_children` and `glob` are not among them.

@@ -128,3 +128,55 @@ phases:
         read_type: reference
         extract: "BE-033-marked cell asserts the timing the rule forbids"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1168 --trace-block-only` at head 12cc667.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1168 --trace-block-only"
+  pr: 1168
+  review_rounds: 3
+  submissions: 2
+  findings: 8
+  by_round:
+    - round: 1
+      findings: 6
+      origin: {original: 2, pre-existing: 3, unclassifiable-file: 1}
+      triage: {must-fix: 6}
+      duration_hours: 8.45
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.87
+  by_file:
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 4
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/backlog/bug-257-graph-walk-first-page-bound.md"
+      findings: 1
+    - path: "sdd/backlog/id-245-derived-inventories.md"
+      findings: 1
+    - path: "sdd/specs/029-async-store-backend-api.md"
+      findings: 1
+  untouched_files:
+    - "sdd/backlog/bk-345-absent-container-conformance.md"
+    - "sdd/backlog/bk-450-driver-boundary-enforcement.md"
+    - "sdd/backlog/bk-454-refusal-timing-read-handle.md"
+    - "sdd/backlog/bk-456-split-spec-003.md"
+    - "sdd/backlog/bug-255-s3fs-midlisting-truncation.md"
+    - "sdd/backlog/bug-318-local-glob-folder-info-denied-subtree.md"
+    - "sdd/backlog/id-247-graph-root-path-cassettes.md"
+    - "sdd/decisions/9d7a45d2-ec37-5681-af22-de8c1ff4d3ac.jsonl"
+    - "sdd/traces/bk-456-spec-003-status-out.yml"
+    - "tests/_kernel/test_protocol.py"
+    - "tests/backends/local/test_listing_errors.py"
+    - "tests/backends/sqlblob/test_absent_table.py"
+  review_driven_commits:
+    - sha: "f3c667d"
+      subject: "fix: address PR #1168 review"
+    - sha: "73bc914"
+      subject: "fix: address PR #1168 review (round 2)"
+    - sha: "12cc667"
+      subject: "BK-456: Self-review fixes in spec 003"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
