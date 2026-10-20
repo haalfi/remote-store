@@ -218,7 +218,7 @@ class _HandleWriter:
     def _abort(self, handle: WriteHandle) -> None:
         try:
             handle.abort()
-        except Exception as failure:  # noqa: BLE001 - a failed cleanup never masks the first error (BE-033)
+        except Exception as failure:  # noqa: BLE001 - a failed cleanup never masks the first error (BE-035)
             self._core._cleanup_failed("abort", self._key, failure)
 
 

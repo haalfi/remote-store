@@ -18,11 +18,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
-from remote_store._errors import BackendUnavailable
+from remote_store._errors import BackendUnavailable, CapabilityNotSupported
 from remote_store._kernel.aio_backend import AsyncDriverBackend
 from tests.backends.conformance._helpers import _require
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from remote_store.aio._async_backend import AsyncBackend
 
 _PROBE = "bk298-close-posture-probe.txt"
@@ -129,11 +131,38 @@ async def test_close_posture_outranks_root_write_rejection(async_backend: AsyncB
         assert "is closed" not in str(error)
 
 
-@pytest.mark.spec("BE-033")
+async def _glob(b: AsyncBackend) -> object:
+    return [info async for info in b.glob("*")]
+
+
+async def _write_atomic(b: AsyncBackend) -> object:
+    return await b.write_atomic(_PROBE, b"x")
+
+
+# The calls a capability gate refuses by the declaration alone (BE-011, BE-024).
+_GATED: dict[str, tuple[Capability, Callable[[AsyncBackend], Awaitable[object]]]] = {
+    "glob": (Capability.GLOB, _glob),
+    "write_atomic": (Capability.ATOMIC_WRITE, _write_atomic),
+}
+
+
+@pytest.mark.spec("BE-020")
+@pytest.mark.parametrize("op_name", sorted(_GATED))
+async def test_an_undeclared_capability_outranks_the_closed_guard(async_backend: AsyncBackend, op_name: str) -> None:
+    """Async twin of the sync cell of the same name: the gate answers, closed or not."""
+    capability, call = _GATED[op_name]
+    if capability in async_backend.capabilities:
+        pytest.skip(f"{async_backend.name} declares {capability.name}")
+    await async_backend.aclose()
+    with pytest.raises(CapabilityNotSupported):
+        await call(async_backend)
+
+
+@pytest.mark.spec("BE-034")
 async def test_a_repeated_aclose_keeps_the_posture(async_backend: AsyncBackend) -> None:
     """Async twin of ``test_a_repeated_close_keeps_the_posture``; another class than one on the kernel is skipped."""
     if not isinstance(async_backend, AsyncDriverBackend):
-        pytest.skip("BE-033 binds classes on the kernel")
+        pytest.skip("BE-034 binds classes on the kernel")
     await async_backend.aclose()
     await async_backend.aclose()
     if async_backend.close_is_terminal:

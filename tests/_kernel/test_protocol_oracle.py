@@ -1,14 +1,14 @@
-"""The kernel against the compiled BE-033 model, over an enumerated set of the protocol's exits.
+"""The kernel against the compiled model of spec 052's kernel clauses, over an enumerated set of the protocol's exits.
 
 ``sdd/formal/KernelProtocol-py/`` is ``KernelProtocol.dfy`` compiled by Dafny,
 so ``KernelExit`` and ``KernelStep`` here are the verified functions whose
-lemmas are BE-033's invariants, not a transcription of them. Each cell drives
+lemmas are spec 052's I1 to I3 (BE-020, BE-034, BE-033), not a transcription of them. Each cell drives
 the kernel over the fake driver to one exit, maps what the fake recorded onto
 the model's datatypes, and requires the state the kernel left to equal the
 state the model computes from the state at the exit. Nothing is sampled: the
 cells are the products the case builders below enumerate, and every call
-sequence up to ``_DEPTH`` calls, per runtime and close posture. Spec 052
-BE-033's "The model is the oracle" names kinds of exit they leave out.
+sequence up to ``_DEPTH`` calls, per runtime and close posture. ``sdd/formal/README.md``'s
+**What the kernel oracle suite drives** names kinds of exit they leave out.
 
 **The mapping is what a pass is worth**, so it is stated here once:
 
@@ -32,9 +32,9 @@ BE-033's "The model is the oracle" names kinds of exit they leave out.
 - A write opens no stream, so its stream is ``SClosed`` throughout.
 
 **Bounds.** The sync runtime's content is a caller stream with no state in the
-model (BE-033: it stays the caller's), so its cells compare the stream and the
+model (BE-036: it stays the caller's), so its cells compare the stream and the
 handle and leave the iterator out; ``test_protocol.py`` pins that the stream is
-never closed. A ``Session``, and the driver duties BE-033 states, are outside
+never closed. A ``Session``, and the driver duties (BE-038, BE-039), are outside
 the model and outside this suite.
 """
 
@@ -407,7 +407,7 @@ def _sequences() -> list[tuple[str, ...]]:
     return [seq for n in range(1, _DEPTH + 1) for seq in itertools.product(_CALLS, repeat=n)]
 
 
-@pytest.mark.spec("BE-033", "BE-020", "BE-022")
+@pytest.mark.spec("BE-020", "BE-034", "BE-022")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 @pytest.mark.parametrize("terminal", [False, True], ids=["reusable", "terminal"])
 def test_every_call_sequence_answers_as_the_model_steps(runtime: str, terminal: bool) -> None:

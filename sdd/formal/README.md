@@ -299,7 +299,7 @@ that must move — see [`000-process.md` Rule
 | `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle, together with the files it includes (§ Compiled oracle lists them) |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
-| `KernelProtocol.dfy` | BE-033's interaction protocol on the kernel, standalone (nothing includes it) and compiled to an oracle of its own (§ Compiled oracle): the close posture as a transition function, with terminal absorption (`TerminalCloseAbsorbs`, I1) and every close forwarded (`CloseIsForwardedAndIdempotent`, I2); `KernelExit` over every exit the kernel observes, leaving no write handle open, every stream closed or, when its failure condemned the connection, released without a close, and no caller iterator with `aclose` suspended (`CleanupOnEveryExit`, I3). I1 covers the calls the closed guard covers; the addressing members are not modelled. The `Session` states are not modelled |
+| `KernelProtocol.dfy` | Spec 052's close and cleanup clauses on the kernel (BE-020's I1, BE-034's I2, BE-033's I3), standalone (nothing includes it) and compiled to an oracle of its own (§ Compiled oracle): the close posture as a transition function, with terminal absorption (`TerminalCloseAbsorbs`, I1) and every close forwarded (`CloseIsForwardedAndIdempotent`, I2); `KernelExit` over every exit the kernel observes, leaving no write handle open, every stream closed or, when its failure condemned the connection, released without a close, and no caller iterator with `aclose` suspended (`CleanupOnEveryExit`, I3). I1 covers the calls the closed guard covers; the addressing members are not modelled. The `Session` states are not modelled |
 | `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
 | `StoreTree.dfy` | RFC-0021's model, a sketch not yet wired into the trait. Its header lists §1 to §12: the store as a tree over spec 051's names (TREE-007), whose distinct Keys never join to the same string (TREE-010); a flat encoding's partial `decode`; agreement between a flat driver's lookups, listings, recursive `delete_folder` walk and `move`/`copy` and the tree; D4's write checks; that a flat encoding holds no empty folder; A.8's refusal rule for every call, namespace and row; and that a valid tree is the pair of spec 051's lemma L6, for finite stores only |
 
@@ -533,9 +533,9 @@ the test itself has a bug and must be fixed.
 | `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
 | `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
 | `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |
-| `sdd/formal/KernelProtocol.dfy` | The second translation entry point: BE-033's interaction protocol, one named `module KernelProtocol`, including nothing and included by nothing |
+| `sdd/formal/KernelProtocol.dfy` | The second translation entry point: spec 052's kernel protocol (BE-020, BE-033, BE-034), one named `module KernelProtocol`, including nothing and included by nothing |
 | `sdd/formal/KernelProtocol-py/KernelProtocol.py` | Its compiled Python: `KernelExit`, `KernelStep`, `KernelRun` and their datatypes (`module_.py` beside it is Dafny's stub entry, not this module) |
-| `tests/_kernel/test_protocol_oracle.py` | Drives the kernel through the exits its case builders enumerate (BE-033's "The model is the oracle") and compares the state it leaves with `KernelExit`'s and `KernelStep`'s answer |
+| `tests/_kernel/test_protocol_oracle.py` | Drives the kernel through the exits its case builders enumerate (below, **What the kernel oracle suite drives**) and compares the state it leaves with `KernelExit`'s and `KernelStep`'s answer |
 
 **The second oracle.** `KernelProtocol-py/` serves a different direction from
 `MemoryBackend-py/`: not "a test the oracle passes is a correct test", but "the
@@ -552,9 +552,29 @@ beside it, and `KernelProtocol.py` imports it; on `sys.path` or cached in
 import. So the suite puts `KernelProtocol-py/` on `sys.path` for its own import
 only, then removes it and restores `sys.modules["module_"]`, and a cell pins
 both. `scripts/gen_protocol_diagram.py` imports it the same way to draw spec
-052 BE-033's state diagrams from `KernelStep` and `KernelExit`, so after
+052's state diagrams (its Notes) from `KernelStep` and `KernelExit`, so after
 rebuilding this oracle run `hatch run gen-protocol-diagram` too, or
 `preflight` fails on the stale block.
+
+**What the kernel oracle suite drives**, which bounds how far spec 052's I1 to
+I3 hold of the code (moved from spec 052's BE-033):
+`KernelProtocol.dfy` compiles to
+`sdd/formal/KernelProtocol-py/`, and `tests/_kernel/test_protocol_oracle.py`
+drives the kernel through the exits its case builders enumerate (`_write_cases`,
+`_UNDRAINED_ROUTES`, `_open_atomic_cases`, `_read_cases`, `_sequences`; that file
+is the list), not every exit and not every state the model admits (most admitted
+states pair resources no single exit holds). The writes run on a hierarchical
+namespace with `overwrite=True` and an unnested key, and fault only the driver
+steps the builders name; a step reached but never faulted, and an exit never
+reached, is outside the suite: for example a failed `abort` or a failed delete
+of the temporary (both pinned in `test_protocol.py` instead), the probes after a
+refusal, `ensure_parents`, the metadata, content-shape and capability gates, a
+refused open of a read, or a flat namespace. Each cell but the read's closed
+guard, which asserts that no stream was opened, requires the state the kernel
+left to equal what the compiled `KernelExit` or `KernelStep` computes from the
+state at the exit, so I1 to I3 hold of the code on these exits to the extent
+that suite's stated mapping from the fake driver's records onto the model's
+states is faithful.
 
 **Regenerating the compiled output.** Ghost-only changes (lemmas,
 invariants, ghost variables, postconditions) erase at compile time and

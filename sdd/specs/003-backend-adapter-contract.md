@@ -4,7 +4,7 @@
 
 The `Backend` ABC defines the contract all storage backends must implement. It is the most critical spec in the system — every operation, error condition, and capability is defined here. Backends declare capabilities via a `Capability` enum and `CapabilitySet`.
 
-The states between calls, the close posture (BE-020), the concurrent-use posture (BE-028) and the kernel's interaction protocol (BE-033), are [spec 052](052-backend-lifetime.md)'s. The contract kernel's single-call clauses (BE-030 to BE-032) are [spec 053](053-contract-kernel.md)'s.
+The states between calls, the close posture (BE-020), the concurrent-use posture (BE-028) and the kernel's cleanup and driver lifetime duties (BE-033 to BE-039), are [spec 052](052-backend-lifetime.md)'s. The contract kernel's single-call clauses (BE-030 to BE-032) are [spec 053](053-contract-kernel.md)'s.
 
 ---
 
@@ -1013,7 +1013,7 @@ follow them, as `LocalBackend`'s do.
 
 **Invariant:** `unwrap(type_hint)` returns the native backend handle if it matches the requested type.
 **Raises:** `CapabilityNotSupported` if the backend cannot provide the requested type.
-**On the kernel:** `unwrap` takes the closed guard, so after a terminal close it raises `BackendUnavailable` ([BE-033](052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)).
+**On the kernel:** `unwrap` takes the closed guard, so after a terminal close it raises `BackendUnavailable` ([BE-020](052-backend-lifetime.md#be-020-close)).
 **Rationale:** See [ADR-0003](../adrs/0003-fsspec-is-implementation-detail.md).
 
 ### BE-023: to_key()

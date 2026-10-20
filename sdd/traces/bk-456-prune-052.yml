@@ -1,0 +1,106 @@
+id: BK-456
+title: "Spec 003 is too long to keep free of contradictions, so it is split (stage three: the 052 prune)"
+trigger: >-
+  BK-456 stage three, second PR: prune spec 052 to SPEC-DESIGN.md § Ready so the
+  kernel/driver migration (RFC-0017 D3 step 2: BK-450, BK-455, BK-454) builds on
+  a lifetime spec that states the contract and nothing else.
+source_items:
+  - BK-456
+  - BK-455
+  - BK-454
+audience:
+  - library.maintainer
+  - contributor.process
+decisions:
+  - sdd/decisions/dd1c9401-8614-5d9e-aa25-af591b8788f8.jsonl
+expected_ripples:
+  - sdd/specs/052-backend-lifetime.md
+  - sdd/specs/053-contract-kernel.md
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/specs/029-async-store-backend-api.md
+  - sdd/formal/KernelProtocol.dfy
+  - sdd/formal/README.md
+  - tests/_kernel/test_protocol.py
+  - tests/backends/conformance/test_close_posture.py
+discovery_followups:
+  - BK-470
+  - BK-471
+orient:
+  - items: [BK-455, BK-454]
+    verdict: constrains
+    evidence: >-
+      Both own text BE-033 carried as rules for components or behaviour that do
+      not exist: the Session's exits (no `Session` in src/) and the refusal
+      timing a read handle would give (test_protocol.py pins the opposite).
+      The prune moves both verbatim to their dossiers and decides neither.
+  - items: [BK-450]
+    verdict: constrains
+    evidence: >-
+      BK-450 enforces the driver duties; BE-033's driver rows split by kind:
+      the lifetime ones (end of data, abort after a failed commit, repeated
+      close) became BE-038, BE-039 and BE-034, and the single-call overwrite
+      conflict went to spec 053's driver list, for the driver-interface spec.
+  - items: [BK-467]
+    verdict: unrelated
+    evidence: >-
+      Prose governs every 052 clause either way. The one F1 limit it names
+      (kernel cells outside tests/backends/conformance) was met here by a
+      conformance cell for BE-033 instead of a baseline entry.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-024-spec-003-052-053-design.md
+        section: "Appendix B"
+        read_type: gate
+        extract: "Every load-bearing clause listed is in the ledger as keep or reword"
+        outcome: ok
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "_guard, class AsyncBackendSyncAdapter"
+        read_type: verify
+        extract: "Inherits close_is_terminal = False, raises RuntimeError after close: BK-470"
+        outcome: ok
+      - file: tests/backends/conformance/test_concurrency.py
+        section: "module docstring"
+        read_type: verify
+        extract: "Asserts no error, distinct-key writes landing, consistent reads; no per-op atomicity"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rules 1 to 7; Ready"
+        read_type: gate
+        extract: "One invariant per section; lifetime as prose tables until a TLA+ module exists"
+        outcome: ok
+      - file: sdd/formal/KernelProtocol.dfy
+        section: "@spec tags"
+        read_type: reference
+        extract: "I1 and ReusableNeverRefuses tag BE-020, I2 BE-034, KernelExit and I3 BE-033"
+        outcome: ok
+      - file: scripts/check_formal_trace.py
+        section: "F1"
+        read_type: gate
+        extract: "A tag needs a conformance mark; BE-033 lost its only one to BE-034, so a cell was added"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/driver.py
+        section: "ReadStream, WriteHandle docstrings"
+        read_type: reference
+        extract: "Already state end of data and abort's mechanism, so those are homed, not copied"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/research/bk-456-prune/check_prune.py
+        section: "ledger_052"
+        read_type: verify
+        extract: "PASS; a mutated ledger (an entry removed, a destination wrong) fails both checks"
+        outcome: ok
+      - file: tests/backends/conformance/aio/test_close_posture.py
+        section: "test_an_undeclared_capability_outranks_the_closed_guard"
+        read_type: verify
+        extract: "Graph, terminal without GLOB, answers CapabilityNotSupported after close"
+        outcome: ok
+surprising_ripples:
+  - sdd/specs/029-async-store-backend-api.md
+  - src/remote_store/_kernel/backend.py

@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 48 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 49 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1558,6 +1558,27 @@ D5 to D7, D9 and D10 are contract or placement and live in BE-032.
   *Why:* model checking an unbridged module proves only that the model agrees
   with itself, while a postcondition the Dafny verifier rejects is a
   contradiction in the contract itself.
+
+### [ADR-0049](0049-close-and-concurrency-postures.md): Close and Concurrent-Use Postures Are Declared per Backend
+
+- **Close is a declared posture, `close_is_terminal`.** A terminal close turns a use-after-close (a likely bug) into a clear typed error instead of a silent resource reopen, while leaving stateless/cheap backends freely reusable. *Reverse when* a reusable backend is shown to leak or reopen something a caller can observe.
+- **An undeclared capability outranks the closed guard on every backend**, as
+  on the kernel: capability data is not a live operation, so a closed backend
+  still answers what it cannot do. *Reverse when* a backend needs a live call
+  to know its capabilities.
+- **The sync adapter is outside BE-020's postures.** Its close is ASYNC-083's
+  one-shot `RuntimeError`; the inherited `close_is_terminal = False`
+  misdeclares it, a defect filed apart rather than a reason to bend BE-020.
+- **Concurrent use is a declared posture, `thread_safe` or `single_connection`.** This clause turns "thread-safe" from an unstated assumption into an explicit per-backend obligation a caller can read from the spec without reading source. Like CAP-007's quality flags, declaring the posture gates no method; it documents a property every method has.
+- **`thread_safe` promises what the conformance lane asserts**: no error a
+  lone call would not raise, writes to distinct keys all landing, reads that
+  see a completed write. Per-operation atomicity is a capability's
+  (`ATOMIC_MOVE`, `ATOMIC_WRITE`). *Reverse when* a cell asserts more for
+  every `thread_safe` backend.
+- **A backend's spec declares its posture per configuration**, until code
+  declares it, which is a gap against `SPEC-DESIGN.md` Rule 5 tracked in the
+  backlog. *Reverse when* a declaration in code exists: it then becomes the
+  profile's declaration.
 
 ## Superseded
 

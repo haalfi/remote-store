@@ -71,7 +71,7 @@ lemma TerminalCloseAbsorbs(b: KernelBackend, calls: seq<KernelCall>)
   ensures forall i | 0 <= i < |calls| && calls[i] == LiveCall ::
             KernelStep(KernelRun(b, calls[..i]), LiveCall).1 == Unavailable
   decreases |calls|
-  // @spec BE-033
+  // @spec BE-020
 {
   if |calls| > 0 {
     var next := KernelStep(b, calls[0]).0;
@@ -94,7 +94,7 @@ lemma TerminalCloseAbsorbs(b: KernelBackend, calls: seq<KernelCall>)
 lemma ReusableNeverRefuses(b: KernelBackend)
   requires b.posture == Reusable
   ensures KernelStep(b, LiveCall).1 == Done
-  // @spec BE-033
+  // @spec BE-020
 {
 }
 
@@ -104,7 +104,7 @@ lemma CloseIsForwardedAndIdempotent(b: KernelBackend, calls: seq<KernelCall>)
   ensures KernelStep(KernelStep(b, CloseCall).0, CloseCall).0.state == KernelStep(b, CloseCall).0.state
   ensures KernelRun(b, calls).driverCloses == b.driverCloses + KernelCloseCount(calls)
   decreases |calls|
-  // @spec BE-033
+  // @spec BE-034
 {
   if |calls| > 0 {
     CloseIsForwardedAndIdempotent(KernelStep(b, calls[0]).0, calls[1..]);

@@ -200,7 +200,7 @@ def _case(runtime: str, terminal: bool) -> Any:
     case = machine.TestCase
     case.settings = settings(max_examples=60, stateful_step_count=25, deadline=None)
     case.__module__ = __name__
-    return pytest.mark.spec("BE-033", "BE-020", "SIO-010")(pytest.mark.pbt(case))
+    return pytest.mark.spec("BE-033", "BE-020", "BE-034", "SIO-010")(pytest.mark.pbt(case))
 
 
 TestProtocolSyncReusable = _case("sync", terminal=False)

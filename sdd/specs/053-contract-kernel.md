@@ -53,7 +53,7 @@ total** below.
 1. The closed guard (BE-020), when the driver declares `close_is_terminal`. The
    class's own `close_is_terminal` must be the driver's; the kernel refuses to
    construct over one that differs. `unwrap` takes it too, and the states
-   around it are [BE-033](052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)'s.
+   around it are [BE-020](052-backend-lifetime.md#be-020-close)'s.
 2. Refusals, raising `InvalidPath`: a key starting with `/`, a `..` segment, a
    null byte, a backslash.
 3. Normalisation: empty and `.` segments are dropped, so `//`, `/./` and a
@@ -584,6 +584,10 @@ destination's state can explain it (BE-030).
 **What drivers owe instead**, each stated once here:
 
 - A refusal changes nothing.
+- An overwrite conflict without `overwrite`: the driver refuses in one step on
+  the wire where the wire has a conditional write; the conflict surfaces at
+  `commit` for a handle, at the call for `put`; its typing as `AlreadyExists` is
+  a driver duty.
 - `get` and `delete` refuse a key that is not an item, and every write
   primitive refuses a folder at its key or an item above it (hierarchical).
   `remove_folder` refuses anything but an empty folder, and `delete_tree`

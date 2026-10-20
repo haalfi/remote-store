@@ -148,7 +148,7 @@ def _close(backend: Any) -> None:
     _run(backend.close() if isinstance(backend, MemoryBackend) else backend.aclose())
 
 
-@pytest.mark.spec("BE-033", "BE-020", "BE-022")
+@pytest.mark.spec("BE-034", "BE-020", "BE-022")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_memory_stays_open_across_repeated_closes(runtime: str) -> None:
     # Memory's posture is non-terminal: close, reuse, close; unwrap keeps the driver's answer.
