@@ -300,6 +300,20 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-465 — The spec template's Assumption IDs fail the spec-mark grammar, so no test can cite one**
+  spec: — · effort: S · audience: contributor.process
+  Assumption IDs take the form `<PREFIX>-A-NN`, a prefix per spec (`000-process.md`
+  § Spec format, the template). `check_spec_marks.py` declares such a row under
+  `## Assumptions`, keeps the duplicate and stale checks, and owes it no mark.
+  Trace: [bk-465](traces/bk-465-assumption-ids-and-mechanism-homes.yml).
+
+- [x] **BK-466 — `SPEC-DESIGN.md` Rule 1 relocates mechanism to a design note, which has no home**
+  spec: — · effort: S · audience: contributor.process
+  Rule 1 now names each home: an ADR for why, a design note (the docstring of the module or
+  class that does it) for how, the custom-backend guide for what an implementer does, a
+  test's docstring for the cases a suite enumerates. AUTHORING gains no type. Shipped with
+  BK-465: [trace](traces/bk-465-assumption-ids-and-mechanism-homes.yml).
+
 - [x] **BK-464 — No review pass checks that a durable doc says one thing, first, in its own place**
   spec: — · effort: XS · audience: contributor.process
   A three-line last pass (Rules 7, 2, 4 and principle 8) found on PR #1166 what three

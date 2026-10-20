@@ -24,8 +24,8 @@ spec ↔ mark wiring mechanically checkable across two sources:
 
 Five failure modes:
 
-  drift  — a *shipped* spec ID (declared in S, not allowlisted) that no
-           marker cites (not in T). The marks rotted, or a new spec
+  drift  — a *shipped* spec ID (declared in S, not allowlisted, not an
+           assumption) that no marker cites (not in T). The marks rotted, or a new spec
            shipped without one.
   stale  — a marker citing a spec ID absent from S (the ``HTTP-001``
            case). The spec was renamed/renumbered and the mark was left.
@@ -52,6 +52,16 @@ Scope — what this check does and does not prove
     clears drift for every sub-clause sharing that ID. The check proves
     each shipped ID is cited at least once — not that each invariant
     sub-clause has its own test.
+
+Assumptions — declared, citable, never owed a mark
+--------------------------------------------------
+A row of a spec's ``## Assumptions`` table whose ID has the assumption
+form ``<PREFIX>-A-NN`` (``000-process.md`` § Spec format) is declared, so
+a mark may cite it and a duplicate still fails, but it is excused from
+drift: an assumption states what the library relies on from outside it,
+which most tests cannot fail (``SPEC-DESIGN.md`` Rule 6). Both conditions
+bind, so an ``-A-NN`` heading elsewhere is an ordinary section. Bound: the
+gate does not say whether an assumption a test *could* check has one.
 
 Allowlist — IDs that legitimately carry no mark
 -----------------------------------------------
@@ -135,6 +145,11 @@ _SPEC_ID_RE = re.compile(_SPEC_ID)
 _HEADING_RE = re.compile(rf"^#+[ \t]+({_SPEC_ID})(?: \([^)]*\))?:")
 _TABLE_ROW_RE = re.compile(rf"^\|[ \t]*({_SPEC_ID})[ \t]*\|")
 _ID_TABLE_HEADER_RE = re.compile(r"^\|[ \t]*ID[ \t]*\|", re.IGNORECASE)
+
+# An assumption: an ``-A-NN`` ID declared in a table under ``## Assumptions``.
+_ASSUMPTION_ID_RE = re.compile(r"-A-\d+[a-z]?$")
+_ASSUMPTIONS_HEADING_RE = re.compile(r"^##[ \t]+Assumptions[ \t]*$")
+_SECTION_HEADING_RE = re.compile(r"^#{1,2}[ \t]")
 
 # A heading that *starts* with a spec-shaped ID, regardless of whether the
 # trailing colon ``_HEADING_RE`` requires is present. Used only to catch
@@ -346,6 +361,27 @@ def extract_declared_specs(specs_dir: Path) -> dict[str, list[str]]:
     one site is a duplicate declaration (the STORE-015 collision shape).
     """
     declared: dict[str, list[str]] = {}
+    for spec_id, site, _ in _scan_declarations(specs_dir):
+        declared.setdefault(spec_id, []).append(site)
+    return declared
+
+
+def extract_assumption_ids(specs_dir: Path) -> frozenset[str]:
+    """IDs declared only as ``-A-NN`` rows of an ``## Assumptions`` table.
+
+    An ID also declared elsewhere is not an assumption: its other site is a
+    section, and a section owes a mark.
+    """
+    in_assumptions: dict[str, bool] = {}
+    for spec_id, _, under_assumptions in _scan_declarations(specs_dir):
+        is_row = under_assumptions and _ASSUMPTION_ID_RE.search(spec_id) is not None
+        in_assumptions[spec_id] = in_assumptions.get(spec_id, True) and is_row
+    return frozenset(spec_id for spec_id, only in in_assumptions.items() if only)
+
+
+def _scan_declarations(specs_dir: Path) -> list[tuple[str, str, bool]]:
+    """Each declaration as ``(spec_id, "path:lineno", is_assumptions_row)``."""
+    found: list[tuple[str, str, bool]] = []
     for path in sorted(specs_dir.glob("*.md")):
         try:
             text = path.read_text(encoding="utf-8")
@@ -353,12 +389,16 @@ def extract_declared_specs(specs_dir: Path) -> dict[str, list[str]]:
             sys.stderr.write(f"Skipping {path}: {type(exc).__name__}\n")
             continue
         in_requirement_table = False
+        in_assumptions = False
         for lineno, line in enumerate(text.splitlines(), 1):
             heading = _HEADING_RE.match(line)
             if heading is not None:
-                declared.setdefault(heading.group(1), []).append(f"{path}:{lineno}")
+                found.append((heading.group(1), f"{path}:{lineno}", False))
                 in_requirement_table = False
+                in_assumptions = False
                 continue
+            if _SECTION_HEADING_RE.match(line):
+                in_assumptions = _ASSUMPTIONS_HEADING_RE.match(line) is not None
             if not line.startswith("|"):
                 in_requirement_table = False
                 continue
@@ -368,8 +408,8 @@ def extract_declared_specs(specs_dir: Path) -> dict[str, list[str]]:
             if in_requirement_table:
                 row = _TABLE_ROW_RE.match(line)
                 if row is not None:
-                    declared.setdefault(row.group(1), []).append(f"{path}:{lineno}")
-    return declared
+                    found.append((row.group(1), f"{path}:{lineno}", in_assumptions))
+    return found
 
 
 def extract_undeclared_id_headings(specs_dir: Path) -> dict[str, list[str]]:
@@ -492,10 +532,12 @@ def compute_violations(
     marks: dict[str, list[str]],
     undeclared_headings: dict[str, list[str]] | None = None,
     allowlist: frozenset[str] = frozenset(),
+    assumptions: frozenset[str] = frozenset(),
 ) -> list[tuple[str, str]]:
     """Return the sorted list of ``(kind, spec_id)`` violations.
 
-    drift           — a declared, non-allowlisted spec ID with no marker.
+    drift           — a declared spec ID with no marker, neither allowlisted
+                      nor in ``assumptions`` (``extract_assumption_ids``).
     stale           — a marker citing an ID with no spec section.
     dup             — a spec ID declared more than once.
     allowlist-stale — an ``allowlist`` ID that no longer earns its place:
@@ -516,7 +558,7 @@ def compute_violations(
     for spec_id, sites in declared.items():
         if len(sites) > 1:
             violations.add((KIND_DUPLICATE, spec_id))
-        if spec_id not in marks and not is_allowlisted(spec_id):
+        if spec_id not in marks and not is_allowlisted(spec_id) and spec_id not in assumptions:
             violations.add((KIND_DRIFT, spec_id))
     for spec_id in marks:
         if spec_id not in declared and not _NON_SPEC_MARK_RE.match(spec_id):
@@ -613,10 +655,12 @@ def main(
     declared = extract_declared_specs(specs_dir)
     marks = extract_test_specs(tests_dir)
     undeclared_headings = extract_undeclared_id_headings(specs_dir)
-    violations = compute_violations(declared, marks, undeclared_headings, allowlist)
+    assumptions = extract_assumption_ids(specs_dir)
+    violations = compute_violations(declared, marks, undeclared_headings, allowlist, assumptions)
 
     print("spec <-> mark traceability gate (BK-251)")
     print(f"  declared spec sections : {len(declared)}")
+    print(f"  of them assumptions    : {len(assumptions)}")
     print(f"  mark-cited spec IDs    : {len(marks)}")
     print(f"  violations             : {len(violations)}")
     print()

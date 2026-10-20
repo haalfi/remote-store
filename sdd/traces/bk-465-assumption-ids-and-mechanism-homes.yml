@@ -1,0 +1,115 @@
+id: BK-465
+title: "The spec template's Assumption IDs fail the spec-mark grammar, so no test can cite one"
+trigger: >-
+  BK-456 stage three, first PR: the maintainer asked for the process gaps audit
+  024 § 2 lists (BK-465, BK-466) to ship first and small, since the keys session
+  writing spec 054 may need BK-465's answer, before any spec 052 or 053 prune.
+source_items:
+  - BK-465
+  - BK-466
+  - BK-456
+audience:
+  - contributor.process
+  - contributor.tooling
+decisions:
+  - sdd/decisions/dd1c9401-8614-5d9e-aa25-af591b8788f8.jsonl
+co_shipped_items:
+  - BK-466
+expected_ripples:
+  - sdd/templates/spec-template.md
+  - sdd/000-process.md
+  - sdd/SPEC-DESIGN.md
+  - scripts/check_spec_marks.py
+  - tests/scripts/test_check_spec_marks.py
+orient:
+  - items: [BK-450, BK-455, BK-454]
+    verdict: constrains
+    evidence: >-
+      BK-450's dossier states driver duties "on the protocol and in BE-032 A.8",
+      and BE-033's driver rows (end of data, abort after a failed commit, the
+      overwrite-conflict typing) are duties it enforces, so the driver-duty
+      home is decided before 052 is pruned. BK-455 and BK-454 own the Session
+      rows and Refusal timing, which the 052 prune moves out of scope rather
+      than decides. Neither touches this PR's process rules.
+  - items: [BK-467, BK-463, BK-434]
+    verdict: unrelated
+    evidence: >-
+      Rule 4 decides which model governs a clause; with no bridge the prose
+      governs either way, so no prune waits on BK-467 (audit 024 § 2.3).
+  - items: [BK-438, BK-433, BK-436]
+    verdict: constrains
+    evidence: >-
+      BK-438 is due "before any flat driver moves onto the kernel" and owns
+      053 A.6's empty-segment scope; BK-433 owns A.7's links; BK-436 owns A.1's
+      name equality. The 053 prune states their scope, decides none, and
+      leaves key questions to the spec 054 session.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-456-split-spec-003.md
+        section: "Stage two; Left for the prune"
+        read_type: gate
+        extract: "Stage three's plan is audit 024; process gaps BK-465, BK-466, BK-467"
+        outcome: ok
+      - file: sdd/audits/audit-024-spec-003-052-053-design.md
+        section: "§ 2, § 3, Appendices B and C"
+        read_type: gate
+        extract: "Per-finding migration verdicts recorded in orient; line numbers are cf75f0c's"
+        outcome: ok
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rules 1, 6; Ready; Review checklist"
+        read_type: gate
+        extract: "Rule 1's 'design note' named no home; Rule 6.4 required an ID a mark can cite"
+        outcome: ok
+      - file: sdd/adrs/0048-how-specs-are-designed.md
+        section: "Decision"
+        read_type: reference
+        extract: "Accepted, so immutable: 'a design note' stays, and Rule 1 defines it rather than dropping it"
+        outcome: ok
+      - file: sdd/backlog/bk-450-driver-boundary-enforcement.md
+        section: "Parts"
+        read_type: reference
+        extract: "Driver duties to be stated on the protocol and in BE-032 A.8"
+        outcome: ok
+      - file: sdd/backlog/bk-454-refusal-timing-read-handle.md
+        section: "Prescription"
+        read_type: reference
+        extract: "The read handle's shape is open; BE-033's Refusal timing is its rule"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/check_spec_marks.py
+        section: "extract_declared_specs; compute_violations"
+        read_type: gate
+        extract: >-
+          A table row under an ID header is a declared, shipped ID, so an
+          Assumptions row would fail drift unless marked or allowlisted: the
+          decision BK-465 hid
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "§ Spec format; Rule 2"
+        read_type: gate
+        extract: "Owns section IDs, so the assumption ID form goes here; Rule 2 binds sections"
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 6, 7"
+        read_type: gate
+        extract: "The exemption is a structural rule with its rationale and bound in the docstring"
+        outcome: ok
+      - file: sdd/DESIGN.md
+        section: "§ 2, § 4"
+        read_type: reference
+        extract: "A module docstring starts with why it exists; a design note may follow"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_check_spec_marks.py
+        section: "TestExtractAssumptionIds; TestComputeViolations; TestMain"
+        read_type: verify
+        extract: "Removing the drift exemption fails three of the new tests; restored, all pass"
+        outcome: ok
+discovery_followups: []
+surprising_ripples: []

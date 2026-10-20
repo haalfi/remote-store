@@ -33,12 +33,14 @@ observable outcome, not how an implementation reaches it.
 ## Assumptions
 
 What the spec relies on and cannot check itself, one row each, under a stable
-ID a conformance test's spec mark can cite. An assumption several specs share is
-stated once, in its owning environment spec, and linked from the others.
+ID a conformance test's spec mark can cite (its form:
+[`000-process.md` § Spec format](../000-process.md#spec-format)). An assumption
+several specs share is stated once, in its owning environment spec, and linked
+from the others.
 
 | ID | Assumption |
 | --- | --- |
-| <PREFIX>-A01 | What the system relies on from outside it. |
+| <PREFIX>-A-01 | What the system relies on from outside it. |
 
 ## Notes
 
