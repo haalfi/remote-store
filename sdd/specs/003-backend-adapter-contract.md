@@ -651,7 +651,7 @@ discharged structurally. Verified in `MemoryBackend.dfy`.
 
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory (cannot overwrite a directory with a file; binds hierarchical backends and every class on the kernel, per [BE-021](#be-021-error-mapping)'s backend scope of the type-mismatch rows), or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move on a file is a no-op (Dafny: `Move: src == dst → Ok`); self-move on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
-**Precondition order:** `src`-NotFound takes priority over dst-side preconditions; specifically `move(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`. `LocalBackend.move` enforces this naturally (the `mkdir_parents` walk that catches the file-ancestor case runs after the src-exists check); flat-namespace backends running the opt-in MUST defer the `_check_no_file_ancestor(dst)` walk until after the src-NotFound probe to match. Pinned to remove the cross-backend ambiguity that existed under BE-018 alone. **One dst-side check outranks src-NotFound: a `dst` that addresses the store root.** [BE-029](#be-029-root-path) decides it from the key before any request, so `move(missing_src, "")` MUST raise `InvalidPath(dst)`; a `src` that is the root is refused first, as `InvalidPath(src)`. "Is the root" there is `is_root`, the source end's floor: [BE-008](#be-008-write)'s two-predicate paragraph lets a backend refuse a wider source spelling first, and does not require it. That is the order the backends measured for it already take (`MemoryBackend`, `AsyncMemoryBackend` and `LocalBackend`, both root spellings, `move` and `copy`; `SFTPBackend`'s is pinned by `test_move_and_copy_destination_cannot_reach_the_corruption`), and the one `sdd/formal/BackendContract.dfy` verifies.
+**Precondition order:** `src`-NotFound takes priority over dst-side preconditions; specifically `move(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`. `LocalBackend.move` enforces this naturally (the `mkdir_parents` walk that catches the file-ancestor case runs after the src-exists check); flat-namespace backends running the opt-in MUST defer the `_check_no_file_ancestor(dst)` walk until after the src-NotFound probe to match. This order is pinned to remove the cross-backend ambiguity that existed under BE-018 alone. **One dst-side check outranks src-NotFound: a `dst` that addresses the store root.** [BE-029](#be-029-root-path) decides it from the key before any request, so `move(missing_src, "")` MUST raise `InvalidPath(dst)`; a `src` that is the root is refused first, as `InvalidPath(src)`. "Is the root" there is `is_root`, the source end's floor: [BE-008](#be-008-write)'s two-predicate paragraph lets a backend refuse a wider source spelling first, and does not require it. That is the order the backends measured for it already take (`MemoryBackend`, `AsyncMemoryBackend` and `LocalBackend`, both root spellings, `move` and `copy`; `SFTPBackend`'s is pinned by `test_move_and_copy_destination_cannot_reach_the_corruption`), and the one `sdd/formal/BackendContract.dfy` verifies.
 **On the kernel:** the flat-namespace opt-in walk named here does not exist. A class on the kernel refuses a destination below a file or over a folder on every namespace, unconditionally, in BE-018's order: on a flat namespace by its own checks after the source check, on a hierarchical one by typing the wire's refusal ([BE-032](#be-032-the-store-tree-on-the-kernel), A.4 and A.8).
 **Metadata:** `move()` preserves the source file's user metadata: after a
 successful move, `get_file_info(dst)` MUST return the same `metadata`
@@ -898,8 +898,8 @@ Backends whose listing API exposes no page boundary may satisfy this by marking
 each item the service returned *before* its own filters run; the residue is a
 truncated page carrying no items at all, which MUST then be stated in that
 backend's spec as a declared variation rather than left implied. That licence
-is for a class not on the kernel: a driver answers the kernel in `Page`s, so a migrated class has no
-unmarked page, and the kernel keeps the bound (BE-032's A.9).
+is for a class not on the kernel: a driver answers the kernel in `Page`s, so a
+migrated class has no unmarked page, and the kernel keeps the bound (BE-032's A.9).
 
 **The root is decided by BE-029, not here, and BE-029 wins.** This paragraph
 assigns answers per *operation*; it says nothing about the store root within
@@ -942,7 +942,7 @@ calls "the single roster for both halves", which *does* name `read_bytes` and
 about. This paragraph is about § Reach's roster only. Neither is wrong; a reader
 meeting the word in one place and the membership claim from the other is.
 
-The rule exists because leaving it unstated let each backend answer from
+The absent-container rule exists because leaving it unstated let each backend answer from
 whatever its wire protocol happened to reveal. `HeadObject` answers a bodyless
 404, so a missing bucket is indistinguishable from a missing key and `delete`
 tolerated it without being asked to; `ListObjectsV2` answers an absent prefix
@@ -1138,8 +1138,8 @@ primitives, per
 [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md). `MemoryBackend`
 and `AsyncMemoryBackend` are the first such classes. Each clause states, once,
 an answer the other clauses of this spec leave to the backend. A backend not on
-the kernel is unaffected by them. The decisions behind what a key resolves to and how a refusal is typed are
-recorded in [RFC-0021](../rfcs/rfc-0021-key-resolution-model.md), which BE-032 lands.
+the kernel is unaffected by them. The decisions behind what a key resolves to
+and how a refusal is typed are recorded in [RFC-0021](../rfcs/rfc-0021-key-resolution-model.md), which BE-032 lands.
 
 ### BE-030: Key Rule on the Kernel
 
@@ -1903,7 +1903,8 @@ stateDiagram-v2
 
 **Conformance:** `tests/_kernel/test_protocol.py`, a cell per kernel- and
 caller-owned row of the tables above over the fake driver, both runtimes
-(the `Session` and driver rows excepted, below, and the stream adapter's close-failure row); `tests/_kernel/test_protocol_stateful.py`,
+(except the `Session` and driver rows, below, and the stream adapter's
+close-failure row); `tests/_kernel/test_protocol_stateful.py`,
 a Hypothesis state machine checking I1 to I3 under random interleavings of
 `write` and the wire-temporary `write_atomic` route, reads and closes, per
 runtime and posture; Memory's rows in `tests/backends/memory/test_kernel_cells.py`;
