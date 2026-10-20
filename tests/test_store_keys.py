@@ -85,6 +85,9 @@ def test_refusal_outranks_the_root_and_a_key(raw: str) -> None:
         pytest.param("a/./b", "a/b", id="dot"),
         pytest.param("a\\b", "a/b", id="backslash"),
         pytest.param("a\\/b", "a/b", id="mixed-separators"),
+        pytest.param("   ", "   ", id="spaces-only"),
+        pytest.param("a/ /b", "a/ /b", id="space-segment"),
+        pytest.param("a/\t/b", "a/\t/b", id="tab-segment"),
     ],
 )
 def test_input_maps_to_its_canonical_key(raw: str, key: str) -> None:

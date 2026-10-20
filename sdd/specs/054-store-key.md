@@ -108,6 +108,7 @@ in input order, joined by `/`, and to ε when none contributes.
 | Input class (examples) | K(s) |
 | --- | --- |
 | canonical (`a`, `a/b`) | the input |
+| a segment of whitespace only (`a/ /b`) | the input: whitespace is a name, neither dropped nor refused |
 | non-canonical (`/a`, `a/`, `a//b`, `a/./b`, `a\b`) | the canonical Key (`a`, `a`, `a/b`, `a/b`, `a/b`) |
 | only empty and `.` segments (`""`, `.`, `./`, `/`, `\`, `/./`) | ε |
 | a `..` segment (`..`, `a/../b`, `a\..\b`, `./..`) | refused |
