@@ -961,11 +961,11 @@ CHANGELOG the release body is built from — say what is actually true.
 
 - [ ] **ID-245 — Derived inventories replacing hand-maintained ones**
   spec: — · effort: M · audience: infra.test, contributor.tooling
-  Three of four inventories are not derived: BE-029's hand-counted
-  cassette-reachability table (after ID-244, § 2), a per-spec accountability
-  record nothing renders (after ID-207), and BE-021's divergence counts,
-  stated in four frames that drift; spec 003 no longer carries the first or last. The checker inventory has shipped. Open
-  decision: the divergence table's input, whose clause half has no form.
+  Three of four inventories are not derived: the hand-counted cassette-reachability
+  table (after ID-244, § 2), a per-spec accountability record nothing renders (after
+  ID-207), and the absent-container divergence counts, in four frames that drift; the first
+  and last left spec 003 (BK-456), so their home is open. The checker inventory has shipped.
+  Open decision: the divergence table's input, whose clause half has no form.
   Detail: [dossier](backlog/id-245-derived-inventories.md)
 
 - [ ] **ID-270 — Revisit informational `verify-tla` CI status (2027-04-19)**

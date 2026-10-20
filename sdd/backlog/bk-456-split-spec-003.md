@@ -84,6 +84,14 @@ on the spec at PR #1168's review: BE-029's absent-container order (two), BE-029'
 write roster, and BE-033's **Conformance** exceptions and its `Session` and
 driver rows. Each carries reasoning, so removing it rewords a clause.
 
+**One obligation reworded, deliberately.** BE-021's no-page-boundary licence
+said its residue "MUST then be stated as a divergence", and the list it was
+stated in left the spec. It now reads "MUST then be stated in that backend's
+spec as a declared variation": the maintainer's choice in this session's
+decision log ("Where does the statement go now?": "The backend's own spec").
+No backend spec states such a residue at this change
+(`rg -n -i 'no page boundary|truncated page|first-page bound' sdd/specs --glob '!003-*'`).
+
 ## Moved out of spec 003, 2026-10-19
 
 Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master

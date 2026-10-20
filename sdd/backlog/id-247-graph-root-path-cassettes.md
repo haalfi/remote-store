@@ -7,7 +7,7 @@ diagnosis; this file is evidence and advisory prescription
 ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 
 **30** `TestBackendRootPath` cells still skip on `graph_replay` for want of a
-recording — the "pinned nowhere" column of spec 003's BE-029 table (Corrected 2026-10-20 (BK-456): the table left spec 003 and is in
+recording — the "pinned nowhere" column of spec 003's BE-029 table (*Corrected 2026-10-20 (BK-456): the table left spec 003 and is in
 [ID-245's dossier](id-245-derived-inventories.md)*). Graph is
 the only HTTP family with **no emulator tier** (`graph_live` Stage 3 and
 `graph_replay` Stage 1, nothing between), so those contracts are unexercised

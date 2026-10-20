@@ -26,8 +26,8 @@ separate PRs under this ID.
 - **One stream adapter and one fault rule** for `read`, `read_bytes` and the
   ranged read: one caught set, a close failure never masking a read failure,
   `__aiter__` inside the guard. Carries T4 and T5. BE-033 states the close
-  failure's rule (logged, never raised, fed to `connection_dead`) as *not yet
-  met* by this part; BK-449 already gave the async `read` and both runtimes'
+  failure's rule (logged, never raised, fed to `connection_dead`), and this
+  part builds it; BK-449 already gave the async `read` and both runtimes'
   `read_bytes` SIO-010's skip. **Constraint** (from a review the maintainer
   brought to PR #1159, filed here by their choice, decision log
   `sdd/decisions/062e5181-cc50-5b17-963f-e9da78bad8ee.jsonl`): the rule must not

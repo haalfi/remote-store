@@ -14,14 +14,16 @@ and generator governs), Rule 5 (gating or advisory, and why).
 - **Spec 003's cassette-reachability table.**
   [`003-backend-adapter-contract.md`](../specs/003-backend-adapter-contract.md)
   BE-029's coverage note tabulates, per backend, which root-path conformance
-  cells execute and which are pinned only in a per-backend home (Corrected 2026-10-20 (BK-456): the table left spec 003 and is under
+  cells execute and which are pinned only in a per-backend home (*Corrected 2026-10-20 (BK-456): the table left spec 003 and is under
   § Moved out of spec 003 below*). Every figure
   was counted by hand, against a corpus that grows, and ID-241 has already
   rewritten it once for that reason. This is the direct instance of
   [principle 9](../../CLAUDE.md#principles) on a published spec. Fix shape: a
   script that runs the conformance suite (or its collection plus the replay
   guard's verdict) and emits, per replay fixture, which cells execute and which
-  skip for want of a cassette; spec 003 then cites the generator. Not derivable
+  skip for want of a cassette; spec 003 then cites the generator. (*Corrected 2026-10-20 (BK-456): SPEC-DESIGN.md Rule 7
+  now keeps a coverage figure out of spec 003, citations included, so where the
+  generated table lives is open.*) Not derivable
   from collection alone — whether a cell needs a cassette depends on whether
   the backend issues a request, which only running it answers (ID-241).
   **Position: after ID-244**, which changes which cells a read-only backend can
@@ -64,6 +66,10 @@ and generator governs), Rule 5 (gating or advisory, and why).
   than restating it. One did not: correcting the prose in place, which is what
   the first four passes did.
 - **BE-021's divergence counts, and the artifacts that re-count against them.**
+  (*Corrected 2026-10-20 (BK-456): the BE-021 list left spec 003: its live bullets are in the
+  BUG-255, BUG-257 and BUG-318 dossiers, its closed ones in BK-456's, and Rule 7
+  keeps the authoritative divergence table out of the spec too, so its home is
+  open.*)
   The absent-container divergence set is stated as a bullet list in BE-021, as
   a class count in `sdd/BACKLOG.md` § 1, and again in the CHANGELOG, spec 040
   and BUG-254's register entry — in **four incompatible frames**: bullets, backend classes,
