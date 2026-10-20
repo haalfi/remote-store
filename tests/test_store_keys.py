@@ -157,7 +157,9 @@ def test_admitted_key_reaches_its_own_entity(
     if backend_name == "local":
         if sys.platform == "win32":
             # Measures the documented Win32 stripping on CI's Windows lane: an XPASS fails it.
-            request.applymarker(pytest.mark.xfail(strict=True, reason="Windows Local aliases the name (BK-469)"))
+            request.applymarker(
+                pytest.mark.xfail(strict=True, raises=AssertionError, reason="Windows Local aliases the name (BK-469)")
+            )
         store = Store(backend=LocalBackend(root=str(tmp_path)))
     else:
         store = _store()
