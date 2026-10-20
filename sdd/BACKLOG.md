@@ -342,6 +342,14 @@ failure it was.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
+- [ ] **BK-469 — The store breaks three clauses of spec 054, so a key's outcome still depends on the backend**
+  spec: KEY-002, KEY-005, KEY-008 · effort: M · audience: user.api, library.maintainer
+  At `7491289`: `Store` takes `"\ud800"` (Memory stores it, Local leaks `UnicodeEncodeError`),
+  against KEY-002; refuses `"./"`, `"/"` and `"\\"` on folder-shaped calls, against KEY-005; and
+  Local leaks `OSError` [Errno 36] for a 300-character name, with no profile declared (KEY-008;
+  BUG-334 is the Windows case). Open decision: how a backend declares a profile (capability or
+  driver flag), and whether the fixes land before or at RFC-0017 D3 step 2.
+
 - [ ] **BK-450 — The driver boundary has no single enforcement point, so each kernel site re-checks a driver by hand**
   spec: BE-021, BE-027, BE-030, BE-032, BE-033, CAP-007 · effort: L · audience: user.api, library.maintainer
   The kernel takes driver records, streams and declarations at scattered sites: metadata handed

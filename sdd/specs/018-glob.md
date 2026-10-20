@@ -111,10 +111,10 @@ as GLOB-004.
 
 ### GLOB-007: Store.glob() Path Scoping
 
-**Invariant:** Store reads the pattern as spec 004 reads a path, then
+**Invariant:** Store reads the pattern as [spec 054](054-store-key.md) reads a key, then
 prepends `root_path` before delegating to `Backend.glob()`. Leading `/`, empty
 and `.` segments are dropped (PATH-004 to PATH-006). Three departures from
-spec 004: a trailing `/` is kept, since in a pattern it selects folders only; a
+spec 054: a trailing `/` is kept, since in a pattern it selects folders only; a
 `\` is kept as written rather than turned into `/` (PATH-002; open under
 BK-451); and a pattern that normalises to the root yields nothing, without
 reaching the backend, rather than raising (PATH-008). Returned `FileInfo.path`
@@ -124,7 +124,7 @@ PATH-007).
 **Rationale:** A pattern is a predicate over Keys, and no Key has a leading
 `/` or an empty segment (spec 051 TREE-011), so those spellings name only what
 the canonical one names. Spec 051 admits `.` as a name; dropping a `.` segment
-is spec 004's input reading (PATH-006), which spec 051 § Layering assigns the
+is spec 054's input reading (PATH-006), which spec 051 § Layering assigns the
 mapping from input strings to Keys. Normalising here makes `"/d/*.csv"`
 mean `"d/*.csv"` under every `root_path`, as `read` and `list_files` already
 do; joining the raw pattern made the answer depend on the root (BK-405).

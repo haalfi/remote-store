@@ -1,4 +1,4 @@
-"""Tests for RemotePath — derived from sdd/specs/004-path-model.md."""
+"""Tests for RemotePath — derived from sdd/specs/004-path-model.md and, for PATH-002 to PATH-007, 054-store-key.md."""
 
 from __future__ import annotations
 

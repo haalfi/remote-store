@@ -330,8 +330,8 @@ this section lands; code and tests cite them by those labels.
   one entity (TREE-010). This section states none of them again. An item also
   has content and metadata, which that structure does not model. By TREE-001
   and TREE-010, `is_file(k)` and `is_folder(k)` are never both true.
-- **A Key is not a caller's input.** Spec 004's `RemotePath` maps an accepted
-  input onto a Key or rejects it (spec 051 § Layering). BE-030's non-canonical
+- **A Key is not a caller's input.** [Spec 054](054-store-key.md) maps an
+  accepted input onto a Key or refuses it (spec 051 § Layering). BE-030's non-canonical
   rows (`d//f`, `d/./f`, `d/`) and root spellings (`./`) are inputs of that
   layer: each is mapped onto a Key, or refused, before the tree is consulted. A
   backend stores a *raw key*, its encoding's own spelling, which A.2 decodes.
@@ -375,7 +375,7 @@ A stored key such as `a\b`, `..` or one holding NUL is not in that list. Spec
 051's names forbid only `/`, so where its characters are in the spec's alphabet
 Σ, it decodes to a Key in the tree. That Key lies outside the library's
 addressable subset: no input maps onto it, so no keyed operation reaches it.
-Spec 004 refuses `..` (PATH-003) and NUL (PATH-007), and folds `\` to `/`
+Spec 054 refuses `..` (PATH-003) and NUL (PATH-007), and folds `\` to `/`
 (PATH-002), so `a\b` as an input addresses the Key `a/b` instead. Listings omit
 such a key and log it, as BE-030 rules, because no keyed operation could act on
 what they returned. Addressing and `unwrap()` still reach it (BE-030, BE-025).

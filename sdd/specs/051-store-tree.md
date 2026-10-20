@@ -15,9 +15,10 @@ evidence behind it are kept in
 the bounded check in [`formal/alloy/StoreAxioms.als`](../formal/alloy/StoreAxioms.als)
 and the proofs in [`formal/lean/StoreAxioms.lean`](../formal/lean/StoreAxioms.lean).
 
-**Layering.** This spec governs Keys and the tree over them. Spec 004 governs
-input strings: `RemotePath` maps an accepted input onto a Key or rejects it, so
-the library addresses a subset of the Keys this spec admits. Spec 053's
+**Layering.** This spec governs Keys and the tree over them.
+[Spec 054](054-store-key.md) governs input strings: it maps an accepted input
+onto a Key or refuses it, so the library addresses a subset of the Keys this
+spec admits (KEY-006). Spec 053's
 BE-032 (The Store Tree on the Kernel) states how a backend encodes the tree and
 points here for its structure.
 
