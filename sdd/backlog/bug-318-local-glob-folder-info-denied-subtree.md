@@ -59,6 +59,7 @@ the recursive `list_files`, #1113 raises `PermissionDenied` for it. Python's own
 `rmdir` and `rmtree` did not produce the state on either filesystem.
 `test_a_subfolder_in_the_classic_delete_pending_state_raises` pins it; spec 003
 lists it under BE-021's Known divergences with this item.
+*Corrected 2026-10-20 (BK-456): that section left spec 003; the bullet is under § Moved out of spec 003 below.*
 
 ## Why it was not BUG-280
 
@@ -85,3 +86,25 @@ Raising for a vanished one was tried in BUG-280's round 3 and reverted in round
 delete-pending folder belongs to the same decision: Windows reports it as
 denied, though it is going away. RFC-0017's kernel takes Local's listings over
 at D3 step 5; a fix here becomes that driver's `classify`.
+
+## Moved out of spec 003, 2026-10-19
+
+Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master
+`35ea366`, links re-based to this directory, by BK-456's first stage: the
+text stated project state, which a spec does not carry
+([`SPEC-DESIGN.md` Rule 7](../SPEC-DESIGN.md#no-project-state)). A dated
+record, not kept current.
+
+BE-021 § Known divergences, this item's bullet:
+
+> - `LocalBackend`'s recursive walks end short in the same shape. A subfolder
+>   absent when the walk reaches it is skipped by `list_files`, `glob` and
+>   `get_folder_info`; at the scan a deleted folder cannot be told from a dangling
+>   Windows junction, which is absent from the start. `glob` and `get_folder_info`
+>   also skip a subfolder they cannot read, where the recursive `list_files`
+>   raises `PermissionDenied`. A subfolder in Windows' classic delete-pending
+>   state (its delete disposition set while another handle stays open) is going
+>   away, but its scan fails with the code a denial carries (`winerror` 5), so
+>   the recursive `list_files` raises `PermissionDenied` for it; Python's own
+>   `rmdir` and `rmtree` delete the POSIX way and do not leave that state.
+>   Tracked as **BUG-318**.

@@ -222,9 +222,10 @@ def test_a_listing_pages_to_done(runtime: str) -> None:
     assert store.called("list_page") == [("list_page", "d")] * 2  # two pages of two, then Done
 
 
-@pytest.mark.spec("BE-033", "BE-020")
+@pytest.mark.spec("BE-020")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_listing_on_a_terminally_closed_backend_fails_at_its_first_page(runtime: str) -> None:
+    """Pins what ships, not BE-033's refusal-timing rule (the call): BK-454 owns that gap."""
     store = _paged()
     run = make_kernel(runtime, store, close_is_terminal=True)
     run.close()

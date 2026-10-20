@@ -63,3 +63,21 @@ applying it to `_S3Base`'s s3fs-backed listings and pinning it per lane, which
 closes the divergence rather than opening one. Take the bound from the worked
 example rather than from this paragraph's first sentence: it is keyed on a page
 having come back, not on an item having been yielded.
+
+## Moved out of spec 003, 2026-10-19
+
+Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master
+`35ea366`, links re-based to this directory, by BK-456's first stage: the
+text stated project state, which a spec does not carry
+([`SPEC-DESIGN.md` Rule 7](../SPEC-DESIGN.md#no-project-state)). A dated
+record, not kept current.
+
+BE-021 § Known divergences, this item's bullet:
+
+> - `S3Backend` and `S3PyArrowBackend` breach the **first-page bound** rather than
+>   the empty-listing answer: a bucket deleted between pages of a listing ends the
+>   iteration cleanly, so a truncated listing reads as a complete one. They answer
+>   the absent-from-the-start case correctly. Tracked as **BUG-255**, with the fix
+>   shape already worked on the three lanes that meet the bound. `AzureBackend` and
+>   `AsyncAzureBackend` meet it on both their flat and their HNS branches, each
+>   executed against a wire stub.

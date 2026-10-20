@@ -71,3 +71,51 @@ stands, and BK-394 now precedes this item because it registers drivers in
 the conformance registry. *Corrected 2026-10-15: BK-394 left the registry
 constructing `MemoryBackend()`, so the precondition is the first PR that
 registers drivers there, as ID-244's entry says.*
+
+## Moved out of spec 003, 2026-10-19
+
+Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master
+`35ea366`, links re-based to this directory, by BK-456's first stage: the
+text stated project state, which a spec does not carry
+([`SPEC-DESIGN.md` Rule 7](../SPEC-DESIGN.md#no-project-state)). A dated
+record, not kept current.
+
+BE-021, the root measured against an absent container:
+
+> **Ten of the thirteen concrete backends are measured against an absent
+> container at the root and all ten meet the row; three are not measured.**
+> Meeting it: `LocalBackend`, `SFTPBackend`, `MemoryBackend`,
+> `AsyncMemoryBackend`, `SQLBlobBackend`, `S3Backend`, `S3PyArrowBackend`,
+> `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend`. Unmeasured:
+> `GraphBackend`, `ReadOnlyHttpBackend`, `SQLQueryBackend`. Derivation of the
+> thirteen: the classes declaring `CAPABILITIES`, excluding the two abstract
+> bases and the sync adapter — enumerated by importing every module under
+> `remote_store.backends` and `remote_store.aio.backends` and selecting classes
+> with `CAPABILITIES` in their own `__dict__`.
+>
+> **The measurement is per-backend, and that is a stated coverage bound rather
+> than a gate.** Conformance's `TestBackendRootPath` runs the row against every
+> LIST-capable backend, but with the container *present*; no conformance fixture
+> removes one. The backends whose container can go absent under them therefore
+> pin the absent state in their own homes:
+> `tests/backends/s3/test_denied_probe.py` for the three S3 lanes,
+> `tests/backends/azure/test_absent_container.py` and its `aio/` sibling for the
+> two Azure classes, `tests/backends/local/test_absent_root.py` for the deleted
+> root, `tests/backends/sqlblob/test_absent_table.py` for the dropped table. The
+> remaining three — `SFTPBackend`, `MemoryBackend`, `AsyncMemoryBackend` — have
+> no container distinct from an empty store (SFTP's `base_path` is created
+> lazily, so an untouched store *is* the absent case), and the conformance
+> cell's unseeded arm is that measurement.
+> **A fourteenth backend is therefore exempt by default at the root exactly as it
+> is for the absent-container clause**, which is the gap BK-345 owns; nothing
+> here closes it.
+>
+> The three unmeasured classes are unmeasured for different reasons, and none is
+> a divergence: `ReadOnlyHttpBackend` and `SQLQueryBackend` arrange no absent
+> container through the `Backend` API at all, and `GraphBackend`'s
+> absent-drive answers are its own (GR-031, [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)).
+>
+> The root is absent from § Known divergences below because that list is
+> organised by the absent-container *clause* and the root is BE-029's; the
+> pointer is here so a reader does not read that list as deciding the root
+> either way.

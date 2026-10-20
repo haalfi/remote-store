@@ -1,0 +1,182 @@
+id: BK-456
+title: "Spec 003 is too long to keep free of contradictions, so it is split (stage one: status out)"
+trigger: >-
+  ADR-0048 and SPEC-DESIGN.md Rule 7 (a spec carries no project state) were
+  accepted, and spec 003 still held backlog IDs, "yet"/"not yet", known-divergence
+  lists and measured tallies inside its normative sections. The maintainer asked
+  for the dossier's first stage: status out, no split, no prune.
+source_items:
+  - BK-456
+audience:
+  - library.maintainer
+  - contributor.process
+decisions:
+  - sdd/decisions/9d7a45d2-ec37-5681-af22-de8c1ff4d3ac.jsonl
+expected_ripples:
+  - sdd/BACKLOG.md
+surprising_ripples:
+  # Rule 7 moves the link into the item, so each open item the spec named had to
+  # name the spec section on its own attribute line: BK-345 (BE-029), BK-390
+  # (BE-017), BK-433 (BE-032), BK-438 (BE-032), BK-450 (BE-033), BUG-310 (BE-033).
+  # Index bodies quoting the removed text (BUG-318, BK-454, BK-455, ID-245) went
+  # stale and were corrected.
+  - sdd/specs/029-async-store-backend-api.md
+  - tests/backends/local/test_listing_errors.py
+  - tests/backends/sqlblob/test_absent_table.py
+  # The "not yet met" marker was the only thing reconciling BE-033's refusal
+  # timing rule with a BE-033-marked cell asserting the old timing; the cell
+  # keeps BE-020 and names BK-454 instead.
+  - tests/_kernel/test_protocol.py
+  - sdd/backlog/bk-345-absent-container-conformance.md
+  - sdd/backlog/bk-454-refusal-timing-read-handle.md
+  - sdd/backlog/bug-255-s3fs-midlisting-truncation.md
+  - sdd/backlog/bug-257-graph-walk-first-page-bound.md
+  - sdd/backlog/bug-318-local-glob-folder-info-denied-subtree.md
+  - sdd/backlog/id-245-derived-inventories.md
+  # Found by PR #1168's review: an open item's dossier pointing at the moved
+  # BE-029 table, which no edited file named.
+  - sdd/backlog/id-247-graph-root-path-cassettes.md
+orient:
+  - items: [BK-456]
+    verdict: constrains
+    evidence: >-
+      BK-456 dossier § Prescription: "Status out first, before the ADR ... One
+      PR, no clause reworded; what leaves names its new home", then a pure-move
+      split and a prune per file. History narrative and mechanism stay for those
+      stages; the split's per-section move check needs this stage to reword nothing.
+  - items: [BK-345, BK-390, BK-433, BK-436, BK-438, BK-439, BK-450, BK-454, BK-455, BUG-255, BUG-257, BUG-260, BUG-292, BUG-310, BUG-318, ID-244]
+    verdict: constrains
+    evidence: >-
+      The 16 open items among the 38 distinct IDs spec 003 cited
+      (`rg -o '\b(?:BL|BK|BUG|ID|AF)-\d+' ... | sort -u | xargs hatch run backlog-show`).
+      SPEC-DESIGN.md Rule 7: "a backlog item names the spec it serves, never the
+      reverse", so each unlinked item must carry the spec ID itself, and the
+      divergence text the spec held moves to the item that owns it.
+  - items: [ID-245]
+    verdict: constrains
+    evidence: >-
+      ID-245 dossier: BE-029's cassette-reachability table and BE-021's
+      divergence counts are the hand inventories it plans to derive. Moving them
+      out of the spec means its dossier carries them as a dated record and its
+      index says the spec no longer does.
+  - items: [BUG-323, BUG-293, BUG-245, BUG-253, BUG-339, BUG-319, BUG-334, BUG-299, BUG-300, BK-382, BK-446, BK-451, BK-452, BK-434, ID-247, ID-262]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-find --spec BE-008 --spec BE-021 --spec BE-029 --spec
+      BE-030 --spec BE-032 --spec BE-033 --spec BE-020 --spec BE-031 --max 60`:
+      code defects or test gaps on those sections, not cited by the spec; no
+      clause they rest on is reworded here.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-456-split-spec-003.md
+        section: "(full)"
+        read_type: gate
+        extract: "Status out first, no clause reworded, what leaves names its new home"
+        outcome: ok
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rule 7"
+        read_type: gate
+        extract: "No status, no backlog IDs, no 'yet'; the item names the spec"
+        outcome: ok
+      - file: sdd/adrs/0048-how-specs-are-designed.md
+        section: "(full)"
+        read_type: reference
+        extract: "Project state goes stale between a spec's own edits"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Orient"
+        read_type: gate
+        extract: "Find, cluster, read, judge, record, recommend in one dialog"
+        outcome: ok
+      - file: sdd/backlog/bug-337-spec-003-contradictions.md
+        section: "(full)"
+        read_type: reference
+        extract: "Done; its fixes stand, nothing here re-touches them"
+        outcome: ok
+      - file: sdd/backlog/id-245-derived-inventories.md
+        section: "(full)"
+        read_type: reference
+        extract: "The coverage table and divergence counts are its inventories"
+        outcome: ok
+  - id: build
+    name: Build
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Backlog IDs 84 matches (38 distinct) before, 0 after, by
+          `rg --count-matches '\b(?:BL|BK|BUG|ID|AF)-\d+'` on the spec (distinct:
+          `rg -o ... | sort -u | wc -l`); "yet" 18 before, 0 after, by
+          `rg --count-matches -i '\byet\b'`. Status blocks in BE-021, BE-029 and
+          BE-033 moved by line range, the rest edited in place
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: gate
+        extract: "Traces are closed YAML, so they cannot hold moved prose"
+        outcome: unclear
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "ID prefixes include BL and AF; partly done vs [~] for staged work"
+        outcome: ok
+      - file: tests/_kernel/test_protocol.py
+        section: "test_a_listing_on_a_terminally_closed_backend_fails_at_its_first_page"
+        read_type: reference
+        extract: "BE-033-marked cell asserts the timing the rule forbids"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1168 --trace-block-only` at head 12cc667.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1168 --trace-block-only"
+  pr: 1168
+  review_rounds: 3
+  submissions: 2
+  findings: 8
+  by_round:
+    - round: 1
+      findings: 6
+      origin: {original: 2, pre-existing: 3, unclassifiable-file: 1}
+      triage: {must-fix: 6}
+      duration_hours: 8.45
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.87
+  by_file:
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 4
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/backlog/bug-257-graph-walk-first-page-bound.md"
+      findings: 1
+    - path: "sdd/backlog/id-245-derived-inventories.md"
+      findings: 1
+    - path: "sdd/specs/029-async-store-backend-api.md"
+      findings: 1
+  untouched_files:
+    - "sdd/backlog/bk-345-absent-container-conformance.md"
+    - "sdd/backlog/bk-450-driver-boundary-enforcement.md"
+    - "sdd/backlog/bk-454-refusal-timing-read-handle.md"
+    - "sdd/backlog/bk-456-split-spec-003.md"
+    - "sdd/backlog/bug-255-s3fs-midlisting-truncation.md"
+    - "sdd/backlog/bug-318-local-glob-folder-info-denied-subtree.md"
+    - "sdd/backlog/id-247-graph-root-path-cassettes.md"
+    - "sdd/decisions/9d7a45d2-ec37-5681-af22-de8c1ff4d3ac.jsonl"
+    - "sdd/traces/bk-456-spec-003-status-out.yml"
+    - "tests/_kernel/test_protocol.py"
+    - "tests/backends/local/test_listing_errors.py"
+    - "tests/backends/sqlblob/test_absent_table.py"
+  review_driven_commits:
+    - sha: "f3c667d"
+      subject: "fix: address PR #1168 review"
+    - sha: "73bc914"
+      subject: "fix: address PR #1168 review (round 2)"
+    - sha: "12cc667"
+      subject: "BK-456: Self-review fixes in spec 003"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

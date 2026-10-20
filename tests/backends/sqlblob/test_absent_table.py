@@ -382,8 +382,9 @@ class TestEveryOperationReadsTheAbsentTableAsAnAbsentPath:
     the listings come back empty because an absent container holds nothing.
 
     Measured before the fix, all of these raised ``BackendUnavailable`` — the
-    widest divergence BE-021's § Known divergences recorded, and the reason a
-    caller could not tell a store that is *gone* from one that is *broken*.
+    widest divergence BE-021 recorded (BK-456's dossier keeps the entry), and
+    the reason a caller could not tell a store that is *gone* from one that is
+    *broken*.
     """
 
     @pytest.mark.parametrize(("op_name", "call"), _PROBE_OPS, ids=[n for n, _ in _PROBE_OPS])
