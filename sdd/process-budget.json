@@ -8,9 +8,9 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 301224,
+  "total": 301463,
   "files": {
-    "CLAUDE.md": 17648,
+    "CLAUDE.md": 17887,
     ".claude/output-styles/interview.md": 2105,
     ".claude/skills/audit/SKILL.md": 1465,
     ".claude/skills/drift/SKILL.md": 23927,
@@ -105,6 +105,12 @@
       "from": 301112,
       "to": 301224,
       "reason": "rvw-pr content-rules check points to CONTENT-RULES last pass"
+    },
+    {
+      "item": "BL-012",
+      "from": 301224,
+      "to": 301463,
+      "reason": "Maintainer asked for the kernel-migration posture in CLAUDE.md (PR 1171)"
     }
   ]
 }

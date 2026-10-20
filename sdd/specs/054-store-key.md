@@ -50,9 +50,18 @@ call-level rule.
 | Key, name, ε | Spec 051's (TREE-007, TREE-009); ε is the Key of the root. |
 | Admits | A backend admits a Key when an operation on an input *s* with that K(s) is not refused for the Key's sake. |
 | Bytes | A string's length in bytes is that of its UTF-8 encoding. |
-| Portable name | A name of at most 255 bytes whose code points are ASCII letters, digits, `.`, `_` and `-`, whose first is a letter or digit, whose last is not `.`, and which is not a reserved name. It holds no space and does not end in `.`, the two endings a namespace that strips them would alias onto another Key (KEY-009). |
+| Portable name | A name `PORTABLE_NAME` below fully matches: ASCII letters, digits, `.`, `_` and `-`, the first a letter or digit, the last not `.`, and not a reserved name. It holds no space and does not end in `.`, the two endings a namespace that strips them would alias onto another Key (KEY-009). |
+| Portable Key | A Key `PORTABLE_KEY` below fully matches: one or more portable names joined by `/`, at most 255 bytes in all. |
 | Reserved name | `CON`, `PRN`, `AUX`, `NUL`, `COM0` to `COM9` or `LPT0` to `LPT9`, compared ASCII case-insensitively, alone or followed by `.` and more. |
 | Profile | A named licence to refuse a Key ([`SPEC-DESIGN.md` Rule 5](../SPEC-DESIGN.md#profiles-and-assumptions)). A backend declares a profile, and a limit where the profile takes one, in its own spec under `sdd/specs/`. |
+
+The two patterns, in Python `re` syntax, are the definition; the prose above
+glosses them. `PORTABLE_KEY` is matched with `re.fullmatch`.
+
+```text
+PORTABLE_NAME = (?!(?i:CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(?:[./]|$))[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?
+PORTABLE_KEY  = (?=[ -~]{1,255}\Z)PORTABLE_NAME(?:/PORTABLE_NAME)*
+```
 
 ---
 
@@ -132,8 +141,7 @@ folder-shaped operation, and is refused by a file-shaped operation and by
 
 ### KEY-007: Portable Floor
 
-**Invariant:** Every backend admits a Key of at most 255 bytes whose names are
-all portable names.
+**Invariant:** Every backend admits a portable Key.
 
 ### KEY-008: Backend Refusal
 
@@ -192,6 +200,8 @@ Not normative.
   canonical ε, prefixed by `root_path` (STORE-003). BE-029's set, which
   excludes `\`, binds a `Backend` called directly.
 - Every portable name is canonical, so a Key in the floor is its own K.
+  `sdd/research/bk-468-key-probe/check_portable_regex.py` checks the two
+  patterns against the gloss on 29 named cases.
   KEY-007 holds per Key; whether two floor Keys differing only in case are two
   entities on a backend is spec 051 § Name equality.
 - A profile is declared in the backend's spec rather than by the capability

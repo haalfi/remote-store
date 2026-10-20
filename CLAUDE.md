@@ -6,6 +6,10 @@
 Python library: unified file storage across backends (Local, S3, SFTP, Azure).
 Spec-Driven Development (SDD).
 
+**Kernel migration.** Until a backend is on the contract kernel (RFC-0017 D3),
+it may diverge from the specs: build the kernel path properly, don't patch the
+old one. Acceptable only while no release is planned; open `BL-` items hold it.
+
 ## Principles
 
 1. **Ship complete**: a change is finished when everything it touches is consistent: code, tests, docs, CHANGELOG, BACKLOG. Track gaps as `[~]`. For releases, follow the full checklist in [`CONTRIBUTING.md` § Release](CONTRIBUTING.md#release).

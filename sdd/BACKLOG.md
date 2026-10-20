@@ -116,6 +116,12 @@ done entry are review-enforced.
 here only when shipping without it resolved would cost users more than delaying
 the release.
 
+- [ ] **BL-012 — Backends not yet on the kernel diverge from spec 054, which is accepted only while no release is planned**
+  spec: KEY-002, KEY-005, KEY-008, KEY-009, STORE-002 · effort: M · audience: user.api
+  The maintainer accepted BK-469's divergence for the kernel migration on the condition that no
+  release ships it (RFC-0023 § Alternatives, 2026-10-20). Closes when BK-469 closes, or when every
+  backend it names is on the kernel and meets spec 054. Open decision: none.
+
 ---
 
 <a id="predictable-failure"></a>

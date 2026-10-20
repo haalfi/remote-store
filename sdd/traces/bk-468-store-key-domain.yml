@@ -14,6 +14,7 @@ decisions:
 # KEY-009 on Windows Local, and KEY-003's and KEY-006's surrogate arms).
 discovery_followups:
   - BK-469
+  - BL-012
 expected_ripples:
   - sdd/specs/004-path-model.md
   - sdd/specs/051-store-tree.md
