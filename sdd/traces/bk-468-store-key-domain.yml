@@ -10,8 +10,8 @@ audience:
   - library.maintainer
 decisions:
   - sdd/decisions/f26dd04d-9f53-5e2c-8e68-0cddadfe681d.jsonl
-# The clauses the code breaks today (spec 054 KEY-002, KEY-005, KEY-008, and
-# KEY-003's and KEY-006's surrogate arms).
+# The clauses the code breaks today (spec 054 KEY-002, KEY-005, KEY-008,
+# KEY-009 on Windows Local, and KEY-003's and KEY-006's surrogate arms).
 discovery_followups:
   - BK-469
 expected_ripples:
@@ -181,6 +181,10 @@ phases:
           inputs without a surrogate; KEY-005 marks the STORE-002 tests, which assert its
           file-shaped half for "", ".", "./", "/", "\\" and its folder-shaped
           half for "" only; KEY-002 and KEY-008 are broken, so allowlisted in
-          check_spec_marks with BK-469 as owner
+          check_spec_marks with BK-469 as owner; KEY-009 (added at the
+          maintainer's request after the Windows trailing-blank question) is
+          asserted on Memory and Linux Local, where a five-space folder and
+          `a.` beside `a` were measured distinct, and skipped on Windows,
+          where Win32 path handling is documented to strip them (unmeasured)
         outcome: ok
 

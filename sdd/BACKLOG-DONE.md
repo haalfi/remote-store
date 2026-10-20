@@ -301,9 +301,9 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **BK-468 — No spec defines which strings a store accepts as a key, so one key works on one backend and fails on another**
-  spec: PATH-002 -- PATH-007, KEY-001 -- KEY-008 · effort: M · audience: library.maintainer, user.api
+  spec: PATH-002 -- PATH-007, KEY-001 -- KEY-009 · effort: M · audience: library.maintainer, user.api
   Spec 054 states the store's key function (backslash a separator, refusals outranking the root),
-  the store-level root, a portable floor and four backend refusal profiles; PATH-002 to PATH-007
+  the store-level root, a portable floor, four backend refusal profiles and faithful admission; PATH-002 to PATH-007
   moved from 004 with IDs unchanged. The clauses the code breaks are BK-469.
   Trace: [bk-468](traces/bk-468-store-key-domain.yml).
 - [x] **BK-464 — No review pass checks that a durable doc says one thing, first, in its own place**

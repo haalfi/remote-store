@@ -9,7 +9,7 @@ under a profile its spec declares and never when it is in the portable floor.
 An operation acts on K(s) when both layers accept it, and refuses *s* otherwise.
 
 Part 1 states K, a rule on the parameter; Part 2 states which Keys a backend
-admits, a rule on K's result. Both are function clauses
+admits, and that an admitted Key reaches its own entity, rules on K's result. Both are function clauses
 ([`SPEC-DESIGN.md` Rule 2](../SPEC-DESIGN.md#kind-of-truth)): input to
 verdict.
 
@@ -148,6 +148,12 @@ as refused; a backend whose spec declares no profile admits every such Key.
 | `name-chars` | one with a name holding a code point other than an ASCII letter, digit, `.`, `_` or `-`, starting with one other than a letter or digit, or ending in `.` | — |
 | `reserved-names` | one with a reserved name | — |
 
+### KEY-009: Faithful Admission
+
+**Invariant:** An operation on a Key a backend admits acts on that Key's own
+entity, never on another Key's, wherever the Key alone decides it; a backend
+whose namespace would address a Key as another Key does not admit it.
+
 ---
 
 ## Assumptions
@@ -194,6 +200,15 @@ Not normative.
   the backend's other clauses, and a conformance cell takes them as a
   per-backend parameter. A runtime declaration would replace it, not add to
   it.
+- KEY-009 binds where the key alone decides the address, such as a
+  namespace that removes a trailing space or `.` from a Key's last name:
+  there `a ` and `a` reach one entity, and `a/     ` reaches its parent `a`,
+  whatever the store holds. Microsoft's "Naming Files, Paths, and Namespaces" states that
+  Windows path handling removes them; such a backend takes `name-chars`.
+  Aliasing that depends on what the store holds, such as two names differing
+  only in case on a case-insensitive file system, is spec 051 § Name
+  equality's. A POSIX file system keeps every name but `/` and U+0000 as
+  written, a five-space name included.
 - The reserved names are the device names of Microsoft's "Naming Files,
   Paths, and Namespaces"; the `name-chars` and `reserved-names` profiles cover
   what that page forbids beyond the floor.

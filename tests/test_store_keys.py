@@ -3,7 +3,8 @@
 KEY-002 (surrogate refusal) and KEY-008 (backend refusal under a declared
 profile) carry no mark: the store breaks both today, which BK-469 tracks. For
 the same reason KEY-003 and KEY-006 are asserted over inputs without a
-surrogate, and KEY-007 on Memory and Local only.
+surrogate, KEY-007 on Memory and Local only, and KEY-009 off Windows, whose
+Local backend breaks it (BK-469).
 """
 
 from __future__ import annotations
@@ -141,3 +142,19 @@ def test_floor_key_is_stored_by_memory_and_local(key: str, backend_name: str, tm
     assert store.read_bytes(key) == b"floor"
     assert store.is_file(key)
     assert [str(f.path) for f in store.list_files("", recursive=True)] == [key]
+
+
+@pytest.mark.spec("KEY-009")
+@pytest.mark.parametrize(("key", "alias"), [("a/     ", "a"), ("a ", "a"), ("a.", "a"), ("d/x. ", "d/x")])
+@pytest.mark.parametrize("backend_name", ["memory", "local"])
+def test_admitted_key_reaches_its_own_entity(key: str, alias: str, backend_name: str, tmp_path: Path) -> None:
+    """A name with a trailing space or dot is its own entity, not its stripped spelling."""
+    if backend_name == "local":
+        if sys.platform == "win32":
+            pytest.skip("KEY-009 is broken on Windows Local, which strips a trailing space or dot (BK-469)")
+        store = Store(backend=LocalBackend(root=str(tmp_path)))
+    else:
+        store = _store()
+    store.write(key, b"key")
+    assert store.read_bytes(key) == b"key"
+    assert not store.is_file(alias)
