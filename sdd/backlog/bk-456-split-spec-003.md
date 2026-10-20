@@ -54,35 +54,22 @@ sequences): lines 219 to 232, 289 to 293, 489 to 513, 670, 789 to 835, 1262 to
   reworded; what leaves names its new home.
 - **Split by kind.** The maintainer's answer of 2026-10-19 (decision log
   `sdd/decisions/d8d56944-7c57-56f1-9c46-bc7c6222fa45.jsonl`; ADR-0048): by
-  kind of
-  truth, interface contracts as the second cut, which replaces the four-file
-  layer split the bullets below still describe. A candidate cut, recorded at
-  orient: 003 keeps the single-call contract (CAP, the operation sections,
-  BE-031) with its outcome tables and error precedence; keys and paths
-  (BE-029, BE-030, BE-032's encoding) and error mapping (BE-021) become
-  function specs; BE-033 with BE-020's close the lifetime spec; BE-028 and the
-  profiles an environment spec. Re-derive against the sections before the
-  split PR.
-
-- Move only in the split PR: no clause is reworded there, so its review is a
-  check that text moved whole (a per-section diff of old against new is the
-  gate). The prune against BK-457's ADR follows, a file per PR.
-- 003 keeps Overview, Capabilities (CAP-001 to CAP-007), the Backend ABC
-  operations and Concurrency (BE-028). New specs: error mapping (BE-021), root
-  path (BE-029), and the contract kernel (its intro and BE-030 to BE-033). IDs
-  keep their BE- prefix, so test markers, Dafny `@spec` tags and
-  `check_spec_marks.py` need nothing.
-- `scripts/gen_protocol_diagram.py`'s `SPEC` path follows BE-033; the
-  generated block moves with it.
-- Open: the new spec numbers, and whether the kernel file splits further once
-  it stands alone.
+  kind of truth, interface contracts as the second cut. It replaced a
+  four-file layer split.
+- Move only in the split PR, then the prune against `SPEC-DESIGN.md`, a file
+  per PR.
 
 **Left for the prune** (stage one removed IDs, "yet" and status blocks, not
 these): coverage-status sentences in spec 003, by
 `rg -n 'no conformance fixture|fixture arranges|no cell|close-failure row'`
 on the spec at PR #1168's review: BE-029's absent-container order (two), BE-029's
 write roster, and BE-033's **Conformance** exceptions and its `Session` and
-driver rows. Each carries reasoning, so removing it rewords a clause.
+driver rows. Each carries reasoning, so removing it rewords a clause. The
+split adds these, each a rewording a move may not make: 003's Overview still
+says every operation, error condition and capability is defined there; 052's
+and 053's Assumptions lift nothing out of the sections (BE-028's native-client
+reliance is environment); and the mixed sections § Stage two names, BE-029 and BE-021 with
+function-shaped parts, BE-030 to BE-032 with driver duties and a pipeline order.
 
 **One obligation reworded, deliberately.** BE-021's no-page-boundary licence
 said its residue "MUST then be stated as a divergence", and the list it was
@@ -91,6 +78,41 @@ spec as a declared variation": the maintainer's choice in this session's
 decision log ("Where does the statement go now?": "The backend's own spec").
 No backend spec states such a residue at this change
 (`rg -n -i 'no page boundary|truncated page|first-page bound' sdd/specs --glob '!003-*'`).
+
+## Stage two: the cut, 2026-10-20
+
+The maintainer's choices, decision log
+`sdd/decisions/c7fc25a1-86c3-542e-a8f0-b02e630d3fd3.jsonl`, re-derived from
+each section's witness shape (`SPEC-DESIGN.md` Rule 2):
+
+| File | Sections | Kind |
+| --- | --- | --- |
+| [003](../specs/003-backend-adapter-contract.md) | CAP-001 to CAP-007, BE-001 to BE-019, BE-021 to BE-027, BE-029 | single call, at the Backend interface |
+| [052](../specs/052-backend-lifetime.md) | BE-020, BE-028, BE-033 | lifetime |
+| [053](../specs/053-contract-kernel.md) | § Contract kernel, BE-030 to BE-032 | single call, at the Backend interface of a class on the kernel, with the driver duties at the kernel-to-driver interface |
+
+- The orient candidate called BE-021, BE-029 and BE-032's encoding function
+  clauses. Most of their witnesses need a state and a call, so they are
+  single-call clauses: only BE-029's root predicate and BE-021's never-leak
+  mapping are function-shaped. Moving BE-021 and BE-029 to files of their own
+  would cut inside one kind by subject, not by interface, so they stay in 003
+  and shrink in the prune.
+- 003 also keeps sections of other kinds, for the prune to place: CAP-001 to
+  CAP-006 (structure and function), BE-001 to BE-003 (structure), BE-023 and
+  BE-025 (function, which spec 010's NPR sections also state) and BE-027
+  (tooling metadata, which no call can fail).
+- BE-028 goes with the lifetime clauses: a breach is an interleaving of calls
+  on one instance. Only its reliance on native clients is environment.
+- The kernel file does not split further.
+- Three sentences that said "this spec" and meant 003 now link to it; the
+  kernel intro's also drops "other", since no clause left in 003 is a kernel
+  clause. That is the one class of edit besides link targets.
+  `sdd/research/bk-456-split/check_move.py` proves the rest byte-identical.
+
+**Stage three's plan** is
+[audit 024](../audits/audit-024-spec-003-052-053-design.md): what each file
+fails, what must survive, and the decisions to take first. Its process gaps are
+BK-465, BK-466 and BK-467; the rest stays under this item.
 
 ## Moved out of spec 003, 2026-10-19
 

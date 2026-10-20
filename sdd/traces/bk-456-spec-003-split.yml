@@ -1,0 +1,252 @@
+id: BK-456
+title: "Spec 003 is too long to keep free of contradictions, so it is split (stage two: the split)"
+trigger: >-
+  Stage one (PR #1168) took project state out of spec 003. The maintainer asked
+  for the dossier's second stage: split spec 003 by kind of truth as a pure
+  move, every section whole, IDs unchanged, no prune and no rewording.
+source_items:
+  - BK-456
+audience:
+  - library.maintainer
+  - contributor.process
+decisions:
+  - sdd/decisions/c7fc25a1-86c3-542e-a8f0-b02e630d3fd3.jsonl
+# The process gaps audit 024 found, which every stage-three prune depends on.
+discovery_followups:
+  - BK-465
+  - BK-466
+  - BK-467
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/bk-456-split-spec-003.md
+  - scripts/gen_protocol_diagram.py
+  - sdd/GATE-INVENTORY.md
+  # The 14 anchored links into moved sections (`git grep -l
+  # "003-backend-adapter-contract.md#"`) and 10 unanchored ones naming a moved ID
+  # (4 on one line; 6 wrapped, below).
+  - sdd/adrs/0047-store-tree-key-resolution.md
+  - sdd/rfcs/rfc-0021-key-resolution-model.md
+  - sdd/specs/005-error-model.md
+  - sdd/specs/006-streaming-io.md
+  - sdd/specs/007-atomic-writes.md
+  - sdd/specs/008-s3-backend.md
+  - sdd/specs/011-s3-pyarrow-backend.md
+  - sdd/specs/012-azure-backend.md
+  - sdd/specs/013-memory-backend.md
+  - sdd/specs/026-health-check.md
+  - sdd/specs/029-async-store-backend-api.md
+  - sdd/specs/037-depth-limited-listing.md
+  - sdd/specs/045-write-result.md
+surprising_ripples:
+  # Found by PR #1169's first review: `See also: [003-...md](003-...md)` with
+  # "(BE-028)" on the next line, which no line-oriented grep matches. Found by
+  # a multiline Grep; check_move.py's check 4 now fails on the shape.
+  - sdd/specs/009-sftp-backend.md
+  - sdd/specs/029-async-store-backend-api.md
+  - sdd/specs/032-http-backend.md
+  - sdd/specs/040-sql-blob-backend.md
+  - sdd/specs/041-sql-query-backend.md
+  - sdd/specs/044-graph-backend.md
+  # Plain-text "spec 003 BE-03x" references, which neither of the two link greps
+  # finds (`git grep -n -i -E "spec 003|\b003 (§|BE-)|003['’]s (BE|§|kernel)"`
+  # over src, tests, scripts, sdd/formal, .github, pyproject.toml, sdd/*.md).
+  # The live ones were retargeted by the maintainer's choice; dated records
+  # (audits, RFCs, done-item dossiers) keep "spec 003".
+  - .github/workflows/ci.yml
+  - pyproject.toml
+  - sdd/formal/BackendContract.dfy
+  - sdd/formal/KernelProtocol.dfy
+  - sdd/formal/MemoryBackend.dfy
+  - sdd/formal/README.md
+  - sdd/specs/051-store-tree.md
+  - sdd/backlog/bk-450-driver-boundary-enforcement.md
+  - src/remote_store/_kernel/__init__.py
+  - src/remote_store/_kernel/_keys.py
+  - tests/_kernel/test_protocol_oracle.py
+  - tests/backends/conformance/test_concurrency.py
+  - tests/backends/memory/test_kernel_cells.py
+  - tests/backends/memory/test_metadata_shape.py
+orient:
+  - items: [BK-456]
+    verdict: constrains
+    evidence: >-
+      BK-456 dossier § Prescription: "Move only in the split PR: no clause is
+      reworded there, so its review is a check that text moved whole"; its
+      candidate cut is to be "re-derived against the sections before the split
+      PR", and the stage-one leftovers belong to the prune.
+  - items: [BK-454, BK-455, BK-460, BK-461]
+    verdict: constrains
+    evidence: >-
+      BK-455: "The Session has obligations in BE-033 but no state set" (spec:
+      BE-033, BE-028); BK-460 is "due with the first lifetime given a module
+      (BK-454 or BK-455)". The lifetime work these items plan reads BE-020,
+      BE-028 and BE-033 together, which argues for one lifetime spec holding all
+      three rather than BE-028 alone in an environment spec.
+  - items: [BK-450]
+    verdict: constrains
+    evidence: >-
+      BK-450 dossier: driver duties "stated on the protocol and in BE-032 A.8",
+      re-derived "against BK-449's outcome, spec 003 BE-033's exit-owner
+      table". The kernel-to-driver boundary is the interface Rule 2's second
+      cut names, so BE-030 to BE-032 form one spec; its dossier's reference to
+      BE-033 follows the section.
+  - items: [BUG-323, BUG-293, BUG-255, BUG-257, BUG-245, BUG-339, BUG-318, BUG-319, BUG-334, BUG-292, BK-439, BK-345, BK-451, BK-446, BK-452, BUG-260, ID-244, ID-247, ID-262, BUG-310, BK-434, BK-436, BK-438, BK-433]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-find --spec BE-020 --spec BE-021 --spec BE-028 --spec
+      BE-029 --spec BE-030 --spec BE-031 --spec BE-032 --spec BE-033 --spec
+      CAP-007 --max 40`: code defects and test gaps on those sections. A pure
+      move changes no clause they rest on, and they cite sections by ID, which
+      the move keeps.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-456-split-spec-003.md
+        section: "(full)"
+        read_type: gate
+        extract: "Candidate cut to re-derive; move only; stage-one leftovers belong to the prune"
+        outcome: ok
+      - file: sdd/adrs/0048-how-specs-are-designed.md
+        section: "(full)"
+        read_type: reference
+        extract: "Cut by kind, never by component; inside a kind, at an interface"
+        outcome: ok
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rules 2, 3, 6"
+        read_type: gate
+        extract: "Kind is the witness shape; larger kind wins; one skeleton per spec"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Orient"
+        read_type: gate
+        extract: "Find, cluster, read, judge, recommend in one dialog"
+        outcome: ok
+      - file: sdd/backlog/bk-450-driver-boundary-enforcement.md
+        section: "(full)"
+        read_type: reference
+        extract: "Driver duties live in BE-032 A.8 and BE-033's exit-owner rows"
+        outcome: ok
+  - id: build
+    name: Build
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Witness per section: BE-021 and BE-029 single call with
+          function-shaped parts, BE-020/BE-028/BE-033 lifetime, BE-030 to
+          BE-032 single call at the kernel-to-driver interface. Three "this
+          spec" sentences change referent when moved
+        outcome: ok
+      - file: sdd/backlog/bk-456-split-spec-003.md
+        section: "Prescription"
+        read_type: gate
+        extract: "Its candidate called BE-021, BE-029 and BE-032 function specs; their witnesses need a state and a call"
+        outcome: misleading
+      - file: sdd/templates/spec-template.md
+        section: "(full)"
+        read_type: gate
+        extract: "Overview, Terms, sections, Assumptions, Notes, Tested against"
+        outcome: ok
+      - file: scripts/check_dafny_oracle_fresh.py
+        section: "docstring"
+        read_type: reference
+        extract: >-
+          Rebuilds each oracle and compares; run after the .dfy comment edits:
+          both oracles match a fresh dafny 4.11.0 build
+        outcome: ok
+      - file: sdd/research/bk-456-split/check_move.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          `python sdd/research/bk-456-split/check_move.py` (base pinned to
+          4694e7a): IDs 40 before, 40 after, sets equal; 41 of 41 blocks (40
+          sections and the Contract kernel intro) byte-identical after folding
+          link targets and the 3 "this spec" retargets; 66 links into the
+          three files, 0 unresolved; 0 unanchored links to 003 naming a moved
+          ID; PASS. Four mutations (a reworded word, a link to the wrong file,
+          a bare in-file link to a moved anchor, a wrapped BE-028 link put back
+          on 003) each made it exit 1
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1169 --trace-block-only` at head 35e0891.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1169 --trace-block-only"
+  pr: 1169
+  review_rounds: 5
+  submissions: 2
+  findings: 7
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.16
+    - round: 2
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {must-fix: 3}
+      duration_hours: 2.76
+  by_file:
+    - path: "sdd/specs/052-backend-lifetime.md"
+      findings: 3
+    - path: "sdd/specs/053-contract-kernel.md"
+      findings: 2
+    - path: "sdd/research/bk-456-split/check_move.py"
+      findings: 1
+    - path: "sdd/traces/bk-456-spec-003-split.yml"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "pyproject.toml"
+    - "scripts/gen_protocol_diagram.py"
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/adrs/0047-store-tree-key-resolution.md"
+    - "sdd/audits/audit-024-spec-003-052-053-design.md"
+    - "sdd/backlog/bk-450-driver-boundary-enforcement.md"
+    - "sdd/backlog/bk-456-split-spec-003.md"
+    - "sdd/decisions/c7fc25a1-86c3-542e-a8f0-b02e630d3fd3.jsonl"
+    - "sdd/formal/BackendContract.dfy"
+    - "sdd/formal/KernelProtocol.dfy"
+    - "sdd/formal/MemoryBackend.dfy"
+    - "sdd/formal/README.md"
+    - "sdd/rfcs/rfc-0021-key-resolution-model.md"
+    - "sdd/specs/003-backend-adapter-contract.md"
+    - "sdd/specs/005-error-model.md"
+    - "sdd/specs/006-streaming-io.md"
+    - "sdd/specs/007-atomic-writes.md"
+    - "sdd/specs/008-s3-backend.md"
+    - "sdd/specs/009-sftp-backend.md"
+    - "sdd/specs/011-s3-pyarrow-backend.md"
+    - "sdd/specs/012-azure-backend.md"
+    - "sdd/specs/013-memory-backend.md"
+    - "sdd/specs/026-health-check.md"
+    - "sdd/specs/029-async-store-backend-api.md"
+    - "sdd/specs/032-http-backend.md"
+    - "sdd/specs/037-depth-limited-listing.md"
+    - "sdd/specs/040-sql-blob-backend.md"
+    - "sdd/specs/041-sql-query-backend.md"
+    - "sdd/specs/044-graph-backend.md"
+    - "sdd/specs/045-write-result.md"
+    - "sdd/specs/051-store-tree.md"
+    - "src/remote_store/_kernel/__init__.py"
+    - "src/remote_store/_kernel/_keys.py"
+    - "tests/_kernel/test_protocol_oracle.py"
+    - "tests/backends/conformance/test_concurrency.py"
+    - "tests/backends/memory/test_kernel_cells.py"
+    - "tests/backends/memory/test_metadata_shape.py"
+  review_driven_commits:
+    - sha: "cf75f0c"
+      subject: "fix: address PR #1169 review"
+    - sha: "d4518a2"
+      subject: "BK-456: decision log"
+    - sha: "1d03a8b"
+      subject: "BK-456: Fix the split's own skeleton text, found by audit 024"
+    - sha: "d4db422"
+      subject: "BK-456: Audit 024, specs 003, 052 and 053 against SPEC-DESIGN.md"
+    - sha: "35e0891"
+      subject: "fix: address PR #1169 review (round 2)"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

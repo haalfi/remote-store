@@ -313,7 +313,7 @@ to be the primary protection for callers using `Store(AsyncBackendSyncAdapter(..
 Store layer (one place, not per-backend) **before** the WR-010 capability
 dispatch. A class on the contract kernel, called directly, also refuses
 `metadata` that is neither `None` nor a `Mapping` ahead of the capability check
-([BE-030](003-backend-adapter-contract.md#be-030-key-rule-on-the-kernel)); the
+([BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel)); the
 key, value and size rules below stay the Store's. The precedence is fixed:
 
 1. **Shape validation first.** Validate `metadata` against the rules below.

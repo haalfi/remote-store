@@ -126,7 +126,7 @@ documented in its own `list_files()` docstring, next to the code that decides
 it; the paragraph below is the exception.
 
 **On the kernel the algorithm is decided once.** A class on the contract kernel
-([003](003-backend-adapter-contract.md#contract-kernel)) answers a recursive
+([053](053-contract-kernel.md#contract-kernel)) answers a recursive
 `list_files` from one `delimiter=None` listing and filters its result by
 `max_depth`, only when `recursive=True`; the driver receives no depth and may
 read below it. Both Memory classes take this route.

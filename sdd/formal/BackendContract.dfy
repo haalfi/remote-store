@@ -360,7 +360,7 @@ ghost predicate Canonical(p: Path)
 
 // BE-031: every key `fs` holds under `path` is one BE-030 lists.  When it
 // fails, a recursive walk on the kernel leaves the omitted key behind and
-// answers DirectoryNotEmpty (spec 003 BE-031, "A recursive delete may answer
+// answers DirectoryNotEmpty (spec 053 BE-031, "A recursive delete may answer
 // DirectoryNotEmpty"), so DeleteFolder's recursive-success and emptiness
 // clauses hold under this guard only.  IsChildOf is the model's descendant
 // relation: any depth below `path`, not only direct children.

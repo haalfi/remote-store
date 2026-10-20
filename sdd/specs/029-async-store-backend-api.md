@@ -16,7 +16,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-001: Abstract Base Class
 
 **Invariant:** `AsyncBackend` is an ABC. Subclasses must implement all abstract methods.
-**On the kernel:** `AsyncDriverBackend` is a complete `AsyncBackend` over an `AsyncDriver` of async wire primitives, the async route of the contract kernel ([003 § Contract kernel](003-backend-adapter-contract.md#contract-kernel)); both are public in `remote_store.drivers`. A subclass builds its driver and need implement no abstract method itself. `AsyncMemoryBackend` is the first class on it.
+**On the kernel:** `AsyncDriverBackend` is a complete `AsyncBackend` over an `AsyncDriver` of async wire primitives, the async route of the contract kernel ([053 § Contract kernel](053-contract-kernel.md#contract-kernel)); both are public in `remote_store.drivers`. A subclass builds its driver and need implement no abstract method itself. `AsyncMemoryBackend` is the first class on it.
 **See also:** [BE-001](003-backend-adapter-contract.md).
 
 ### ASYNC-002: Name Property
@@ -43,7 +43,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 **Invariant:** `async def read(path) -> AsyncIterator[bytes]`. Returns an async iterator of byte chunks for the file content.
 **Raises:** `NotFound` if the file does not exist.
-**When a refusal surfaces:** [BE-033](003-backend-adapter-contract.md#be-033-interaction-protocol-on-the-kernel)'s **Refusal timing**.
+**When a refusal surfaces:** [BE-033](052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)'s **Refusal timing**.
 **See also:** [BE-006](003-backend-adapter-contract.md), ASYNC-020.
 
 ### ASYNC-007: read_bytes()
@@ -141,7 +141,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-022: aclose()
 
 **Invariant:** `async def aclose()` is optional (default no-op). Called for resource cleanup. Named `aclose` per Python convention (async generators, `asyncio.StreamWriter`).
-**See also:** [BE-020](003-backend-adapter-contract.md).
+**See also:** [BE-020](052-backend-lifetime.md).
 
 ### ASYNC-023: Async Context Manager
 
@@ -613,7 +613,7 @@ is reaped by process exit.  Passing `timeout=None` waits indefinitely.
 `__exit__` delegates to `close()`.
 **See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
 § Lifecycle; for a wrapped class on the kernel, the states its `aclose()`
-moves through are [BE-033](003-backend-adapter-contract.md#be-033-interaction-protocol-on-the-kernel)'s.
+moves through are [BE-033](052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)'s.
 
 ### ASYNC-089: Concurrent-callers No-deadlock Invariant
 
@@ -732,7 +732,7 @@ async→sync *manufactures* thread-safety by funnelling through one loop. Encodi
 the asymmetry stops callers from assuming `SyncBackendAdapter` confers the
 protection `AsyncBackendSyncAdapter` does.
 
-**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
+**See also:** [052-backend-lifetime.md](052-backend-lifetime.md)
 (BE-028), ASYNC-055 (one-loop rule), ASYNC-089 (serialisation invariant),
 [009-sftp-backend.md](009-sftp-backend.md) (SFTP-029),
 [../adrs/0025-async-to-sync-backend-adapter.md](../adrs/0025-async-to-sync-backend-adapter.md).

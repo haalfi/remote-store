@@ -8,7 +8,7 @@ All errors raised by `remote_store` inherit from a single base class `RemoteStor
 
 **Invariant:** `RemoteStoreError` is the root of the error hierarchy.
 **Postconditions:** Carries optional `path: str | None` and `backend: str | None` attributes.
-**On the kernel:** for a class on the contract kernel ([003](003-backend-adapter-contract.md#contract-kernel)), an error passing the kernel's choke point gets `path` set to the operation's key and `backend` set to the driver's `name`, each where the error left it unset, so a driver need not set either. An error the caller's own content raised passes the choke point untouched (ASYNC-091).
+**On the kernel:** for a class on the contract kernel ([053](053-contract-kernel.md#contract-kernel)), an error passing the kernel's choke point gets `path` set to the operation's key and `backend` set to the driver's `name`, each where the error left it unset, so a driver need not set either. An error the caller's own content raised passes the choke point untouched (ASYNC-091).
 **Example:**
 ```python
 try:

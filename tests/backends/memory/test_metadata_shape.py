@@ -1,4 +1,4 @@
-"""Metadata that is not a mapping, on both Memory classes called directly (spec 013 MEM-020, 003 BE-030).
+"""Metadata that is not a mapping, on both Memory classes called directly (spec 013 MEM-020, 053 BE-030).
 
 ``Store`` refuses it before the backend is reached, so each test calls the
 backend itself: the kernel refuses it with ``ValueError`` before the tree sees
