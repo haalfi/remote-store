@@ -50,7 +50,7 @@ call-level rule.
 | Key, name, ε | Spec 051's (TREE-007, TREE-009); ε is the Key of the root. |
 | Admits | A backend admits a Key when an operation on an input *s* with that K(s) is not refused for the Key's sake. |
 | Bytes | A string's length in bytes is that of its UTF-8 encoding. |
-| Portable name | A name of at most 255 bytes whose code points are ASCII letters, digits, `.`, `_` and `-`, whose first is a letter or digit, whose last is not `.`, and which is not a reserved name. |
+| Portable name | A name of at most 255 bytes whose code points are ASCII letters, digits, `.`, `_` and `-`, whose first is a letter or digit, whose last is not `.`, and which is not a reserved name. It holds no space and does not end in `.`, the two endings a namespace that strips them would alias onto another Key (KEY-009). |
 | Reserved name | `CON`, `PRN`, `AUX`, `NUL`, `COM0` to `COM9` or `LPT0` to `LPT9`, compared ASCII case-insensitively, alone or followed by `.` and more. |
 | Profile | A named licence to refuse a Key ([`SPEC-DESIGN.md` Rule 5](../SPEC-DESIGN.md#profiles-and-assumptions)). A backend declares a profile, and a limit where the profile takes one, in its own spec under `sdd/specs/`. |
 
