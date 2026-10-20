@@ -171,6 +171,12 @@ Not normative.
 - Every portable name is canonical, so a Key in the floor is its own K.
   KEY-007 holds per Key; whether two floor Keys differing only in case are two
   entities on a backend is spec 051 § Name equality.
+- A profile is declared in the backend's spec rather than by the capability
+  or driver flag [`SPEC-DESIGN.md` Rule 5](../SPEC-DESIGN.md#profiles-and-assumptions)
+  names, by the maintainer's decision: the licence and its limit sit beside
+  the backend's other clauses, and a conformance cell takes them as a
+  per-backend parameter. A runtime declaration would replace it, not add to
+  it.
 - The reserved names are the device names of Microsoft's "Naming Files,
   Paths, and Namespaces"; the `name-chars` and `reserved-names` profiles cover
   what that page forbids beyond the floor.
