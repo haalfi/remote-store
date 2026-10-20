@@ -352,7 +352,7 @@ no clause of the contract ships unexercised.
   Detail: [dossier](backlog/bk-450-driver-boundary-enforcement.md)
 
 - [ ] **BK-455 — The `Session` has obligations but no state set, and its close/run race no model**
-  spec: BE-033, BE-028 · effort: M · audience: library.maintainer
+  spec: BE-028, BE-034 · effort: M · audience: library.maintainer
   The `Session`'s exits BK-449 wrote (`invalidate` closes the client at once, a cancel never
   invalidates, `unwrap` goes through `run`, a `close` racing in-flight calls) left spec 052
   for the dossier: no `Session` exists, so none has states or a cell. Due at RFC-0017 D3
@@ -362,7 +362,7 @@ no clause of the contract ships unexercised.
 
 - [ ] **BK-470 — The sync adapter declares a reusable close but refuses every call after one**
   spec: BE-020, ASYNC-083 · effort: S · audience: user.api, library.maintainer
-  `AsyncBackendSyncAdapter` inherits `close_is_terminal = False` (`_backend.py:53`) yet raises
+  `AsyncBackendSyncAdapter` inherits `close_is_terminal = False` (`_backend.py:60`) yet raises
   `RuntimeError` after `close()` (`_async_to_sync_adapter.py:129-130`, ASYNC-083), so a caller
   reading the flag is misled. BE-020 now excludes the adapter (ADR-0049). Found by audit 024
   § 3. Open decision: declare it terminal (and with which error), or a third posture.
@@ -376,7 +376,7 @@ no clause of the contract ships unexercised.
   URL), and whether BK-450's declaration record carries it for drivers.
 
 - [ ] **BK-454 — A refusal surfaces at the call in one layer and at the first iteration in another**
-  spec: BE-033, ASYNC-006 · effort: M · audience: user.api
+  spec: ASYNC-006 · effort: M · audience: user.api
   The rule its dossier holds puts pure refusals at the call and a stream's I/O refusal at open, through a
   read handle (`with`/`async with store.read(...)`); the timing measured in the dossier has four
   layers that meet it in no column alike. Moving sync listing refusals to the call changes

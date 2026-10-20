@@ -25,13 +25,13 @@ separate PRs under this ID.
   row, and the canonical omission on listings.
 - **One stream adapter and one fault rule** for `read`, `read_bytes` and the
   ranged read: one caught set, a close failure never masking a read failure,
-  `__aiter__` inside the guard. Carries T4 and T5. BE-033 states the close
+  `__aiter__` inside the guard. Carries T4 and T5. Spec 052 BE-035 states the close
   failure's rule (logged, never raised, fed to `connection_dead`), and this
   part builds it; BK-449 already gave the async `read` and both runtimes'
   `read_bytes` SIO-010's skip. **Constraint** (from a review the maintainer
   brought to PR #1159, filed here by their choice, decision log
   `sdd/decisions/062e5181-cc50-5b17-963f-e9da78bad8ee.jsonl`): the rule must not
-  swallow an integrity failure. BE-033 puts length and checksum checks at the
+  swallow an integrity failure. Spec 052 BE-038 puts length and checksum checks at the
   client's own end-of-data read, where they raise before any close; an SDK that
   verifies a checksum or trailer only at close would have that failure logged as
   teardown noise. The adapter tells the two apart (a typed disposition: clean
@@ -45,14 +45,16 @@ separate PRs under this ID.
   and `commit` overwrite duty (T16), `src != dst` as a kernel guarantee, the
   native-aggregate omission (T13; Memory's `folder_stats` counts every node),
   `container_absent` for untyped errors only. BK-449 added a row: an overwrite
-  conflict, refused in one wire step at `commit` or `put` (BE-033's exit
-  owners), is typed `AlreadyExists`, which nothing checks. BE-033's other driver
-  rows (idempotent `close`, `abort` after a failed `commit`, end of data at the
-  client's own end-of-data read, transport-level `connection_dead`) are stated
-  on the protocol docstrings and unchecked too. One more, unstated anywhere: a
+  conflict, refused in one wire step at `commit` or `put` (now in spec 053 A.8's driver
+  list), is typed `AlreadyExists`, which nothing checks. The other driver
+  duties (idempotent `close`, BE-034; `abort` after a failed `commit`, BE-039;
+  end of data at the client's own end-of-data read, BE-038; transport-level
+  `connection_dead`, 052's Terms) are stated on the protocol docstrings; since
+  BK-456's 052 prune, Memory's drivers have cells for BE-038 and BE-039
+  (`tests/backends/memory/test_driver_duties.py`), and no other driver does. One more, unstated anywhere: a
   `put` that returns success has consumed all of the caller's async content.
   A driver that returns early has truncated the write; the kernel closes the
-  iterator it left suspended (BE-033's exit-owner row) and reports success.
+  iterator it left suspended (spec 052 BE-033's exit table) and reports success.
   Found by PR #1159's closing measuring pass.
 - **One meaning per capability flag, checked in each runtime** (P5, T6):
   `LAZY_READ` as per-chunk pull, `SEEKABLE_READ` withheld by async backends,
@@ -62,8 +64,8 @@ separate PRs under this ID.
   prose half (BE-027) and the error-path row.
 
 Each part's owner (kernel check, driver obligation or `Session` obligation) is
-audit-023 P1's table; re-derive it against BK-449's outcome, spec 052 BE-033's
-exit-owner table, before acting.
+audit-023 P1's table; re-derive it against BK-449's outcome, spec 052 BE-033 to
+BE-039 and spec 053 A.8's driver list, before acting.
 
 **Due:** before RFC-0017 D3 step 2, after BK-449. The P6 part changes no driver
 code and may trail to step 8.

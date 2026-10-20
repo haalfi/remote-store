@@ -1,7 +1,7 @@
-"""BE-033's interaction protocol on the kernel: one cell per transition, both runtimes.
+"""Spec 052's kernel clauses (BE-020, BE-033 to BE-037): one cell per state change, both runtimes.
 
 The backend's close posture, the read stream's close, the write handle's exits
-and the caller's content, each from the state BE-033's tables name, over the
+and the caller's content, each from the state spec 052's tables name, over the
 fake driver. Each cell asserts the next state through what the fake records:
 the calls that reached the wire, the handle's state, whether the caller's
 iterator or stream was closed.
@@ -213,7 +213,7 @@ def _paged() -> FakeStore:
     return FakeStore(page_size=2).add("d/a", "d/b", "d/c", "d/e")
 
 
-@pytest.mark.spec("BE-033", "BE-014")
+@pytest.mark.spec("BE-014")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_listing_pages_to_done(runtime: str) -> None:
     store = _paged()
@@ -236,7 +236,7 @@ def test_a_listing_on_a_terminally_closed_backend_fails_at_its_first_page(runtim
     assert store.calls == []
 
 
-@pytest.mark.spec("BE-033", "BE-032")
+@pytest.mark.spec("BE-032")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_refusal_while_paging_fails_the_listing_after_its_first_page(runtime: str) -> None:
     # A.9: after the first page a refusal propagates; what was yielded stays yielded.

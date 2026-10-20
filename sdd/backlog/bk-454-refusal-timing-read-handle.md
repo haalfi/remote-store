@@ -50,6 +50,11 @@ BE-033:
 > when the stream opens, through a handle (`with`/`async with store.read(...)`);
 > a listing's I/O stays lazy, at its first page.
 
+BE-033, its states table: the listing row, which no clause of spec 052 states
+anything about, and which this item's lazy-listing rule needs:
+
+> | listing | Not started, Paging, Done, Failed | the first `next`, the last page, a refusal |
+
 ASYNC-006:
 
 > **When a refusal surfaces:** [BE-033](../specs/052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)'s **Refusal timing**.

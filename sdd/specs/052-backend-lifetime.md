@@ -35,9 +35,12 @@ owns it:
 - **Live operation**: every member of a backend except the addressing members
   (`native_path`, `to_key`, `resolve`), `name`, `capabilities`, `close` and
   `unwrap`.
-- **Capability gate**: the refusal with `CapabilityNotSupported` of a call that
-  needs a capability the class does not declare, by the declaration alone
-  (BE-011, BE-024; on the kernel, BE-030's **Gates around the pipeline**).
+- **Capability gate**: the refusal with `CapabilityNotSupported` of a whole
+  call whose capability the class does not declare, by the declaration alone:
+  `ATOMIC_WRITE` (BE-011), `GLOB` (BE-024), and on the kernel `MOVE` and `COPY`
+  (BE-030's **Gates around the pipeline**). WR-010's refusal of `metadata` for
+  want of `USER_METADATA` depends on an argument, is not one, and ranks after
+  the closed guard (BE-008, BE-030).
 - **Closed guard**: after a terminal close, the refusal with
   `BackendUnavailable` of every live operation and, on a class on the kernel,
   of `unwrap` too (BE-020).
@@ -111,7 +114,8 @@ no order. Whether one operation is atomic is its capability's (`ATOMIC_MOVE`,
 **Invariant:** on every exit, a class on the kernel leaves no write handle
 open, every read stream it opened closed or, when the failure condemned the
 connection, released without a close, and no caller's async content iterator
-it took suspended, when that iterator has `aclose`.
+it took suspended, when that iterator has `aclose`. The one stream an exit
+leaves open is the one a sync `read` returns: its exit is the caller's close.
 
 The states it ranges over:
 
@@ -119,7 +123,6 @@ The states it ranges over:
 |---|---|---|
 | read stream | Open, Exhausted, Failed, Closed, Released | reading to the end, a mapped stream error, `close`/`aclose`; a Failed stream whose error `connection_dead` condemns is Released, let go without a close (the model's `SReleased`) |
 | write handle (`open_write`) | Open, Committed, Aborted | `commit`; `abort` on any exception |
-| listing | Not started, Paging, Done, Failed | the first `next`, the last page, a refusal |
 | caller's async content iterator | Unstarted, Suspended, Exhausted, Closed | each chunk the kernel takes; its end; the kernel's `aclose` |
 
 A sync caller's content is a stream, not an iterator, and has no row: it stays

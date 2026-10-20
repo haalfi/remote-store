@@ -34,10 +34,13 @@ HTTP-CONC-001), while no attribute in `src/` declares it.
 ## Decision
 
 - **Close is a declared posture, `close_is_terminal`.** A terminal close turns a use-after-close (a likely bug) into a clear typed error instead of a silent resource reopen, while leaving stateless/cheap backends freely reusable. *Reverse when* a reusable backend is shown to leak or reopen something a caller can observe.
-- **An undeclared capability outranks the closed guard on every backend**, as
-  on the kernel: capability data is not a live operation, so a closed backend
-  still answers what it cannot do. *Reverse when* a backend needs a live call
-  to know its capabilities.
+- **A gate on an undeclared capability outranks the closed guard on every
+  backend**, as on the kernel, for a call the capability names as a whole
+  (`GLOB`, `ATOMIC_WRITE`, on the kernel `MOVE` and `COPY`): capability data is
+  not a live operation, so a closed backend still answers what it cannot do.
+  WR-010's metadata refusal depends on an argument and keeps BE-008's rank,
+  after the closed guard. *Reverse when* a backend needs a live call to know
+  its capabilities.
 - **The sync adapter is outside BE-020's postures.** Its close is ASYNC-083's
   one-shot `RuntimeError`; the inherited `close_is_terminal = False`
   misdeclares it, a defect filed apart rather than a reason to bend BE-020.

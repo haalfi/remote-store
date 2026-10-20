@@ -1,13 +1,13 @@
-// KernelProtocol.dfy. The interaction protocol on the kernel  (BE-033, BK-449).
+// KernelProtocol.dfy. The interaction protocol on the kernel  (spec 052 BE-020, BE-033, BE-034; BK-449).
 //
-// The parties' states as spec 052 BE-033 tables them, for the session-less
-// kernel classes (`DriverBackend`, `AsyncDriverBackend`); the `Session` row is
-// fixed at RFC-0017 D3 step 2 and is not modelled. `ResourceSafety.dfy` §1 and
+// The parties' states as spec 052 BE-020 and BE-033 table them, for the
+// session-less kernel classes (`DriverBackend`, `AsyncDriverBackend`); a
+// `Session` is not modelled. `ResourceSafety.dfy` §1 and
 // §3 model the classes before the kernel. Nothing includes this file, so it
 // adds nothing to MemoryBackend.dfy's oracle; it compiles to an oracle of its
 // own, `sdd/formal/KernelProtocol-py/`, which
 // `tests/_kernel/test_protocol_oracle.py` drives against the kernel over the
-// exits its case builders enumerate (spec 052 BE-033; sdd/formal/README.md § Compiled oracle). Hypothesis
+// exits its case builders enumerate (sdd/formal/README.md § Compiled oracle). Hypothesis
 // twin: `tests/_kernel/test_protocol_stateful.py`.
 //
 // One named module, so the compiled Python is `KernelProtocol.py`. Dafny still
@@ -20,7 +20,7 @@
 // covers, a live operation past its capability gates or `unwrap`; the
 // addressing members are never refused and are not modelled. `KernelExit` maps
 // every exit the kernel observes onto the resources' states after its cleanup,
-// and the lemmas are BE-033's invariants:
+// and the lemmas are spec 052's invariants (I1 BE-020, I2 BE-034, I3 BE-033):
 //   I1  TerminalCloseAbsorbs:   after a terminal close every LiveCall is
 //                               Unavailable and the state stays Closed;
 //   I2  CloseIsForwardedAndIdempotent: close twice is close once in state, and
@@ -133,7 +133,7 @@ datatype KernelResources = KernelResources(stream: KernelStreamState, handle: Wr
 // A success may meet a suspended iterator: a driver whose `put` returns before
 // draining it, which the kernel closes as on any other exit.
 // The bound on this predicate is edge-level: `tests/scripts/test_gen_protocol_diagram.py`
-// holds every edge BE-033's diagram draws from it equal to an edge the oracle
+// holds every edge spec 052's diagram draws from it equal to an edge the oracle
 // suite drives the kernel through, so a drawn edge no exit takes fails a test. A
 // state admitted here that no exit meets, whose edges other states draw too, is
 // not caught there; the lemmas below hold over all of it.
