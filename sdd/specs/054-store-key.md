@@ -21,39 +21,27 @@ operation's own clause (spec 001, spec 003).
 
 ## Terms
 
-- **Input**: a `str` passed as a key argument to a `Store` or `AsyncStore`
-  operation. Its characters are code points, so it may hold a **surrogate**,
-  a code point in U+D800 to U+DFFF; every other code point is a **scalar
-  value**.
-- **Examples** quote inputs literally, except that `\0` stands for U+0000 and
-  `\ud800` or `\udc00` for that surrogate; every other `\` is a backslash.
-- **Separator**: `/` or `\`. A **segment** of an input is a maximal run of
-  code points holding no separator; an input with *n* separators has *n* + 1
-  segments, some possibly empty.
-- **Key**, **name**, ε: spec 051's (TREE-007, TREE-009); ε is the Key of the
-  root.
-- **K(s)**: the store key of input *s*, a Key or **refused**.
-- **Refused**: the operation given the input raises `InvalidPath`
-  ([ERR-005](005-error-model.md#err-005-invalidpath)) carrying the input, and
-  the store is unchanged.
-- **Folder-shaped** operation: `exists`, `is_file`, `is_folder`,
-  `iter_children`, `list_files`, `list_folders`, `get_folder_info`,
-  `native_path` and `resolve`. **File-shaped**: `read`, `read_bytes`,
-  `read_text`, `read_seekable`, `write`, `write_text`, `write_atomic`,
-  `open_atomic`, `delete`, `get_file_info`, `head`, and both keys of `move`
-  and `copy`. Each list holds the `AsyncStore` method of the same name where
-  one exists ([STORE-002](001-store-api.md#store-002-path-validation) names
-  the call-level rule).
-- **Bytes**: a string's length in bytes is that of its UTF-8 encoding.
-- **Portable name**: a name of at most 255 bytes whose code points are ASCII
-  letters, digits, `.`, `_` and `-`, whose first is a letter or digit, whose
-  last is not `.`, and which is not a **reserved name**: `CON`, `PRN`, `AUX`,
-  `NUL`, `COM0` to `COM9` or `LPT0` to `LPT9`, compared ASCII
-  case-insensitively, alone or followed by `.` and more.
-- **Profile**: a named licence to refuse a Key
-  ([`SPEC-DESIGN.md` Rule 5](../SPEC-DESIGN.md#profiles-and-assumptions)). A
-  backend **declares** a profile, and a limit where the profile takes one, in
-  its own spec under `sdd/specs/`.
+| Term | Meaning |
+| --- | --- |
+| Input | A `str` passed as a key argument to a `Store` or `AsyncStore` operation. Its characters are code points. |
+| Surrogate | A code point in U+D800 to U+DFFF; a Python `str` can hold one. |
+| Scalar value | Any code point that is not a surrogate. |
+| Examples | Quote inputs literally, except that `\0` stands for U+0000 and `\ud800` or `\udc00` for that surrogate; every other `\` is a backslash. |
+| Separator | `/` or `\`. |
+| Segment | A maximal run of code points holding no separator; an input with *n* separators has *n* + 1 segments, some possibly empty. |
+| Key, name, ε | Spec 051's (TREE-007, TREE-009); ε is the Key of the root. |
+| K(s) | The store key of input *s*: a Key, or refused. |
+| Refused | The operation given the input raises `InvalidPath` ([ERR-005](005-error-model.md#err-005-invalidpath)) carrying the input, and the store is unchanged. |
+| Folder-shaped | `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `get_folder_info`, `native_path`, `resolve`, and `delete_folder` except at the root (KEY-005). |
+| File-shaped | `read`, `read_bytes`, `read_text`, `read_seekable`, `write`, `write_text`, `write_atomic`, `open_atomic`, `delete`, `get_file_info`, `head`, and both keys of `move` and `copy`. |
+| Bytes | A string's length in bytes is that of its UTF-8 encoding. |
+| Portable name | A name of at most 255 bytes whose code points are ASCII letters, digits, `.`, `_` and `-`, whose first is a letter or digit, whose last is not `.`, and which is not a reserved name. |
+| Reserved name | `CON`, `PRN`, `AUX`, `NUL`, `COM0` to `COM9` or `LPT0` to `LPT9`, compared ASCII case-insensitively, alone or followed by `.` and more. |
+| Profile | A named licence to refuse a Key ([`SPEC-DESIGN.md` Rule 5](../SPEC-DESIGN.md#profiles-and-assumptions)). A backend declares a profile, and a limit where the profile takes one, in its own spec under `sdd/specs/`. |
+
+Both operation lists hold the `AsyncStore` method of the same name where one
+exists; [STORE-002](001-store-api.md#store-002-path-validation) names the
+call-level rule.
 
 ---
 
@@ -170,6 +158,13 @@ Not normative.
   is the root (KEY-005), `\` included; a store hands its backend only the
   canonical ε, prefixed by `root_path` (STORE-003). BE-029's set, which
   excludes `\`, binds a `Backend` called directly.
+- K applies no Unicode normalisation and no case folding: inputs that differ
+  only in normal form (NFC against NFD) or in case are distinct Keys. A
+  normalisation would make differently spelled names aliases of one entity;
+  how a backend whose own name equality is coarser answers is spec 051 §
+  Name equality.
+- A `..` segment is refused, never resolved against its parent: `a/../b` is
+  not `b`, so no input reaches a Key outside the one it spells.
 - Every portable name is canonical, so a Key in the floor is its own K.
   KEY-007 holds per Key; whether two floor Keys differing only in case are two
   entities on a backend is spec 051 § Name equality.
