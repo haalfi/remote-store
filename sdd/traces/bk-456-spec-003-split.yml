@@ -11,6 +11,11 @@ audience:
   - contributor.process
 decisions:
   - sdd/decisions/c7fc25a1-86c3-542e-a8f0-b02e630d3fd3.jsonl
+# The process gaps audit 024 found, which every stage-three prune depends on.
+discovery_followups:
+  - BK-465
+  - BK-466
+  - BK-467
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/backlog/bk-456-split-spec-003.md
@@ -158,7 +163,7 @@ phases:
           `python sdd/research/bk-456-split/check_move.py` (base pinned to
           4694e7a): IDs 40 before, 40 after, sets equal; 41 of 41 blocks (40
           sections and the Contract kernel intro) byte-identical after folding
-          link targets and the 3 "this spec" retargets; 65 links into the
+          link targets and the 3 "this spec" retargets; 66 links into the
           three files, 0 unresolved; 0 unanchored links to 003 naming a moved
           ID; PASS. Four mutations (a reworded word, a link to the wrong file,
           a bare in-file link to a moved anchor, a wrapped BE-028 link put back

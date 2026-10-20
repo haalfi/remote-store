@@ -383,6 +383,14 @@ no clause of the contract ships unexercised.
   clause, against RFC-0022 D5's path ("Dafny for single calls first"). Open decision: one
   `formal/README.md` heading per oracle or one for both; T14's key glue goes under item 2.
 
+- [ ] **BK-467 — Rule 4 cannot let the Dafny lifetime model or kernel-cell marks govern a clause**
+  spec: BE-030 -- BE-033 · effort: M · audience: library.maintainer, contributor.process
+  Rule 4's table gives a lifetime to TLA+ only, yet BE-033's model is Dafny
+  (`KernelProtocol.dfy`, compiled oracle), so BK-463's Rule 8 statement cannot make it govern.
+  `check_formal_trace.py` counts only `tests/backends/conformance/` marks, and none of the 88
+  test lines marking BE-030 to BE-032 is one (`rg -c`), so no `@spec BE-03x` tag can pass its F1.
+  Open decision: amend Rule 4's table, widen the trace check's mark source, or both.
+
 - [ ] **BK-461 — No TLA+ module is bridged to code, so none can gate or govern a lifetime**
   spec: — · effort: L · audience: infra.test, library.maintainer
   ADR-0048 gates a TLA+ module from the PR that bridges it; RFC-0022 D5's first
@@ -870,13 +878,29 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
+- [ ] **BK-465 — The spec template's Assumption IDs fail the spec-mark grammar, so no test can cite one**
+  spec: — · effort: S · audience: contributor.process
+  `templates/spec-template.md` gives `<PREFIX>-A01`; `check_spec_marks._SPEC_ID` fully matches
+  `BE-A-01` and neither `BE-A01` nor `KERN-A01` (run with `re.fullmatch`), so a template-form
+  row is never declared and a mark citing it goes unfound, against `SPEC-DESIGN.md` Rule 6.4.
+  One prefix spanning specs (BE- over 003, 052, 053) would also collide. Open decision: change
+  the template or the grammar, and the prefix per spec. Found by audit 024 § 2.
+
+- [ ] **BK-466 — `SPEC-DESIGN.md` Rule 1 relocates mechanism to a design note, which has no home**
+  spec: — · effort: S · audience: contributor.process
+  Rule 1 sends a sentence that mandates an algorithm to "an ADR, a design note or the task's
+  plan"; `rg -n -i 'design note'` over `AUTHORING.md`, `000-process.md` and `DOCUMENTATION.md`
+  finds nothing, and AUTHORING's placement table has no such type. Every BK-456 prune
+  relocates mechanism (audit 024 § 2). Open decision: a placement for design notes, or
+  Rule 1 drops the option and names ADRs and the custom-backend guide.
+
 - [~] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
-  Most of the spec sat in BE-021, BE-029, BE-032 and BE-033 (sizes: dossier); PR #1159's
-  rounds kept finding one section contradicting another. In stages: IDs, "yet" and status
-  blocks out (done; coverage sentences remain, dossier); a split by kind of truth as a pure
-  move (done: lifetime clauses to spec 052, the kernel's to spec 053, IDs unchanged); then a
-  prune per file against `SPEC-DESIGN.md`, 003, 052 and 053. Open decision: none.
+  PR #1159's rounds kept finding one section of spec 003 contradicting another. In stages:
+  IDs, "yet" and status blocks out (done; coverage sentences remain, dossier); a split by kind
+  as a pure move (done: lifetime clauses to spec 052, the kernel's to 053, IDs unchanged); a
+  prune per file against `SPEC-DESIGN.md`, after BK-465 and BK-466, planned by audit 024.
+  Open decision: the contradictions and profiles audit 024 § 2 and § 3 list, per file.
   Detail: [dossier](backlog/bk-456-split-spec-003.md)
 
 - [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**

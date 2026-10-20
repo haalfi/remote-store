@@ -89,7 +89,7 @@ each section's witness shape (`SPEC-DESIGN.md` Rule 2):
 | --- | --- | --- |
 | [003](../specs/003-backend-adapter-contract.md) | CAP-001 to CAP-007, BE-001 to BE-019, BE-021 to BE-027, BE-029 | single call, at the Backend interface |
 | [052](../specs/052-backend-lifetime.md) | BE-020, BE-028, BE-033 | lifetime |
-| [053](../specs/053-contract-kernel.md) | § Contract kernel, BE-030 to BE-032 | single call, at the kernel-to-driver interface |
+| [053](../specs/053-contract-kernel.md) | § Contract kernel, BE-030 to BE-032 | single call, at the Backend interface of a class on the kernel, with the driver duties at the kernel-to-driver interface |
 
 - The orient candidate called BE-021, BE-029 and BE-032's encoding function
   clauses. Most of their witnesses need a state and a call, so they are
@@ -97,12 +97,22 @@ each section's witness shape (`SPEC-DESIGN.md` Rule 2):
   mapping are function-shaped. Moving BE-021 and BE-029 to files of their own
   would cut inside one kind by subject, not by interface, so they stay in 003
   and shrink in the prune.
+- 003 also keeps sections of other kinds, for the prune to place: CAP-001 to
+  CAP-006 (structure and function), BE-001 to BE-003 (structure), BE-023 and
+  BE-025 (function, which spec 010's NPR sections also state) and BE-027
+  (tooling metadata, which no call can fail).
 - BE-028 goes with the lifetime clauses: a breach is an interleaving of calls
   on one instance. Only its reliance on native clients is environment.
 - The kernel file does not split further.
-- Three sentences that said "this spec" and meant 003 now link to it. That is
-  the one class of edit besides link targets.
+- Three sentences that said "this spec" and meant 003 now link to it; the
+  kernel intro's also drops "other", since no clause left in 003 is a kernel
+  clause. That is the one class of edit besides link targets.
   `sdd/research/bk-456-split/check_move.py` proves the rest byte-identical.
+
+**Stage three's plan** is
+[audit 024](../audits/audit-024-spec-003-052-053-design.md): what each file
+fails, what must survive, and the decisions to take first. Its process gaps are
+BK-465, BK-466 and BK-467; the rest stays under this item.
 
 ## Moved out of spec 003, 2026-10-19
 
