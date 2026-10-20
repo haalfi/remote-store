@@ -19,6 +19,7 @@ BASE = "6e4c4fd"
 D456 = "sdd/backlog/bk-456-split-spec-003.md"
 D454 = "sdd/backlog/bk-454-refusal-timing-read-handle.md"
 D455 = "sdd/backlog/bk-455-session-state-set.md"
+D450 = "sdd/backlog/bk-450-driver-boundary-enforcement.md"
 ADR = "sdd/adrs/0049-close-and-concurrency-postures.md"
 README = "sdd/formal/README.md"
 BACKEND = "src/remote_store/_backend.py"
@@ -438,13 +439,14 @@ LEDGER = [
         "call |",
         "reword",
         "BE-020",
-        "| a live operation | answered as before `close()` | `BackendUnavailable`, with no side effect |",
+        "| a live operation | not refused for being closed: answered by its own clause against what the store holds "
+        "after the close | `BackendUnavailable`, with no side effect |",
     ),
     (
         "| `unwrap` | the driver's handle, or BE-022's `CapabilityNotSupported` | as Open | `BackendUnavailable` |",
         "reword",
         "BE-020",
-        "| `unwrap` | answered as before `close()` | on a class on the kernel, `BackendUnavailable`; on any other "
+        "| `unwrap` | not refused for being closed | on a class on the kernel, `BackendUnavailable`; on any other "
         "class, not refused by this clause (BE-022) |",
     ),
     (
@@ -503,10 +505,9 @@ LEDGER = [
     (
         "| a read stream's close that fails after a successful read | the kernel's stream adapter | the close "
         "failure is logged, never raised, and fed to `connection_dead`; a read failure outranks a close failure |",
-        "reword",
-        "BE-035",
-        "| a read stream's close after a successful read | nothing is raised; the close failure is logged and fed "
-        "to `connection_dead`; a read failure outranks a close failure |",
+        "move",
+        D450,
+        None,
     ),
     (
         "| end of data | the driver | exhaustion is the client's own end-of-data read, after any length or checksum "

@@ -25,9 +25,9 @@ separate PRs under this ID.
   row, and the canonical omission on listings.
 - **One stream adapter and one fault rule** for `read`, `read_bytes` and the
   ranged read: one caught set, a close failure never masking a read failure,
-  `__aiter__` inside the guard. Carries T4 and T5. Spec 052 BE-035 states the close
-  failure's rule (logged, never raised, fed to `connection_dead`), and this
-  part builds it; BK-449 already gave the async `read` and both runtimes'
+  `__aiter__` inside the guard. Carries T4 and T5. The close failure's rule (logged, never raised, fed to
+  `connection_dead`) is below, moved out of spec 052 until this part builds
+  it; BK-449 already gave the async `read` and both runtimes'
   `read_bytes` SIO-010's skip. **Constraint** (from a review the maintainer
   brought to PR #1159, filed here by their choice, decision log
   `sdd/decisions/062e5181-cc50-5b17-963f-e9da78bad8ee.jsonl`): the rule must not
@@ -69,3 +69,18 @@ BE-039 and spec 053 A.8's driver list, before acting.
 
 **Due:** before RFC-0017 D3 step 2, after BK-449. The P6 part changes no driver
 code and may trail to step 8.
+
+## Moved out of spec 052, 2026-10-20
+
+Verbatim from `sdd/specs/052-backend-lifetime.md` at `6e4c4fd`, by BK-456's
+052 prune: no read path meets the row (measured at `fc8a644`: sync `read`
+suppresses a close failure silently, `_stream.py:243`; async `read` lets it
+propagate, `aio_backend.py:65-67`; `read_bytes` maps it through the choke and
+raises it, `_kernel/_async/kernel.py:734-737`), and no test marks it, so it is
+intent, which a spec does not carry ([`SPEC-DESIGN.md` Ready item 3](../SPEC-DESIGN.md#ready)).
+When this item builds the stream adapter, the rule goes back as a row of spec
+052 BE-035. A dated record, not kept current.
+
+BE-033, Exit owners:
+
+> | a read stream's close that fails after a successful read | the kernel's stream adapter | the close failure is logged, never raised, and fed to `connection_dead`; a read failure outranks a close failure |

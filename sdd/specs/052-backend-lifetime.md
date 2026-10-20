@@ -70,17 +70,17 @@ and a reusable one never refuses a call for being closed.
 
 | Call after `close()` | `close_is_terminal = False` | `close_is_terminal = True` |
 |---|---|---|
-| a live operation | answered as before `close()` | `BackendUnavailable`, with no side effect |
+| a live operation | not refused for being closed: answered by its own clause against what the store holds after the close | `BackendUnavailable`, with no side effect |
 | a call a capability gate refuses | `CapabilityNotSupported` | `CapabilityNotSupported` |
-| `unwrap` | answered as before `close()` | on a class on the kernel, `BackendUnavailable`; on any other class, not refused by this clause (BE-022) |
+| `unwrap` | not refused for being closed | on a class on the kernel, `BackendUnavailable`; on any other class, not refused by this clause (BE-022) |
 | `close`/`aclose` | accepted again | accepted again |
 | `name`, `capabilities`, the addressing members | answered | answered, never refused |
 
 - **Precedence.** A capability gate outranks the closed guard, since
   capability data is not a live operation, and the closed guard outranks every
   other answer of a live operation, the root's and a key's refusal included.
-- **When it binds.** A call that begins after `close()` begins is refused,
-  whether or not `close()` has returned.
+- **When it binds.** On a terminal backend, a call that begins after
+  `close()` begins is refused, whether or not `close()` has returned.
 - **Nothing leaves Closed.** Under `close_is_terminal = False` the backend
   takes calls again but stays Closed; its next call re-initialises what the
   close released.
@@ -151,7 +151,6 @@ never raised in place of the call's own result or error.
 
 | Cleanup that fails | What is raised and logged |
 |---|---|
-| a read stream's close after a successful read | nothing is raised; the close failure is logged and fed to `connection_dead`; a read failure outranks a close failure |
 | `abort` of a write handle | the write's own error is raised; the `abort` failure is logged on `remote_store._kernel` at `WARNING` with its `connection_dead` verdict |
 | the delete of a temp-and-rename temporary | the write's own error is raised; the failed delete is logged as a failed `abort` is, except one that maps to `NotFound` (BE-021, a `container_absent` answer included): no temporary was left, so there is nothing to clean up |
 | a caller's async content iterator's `aclose` | the write's own result or error; what `aclose` raised is logged |
