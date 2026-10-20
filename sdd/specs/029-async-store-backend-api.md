@@ -43,7 +43,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 **Invariant:** `async def read(path) -> AsyncIterator[bytes]`. Returns an async iterator of byte chunks for the file content.
 **Raises:** `NotFound` if the file does not exist.
-**When a refusal surfaces:** at the first `__anext__` on a class on the kernel, every refusal included; the rule that moves the pure ones to the call is [BE-033](003-backend-adapter-contract.md#be-033-interaction-protocol-on-the-kernel)'s **Refusal timing**.
+**When a refusal surfaces:** [BE-033](003-backend-adapter-contract.md#be-033-interaction-protocol-on-the-kernel)'s **Refusal timing**.
 **See also:** [BE-006](003-backend-adapter-contract.md), ASYNC-020.
 
 ### ASYNC-007: read_bytes()

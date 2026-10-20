@@ -77,6 +77,13 @@ sequences): lines 219 to 232, 289 to 293, 489 to 513, 670, 789 to 835, 1262 to
 - Open: the new spec numbers, and whether the kernel file splits further once
   it stands alone.
 
+**Left for the prune** (stage one removed IDs, "yet" and status blocks, not
+these): coverage-status sentences in spec 003, by
+`rg -n 'no conformance fixture|fixture arranges|no cell|close-failure row'`
+on the spec at PR #1168's review: BE-029's absent-container order (two), BE-029's
+write roster, and BE-033's **Conformance** exceptions and its `Session` and
+driver rows. Each carries reasoning, so removing it rewords a clause.
+
 ## Moved out of spec 003, 2026-10-19
 
 Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master

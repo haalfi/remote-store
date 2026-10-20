@@ -33,6 +33,9 @@ surprising_ripples:
   - sdd/backlog/bug-257-graph-walk-first-page-bound.md
   - sdd/backlog/bug-318-local-glob-folder-info-denied-subtree.md
   - sdd/backlog/id-245-derived-inventories.md
+  # Found by PR #1168's review: an open item's dossier pointing at the moved
+  # BE-029 table, which no edited file named.
+  - sdd/backlog/id-247-graph-root-path-cassettes.md
 orient:
   - items: [BK-456]
     verdict: constrains

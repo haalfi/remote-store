@@ -14,7 +14,8 @@ and generator governs), Rule 5 (gating or advisory, and why).
 - **Spec 003's cassette-reachability table.**
   [`003-backend-adapter-contract.md`](../specs/003-backend-adapter-contract.md)
   BE-029's coverage note tabulates, per backend, which root-path conformance
-  cells execute and which are pinned only in a per-backend home. Every figure
+  cells execute and which are pinned only in a per-backend home (Corrected 2026-10-20 (BK-456): the table left spec 003 and is under
+  § Moved out of spec 003 below*). Every figure
   was counted by hand, against a corpus that grows, and ID-241 has already
   rewritten it once for that reason. This is the direct instance of
   [principle 9](../../CLAUDE.md#principles) on a published spec. Fix shape: a

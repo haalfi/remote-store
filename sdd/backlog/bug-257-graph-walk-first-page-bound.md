@@ -41,6 +41,7 @@ the classes diverging from BE-021's absent-container clause. The ADR-0040 § 1
 pilot removed it, because the list it mirrored is authoritative where it lives:
 BE-021 § Known divergences in
 [`specs/003-backend-adapter-contract.md`](../specs/003-backend-adapter-contract.md).
+*Corrected 2026-10-20 (BK-456): that section left spec 003; this item's bullet is under § Moved out of spec 003 below.*
 
 ## Moved out of spec 003, 2026-10-19
 

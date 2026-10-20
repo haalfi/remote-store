@@ -292,7 +292,7 @@ failure it was.
   here, or leave it to RFC-0017 step 5's kernel key rule.
 
 - [ ] **BUG-292 — The file-ancestor gate fails open on every `SQLAlchemyError`, so it degrades to a no-op without a signal**
-  spec: BE-008, SQL-BLOB-031 · effort: M · audience: user.api, library.maintainer
+  spec: BE-008, BE-032, SQL-BLOB-031 · effort: M · audience: user.api, library.maintainer
   All five flat-namespace `_head_one` probes read any driver error (and
   `OSError`) as "no ancestor", so the file-ancestor gate vanishes silently;
   measured letting `move` succeed under a file ancestor. An anonymous in-memory
@@ -426,7 +426,7 @@ no clause of the contract ships unexercised.
   Detail: [dossier](backlog/bug-251-shared-cache-cross-store-bytes.md)
 
 - [ ] **BUG-260 — `SQLBlobBackend.list_files("./")` answers empty for a non-empty root**
-  spec: BE-029, SQL-BLOB-010 · effort: S · audience: user.api
+  spec: BE-008, BE-029, SQL-BLOB-010 · effort: S · audience: user.api
   On a root holding two files, `list_files("./", recursive=True)` returns
   nothing while `exists` and `is_folder` answer `True` and `""` and `"."` list
   both: `is_root` misses `"./"`, so the listing prefix becomes `'./%'`. Open
@@ -435,7 +435,7 @@ no clause of the contract ships unexercised.
   Detail: [dossier](backlog/bug-260-sqlblob-dot-slash-root-listing.md)
 
 - [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
-  spec: — · effort: M · audience: infra.test
+  spec: BE-029 · effort: M · audience: infra.test
   Conformance cells seed data through `backend.write`, so their classes are
   gated on `Capability.WRITE` and a read-only backend reaches none of them:
   `ReadOnlyHttpBackend` never runs SIO-009's laziness cells. Open decision:
@@ -543,7 +543,7 @@ no clause of the contract ships unexercised.
   (after BK-434). Open decision: none.
 
 - [ ] **BK-436 — No backend's observed tree is checked against spec 051**
-  spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
+  spec: TREE-001 -- TREE-012, BE-032 · effort: M · audience: library.maintainer
   Spec 051's sections are tested only against a reference model (`tests/test_store_tree.py`). A
   flat backend can hold an item with keys below it (on the kernel listings omit them, keyed probes
   still find them: BE-032 A.3), and a case-insensitive or normalizing one merges names spec 051
@@ -874,9 +874,9 @@ CHANGELOG the release body is built from — say what is actually true.
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
   Most of the spec sits in BE-021, BE-029, BE-032 and BE-033 (sizes: dossier); PR #1159's
   rounds kept finding one section contradicting another, and history sits inside its
-  normative sections. In stages: status out (done), a split by kind of truth as a
-  pure move (IDs keep their BE- prefix), then a prune per file against `SPEC-DESIGN.md`.
-  Open decision: the new spec numbers and each section's kind.
+  normative sections. In stages: IDs, "yet" and status blocks out (done; coverage sentences
+  remain, dossier), a split by kind of truth as a pure move (IDs keep their BE- prefix), then a
+  prune per file against `SPEC-DESIGN.md`. Open decision: the new spec numbers and each section's kind.
   Detail: [dossier](backlog/bk-456-split-spec-003.md)
 
 - [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**

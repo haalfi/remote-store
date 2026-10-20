@@ -896,9 +896,9 @@ prefixes.
 
 Backends whose listing API exposes no page boundary may satisfy this by marking
 each item the service returned *before* its own filters run; the residue is a
-truncated page carrying no items at all, which MUST then be stated as a
-divergence rather than left implied. That licence is for a class not on the
-kernel: a driver answers the kernel in `Page`s, so a migrated class has no
+truncated page carrying no items at all, which MUST then be stated in that
+backend's spec as a declared variation rather than left implied. That licence
+is for a class not on the kernel: a driver answers the kernel in `Page`s, so a migrated class has no
 unmarked page, and the kernel keeps the bound (BE-032's A.9).
 
 **The root is decided by BE-029, not here, and BE-029 wins.** This paragraph
@@ -1806,6 +1806,7 @@ gate, `InvalidPath` for a malformed key) surfaces at the call; a stream's I/O
 refusal (`NotFound`, `InvalidPath` for a file-versus-folder mismatch) surfaces
 when the stream opens, through a handle (`with`/`async with store.read(...)`);
 a listing's I/O stays lazy, at its first page.
+
 **Invariants**, each a lemma of `sdd/formal/KernelProtocol.dfy`:
 
 1. **I1, terminal absorption** (`TerminalCloseAbsorbs`): from Closed under

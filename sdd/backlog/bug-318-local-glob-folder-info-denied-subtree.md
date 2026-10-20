@@ -59,6 +59,7 @@ the recursive `list_files`, #1113 raises `PermissionDenied` for it. Python's own
 `rmdir` and `rmtree` did not produce the state on either filesystem.
 `test_a_subfolder_in_the_classic_delete_pending_state_raises` pins it; spec 003
 lists it under BE-021's Known divergences with this item.
+*Corrected 2026-10-20 (BK-456): that section left spec 003; the bullet is under § Moved out of spec 003 below.*
 
 ## Why it was not BUG-280
 

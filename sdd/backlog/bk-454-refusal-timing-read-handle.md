@@ -9,6 +9,7 @@ advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 recorded in `sdd/decisions/ad497154-50c4-54f3-9b47-d86d1878741d.jsonl` ("Where
 is the refusal-timing rule implemented?": "With the handle item (Rec.)"). That
 section's table is the measurement; this dossier does not copy it.
+*Corrected 2026-10-20 (BK-456): the table left spec 003 and is under § Moved out of spec 003 below.*
 
 **How the table was measured.** Each cell called the member and recorded
 whether the refusal raised at the call or at the first `next`/`__anext__`
