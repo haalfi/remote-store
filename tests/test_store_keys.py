@@ -1,7 +1,9 @@
 """Store keys — derived from sdd/specs/054-store-key.md.
 
 KEY-002 (surrogate refusal) and KEY-008 (backend refusal under a declared
-profile) carry no mark: the store breaks both today, which BK-469 tracks.
+profile) carry no mark: the store breaks both today, which BK-469 tracks. For
+the same reason KEY-003 and KEY-006 are asserted over inputs without a
+surrogate, and KEY-007 on Memory and Local only.
 """
 
 from __future__ import annotations
@@ -123,7 +125,7 @@ def _local_room_for_floor(root: Path) -> bool:
 @pytest.mark.spec("KEY-007", "KEY-A-01")
 @pytest.mark.parametrize("key", _FLOOR_KEYS)
 @pytest.mark.parametrize("backend_name", ["memory", "local"])
-def test_floor_key_is_stored_by_every_in_process_backend(key: str, backend_name: str, tmp_path: Path) -> None:
+def test_floor_key_is_stored_by_memory_and_local(key: str, backend_name: str, tmp_path: Path) -> None:
     assert len(key.encode()) <= 255
     if backend_name == "local":
         if not _local_room_for_floor(tmp_path):

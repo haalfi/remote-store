@@ -217,7 +217,7 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         # 054 clauses the store breaks today (000-process.md Rule 7, unenforced;
         # BK-469): no test asserts them yet, so a mark would sit on nothing.
         "KEY-002",  # 054 — surrogate refusal (Memory stores one, Local leaks UnicodeEncodeError)
-        "KEY-008",  # 054 — backend refusal only under a declared profile (no declaration exists)
+        "KEY-008",  # 054 — backend refusal only under a profile its spec declares (none declares one)
         "GR-011",  # 044 — item-id addressing deferred to a future RFC (reserved slot, no behavior)
         # Optional-dependency / packaging declarations (pyproject extras).
         "PA-023",  # 014 — pyarrow optional extra declaration

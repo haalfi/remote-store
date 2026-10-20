@@ -42,8 +42,10 @@ operation's own clause (spec 001, spec 003).
   last is not `.`, and which is not a **reserved name**: `CON`, `PRN`, `AUX`,
   `NUL`, `COM0` to `COM9` or `LPT0` to `LPT9`, compared ASCII
   case-insensitively, alone or followed by `.` and more.
-- **Profile**: a named licence to refuse a Key, which a backend declares
-  ([`SPEC-DESIGN.md` Rule 5](../SPEC-DESIGN.md#profiles-and-assumptions)).
+- **Profile**: a named licence to refuse a Key
+  ([`SPEC-DESIGN.md` Rule 5](../SPEC-DESIGN.md#profiles-and-assumptions)). A
+  backend **declares** a profile, and a limit where the profile takes one, in
+  its own spec under `sdd/specs/`.
 
 ---
 
@@ -122,8 +124,8 @@ is refused by no backend.
 ## KEY-008: Backend Refusal
 
 **Invariant:** A backend that does not store a Key in K's range answers as
-refused, and only where a profile it declares licenses it; one declaring no
-profile stores every such Key.
+refused, and only where a profile its spec declares licenses it; a backend
+whose spec declares no profile stores every such Key.
 
 | Profile | A Key it may refuse | Bound |
 | --- | --- | --- |

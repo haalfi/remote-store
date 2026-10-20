@@ -10,7 +10,8 @@ audience:
   - library.maintainer
 decisions:
   - sdd/decisions/f26dd04d-9f53-5e2c-8e68-0cddadfe681d.jsonl
-# The three clauses the code breaks today (spec 054 KEY-002, KEY-005, KEY-008).
+# The clauses the code breaks today (spec 054 KEY-002, KEY-005, KEY-008, and
+# KEY-003's and KEY-006's surrogate arms).
 discovery_followups:
   - BK-469
 expected_ripples:
@@ -173,10 +174,11 @@ phases:
         section: "(full)"
         read_type: verify
         extract: >-
-          Rule 7 per section: KEY-001, KEY-003, KEY-004, KEY-006, KEY-007 hold
-          today and carry new marks (KEY-006 asserted over inputs without
-          surrogates, KEY-007 on Memory and Local only, unenforced for the
-          other backends); KEY-005 marks the STORE-002 tests, which assert its
+          Rule 7 per section: KEY-001, KEY-004 and KEY-007 hold today and carry
+          new marks (KEY-007 on Memory and Local only, unenforced for the other
+          backends); KEY-003 and KEY-006 hold except their surrogate arms,
+          which KEY-002's breakage breaks, so their marks sit on tests over
+          inputs without a surrogate; KEY-005 marks the STORE-002 tests, which assert its
           file-shaped half for "", ".", "./", "/", "\\" and its folder-shaped
           half for "" only; KEY-002 and KEY-008 are broken, so allowlisted in
           check_spec_marks with BK-469 as owner
