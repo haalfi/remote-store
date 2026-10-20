@@ -3,8 +3,8 @@
 KEY-002 (surrogate refusal) and KEY-008 (backend refusal under a declared
 profile) carry no mark: the store breaks both today, which BK-469 tracks. For
 the same reason KEY-003 and KEY-006 are asserted over inputs without a
-surrogate, KEY-007 on Memory and Local only, and KEY-009 off Windows, whose
-Local backend breaks it (BK-469).
+surrogate, KEY-007 on Memory and Local only, and KEY-009 as a strict xfail on
+Windows Local, which breaks it (BK-469).
 """
 
 from __future__ import annotations
@@ -144,16 +144,20 @@ def test_floor_key_is_stored_by_memory_and_local(key: str, backend_name: str, tm
     assert [str(f.path) for f in store.list_files("", recursive=True)] == [key]
 
 
+@pytest.mark.os_sensitive
 @pytest.mark.spec("KEY-009")
 @pytest.mark.parametrize(
     ("key", "alias"), [("a/     ", "a"), ("a ", "a"), ("a.", "a"), ("d/x. ", "d/x"), ("a./b", "a/b")]
 )
 @pytest.mark.parametrize("backend_name", ["memory", "local"])
-def test_admitted_key_reaches_its_own_entity(key: str, alias: str, backend_name: str, tmp_path: Path) -> None:
+def test_admitted_key_reaches_its_own_entity(
+    key: str, alias: str, backend_name: str, tmp_path: Path, request: pytest.FixtureRequest
+) -> None:
     """A name with a trailing space or dot is its own entity, not its stripped spelling."""
     if backend_name == "local":
         if sys.platform == "win32":
-            pytest.skip("KEY-009 is broken on Windows Local, which strips a trailing space or dot (BK-469)")
+            # Measures the documented Win32 stripping on CI's Windows lane: an XPASS fails it.
+            request.applymarker(pytest.mark.xfail(strict=True, reason="Windows Local aliases the name (BK-469)"))
         store = Store(backend=LocalBackend(root=str(tmp_path)))
     else:
         store = _store()

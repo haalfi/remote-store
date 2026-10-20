@@ -186,8 +186,9 @@ phases:
           check_spec_marks with BK-469 as owner; KEY-009 (added at the
           maintainer's request after the Windows trailing-blank question) is
           asserted on Memory and Linux Local, where a five-space folder and
-          `a.` beside `a` were measured distinct, and skipped on Windows,
-          where Win32 path handling is documented to strip them (unmeasured)
+          `a.` beside `a` were measured distinct; on Windows Local it is a
+          strict xfail in the os_sensitive lane, so CI's windows-latest job
+          measures the documented Win32 stripping (an XPASS fails the job)
         outcome: ok
       - file: sdd/SPEC-DESIGN.md
         section: "Rule 5"
