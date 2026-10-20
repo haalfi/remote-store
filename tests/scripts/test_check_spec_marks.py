@@ -39,6 +39,7 @@ _mod = _load_module()
 extract_declared_specs = _mod.extract_declared_specs
 extract_test_specs = _mod.extract_test_specs
 extract_undeclared_id_headings = _mod.extract_undeclared_id_headings
+extract_assumption_ids = _mod.extract_assumption_ids
 is_allowlisted = _mod.is_allowlisted
 compute_violations = _mod.compute_violations
 main = _mod.main
@@ -94,6 +95,52 @@ class TestExtractDeclaredSpecs:
         (tmp_path / "001.md").write_text("### STORE-015: native_path()\n\n### STORE-015: glob()\n", encoding="utf-8")
         declared = extract_declared_specs(tmp_path)
         assert len(declared["STORE-015"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# Assumptions — declared and citable, excused from drift (BK-465)
+# ---------------------------------------------------------------------------
+
+_ASSUMPTIONS = "## Assumptions\n\n| ID | Assumption |\n| --- | --- |\n| KERN-A-01 | names compare exactly |\n"
+
+
+class TestExtractAssumptionIds:
+    def test_row_under_assumptions_is_declared_and_an_assumption(self, tmp_path: Path) -> None:
+        (tmp_path / "053.md").write_text(_ASSUMPTIONS, encoding="utf-8")
+        assert set(extract_declared_specs(tmp_path)) == {"KERN-A-01"}
+        assert extract_assumption_ids(tmp_path) == {"KERN-A-01"}
+
+    def test_unhyphenated_form_is_not_declared(self, tmp_path: Path) -> None:
+        # The form the template gave before BK-465: the grammar cannot parse it.
+        (tmp_path / "053.md").write_text(_ASSUMPTIONS.replace("KERN-A-01", "KERN-A01"), encoding="utf-8")
+        assert extract_declared_specs(tmp_path) == {}
+
+    def test_row_under_another_heading_is_a_section(self, tmp_path: Path) -> None:
+        (tmp_path / "053.md").write_text(_ASSUMPTIONS.replace("## Assumptions", "## Notes"), encoding="utf-8")
+        assert set(extract_declared_specs(tmp_path)) == {"KERN-A-01"}
+        assert extract_assumption_ids(tmp_path) == frozenset()
+
+    def test_scope_ends_at_the_next_level_two_heading(self, tmp_path: Path) -> None:
+        text = "## Assumptions\n\nNone.\n\n## Notes\n\n| ID | x |\n| --- | --- |\n| KERN-A-02 | y |\n"
+        (tmp_path / "053.md").write_text(text, encoding="utf-8")
+        assert extract_assumption_ids(tmp_path) == frozenset()
+
+    def test_scope_survives_a_level_three_heading(self, tmp_path: Path) -> None:
+        (tmp_path / "053.md").write_text(_ASSUMPTIONS.replace("\n\n|", "\n\n### Wires\n\n|", 1), encoding="utf-8")
+        assert extract_assumption_ids(tmp_path) == {"KERN-A-01"}
+
+    def test_section_shaped_id_under_assumptions_is_a_section(self, tmp_path: Path) -> None:
+        (tmp_path / "053.md").write_text(_ASSUMPTIONS.replace("KERN-A-01", "KERN-001"), encoding="utf-8")
+        assert extract_assumption_ids(tmp_path) == frozenset()
+
+    def test_heading_form_is_a_section(self, tmp_path: Path) -> None:
+        (tmp_path / "053.md").write_text("## Assumptions\n\n### KERN-A-01: names\n", encoding="utf-8")
+        assert extract_assumption_ids(tmp_path) == frozenset()
+
+    def test_id_also_declared_as_a_section_is_not_an_assumption(self, tmp_path: Path) -> None:
+        (tmp_path / "053.md").write_text(_ASSUMPTIONS, encoding="utf-8")
+        (tmp_path / "054.md").write_text("### KERN-A-01: a section\n", encoding="utf-8")
+        assert extract_assumption_ids(tmp_path) == frozenset()
 
 
 # ---------------------------------------------------------------------------
@@ -321,6 +368,30 @@ class TestComputeViolations:
         )
         assert violations == []
 
+    def test_unmarked_assumption_is_not_drift(self) -> None:
+        violations = compute_violations(
+            declared={"KERN-A-01": ["s:1"]},
+            marks={},
+            assumptions=frozenset({"KERN-A-01"}),
+        )
+        assert violations == []
+
+    def test_mark_citing_an_assumption_is_not_stale(self) -> None:
+        violations = compute_violations(
+            declared={"KERN-A-01": ["s:1"]},
+            marks={"KERN-A-01": ["t:1"]},
+            assumptions=frozenset({"KERN-A-01"}),
+        )
+        assert violations == []
+
+    def test_duplicate_assumption_still_fails(self) -> None:
+        violations = compute_violations(
+            declared={"BE-A-01": ["s:1", "s:2"]},
+            marks={},
+            assumptions=frozenset({"BE-A-01"}),
+        )
+        assert violations == [(KIND_DUPLICATE, "BE-A-01")]
+
     def test_colonless_heading_is_a_violation(self) -> None:
         violations = compute_violations(
             declared={},
@@ -354,6 +425,14 @@ class TestMain:
         dirs = _make_repo(
             tmp_path,
             specs="### BE-014: list_files()\n",
+            tests='import pytest\n\n\n@pytest.mark.spec("BE-014")\ndef t(): ...\n',
+        )
+        assert main(**dirs, baseline=frozenset(), allowlist=frozenset()) == 0
+
+    def test_unmarked_assumption_passes(self, tmp_path: Path) -> None:
+        dirs = _make_repo(
+            tmp_path,
+            specs="### BE-014: list_files()\n\n" + _ASSUMPTIONS,
             tests='import pytest\n\n\n@pytest.mark.spec("BE-014")\ndef t(): ...\n',
         )
         assert main(**dirs, baseline=frozenset(), allowlist=frozenset()) == 0

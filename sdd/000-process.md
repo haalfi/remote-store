@@ -35,6 +35,14 @@ the file:
 
 Each spec declares its prefix (e.g. `STORE`, `PATH`, `ERR`, `CACHE`). A test referencing `STORE-005` traces back to section 005 in the Store API spec.
 
+An assumption ([`SPEC-DESIGN.md` Rule 6](SPEC-DESIGN.md#skeleton)) is a row of
+the spec's Assumptions table under the ID `<PREFIX>-A-NN`, and its prefix is one
+no other spec's Assumptions use, so specs that share a section prefix still give
+each assumption one home. A test may cite it with a spec mark; Rule 2 asks a
+mark of sections only, since most assumptions state what no test of this
+library can fail. `scripts/check_spec_marks.py` declares such a row, fails a
+duplicate or a mark citing an undeclared one, and owes it no mark.
+
 Specs cover both library contracts and build/CI tooling contracts.
 Library specs use subsystem prefixes (`STORE`, `S3`, `ERR`, ...) and
 are tested against runtime code. Tooling specs use a tool/framework

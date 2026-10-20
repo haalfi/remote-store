@@ -114,6 +114,27 @@ each section's witness shape (`SPEC-DESIGN.md` Rule 2):
 fails, what must survive, and the decisions to take first. Its process gaps are
 BK-465, BK-466 and BK-467; the rest stays under this item.
 
+## Stage three: scope and order, 2026-10-20
+
+The maintainer's choices, decision log
+`sdd/decisions/dd1c9401-8614-5d9e-aa25-af591b8788f8.jsonl`, judged against the
+kernel migration (RFC-0017 D3 step 2: BK-450, BK-455, BK-454):
+
+1. BK-465 and BK-466 first, one PR. BK-467 is not needed for a prune: prose
+   governs a clause whether or not Rule 4 lets a model govern it.
+2. A dialog on 052's contradictions (audit 024 § 3) and the driver-duty
+   placement, then the 052 prune.
+3. A driver-interface spec, numbered 055 or higher, as a pure move: the
+   driver's single-call duties from 053 (BE-032 A.8's list, the construction
+   refusals, BE-031's primitives) and 003 BE-021's driver rows, so BK-450 has
+   one home. The driver's lifetime duties stay in 052, each its own section.
+   This revisits stage two's "the kernel file does not split further".
+4. 053 pruned without its key clauses, which wait for spec 054.
+5. 003 last, in the PRs audit 024 Appendix A proposes, BE-029 after spec 054.
+
+Assumption prefixes (BK-465's rule, one prefix per spec): `BE-A-` for 003,
+`LIFE-A-` for 052, `KERN-A-` for 053.
+
 ## Moved out of spec 003, 2026-10-19
 
 Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master

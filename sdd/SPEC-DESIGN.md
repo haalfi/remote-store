@@ -26,8 +26,14 @@ written.
     and for a lifetime its states and transitions. Every sentence passes two
     tests:
     - **Two implementations:** two different correct implementations can both
-      satisfy it. A sentence that fails mandates an algorithm; it moves to an
-      ADR, a design note or the task's plan, relocated rather than deleted.
+      satisfy it. A sentence that fails mandates an algorithm; it is relocated,
+      never deleted, to the home its content has. Why it was chosen over the
+      alternatives goes to an ADR; how the code does it, to a design note,
+      which is the docstring of the module or class that does it, so it
+      changes with the code; what an implementer does to meet the contract,
+      to the [custom-backend guide](../docs-src/guides/custom-backend-guide.md);
+      the cases a suite enumerates, to that test's docstring; work still to
+      do, to the task's plan.
     - **Can fail:** a black-box test, a model check or a proof could fail it. A
       sentence that fails is not a clause: state it as an assumption (Rule 5)
       or remove it.
@@ -128,7 +134,8 @@ written.
        gives the spec's kind.
     4. **Assumptions:** what the spec relies on and cannot check itself, one
        line each, as rows of a table whose first column is `ID`, so a test's
-       spec mark can cite it ([`000-process.md` Rule 2](000-process.md#spec-test-traceability)).
+       spec mark can cite it, under the ID form
+       [`000-process.md` § Spec format](000-process.md#spec-format) gives.
        An assumption several specs share has one owning environment spec, and
        the others link to it.
     5. **Notes:** not normative; derived properties and the proofs behind them.
