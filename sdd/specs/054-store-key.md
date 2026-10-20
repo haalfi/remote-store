@@ -13,8 +13,8 @@ are function clauses
 Scope: the key arguments of `Store` and `AsyncStore` operations. Out of scope:
 the tree a Key names and how names compare, which are spec 051's (§ Name
 equality governs a backend that compares names more coarsely); the
-`RemotePath` value object, spec 004's; `root_path`, STORE-001's; `glob`
-patterns, GLOB-007's; the keys a `Backend` takes when called directly,
+`RemotePath` value object, spec 004's; `root_path`, STORE-001's; `child`'s
+subpath, spec 015's; `glob` patterns, GLOB-007's; the keys a `Backend` takes when called directly,
 including its root spellings, BE-029's, and on the kernel BE-030's; and where
 an operation ranks a refusal among its other errors, which is that
 operation's own clause (spec 001, spec 003).
@@ -25,6 +25,8 @@ operation's own clause (spec 001, spec 003).
   operation. Its characters are code points, so it may hold a **surrogate**,
   a code point in U+D800 to U+DFFF; every other code point is a **scalar
   value**.
+- **Examples** quote inputs literally, except that `\0` stands for U+0000 and
+  `\ud800` or `\udc00` for that surrogate; every other `\` is a backslash.
 - **Separator**: `/` or `\`. A **segment** of an input is a maximal run of
   code points holding no separator; an input with *n* separators has *n* + 1
   segments, some possibly empty.

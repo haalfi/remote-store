@@ -14,7 +14,7 @@
 
 ### STORE-002: Path Validation
 
-**Invariant:** Path arguments map to keys as [spec 054](054-store-key.md) states. An input naming the root (`""`, `"."` and every other input spec 054 maps to the root, KEY-005) is accepted by folder/query methods (`exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_folder_info`) to mean "the store root." This ensures `str(RemotePath.ROOT)` round-trips through Store methods (see PATH-015). File-targeted methods (`read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `open_atomic`, `delete`, `get_file_info`, `head`, `move`, `copy`) raise `InvalidPath` on an input naming the root (the `open_atomic` case is captured normatively in SAW-007). `delete_folder` also rejects the root to prevent accidental root deletion. See ADR-0004.
+**Invariant:** Path arguments map to keys as [spec 054](054-store-key.md) states. An input naming the root (`""`, `"."` and every other input spec 054 maps to the root, KEY-005) is accepted by folder-shaped methods ([spec 054](054-store-key.md)'s Terms list both shapes) to mean "the store root." This ensures `str(RemotePath.ROOT)` round-trips through Store methods (see PATH-015). File-shaped methods raise `InvalidPath` on an input naming the root (the `open_atomic` case is captured normatively in SAW-007). `delete_folder` also rejects the root to prevent accidental root deletion. See ADR-0004.
 
 ### STORE-003: Root Path Scoping
 

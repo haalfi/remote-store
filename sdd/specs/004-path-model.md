@@ -2,7 +2,7 @@
 
 ## Overview
 
-`RemotePath` is an immutable value object holding one non-root Key of a store, with path manipulation utilities. `RemotePath(s)` holds [spec 054](054-store-key.md)'s store key K(s) of the input `s`, and raises `InvalidPath` where spec 054 refuses `s`; which inputs map to which Key, and in what precedence, is spec 054's (PATH-002 to PATH-007 are its sections). This spec states the value object.
+`RemotePath` is an immutable value object holding one Key of a store, with path manipulation utilities. `RemotePath(s)` holds [spec 054](054-store-key.md)'s store key K(s) of the input `s` where that is not the root, and raises `InvalidPath` where spec 054 refuses `s` or K(s) is the root (PATH-008); `RemotePath.ROOT` holds the root (PATH-015); which inputs map to which Key, and in what precedence, is spec 054's (PATH-002 to PATH-007 are its sections). This spec states the value object.
 
 ## PATH-001: Immutability
 

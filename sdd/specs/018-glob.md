@@ -114,7 +114,7 @@ as GLOB-004.
 **Invariant:** Store reads the pattern by [spec 054](054-store-key.md)'s PATH-003 to
 PATH-007, then prepends `root_path` before delegating to `Backend.glob()`. Leading `/`, empty
 and `.` segments are dropped (PATH-004 to PATH-006). Three departures from
-how spec 054 reads a key: a trailing `/` is kept, since in a pattern it selects folders only; a
+those sections and KEY-005: a trailing `/` is kept, since in a pattern it selects folders only; a
 `\` is kept as written rather than turned into `/` (PATH-002; open under
 BK-451); and a pattern that normalises to the root yields nothing, without
 reaching the backend, rather than naming the root folder (KEY-005). Returned `FileInfo.path`
