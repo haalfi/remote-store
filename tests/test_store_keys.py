@@ -145,7 +145,9 @@ def test_floor_key_is_stored_by_memory_and_local(key: str, backend_name: str, tm
 
 
 @pytest.mark.spec("KEY-009")
-@pytest.mark.parametrize(("key", "alias"), [("a/     ", "a"), ("a ", "a"), ("a.", "a"), ("d/x. ", "d/x")])
+@pytest.mark.parametrize(
+    ("key", "alias"), [("a/     ", "a"), ("a ", "a"), ("a.", "a"), ("d/x. ", "d/x"), ("a./b", "a/b")]
+)
 @pytest.mark.parametrize("backend_name", ["memory", "local"])
 def test_admitted_key_reaches_its_own_entity(key: str, alias: str, backend_name: str, tmp_path: Path) -> None:
     """A name with a trailing space or dot is its own entity, not its stripped spelling."""

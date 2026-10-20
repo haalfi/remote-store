@@ -9,7 +9,7 @@ under a profile its spec declares and never when it is in the portable floor.
 An operation acts on K(s) when both layers accept it, and refuses *s* otherwise.
 
 Part 1 states K, a rule on the parameter; Part 2 states which Keys a backend
-admits, and that an admitted Key reaches its own entity, rules on K's result. Both are function clauses
+admits, and that it addresses them one-to-one, rules on K's result. Both are function clauses
 ([`SPEC-DESIGN.md` Rule 2](../SPEC-DESIGN.md#kind-of-truth)): input to
 verdict.
 
@@ -147,7 +147,9 @@ folder-shaped operation, and is refused by a file-shaped operation and by
 
 **Invariant:** A backend admits every Key in K's range except where a profile
 its spec declares licenses a refusal, and a Key it does not admit is answered
-as refused; a backend whose spec declares no profile admits every such Key.
+as refused by every operation but `native_path` and `resolve`, which stay
+total (BE-025); a backend whose spec declares no profile admits every such
+Key.
 
 | Profile | A Key it may refuse | Bound |
 | --- | --- | --- |
@@ -158,9 +160,8 @@ as refused; a backend whose spec declares no profile admits every such Key.
 
 ### KEY-009: Faithful Admission
 
-**Invariant:** An operation on a Key a backend admits acts on that Key's own
-entity, never on another Key's, wherever the Key alone decides it; a backend
-whose namespace would address a Key as another Key does not admit it.
+**Invariant:** A backend addresses the Keys it admits one-to-one: two
+different Keys it admits never share an address in its namespace.
 
 ---
 
@@ -210,11 +211,12 @@ Not normative.
   the backend's other clauses, and a conformance cell takes them as a
   per-backend parameter. A runtime declaration would replace it, not add to
   it.
-- KEY-009 binds where the key alone decides the address, such as a
-  namespace that removes a trailing space or `.` from a Key's last name:
-  there `a ` and `a` reach one entity, and `a/     ` reaches its parent `a`,
-  whatever the store holds. Microsoft's "Naming Files, Paths, and Namespaces" states that
-  Windows path handling removes them; such a backend takes `name-chars`.
+- KEY-009 binds where the Key alone decides the address, whatever the store
+  holds. Microsoft's "File path formats on Windows systems" states that
+  Windows path handling removes a single trailing `.` from every name and
+  trailing spaces and dots from the last one: there `a.` and `a` share an
+  address at any depth (`a./b` and `a/b`), and `a/     ` shares its parent
+  `a`'s; such a backend takes `name-chars`.
   Aliasing that depends on what the store holds, such as two names differing
   only in case on a case-insensitive file system, is spec 051 § Name
   equality's. A POSIX file system keeps every name but `/` and U+0000 as

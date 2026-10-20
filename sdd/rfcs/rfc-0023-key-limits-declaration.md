@@ -2,8 +2,8 @@
 
 ## Status
 
-Draft, 2026-10-20. Tracked as **BK-468**, whose spec 054 it amends on
-acceptance; the implementation is BK-469's.
+Draft, 2026-10-20. Tracked as **BK-469**, which carries its acceptance and
+its implementation; it amends spec 054 (BK-468) on acceptance.
 
 ## Summary
 
@@ -20,10 +20,11 @@ which mechanism carries it.
 A Key one backend stores fails on another, and each backend fails its own way.
 Measured at `7491289` with `sdd/research/bk-468-key-probe/probe_write.py`:
 Memory stores a 300-character name; Local on Linux raises a raw `OSError`
-[Errno 36] after creating the parent folders. BUG-334 records Windows Local's
-raw `OSError` [Errno 22]; Win32 path handling drops a last name's trailing
-space or dot, so `a.` reaches `a` (spec 054 KEY-009's Note, documented, not
-measured here).
+[Errno 36]. Read from `src/remote_store/backends/_local.py`, not measured:
+Local creates a write's parent folders before it opens the file, so a nested
+key fails after leaving them behind. BUG-334 records Windows Local's raw
+`OSError` [Errno 22]; Windows path handling removes a trailing `.` from a name,
+so `a.` reaches `a` (spec 054 KEY-009's Note, documented, not measured here).
 
 Spec 054 first stated the licence to refuse as a profile declared in each
 backend's spec. Three review rounds on PR #1171 found the cost: nothing at
@@ -42,15 +43,22 @@ frozen value:
 
 | Field | The kernel refuses a Key | Bound |
 | --- | --- | --- |
-| `name_bytes: int \| None` | with a name longer than this many bytes | at least 255 |
-| `key_bytes: int \| None` | longer than this many bytes, as the driver receives it (`root_path` included) | KEY-A-01 |
+| `unit: "utf8" \| "utf16"` | — (the unit `name_max` and `key_max` count in) | — |
+| `name_max: int \| None` | with a name longer than this many units | at least 255 |
+| `key_max: int \| None` | longer than this many units, as the driver receives it (`root_path` included) | KEY-A-01 |
 | `forbidden: frozenset[str]` | with a name holding one of these code points | none of the portable name's code points |
-| `trailing: frozenset[str]` | with a name ending in one of these code points | none of the portable name's code points |
+| `trailing: frozenset[str]` | with a name ending in one of these code points | none of the code points a portable name may end with (`A-Z`, `a-z`, `0-9`, `_`, `-`) |
 | `reserved_names: bool` | with a reserved name (spec 054 Terms) | — |
 
-Local's driver on Windows, for instance, declares `forbidden` as `<>:"|?*` and
-U+0001 to U+001F (spec 054 has already folded `\`), `trailing` as space and `.`, and `reserved_names`; a name holding a
-space elsewhere, such as `my file.txt`, stays stored. Each bound keeps spec
+`unit` exists because a name limit is counted where the namespace counts it:
+NTFS allows 255 UTF-16 units, which no byte count matches (`"日"*200` is 600
+bytes and stored; `"𝄞"*130` is 520 bytes and refused). A portable name is
+ASCII, so 255 units is 255 bytes in either unit and the floor holds.
+
+Local's driver on Windows, for instance, declares `unit` as `"utf16"`,
+`forbidden` as `<>:"|?*` and U+0001 to U+001F (spec 054 has already folded
+`\`), `trailing` as space and `.`, and `reserved_names`; a name holding a space
+elsewhere, such as `my file.txt`, stays stored. Each bound keeps spec
 054's portable floor (KEY-007) inside every declaration.
 
 ### D2. A declared limit is an exact rule
@@ -60,22 +68,28 @@ other Key in spec 054's range. Spec 054's profiles become the declaration's
 fields: KEY-008's table maps one row per field, and its licence ("may refuse")
 becomes a rule ("refuses"), testable both ways. KEY-009 follows from it: a
 backend whose namespace drops a trailing space or `.` declares them in
-`trailing`.
+`trailing`. One part of `name-chars` has no field: refusing a name by its
+first code point. No backend measured or documented here refuses `.a` or
+`_a`, so it is dropped; the floor still excludes such names, for the tools
+that treat them specially, not for any backend.
 
 ### D3. The kernel enforces it
 
 On the kernel, the check runs on the canonical key, after BE-030's root check
 and before the driver; the root has no name and no limit applies to it.
 Addressing (`native_path`, `resolve`) runs no check, so it stays total
-(BE-025). A driver whose wire refuses a Key the declaration admits answers
-through BE-021's error mapping as today: the declaration narrows that path, it
-does not replace it.
+(BE-025), and spec 054 KEY-008 exempts it (D7). A `glob` pattern is not
+checked: it is no key, and Windows' `forbidden` holds its wildcards `*` and
+`?`; what it lists are stored keys. A driver whose wire refuses a Key its
+declaration admits breaks KEY-008: the declaration is incomplete. BE-021's
+error mapping still types that refusal, so the breach is a typed error and
+not a raw one, but it is a breach, not a licence.
 
 ### D4. A value is derived at construction
 
 A driver computes its declaration from its environment when it is built, never
 from a backend's name. Local reads its file system's name limit and, on
-Windows, derives `key_bytes` from the path limit in force less its root's
+Windows, derives `key_max` from the path limit in force less its root's
 length; S3, Azure and SQL declare their documented or schema limits. The
 declaration is fixed for the driver's lifetime.
 
@@ -106,8 +120,10 @@ profile with each outcome it allows") names no mechanism and is unchanged.
 ### D7. What changes on acceptance
 
 - Spec 054: KEY-008 states the declaration and the exact rule, its table one
-  row per field; the Terms' Profile and the Note recording the departure from
-  Rule 5 go.
+  row per field, and exempts `native_path` and `resolve`. Every other mention
+  of the profiles follows: the Overview's "a profile its spec declares", the
+  Terms' Profile, KEY-A-01's `key-bytes`, and the Notes naming `name-chars`,
+  `reserved-names` and the departure from Rule 5.
 - Spec 053: a new section, BE-040 (Key Limits on the Kernel), states D1 to D4.
   BE-030 is not reworded.
 - `SPEC-DESIGN.md` Rule 5, as D6.
@@ -153,8 +169,8 @@ profile with each outcome it allows") names no mechanism and is unchanged.
    key, or listed but unreachable?
 2. **Precedence against WR-010's metadata gate.** Proposed: the key check
    first, as a key refusal comes before what is written there.
-3. **Windows path limit.** How Local detects long-path support, and whether
-   `key_bytes` counts UTF-16 units there rather than bytes.
+3. **Windows path limit.** How Local detects long-path support for
+   `key_max`.
 4. **Callers.** Whether `Store` exposes the declaration, so a caller can check
    a key without a call.
 
@@ -162,4 +178,5 @@ profile with each outcome it allows") names no mechanism and is unchanged.
 
 - Spec 054 (KEY-007 to KEY-009), spec 053 BE-030, spec 003 BE-021 and BE-025.
 - `SPEC-DESIGN.md` Rule 5; ADR-0048; RFC-0017 D3; ADR-0042.
-- Microsoft, "Naming Files, Paths, and Namespaces".
+- Microsoft, "Naming Files, Paths, and Namespaces" and "File path formats on
+  Windows systems".

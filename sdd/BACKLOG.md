@@ -353,7 +353,7 @@ no clause of the contract ships unexercised.
   At `7491289`: `Store` takes `"\ud800"` (Memory stores it, Local leaks `UnicodeEncodeError`),
   against KEY-002, KEY-003 and KEY-006; refuses `"./"`, `"/"`, `"\\"` on folder-shaped calls
   (KEY-005, STORE-002); Local leaks `OSError` [Errno 36] for a 300-character name (KEY-008).
-  Windows Local strips a last name's trailing space or dot (KEY-009, unmeasured; BUG-334 is
+  Windows Local strips a name's trailing dot, and spaces at the end (KEY-009, unmeasured; BUG-334 is
   its sibling). Open decision: RFC-0023 (key limits as a driver declaration), then when they land.
 
 - [ ] **BK-450 — The driver boundary has no single enforcement point, so each kernel site re-checks a driver by hand**
