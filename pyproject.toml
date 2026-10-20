@@ -458,7 +458,7 @@ drift-docs-check = "python scripts/drift_check.py render-docs --check"
 # 0 when every raise is patch-eligible, 1 when one is breaking or undateable.
 gen-python-support = "python scripts/gen_python_support.py {args}"
 gen-python-support-check = "python scripts/gen_python_support.py --check"
-# `gen-protocol-diagram` draws spec 003 BE-033's state diagrams from the compiled
+# `gen-protocol-diagram` draws spec 052 BE-033's state diagrams from the compiled
 # KernelProtocol oracle. Offline and byte-stable; its `--check` is in `preflight`
 # and, for an `sdd/`-only rebuild of the oracle, in `docs-gate` (DOCS_PAT).
 gen-protocol-diagram = "python scripts/gen_protocol_diagram.py {args}"

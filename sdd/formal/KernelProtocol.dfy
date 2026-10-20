@@ -1,13 +1,13 @@
 // KernelProtocol.dfy. The interaction protocol on the kernel  (BE-033, BK-449).
 //
-// The parties' states as spec 003 BE-033 tables them, for the session-less
+// The parties' states as spec 052 BE-033 tables them, for the session-less
 // kernel classes (`DriverBackend`, `AsyncDriverBackend`); the `Session` row is
 // fixed at RFC-0017 D3 step 2 and is not modelled. `ResourceSafety.dfy` §1 and
 // §3 model the classes before the kernel. Nothing includes this file, so it
 // adds nothing to MemoryBackend.dfy's oracle; it compiles to an oracle of its
 // own, `sdd/formal/KernelProtocol-py/`, which
 // `tests/_kernel/test_protocol_oracle.py` drives against the kernel over the
-// exits its case builders enumerate (spec 003 BE-033; sdd/formal/README.md § Compiled oracle). Hypothesis
+// exits its case builders enumerate (spec 052 BE-033; sdd/formal/README.md § Compiled oracle). Hypothesis
 // twin: `tests/_kernel/test_protocol_stateful.py`.
 //
 // One named module, so the compiled Python is `KernelProtocol.py`. Dafny still

@@ -1,4 +1,4 @@
-"""Memory's own cells for the key rule and the protocol, on both classes (spec 003 BE-030, BE-025, BE-033).
+"""Memory's own cells for the key rule and the protocol, on both classes (spec 053 BE-030, 003 BE-025, 052 BE-033).
 
 The key-rule cells are the ones BK-389's decision 6 table marks as changing when
 Memory moves onto the contract kernel: the root spellings of

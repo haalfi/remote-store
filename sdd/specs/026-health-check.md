@@ -68,7 +68,7 @@ def check_health(self) -> None: ...
 - Must map native exceptions through the backend's error mapper.
 
 **On the kernel:** a class on the contract kernel
-([003](003-backend-adapter-contract.md#contract-kernel)) does not take the
+([053](053-contract-kernel.md#contract-kernel)) does not take the
 default. Its `check_health()` is the kernel's: the closed guard, then the
 driver's required `probe()`, its errors mapped by the kernel's choke point. The
 `Driver` and `AsyncDriver` protocols give `probe` a no-op body, which a driver

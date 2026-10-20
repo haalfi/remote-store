@@ -62,7 +62,7 @@ separate PRs under this ID.
   prose half (BE-027) and the error-path row.
 
 Each part's owner (kernel check, driver obligation or `Session` obligation) is
-audit-023 P1's table; re-derive it against BK-449's outcome, spec 003 BE-033's
+audit-023 P1's table; re-derive it against BK-449's outcome, spec 052 BE-033's
 exit-owner table, before acting.
 
 **Due:** before RFC-0017 D3 step 2, after BK-449. The P6 part changes no driver

@@ -538,7 +538,7 @@ no clause of the contract ships unexercised.
 - [~] **BK-435 — Spec 051's store tree is not yet tied to the store's operations, and `StoreTree.dfy` §12 carries no `@spec` tags**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
   Spec 051 states the axioms of `research/research-store-model-axioms.md`, checked in Alloy, Lean
-  and, as L6's finite pair, `StoreTree.dfy` §12; spec 003's BE-032 A.1 points to it (BK-432).
+  and, as L6's finite pair, `StoreTree.dfy` §12; spec 053's BE-032 A.1 points to it (BK-432).
   Not done: §12's `@spec` tags (F1 needs BK-436); research § 10 step 3's Dafny operations
   (after BK-434). Open decision: none.
 
@@ -872,11 +872,11 @@ CHANGELOG the release body is built from — say what is actually true.
 
 - [~] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
   spec: BE-001 -- BE-033, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
-  Most of the spec sits in BE-021, BE-029, BE-032 and BE-033 (sizes: dossier); PR #1159's
-  rounds kept finding one section contradicting another, and history sits inside its
-  normative sections. In stages: IDs, "yet" and status blocks out (done; coverage sentences
-  remain, dossier), a split by kind of truth as a pure move (IDs keep their BE- prefix), then a
-  prune per file against `SPEC-DESIGN.md`. Open decision: the new spec numbers and each section's kind.
+  Most of the spec sat in BE-021, BE-029, BE-032 and BE-033 (sizes: dossier); PR #1159's
+  rounds kept finding one section contradicting another. In stages: IDs, "yet" and status
+  blocks out (done; coverage sentences remain, dossier); a split by kind of truth as a pure
+  move (done: lifetime clauses to spec 052, the kernel's to spec 053, IDs unchanged); then a
+  prune per file against `SPEC-DESIGN.md`, 003, 052 and 053. Open decision: none.
   Detail: [dossier](backlog/bk-456-split-spec-003.md)
 
 - [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**

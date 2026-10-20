@@ -4,6 +4,8 @@
 
 The `Backend` ABC defines the contract all storage backends must implement. It is the most critical spec in the system — every operation, error condition, and capability is defined here. Backends declare capabilities via a `Capability` enum and `CapabilitySet`.
 
+The states between calls, the close posture (BE-020), the concurrent-use posture (BE-028) and the kernel's interaction protocol (BE-033), are [spec 052](052-backend-lifetime.md)'s. The contract kernel's single-call clauses (BE-030 to BE-032) are [spec 053](053-contract-kernel.md)'s.
+
 ---
 
 ## Capabilities
@@ -314,7 +316,7 @@ failure of the two — on a POSIX namespace it lands a file named `\` inside the
 container rather than occupying it — and it is stated here rather than closed,
 because closing it costs the addressing contract. A backend wanting to refuse it
 must do so without widening the predicate its addressing depends on. A class on
-the kernel does exactly that: [BE-030](#be-030-key-rule-on-the-kernel) refuses a
+the kernel does exactly that: [BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel) refuses a
 backslash on every operation, as a validation rule rather than a root rule, while
 its addressing passes the key raw.
 
@@ -361,14 +363,14 @@ reachability argument is a clause that is wrong on the namespace nobody checked.
 
 **Out of scope:** `delete_folder("")`, which is governed at the `Store` layer
 (STORE-002) — backend behaviour for it is undefined by this clause, except on a
-class on the kernel, where [BE-031](#be-031-delete_folder-on-the-kernel) refuses
+class on the kernel, where [BE-031](053-contract-kernel.md#be-031-delete_folder-on-the-kernel) refuses
 it with `InvalidPath`. Note
 `delete("")` is **not** out of scope — it is a file-shaped operation on a folder,
 and the row above governs it.
 
 **On the kernel:** this clause's answers are the kernel's, not the driver's.
 The kernel decides the root on the canonical key, after the closed guard
-([BE-030](#be-030-key-rule-on-the-kernel), steps 1 and 4), so every spelling
+([BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel), steps 1 and 4), so every spelling
 that addresses the root reaches the driver as `""`, and only for a
 folder-shaped call or addressing; the probes answer the root from the key
 without a driver call. The driver owes a listing of `""` (`list_page`, and
@@ -421,13 +423,13 @@ reaches `SQLQueryBackend`, which is read-only.
 **See also:** [045-write-result.md](045-write-result.md) (WR-001 through WR-005, WR-010 through WR-012).
 **Precondition evaluation order:** Backends MUST evaluate preconditions in this
 order: the closed guard — after a terminal close the call raises
-`BackendUnavailable`, ahead of every step below ([BE-020](#be-020-close));
+`BackendUnavailable`, ahead of every step below ([BE-020](052-backend-lifetime.md#be-020-close));
 (0) the root — if `path` is the store root, raises `InvalidPath`, decided
 from the key and before any request is issued ([BE-029](#be-029-root-path));
 the metadata gate — a non-empty `metadata` on a class without `USER_METADATA`
 raises `CapabilityNotSupported` (WR-010). A class that runs the gate itself runs
 it here, as every class on the kernel does
-([BE-030](#be-030-key-rule-on-the-kernel)). A class that leaves the gate to
+([BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel)). A class that leaves the gate to
 `Store` (e.g. `LocalBackend`) does not raise it, and `Store` runs it before the
 backend is called;
 (1) path validity — if `path` names an
@@ -452,7 +454,7 @@ the shared `_reject_root_as_file`, which is exactly `is_root`; the other four
 refuse the source under the **wider** predicate: `GraphBackend` and
 `SQLBlobBackend` as a by-product of their own key splitters, and
 `MemoryBackend` and `AsyncMemoryBackend` by the kernel's key rule
-([BE-030](#be-030-key-rule-on-the-kernel)), so `move("./", dst)` raises there
+([BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel)), so `move("./", dst)` raises there
 and not on the seven. That
 divergence is permitted: the floor is `is_root` and a backend MAY exceed it.
 
@@ -497,7 +499,7 @@ non-HNS opt-in path through `_acheck_no_file_ancestor` and the SDK
 effective order is the order above with step (1) skipped.
 **On the kernel no backend takes this exemption.** A class on the kernel
 refuses a write below a file and a write of a file over a folder on every
-namespace, unconditionally ([BE-032](#be-032-the-store-tree-on-the-kernel)'s
+namespace, unconditionally ([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel)'s
 A.4), so the opt-in walk and its fail-open sentence below bind only the
 classes not on the kernel.
 **Azure HNS caveat.** On Azure HNS accounts the kwarg short-circuits the
@@ -552,7 +554,7 @@ the file-ancestor rejection is exercised by
 
 **Invariant:** `write_atomic(path, content, *, overwrite=False, metadata=None) -> WriteResult` writes via a temporary file + atomic rename and returns a `WriteResult`.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out), on a class that runs the gate itself, as BE-008 scopes it.
-**Precondition order:** [BE-008](#be-008-write)'s, every step of it, from the closed guard and the root through I/O. Flat-namespace exemption from BE-008 applies, except on the kernel, where no backend takes it ([BE-032](#be-032-the-store-tree-on-the-kernel), A.4).
+**Precondition order:** [BE-008](#be-008-write)'s, every step of it, from the closed guard and the root through I/O. Flat-namespace exemption from BE-008 applies, except on the kernel, where no backend takes it ([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel), A.4).
 **See also:** [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
 **Formal coverage:** Delegates to BE-008 — at the Backend-contract level
 `write_atomic` shares the `Write` postcondition model (return type, precondition
@@ -652,7 +654,7 @@ discharged structurally. Verified in `MemoryBackend.dfy`.
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory (cannot overwrite a directory with a file; binds hierarchical backends and every class on the kernel, per [BE-021](#be-021-error-mapping)'s backend scope of the type-mismatch rows), or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move on a file is a no-op (Dafny: `Move: src == dst → Ok`); self-move on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
 **Precondition order:** `src`-NotFound takes priority over dst-side preconditions; specifically `move(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`. `LocalBackend.move` enforces this naturally (the `mkdir_parents` walk that catches the file-ancestor case runs after the src-exists check); flat-namespace backends running the opt-in MUST defer the `_check_no_file_ancestor(dst)` walk until after the src-NotFound probe to match. This order is pinned to remove the cross-backend ambiguity that existed under BE-018 alone. **One dst-side check outranks src-NotFound: a `dst` that addresses the store root.** [BE-029](#be-029-root-path) decides it from the key before any request, so `move(missing_src, "")` MUST raise `InvalidPath(dst)`; a `src` that is the root is refused first, as `InvalidPath(src)`. "Is the root" there is `is_root`, the source end's floor: [BE-008](#be-008-write)'s two-predicate paragraph lets a backend refuse a wider source spelling first, and does not require it. That is the order the backends measured for it already take (`MemoryBackend`, `AsyncMemoryBackend` and `LocalBackend`, both root spellings, `move` and `copy`; `SFTPBackend`'s is pinned by `test_move_and_copy_destination_cannot_reach_the_corruption`), and the one `sdd/formal/BackendContract.dfy` verifies.
-**On the kernel:** the flat-namespace opt-in walk named here does not exist. A class on the kernel refuses a destination below a file or over a folder on every namespace, unconditionally, in BE-018's order: on a flat namespace by its own checks after the source check, on a hierarchical one by typing the wire's refusal ([BE-032](#be-032-the-store-tree-on-the-kernel), A.4 and A.8).
+**On the kernel:** the flat-namespace opt-in walk named here does not exist. A class on the kernel refuses a destination below a file or over a folder on every namespace, unconditionally, in BE-018's order: on a flat namespace by its own checks after the source check, on a hierarchical one by typing the wire's refusal ([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel), A.4 and A.8).
 **Metadata:** `move()` preserves the source file's user metadata: after a
 successful move, `get_file_info(dst)` MUST return the same `metadata`
 mapping the source file carried before the move — the WR-013 user-metadata
@@ -677,7 +679,7 @@ drops metadata fails to verify. Verified in `MemoryBackend.dfy`.
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory (on the backends BE-018 names), or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021.
 **Precondition order:** Same as BE-018 — `src`-NotFound takes priority over dst-side preconditions, so `copy(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`, except for a `dst` that addresses the store root, which BE-018 ranks ahead of it.
-**On the kernel:** the flat-namespace opt-in walk named here does not exist. A class on the kernel refuses a destination below a file or over a folder on every namespace, unconditionally, in BE-018's order: on a flat namespace by its own checks after the source check, on a hierarchical one by typing the wire's refusal ([BE-032](#be-032-the-store-tree-on-the-kernel), A.4 and A.8).
+**On the kernel:** the flat-namespace opt-in walk named here does not exist. A class on the kernel refuses a destination below a file or over a folder on every namespace, unconditionally, in BE-018's order: on a flat namespace by its own checks after the source check, on a hierarchical one by typing the wire's refusal ([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel), A.4 and A.8).
 **Metadata:** `copy()` preserves the source file's user metadata: after a
 successful copy, `get_file_info(dst)` MUST return the same `metadata`
 mapping as `get_file_info(src)` — the WR-013 user-metadata round-trip,
@@ -694,19 +696,6 @@ error is raised mid-operation.
 both `fs[dst].content == old(fs)[src].content` and
 `fs[dst].info.metadata == old(fs)[src].info.metadata`, so a refinement that
 drops metadata fails to verify. Verified in `MemoryBackend.dfy`.
-
-### BE-020: close()
-
-**Invariant:** `close()` is optional (default no-op). Called for resource cleanup.
-**Postconditions:** Whether the instance is reusable after `close()` is the backend's **close posture**, declared by the `close_is_terminal` class attribute:
-
-- `close_is_terminal = False` (the default — a backend need not restate it): the backend re-initialises its clients lazily and remains usable after `close()`. The posture of `LocalBackend`, `MemoryBackend`, `SFTPBackend`, `ReadOnlyHttpBackend`, and the SQL backends.
-- `close_is_terminal = True`: `close()` / `aclose()` is **terminal** — the flag flips at the *start* of `close()` and every lazy client accessor guards on it, so a subsequent operation raises `BackendUnavailable` rather than silently re-opening resources the caller cannot observe. The posture of `AzureBackend` (AZ-029), the three S3 backends (S3-019), and `GraphBackend` (GR-051).
-
-The use-after-close conformance lane (`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling) gates on this attribute, asserting the terminal error for terminal backends and re-initialisation for the rest.
-**On the kernel:** the closed guard is the kernel's, [BE-030](#be-030-key-rule-on-the-kernel)'s step 1, and the posture is the driver's `close_is_terminal`. The class's own `close_is_terminal`, which the lane above reads, must match the driver's; the kernel refuses to construct over one that differs. `MemoryBackend` and `AsyncMemoryBackend` are on the kernel, and their drivers declare `close_is_terminal = False`. The states either posture passes through, and who owns each exit, are [BE-033](#be-033-interaction-protocol-on-the-kernel)'s.
-**Rationale:** A terminal close turns a use-after-close (a likely bug) into a clear typed error instead of a silent resource reopen, while leaving stateless/cheap backends freely reusable.
-**Formal coverage:** `sdd/formal/BackendContract.dfy` models the posture as `closeIsTerminal`, `closed` and `Live()`, with a `Close()` that sets `closed` and promises nothing about the store's contents. Every operation that returns a result, except `RequireCapability`, answers `BackendUnavailable` when `!Live()`, ahead of every other clause and with `fs` unchanged. `Close()` returns nothing and stays callable after a terminal close, and `DropContainer()` models the environment rather than an operation, so neither carries the guard; every other postcondition the other formal-coverage notes in this spec quote holds under `Live()`. `MemoryBackendMinimal` is the close-terminal witness in `MemoryBackend.dfy`.
 
 ### BE-021: Error Mapping
 
@@ -737,7 +726,7 @@ binds hierarchical backends only. On a flat namespace a write to a key that
 shadows a prefix succeeds, so there is no error to reclassify; BE-008's
 flat-namespace exemption governs there instead, unchanged. On the kernel the
 write half binds every namespace too
-([BE-032](#be-032-the-store-tree-on-the-kernel), A.4). This is the single
+([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel), A.4). This is the single
 roster for both halves; the clauses below explain the mechanism behind the
 split and what it costs, and do not restate it.
 
@@ -751,7 +740,7 @@ A class not on the kernel discharges both halves itself.
 | Obligation | Kernel | Driver |
 |---|---|---|
 | Native exceptions never leak (the invariant) | the choke point: a `RemoteStoreError` passes, any other `Exception` goes to `classify`, and a classifier that raises or answers a non-error still yields a `RemoteStoreError` ([ERR-001](005-error-model.md#err-001-base-error), [ERR-009](005-error-model.md#err-009-meaningful-string-representations)). An error raised by the caller's own content passes verbatim ([ASYNC-091](029-async-store-backend-api.md#async-091-write-side-binaryio-failure-mid-write)) | `classify` maps its wire's exceptions |
-| The type-mismatch and `NotFound` rows, and type mismatch outranking `missing_ok` | decided from the driver's observations by [BE-032](#be-032-the-store-tree-on-the-kernel)'s A.5 and A.8 | `stat` and `list_page` observe, and refusals keep A.8's "What drivers owe instead" |
+| The type-mismatch and `NotFound` rows, and type mismatch outranking `missing_ok` | decided from the driver's observations by [BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel)'s A.5 and A.8 | `stat` and `list_page` observe, and refusals keep A.8's "What drivers owe instead" |
 | The `PermissionDenied` rows | passes the driver's type through | `classify` types a denial |
 | Parent creation fails on a path conflict | A.8's write and `ensure_parents` rows type a refusal | a write primitive or `ensure_parents` refuses an item above the key |
 | Flat namespaces' error-path obligation, fail-open probes, fail-closed determinants | A.3 and A.8 | — |
@@ -781,7 +770,7 @@ hot path. A class on the kernel with a flat namespace departs from that: it
 also refuses the states a flat store can hold and no tree gives, so every
 non-root folder operation calls `stat` on its key and every write checks the
 key's ancestors and its prefix, success included
-([BE-032](#be-032-the-store-tree-on-the-kernel), A.3 and A.4, whose cost table
+([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel), A.3 and A.4, whose cost table
 lists each).
 
 **Two cases both fail and succeed**, and both are the idempotent-delete idiom.
@@ -798,7 +787,7 @@ tolerates the miss; in a delete loop that is one extra round trip per absent
 path. A class on the kernel departs from the first row: its flat `delete`
 error path asks `stat` before the listing, two round trips, since a refusal
 may meet an existing file as well as a missing one; its costs are in
-[BE-032](#be-032-the-store-tree-on-the-kernel)'s cost table. Neither is avoidable by testing `missing_ok` first: `delete(folder,
+[BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel)'s cost table. Neither is avoidable by testing `missing_ok` first: `delete(folder,
 missing_ok=True)` and `delete_folder(file, missing_ok=True)` must still raise
 `InvalidPath` (see "Type mismatch outranks `missing_ok`" below), and after a
 miss the probe is the only thing separating *this is the wrong type* from *this
@@ -1024,7 +1013,7 @@ follow them, as `LocalBackend`'s do.
 
 **Invariant:** `unwrap(type_hint)` returns the native backend handle if it matches the requested type.
 **Raises:** `CapabilityNotSupported` if the backend cannot provide the requested type.
-**On the kernel:** `unwrap` takes the closed guard, so after a terminal close it raises `BackendUnavailable` ([BE-033](#be-033-interaction-protocol-on-the-kernel)).
+**On the kernel:** `unwrap` takes the closed guard, so after a terminal close it raises `BackendUnavailable` ([BE-033](052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)).
 **Rationale:** See [ADR-0003](../adrs/0003-fsspec-is-implementation-detail.md).
 
 ### BE-023: to_key()
@@ -1038,7 +1027,7 @@ follow them, as `LocalBackend`'s do.
 **Invariant:** `native_path(path)` converts a backend-relative key to the backend-native path. The inverse of `to_key()`: `backend.to_key(backend.native_path(key)) == key`. The default implementation is the identity function — backends with a native root **must** override.
 **Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key **in canonical form** round-trips verbatim; a non-canonical one need not, and for the same reason — `native_path` normalises, and one address cannot invert to the several keys that produced it. Every lossy class is one `WellFormedPath` (PATH-002 through PATH-008) already excludes, though not every exclusion is lossy — `".."` segments and null bytes are excluded and do round-trip verbatim. The lossy ones are: a redundant `"."` segment, an empty segment (leading, trailing or doubled slash), and on backends that fold it, a backslash. Measured on `GraphBackend`, `native_path("a/./b")`, `native_path("dir/")`, `native_path("a//b")` and `native_path("/a")` each invert to the canonical key rather than the caller's spelling. So the identity is exact over the keys `to_key` produces and over every canonical key, and lossy over the wider set a caller holding a `Backend` directly may hand `native_path`. The identity-default implementation normalises both root spellings for the same reason.
 **Postconditions:** Pure, deterministic, total (never raises). The returned path is usable with the native handle from `unwrap()`.
-**On the kernel:** a class on the kernel normalises a key before its driver addresses it and passes a refused key raw, so a non-canonical key inverts to its canonical form and a `..` or null-byte key round-trips verbatim; the rule is [BE-030](#be-030-key-rule-on-the-kernel)'s **Addressing stays total**.
+**On the kernel:** a class on the kernel normalises a key before its driver addresses it and passes a refused key raw, so a non-canonical key inverts to its canonical form and a `..` or null-byte key round-trips verbatim; the rule is [BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel)'s **Addressing stays total**.
 **Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container), `MemoryBackend` and `AsyncMemoryBackend` (the kernel's normalisation, over a driver whose `native_path` is the identity on a canonical key).
 **Example:** `S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")` returns `"lake/data/file.parquet"`.
 **See also:** [001-store-api.md](001-store-api.md) (STORE-015), [014-pyarrow-filesystem-adapter.md](014-pyarrow-filesystem-adapter.md) (PA-010 Tier 1).
@@ -1054,7 +1043,7 @@ follow them, as `LocalBackend`'s do.
 **Invariant:** `glob(pattern)` matches files against a glob pattern. Non-abstract — the default implementation raises `CapabilityNotSupported`. Backends with native glob support override this and declare `Capability.GLOB`.
 **Postconditions:** Returns only files (not folders). Paths in returned `FileInfo` objects are backend-relative (same convention as `list_files`).
 **Raises:** `CapabilityNotSupported` if the backend lacks `GLOB`.
-**On the kernel:** a class on the kernel refuses and normalises the pattern by the rule and order [BE-030](#be-030-key-rule-on-the-kernel) states, so the driver receives a canonical pattern.
+**On the kernel:** a class on the kernel refuses and normalises the pattern by the rule and order [BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel) states, so the driver receives a canonical pattern.
 **See also:** [018-glob.md](018-glob.md) (GLOB-003 through GLOB-005), [ADR-0009](../adrs/0009-glob-three-tier-design.md).
 
 ### BE-027: Capability-Gated Methods (Graph IR Metadata)
@@ -1076,840 +1065,3 @@ follow them, as `LocalBackend`'s do.
 **Enforcement:** Runtime capability enforcement for these methods is performed by `Store._gate()`, not by `Backend` directly. `_BACKEND_GATING` is the authoritative source for graph-IR generation only; keeping it in sync with the Backend ABC is enforced by `tests/scripts/test_gen_graph.py::test_backend_gating_keys_match_backend_members`.
 **Async counterpart:** `AsyncBackend` carries the same table minus `read_seekable` / `open_atomic` in `_ASYNC_BACKEND_GATING` — see [ASYNC-045a](029-async-store-backend-api.md).
 **See also:** `sdd/CLAUDE-REFERENCE.md` ripple-check row for `_BACKEND_GATING`.
-
----
-
-## Concurrency
-
-### BE-028: Concurrent-Use Posture
-
-**Invariant:** Every concrete `Backend` declares a **concurrent-use posture**,
-one of two values:
-
-- **`thread_safe`** (the default — a backend spec need not restate it): a single
-  instance is safe to share across threads, and each `Backend` operation is
-  atomic with respect to other operations on the same instance.
-- **`single_connection`**: a single instance is **not** safe under concurrent
-  use — it wraps a non-thread-safe native client (e.g. one SFTP channel, or a
-  `urllib` opener whose redirect counter is shared). Such a backend MUST document
-  the posture in its spec **and** class docstring, and MUST state the remedy: one
-  instance per thread, or an external serializing wrapper.
-
-No backend provides multi-operation transactionality: atomicity is per-operation
-only (MEM-026), and ordering between concurrent callers is not guaranteed.
-
-**Postconditions:**
-- `thread_safe` is the posture of `LocalBackend` (stateless; delegates to
-  `os`/`shutil`, serialised by the operating system), `MemoryBackend` (a single
-  `threading.Lock`, MEM-025), the cloud and SQL backends (their native clients —
-  the boto3/s3fs client, the Azure SDK service clients, the SQLAlchemy
-  engine/pool — are documented thread-safe for concurrent per-instance use), and
-  `GraphBackend` on the async axis (GR-059).
-- `single_connection` is the posture of `SFTPBackend` (SFTP-029) and
-  `ReadOnlyHttpBackend` on its default `urllib` transport (HTTP-CONC-001).
-- An **undeclared** posture is a contract violation, not a silent default: every
-  concrete backend states its posture, or inherits the `thread_safe` default by
-  the terms of this clause (`LocalBackend`, which has no numbered spec, is
-  `thread_safe` by this paragraph).
-
-**Rationale:** STORE-007 promises a `Store` is "safe to share across threads,"
-but a `Store` is immutable and merely delegates — the guarantee bottoms out in
-the backend. This clause turns "thread-safe" from an unstated assumption into an
-explicit per-backend obligation a caller can read from the spec without reading
-source. Like CAP-007's quality flags, declaring the posture gates no method; it
-documents a property every method has. The posture is the authoritative source
-for the machine-readable `concurrency` registry field the cross-backend
-concurrency conformance lane tests against.
-
-**See also:** [001-store-api.md](001-store-api.md) (STORE-007),
-[013-memory-backend.md](013-memory-backend.md) (MEM-025/026),
-[029-async-store-backend-api.md](029-async-store-backend-api.md) (ASYNC-094);
-a `close` racing in-flight calls on the kernel, [BE-033](#be-033-interaction-protocol-on-the-kernel).
-
----
-
-## Contract kernel
-
-The clauses below bind a **class on the kernel**: a backend implemented as the
-contract kernel (`DriverBackend` / `AsyncDriverBackend`, public in
-`remote_store.drivers` with the driver protocols) over a driver of wire
-primitives, per
-[RFC-0017](../rfcs/rfc-0017-contract-kernel-over-thin-drivers.md) D1 and D2 and
-[ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md). `MemoryBackend`
-and `AsyncMemoryBackend` are the first such classes. Each clause states, once,
-an answer the other clauses of this spec leave to the backend. A backend not on
-the kernel is unaffected by them. The decisions behind what a key resolves to
-and how a refusal is typed are recorded in [RFC-0021](../rfcs/rfc-0021-key-resolution-model.md), which BE-032 lands.
-
-### BE-030: Key Rule on the Kernel
-
-**Invariant:** a class on the kernel validates and normalises every key an
-operation names before its driver sees it, and decides the root on the result.
-An operation's driver call receives only canonical keys: no leading `/`, no
-empty, `.` or `..` segment, no null byte, no backslash, and `""` for the root.
-The addressing members are the one exception, stated under **Addressing stays
-total** below.
-
-**Pipeline, per operation**, in this order:
-
-1. The closed guard (BE-020), when the driver declares `close_is_terminal`. The
-   class's own `close_is_terminal` must be the driver's; the kernel refuses to
-   construct over one that differs. `unwrap` takes it too, and the states
-   around it are [BE-033](#be-033-interaction-protocol-on-the-kernel)'s.
-2. Refusals, raising `InvalidPath`: a key starting with `/`, a `..` segment, a
-   null byte, a backslash.
-3. Normalisation: empty and `.` segments are dropped, so `//`, `/./` and a
-   trailing `/` fold and every root spelling becomes `""`.
-4. The root check on the canonical key, where `""` is the root.
-5. The driver, with the canonical key. For a write the result's path is built
-   from that key **before** the driver commits, so no key the kernel accepts can
-   fail after the bytes land.
-
-**Gates around the pipeline.** A declared-capability gate comes before step 1,
-closed or not, since capability data is not a live operation: `GLOB` for
-`glob` (the pattern rule below), `ATOMIC_WRITE` for `write_atomic` and
-`open_atomic` (BE-011), `MOVE` for `move` and `COPY` for `copy`, a
-self-operation included, each refused with `CapabilityNotSupported` by the
-declaration, whatever protocols the driver presents. The kernel refuses to
-construct over a declaration its protocols cannot back, and over a driver that
-leaves a primitive out or inherits the protocol's own body for one, which would
-answer `None` instead of acting. `probe`'s inherited body is the one exception,
-being the exemption from probing (PING-008); a `probe` left out is refused like
-any other. WR-010's metadata gate
-on `write` and `write_atomic` comes after step 4 and before step 5, where
-BE-008's order puts it: after the root refusal and ahead of any I/O.
-Shape comes first within it, as WR-011 orders it: `metadata` that is neither
-`None` nor a `Mapping`, a falsy one included, is refused with `ValueError`
-whatever the class declares, and only then is a non-empty mapping refused for
-want of `USER_METADATA`.
-That ranks it ahead of BE-008's type, ancestor and overwrite checks: on a class
-without `USER_METADATA`, a write carrying metadata answers
-`CapabilityNotSupported` with a folder at the key, a file above it, or an
-existing file and `overwrite=False`, on both namespaces. Ranking it after those
-checks instead would cost every such write a `stat` on a hierarchical namespace, and on
-a flat one would put I/O ahead of the gate. `BackendContract.dfy`'s `Write`
-states the same order.
-
-**Content.** A driver receives only the types its `put` declares. A
-`bytearray` or `memoryview` passed to `write` or `write_atomic` reaches it as
-a `bytes` copy, and so does a buffer a content stream (or, async, its iterator)
-yields. Content that is no bytes source, neither a buffer nor a readable stream
-(async: an async iterator), is refused with `TypeError` after WR-010's gate and
-before any I/O, on `write` and `write_atomic` alike; a buffer that cannot be
-read as `bytes` (a released `memoryview`) fails at the same rank with its own
-error, and so does content whose `read` (async: `__aiter__`) cannot even be
-looked up. A stream that yields something not binary, `None` included (a
-non-blocking stream's "no data available"), or whose `readinto` answers anything but
-a count or `readlines` anything but a list, raises `TypeError` when read; one
-that yields a buffer that cannot be read as `bytes` raises that buffer's error.
-Either is the caller's own error, passed through verbatim like ASYNC-091's and
-never classified. Async content is checked chunk by chunk whatever the driver
-does. On sync the stream a driver receives answers an unsized `read` (no size,
-`None` or a negative one) and `readall` by sized reads of the caller's stream,
-each checked, so a driver that reads its content in full sees the `None` a raw
-stream's own `readall` would stop at. Line reads (`readline`, `readlines`,
-iteration) loop inside the caller's stream, where the kernel cannot see a
-`None`, and are not covered. A check on the target made before the stream is
-read answers first, such as `write_atomic`'s `stat` by temp and rename without
-`overwrite`. The stream `open_atomic` yields takes a write as Python's binary
-files do, on the wire temporary's route and the spool's alike: a buffer that is
-not C-contiguous is refused with its exporter's own error, `BufferError` for a
-`memoryview`.
-
-**What a key resolves to** is [BE-032](#be-032-the-store-tree-on-the-kernel)'s
-answer, for every call below: the tree's `Item`, `Folder` or `Nothing` (A.1),
-each family's result (A.5), the determinants a call runs whether or not it
-fails, and the error-path probes that type a driver refusal (A.8). On the
-kernel, BE-008's "no native directory concept" is the flat namespace, and the
-kernel refuses to construct over a flat driver with folder objects (`parents`
-other than `"none"`), whose `stat` could not see them, and over an
-explicit-parents driver without `ensure_parents`, which could not create a
-write's parents (BE-009). What stays here is what is specific to one call:
-
-- *A write target* (`write`, `write_atomic`, `open_atomic`, the `move`/`copy`
-  destination). Where the kernel stats the target first (`write_atomic` by temp
-  and rename without `overwrite`, `move` by rename) that `stat` is a
-  determinant: a file is `AlreadyExists` without `overwrite`, a folder or a
-  file above `InvalidPath`, and a miss goes on to the wire. With `overwrite`, a
-  file that check missed is replaced, or displaced and restored by a rename
-  that cannot replace, never answered `AlreadyExists`, and one gone before it
-  is displaced leaves the destination free for the move.
-- *Two keys* (`move`, `copy`), in BE-018's order. The kernel checks the source
-  first on a flat namespace, with explicit parents, on a rename route and for
-  a self-operation, so the source's `NotFound` outranks BE-032 A.4's checks and
-  parent creation for the destination. A refusal is answered for the source
-  first, then the destination, by A.8's rows; when it stands, it names the
-  destination if it is an `AlreadyExists`, or a `NotFound` or `InvalidPath`
-  with the source confirmed a file.
-- *An empty aggregate* (`get_folder_info`): typed as BE-017 states, by a
-  determinant `stat` with folder objects and fail-open without them; on a flat
-  namespace A.3's `stat` has already answered for an item.
-
-For a key passing step 2, a canonical `""` is exactly BE-029's "addresses the
-root" predicate, so every operation gets the wide predicate: the write side and
-the `move`/`copy` destination as BE-029 requires, and the read side and the
-source as BE-008 permits.
-
-| Key class (examples) | Probes: `exists`, `is_file`, `is_folder` | File-shaped: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete`, `move`/`copy` source | Write-shaped: `write`, `write_atomic`, `open_atomic`, `move`/`copy` destination | Folder-shaped: `list_files`, `list_folders`, `iter_children`, `get_folder_info` | `delete_folder` |
-|---|---|---|---|---|---|
-| root (`""`, `"."`, `"./"`, `".//"`, `"./."`) | the root's answer (BE-029) | `InvalidPath` | `InvalidPath` | the root folder | `InvalidPath`, refused before the driver |
-| `/`-led (`"/"`, `"/./"`, `"/f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
-| `..` segment (`"d/../f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
-| null byte | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
-| backslash (`"d\\f"`, `"\\"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
-| non-canonical (`"d//f"`, `"d/./f"`, `"d/"`) | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer |
-| canonical (`"f"`, `"d/f"`) | passed through | passed through | passed through | passed through | passed through |
-
-The `InvalidPath` of a refused probe is a refusal of the key, not a traversal
-answer, so BE-004's "never raises `NotFound`" is unaffected.
-
-**Addressing stays total** (BE-025). `native_path(key)` and `resolve(key)` run
-no closed guard and never raise for the key: a key passing step 2 is normalised
-and the driver receives the canonical key; a key step 2 refuses reaches the
-driver raw. `resolve(key).key` is the caller's `key`, and its `native_path` is
-the kernel's `native_path(key)`. `to_key` is forwarded unchanged.
-
-**A listing never presents a key the rule would refuse or rewrite.** An entry or
-common prefix a driver lists whose key is not canonical (one another tool stored,
-such as `a\b`) is omitted from `list_files`, `list_folders`, `iter_children`,
-`glob` and the `get_folder_info` aggregate, and the omission is logged. A driver
-that aggregates natively computes that aggregate itself, so it owes the same
-omission (BE-017: it returns the value the kernel would). Folding it
-would name another node (`a\b` as `a/b`), which is BE-029's withdrawn fold;
-raising would make every sibling unlistable. The entry stays reachable through
-addressing and `unwrap()`. Since the kernel never hands such a key to its driver,
-a recursive `delete_folder` that walks the tree cannot empty a folder holding
-one and answers `DirectoryNotEmpty`; one the driver's `delete_tree` performs
-removes it with the rest of the tree (BE-031).
-
-**`glob(pattern)` takes the rule segment-wise over the whole pattern.** Order:
-the capability first (a driver without native glob declares no `GLOB`, so
-`CapabilityNotSupported`, closed or not, since capability data is not a live
-operation); then the closed guard; then step 2's refusals over the raw pattern;
-then step 3 for every segment, wildcard characters untouched inside their
-segments, with one addition: a raw pattern ending in `/` keeps that trailing `/`
-when anything remains, since in a pattern it selects directories only. A
-canonical `""` names the root, a folder, and yields nothing. Worked examples:
-`"./d/*.csv"`, `"d//*.csv"` and `"d/./*.csv"` reach the driver as `"d/*.csv"`;
-`"d/*//"` as `"d/*/"`; `"d/*/."` as `"d/*"`; `"/d/*.csv"`, `"*/../x"` and
-`"d\\*.csv"` raise `InvalidPath`.
-
-**Conformance:** fake-driver kernel cells in `tests/_kernel/`, run against both
-runtimes. Memory's cells are in `tests/backends/memory/test_kernel_cells.py`,
-both classes: the root spellings' `FolderInfo`, addressing's fold of a
-non-canonical key, and the backslash refusal storing nothing; and in
-`tests/backends/memory/test_metadata_shape.py`, both classes: metadata that is
-not a mapping refused with no parent folder made. What a key resolves to is
-BE-032's two generated suites (its A.10); `glob`, the capability gates and
-construction are generated over axes of their own.
-
-### BE-031: `delete_folder` on the Kernel
-
-**Invariant:** a class on the kernel removes folders through two driver
-primitives with refusal obligations of their own, and sequences them, with its
-error-path probes, in one place.
-
-**Primitives.**
-
-- `remove_folder(key)` removes an empty folder and refuses anything else (a
-  non-empty folder, a file, an absent key) **without removing it**, in one step
-  where the wire has one (`rmdir`, a lock). A driver whose `parents` is
-  `"explicit"` or `"implicit"`, which has folder objects, MUST provide it; the
-  kernel refuses to construct over one that does not. It is never called when
-  `parents == "none"`. A folder object persists until `remove_folder` or
-  `delete_tree` removes it: emptying a folder does not remove it.
-- `delete_tree(key)`, optional, removes a folder's whole tree. Where folder
-  objects exist it refuses a file, a link (never traversed) or an absent key
-  without removing anything, removes a link below `key` as an entry without
-  following it, and a wire whose tree delete also removes a file item checks
-  first and documents that race. The kernel calls it with no probe before it,
-  so the link refusal is the driver's: it is what keeps the table's link row
-  true on this route. With `parents == "none"` it removes what lies under the
-  prefix and leaves a file named by the key itself.
-
-**`stat` and `list_page` take `follow_links`**, default `True`; `False` is a view
-in which a link (dangling or not, or a Windows junction) is a non-folder entry.
-`stat` is called with `False` by the three calls that name the entry at their
-key: `delete`, a `move` source and `delete_folder` (BE-032 A.7);
-`list_page` by `delete_folder` alone. So a link at `key` answers
-`InvalidPath`, and a link below it is deleted as an entry, never traversed.
-The walk lists `key` with no `stat` first, so the view is a driver obligation:
-`list_page` with `follow_links=False` refuses a link at `prefix` or lists
-nothing, never its target's entries, and `delete` on a link removes the link,
-never its target.
-
-**The probe rule** is BE-032's A.8: a refusal in the probe set (`NotFound`,
-`InvalidPath`, `AlreadyExists`, `PermissionDenied`, untyped) gets the rows of
-the call that refused, `remove_folder`, `delete_tree` (hierarchical with folder
-objects, or the flat row without them) or the walk's first listing of `key`,
-and every other type passes through unprobed. A probe that cannot answer leaves
-the refusal standing (fail-open), and `missing_ok` applies to the answer,
-replaced or standing, when it is a `NotFound`.
-
-**The sequence.**
-
-- *Folder objects, `recursive=False`:* `remove_folder(key)`, with no probe
-  before it.
-- *Folder objects, `recursive=True`, with `delete_tree`:* `delete_tree(key)`.
-- *Folder objects, `recursive=True`, without it (the walk):* `list_page(prefix,
-  delimiter="/")` down the tree, then every file deleted, then `remove_folder`
-  deepest first and `key` last. A refusal of the first page of `key`'s
-  listing is the operation's first page and gets A.8's rows; a refusal of a
-  later page of `key`'s listing propagates, `missing_ok` not applying (A.9). On
-  the way, a typed `NotFound` from any call below `key` (a subfolder's listing,
-  a file's `delete`, a subfolder's `remove_folder`) is tolerated, the entry
-  being already gone, and any other refusal propagates unprobed (A.9). Only
-  the calls on `key` itself apply `missing_ok`.
-- *`parents == "none"`:* on a flat namespace one `stat(key)` first, since a
-  listing of `key/` cannot see an item `key` (A.3): an item answers
-  `InvalidPath` and nothing is removed. Then list first, `stat` only after an
-  empty listing on a hierarchical namespace. A non-recursive call lists
-  `limit=1` with `delimiter="/"`; a recursive one lists with `delimiter=None`,
-  `limit=1` before `delete_tree`, or paged without `delete_tree`, deleting each
-  listed file and tolerating a `NotFound` on one; a listed key the listing
-  omits (one BE-030 refuses, or one below a listed item, A.3) is left, and the
-  call then answers `DirectoryNotEmpty`. The listing is the determinant and
-  fails closed, except that a refusal of its first page is an empty listing
-  where A.8's first-page row reads it so; on a later page a refusal propagates
-  (A.9). After an empty listing: an item → `InvalidPath`, anything else →
-  `NotFound`, to which `missing_ok` applies; a `stat` that cannot answer leaves
-  `NotFound` (fail-open). A `delete_tree` refusal after a non-empty listing
-  gets A.8's flat `delete_tree` row.
-
-| Key state, folder objects | `recursive=False` | `recursive=True` |
-|---|---|---|
-| empty folder | removed | removed |
-| folder holding files, or only an empty folder | `DirectoryNotEmpty` | removed |
-| file, or a link | `InvalidPath` | `InvalidPath`, nothing removed |
-| absent, or under a file (`f/x`) | `NotFound` | `NotFound` |
-
-| Key state, `parents == "none"` | `recursive=False` | `recursive=True` |
-|---|---|---|
-| files under the prefix | `DirectoryNotEmpty` | removed |
-| file `f`, nothing under it | `InvalidPath` | `InvalidPath` |
-| a file and a prefix both (flat; decodes to no tree, A.3) | `InvalidPath`, nothing removed | `InvalidPath`, nothing removed |
-| absent, or under a file (`f/x`) | `NotFound` | `NotFound` |
-
-**A recursive delete may answer `DirectoryNotEmpty`** on a walk (either
-`parents` case), when a writer adds under the tree mid-walk, or when an entry
-the listing omits (BE-030, BE-032 A.3) stays behind. BE-013's prose lists the error for
-`recursive=False` only, but `BackendContract.dfy`'s `DeleteFolder` (tagged
-BE-013) requires a recursive delete of a present folder to succeed and remove
-every child. A concurrent writer lies outside that sequential model. A stored
-key BE-030 omits lies inside it, and the model now covers that state: its
-recursive-success and emptiness postconditions are guarded by a
-canonical-subtree predicate, `CanonicalUnder`, so the walk's `DirectoryNotEmpty` over an omitted stored key is a state the model
-admits rather than a departure from it.
-
-**The root.** `delete_folder` on any root spelling raises `InvalidPath` before
-the driver is called (BE-030's table), never reaching `remove_folder`,
-`delete_tree` or the walk. BE-029 leaves the root `delete_folder` undefined for
-backends in general; for a class on the kernel this clause defines it.
-
-**Conformance:** fake-driver kernel cells in `tests/_kernel/`, which enumerate the
-probe rule's condition space (refusal × `stat` outcome × listing outcome ×
-`missing_ok`, per context).
-
-### BE-032: The Store Tree on the Kernel
-
-**Invariant:** a class on the kernel answers every keyed operation as the store
-tree would. The tree is [spec 051](051-store-tree.md)'s. A backend holds an
-*encoding* of it, which a partial `decode` maps onto the tree; a raw state that
-decodes to no tree is not in the store. The kernel's job is to give the tree's
-answer from what the driver can observe of the encoding, and how much that
-costs depends on the encoding, never on the answer. The decision and its
-alternatives are [RFC-0021](../rfcs/rfc-0021-key-resolution-model.md);
-`sdd/formal/StoreTree.dfy` states the model and verifies the flat encoding's
-`decode`, its operations and the refusal rule (A.8).
-
-The parts below are labelled A.1 to A.10, as in the RFC's Appendix A, which
-this section lands; code and tests cite them by those labels.
-
-**A.1 Nodes and keys.**
-
-- **The tree** is spec 051's: TREE-001 to TREE-012 state its folders and
-  items, its names (TREE-007), its Keys (TREE-009) and that a Key names at most
-  one entity (TREE-010). This section states none of them again. An item also
-  has content and metadata, which that structure does not model. By TREE-001
-  and TREE-010, `is_file(k)` and `is_folder(k)` are never both true.
-- **A Key is not a caller's input.** Spec 004's `RemotePath` maps an accepted
-  input onto a Key or rejects it (spec 051 § Layering). BE-030's non-canonical
-  rows (`d//f`, `d/./f`, `d/`) and root spellings (`./`) are inputs of that
-  layer: each is mapped onto a Key, or refused, before the tree is consulted. A
-  backend stores a *raw key*, its encoding's own spelling, which A.2 decodes.
-  Below, "key" means a Key unless it says otherwise.
-- A Key resolves to exactly one of `Item`, `Folder` or `Nothing`. Where an
-  operation cares why there is nothing, the reason travels with the answer: a
-  key whose path passes through an item makes a write `InvalidPath` (A.5).
-- **Resolution assumes exact name equality**, as spec 051's names compare
-  (§ Name equality), so A.4's checks and every column of A.5 hold where the
-  encoding compares names exactly too. On a case-insensitive or normalizing
-  encoding a Key can find an entry of another name (`read("A")` finds `a`);
-  which backends compare names how, and how they then answer, is not
-  decided here.
-- Resolutions carry no depth. `ensure_parents(key)` creates every missing
-  folder from the key alone, so no result depends on where absence starts.
-  The item a path passes through travels with the answer only for the error
-  message.
-
-**A.2 Encodings.** Each driver declares its encoding's properties:
-
-| Property | Meaning for the encoding | Declaration |
-|---|---|---|
-| refuses non-tree writes | the wire refuses a write below an item, or of an item over a folder | `namespace="hierarchical"` |
-| folder objects | a folder is a raw entry, so it can exist with no children | `parents` other than `"none"` |
-| one lookup sees a folder | a single `stat` answers for a folder too | `namespace="hierarchical"` |
-| links | a raw entry can be a link | `links` (A.7) |
-
-The kernel refuses to construct over a flat driver with folder objects.
-
-These raw states decode to no tree:
-
-- an item at `k` together with entries below `k/`, on a flat encoding;
-- under `follow_within_root`, a link whose target is outside the root, a
-  dangling link, and a loop of links (A.7).
-
-A flat raw key with an empty segment, such as a folder marker `a/` or `a//b`,
-would give an empty name (TREE-007); how it decodes is not decided here, and
-A.3 keeps BE-030's omission of such a key.
-
-A stored key such as `a\b`, `..` or one holding NUL is not in that list. Spec
-051's names forbid only `/`, so where its characters are in the spec's alphabet
-Σ, it decodes to a Key in the tree. That Key lies outside the library's
-addressable subset: no input maps onto it, so no keyed operation reaches it.
-Spec 004 refuses `..` (PATH-003) and NUL (PATH-007), and folds `\` to `/`
-(PATH-002), so `a\b` as an input addresses the Key `a/b` instead. Listings omit
-such a key and log it, as BE-030 rules, because no keyed operation could act on
-what they returned. Addressing and `unwrap()` still reach it (BE-030, BE-025).
-
-**A.3 Undecodable states.**
-
-- **Listings.** A listing of `k`'s parent that returns `k` as an item and `k/`
-  as a prefix omits the prefix. A recursive listing omits every entry below an
-  item it has listed. For that, a flat driver's `list_page` returns keys in
-  byte-lexicographic order, a prefix `p` ordered as `p/`, so `k` arrives before
-  every key below `k/`; that is a driver obligation, and it lets the kernel
-  track the omission with a stack of open items rather than a buffer of the
-  listing. Hierarchical drivers stay unordered. A link that does not decode is
-  omitted too (A.7). Each omission is logged, in the one record per listing
-  BE-030 already writes.
-- **Folder operations on an item.** `list_files(k)`, `list_folders(k)` and
-  `iter_children(k)` are empty, and `get_folder_info(k)` and `delete_folder(k)`
-  answer `InvalidPath`, when `k` is an item. On a flat encoding a listing of
-  `k/` cannot see an item `k`, so a flat folder operation `stat`s `k` first,
-  success included, whatever raw entries lie below it.
-- **Keys below an item, on a flat encoding.** The probe, read-file and
-  delete-file families do not walk their key's ancestors, and neither do the
-  folder families: they `stat` the key alone. So `read("k/a.txt")` finds a raw
-  entry another tool wrote below an item `k`, `delete("k/a.txt")` removes it,
-  which is how such an entry is cleaned up, and `list_files("k/d")` lists `k/d/`
-  as it stands. This is a stated limit, where the tree would answer as A.5's
-  last row. A.4 keeps the library's own writes from producing it.
-- **A link that does not decode** is refused like an input the key rule
-  refuses: every keyed operation answers `InvalidPath`, a `move` from it
-  included, except `delete`, which removes the link (A.7).
-- **Omitted entries and `delete_folder`.** A recursive `delete_folder` that
-  walks removes only what its listings return, so an omitted entry below the
-  folder remains and the call answers `DirectoryNotEmpty`. One that runs the
-  driver's `delete_tree` removes the omitted entry with the rest (BE-031). On a
-  flat encoding, a recursive `delete_folder` of an item `k` answers
-  `InvalidPath` and removes nothing, and a walk of `k`'s parent removes `k`,
-  leaves `k/a.txt` and answers `DirectoryNotEmpty`.
-- **`unwrap()`** reaches any raw entry.
-
-**A.4 Writes.** These writes are `InvalidPath` on every class on the kernel,
-within A.1's scope on name equality:
-
-- writing below an item (`k/a.txt` while `k` is an item);
-- writing an item over a folder (`k` while `k` is a folder, including a flat
-  `k/` that holds entries).
-
-A write is `write`, `write_atomic`, `open_atomic` and the `move`/`copy`
-destination. An encoding that refuses non-tree writes needs no check, because
-the kernel types the wire's refusal (A.8). A flat encoding checks with one
-`stat` per ancestor, shallowest first, and one `list_page(k, limit=1)`, before
-the write and after the transfer source check. These checks decide the result,
-so they fail closed: a `stat` miss (`None`,
-`NotFound`, `InvalidPath`) is no item, a listing's `NotFound` or `InvalidPath`
-is an empty listing by the flat listing obligation (A.8), and any other failure
-is the write's. Neither check is race-free on a flat wire: another writer can
-act between the check and the write.
-
-**A.5 Families and results.**
-
-| Family | Operations |
-|---|---|
-| probe | `exists`, `is_file`, `is_folder` |
-| read-file | `read`, `read_bytes`, `read_seekable`, `get_file_info` |
-| write-file | `write`, `write_atomic`, `open_atomic` |
-| delete-file | `delete` |
-| folder-read | `list_files`, `list_folders`, `iter_children`, `get_folder_info`, and `glob` over its pattern's literal prefix |
-| delete-folder | `delete_folder` |
-| transfer | `move`, `copy`: the source as read-file, except that a `move` source names the entry at the key (A.7); the destination as write-file; in BE-018's order |
-
-| Resolves to | probe `exists`/`is_file`/`is_folder` | read-file | write-file | delete-file | folder-read | delete-folder |
-|---|---|---|---|---|---|---|
-| `Item` | T / T / F | the item; a link under `no_follow` is `InvalidPath` (A.7) | replaced, or `AlreadyExists` without `overwrite`; a link under `no_follow` is `InvalidPath` (A.7) | removed | empty | `InvalidPath` |
-| `Folder` | T / F / T | `InvalidPath` | `InvalidPath` | `InvalidPath` | its children | removed, or `DirectoryNotEmpty` |
-| `Nothing` | F / F / F | `NotFound` | written, parents created | `NotFound` | empty | `NotFound` |
-| `Nothing`, path through an item | F / F / F | `NotFound` | `InvalidPath` | `NotFound` | empty | `NotFound` |
-
-The last row is what the tree answers. On a flat encoding the keyed families
-and the folder families trust the encoding instead (A.3). For `delete`,
-`delete_folder` and a `move` source, a link at the key that decodes resolves to
-`Item` (A.7). A link that does not decode never reaches this table (A.3). Every
-column holds where names compare exactly (A.1). `missing_ok` turns a delete's
-`NotFound` into success. `get_folder_info` types an empty aggregate as BE-017
-states. The per-operation clauses keep what is specific to them, such as
-`overwrite`, cursors, `max_depth` and the synthesised write routes, and cite
-this table for the rest.
-
-**A.6 Empty folders.** The tree allows an empty folder. A folder becomes empty
-when its last child is deleted or moved out. An encoding without folder objects
-cannot hold an empty folder, so there it vanishes. With folder objects it stays
-until `remove_folder` or `delete_tree` removes it (BE-031). Whether a flat raw
-key with an empty segment, such as a folder marker another tool wrote, holds an
-empty folder is not decided here.
-
-**A.7 Links.** The rule below binds a driver that declares `links="present"`.
-Whatever its driver declares, a class on the kernel has `delete` and a `move`
-source probe their key without following a link, and `delete_folder` keeps
-BE-031's `follow_links=False` view.
-
-- `links` is `none` for object stores and `present` where the wire has links:
-  Local and SFTP.
-- The store policy is `follow_within_root` (the default) or `no_follow`. Under
-  `follow_within_root` a link decodes to its target's node, and a target
-  outside the root does not decode. Under `no_follow` a link decodes to an
-  item.
-- **Entry operations.** `delete`, `delete_folder` and a `move` source name the
-  entry at the key itself, so for them the last segment decodes under
-  `no_follow` whatever the policy, and a link that decodes is an `Item` there.
-  A.5's `Item` row then gives their answers: `delete` removes the link, never
-  its target (BE-031's existing rule); `delete_folder` answers `InvalidPath`;
-  `move` moves the link entry and leaves the target alone, as a rename does.
-- **Every other operation** reads through a link under the store policy. Under
-  `follow_within_root` a read or a `copy` from a link reads the target's
-  content, and a write to a link goes to its target. Under `no_follow` a link
-  has no content of its own, so read-file, a `copy` from it and a write to it
-  are `InvalidPath`; replacing a link the store did not make would destroy it
-  without a signal.
-- **A link that does not decode** (its target outside the root, dangling, or in
-  a loop) is refused like an input the key rule refuses (A.3). That outranks
-  the entry rule: `move` of such a link is `InvalidPath`, and only `delete`
-  removes it. The driver signals it (A.8's typing rule for drivers with links).
-
-**A.8 Observations.** A driver call observes the encoding, often only partly: a
-flat `stat` sees an item but not a folder, and a `list_page(limit=1)` sees
-whether a folder is empty. A refusal arrives as `NotFound`, `InvalidPath`,
-`AlreadyExists`, `PermissionDenied`, an untyped `RemoteStoreError`, or another
-type.
-
-**The probe set** is those first five shapes. Drivers owe no rule about which
-of them a refusal takes, except the two typing rules at the end of this part: a
-wire's ENOTDIR may arrive as any of them. Any other type (`BackendUnavailable`,
-`ResourceLocked`, `DirectoryNotEmpty`, ...) says nothing about the key and
-passes through unprobed. Then:
-
-1. A call that succeeds runs only its *determinants*: the probes that run
-   whether or not it fails. They are A.3's `stat` before a flat folder
-   operation; A.4's write checks; the probes `exists`, `is_file` and
-   `is_folder`; `get_file_info` and a ranged `read_seekable`; the transfer
-   source check, which runs on a flat namespace, with explicit parents, on a
-   rename route and for a self-operation; the destination `stat` where the
-   kernel stats a write target first (`write_atomic` by temp and rename without
-   `overwrite`, `move` by rename); `get_folder_info`'s empty-aggregate `stat`
-   with folder objects; and, without folder objects, `delete_folder`'s listing.
-   A call that succeeds without a determinant probes nothing.
-2. On a refusal whose compatible rows give more than one result for the family,
-   the kernel probes, cheapest call first. For example, delete-folder answers
-   `NotFound` in both `Nothing` rows, so it never tells them apart.
-3. A determinant fails closed: its failure is the operation's failure. A probe
-   that runs only because the call refused fails open: if it cannot answer,
-   the refusal stands (BE-021).
-4. **A probe replaces the refusal only on a row where the call must refuse,
-   or, for a listing, on a row that holds nothing.** A refusal in the probe set
-   can meet any row, since a denial or a dead connection meets an existing item
-   as well as a missing one. So when the probe concludes a row where A.5 gives
-   the call success (an item for `get`, an empty folder for `remove_folder`,
-   nothing for a write, a folder for a listing), the refusal stands. Otherwise
-   that row's A.5 result replaces it, chaining the refusal as its cause.
-
-What a `stat` says. A miss is `None`, or a raised `NotFound` or `InvalidPath`,
-since a POSIX `stat` below an item raises ENOTDIR. On a hierarchical namespace a
-key's `stat` that raises another refusal in the probe set is followed by its
-ancestors' `stat`s, shallowest first: an item among them puts the key's path
-through an item, an absent one makes the key absent, and an ancestor that
-cannot answer is skipped; if none decides, the `stat`'s own error is the
-answer, which a determinant raises and an error-path probe reads as no answer.
-A flat namespace never walks ancestors (A.3's stated limit).
-
-The tables split by `namespace`, which decides what one `stat` sees; a
-`parents="none"` driver on a hierarchical namespace takes the hierarchical
-table, except that its `delete_folder` follows BE-031's `parents="none"`
-sequence and so the flat `delete_tree` row, and it has no `remove_folder`.
-`StoreTree.dfy` §11 enumerates every call these tables name (`get`, `delete`,
-`put`, `ensure_parents`, `remove_folder`, `delete_tree`, the first listing
-page; `move`, `copy` and `rename` as a source read and a destination write),
-each namespace and each row, and proves rule 4.
-
-**Flat namespace.** A `stat` sees an item or answers a miss; it cannot tell a
-folder from nothing. Per call, after a refusal in the probe set:
-
-| Call | Probe | Concludes |
-|---|---|---|
-| `get`, `delete` | `stat(k)`, then on a miss `list_page(k, limit=1)` | an item: the refusal stands; a non-empty listing: `InvalidPath`; an empty one: `NotFound` |
-| `put`, `open_write`, commit, `rename` (A.4's checks ran first, so the key is no folder and nothing above it is an item) | `stat(k)` | an item without `overwrite`: `AlreadyExists`; anything else: the refusal stands |
-| `delete_tree` (BE-031's `parents="none"` order) | `list_page(k, limit=1)` first, then `stat(k)` after an empty listing | a non-empty listing: the refusal stands; then an item: `InvalidPath`; a miss: `NotFound` |
-| `list_page(k)`, first page | none: the only call that sees a flat folder is the listing that just failed, and A.3's `stat` ran first and found no item | a `NotFound` or `InvalidPath` is an empty listing, by the flat listing obligation below; any other shape stands |
-| `move`, `copy` | the source as `get`, the destination as `put` | as those |
-
-**Hierarchical namespace.** A `stat` sees an item or a folder. Per call, after
-a refusal in the probe set:
-
-| Call | Probe | Concludes |
-|---|---|---|
-| `get`, `delete`, a `move` or `copy` source | `stat(k)`, without following a link for `delete` and a `move` source, which name the entry (A.7) | an item: the refusal stands; a folder: `InvalidPath`; a miss or a path through an item: `NotFound` |
-| write primitives (`put`, `open_write` and commit, `rename`, `copy`, `move` at the destination) | `stat(k)`, then on a miss the ancestors' `stat`s, shallowest first | a folder: `InvalidPath`; an item without `overwrite`: `AlreadyExists`; an item among the ancestors: `InvalidPath`; anything else: the refusal stands |
-| `ensure_parents` | the ancestors' `stat`s | an item among them: `InvalidPath`, naming it; otherwise the refusal stands |
-| `remove_folder` | `stat(k)` without following a link, then for a folder `list_page(k, limit=1)` | an item: `InvalidPath`; a miss: `NotFound`; a non-empty folder: `DirectoryNotEmpty`; an empty folder: the refusal stands |
-| `delete_tree`, with folder objects, and the walk's first listing of `k` | `stat(k)` without following a link | an item: `InvalidPath`; a miss: `NotFound`; a folder: the refusal stands |
-| `list_page(k)`, first page | `stat(k)` | a folder: the refusal stands; anything else: an empty listing |
-
-A listing's first page and a `folder_stats` push-down answer alike, and on the
-root `""`, always a folder, only a `NotFound` or `InvalidPath`, an absent
-container's, is an empty listing (BE-021); no `stat` is asked. A two-key
-refusal is answered for the source first, both keys being probed only when the
-source is an item; the refusal then names the destination when only the
-destination's state can explain it (BE-030).
-
-**What drivers owe instead**, each stated once here:
-
-- A refusal changes nothing.
-- `get` and `delete` refuse a key that is not an item, and every write
-  primitive refuses a folder at its key or an item above it (hierarchical).
-  `remove_folder` refuses anything but an empty folder, and `delete_tree`
-  refuses an item, a link or nothing.
-- A flat driver's `list_page` returns keys in byte-lexicographic order (A.3).
-- A driver's `folder_stats` returns the aggregate the kernel would compute over
-  its own listing, so it omits what that listing omits: the keys BE-030's
-  listing rule omits (one the key rule refuses or rewrites, an empty-segment
-  key among them), and on a flat namespace every key below an item it lists
-  (A.3). BE-030 states the first half for native aggregates; this adds A.3's.
-- `list_page` with `follow_links=False` never lists a link's target, and
-  `delete` on a link removes the link (A.7).
-- A driver declaring `links="present"` refuses a key whose link does not decode
-  with `InvalidPath`, from `stat` and from every call, and types its own
-  ENOTDIR as `NotFound`. So an `InvalidPath` from such a driver's `stat` means
-  "does not decode", never a miss. This typing rule binds only drivers with
-  links.
-- A flat driver's `list_page` answers `NotFound` or `InvalidPath` only when
-  nothing lies under the prefix, an absent container included (BE-021). Since
-  the only call that sees a flat folder is the listing that just failed, this
-  is what lets a refused first page read as empty without hiding entries. This
-  typing rule binds only flat drivers' listings.
-
-**A.9 Changes under an operation.** A refusal before the operation's first page
-is read through A.5. A refusal after it propagates. The bound is kept once per
-operation, not per request. In `delete_folder`'s walk, a refusal of an entry
-below the key propagates unprobed, except a `NotFound`, an entry already gone,
-which is tolerated; `DirectoryNotEmpty` when a writer adds under the tree
-mid-walk is the same rule.
-
-**A.10 Conformance:** two generated suites in `tests/_kernel/`, run against both
-runtimes. `test_tree_results.py` crosses tree state with key, for the results
-in A.5. `test_encoding_observations.py` crosses encoding property, raw state,
-refusal shape and what the error-path probes do, for A.3, A.4, A.8 and A.9.
-Its fake driver returns an item and a prefix of the same name on one flat
-listing page, in byte-lexicographic order, as a real flat wire does.
-
-**Costs**, on the kernel, against a class not on it (BE-021's cost table
-measures the error-path probes; these are the determinants this section adds):
-
-| Call | Encoding | Added on every call | Added on the error path |
-|---|---|---|---|
-| a write or a `move`/`copy` destination (A.4) | flat | one `stat` per ancestor and one `list_page(limit=1)`; on a transfer, also the source check | one `stat` |
-| a folder operation on a non-root key (A.3) | flat | one `stat` | — |
-| `get`, `delete`, a source, refused | flat | — | one `stat`, then on a miss one `list_page(limit=1)` |
-| `delete(path, missing_ok=True)` on an absent key | flat | — | one `stat` and one `list_page(limit=1)`, where a class not on the kernel spends the listing alone (BE-021) |
-| a listing's first page refused in the probe set | hierarchical | — | one `stat` |
-
-### BE-033: Interaction Protocol on the Kernel
-
-**Invariant:** a class on the kernel, its driver and the caller pass through the
-states tabled below, a call means what the transition table says in each state,
-and every exit, failure and cancellation included, has one owner who closes,
-aborts or releases what is open. Three invariants hold on every path: a terminal
-close absorbs every later call the closed guard covers (I1), every `close` reaches the
-driver, so a repeated one is the driver's to make idempotent (I2), and on every
-exit the kernel observes it leaves no write handle open, no read stream open
-but one a condemned connection releases, and no caller iterator with `aclose`
-suspended (I3); the temporary of a temp-and-rename write
-is the kernel's too, by the exit-owner row below, outside the model. The other clauses of this spec
-state each call; this one states the states between them.
-
-**Scope.** The session-less classes on the kernel, such as `MemoryBackend` and
-`AsyncMemoryBackend`. A `Session` (RFC-0017 D5) has an interface here and no
-states; its obligations below bind it.
-
-**States.**
-
-| Party | States | Leaves a state by |
-|---|---|---|
-| backend | Open, Closed | `close`/`aclose`; nothing leaves Closed: under `close_is_terminal = False` the driver re-initialises on the next call and the backend stays Closed (BE-020) |
-| read stream | Open, Exhausted, Failed, Closed, Released | reading to the end, a mapped stream error, `close`/`aclose`; a Failed stream whose error `connection_dead` condemns is Released, let go without a close (the model's `SReleased`) |
-| write handle (`open_write`) | Open, Committed, Aborted | `commit`; `abort` on any exception |
-| listing | Not started, Paging, Done, Failed | the first `next`, the last page, a refusal |
-| caller's async content iterator | Unstarted, Suspended, Exhausted, Closed | each chunk the kernel takes; its end; the kernel's `aclose` |
-| `Session` | not stated here | — |
-
-A sync caller's content is a stream, not an iterator, and has no row: it stays
-the caller's in every state (below).
-
-**Transitions.** Per call, in the backend's state:
-
-| Call | Open | Closed, `close_is_terminal = False` | Closed, `close_is_terminal = True` |
-|---|---|---|---|
-| a live operation (every member BE-030's pipeline runs) | its own clause | as Open, the driver re-initialising | `BackendUnavailable`, after the capability gates BE-030 orders ahead of it; no driver call |
-| `unwrap` | the driver's handle, or BE-022's `CapabilityNotSupported` | as Open | `BackendUnavailable` |
-| `close`/`aclose` | to Closed; forwarded | forwarded again | forwarded again |
-| `name`, `capabilities`, `native_path`, `to_key`, `resolve` | answered | answered | answered, never refused (BE-030's **Addressing stays total**) |
-
-For a read stream: reading to the end leaves it Exhausted, and its close is the
-kernel's (async) or the caller's (sync, the `BinaryIO` it was handed). A mapped
-stream error leaves it Failed; a Failed stream is closed unless the driver's
-`connection_dead` condemns the error, and then it is released without a close,
-so no second wait falls on a dead connection (SIO-010), in both runtimes, for
-`read` and for `read_bytes`, which drains and closes its stream itself. Read
-after close: the sync stream raises `ValueError`, and an async iterator closed
-by its caller ends.
-
-**Exit owners.**
-
-| Exit | Owner | What it does |
-|---|---|---|
-| a repeated `close` | the driver | is idempotent; the kernel forwards every call and short-circuits none |
-| a read stream's close that fails after a successful read | the kernel's stream adapter | the close failure is logged, never raised, and fed to `connection_dead`; a read failure outranks a close failure |
-| end of data | the driver | exhaustion is the client's own end-of-data read, after any length or checksum check the client makes there, never a byte count the driver keeps |
-| a write handle on any exception, cancellation included | the kernel | calls `abort`; an `abort` that fails is logged on `remote_store._kernel` at `WARNING` with its `connection_dead` verdict, and the write's own error is raised |
-| a temporary of the temp-and-rename write | the kernel | deleted on any exception; a failed delete is logged as a failed `abort` is, except one that maps to `NotFound` (BE-021, a `container_absent` answer included): no temporary was left, so there is nothing to clean up |
-| `abort` after a failed `commit` | the driver | is legal and idempotent |
-| an overwrite conflict without `overwrite` | the driver | refuses in one step on the wire where the wire has a conditional write; the conflict surfaces at `commit` for a handle, at the call for `put`; its typing as `AlreadyExists` is a driver duty |
-| a caller's async content iterator the kernel stops taking (a refused chunk, a driver or handle failure, a cancel, or a success whose driver returned before its end) | the kernel | calls its `aclose`, when it has one, before the call returns; what that raises is logged and never replaces the write's error. An exhausted one needs nothing. The kernel takes the iterator with its first chunk: a refusal before that, at the gates (closed guard, key, metadata, content shape), a write check or the driver, leaves it unstarted and the caller's to retry with |
-| a sync caller's content stream | the caller | the kernel never closes it, on any exit: the caller may seek it or retry with it |
-| a connection a failure condemns | the `Session` | `invalidate` closes the client at once, and a stream on it fails mapped at its next read. `connection_dead` means transport-level death, the socket or session gone, never an error the next request on the same connection survives. A cancel never invalidates |
-| `unwrap` on a `Session` driver | the `Session` | goes through `run`, so after `invalidate` it reconnects |
-| a `close` racing in-flight calls on a `thread_safe` class (BE-028) | the `Session` | creating and tearing down the client is atomic against the closed flag, under a lock held around the accessor alone, never over I/O, and async re-checks after its connect await; `close` waits for no in-flight call, and the teardown wakes blocked calls, which fail mapped. On a `single_connection` class concurrent `close` is already the caller's misuse |
-
-**Refusal timing.** The rule: a pure refusal (the closed guard, a capability
-gate, `InvalidPath` for a malformed key) surfaces at the call; a stream's I/O
-refusal (`NotFound`, `InvalidPath` for a file-versus-folder mismatch) surfaces
-when the stream opens, through a handle (`with`/`async with store.read(...)`);
-a listing's I/O stays lazy, at its first page.
-
-**Invariants**, each a lemma of `sdd/formal/KernelProtocol.dfy`:
-
-1. **I1, terminal absorption** (`TerminalCloseAbsorbs`): from Closed under
-   `close_is_terminal = True`, every live operation and `unwrap` answers
-   `BackendUnavailable`, past any capability gate BE-030 ranks ahead of the
-   guard, and the state stays Closed. `close` and the addressing members are
-   not refused (the transition table). A non-terminal backend is never refused
-   for being closed (`ReusableNeverRefuses`).
-2. **I2, `close ∘ close = close`** (`CloseIsForwardedAndIdempotent`): two closes
-   leave the backend as one does, and the driver sees each.
-3. **I3, cleanup on every exit the kernel observes** (`CleanupOnEveryExit`, over
-   `KernelExit`): after any exit, no write handle is Open; every read stream is
-   closed, except one whose failure condemned the connection, which is released
-   without a close; and no caller iterator the kernel took is Suspended if it
-   has `aclose`. One without `aclose` is left where the kernel stopped taking
-   it, the caller's to finish. A sync read hands its stream to the caller
-   open, so that stream's exit is the caller's close, which the kernel's
-   wrapper turns into the close or the release.
-
-**Guard order.** Which capability gates run ahead of the closed guard is
-BE-030's **Gates around the pipeline**, and this clause keeps that order.
-
-**The model is the oracle.** `KernelProtocol.dfy` compiles to
-`sdd/formal/KernelProtocol-py/`, and `tests/_kernel/test_protocol_oracle.py`
-drives the kernel through the exits its case builders enumerate (`_write_cases`,
-`_UNDRAINED_ROUTES`, `_open_atomic_cases`, `_read_cases`, `_sequences`; that file
-is the list), not every exit and not every state the model admits (most admitted
-states pair resources no single exit holds). The writes run on a hierarchical
-namespace with `overwrite=True` and an unnested key, and fault only the driver
-steps the builders name; a step reached but never faulted, and an exit never
-reached, is outside the suite: for example a failed `abort` or a failed delete
-of the temporary (both pinned in `test_protocol.py` instead), the probes after a
-refusal, `ensure_parents`, the metadata, content-shape and capability gates, a
-refused open of a read, or a flat namespace. Each cell but the read's closed
-guard, which asserts that no stream was opened, requires the state the kernel
-left to equal what the compiled `KernelExit` or `KernelStep` computes from the
-state at the exit, so I1 to I3 hold of the code on these exits to the extent
-that suite's stated mapping from the fake driver's records onto the model's
-states is faithful.
-
-**The model drawn.** The diagrams below are enumerated from the same compiled
-model, over every value of its datatypes that `KernelExit`'s preconditions
-admit, and a test holds every drawn edge, label included, to one the oracle
-suite drives the kernel through; `hatch run gen-protocol-diagram` rewrites
-them after the oracle is rebuilt, and `preflight` fails while they are stale.
-
-<!-- BEGIN_GENERATED:kernel_protocol -->
-Generated from the compiled model by `scripts/gen_protocol_diagram.py`; do not edit by hand.
-
-The backend under `KernelStep`, each edge a call / its answer:
-
-```mermaid
-stateDiagram-v2
-  state Reusable {
-    [*] --> Reusable_BOpen
-    Reusable_BOpen --> Reusable_BClosed : CloseCall / Done
-    Reusable_BOpen --> Reusable_BOpen : LiveCall / Done
-    Reusable_BClosed --> Reusable_BClosed : CloseCall / Done<br/>LiveCall / Done
-  }
-  state Terminal {
-    [*] --> Terminal_BOpen
-    Terminal_BOpen --> Terminal_BClosed : CloseCall / Done
-    Terminal_BOpen --> Terminal_BOpen : LiveCall / Done
-    Terminal_BClosed --> Terminal_BClosed : CloseCall / Done<br/>LiveCall / Unavailable
-  }
-```
-
-Each resource under `KernelExit`, each edge labelled with the exits that make it; an exit not drawn
-leaves the resource as it was:
-
-Stream:
-
-```mermaid
-stateDiagram-v2
-  SOpen --> SClosed : Success, Faulted(dead=False), Cancelled
-  SOpen --> SReleased : Faulted(dead=True)
-```
-
-Handle:
-
-```mermaid
-stateDiagram-v2
-  HOpen --> HAborted : Faulted(dead=False), Faulted(dead=True), Cancelled
-  HOpen --> HCommitted : Success
-```
-
-Iterator:
-
-```mermaid
-stateDiagram-v2
-  ISuspended --> IClosed : Success, Faulted(dead=False), Faulted(dead=True), Cancelled with aclose
-```
-<!-- END_GENERATED:kernel_protocol -->
-
-**Conformance:** `tests/_kernel/test_protocol.py`, a cell per kernel- and
-caller-owned row of the tables above over the fake driver, both runtimes
-(except the `Session` and driver rows, below, and the stream adapter's
-close-failure row); `tests/_kernel/test_protocol_stateful.py`,
-a Hypothesis state machine checking I1 to I3 under random interleavings of
-`write` and the wire-temporary `write_atomic` route, reads and closes, per
-runtime and posture; Memory's rows in `tests/backends/memory/test_kernel_cells.py`;
-and the repeated-close cell in both close-posture lanes
-(`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling). The
-`Session` rows have no cell. The driver's rows are
-duties its protocols' docstrings state (`remote_store._kernel._async.driver`),
-and no cell checks them.

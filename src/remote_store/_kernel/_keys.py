@@ -3,7 +3,7 @@
 Pure functions over strings, so both runtimes share them unchanged.
 """
 
-# Spec 003 BE-030.
+# Spec 053 BE-030.
 
 from __future__ import annotations
 

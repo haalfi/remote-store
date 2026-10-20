@@ -93,7 +93,7 @@ behaviour every backend had before this clause.
 **On the kernel:** a class on the kernel supplies its driver's `connection_dead`
 as the predicate, and the async `read` and both runtimes' `read_bytes` honour
 the same verdict, so both runtimes skip the close of a condemned stream
-([BE-033](003-backend-adapter-contract.md#be-033-interaction-protocol-on-the-kernel)).
+([BE-033](052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)).
 
 **The predicate's verdict is the scope, and it is narrower than "unusable".**
 The Invariant read "a connection the stream's own failure has already

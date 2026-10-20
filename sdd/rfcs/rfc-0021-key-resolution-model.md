@@ -7,7 +7,7 @@ Accepted, 2026-10-13, by the maintainer. Drafted 2026-10-12. Aligned with
 **BK-432**. PR #1127 (BK-389) was parked until this was decided, and resumes
 against it: its open `delete_folder` findings are answered from it. Appendix A
 landed as spec 003's
-[BE-032](../specs/003-backend-adapter-contract.md#be-032-the-store-tree-on-the-kernel)
+[BE-032](../specs/053-contract-kernel.md#be-032-the-store-tree-on-the-kernel)
 with PR #1127, which is now the authority; the appendix stays as drafted.
 Links (A.7) are stated there but not yet on the kernel.
 

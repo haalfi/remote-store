@@ -8,7 +8,7 @@ Built-in (no optional extra). `open_atomic` holds its temporary in memory too,
 through the driver's `open_write` (SAW-012).
 
 `MemoryBackend` is a class on the contract kernel
-([003 § Contract kernel](003-backend-adapter-contract.md#contract-kernel)):
+([053 § Contract kernel](053-contract-kernel.md#contract-kernel)):
 `class MemoryBackend(DriverBackend)`, whose zero-argument constructor builds a
 `MemoryDriver`. `AsyncMemoryBackend(AsyncDriverBackend)` builds an
 `AsyncMemoryDriver` the same way. Both drivers hold a `MemoryTree`
@@ -158,7 +158,7 @@ the backend validates paths before traversal. When used via `Store`, the
 `RemotePath` constructor handles normalization upstream — but the backend must
 not rely on this since direct use is a supported pattern. On the kernel the
 validation is the kernel's, by
-[BE-030](003-backend-adapter-contract.md#be-030-key-rule-on-the-kernel)'s key
+[BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel)'s key
 rule, ahead of every driver call; every row below is that rule's answer.
 
 Validation rules (applied by splitting on `'/'` and inspecting segments):
@@ -358,7 +358,7 @@ it has no children (else `DirectoryNotEmpty`), remove from parent, decrement
 `folder_count` by 1.
 
 On the kernel the `recursive` dispatch is the kernel's
-([BE-031](003-backend-adapter-contract.md#be-031-delete_folder-on-the-kernel)):
+([BE-031](053-contract-kernel.md#be-031-delete_folder-on-the-kernel)):
 the recursive case calls the driver's `delete_tree`, the other its
 `remove_folder`, each one locked step over `MemoryTree`. The root is refused
 with `InvalidPath` before either is called.
