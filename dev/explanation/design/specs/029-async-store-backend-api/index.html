@@ -13784,7 +13784,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <h3 id="async-006-read">ASYNC-006: read()<a class="headerlink" href="#async-006-read" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def read(path) -&gt; AsyncIterator[bytes]</code>. Returns an async iterator of byte chunks for the file content.
 <strong>Raises:</strong> <code>NotFound</code> if the file does not exist.
-<strong>When a refusal surfaces:</strong> at the first <code>__anext__</code> on a class on the kernel, every refusal included; the rule that moves the pure ones to the call, and today's timing per layer, are <a href="../003-backend-adapter-contract/#be-033-interaction-protocol-on-the-kernel">BE-033</a>'s <strong>Refusal timing</strong>.
+<strong>When a refusal surfaces:</strong> <a href="../003-backend-adapter-contract/#be-033-interaction-protocol-on-the-kernel">BE-033</a>'s <strong>Refusal timing</strong>.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-006</a>, ASYNC-020.</p>
 <h3 id="async-007-read_bytes">ASYNC-007: read_bytes()<a class="headerlink" href="#async-007-read_bytes" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def read_bytes(path) -&gt; bytes</code>. Returns the full file content as bytes.
