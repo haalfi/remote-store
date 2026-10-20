@@ -187,8 +187,11 @@ phases:
           maintainer's request after the Windows trailing-blank question) is
           asserted on Memory and Linux Local, where a five-space folder and
           `a.` beside `a` were measured distinct; on Windows Local it is a
-          strict xfail in the os_sensitive lane, so CI's windows-latest job
-          measures the documented Win32 stripping (an XPASS fails the job)
+          strict xfail in the os_sensitive lane. CI's windows-latest job at
+          74271f9c4 measured it: `a `, `a.`, `d/x. ` and `a./b` alias their
+          stripped names (AssertionError), and `a/     ` lands on folder `a`
+          as PermissionDenied, which the narrowed xfail first reported as a
+          failure; each case's expected error is now pinned
         outcome: ok
       - file: sdd/SPEC-DESIGN.md
         section: "Rule 5"

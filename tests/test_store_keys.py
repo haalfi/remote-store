@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from remote_store._errors import InvalidPath
+from remote_store._errors import InvalidPath, PermissionDenied
 from remote_store._path import RemotePath
 from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
@@ -156,9 +156,16 @@ def test_admitted_key_reaches_its_own_entity(
     """A name with a trailing space or dot is its own entity, not its stripped spelling."""
     if backend_name == "local":
         if sys.platform == "win32":
-            # Measures the documented Win32 stripping on CI's Windows lane: an XPASS fails it.
+            # Measured on CI's Windows lane: a stripped name aliases its stripped spelling,
+            # and one stripped to its parent's name lands on that folder (PermissionDenied).
+            # Any other outcome, an XPASS included, fails the job.
+            onto_parent = key.startswith(alias + "/")
             request.applymarker(
-                pytest.mark.xfail(strict=True, raises=AssertionError, reason="Windows Local aliases the name (BK-469)")
+                pytest.mark.xfail(
+                    strict=True,
+                    raises=PermissionDenied if onto_parent else AssertionError,
+                    reason="Windows Local aliases the name (BK-469)",
+                )
             )
         store = Store(backend=LocalBackend(root=str(tmp_path)))
     else:

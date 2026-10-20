@@ -23,8 +23,10 @@ Memory stores a 300-character name; Local on Linux raises a raw `OSError`
 [Errno 36]. Read from `src/remote_store/backends/_local.py`, not measured:
 Local creates a write's parent folders before it opens the file, so a nested
 key fails after leaving them behind. BUG-334 records Windows Local's raw
-`OSError` [Errno 22]; Windows path handling removes a trailing `.` from a name,
-so `a.` reaches `a` (spec 054 KEY-009's Note, documented, not measured here).
+`OSError` [Errno 22]. Measured on CI's windows-latest runner at `74271f9c4`
+(`tests/test_store_keys.py`, KEY-009): Local stores `a `, `a.`, `d/x. ` and
+`a./b` under their stripped names, and a write of `a/     ` lands on the folder
+`a` and raises `PermissionDenied`.
 
 Spec 054 first stated the licence to refuse as a profile declared in each
 backend's spec. Three review rounds on PR #1171 found the cost: nothing at
