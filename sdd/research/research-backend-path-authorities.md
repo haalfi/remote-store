@@ -1,25 +1,22 @@
 # Research: What each backend's authority allows in a path or key
 
 **Date:** 2026-10-21
-**Status:** Research complete — ready for design decisions
+**Status:** Research complete — a reference table
 
 ---
 
-## 1. Problem Statement
+## 1. Purpose
 
-A key model has to say which strings the library accepts, and every backend
-that stores the result has its own rules for what a name may be. Those rules
-live in different authorities: an RFC, the POSIX standard, vendor
+Every storage backend has its own rules for what a path or key may be. Those
+rules live in different authorities: an RFC, the POSIX standard, vendor
 documentation, an expired Internet-Draft. They are stated in different units
 (bytes, UTF-16 units, characters, segment counts), and they are often recalled
 from memory rather than read.
 
-This document collects, for each externally governed backend, what its own
-authoritative source permits in a path or key. It covers external authorities
-only and says nothing about what remote-store accepts; that is the subject of
-[the key-model research](research-key-model.md). The decision it informs is the
-content of the spec between spec 051 and spec 004: which strings a key may be,
-measured against what each backend can store.
+This document is a reference: for each externally governed backend, what its
+own authoritative source permits in a path or key, with the source cited. It
+records the external authorities only. It decides nothing and states nothing
+about what remote-store accepts.
 
 **Scope.** The externally governed backends of remote-store v0.33.0
 (`FEATURES.md` § Backends): `local`, `s3`, `s3-pyarrow`, `azure`, `sftp`,
@@ -29,18 +26,17 @@ authority; their key rules are remote-store-defined.
 **Derivation.** Every claim comes from a primary source fetched on 2026-10-21
 (WebFetch, or Python `urllib` / `pdftotext` for POSIX, Apple and Python
 pages). Quotes passed through WebFetch's extraction model: they are
-near-verbatim, not byte-checked. Before a quote becomes a spec clause, check it
-against the raw source. Points that no primary source settles after two rounds
+near-verbatim, not byte-checked. Before relying on a quote, check it against
+the raw source. Points that no primary source settles after two rounds
 of search are marked "Not documented" and listed in § 4. Statements from SDK
 source, SDK issue trackers or emulators are labelled as such.
 
 ---
 
-## 2. Evaluation
+## 2. Reference table
 
-One row per backend and namespace model, against the questions a key model
-has to answer. Each cell is derived from the subsection of § 3 for that
-backend.
+One row per backend and namespace model, with the same questions asked of
+each. Each cell is derived from the subsection of § 3 for that backend.
 
 | Backend | Authority | Unit, max length | Hierarchy, separator | Forbidden | Avoid (advisory) | `.` / `..` | Empty segment, `//` | Trailing `/` | Case | Encoding |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -567,13 +563,8 @@ No source settles these, after two rounds of search:
 
 ---
 
-## 5. Recommendation
+## 5. Using this reference
 
-Use § 2 as the reference when the key spec decides which strings a key may
-be, and cite the § 3 subsection, not the table, for any clause that rests on
-a backend rule. The authorities differ in what they forbid, in the unit they
-measure length in, and in whether they normalise names or fold case (§ 2), so
-no one backend's rules can serve as the key rule for the others. The spec has
-to choose its own rule and record which backend rules it is stricter or looser
-than. Treat the points of § 4 as unknown, not as
+§ 2 is the overview; cite the § 3 subsection, not the table, for any claim
+that rests on a backend's rule. Treat the points of § 4 as unknown, not as
 permitted.
