@@ -113,6 +113,13 @@ L_shared ⊆ L_b ⊆ L_core      for every backend b,
 L_shared ⊆ ⋂_b L_b           (equal, or stricter as a deliberate policy)
 ```
 
+What each backend's own authority permits, with sources, is collected in
+[research-backend-path-authorities.md](research-backend-path-authorities.md),
+the input for each L_b. Its § 3.7 also records that the Azure Python SDK's
+transport removes dot segments before sending, so a `..` that reached it could
+address a blob outside the container; § 3.5's reduction removes navigation
+before any key string reaches a backend.
+
 **L_api** is L_floor ∩ L_b by default, so every key the backend can hold
 under the floor stays reachable; a store may opt into portability, and then
 L_api = L_floor ∩ L_shared. The choice is a declared, observable part of the

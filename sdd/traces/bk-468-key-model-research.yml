@@ -148,3 +148,13 @@ phases:
         read_type: reference
         extract: "PoC folder convention: repo-only README, freezes once the finding lands, run commands name the path"
         outcome: ok
+      - file: sdd/research/research-backend-path-authorities.md
+        section: "(full)"
+        read_type: reference
+        extract: "A second session's survey of each backend's own path authority, landed as is at the maintainer's request; back-linked from research-key-model.md § 3.2 as the input for each L_b, with its § 3.7 Azure dot-segment finding"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Docs navigation"
+        read_type: verify
+        extract: "No trigger names a new research doc; Docs navigation was the nearest, and research pages are indexed by check-sdd-index, not a _nav.yml entry"
+        outcome: unclear
