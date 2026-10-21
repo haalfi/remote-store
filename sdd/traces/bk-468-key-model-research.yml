@@ -1,0 +1,142 @@
+id: BK-468
+title: "No key model connects spec 051's Key to the key parameter of Store"
+trigger: >-
+  Spec 051 defined Key on entities while RemotePath (spec 004), the kernel's
+  key rule (BE-030) and child() (spec 015) each mapped a caller's string by
+  their own rules; a concept for the layer between was drafted outside the
+  repo, decided with the maintainer, spike-tested and proved in Lean, then
+  landed as a research doc.
+source_items:
+  - BK-468
+  - BK-435
+audience:
+  - library.maintainer
+  - contributor.process
+decisions:
+  - sdd/decisions/fca785b7-259e-4b69-9457-132a2b61107a.jsonl
+expected_ripples:
+  - sdd/backlogid.json
+orient:
+  - items: [BK-435]
+    verdict: unrelated
+    evidence: >-
+      BK-435's open work is StoreTree.dfy §12's @spec tags and research
+      § 10 step 3's Dafny operations (its index entry); the key model is a
+      separate layer above spec 051 and closes neither.
+  - items: [BK-436]
+    verdict: constrains
+    evidence: >-
+      BK-436's open decision includes how a backend's coarser name equality
+      answers (BE-032 A.1); the research's § 3.2 sibling equivalence and
+      normal-form rule are a candidate answer, stated as such, without
+      closing BK-436.
+  - items: [BK-462]
+    verdict: constrains
+    evidence: >-
+      Lean and Alloy run in no CI job (BK-462's index entry), so the Lean
+      proofs land as evidence under sdd/research/ and govern no clause; the
+      research's § 10 says so.
+  - items: [BUG-299, BUG-300, BUG-334]
+    verdict: unrelated
+    evidence: >-
+      Kernel-step fixes for Local's `..` key, SQLBlob's `\` key and Windows-
+      refused names (their index entries); a research doc changes no code.
+      BUG-334 is cited only as an instance of a backend tier.
+  - items: [BK-456]
+    verdict: unrelated
+    evidence: >-
+      Spec 003's split moves BE clauses (the kernel's to spec 053); the
+      research cites BE-030 by ID, which the split keeps.
+phases:
+  - id: design
+    name: Design the concept against the authorities (outside the repo, then here)
+    steps:
+      - file: sdd/specs/051-store-tree.md
+        section: "(full)"
+        read_type: gate
+        extract: "Key is defined on entities; TREE-011's shape is the key-string language; § Layering lets the library address a subset"
+        outcome: ok
+      - file: sdd/research/research-store-model-axioms.md
+        section: "§ 1 to § 10"
+        read_type: gate
+        extract: "Structure to align the new research doc with; § 6 admits `.` and `..` as names; § 10 Lean results to reuse"
+        outcome: ok
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-001 -- PATH-017"
+        read_type: gate
+        extract: "RemotePath is a stricter ν: rejects every `..`, converts `\\`, spells the root `.`"
+        outcome: ok
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-002, ERR-003, ERR-005"
+        read_type: reference
+        extract: "Map resolution outcomes onto errors; two widenings and one delta (ERR-005 (a), empty path)"
+        outcome: ok
+      - file: sdd/specs/015-store-child.md
+        section: "CHILD-001 -- CHILD-011"
+        read_type: reference
+        extract: "Child composition and round trip agree; `..` and the empty subpath differ; an absent or item c is undecided there"
+        outcome: ok
+  - id: orient
+    name: Orient against open and decided work
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-435, BK-436, BK-462, BUG-299, BUG-300, BUG-334, BK-456"
+        read_type: gate
+        extract: "Cluster verdicts for the orient note"
+        outcome: ok
+      - file: sdd/backlog/bk-395-kernel-key-rule-addressing.md
+        section: "(full)"
+        read_type: gate
+        extract: "The kernel refuses `\\` on every operation; the decision lives in BK-389's decision 6"
+        outcome: ok
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "Decisions / 6"
+        read_type: gate
+        extract: "The kernel's pipeline and table; its domain equals L_api, so the concept sits above it and agrees"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "§5a WellFormedPath, Canonical"
+        read_type: verify
+        extract: "Clause-by-clause comparison: L_floor plus TREE-011 shape is Canonical's non-root domain"
+        outcome: ok
+  - id: verify
+    name: Spike and proofs
+    steps:
+      - file: sdd/formal/lean/StoreAxioms.lean
+        section: "§ 2 join, § 4 seqOf/Key, § 7 L3-L6, ofTrie"
+        read_type: reference
+        extract: "Reuse join_inj, join_shape, seqOf, Key and ofTrie instead of restating; Lemma C and the child view go through L6"
+        outcome: ok
+      - file: scripts/lean_check.sh
+        section: "(full)"
+        read_type: reference
+        extract: "It copies only the project dir into Docker, so a project requiring sdd/formal/lean by path needs its own build script"
+        outcome: unclear
+  - id: docs
+    name: Land the research doc
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "Item shape, attributes, next safe ID BK-468"
+        outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "sdd/research/research-*.md is dual by default; a PoC folder needs its own marker"
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Document types / Research"
+        read_type: gate
+        extract: "Companion code in a folder beside the doc, linked from it; point-in-time snapshot"
+        outcome: ok
+      - file: sdd/templates/research-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "The **Date:** header is load-bearing (check-sdd-index)"
+        outcome: ok
+      - file: sdd/research/bk-181-poc/README.md
+        section: "(full)"
+        read_type: reference
+        extract: "PoC folder convention: repo-only README, freezes once the finding lands, run commands name the path"
+        outcome: ok
