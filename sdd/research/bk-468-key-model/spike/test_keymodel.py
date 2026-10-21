@@ -14,6 +14,7 @@ from keymodel import (
     Store,
     accept,
     axiom_violations,
+    child_resolve,
     child_view,
     in_l_core,
     join,
@@ -273,6 +274,20 @@ def test_child_resolution_commutes(s: Store, data: st.DataObject, k: str) -> Non
     assert rc[0] == rs[0]
     if rc[0] == "found":
         assert rc[1] == rs[1]
+
+
+@given(stores(), key_strings, key_strings)
+def test_child_composition_table(s: Store, c: str, k: str) -> None:
+    """§ 3.6's table: below an absent c every key is AbsentAncestor; below an item, BlockedByItem."""
+    assume(c != "" and k != "")
+    at_c = resolve(c, s)
+    below = child_resolve(s, c, k)
+    if at_c[0] in ("absent", "absent_ancestor"):
+        assert child_view(s, c) is None
+        assert below[0] == "absent_ancestor"
+    elif at_c[0] == "blocked" or (at_c[0] == "found" and at_c[2] == "item"):
+        assert child_view(s, c) is None
+        assert below[0] == "blocked"
 
 
 # --- § 3.2 round trip on a rewriting backend ---------------------------------

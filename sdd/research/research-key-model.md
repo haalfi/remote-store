@@ -89,7 +89,8 @@ Acceptance constraints come in two kinds. A **per-string** constraint judges
 one key string alone and is a language; a **per-store** constraint judges a
 set of names together and is a predicate on states.
 
-**The floor.** Refused for every store, whatever its backend:
+**The floor.** Every store, whatever its backend, refuses a name holding NUL
+or `\`, and a name equal to `.` or `..`. L_floor is what remains:
 
 ```
 L_floor = { k ∈ L_core │ no segment contains NUL or `\`, and no segment equals `.` or `..` }
@@ -226,17 +227,24 @@ After an opt-out (Sep_S = {`/`}), `a\b` and `a\a/..` are Reject at step 0.
 
 ### 3.6 Child stores
 
-A child store of S at c, for c ∈ L_api with c ≠ ε (spec 015), is read from
-S's state each time an operation runs, so it changes as S does:
+A child store of S at c, for c ∈ L_api with c ≠ ε (spec 015), answers by
+**composition**: when an operation runs, the child resolves its key string k
+as S resolves c ⊕ k, and the operation maps that outcome as § 3.7 does. So
+the child and S never disagree about one entity. Creating a child needs no
+lookup, and its first write creates c and its missing ancestors in S, as the
+same write to c ⊕ k in S would.
 
-| Ω_S(c) when the operation runs | The child's view |
+| Ω_S(c) when the operation runs | The child |
 |---|---|
-| Found(e, folder) | the subtree under e, with e as root and its name taken as ε (TREE-007); a store per spec 051 |
-| Absent, AbsentAncestor | the one-entity store (only its root); its first write creates c and its missing ancestors in S |
-| Found(e, item), BlockedByItem | none: every operation on the child raises `InvalidPath`, since a prefix of each composed key names an item |
+| Found(e, folder) | a store per spec 051 of its own: the subtree under e, with e as root and its name taken as ε (TREE-007); resolving in it agrees with S (K12) |
+| Absent, AbsentAncestor | no store of its own: its root resolves as c does in S (no folder there), and every other key as AbsentAncestor |
+| Found(e, item), BlockedByItem | no store of its own: its root resolves as c does in S, and every other key as BlockedByItem, so a write is `InvalidPath`, a read `NotFound` and a probe false (§ 3.7) |
 
-Creating a child needs no lookup. Keys compose by join: a child key string k
-is S's key string c ⊕ k, so child(c).child(d) = child(c ⊕ d) (CHILD-005).
+Keys compose by join: a child key string k is S's key string c ⊕ k.
+**Chaining** holds for a d the child accepts: if ν_c(d) ≠ Reject, then
+child(c).child(d) = child(c ⊕ ν_c(d)) (CHILD-005). A d the child rejects
+creates no grandchild: under c = `a`, `../b` escapes the child, although S
+accepts c ⊕ `../b` = `b`.
 Walks start at the child's root, so a child never reaches the rest of S.
 **Acceptance runs on the composed string:** a whole-string limit applies to
 the backend's key, so a k that passes alone can fail under c. Sep_S and L_api
@@ -274,6 +282,7 @@ outcome is an error is the operation's decision. Where it is one:
 | Found, but the operation needs the other kind | `InvalidPath` | ERR-005 (b) |
 | BlockedByItem, in an operation that would create below the item | `InvalidPath`, as BE-032 A.4 and A.5 already answer | ERR-005 (b), widened: the key *or one of its prefixes* names the wrong kind |
 | Absent or AbsentAncestor, in an operation that needs the entity | `NotFound` | ERR-002 |
+| BlockedByItem, in an operation that needs the entity (a read, a delete); a probe answers false and a listing is empty | `NotFound`, as BE-032 A.5's "path through an item" row | ERR-002 |
 | AbsentAncestor, in a write | none: the write creates the missing folders | as ERR-005's own example |
 | A sibling clash under ≡_b: writing `a` beside an existing `A` | `AlreadyExists`; `path` is the caller's key, the message names the existing sibling | ERR-003, widened to a clash under the backend's name equality |
 
@@ -351,12 +360,12 @@ the session's decision log (`sdd/decisions/`, listed in the BK-468 trace).
 | `..` above the root | Reject | Clamp at the root, as `posixpath.normpath` and RFC 3986 do (§ 9): never fails, may address the wrong entity. |
 | Separator noise (`//`, leading and trailing `/`) | Collapsed: equivalent to the clean string | Rejected: one spelling per key on input too. |
 | `\` | A separator by default; forced where the backend instance treats it natively; an opt-out rejects it anywhere in the input; never a name character | A literal mode keeping `\` in names: reaches S3 and Azure names holding `\`, at the cost of one string meaning different keys per store. |
-| The root's key string | ε, by spec 051; display out of this model's scope | Mandate ε for display too: spec 004's `.` (PATH-015) becomes a defect. |
+| The root's key string | ε, by spec 051; display out of this model's scope | Mandate ε for display too: spec 004's printed `.` (PATH-015's `str()`) becomes a defect. |
 | Where step 0's rules apply | The whole raw input | The end position: § 5's first two rows. |
 | What step 2 judges | The end position only | Each *down* step: § 5's third row. |
 | Error for BlockedByItem in a write | `InvalidPath`, widening ERR-005 (b); BE-032 A.4 and A.5 already give the same answer | `NotFound`, hiding that something exists at the prefix; or a new class with its own ADR. |
 | Error for a sibling clash under ≡_b | `AlreadyExists`, widening ERR-003 | `InvalidPath`, a lexical-sounding error for a state conflict; or leave it to BE-032. |
-| A child at an absent c | Lazy: empty until written | Must exist: `child()` needs a lookup, and multi-tenant setups create folders first. |
+| A child at an absent or item c | Lazy and by composition: it answers what S answers at c ⊕ k, and is a store of its own only at a folder c | Must exist: `child()` needs a lookup, and multi-tenant setups create folders first. Or a view of its own (a one-entity store, or raising on every operation), whose root then disagrees with S. |
 | A backend that rewrites names | Accept only names in its normal form | The backend returns the written spelling, needing extra state; or leave it to BE-032. |
 | Σ | Unicode scalar values | Bytes, reaching non-UTF-8 POSIX names; or all code points, surrogates included. |
 | Length units | Each backend's own | One library unit, with conservative conversions. |
@@ -408,7 +417,8 @@ All are proved in Lean 4 (§ 10); the theorem names are in its table.
   the "create in place" column of § 3.7.
 - How a backend encodes the tree (BE-032), and `glob` patterns (BK-389's
   dossier, decision 6).
-- How a key string is displayed, including the root's `.` (PATH-015).
+- How a key string is displayed, including the root printed as `.` (PATH-015's
+  `str()`); PATH-015's `name` and `parts` are a delta (§ 9.2).
 - The shape of the API: which type carries a key, and how Sep_S and the
   portability choice are configured and shown.
 
@@ -443,9 +453,11 @@ shown; all with `hatch run python -I`, Python 3.13.16, 2026-10-21.
 of ν: it agrees on separator noise and `.`, and on `\` as a separator by
 default. It differs in three places, each a delta for the spec to settle:
 `..` (PATH-003 rejects every `..`; ν climbs), the root (PATH-008 rejects the
-empty path; PATH-015 gives the root the name `.` and parts `(".",)`, where
-spec 051 has name(r) = ε and no segments; PATH-010 gives `a` no parent, where
-§ 4 has ε), and the opt-out, which spec 004 does not have.
+empty path; PATH-015's `name` and `parts` give the root the name `.` and parts
+`(".",)`, where spec 051 has name(r) = ε and no segments; PATH-010 gives `a` no
+parent, where § 4 has ε), and the opt-out, which spec 004 does not have.
+PATH-015's `str()`, printing the root as `.`, is display and out of scope
+(§ 8).
 
 ### 9.3 The kernel's key rule
 
@@ -514,7 +526,7 @@ up to 2000 generated examples per property (its `settings` profile), over
 small name pools chosen so collisions and navigation are frequent, and over
 generated stores of at most ten entities. It found one defect: the `\` and
 NUL rules were checked on the result, giving § 5's first two rows; the fix is
-step 0. Run as the folder's README says, it reports `43 passed`.
+step 0. Run as the folder's README says, it reports `44 passed`.
 
 **Lean 4 (2026-10-21).** [`bk-468-key-model/lean/`](bk-468-key-model/README.md)
 proves K1 to K12 with Lean 4.34.1, core library only, against spec 051's own
@@ -546,8 +558,10 @@ with the opt-out and the dependent proofs no longer checking and the
 **What neither covers.** Backend tiers are an arbitrary predicate in Lean and
 stand-ins in the spike (`CON`, a byte limit), not real rule sets. Resolution's
 four outcomes are proved to cover every case; their disjointness is stated,
-following from arithmetic and TREE-001, not proved as a theorem. The lazy
-child at an absent c and § 3.7's state changes are not modelled. Neither tool
+following from arithmetic and TREE-001, not proved as a theorem. A child at
+an absent or item c answers by definition from S (§ 3.6); only the folder case,
+where the child is a store of its own, is a theorem (K12). § 3.7's state
+changes are not modelled. Neither tool
 runs in CI (BK-462), so both are review aids: no clause they check is
 model-governed.
 
@@ -561,7 +575,8 @@ these deltas, each named in § 3.3 or § 9:
 - BE-032 A.1: resolution's depth (Absent against AbsentAncestor), and its
   naming of spec 004 as the input layer's owner; spec 051's § Layering names
   spec 004 the same way.
-- PATH-008, PATH-010, PATH-015, CHILD-001 and ERR-005 (a): ε is a key string;
+- PATH-008, PATH-010, PATH-015's `name` and `parts`, CHILD-001 and ERR-005
+  (a): ε is a key string;
   the root's name is ε and its segments empty; `parent(a)` is ε; the operation
   decides whether it accepts the root.
 - ERR-005 (b) and ERR-003: the two widenings of § 3.7.

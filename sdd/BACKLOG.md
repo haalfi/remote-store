@@ -551,7 +551,7 @@ no clause of the contract ships unexercised.
   (after BK-434). Open decision: none.
 
 - [~] **BK-468 — No key model connects spec 051's Key to the key parameter of `Store`**
-  spec: TREE-009 -- TREE-012, PATH-002 -- PATH-015, ERR-003, ERR-005, CHILD-001 -- CHILD-009 · effort: L · audience: library.maintainer, contributor.process
+  spec: TREE-009 -- TREE-012, PATH-002 -- PATH-015, ERR-003, ERR-005, CHILD-001 -- CHILD-009, BE-030, BE-032 · effort: L · audience: library.maintainer, contributor.process
   Spec 051 defines Key on entities; `RemotePath` (spec 004), the kernel's key rule (BE-030) and
   `child()` (spec 015) each map a caller's string by their own rules. `research-key-model.md`
   states one model, decided by the maintainer, spike-tested and proved in Lean. Not done: the

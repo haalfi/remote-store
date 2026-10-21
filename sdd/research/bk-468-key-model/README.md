@@ -11,7 +11,7 @@ and its tests are written at their own paths and do not extend this folder.
 
 | Path | Role |
 |---|---|
-| `spike/keymodel.py` | The model of § 3, executable: ν, the walk, join, resolution, child views, and spec 051 stores with an axiom checker |
+| `spike/keymodel.py` | The model of § 3, executable: ν, the walk, join, resolution, child stores by composition, and spec 051 stores with an axiom checker |
 | `spike/test_keymodel.py` | Hypothesis property tests of § 7's claims, and § 3.5's examples |
 | `spike/pytest.ini` | Anchors pytest's rootdir here, so the repo's pytest configuration does not apply |
 | `lean/KeyConcept.lean` | The input layer: § 3.3 and § 3.5 restated, K1 to K6 proved |
@@ -30,7 +30,7 @@ From the repo root:
 hatch run python -m pytest sdd/research/bk-468-key-model/spike -q -p no:cacheprovider -p no:randomly
 ```
 
-Expected: `43 passed` (2026-10-21, a few minutes: up to 2000 examples per
+Expected: `44 passed` (2026-10-21, a few minutes: up to 2000 examples per
 property).
 
 ## Building the proofs

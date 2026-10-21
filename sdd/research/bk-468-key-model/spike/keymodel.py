@@ -217,7 +217,13 @@ def resolve(k: str, s: Store) -> tuple:
 # --- § 3.6 child stores ---------------------------------------------------
 
 
+def child_resolve(s: Store, c: str, k: str) -> tuple:
+    """§ 3.6: a child at c resolves k as S resolves c ⊕ k, in every state."""
+    return resolve("/".join(segments(c) + segments(k)), s)
+
+
 def child_view(s: Store, c: str) -> Store | None:
+    """The child's own store, which exists only at a folder c (K12)."""
     r = resolve(c, s)
     if r[0] == "found" and r[2] == "folder":
         e = r[1]
@@ -229,6 +235,4 @@ def child_view(s: Store, c: str) -> Store | None:
             contains={(p, y) for (p, y) in s.contains if p in sub and y in sub},
             name={x: ("" if x == e else s.name[x]) for x in sub},
         )
-    if r[0] in ("absent", "absent_ancestor"):
-        return Store(folders={0}, items=set(), root=0, contains=set(), name={0: ""})
-    return None  # item at or above c: every operation raises InvalidPath
+    return None  # absent or item c: no store of its own; see child_resolve
