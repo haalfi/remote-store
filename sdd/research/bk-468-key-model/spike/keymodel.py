@@ -227,7 +227,8 @@ def child_view(s: Store, c: str) -> Store | None:
     r = resolve(c, s)
     if r[0] == "found" and r[2] == "folder":
         e = r[1]
-        sub = {x for x in s.universe if x == e or (s.key_of(x) + "/").startswith(c + "/")}
+        below = c + "/" if c else ""  # at ε every key is below the root
+        sub = {x for x in s.universe if x == e or (s.key_of(x) + "/").startswith(below)}
         return Store(
             folders=s.folders & sub,
             items=s.items & sub,

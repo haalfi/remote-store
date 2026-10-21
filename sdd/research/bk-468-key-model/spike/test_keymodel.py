@@ -162,10 +162,10 @@ def test_child_key_composes_with_parent(c: str, p: str, cfg: Config) -> None:
 
 @given(child_roots, raw, configs)
 def test_child_chaining(c: str, d: str, cfg: Config) -> None:
-    """CHILD-005 via § 3.6: child(c).child(d) has root c ⊕ ν_c(d) = ν_S(c/d)."""
+    """CHILD-005 via § 3.6: child(c).child(d) has root c ⊕ ν_c(d) = ν_S(c/d), d → ε included."""
     assume(c != "")
     k = nu(d, cfg, root=c)
-    assume(ok(k) and k != "")
+    assume(ok(k))
     assert "/".join(segments(c) + segments(k)) == nu(c + "/" + d, cfg)
 
 
@@ -274,6 +274,15 @@ def test_child_resolution_commutes(s: Store, data: st.DataObject, k: str) -> Non
     assert rc[0] == rs[0]
     if rc[0] == "found":
         assert rc[1] == rs[1]
+
+
+@given(stores(), key_strings)
+def test_child_at_root_is_the_store(s: Store, k: str) -> None:
+    """§ 3.6: a child at ε is S itself."""
+    v = child_view(s, "")
+    assert v is not None
+    assert set(v.keys()) == set(s.keys())
+    assert child_resolve(s, "", k) == resolve(k, s)
 
 
 @given(stores(), key_strings, key_strings)

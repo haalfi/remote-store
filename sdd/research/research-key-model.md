@@ -234,10 +234,12 @@ After an opt-out (Sep_S = {`/`}), `a\b` and `a\a/..` are Reject at step 0.
 
 ### 3.6 Child stores
 
-A child store of S at c, for c ∈ L_api with c ≠ ε (spec 015), answers by
-**composition**: when an operation runs, the child resolves its key string k
-as S resolves c ⊕ k, and the operation maps that outcome as § 3.7 does. So
-the child and S never disagree about one entity. Creating a child needs no
+A child store of S at c, for c ∈ L_api (spec 015; c is the subpath reduced
+by S's ν), answers by **composition**: when an operation runs, the child
+resolves its key string k as S resolves c ⊕ k, and the operation maps that
+outcome as § 3.7 does. So the child and S never disagree about one entity.
+**At c = ε the child is S itself** (decided 2026-10-21): ε ⊕ k = k, so
+`child("")`, `child(".")` and `child("x/..")` resolve every key as S does. Creating a child needs no
 lookup, and its first write creates c and its missing ancestors in S, as the
 same write to c ⊕ k in S would.
 
@@ -249,7 +251,8 @@ same write to c ⊕ k in S would.
 
 Keys compose by join: a child key string k is S's key string c ⊕ k.
 **Chaining** holds for a d the child accepts: if ν_c(d) ≠ Reject, then
-child(c).child(d) = child(c ⊕ ν_c(d)) (CHILD-005). A d the child rejects
+child(c).child(d) = child(c ⊕ ν_c(d)) (CHILD-005). A d that reduces to ε,
+such as `.`, gives child(c) itself, since c ⊕ ε = c. A d the child rejects
 creates no grandchild: under c = `a`, `../b` escapes the child, although S
 accepts c ⊕ `../b` = `b`.
 Walks start at the child's root, so a child never reaches the rest of S.
@@ -402,8 +405,10 @@ All are proved in Lean 4 (§ 10); the theorem names are in its table.
   (k ⊕ p) ⊕ q = k ⊕ (p/q).
 - **K5, an opt-out only rejects more.** If ν accepts p with Sep_S = {`/`},
   it accepts p with the same result when Sep_S = {`/`, `\`}.
-- **K6, child composition.** A child key k accepted under c is the parent's
-  c ⊕ k, and the parent accepts the composed string with that result.
+- **K6, child composition.** For c ≠ ε, a child key k accepted under c is the
+  parent's c ⊕ k, and the parent accepts the composed string with that
+  result. At c = ε the child is S itself (§ 3.6), so K6 holds there by
+  definition.
 - **K7, segments.** segments(Key(x)) is the names along the chain of x.
 - **K8, last and parent.** last(Key(x)) = name(x); parent(Key(x)) is the Key
   of x's container.
@@ -486,8 +491,9 @@ empty" is an error, where ε is a key string here and the operation decides;
 and a path containing `..` is an error (its example: `foo/../bar`), where ν
 reduces it to `bar` and accepts it. Spec 015 agrees on
 composition (CHILD-005) and the round trip (CHILD-009); it differs on `..`
-(CHILD-003, as PATH-003) and the empty subpath (CHILD-001), and does not say
-what a child at an absent or item c is.
+(CHILD-003, as PATH-003) and the empty subpath (CHILD-001 rejects it; here a
+child at ε is the store itself, § 3.6), and does not say what a child at an
+absent or item c is.
 
 ### 9.5 Path normalisers
 
@@ -533,7 +539,7 @@ up to 2000 generated examples per property (its `settings` profile), over
 small name pools chosen so collisions and navigation are frequent, and over
 generated stores of at most ten entities. It found one defect: the `\` and
 NUL rules were checked on the result, giving § 5's first two rows; the fix is
-step 0. Run as the folder's README says, it reports `44 passed`.
+step 0. Run as the folder's README says, it reports `45 passed`.
 
 **Lean 4 (2026-10-21).** [`bk-468-key-model/lean/`](bk-468-key-model/README.md)
 proves K1 to K12 with Lean 4.34.1, core library only, against spec 051's own
@@ -582,10 +588,11 @@ these deltas, each named in § 3.3 or § 9:
 - BE-032 A.1: resolution's depth (Absent against AbsentAncestor), and its
   naming of spec 004 as the input layer's owner; spec 051's § Layering names
   spec 004 the same way.
-- PATH-008, PATH-010, PATH-015's `name` and `parts`, CHILD-001 and ERR-005
-  (a): ε is a key string;
-  the root's name is ε and its segments empty; `parent(a)` is ε; the operation
-  decides whether it accepts the root.
+- PATH-008, PATH-010, PATH-015's `name` and `parts` and ERR-005 (a): ε is a
+  key string; the root's name is ε and its segments empty; `parent(a)` is ε;
+  the operation decides whether it accepts the root.
+- CHILD-001: a child at ε is the store itself (§ 3.6), where CHILD-001 rejects
+  an empty subpath.
 - ERR-005 (b) and ERR-003: the two widenings of § 3.7.
 - The `\` opt-out and the portability opt-in: new configuration.
 - What a listing does with a stored name this model refuses beyond the

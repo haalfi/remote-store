@@ -30,7 +30,7 @@ From the repo root:
 hatch run python -m pytest sdd/research/bk-468-key-model/spike -q -p no:cacheprovider -p no:randomly
 ```
 
-Expected: `44 passed` (2026-10-21, a few minutes: up to 2000 examples per
+Expected: `45 passed` (2026-10-21, a few minutes: up to 2000 examples per
 property).
 
 ## Building the proofs
