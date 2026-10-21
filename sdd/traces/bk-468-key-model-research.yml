@@ -14,9 +14,17 @@ audience:
   - contributor.process
 decisions:
   - sdd/decisions/fca785b7-259e-4b69-9457-132a2b61107a.jsonl
-expected_ripples:
-  - sdd/backlogid.json
 orient:
+  - items: [BK-432]
+    verdict: constrains
+    evidence: >-
+      Done, but its RFC-0021 Appendix A landed as spec 053's BE-032, the
+      accepted authority for resolution: A.1 resolves a Key to Item, Folder or
+      Nothing with no depth and names spec 004 as the input layer's owner, and
+      A.4 and A.5 make a write below an item InvalidPath. Missed at first
+      orient and raised by PR #1173's review; the research keeps spec 051 as
+      its only authority (maintainer) and records the depth and owner
+      differences as deltas (§ 9.6, § 10).
   - items: [BK-435]
     verdict: unrelated
     evidence: >-
@@ -92,7 +100,7 @@ phases:
       - file: sdd/backlog/bk-389-kernel-step-1-memory.md
         section: "Decisions / 6"
         read_type: gate
-        extract: "The kernel's pipeline and table; its domain equals L_api, so the concept sits above it and agrees"
+        extract: "The kernel's pipeline and table; L_api lies inside its domain (strictly, when a tier refuses a canonical name), so the concept sits above it and agrees"
         outcome: ok
       - file: sdd/formal/BackendContract.dfy
         section: "§5a WellFormedPath, Canonical"

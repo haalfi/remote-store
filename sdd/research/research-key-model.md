@@ -13,10 +13,15 @@ store at one instant; a caller passes a string. Nothing states what that
 string denotes before any entity has it, which strings denote the same key,
 or what lookup answers for a key no entity has.
 
-Three layers answer parts of this, each by its own rules: spec 004's
+Four existing clauses answer parts of this, each by its own rules: spec 004's
 `RemotePath` normalises input, the kernel's key rule (BE-030, BK-389's
-dossier, decision 6) refuses and normalises keys at the backend's entry, and
-spec 015 composes a child store's keys. They differ from one another (§ 9).
+dossier, decision 6) refuses and normalises keys at the backend's entry,
+spec 053's BE-032 (from RFC-0021) resolves a Key against the tree, and spec
+015 composes a child store's keys. They differ from one another (§ 9).
+
+**Authority.** Only spec 051 governs this model. Where an existing spec or
+accepted RFC says otherwise (specs 004, 005, 015 and 053, RFC-0021), the
+difference is recorded as a delta (§ 9, § 10), not adopted.
 
 This document states one model for the layer between a caller's string and
 spec 051's Key, as definitions over spec 051's own terms, with no backend,
@@ -27,8 +32,8 @@ informs is the content of a spec between 051 and 004.
 
 **What is claimed.** A caller's string is reduced, by the string alone and
 the store's configuration, to at most one key string; two strings reducing to
-the same one are equivalent, and each class of equivalent strings holds
-exactly one key string, its canonical form (§ 3.5). Lookup then answers one of
+the same one are equivalent, and each class of accepted strings holds exactly
+one member of L_api, its canonical form (§ 3.5, § 4). Lookup then answers one of
 four outcomes against the store's state (§ 3.7). Every key string the library
 accepts is a key spec 051 admits and the kernel accepts (§ 4).
 
@@ -165,8 +170,10 @@ folder.
 
 Spec 051 (by `research-store-model-axioms.md` § 6) admits `.` and `..` as
 names. Once they are read as navigation, an entity named `.` or `..` exists in
-the model and is not addressable through `Store`. Spec 051 is not amended:
-its § Layering says the library addresses a subset of the Keys it admits.
+the model and is not addressable through `Store`. TREE-001 to TREE-012 are not
+amended: spec 051's § Layering says the library addresses a subset of the Keys
+they admit. That same paragraph names spec 004 as the input layer's owner,
+which § 10's recommendation changes (a delta, § 10).
 
 ### 3.4 Parameter equivalence
 
@@ -249,7 +256,11 @@ i ≤ j is a Key too (TREE-012).
 | j = n − 1, e ∈ F | **Absent** | create k in place |
 | j < n − 1, e ∈ F | **AbsentAncestor**(kⱼ) | create k only by also creating kⱼ₊₁ … kₙ₋₁ |
 
-A Miss is one of the last three. The four are disjoint and exhaustive. Ω_S(ε)
+A Miss is one of the last three. The four are disjoint and exhaustive. Spec
+053's BE-032 A.1 resolves a Key to `Item`, `Folder` or `Nothing` and states
+that resolutions carry no depth: Absent and AbsentAncestor are both its
+`Nothing`, and BlockedByItem is its `Nothing` with the item travelling for the
+message. Telling Absent from AbsentAncestor is a delta (§ 9.6). Ω_S(ε)
 is Found(r, folder) in every store (TREE-002, TREE-009); whether an operation
 accepts the root is that operation's predicate, not ν's. The kernel's root row
 (BK-389's dossier, decision 6) is one such set of predicates.
@@ -261,7 +272,7 @@ outcome is an error is the operation's decision. Where it is one:
 |---|---|---|
 | Reject: step 0, escape, the floor, a tier | `InvalidPath` | ERR-005 (a) |
 | Found, but the operation needs the other kind | `InvalidPath` | ERR-005 (b) |
-| BlockedByItem, in an operation that would create below the item | `InvalidPath` | ERR-005 (b), widened: the key *or one of its prefixes* names the wrong kind |
+| BlockedByItem, in an operation that would create below the item | `InvalidPath`, as BE-032 A.4 and A.5 already answer | ERR-005 (b), widened: the key *or one of its prefixes* names the wrong kind |
 | Absent or AbsentAncestor, in an operation that needs the entity | `NotFound` | ERR-002 |
 | AbsentAncestor, in a write | none: the write creates the missing folders | as ERR-005's own example |
 | A sibling clash under ≡_b: writing `a` beside an existing `A` | `AlreadyExists`; `path` is the caller's key, the message names the existing sibling | ERR-003, widened to a clash under the backend's name equality |
@@ -343,7 +354,7 @@ the session's decision log (`sdd/decisions/`, listed in the BK-468 trace).
 | The root's key string | ε, by spec 051; display out of this model's scope | Mandate ε for display too: spec 004's `.` (PATH-015) becomes a defect. |
 | Where step 0's rules apply | The whole raw input | The end position: § 5's first two rows. |
 | What step 2 judges | The end position only | Each *down* step: § 5's third row. |
-| Error for BlockedByItem in a write | `InvalidPath`, widening ERR-005 (b) | `NotFound`, hiding that something exists at the prefix; or a new class with its own ADR. |
+| Error for BlockedByItem in a write | `InvalidPath`, widening ERR-005 (b); BE-032 A.4 and A.5 already give the same answer | `NotFound`, hiding that something exists at the prefix; or a new class with its own ADR. |
 | Error for a sibling clash under ≡_b | `AlreadyExists`, widening ERR-003 | `InvalidPath`, a lexical-sounding error for a state conflict; or leave it to BE-032. |
 | A child at an absent c | Lazy: empty until written | Must exist: `child()` needs a lookup, and multi-tenant setups create folders first. |
 | A backend that rewrites names | Accept only names in its normal form | The backend returns the written spelling, needing extra state; or leave it to BE-032. |
@@ -450,9 +461,11 @@ reachable through addressing (§ 6, costs).
 ### 9.4 Spec 005 and spec 015
 
 Spec 005 has an error for every outcome but two, each a widening (§ 3.7):
-ERR-005 (b) to a prefix of the wrong kind, ERR-003 to a clash under ≡_b. One
-delta: ERR-005 (a) makes a path "that normalizes to empty" an error, where ε
-is a key string here and the operation decides. Spec 015 agrees on
+ERR-005 (b) to a prefix of the wrong kind, ERR-003 to a clash under ≡_b. Two
+deltas, both in ERR-005 (a)'s preconditions: a path "that normalizes to
+empty" is an error, where ε is a key string here and the operation decides;
+and a path containing `..` is an error (its example: `foo/../bar`), where ν
+reduces it to `bar` and accepts it. Spec 015 agrees on
 composition (CHILD-005) and the round trip (CHILD-009); it differs on `..`
 (CHILD-003, as PATH-003) and the empty subpath (CHILD-001), and does not say
 what a child at an absent or item c is.
@@ -465,6 +478,31 @@ counterpart here: every key parameter is relative to its store's root, so
 such a `..` escapes. POSIX resolution is physical, following the entry a
 name denotes; this model is lexical, which is sound only because spec 051 has
 no links.
+
+### 9.6 Spec 053's BE-032 and RFC-0021
+
+BE-032 lands RFC-0021's Appendix A (accepted, BK-432) and is the accepted
+authority for what a Key resolves to on the kernel (*Read*, spec 053 BE-032
+A.1 to A.5; RFC-0021 D0, D1, D4, D5). RFC-0021 D0 puts how an input becomes a
+Key out of its scope, so the two meet only at the Key.
+
+- **Agrees.** A Key names at most one entity (A.1, TREE-010); writing below an
+  item, or an item over a folder, is `InvalidPath` (A.4, D4; § 3.7's
+  BlockedByItem row and its Found-with-the-other-kind row); a stored key
+  holding `\`, `..` or NUL is outside the library's addressable subset,
+  omitted from listings and reached through addressing and `unwrap()` (A.2,
+  BE-030; § 6, costs).
+- **Delta: depth.** A.1 resolves to `Item`, `Folder` or `Nothing` and states
+  "Resolutions carry no depth", since `ensure_parents(key)` creates every
+  missing folder from the key alone. § 3.7 tells Absent from AbsentAncestor by
+  j.
+- **Delta: the input layer's owner.** A.1 ("A Key is not a caller's input")
+  names spec 004's `RemotePath` as the layer mapping input onto a Key, and
+  A.2 attributes the refusal of `..` to PATH-003; ν climbs `..` (§ 3.3).
+- **Open there, answered here.** A.1 leaves undecided how a case-insensitive
+  or normalising encoding answers; § 3.2's sibling equivalence and normal-form
+  rule, and § 3.7's `AlreadyExists` for a clash, are one answer (BK-436 holds
+  the open decision).
 
 ---
 
@@ -515,10 +553,14 @@ model-governed.
 
 **Recommendation.** Specify the model as a new spec between 051 and 004,
 owning key strings, acceptance, ν, ≈ and resolution; spec 004 becomes one
-realisation of ν, and spec 005 and spec 015 link to it. The spec settles
-these deltas, each named in § 9:
+realisation of ν, and specs 005, 015 and 053 link to it. The spec settles
+these deltas, each named in § 3.3 or § 9:
 
-- PATH-003 and CHILD-003: `..` climbs.
+- PATH-003, CHILD-003, ERR-005 (a)'s `..` clause and BE-032 A.2's attribution
+  of the `..` refusal: `..` climbs.
+- BE-032 A.1: resolution's depth (Absent against AbsentAncestor), and its
+  naming of spec 004 as the input layer's owner; spec 051's § Layering names
+  spec 004 the same way.
 - PATH-008, PATH-010, PATH-015, CHILD-001 and ERR-005 (a): ε is a key string;
   the root's name is ε and its segments empty; `parent(a)` is ε; the operation
   decides whether it accepts the root.

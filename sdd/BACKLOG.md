@@ -555,7 +555,7 @@ no clause of the contract ships unexercised.
   Spec 051 defines Key on entities; `RemotePath` (spec 004), the kernel's key rule (BE-030) and
   `child()` (spec 015) each map a caller's string by their own rules. `research-key-model.md`
   states one model, decided by the maintainer, spike-tested and proved in Lean. Not done: the
-  spec between 051 and 004. Open decision: the deltas its § 10 lists against specs 004, 005, 015.
+  spec between 051 and 004. Open decision: its § 10's deltas against specs 004, 005, 015, 051, 053.
 
 - [ ] **BK-436 — No backend's observed tree is checked against spec 051**
   spec: TREE-001 -- TREE-012, BE-032 · effort: M · audience: library.maintainer
