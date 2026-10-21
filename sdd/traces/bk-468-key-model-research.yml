@@ -14,8 +14,6 @@ audience:
   - contributor.process
 decisions:
   - sdd/decisions/fca785b7-259e-4b69-9457-132a2b61107a.jsonl
-  - sdd/decisions/a7d8485d-0ebf-417f-908f-3e06ab710b84.jsonl
-  - sdd/decisions/b78ceaa2-3e56-421e-bb00-2d417dbd8652.jsonl
 orient:
   - items: [BK-432]
     verdict: constrains
