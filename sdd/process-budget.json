@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 304687,
+  "total": 304972,
   "files": {
     "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2105,
@@ -20,9 +20,9 @@
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
-    ".claude/skills/rvw-pr/SKILL.md": 23616,
+    ".claude/skills/rvw-pr/SKILL.md": 23694,
     ".claude/skills/rvw-pr/measuring.md": 5482,
-    ".claude/skills/rvw-pr/posting.md": 7844,
+    ".claude/skills/rvw-pr/posting.md": 8051,
     ".claude/skills/ship/SKILL.md": 54320,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
@@ -109,14 +109,20 @@
     {
       "item": "BK-481",
       "from": 301224,
-      "to": 303896,
-      "reason": "rvw-pr posts through gh when no MCP posting tool loads: posting.md gains the measured -F recipe and the file-level call (+1863, read only by posting passes); SKILL.md guard and Bash-use lists (+435); I/O split write row and why (+300); /ship's posting pointer (+74)"
+      "to": 303875,
+      "reason": "rvw-pr posts through gh when no MCP posting tool loads: posting.md gains the measured -F recipe and the file-level call (+1863, read only by posting passes); SKILL.md guard and Bash-use lists (+414); I/O split write row and why (+300); /ship's posting pointer (+74); sizes at 0002d604a against origin/master"
     },
     {
       "item": "BK-481",
-      "from": 303896,
+      "from": 303875,
       "to": 304687,
       "reason": "PR #1174 test run: posting.md's gh recipe moves from -F fields to JSON on stdin from a quoted heredoc (backticks ran as commands, -F rewrote {owner}/{repo}/{branch}), full-SHA and worktree-refusal notes, and a partial-post header (+799); I/O split rationale (+13)"
+    },
+    {
+      "item": "BK-481",
+      "from": 304687,
+      "to": 304972,
+      "reason": "PR #1174 review round 2: a partial post returns the findings a failed call carried, or all of them marked for comparison when a count shortfall cannot be attributed, and the worktree refusal is narrowed to the two measured cases (posting.md +207); SKILL.md defers to the partial header (+78); sizes at this commit against 8cea5d238"
     }
   ]
 }

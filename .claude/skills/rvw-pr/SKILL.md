@@ -145,10 +145,11 @@ verification, and the one instrument that count is taken with.
 **No MCP posting tool?** If neither prefix's `pull_request_review_write` is among
 your tools and `ToolSearch` cannot load it, post with `posting.md`'s `gh` call
 (a session with no GitHub MCP server connected). Never as a
-top-level comment. If `gh` is missing, or the call is refused or fails twice,
-return the findings as analyze-only mode does, under the header
+top-level comment. If `gh` is missing, or the review call is refused or fails
+twice, return the findings as analyze-only mode does, under the header
 `## PR #N Review — X findings returned (not posted: <reason>)`, naming what was
-missing or the error. In the cloud, the MCP tools also go missing when the pass
+missing or the error; a post that lands in part takes `posting.md`'s partial
+header instead. In the cloud, the MCP tools also go missing when the pass
 started before GitHub MCP connected (`/rvw-pr` as a session's first prompt); the
 `gh` call has not been measured there, so if it fails, re-run the pass later or
 the caller posts the findings.

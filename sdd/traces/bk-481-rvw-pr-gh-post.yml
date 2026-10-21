@@ -123,5 +123,16 @@ phases:
           $HOME, an apostrophe, a newline, @file, true) arrived unchanged;
           deleted, no pending review left
         outcome: ok
+      - file: .claude/skills/rvw-pr/posting.md
+        section: "(run) /rvw-pr 1174 root=<worktree> from a non-isolated session at 8cea5d238"
+        read_type: verify
+        extract: >-
+          Posted through the heredoc route: review 5602679326, comment count
+          0 to 3, each comment on its reported line (posting.md 30 and 28,
+          process-budget.json 119). Its findings: the partial-post return was
+          unattributable from a count, the worktree refusal was stated wider
+          than measured, and the first budget raise kept a stale +435 (the
+          file sizes at 0002d604a give SKILL.md +414 over master)
+        outcome: misleading
 decisions:
   - sdd/decisions/b301fcfb-c12a-4332-be83-7addd61e5d96.jsonl
