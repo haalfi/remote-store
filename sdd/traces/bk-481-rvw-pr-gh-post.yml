@@ -98,5 +98,30 @@ phases:
           Posted as its own one-comment review (comment 4338754328 in review
           5602213230); deleting the comment removed that review too (404)
         outcome: ok
+  - id: test_run
+    name: A real /rvw-pr pass on PR #1174, and the recipe it broke
+    steps:
+      - file: .claude/skills/rvw-pr/posting.md
+        section: "(run) /rvw-pr 1174 from the worktree-isolated session"
+        read_type: verify
+        extract: >-
+          Posted nothing: the session's worktree guard refused the -F call
+          because a finding body named git commands. Its 3 findings: double
+          quotes let a backtick span in a body run as a command; -F also
+          rewrites {owner}, {repo}, {branch} anywhere in a value (shown by a
+          GET); and a gh-route shortfall had no Step 5 header
+        outcome: misleading
+      - file: .claude/skills/rvw-pr/posting.md
+        section: "(probe) all -f fields, then JSON on stdin from a quoted heredoc"
+        read_type: verify
+        extract: >-
+          All -f: HTTP 422, line "19" is not a number, so -F cannot be dropped
+          and mixing breaks grouping past one comment. The worktree guard also
+          refused the heredoc, so the probe ran after leaving the worktree. A
+          short commit_id is HTTP 422; with the full SHA, pending review
+          5602600979 held two comments whose bodies (backticks, git, {owner},
+          $HOME, an apostrophe, a newline, @file, true) arrived unchanged;
+          deleted, no pending review left
+        outcome: ok
 decisions:
   - sdd/decisions/b301fcfb-c12a-4332-be83-7addd61e5d96.jsonl

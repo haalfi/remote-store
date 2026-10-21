@@ -504,8 +504,8 @@ reading as "the post failed" is what made pinning necessary.)
 no approval prompt. **Why MCP for writes:** posts without an approval prompt and
 avoids the temp-JSON + `gh api --input` dance the no-pipes/no-redirect hook
 forces on CLI writes. Identical in main session and forks. The `gh` fallback
-avoids the temp file by passing each field as `-F` instead, which a reviewer
-without `Write` can do; unlike the MCP tools, it is not pre-approved.
+avoids the temp file by sending the JSON on stdin from a quoted heredoc, which a
+reviewer without `Write` can do; unlike the MCP tools, it is not pre-approved.
 
 ---
 
