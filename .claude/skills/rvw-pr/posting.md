@@ -5,13 +5,27 @@ Two readers: a [`/rvw-pr`](SKILL.md) pass that posts, at its Step 4; and
 member does not post and does not read this file; the Comment rules that bind
 every pass stay in `SKILL.md` Step 4.
 
-**Use the pending-review flow — three steps, in order.** The GitHub MCP server silently drops inline comments if you pass them as a `comments:` array on a single `submit`/`create` call. Always:
+**With the MCP posting tools, use the pending-review flow — three steps, in order.** The GitHub MCP server silently drops inline comments if you pass them as a `comments:` array on a single `submit`/`create` call. Always:
 
 1. **Create a pending review.** `pull_request_review_write` with `method: "create"` and **no `event` parameter** — omitting `event` is what makes the review pending (the `event` enum is only `APPROVE` / `REQUEST_CHANGES` / `COMMENT`; passing any value here submits immediately). No review ID bookkeeping is needed — subsequent calls attach to the requester's latest pending review automatically.
 2. **Attach each inline comment** with `add_comment_to_pending_review`, one call per finding. Required params: `path`, `body`, `subjectType: "LINE"` (or `"FILE"` for file-level). Optional: `line`, `side`, `startLine`, `startSide` for multi-line. Do not batch into a single review creation.
 3. **Submit the review.** `pull_request_review_write` with `method: "submit_pending"`, `event: "COMMENT"`, and the summary body.
 
-**Verify (only when you posted inline findings).** The check is a **delta**, not an absolute: capture the review-comment count **before** creating the pending review, and again after `submit_pending`. The count must rise by the number of comments you attached (at minimum, it must rise) — an absolute non-zero count proves nothing on a PR that already carries review comments from earlier rounds. If you had no inline findings to post (step 2 had nothing to attach), skip verification — an unchanged count is the correct outcome. If the count did not rise, the submit dropped your comments. Retry **once**: restart from step 1 (new `create` pending review, re-attach every comment, re-`submit_pending`) — after `submit_pending` there is no pending review to attach to, so calling `add_comment_to_pending_review` without a fresh `create` will fail. If the retry also fails the delta, stop and report the failure in the Step 5 summary (do not loop further).
+**Without them, post with `gh`: one review call, then one call per file-level finding.** `SKILL.md` Step 4 says when this applies. This REST review call kept all six inline comments of review 5601961745, so the MCP warning above does not apply to it:
+
+```bash
+gh api --method POST repos/haalfi/remote-store/pulls/<N>/reviews \
+  -F commit_id=<Step 0's head SHA> -F event=COMMENT -F "body=<summary>" \
+  -F "comments[][path]=<path>" -F "comments[][line]=<line>" -F "comments[][side]=RIGHT" -F "comments[][body]=<Category: body>" \
+  -F "comments[][path]=<next path>" ...
+```
+
+- **Every field is `-F`, none `-f`.** `gh` sends all `-f` fields before all `-F` ones, so a mix splits a comment's `line` from its `path` (measured: HTTP 422). `-F` reads a value starting with `@` as a file and turns `true`, `false`, `null` and integers into JSON; a body starts with its category tag, so neither applies to it, nor to a path unless it is all digits.
+- **One group per LINE finding**, its keys in the order `path`, `line`, `side`, `body` (plus `start_line`, `start_side` for a range); a repeated key starts the next comment.
+- **`comments[]` takes no `subject_type`** (measured: HTTP 422). Post each FILE finding after the review, as `gh api --method POST repos/haalfi/remote-store/pulls/<N>/comments -F commit_id=<SHA> -F path=<path> -F subject_type=file -F "body=<Category: body>"`; it appears as its own one-comment review.
+- **`event=COMMENT` submits in the same call**, and a call that fails posts nothing (the 422 above left no review). Retry a failed call once; never re-run one that succeeded, which would post its comments twice.
+
+**Verify (only when you posted inline findings).** The check is a **delta**, not an absolute: capture the review-comment count **before** creating the pending review (or before the first `gh` call), and again after `submit_pending` (or the last `gh` call). The count must rise by the number of comments you attached (at minimum, it must rise) — an absolute non-zero count proves nothing on a PR that already carries review comments from earlier rounds. If you had no inline findings to post (step 2 had nothing to attach), skip verification — an unchanged count is the correct outcome. If the count did not rise, the submit dropped your comments. Retry **once**: restart from step 1 (new `create` pending review, re-attach every comment, re-`submit_pending`) — after `submit_pending` there is no pending review to attach to, so calling `add_comment_to_pending_review` without a fresh `create` will fail. If the retry also fails the delta, stop and report the failure in the Step 5 summary (do not loop further). On the `gh` route the delta must rise by the LINE and FILE comments together; a shortfall there is not retried, because its calls reported success.
 
 **Take the count from exactly one instrument, and walk its pages explicitly:**
 

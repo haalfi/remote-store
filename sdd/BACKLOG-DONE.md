@@ -300,6 +300,13 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-481 — `/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  A local `/rvw-pr 1173` returned six findings unposted: no MCP server here, and
+  Step 4 forbade `gh`. MCP stays first; without it the pass posts through `gh`'s
+  REST review call with `-F` fields only, so the read-only reviewer needs no temp
+  file. Probed on #1173 and deleted: a `-f`/`-F` mix and a file-level comment in
+  `comments[]` both 422. Trace: [bk-481](traces/bk-481-rvw-pr-gh-post.yml).
 - [x] **BK-464 — No review pass checks that a durable doc says one thing, first, in its own place**
   spec: — · effort: XS · audience: contributor.process
   A three-line last pass (Rules 7, 2, 4 and principle 8) found on PR #1166 what three

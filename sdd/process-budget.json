@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 301224,
+  "total": 303896,
   "files": {
     "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2105,
@@ -20,17 +20,17 @@
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
-    ".claude/skills/rvw-pr/SKILL.md": 23202,
+    ".claude/skills/rvw-pr/SKILL.md": 23637,
     ".claude/skills/rvw-pr/measuring.md": 5482,
-    ".claude/skills/rvw-pr/posting.md": 5182,
-    ".claude/skills/ship/SKILL.md": 54246,
+    ".claude/skills/rvw-pr/posting.md": 7045,
+    ".claude/skills/ship/SKILL.md": 54320,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
     ".claude/agents/reviewer.md": 970,
     ".claude/agents/sdd-expert.md": 1799,
     ".claude/agents/store-backend-expert.md": 1903,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64777,
+    "sdd/CLAUDE-REFERENCE.md": 65077,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [
@@ -105,6 +105,12 @@
       "from": 301112,
       "to": 301224,
       "reason": "rvw-pr content-rules check points to CONTENT-RULES last pass"
+    },
+    {
+      "item": "BK-481",
+      "from": 301224,
+      "to": 303896,
+      "reason": "rvw-pr posts through gh when no MCP posting tool loads: posting.md gains the measured -F recipe and the file-level call (+1863, read only by posting passes); SKILL.md guard and Bash-use lists (+435); I/O split write row and why (+300); /ship's posting pointer (+74)"
     }
   ]
 }

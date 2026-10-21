@@ -331,8 +331,9 @@ findings while that skill's verification still reads success. Panel members run
 `Subject:` line included, which the Stop rule's clean-round check needs — plus
 consolidated findings as the final message. The orchestrator merges, dedups (two
 members reporting one defect is one finding), posts the round as one review
-**via `rvw-pr` Step 4's pending-review flow and its posted-count delta
-verification** — those bind the poster, not only reviewers: the single
+**via `rvw-pr` Step 4's posting flow (MCP's pending review, or its `gh` call
+where no MCP posting tool loads) and its posted-count delta verification** —
+those bind the poster, not only reviewers: on MCP, the single
 create-with-`comments:` call that flow forbids drops findings silently, and the
 members who would have caught it no longer post — then runs one triage and fix
 pass.

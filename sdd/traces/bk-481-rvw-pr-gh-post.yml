@@ -1,0 +1,102 @@
+id: BK-481
+title: "`/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can"
+trigger: >-
+  A local `/rvw-pr 1173` finished with six findings and posted none: the
+  session had no GitHub MCP server, and Step 4's guard forbade posting through
+  `gh`. The main session then posted them by hand with `gh api --input` from a
+  temp JSON file (review 5601961745, six inline comments, each on its line).
+source_items:
+  - BK-481
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - .claude/skills/rvw-pr/SKILL.md
+  - .claude/skills/rvw-pr/posting.md
+  - .claude/skills/ship/SKILL.md
+  - sdd/CLAUDE-REFERENCE.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/process-budget.json
+orient:
+  - items: [BK-459]
+    verdict: constrains
+    evidence: >-
+      Done. It listed every GitHub tool under both server prefixes plus
+      ToolSearch, so a claude.ai/code pass loads the github MCP tools, and it
+      added the no-posting-tool guard this item narrows. The MCP path stays
+      first, so a session that has the tools posts exactly as before; the
+      tool lists and test_reviewer_tools.py are untouched.
+  - items: [BK-384]
+    verdict: constrains
+    evidence: >-
+      RFC-0015 D5 tags a finding's origin by blaming its anchored line, so the
+      gh call must keep the Comment rules' anchors: path, line and side per
+      LINE finding, and a FILE finding stays file-level rather than moving to
+      a nearby line.
+  - items: [ID-268, BK-445]
+    verdict: unrelated
+    evidence: >-
+      ID-268's dossier lists /ship's panel-posting paragraph among close-step
+      sites, but its decision is about pasting the review block, not how a
+      review is posted. BK-445 is the review root's `env -C` route in
+      rvw-pr/SKILL.md § Review root, a paragraph this change does not touch.
+phases:
+  - id: reproduce
+    name: Why the pass did not post
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 4, No posting tool?"
+        read_type: gate
+        extract: >-
+          With no pull_request_review_write under either prefix the pass must
+          not post another way, "not gh"; this machine has no GitHub MCP
+          server, so every local pass ends unposted
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "GitHub PR I/O split"
+        read_type: reference
+        extract: >-
+          Writes are MCP only. Its stated reasons: no approval prompt, and no
+          temp-JSON plus `gh api --input`, which the no-pipes hook forces and a
+          reviewer without Write cannot do. Neither reason rules out a gh call
+          built from fields alone
+        outcome: ok
+      - file: sdd/traces/bk-459-cloud-github-tools.yml
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Records no reason for excluding gh as a poster; the guard's job was
+          to stop a pass with no MCP tool from failing silently
+        outcome: ok
+  - id: orient
+    name: Related open work
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-384, ID-268, BK-445"
+        read_type: gate
+        extract: "Per-cluster verdicts in orient:"
+        outcome: ok
+  - id: design
+    name: Measure the gh call before writing it down
+    steps:
+      - file: .claude/skills/rvw-pr/posting.md
+        section: "(probe) gh api POST pulls/1173/reviews, pending, then deleted"
+        read_type: verify
+        extract: >-
+          Mixing -f and -F scrambled the comments: HTTP 422, a side with no
+          line, because gh sends every -f field before every -F one. With -F
+          only, a pending review (5602206513) was created holding two comments
+          with their own paths and bodies, a newline kept; then deleted, and
+          no pending review was left. The 422 also showed comments[] rejects
+          subject_type, so a file-level comment cannot ride in the review
+        outcome: ok
+      - file: .claude/skills/rvw-pr/posting.md
+        section: "(probe) gh api POST pulls/1173/comments subject_type=file, then deleted"
+        read_type: verify
+        extract: >-
+          Posted as its own one-comment review (comment 4338754328 in review
+          5602213230); deleting the comment removed that review too (404)
+        outcome: ok
+decisions:
+  - sdd/decisions/b301fcfb-c12a-4332-be83-7addd61e5d96.jsonl
