@@ -557,6 +557,22 @@ no clause of the contract ships unexercised.
   states one model, decided by the maintainer, spike-tested and proved in Lean. Not done: the
   spec between 051 and 004. Open decision: its § 10's deltas against specs 004, 005, 015, 051, 053.
 
+- [ ] **BK-482 — Azure conformance runs on Azurite, which stores raw keys the HNS service rewrites**
+  spec: BE-030, BE-032 · effort: M · audience: infra.test, library.maintainer
+  `research-backend-path-authorities.md` § 5 (2026-10-22): sent raw, `a//b`, `.`, `..`, a leading `/`
+  and a trailing `.` are stored as sent by Azurite 3.35.0 and rewritten by an HNS account; they agree
+  only on the control key and `\` becoming `/`. An assertion about such keys on the Azurite fixtures may
+  hold only on the emulator; the flat namespace is unmeasured. Open decision: which assertions rerun on
+  `azure_live` or are marked emulator-only, and whether a flat account is probed.
+
+- [ ] **BK-483 — A stored Azure name holding `..` may be read back at a different path**
+  spec: BE-030, PATH-003 · effort: M · audience: library.maintainer, user.api
+  The HNS service resolves `..` in a raw path before authorising (`research-backend-path-authorities.md`
+  § 5), and the Python SDK's urllib3 removes dot segments client-side (its § 3.7). A listed name holding
+  `..` (possible on a flat account, unmeasured) would be read, written or deleted at the resolved path,
+  which under an account key may lie in another container. PATH-003 refuses `..` input; a listed key is
+  not input. Open decision: whether Azure listings yield such names, and whether they are omitted or refused.
+
 - [ ] **BK-436 — No backend's observed tree is checked against spec 051**
   spec: TREE-001 -- TREE-012, BE-032 · effort: M · audience: library.maintainer
   Spec 051's sections are tested only against a reference model (`tests/test_store_tree.py`). A

@@ -12,6 +12,9 @@ source_items:
 audience:
   - library.maintainer
   - contributor.process
+discovery_followups:
+  - BK-482
+  - BK-483
 decisions:
   - sdd/decisions/fca785b7-259e-4b69-9457-132a2b61107a.jsonl
   - sdd/decisions/1360c86a-3116-4ddc-b37c-d5fcfc84685e.jsonl
