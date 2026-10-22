@@ -550,7 +550,7 @@ no clause of the contract ships unexercised.
   Not done: §12's `@spec` tags (F1 needs BK-436); research § 10 step 3's Dafny operations
   (after BK-434). Open decision: none.
 
-- [~] **BK-468 — No key model connects spec 051's Key to the key parameter of `Store`**
+- [~] **BK-484 — No key model connects spec 051's Key to the key parameter of `Store`**
   spec: TREE-009 -- TREE-012, PATH-002 -- PATH-015, ERR-003, ERR-005, CHILD-001 -- CHILD-009, BE-030, BE-032 · effort: L · audience: library.maintainer, contributor.process
   Spec 051 defines Key on entities; `RemotePath` (spec 004), the kernel's key rule (BE-030) and
   `child()` (spec 015) each map a caller's string by their own rules. `research-key-model.md`

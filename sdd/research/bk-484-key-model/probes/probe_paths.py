@@ -20,7 +20,7 @@ Targets, chosen with ``--target`` (comma-separated):
 
 Run from the repo root, for example::
 
-    hatch run python sdd/research/bk-468-key-model/probes/probe_paths.py --target minio,azurite,sftp
+    hatch run python sdd/research/bk-484-key-model/probes/probe_paths.py --target minio,azurite,sftp
 
 Credentials load inside the process (``.env`` for the cloud, ``infra/.env``
 through ``infra._settings`` for the local stack) and are never printed.

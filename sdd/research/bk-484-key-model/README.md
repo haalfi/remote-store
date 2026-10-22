@@ -1,4 +1,4 @@
-# BK-468 key model: spike and Lean proofs
+# BK-484 key model: spike and Lean proofs
 
 <!-- doc: repo-only -->
 
@@ -22,14 +22,15 @@ and its tests are written at their own paths and do not extend this folder.
 | `probes/results-2026-10-22.json` | That probe's output, with account, resource, region and zone names redacted |
 
 No folder here is collected, built or run by any gate: `spike/` and `probes/`
-are outside `testpaths` and ruff's scope, and no CI job runs Lean (BK-462).
+are outside `testpaths` and `hatch run lint`'s ruff paths (the pre-commit ruff
+hook still lints a changed file), and no CI job runs Lean (BK-462).
 
 ## Running the spike
 
 From the repo root:
 
 ```
-hatch run python -m pytest sdd/research/bk-468-key-model/spike -q -p no:cacheprovider -p no:randomly
+hatch run python -m pytest sdd/research/bk-484-key-model/spike -q -p no:cacheprovider -p no:randomly
 ```
 
 Expected: `45 passed` (2026-10-21, a few minutes: up to 2000 examples per
@@ -38,7 +39,7 @@ property).
 ## Building the proofs
 
 ```
-bash sdd/research/bk-468-key-model/lean/build.sh
+bash sdd/research/bk-484-key-model/lean/build.sh
 ```
 
 It needs the Docker image `remote-store-lean:4.34.1`, which
@@ -54,7 +55,7 @@ The local stack (`docker compose -f infra/docker-compose.yml up -d --wait
 minio azurite sftp`) needs no account:
 
 ```
-hatch run python sdd/research/bk-468-key-model/probes/probe_paths.py --target minio,azurite,sftp --out tmp/probe-local.json
+hatch run python sdd/research/bk-484-key-model/probes/probe_paths.py --target minio,azurite,sftp --out tmp/probe-local.json
 ```
 
 `--target s3,s3express,azure` reaches the accounts in `.env`. Each run

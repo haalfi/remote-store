@@ -1,7 +1,7 @@
 import KeyConcept
 
 /-!
-# Key model, store layer (BK-468)
+# Key model, store layer (BK-484)
 
 Proves the store-layer lemmas K7 to K12 of `sdd/research/research-key-model.md`
 (§ 3.6, § 3.7, § 4) against spec 051's own definitions in `StoreAxioms.lean`: `seqOf`

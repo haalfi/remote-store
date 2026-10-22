@@ -1,7 +1,7 @@
-# Research: A key model between the store tree and the key parameter (BK-468)
+# Research: A key model between the store tree and the key parameter (BK-484)
 
 **Date:** 2026-10-21
-**Backlog items:** BK-468 (No key model connects spec 051's Key to the key parameter of `Store`)
+**Backlog items:** BK-484 (No key model connects spec 051's Key to the key parameter of `Store`)
 **Status:** Research complete — ready for design decisions. The decisions of § 6 were taken by the maintainer through the interview (2026-10-21); the model is tested by a property-based spike and proved in Lean 4 (§ 10). Next: a spec between spec 051 and spec 004.
 
 ---
@@ -395,7 +395,7 @@ were found while deciding § 6.
 ## 6. Decisions taken
 
 Taken by the maintainer through the interview, 2026-10-21; each dialog is in
-the session's decision log (`sdd/decisions/`, listed in the BK-468 trace).
+the session's decision log (`sdd/decisions/`, listed in the BK-484 trace).
 
 | Decision | Chosen | Alternative and what it would change |
 |---|---|---|
@@ -588,11 +588,38 @@ source named, and each is narrower than the model.
   nodes carry data and children at once, so it has no folder/item partition
   (TREE-001), and nothing like BlockedByItem arises.
 
+### 9.8 Spec 054 as proposed (PR #1171, not merged)
+
+PR #1171 proposes spec 054, "Store Key Specification" (*Read*: its branch,
+2026-10-22). It moves PATH-002 to PATH-007 out of spec 004 and adds KEY-001 to
+KEY-009. It is the spec § 10 recommends, written in parallel, and it agrees on
+most of the model:
+
+- `\` is a separator (PATH-002).
+- Empty and `.` segments contribute nothing (PATH-004 to PATH-006).
+- ε is a Key that folder-shaped operations accept, which is one choice of
+  § 3.7's "the operation decides" (KEY-005).
+- A refusal inspects the whole raw input (KEY-003, as § 3.5 step 0).
+- Backends admit a portable floor and refuse more only under a declared
+  profile (KEY-007, KEY-008), one shape for § 3.2's tiers.
+- KEY-009's one-to-one admission serves the same end as § 3.2's normal-form
+  rule: no two key strings share one stored name.
+
+It differs in three places:
+
+- **`..`.** PATH-003 refuses every `..` segment, and spec 054's Notes say "A
+  `..` segment is refused, never resolved against its parent". § 6 decides that `..` climbs and only
+  an escape is refused (§ 5's escape row). The maintainer keeps § 6's
+  decision, so this is a delta for spec 054 to take, not for this model.
+- **The `\` opt-out.** Spec 054 has none.
+- **Resolution.** Spec 054 states no lookup outcomes; § 3.7's four remain this
+  model's own.
+
 ---
 
 ## 10. Results and recommendation
 
-**Spike (2026-10-21).** [`bk-468-key-model/spike/`](bk-468-key-model/README.md)
+**Spike (2026-10-21).** [`bk-484-key-model/spike/`](bk-484-key-model/README.md)
 is an executable model of § 3 and Hypothesis property tests of § 7's claims,
 up to 2000 generated examples per property (its `settings` profile), over
 small name pools chosen so collisions and navigation are frequent, and over
@@ -600,7 +627,7 @@ generated stores of at most ten entities. It found one defect: the `\` and
 NUL rules were checked on the result, giving § 5's first two rows; the fix is
 step 0. Run as the folder's README says, it reports `45 passed`.
 
-**Lean 4 (2026-10-21).** [`bk-468-key-model/lean/`](bk-468-key-model/README.md)
+**Lean 4 (2026-10-21).** [`bk-484-key-model/lean/`](bk-484-key-model/README.md)
 proves K1 to K12 with Lean 4.34.1, core library only, against spec 051's own
 definitions: it imports `join`, `join_inj`, `join_shape`, `seqOf`, `Key` and
 L6's `ofTrie` from [`StoreAxioms.lean`](../formal/lean/StoreAxioms.lean)
@@ -643,7 +670,7 @@ realisation of ν, and specs 005, 015 and 053 link to it. The spec settles
 these deltas, each named in § 3.3 or § 9:
 
 - PATH-003, CHILD-003, ERR-005 (a)'s `..` clause and BE-032 A.2's attribution
-  of the `..` refusal: `..` climbs.
+  of the `..` refusal: `..` climbs. Spec 054 as proposed keeps PATH-003 (§ 9.8).
 - BE-032 A.1: resolution's depth (Absent against AbsentAncestor), and its
   naming of spec 004 as the input layer's owner; spec 051's § Layering names
   spec 004 the same way.

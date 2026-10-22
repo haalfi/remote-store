@@ -7,12 +7,10 @@ import unicodedata
 import pytest
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
-
 from keymodel import (
     Config,
     Reject,
     Store,
-    accept,
     axiom_violations,
     child_resolve,
     child_view,
@@ -38,7 +36,7 @@ TOKENS = ["a", "b", "A", "c", ".", "..", "", "CON", "a..b", ".hidden", NFC_E, NF
 token = st.one_of(st.sampled_from(TOKENS), st.text(min_size=1, max_size=3))
 raw = st.lists(token, max_size=7).flatmap(
     lambda ts: st.lists(st.sampled_from(["/", "\\"]), min_size=len(ts), max_size=len(ts)).map(
-        lambda seps: "".join(t + s for t, s in zip(ts, seps))
+        lambda seps: "".join(t + s for t, s in zip(ts, seps, strict=True))
     )
 )
 
@@ -65,14 +63,26 @@ def ok(v: object) -> bool:
 @pytest.mark.parametrize(
     ("inp", "want"),
     [
-        ("a/b", "a/b"), ("a//b", "a/b"), ("/a/b/", "a/b"), ("a/./b", "a/b"), ("a/c/../b", "a/b"),
-        ("", ""), ("/", ""), (".", ""), ("a/..", ""),
-        ("a..b", "a..b"), (".hidden", ".hidden"),
+        ("a/b", "a/b"),
+        ("a//b", "a/b"),
+        ("/a/b/", "a/b"),
+        ("a/./b", "a/b"),
+        ("a/c/../b", "a/b"),
+        ("", ""),
+        ("/", ""),
+        (".", ""),
+        ("a/..", ""),
+        ("a..b", "a..b"),
+        (".hidden", ".hidden"),
         ("CON/../a", "a"),
-        ("..", Reject("escape")), ("/..", Reject("escape")), ("a/../..", Reject("escape")),
-        ("CON", Reject("tier")), ("a/CON", Reject("tier")),
+        ("..", Reject("escape")),
+        ("/..", Reject("escape")),
+        ("a/../..", Reject("escape")),
+        ("CON", Reject("tier")),
+        ("a/CON", Reject("tier")),
         ("A/b", "A/b"),
-        ("a\\b", "a/b"), ("a\\.\\b", "a/b"),
+        ("a\\b", "a/b"),
+        ("a\\.\\b", "a/b"),
     ],
 )
 def test_examples_table(inp: str, want: object) -> None:
@@ -216,7 +226,7 @@ def test_lemma_c(names: list[str], last_is_item: bool) -> None:
         name={0: "", **{i + 1: names[i] for i in range(n)}},
     )
     assert axiom_violations(s) == []
-    assert k in s.keys()
+    assert k in s.keys()  # noqa: SIM118 -- Store.keys() is a method, not a dict view
 
 
 @given(stores())

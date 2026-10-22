@@ -575,9 +575,9 @@ This section is not an authority. It records what one Azure account and three
 local implementations did with eleven raw keys on one day.
 
 **Method.** The script is
-[`bk-468-key-model/probes/probe_paths.py`](bk-468-key-model/probes/probe_paths.py),
+[`bk-484-key-model/probes/probe_paths.py`](bk-484-key-model/probes/probe_paths.py),
 and its output is
-[`results-2026-10-22.json`](bk-468-key-model/probes/results-2026-10-22.json),
+[`results-2026-10-22.json`](bk-484-key-model/probes/results-2026-10-22.json),
 which carries no account, resource, region or zone name.
 
 - For each key, the script sends a PUT byte for byte through `http.client`,

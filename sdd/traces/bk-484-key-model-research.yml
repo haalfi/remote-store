@@ -1,4 +1,4 @@
-id: BK-468
+id: BK-484
 title: "No key model connects spec 051's Key to the key parameter of Store"
 trigger: >-
   Spec 051 defined Key on entities while RemotePath (spec 004), the kernel's
@@ -7,7 +7,7 @@ trigger: >-
   repo, decided with the maintainer, spike-tested and proved in Lean, then
   landed as a research doc.
 source_items:
-  - BK-468
+  - BK-484
   - BK-435
 audience:
   - library.maintainer
@@ -54,6 +54,17 @@ orient:
       Kernel-step fixes for Local's `..` key, SQLBlob's `\` key and Windows-
       refused names (their index entries); a research doc changes no code.
       BUG-334 is cited only as an instance of a backend tier.
+  - items: [BK-468, BK-469]
+    verdict: constrains
+    evidence: >-
+      Open PR #1171 (branch claude/wonderful-bell-mqemmt, opened 2026-10-20)
+      minted BK-468 first for spec 054, the store key spec this research
+      recommends, and BK-469 for the code it breaks. Missed at first orient,
+      which searched master's backlog and not open PRs; found on 2026-10-22 by
+      `hatch run gen-backlogid --check --remote`. This item was re-minted as
+      BK-484. Spec 054 keeps PATH-003's `..` refusal while § 6 decides `..`
+      climbs; the maintainer keeps § 6, recorded as a delta (§ 9.8) and raised
+      on #1171.
   - items: [BK-456]
     verdict: unrelated
     evidence: >-
@@ -180,7 +191,7 @@ phases:
         read_type: reference
         extract: "Temporary rs-conformance-<hex> buckets and the region's LocationConstraint; the probe follows the same lifecycle"
         outcome: ok
-      - file: sdd/research/bk-468-key-model/probes/probe_paths.py
+      - file: sdd/research/bk-484-key-model/probes/probe_paths.py
         section: "(run: minio, azurite, sftp twice; s3, s3express, azure once)"
         read_type: verify
         extract: "Azure HNS rewrites raw paths in the service and resolves `..` before authorisation; Azurite stores them as sent; AWS refused (stored key no longer valid), so its § 4 points stay open"

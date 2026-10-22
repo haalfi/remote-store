@@ -1,7 +1,7 @@
 import StoreAxioms
 
 /-!
-# Key model, input layer (BK-468)
+# Key model, input layer (BK-484)
 
 Restates `sdd/research/research-key-model.md` § 3.3 (separators, the walk) and § 3.5 (ν, steps
 0 to 2) and proves the input-layer claims the Hypothesis spike tested, for
