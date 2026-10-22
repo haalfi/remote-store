@@ -1,7 +1,7 @@
-"""BE-033's interaction protocol on the kernel: one cell per transition, both runtimes.
+"""Spec 052's kernel clauses (BE-020, BE-033 to BE-037): one cell per state change, both runtimes.
 
 The backend's close posture, the read stream's close, the write handle's exits
-and the caller's content, each from the state BE-033's tables name, over the
+and the caller's content, each from the state spec 052's tables name, over the
 fake driver. Each cell asserts the next state through what the fake records:
 the calls that reached the wire, the handle's state, whether the caller's
 iterator or stream was closed.
@@ -42,7 +42,7 @@ def _write(run: Any, route: str, content: Any) -> Any:
 # --- the backend: close posture (BE-020), repeated close, unwrap ----------------
 
 
-@pytest.mark.spec("BE-033", "BE-022")
+@pytest.mark.spec("BE-020", "BE-022")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_unwrap_after_a_terminal_close_is_backend_unavailable(runtime: str) -> None:
     run = make_kernel(runtime, _store(), close_is_terminal=True)
@@ -55,7 +55,7 @@ def test_unwrap_after_a_terminal_close_is_backend_unavailable(runtime: str) -> N
         run.unwrap(int)
 
 
-@pytest.mark.spec("BE-033", "BE-022")
+@pytest.mark.spec("BE-020", "BE-022")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_unwrap_after_a_non_terminal_close_is_the_drivers_answer(runtime: str) -> None:
     run = make_kernel(runtime, _store(), close_is_terminal=False)
@@ -65,7 +65,7 @@ def test_unwrap_after_a_non_terminal_close_is_the_drivers_answer(runtime: str) -
         run.unwrap(int)
 
 
-@pytest.mark.spec("BE-033", "BE-025", "BE-030")
+@pytest.mark.spec("BE-020", "BE-025", "BE-030")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_addressing_is_answered_after_a_terminal_close(runtime: str) -> None:
     run = make_kernel(runtime, _store(), close_is_terminal=True)
@@ -77,7 +77,7 @@ def test_addressing_is_answered_after_a_terminal_close(runtime: str) -> None:
     assert run.resolve("d/f").native_path == "fake://d/f"
 
 
-@pytest.mark.spec("BE-033", "BE-020")
+@pytest.mark.spec("BE-034", "BE-020")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 @pytest.mark.parametrize("terminal", [False, True], ids=["non-terminal", "terminal"])
 def test_every_close_reaches_the_driver(runtime: str, terminal: bool) -> None:
@@ -88,7 +88,7 @@ def test_every_close_reaches_the_driver(runtime: str, terminal: bool) -> None:
     assert run.store.called("close") == [("close", ""), ("close", "")]
 
 
-@pytest.mark.spec("BE-033", "BE-020")
+@pytest.mark.spec("BE-020")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_non_terminal_backend_is_reused_between_closes(runtime: str) -> None:
     run = make_kernel(runtime, _store(), close_is_terminal=False)
@@ -99,7 +99,7 @@ def test_a_non_terminal_backend_is_reused_between_closes(runtime: str) -> None:
     assert len(run.store.called("close")) == 2
 
 
-@pytest.mark.spec("BE-033", "BE-020")
+@pytest.mark.spec("BE-020")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_terminal_close_absorbs_every_later_operation(runtime: str) -> None:
     # I1: Closed is absorbing; only close itself stays callable.
@@ -173,7 +173,7 @@ def test_a_connection_dead_that_raises_propagates_in_both_runtimes(runtime: str,
     assert caught.value is bug
 
 
-@pytest.mark.spec("BE-033", "SIO-001")
+@pytest.mark.spec("BE-037", "SIO-001")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_read_after_close_raises_or_ends(runtime: str) -> None:
     # Sync: ValueError, never data; async: an iterator its caller closed ends.
@@ -213,7 +213,7 @@ def _paged() -> FakeStore:
     return FakeStore(page_size=2).add("d/a", "d/b", "d/c", "d/e")
 
 
-@pytest.mark.spec("BE-033", "BE-014")
+@pytest.mark.spec("BE-014")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_listing_pages_to_done(runtime: str) -> None:
     store = _paged()
@@ -225,7 +225,7 @@ def test_a_listing_pages_to_done(runtime: str) -> None:
 @pytest.mark.spec("BE-020")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_listing_on_a_terminally_closed_backend_fails_at_its_first_page(runtime: str) -> None:
-    """Pins what ships, not BE-033's refusal-timing rule (the call): BK-454 owns that gap."""
+    """Pins what ships, not the refusal-timing rule (the call) BK-454's dossier holds."""
     store = _paged()
     run = make_kernel(runtime, store, close_is_terminal=True)
     run.close()
@@ -236,7 +236,7 @@ def test_a_listing_on_a_terminally_closed_backend_fails_at_its_first_page(runtim
     assert store.calls == []
 
 
-@pytest.mark.spec("BE-033", "BE-032")
+@pytest.mark.spec("BE-032")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_refusal_while_paging_fails_the_listing_after_its_first_page(runtime: str) -> None:
     # A.9: after the first page a refusal propagates; what was yielded stays yielded.
@@ -302,7 +302,7 @@ def test_a_cancelled_handle_write_is_aborted(runtime: str, at: str) -> None:
     assert [h.state for h in store.handles] == ["aborted"]  # type: ignore[attr-defined]
 
 
-@pytest.mark.spec("BE-033")
+@pytest.mark.spec("BE-035")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 @pytest.mark.parametrize("dead", [True, False], ids=["dead", "alive"])
 def test_a_failed_abort_is_logged_and_the_commit_error_raised(
@@ -321,7 +321,7 @@ def test_a_failed_abort_is_logged_and_the_commit_error_raised(
     assert f"connection dead: {dead}" in warning
 
 
-@pytest.mark.spec("BE-033")
+@pytest.mark.spec("BE-035")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_verdict_that_cannot_be_reached_is_logged_as_alive(runtime: str, caplog: pytest.LogCaptureFixture) -> None:
     # A predicate that raises on a cleanup failure says no: the cleanup never raises.
@@ -342,7 +342,7 @@ def test_a_verdict_that_cannot_be_reached_is_logged_as_alive(runtime: str, caplo
     assert "connection dead: False" in warning
 
 
-@pytest.mark.spec("BE-033")
+@pytest.mark.spec("BE-035")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_failed_temporary_delete_is_logged_and_the_rename_error_raised(
     runtime: str, caplog: pytest.LogCaptureFixture
@@ -363,7 +363,7 @@ def test_a_failed_temporary_delete_is_logged_and_the_rename_error_raised(
     assert Op.DELETE not in {op for _, op in asked}
 
 
-@pytest.mark.spec("BE-033")
+@pytest.mark.spec("BE-035")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_temporary_never_written_is_no_failed_cleanup(runtime: str, caplog: pytest.LogCaptureFixture) -> None:
     # The put fails before the temporary exists: the delete's NotFound is nothing to clean up.
@@ -376,7 +376,7 @@ def test_a_temporary_never_written_is_no_failed_cleanup(runtime: str, caplog: py
     assert sorted(store.files) == ["f"]
 
 
-@pytest.mark.spec("BE-033", "BE-021")
+@pytest.mark.spec("BE-035", "BE-021")
 @pytest.mark.parametrize("runtime", RUNTIMES)
 def test_a_temporary_in_a_vanished_container_is_no_failed_cleanup(
     runtime: str, caplog: pytest.LogCaptureFixture
@@ -398,7 +398,7 @@ def test_a_temporary_in_a_vanished_container_is_no_failed_cleanup(
     assert Op.DELETE not in {op for _, op in run.driver.absent_asked}
 
 
-@pytest.mark.spec("BE-033")
+@pytest.mark.spec("BE-035")
 @pytest.mark.parametrize("failure", ["body", "commit"])
 def test_open_atomic_logs_a_failed_abort_and_raises_the_first_error(
     failure: str, caplog: pytest.LogCaptureFixture
@@ -505,7 +505,7 @@ _BEFORE_THE_FIRST_CHUNK = {
 }
 
 
-@pytest.mark.spec("BE-033", "ASYNC-091")
+@pytest.mark.spec("BE-036", "ASYNC-091")
 @pytest.mark.parametrize("case", sorted(_BEFORE_THE_FIRST_CHUNK))
 def test_a_retry_after_a_refusal_before_the_first_chunk_writes_everything(case: str) -> None:
     route, arrange = _BEFORE_THE_FIRST_CHUNK[case]
@@ -531,7 +531,7 @@ def test_a_retry_after_a_refusal_before_the_first_chunk_writes_everything(case: 
     assert log == ["finally"]
 
 
-@pytest.mark.spec("BE-033", "ASYNC-091")
+@pytest.mark.spec("BE-030", "ASYNC-091")
 def test_the_guarded_iterator_hands_a_buffer_chunk_on_as_bytes() -> None:
     guarded = async_io.guard_content(_CallerChunks(bytearray(b"ab"), memoryview(b"cd")))
 
@@ -577,7 +577,7 @@ def test_a_caller_iterator_without_aclose_is_left_as_it_is() -> None:
     assert content._chunks == [b"cd"]  # left where the refusal stopped it
 
 
-@pytest.mark.spec("BE-033", "ASYNC-091")
+@pytest.mark.spec("BE-035", "ASYNC-091")
 def test_a_failing_aclose_never_masks_the_refusal(caplog: pytest.LogCaptureFixture) -> None:
     class _BadClose(_CallerChunks):
         async def aclose(self) -> None:
@@ -597,7 +597,7 @@ def test_an_exhausted_caller_iterator_is_written_whole(route: str) -> None:
     assert run.store.files["g"].data == b"abcd"
 
 
-@pytest.mark.spec("BE-033", "ASYNC-091")
+@pytest.mark.spec("BE-036", "ASYNC-091")
 @pytest.mark.parametrize("route", sorted(_ROUTES))
 @pytest.mark.parametrize("fails", [False, True], ids=["success", "failure"])
 def test_the_kernel_never_closes_a_sync_caller_stream(route: str, fails: bool) -> None:

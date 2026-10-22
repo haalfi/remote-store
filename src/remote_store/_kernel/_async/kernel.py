@@ -851,7 +851,7 @@ class _AsyncKernelCore:
         target = RemotePath(key)  # built before the driver commits (BE-030 step 5)
         # Past the gates the kernel holds the caller's content until it returns, and
         # release_content hands it back: an abandoned async iterator is closed, a sync
-        # stream is left to its caller (BE-033).
+        # stream is left to its caller (BE-033, BE-036).
         content = _io.guard_content(content)  # the caller's own errors pass verbatim (ASYNC-091)
         try:
             await self._prepare_write(Op.WRITE, key)
@@ -901,7 +901,7 @@ class _AsyncKernelCore:
             else:
                 result = await self._write_temp_and_rename(key, content, overwrite, metadata)
         finally:
-            await _io.release_content(content)  # as in write (BE-033)
+            await _io.release_content(content)  # as in write (BE-033, BE-036)
         return _write_result(target, result)
 
     async def _write_through_handle(

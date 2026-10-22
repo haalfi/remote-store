@@ -50,6 +50,13 @@ class Backend(abc.ABC):
     # is *terminal*: a subsequent operation raises ``BackendUnavailable`` rather
     # than silently re-opening resources (Azure, S3, Graph). The use-after-close
     # conformance lane gates on this flag.
+    #
+    # How a backend off the kernel meets it (a design note; the outcome is
+    # BE-020's): reusable, the backend re-initialises its clients lazily and
+    # remains usable after `close()`; terminal, the flag flips at the *start* of
+    # `close()` and every lazy client accessor guards on it, so a subsequent
+    # operation raises `BackendUnavailable` rather than silently re-opening
+    # resources the caller cannot observe.
     close_is_terminal: ClassVar[bool] = False
 
     @property

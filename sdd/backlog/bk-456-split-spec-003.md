@@ -135,6 +135,87 @@ kernel migration (RFC-0017 D3 step 2: BK-450, BK-455, BK-454):
 Assumption prefixes (BK-465's rule, one prefix per spec): `BE-A-` for 003,
 `LIFE-A-` for 052, `KERN-A-` for 053.
 
+## Moved out of spec 052, 2026-10-20
+
+Verbatim from `sdd/specs/052-backend-lifetime.md` at `6e4c4fd`, by stage
+three's 052 prune: project state (rosters, coverage, which class is on the
+kernel), navigation, and sentences no test could fail
+([`SPEC-DESIGN.md` Rules 1 and 7](../SPEC-DESIGN.md#rules)). What the prune
+kept, reworded or moved to another home is listed in
+`sdd/research/bk-456-prune/ledger_052.py`. A dated record, not kept current.
+
+BE-020:
+
+> Called for resource cleanup.
+
+> The posture of `LocalBackend`, `MemoryBackend`, `SFTPBackend`, `ReadOnlyHttpBackend`, and the SQL backends.
+
+> The posture of `AzureBackend` (AZ-029), the three S3 backends (S3-019), and `GraphBackend` (GR-051).
+
+> The use-after-close conformance lane (`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling) gates on this attribute, asserting the terminal error for terminal backends and re-initialisation for the rest.
+
+> **On the kernel:** the closed guard is the kernel's, [BE-030](../specs/053-contract-kernel.md#be-030-key-rule-on-the-kernel)'s step 1, and the posture is the driver's `close_is_terminal`. The class's own `close_is_terminal`, which the lane above reads, must match the driver's; the kernel refuses to construct over one that differs. `MemoryBackend` and `AsyncMemoryBackend` are on the kernel, and their drivers declare `close_is_terminal = False`. The states either posture passes through, and who owns each exit, are [BE-033](../specs/052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)'s.
+
+BE-028:
+
+> it wraps a non-thread-safe native client (e.g. one SFTP channel, or a
+>   `urllib` opener whose redirect counter is shared). Such a backend MUST document
+>   the posture in its spec **and** class docstring, and MUST state the remedy: one
+>   instance per thread, or an external serializing wrapper.
+
+> **Postconditions:**
+> - `thread_safe` is the posture of `LocalBackend` (stateless; delegates to
+>   `os`/`shutil`, serialised by the operating system), `MemoryBackend` (a single
+>   `threading.Lock`, MEM-025), the cloud and SQL backends (their native clients —
+>   the boto3/s3fs client, the Azure SDK service clients, the SQLAlchemy
+>   engine/pool — are documented thread-safe for concurrent per-instance use), and
+>   `GraphBackend` on the async axis (GR-059).
+> - `single_connection` is the posture of `SFTPBackend` (SFTP-029) and
+>   `ReadOnlyHttpBackend` on its default `urllib` transport (HTTP-CONC-001).
+> - An **undeclared** posture is a contract violation, not a silent default: every
+>   concrete backend states its posture, or inherits the `thread_safe` default by
+>   the terms of this clause (`LocalBackend`, which has no numbered spec, is
+>   `thread_safe` by this paragraph).
+
+> The posture is the authoritative source for the machine-readable `concurrency` registry field the cross-backend
+> concurrency conformance lane tests against.
+
+> a `close` racing in-flight calls on the kernel, [BE-033](../specs/052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel).
+
+BE-033:
+
+> The other clauses of [spec 003](../specs/003-backend-adapter-contract.md) and
+> [spec 053](../specs/053-contract-kernel.md) state each call; this one states the states between them.
+
+> **Scope.** The session-less classes on the kernel, such as `MemoryBackend` and
+> `AsyncMemoryBackend`.
+
+> **Guard order.** Which capability gates run ahead of the closed guard is
+> BE-030's **Gates around the pipeline**, and this clause keeps that order.
+
+> **Conformance:** `tests/_kernel/test_protocol.py`, a cell per kernel- and
+> caller-owned row of the tables above over the fake driver, both runtimes
+> (except the `Session` and driver rows, below, and the stream adapter's
+> close-failure row); `tests/_kernel/test_protocol_stateful.py`,
+> a Hypothesis state machine checking I1 to I3 under random interleavings of
+> `write` and the wire-temporary `write_atomic` route, reads and closes, per
+> runtime and posture; Memory's rows in `tests/backends/memory/test_kernel_cells.py`;
+> and the repeated-close cell in both close-posture lanes
+> (`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling). The
+> `Session` rows have no cell. The driver's rows are
+> duties its protocols' docstrings state (`remote_store._kernel._async.driver`),
+> and no cell checks them.
+
+Assumptions and Notes:
+
+> None lifted out of the sections: BE-028 states, in its own text, what it relies
+> on from the native clients.
+
+> The sections carry their derived claims in place: BE-033's Invariants name the
+> `KernelProtocol.dfy` lemma behind each of I1 to I3, its diagrams are a view
+> generated from the compiled model, and BE-028's Rationale states STORE-007's
+> dependence on it.
+
 ## Moved out of spec 003, 2026-10-19
 
 Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master

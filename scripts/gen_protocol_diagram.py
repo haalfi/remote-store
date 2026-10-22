@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Draw the kernel's interaction protocol from its compiled model.
 
-The diagrams under spec 052 BE-033 are enumerated, not drawn: this runs the
+The diagrams in spec 052's Notes are enumerated, not drawn: this runs the
 compiled ``sdd/formal/KernelProtocol-py/`` oracle over its whole finite input
 space and writes what it computes as Mermaid ``stateDiagram-v2`` fences between
 ``<!-- BEGIN_GENERATED:kernel_protocol -->`` markers. So a change to
@@ -37,7 +37,7 @@ first ``kernel_protocol`` region is rewritten; a second copy is not seen.
 Drift-gate::
 
     kind:       pair
-    compares:   sdd/formal/KernelProtocol-py/ (KernelStep, KernelExit) ↔ the generated diagram block under BE-033 in
+    compares:   sdd/formal/KernelProtocol-py/ (KernelStep, KernelExit) ↔ the generated diagram block in the Notes of
         sdd/specs/052-backend-lifetime.md
     domain:     intent ↔ intent-formalized
 """

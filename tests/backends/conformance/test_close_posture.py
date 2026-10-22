@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
-from remote_store._errors import BackendUnavailable, InvalidPath
+from remote_store._errors import BackendUnavailable, CapabilityNotSupported, InvalidPath
 from remote_store._kernel.backend import DriverBackend
 from tests.backends.conformance._helpers import _require
 
@@ -128,14 +128,37 @@ def test_close_posture_outranks_root_write_rejection(backend: Backend, root: str
         assert "is closed" not in str(exc_info.value)
 
 
-@pytest.mark.spec("BE-033")
+# The calls a capability gate refuses by the declaration alone (BE-011, BE-024).
+_GATED: dict[str, tuple[Capability, Callable[[Backend], object]]] = {
+    "glob": (Capability.GLOB, lambda b: list(b.glob("*"))),
+    "write_atomic": (Capability.ATOMIC_WRITE, lambda b: b.write_atomic(_PROBE, b"x")),
+}
+
+
+@pytest.mark.spec("BE-020")
+@pytest.mark.parametrize("op_name", sorted(_GATED))
+def test_an_undeclared_capability_outranks_the_closed_guard(backend: Backend, op_name: str) -> None:
+    """After ``close()``, a call whose capability the class does not declare is refused for that.
+
+    Capability data is not a live operation, so it answers the same before and after a
+    close, on either posture. A backend that declares the capability has no gate to rank.
+    """
+    capability, call = _GATED[op_name]
+    if capability in backend.capabilities:
+        pytest.skip(f"{backend.name} declares {capability.name}")
+    backend.close()
+    with pytest.raises(CapabilityNotSupported):
+        call(backend)
+
+
+@pytest.mark.spec("BE-034")
 def test_a_repeated_close_keeps_the_posture(backend: Backend) -> None:
     """On the kernel, a second ``close()`` is forwarded and accepted, and the posture holds after it.
 
-    BE-033 binds classes on the kernel only, so another backend is skipped.
+    BE-034 binds classes on the kernel only, so another backend is skipped.
     """
     if not isinstance(backend, DriverBackend):
-        pytest.skip("BE-033 binds classes on the kernel")
+        pytest.skip("BE-034 binds classes on the kernel")
     backend.close()
     backend.close()
     if backend.close_is_terminal:

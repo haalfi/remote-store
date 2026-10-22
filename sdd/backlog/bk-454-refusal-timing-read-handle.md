@@ -32,6 +32,33 @@ with `close_is_terminal=True` after `close()` for the closed guard, and `Store` 
 - Open: whether a bare `async for chunk in store.read(path)` keeps working
   unchanged, and the handle's type in each runtime.
 
+## Moved out of spec 052, 2026-10-20
+
+Verbatim from `sdd/specs/052-backend-lifetime.md` and
+`029-async-store-backend-api.md` at `6e4c4fd`, by BK-456's 052 prune: the rule
+is not met (the table below is today's timing), so it is intent, which a spec
+does not carry ([`SPEC-DESIGN.md` Ready item 3](../SPEC-DESIGN.md#ready)).
+When this item builds the handle, the rule goes back as a clause of spec 001
+and spec 029, which own when a `Store` call's refusal surfaces. A dated
+record, not kept current.
+
+BE-033:
+
+> **Refusal timing.** The rule: a pure refusal (the closed guard, a capability
+> gate, `InvalidPath` for a malformed key) surfaces at the call; a stream's I/O
+> refusal (`NotFound`, `InvalidPath` for a file-versus-folder mismatch) surfaces
+> when the stream opens, through a handle (`with`/`async with store.read(...)`);
+> a listing's I/O stays lazy, at its first page.
+
+BE-033, its states table: the listing row, which no clause of spec 052 states
+anything about, and which this item's lazy-listing rule needs:
+
+> | listing | Not started, Paging, Done, Failed | the first `next`, the last page, a refusal |
+
+ASYNC-006:
+
+> **When a refusal surfaces:** [BE-033](../specs/052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)'s **Refusal timing**.
+
 ## Moved out of spec 003, 2026-10-19
 
 Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master
