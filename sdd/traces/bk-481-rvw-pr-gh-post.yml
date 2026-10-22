@@ -134,5 +134,16 @@ phases:
           than measured, and the first budget raise kept a stale +435 (the
           file sizes at 0002d604a give SKILL.md +414 over master)
         outcome: misleading
+      - file: sdd/CONTENT-RULES.md
+        section: "Last pass: three lines"
+        read_type: gate
+        extract: >-
+          Owner review asked for the three-line pass on the whole change.
+          posting.md condensed to its rules (evidence prose left to this
+          trace), SKILL.md, /ship and the I/O split trimmed; the process total
+          fell to 300326 below master's 301224, so the three raises were
+          dropped and the cut locked in with --update
+        outcome: ok
 decisions:
   - sdd/decisions/b301fcfb-c12a-4332-be83-7addd61e5d96.jsonl
+  - sdd/decisions/caf9bbcd-11d7-471b-9c9e-a5ffd792c9b3.jsonl
