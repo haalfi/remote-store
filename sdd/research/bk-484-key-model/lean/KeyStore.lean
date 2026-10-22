@@ -217,6 +217,8 @@ theorem lemma_C {sl : α} (ws : List (List α)) (hws : ∀ w ∈ ws, InN sl w) (
 #guard_msgs in #print axioms parent_eq_dropLast
 /-- info: 'KeyConcept.item_has_no_extension' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in #print axioms item_has_no_extension
+/-- info: 'KeyConcept.occupied_take' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in #print axioms occupied_take
 /-- info: 'KeyConcept.resolution' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in #print axioms resolution
 /-- info: 'KeyConcept.child_view' depends on axioms: [propext, Classical.choice, Quot.sound] -/

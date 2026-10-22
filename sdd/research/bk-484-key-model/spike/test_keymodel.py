@@ -250,12 +250,19 @@ def test_resolution(s: Store, k: str) -> None:
     assert all(prefix(k, i) in keys for i in range(j + 1))
     if r[0] == "found":
         assert s.key_of(r[1]) == k
+        assert r[2] == s.kind(r[1])
     else:
         assert k not in keys
+        assert prefix(k, j + 1) not in keys  # j is the largest occupied prefix
     if r[0] == "blocked":
+        assert j < n
         assert keys[r[1]] in s.items
     if r[0] == "absent":
+        assert j == n - 1
         assert keys[parent(k)] in s.folders
+    if r[0] == "absent_ancestor":
+        assert j < n - 1
+        assert keys[r[1]] in s.folders
 
 
 @given(stores())

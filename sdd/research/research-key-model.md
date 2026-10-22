@@ -63,6 +63,9 @@ exactly (spec 051 § Name equality).
 the surrogates (§ 6). It contains `/` and other symbols, as spec 051 requires,
 and every name over it is encodable as UTF-8.
 
+**Examples** quote strings literally. `␀` stands for NUL (U+0000); every `\`
+is a backslash, never an escape.
+
 ---
 
 ## 3. The model
@@ -259,7 +262,7 @@ Examples, for a store with Sep_S = {`/`, `\`} whose tier refuses `CON`:
 | `a..b`, `.hidden` | the input | names, not navigation |
 | `CON/../a` | `a` | the class of `a` |
 | `..`, `/..`, `a/../..` | Reject (escape) | — |
-| `x\0/..` | Reject (step 0) | — |
+| `x␀/..` | Reject (step 0) | — |
 | `CON`, `a/CON` | Reject (step 2) | — |
 | `A/b` | `A/b` | not equivalent to `a/b` |
 
@@ -379,7 +382,7 @@ were found while deciding § 6.
 | Rule removed | Input | What goes wrong |
 |---|---|---|
 | Step 0's `\` rule on the raw input (checking `\` on the result instead) | `a\a/..` | ε after an opt-out, `a` by default: the opt-out changes what an accepted input means, so K5 fails. |
-| Step 0's NUL rule on the raw input | `x\0/..` | Accepted as ε: a string carrying NUL denotes the root. |
+| Step 0's NUL rule on the raw input | `x␀/..` | Accepted as ε: a string carrying NUL denotes the root. |
 | Acceptance on the end position only (checking each *down* step instead) | `CON/../a` | Rejected, although ≈ makes it equivalent to the accepted `a`: ν no longer decides ≈ (K3). |
 | Escape rejected (clamping at the root instead) | `../x` at the root | Means `x`: a mistaken path silently addresses an entity. |
 | One starting point, the store's root (a general base b instead) | `..` from base `x/y` | Two readings: escape at b, or climb through b to the root. A draft of this model stated both. |
@@ -633,8 +636,9 @@ definitions: it imports `join`, `join_inj`, `join_shape`, `seqOf`, `Key` and
 L6's `ofTrie` from [`StoreAxioms.lean`](../formal/lean/StoreAxioms.lean)
 rather than restating them. Two results go through L6: Lemma C builds the
 store from the trie of one sequence's prefixes, and the child view is the trie
-of positions below a folder. A `#guard_msgs` block pins each headline
-theorem's axioms to Lean's standard ones, so a `sorry` fails the build. A
+of positions below a folder. A `#guard_msgs` block pins the axioms of every
+theorem the table below names, 15 in all, to Lean's standard ones, so a
+`sorry` fails the build. A
 mutation check, not committed, disabled step 0's `\` rule: the build failed,
 with the opt-out and the dependent proofs no longer checking and the
 `a\a/..` example evaluating to the wrong result.

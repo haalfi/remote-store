@@ -46,8 +46,8 @@ It needs the Docker image `remote-store-lean:4.34.1`, which
 `bash scripts/lean_check.sh` builds on its first run. The script mounts the
 repo read-only, copies `sdd/formal/lean` and this project into the container
 with their relative layout, and runs `lake build`; warnings fail the build,
-and `#guard_msgs` pins each headline theorem's axioms, so a `sorry` fails it
-too. Expected: `Build completed successfully`.
+and `#guard_msgs` pins the axioms of every theorem in the document's § 10
+table, so a `sorry` fails it too. Expected: `Build completed successfully`.
 
 ## Running the probe
 

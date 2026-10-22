@@ -497,6 +497,8 @@ example : nu symC cfgDefault [] [] = some [] := by decide
 
 /-! ## What the claims rest on: Lean's standard axioms only, never `sorryAx` -/
 
+/-- info: 'KeyConcept.nu_output' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs in #print axioms nu_output
 /-- info: 'KeyConcept.nu_key_shape' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in #print axioms nu_key_shape
 /-- info: 'KeyConcept.nu_fixed_point' depends on axioms: [propext] -/
