@@ -180,6 +180,16 @@ phases:
           had no consistent outcome; the fold's chaining was untested; and the
           condense had dropped the REST range and deleted-line spellings
         outcome: misleading
+      - file: .claude/skills/rvw-pr/posting-gh.md
+        section: "(run) claude.ai/code session, at 224228fab"
+        read_type: verify
+        extract: >-
+          Not the no-MCP condition: GitHub MCP was connected, the reviewer was
+          told to avoid it and to use no heredoc, and printed the gh calls
+          instead of running them (issue comment 6334390644). No cloud gh post
+          measured. Its findings: SKILL.md Step 1 still said MCP only for
+          writes, and the FILE call had a shape but no command
+        outcome: misleading
 surprising_ripples:
   - scripts/ship_report.py
   - sdd/rfcs/rfc-0015-findings.py
