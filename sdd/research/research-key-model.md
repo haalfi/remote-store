@@ -67,6 +67,39 @@ and every name over it is encodable as UTF-8.
 
 ## 3. The model
 
+The model has three layers, and only the last reads the store's state:
+
+1. **Reduction** ν: R → L_api ∪ {Reject} (§ 3.3 to § 3.5). It reads the
+   string and the store's configuration (Sep_S and the chosen L_api), never
+   its state. It checks the raw input, walks away navigation and separator
+   noise, rejects an escape, and judges where the walk ends.
+2. **Key strings** L_api ⊆ L_floor ⊆ L_core (§ 3.1, § 3.2). L_core is
+   TREE-011's Key shape. In one store, Key is a bijection between U_S and
+   K(S) ⊆ L_core (TREE-010), so a key string names at most one entity.
+3. **Resolution** Ω_S: L_api → (U_S × kind) ∪ Miss (§ 3.7), with four
+   disjoint outcomes: Found, BlockedByItem, Absent and AbsentAncestor.
+
+A child store adds no layer. It walks from its own root and resolves c ⊕ k
+in S (§ 3.6).
+
+```mermaid
+flowchart LR
+    p["p ∈ R<br/>a caller's string"] --> nu["ν: step 0, walk, accept"]
+    subgraph cfg["configuration, not state"]
+        sep["Sep_S"]
+        lapi["L_api ⊆ L_floor ⊆ L_core"]
+    end
+    sep --> nu
+    lapi --> nu
+    nu -->|Reject| inv["InvalidPath"]
+    nu -->|"k ∈ L_api"| omega["Ω_S"]
+    state[("S: the store's state")] --> omega
+    omega --> found["Found(e, kind)"]
+    omega --> blocked["BlockedByItem(kⱼ)"]
+    omega --> absent["Absent"]
+    omega --> anc["AbsentAncestor(kⱼ)"]
+```
+
 ### 3.1 Key strings
 
 ```
@@ -454,6 +487,7 @@ not checked against one cited text).
 | `ntpath.normpath` (*Measured*) | climbs | collapsed | separator (output uses `\`) | — | drive root | clamped (`C:\..` → `C:\`) |
 | RFC 3986 § 5.2.4, `remove_dot_segments` (*Textbook*) | climbs | `.` removed | — | — | `/` | clamped |
 | POSIX pathname resolution (*Textbook*) | physical: follows the directory entry, after links | `.` stays; empty segments collapse | an ordinary character | not in a path | `/` | `/..` is `/` |
+| ZooKeeper `PathUtils.validatePath` (*Read*, § 9.7) | rejected | rejected, as is a trailing `/` | an ordinary character | rejected | `/` | — |
 
 The measured rows: `RemotePath` on `a/c/../b` (`InvalidPath`), `a\b`
 (`a/b`), `/a/b/` and `a/./b` (`a/b`); `posixpath` and `ntpath` on the inputs
@@ -528,6 +562,31 @@ Key out of its scope, so the two meet only at the Key.
   or normalising encoding answers; § 3.2's sibling equivalence and normal-form
   rule, and § 3.7's `AlreadyExists` for a clash, are one answer (BK-436 holds
   the open decision).
+
+### 9.7 Prior art
+
+Three known structures sit under this model. Each is checked against the
+source named, and each is narrower than the model.
+
+- **Tries** (*Read*). A prefix-closed set of name sequences is a rooted tree
+  whose edges are names, not characters. That is spec 051's L6, `ofTrie` in
+  [`StoreAxioms.lean`](../formal/lean/StoreAxioms.lean) § 7. K(S) is such a
+  set (TREE-012), and two of the Lean proofs go through it (§ 10).
+- **Path-keyed tree maps** (*Read*).
+  [`StoreTree.dfy`](../formal/StoreTree.dfy) § 1 states the tree as
+  `map<Key, Kind>`, valid when the root is a folder and every proper prefix of
+  a key is a folder. Its § 2 `Resolve` answers `RItem`, `RFolder`,
+  `RThroughItem` or `RNothing`. That is § 3.7 with Absent and AbsentAncestor
+  merged, the depth delta of § 9.6.
+- **ZooKeeper's namespace** (*Read*: the Programmer's Guide and
+  `PathUtils.validatePath`, 2026-10-22). Paths are "canonical, absolute,
+  slash-separated", with "no relative reference". The validator refuses
+  where ν reduces: it rejects an empty path, a missing leading `/`, a trailing
+  `/`, an empty node name, a `.` or `..` segment, NUL and several
+  code-point ranges. A name such as `a..b` passes. This is § 6's rejected
+  alternative for separator noise ("one spelling per key on input too"). Its
+  nodes carry data and children at once, so it has no folder/item partition
+  (TREE-001), and nothing like BlockedByItem arises.
 
 ---
 
@@ -606,3 +665,8 @@ these deltas, each named in § 3.3 or § 9:
   Remove Dot Segments (*Textbook* in § 9; not re-read in this session).
 - POSIX.1, Base Definitions § 4.13 Pathname Resolution (*Textbook* in § 9;
   not re-read in this session).
+- Apache ZooKeeper, "ZooKeeper Programmer's Guide", § ZNodes
+  (<https://zookeeper.apache.org/doc/current/zookeeperProgrammers.html>), and
+  `PathUtils.validatePath`
+  (<https://github.com/apache/zookeeper/blob/master/zookeeper-server/src/main/java/org/apache/zookeeper/common/PathUtils.java>),
+  read 2026-10-22 (§ 9.7).
