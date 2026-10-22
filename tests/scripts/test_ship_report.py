@@ -995,6 +995,37 @@ class TestRoundsWithFindings:
         rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
         assert [[f["path"] for f in group] for group in rounds.values()] == [["a.py", "b.md"]]
 
+    def test_the_window_runs_from_the_previous_file_review(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A pass with several FILE findings posts one review per finding, so the
+        last can land past the window from the summary but inside it from the
+        previous one: all of them are still that pass."""
+        line = self._comment(1, 10, "a.py")
+        files = [{**self._comment(i, 10 + i - 1, f"f{i}.md"), "subject_type": "file"} for i in (2, 3)]
+        reviews = [
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T00:01:40Z", "body": "", "user": {"login": "r"}},
+            {"id": 12, "submitted_at": "2026-09-01T00:03:20Z", "body": "", "user": {"login": "r"}},
+        ]
+        self._stub(monkeypatch, [line, *files], reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert [[f["path"] for f in group] for group in rounds.values()] == [["a.py", "f2.md", "f3.md"]]
+
+    def test_a_pass_with_only_file_findings_is_one_round(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The summary review then carries no finding of its own; the round is
+        keyed by it all the same, and sorts by its submission time."""
+        earlier = self._comment(1, 5, "a.py")
+        file_level = {**self._comment(2, 11, "b.md"), "subject_type": "file"}
+        reviews = [
+            {"id": 5, "submitted_at": "2026-08-31T00:00:00Z", "body": "round 1", "user": {"login": "r"}},
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T00:00:02Z", "body": "", "user": {"login": "r"}},
+        ]
+        self._stub(monkeypatch, [earlier, file_level], reviews)
+        rounds, review_ts, _fr, unsubmitted = _mod.rounds_with_findings(1)
+        assert list(rounds) == [5, 10]
+        assert unsubmitted == []
+        assert 10 in review_ts
+
     def test_a_file_comment_hours_later_stays_its_own_round(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """The owner's own file-level notes on #1173 came hours after the pass:
         they are not its findings, so they do not fold into it."""

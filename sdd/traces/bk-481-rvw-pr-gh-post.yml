@@ -170,6 +170,16 @@ phases:
           Re-running the RFC's derivation moved Table 2 r4/r5 unclassifiable
           34/28 to 35/27 and Table 3's 92 submissions to 91, nothing else
         outcome: ok
+      - file: .claude/skills/rvw-pr/posting-gh.md
+        section: "(run) /rvw-pr 1174 from a local session with --strict-mcp-config, at 823985a08"
+        read_type: verify
+        extract: >-
+          No MCP server, so no posting tool to search for: the pass posted
+          through the gh heredoc, review 5609728405, count 12 to 15, three line
+          comments each on its line, no retry. Findings: a refused FILE call
+          had no consistent outcome; the fold's chaining was untested; and the
+          condense had dropped the REST range and deleted-line spellings
+        outcome: misleading
 surprising_ripples:
   - scripts/ship_report.py
   - sdd/rfcs/rfc-0015-findings.py
