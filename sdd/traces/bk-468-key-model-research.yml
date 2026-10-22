@@ -14,6 +14,7 @@ audience:
   - contributor.process
 decisions:
   - sdd/decisions/fca785b7-259e-4b69-9457-132a2b61107a.jsonl
+  - sdd/decisions/1360c86a-3116-4ddc-b37c-d5fcfc84685e.jsonl
 orient:
   - items: [BK-432]
     verdict: constrains
@@ -158,3 +159,26 @@ phases:
         read_type: verify
         extract: "No trigger names a new research doc; Docs navigation was the nearest, and research pages are indexed by check-sdd-index, not a _nav.yml entry"
         outcome: unclear
+  - id: probe
+    name: Measure the authorities doc's open points (§ 4) with raw-key probes
+    steps:
+      - file: infra/docker-compose.yml
+        section: "(full)"
+        read_type: reference
+        extract: "MinIO (Chainguard latest-dev), Azurite 3.35.0 and atmoz/sftp:alpine are the local implementations probed"
+        outcome: ok
+      - file: tests/backends/fixtures/_live_env.py
+        section: "(full)"
+        read_type: reference
+        extract: "Credential variable names for the live tier; the Azurite signature check reused by the probe"
+        outcome: ok
+      - file: tests/backends/fixtures/s3_live.py
+        section: "module docstring, _factory"
+        read_type: reference
+        extract: "Temporary rs-conformance-<hex> buckets and the region's LocationConstraint; the probe follows the same lifecycle"
+        outcome: ok
+      - file: sdd/research/bk-468-key-model/probes/probe_paths.py
+        section: "(run: minio, azurite, sftp twice; s3, s3express, azure once)"
+        read_type: verify
+        extract: "Azure HNS rewrites raw paths in the service and resolves `..` before authorisation; Azurite stores them as sent; AWS refused (stored key no longer valid), so its § 4 points stay open"
+        outcome: ok

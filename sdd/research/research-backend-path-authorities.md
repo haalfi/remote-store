@@ -1,7 +1,7 @@
 # Research: What each backend's authority allows in a path or key
 
 **Date:** 2026-10-21
-**Status:** Research complete — a reference table
+**Status:** Research complete — a reference table, with one dated measurement (§ 5)
 
 ---
 
@@ -14,9 +14,11 @@ documentation, an expired Internet-Draft. They are stated in different units
 from memory rather than read.
 
 This document is a reference: for each externally governed backend, what its
-own authoritative source permits in a path or key, with the source cited. It
-records the external authorities only. It decides nothing and states nothing
-about what remote-store accepts.
+own authoritative source permits in a path or key, with the source cited.
+§ 2 to § 4 record the external authorities only. § 5 adds one dated
+measurement of what services and local implementations did, labelled as a
+measurement and not an authority. The document decides nothing and states
+nothing about what remote-store accepts.
 
 **Scope.** The externally governed backends of remote-store v0.33.0
 (`FEATURES.md` § Backends): `local`, `s3`, `s3-pyarrow`, `azure`, `sftp`,
@@ -36,7 +38,8 @@ source, SDK issue trackers or emulators are labelled as such.
 ## 2. Reference table
 
 One row per backend and namespace model, with the same questions asked of
-each. Each cell is derived from the subsection of § 3 for that backend.
+each. Each cell is derived from the subsection of § 3 for that backend; a
+cell marked "measured" comes from § 5.
 
 | Backend | Authority | Unit, max length | Hierarchy, separator | Forbidden | Avoid (advisory) | `.` / `..` | Empty segment, `//` | Trailing `/` | Case | Encoding |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -49,7 +52,7 @@ each. Each cell is derived from the subsection of § 3 for that backend.
 | `s3`, `s3-pyarrow` general-purpose bucket | AWS "Naming Amazon S3 objects"; `PutObject`; `ListObjectsV2` | UTF-8 bytes; key 1–1024 | Flat; `/` is only a convention | `..` where cumulative `..` count exceeds preceding normal segments (REST, CLI, SDK, console) | Period-only segments; control chars 0–31, 127; `\ { } ^ % \` [ ] " < > ~ # \|`; bytes 128–255 | Stored literally if valid (see Forbidden); tools may normalise | Not documented; SDK issue reports indicate stored literally (§ 3.6) | Allowed (REST/SDK; console cannot upload) | Case-sensitive | UTF-8; list needs `encoding-type=url` for XML-unsafe chars |
 | S3 directory bucket (Express One Zone) | AWS "Working with directory buckets"; "Differences for directory buckets" | UTF-8 bytes; key ≤ 1024 | Real directories; `/` only delimiter; prefixes must end in `/` | `DeleteObjects` keys: all-whitespace, control chars except `\n \t \r` | — | Not documented (live probe) | Not documented (live probe) | Not documented (live probe) for PUT; `RenameObject` fails on it | Not documented for directory buckets (general-purpose keys are case-sensitive) | UTF-8; listing unsorted |
 | `azure` flat namespace | MS "Naming and Referencing Containers, Blobs, and Metadata" | Characters; blob name 1–1024; ≤ 254 segments | Flat; virtual hierarchy via any delimiter | Control chars 0x00–0x1F, invalid Unicode code points; URL-invalid chars may fail | Names or segments ending in `.`, `/`, `\`; U+0080–009F and noncharacters | Not documented (live probe) (only "no segment should end with `.`") | Not documented (live probe) | Avoid | Case-sensitive | Reserved URL chars must be escaped |
-| `azure` HNS (ADLS Gen2) | Same page; ADLS "Path - Create"; Data Lake known issues | Characters; name 1–1024; ≤ 63 segments incl. account and container | Real directories; `/` only delimiter | As flat | As flat | Not documented (live probe) | Not documented (live probe) | Avoid | Case-sensitive | As flat |
+| `azure` HNS (ADLS Gen2) | Same page; ADLS "Path - Create"; Data Lake known issues | Characters; name 1–1024; ≤ 63 segments incl. account and container | Real directories; `/` only delimiter | As flat | As flat; measured: a trailing `.` is stripped and `\` becomes `/` (§ 5) | Not documented; measured: resolved by the service, `..` before authorisation (§ 5) | Not documented; measured: collapsed, a leading `/` dropped (§ 5) | Avoid; measured: PUT refused, `InvalidUri` (§ 5) | Case-sensitive | As flat |
 | `sftp` (protocol v3, OpenSSH) | draft-ietf-secsh-filexfer-02 §6.2; OpenSSH `PROTOCOL` §4 | — (protocol sets none; server FS rules apply) | `/` assumed; relative to home | — (no syntax defined) | — | Servers SHOULD treat as parent/current | Not defined (server FS); an empty *path* is the home directory | — | Server FS | Opaque strings (UTF-8 only from v6, which OpenSSH lacks) |
 | `graph` (OneDrive / SharePoint) | MS "Restrictions and limitations"; SharePoint limits; Graph "Addressing driveItems" | Characters; decoded path ≤ 400 | Folders, addressed by `/` paths | `" * : < > ? / \ \|`; `#` `%` on some business tenants; names `.lock CON PRN AUX NUL COM0–9 LPT0–9 _vti_ desktop.ini`; `~$` prefix; `_vti_` anywhere; leading/trailing spaces; folder ending in `.` and name starting with `~` (Graph page only) | — | Not documented | Not documented | Not documented | Path lookup case-insensitive, case-preserving | Percent-encoded UTF-8 per RFC 3986 |
 
@@ -439,7 +442,8 @@ Sources:
   (non-authoritative) stores `//` literally and converts `\` to `/` with the
   comment "Azure Storage Server will replace "\" with "/" in the blob names".
   Settled only by a live probe that bypasses client normalisation (for example
-  `curl --path-as-is`).
+  `curl --path-as-is`). § 5 records such a probe against an HNS account; the
+  flat namespace is still unmeasured.
 
 Sources:
 
@@ -547,12 +551,14 @@ Sources:
 No source settles these, after two rounds of search:
 
 - S3 directory buckets: `//`, empty, `.`, `..` segments; PUT of a key ending
-  in `/`; leading `/`. AWS documents none of these; needs a live probe.
+  in `/`; leading `/`. AWS documents none of these; needs a live probe. § 5's
+  probe covers them, but its 2026-10-22 run could not create a bucket.
 - S3 general-purpose: `//` stored literally (indicative SDK issue reports
-  only).
-- Azure (flat and HNS): service treatment of raw `.`, `..`, `//` and `\`.
+  only). § 5's probe covers it; the same run was refused at authentication.
+- Azure flat namespace: service treatment of raw `.`, `..`, `//` and `\`.
   Microsoft documents none; needs a live probe with an unnormalised request
-  path.
+  path. The HNS endpoint is measured in § 5; Azurite, a flat emulator, is not
+  an authority for the service.
 - Graph: whether a reserved name with an extension (`CON.txt`) is blocked.
   Microsoft documents it nowhere; needs a test upload.
 - Graph: that `a.txt` and `A.txt` cannot coexist is inferred from
@@ -563,8 +569,85 @@ No source settles these, after two rounds of search:
 
 ---
 
-## 5. Using this reference
+## 5. Measured: raw keys against a service and local implementations (2026-10-22)
+
+This section is not an authority. It records what one Azure account and three
+local implementations did with eleven raw keys on one day.
+
+**Method.** The script is
+[`bk-468-key-model/probes/probe_paths.py`](bk-468-key-model/probes/probe_paths.py),
+and its output is
+[`results-2026-10-22.json`](bk-468-key-model/probes/results-2026-10-22.json),
+which carries no account, resource, region or zone name.
+
+- For each key, the script sends a PUT byte for byte through `http.client`,
+  so no SDK or urllib3 step rewrites the path (§ 3.7).
+- It then lists the target and sends a GET on the same raw path.
+- Azure requests use a container SAS and `x-ms-version: 2023-11-03`. S3
+  requests are signed with botocore's `S3SigV4Auth`, which leaves the path
+  as is.
+- SFTP goes through paramiko, which sends path strings unchanged. The
+  directories `a`, `e` and `g` are created first, because POSIX resolution is
+  physical.
+- Each target gets a fresh bucket, container or folder, deleted afterwards.
+
+**Targets.**
+
+- An Azure storage account with HNS (`is_hns_enabled` true), through the
+  blob endpoint. The DFS endpoint was not probed.
+- Azurite 3.35.0, a flat emulator.
+- MinIO, Chainguard image `latest-dev`, unpinned.
+- OpenSSH in `atmoz/sftp:alpine`, chrooted with home `/`.
+
+AWS was not measured. The general-purpose bucket's `CreateBucket` was refused
+with `InvalidAccessKeyId` (the stored key no longer exists). The directory
+bucket's `CreateBucket` was refused with `AccessDenied` in all six zone IDs
+tried, with the same key, so whether the account's policy would allow a
+directory bucket is not known.
+
+| Key sent | Azure HNS (service) | Azurite (emulator) | MinIO | OpenSSH |
+| --- | --- | --- | --- | --- |
+| `p/plain` (control) | stored as sent | as sent | as sent | as sent |
+| `p/...` | PUT 400 `InvalidUri`; a GET on the path answers 200 | as sent | as sent | as sent |
+| `p/a//b` | `p/a/b` | as sent | 400 `XMinioInvalidObjectName` | `a/b` |
+| `p//c` | `p/c` | as sent | 400 `XMinioInvalidObjectName` | `c` |
+| `p/./d` | `p/d` | as sent | 400 `XMinioInvalidResourceName` | `d` |
+| `p/e/../f` | `p/f` | as sent | 400 `XMinioInvalidResourceName` | `f` |
+| `p/g/` | PUT 400 `InvalidUri` | as sent | as sent | refused (`SSH_FX_FAILURE`) |
+| `/p/h` | `p/h` | as sent | `p/h` | the same file as `p/h` |
+| `p/i\j` | `p/i/j`, and a directory `p/i` | `p/i/j` | as sent | as sent |
+| `p/k.` | `p/k` | as sent | as sent | as sent |
+| `p/../../x` | 403 `AuthenticationFailed` | as sent | 400 `XMinioInvalidResourceName` | refused (`EACCES`) |
+
+OpenSSH names are relative to the probe folder. Both local runs gave the same
+results.
+
+**Readings.**
+
+- **The Azure HNS service rewrites a raw path.** It collapses empty segments,
+  drops a leading `/`, removes `.`, resolves `..`, converts `\` to `/` and
+  strips a trailing `.`. Each rewritten key was stored under a name other than
+  the one sent, with no error. The `p/...` row fits dot-stripping leaving an
+  empty name, and the 200 on its GET fits that GET reaching the directory `p`.
+  Both are inferences; neither was probed separately.
+- **On Azure, `..` resolves before authorisation.** The 403 means the
+  resolved path lay outside the container the SAS covers. Under a credential
+  that covers the whole account (an account key or an account SAS), the same
+  request would be authorised against the resolved path. That is an
+  inference; it was not run.
+- **Azurite differs from the service on every row except the control and
+  `\`.** It stores the other keys as sent.
+- **MinIO refuses empty, `.` and `..` segments and drops a leading `/`.**
+  What AWS does with these remains open (§ 4).
+- **OpenSSH resolves paths in the server's filesystem.** A `..` above the
+  chroot root lands at the root (`/..` is `/`, § 3.2), where the write was
+  refused by permission, not by a path rule.
+
+---
+
+## 6. Using this reference
 
 § 2 is the overview; cite the § 3 subsection, not the table, for any claim
 that rests on a backend's rule. Treat the points of § 4 as unknown, not as
-permitted.
+permitted. § 5 is one day's measurement of one instance per target; cite it
+as such, never as a rule.
