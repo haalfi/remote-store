@@ -127,8 +127,8 @@ submissions in posting order.
 | 1 | 125 | 0 | 0% | 2 |
 | 2 | 50 | 43 | 46% | 2 |
 | 3 | 20 | 68 | 77% | 59 |
-| 4 | 2 | 27 | 93% | 34 |
-| 5 | 4 | 16 | 80% | 28 |
+| 4 | 2 | 27 | 93% | 35 |
+| 5 | 4 | 16 | 80% | 27 |
 | 6 | 2 | 11 | 85% | 18 |
 | 7 | 2 | 11 | 85% | 10 |
 | 8 | 0 | 0 | — | 2 |
@@ -160,7 +160,9 @@ blame-failure finding. The comments endpoint's row order agreed with review
 submission order in every sampled PR, which the script now checks rather than
 assumes. The direction is unambiguous; the figures are not precise.
 **A submission is not always a round**: BUG-264's trace records eight rounds
-where the endpoint shows two submissions, so some rows merge rounds. **A
+where the endpoint shows two submissions, so some rows merge rounds; and a
+file-level finding posted as its own review within two minutes of its pass
+counts in that pass, which moves one of #968's from round 5 to round 4. **A
 commit authored before round 1 but pushed after it would read as original**;
 the loop pushes before it spawns reviewers, so the case is not expected, and
 it is not measured. None of the four bounds moves a round-1 finding into a
@@ -205,7 +207,7 @@ below the 77% Table 2 gives for the same round.
 
 **Table 3. What the findings are about.** Same script, same sample, and
 unaffected by the origin classifier:
-92 submissions, **190 findings on `src/` or `tests/` files and 351 on
+91 submissions, **190 findings on `src/` or `tests/` files and 351 on
 everything else**, and **133 of the 351 sit on `sdd/traces/`, `sdd/BACKLOG.md`
 or `sdd/BACKLOG-DONE.md`**. A quarter of everything the loop found, it found
 in its own record. Bound: a docstring finding in `tests/` counts as code here,

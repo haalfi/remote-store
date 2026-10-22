@@ -15,7 +15,7 @@ RVW_PR_JSON
 
 - **JSON on stdin from a quoted heredoc, never `-f`/`-F` fields**: the quotes stop backticks and `$` in a body from running, `-F` rewrites `@file` and `{owner}`/`{repo}`/`{branch}`, and a `-f` `line` is a string (HTTP 422). Escape `"`, `\` and newlines (`\n`); no payload line may be the bare delimiter.
 - **`commit_id` is the full SHA, and `comments[]` takes no `subject_type`** (both HTTP 422). A FILE finding goes to `pulls/<N>/comments` as `{"commit_id", "path", "subject_type": "file", "body"}`.
-- **A failed call posts nothing: retry it once.** Never re-run a call that succeeded; it would post its comments twice.
+- **Recount before retrying a failed call.** A rejected call posts nothing (an HTTP 422 left no review), but one that timed out may have landed. If the count rose by the call's comments, it did: do not retry. Otherwise retry it once. Never re-run a call that succeeded; it would post its comments twice.
 - **A worktree-isolated session refused this heredoc**, and a call whose body named git commands. A refusal is not retried: return the findings unposted.
 
 The HTTP 422s and refusals were measured for BK-481 on PRs #1173 and #1174;

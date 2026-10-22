@@ -981,6 +981,45 @@ class TestRoundsWithFindings:
         assert unsubmitted == [99]
         assert [group[0]["path"] for group in rounds.values()] == ["stamped.py", "no-stamp.py"]
 
+    def test_a_gh_posted_file_finding_counts_in_its_pass(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """`/rvw-pr`'s `gh` route posts each FILE finding as its own review, with an
+        empty body, after the pass's summary review (measured on PR #1174). It is
+        one round, not two."""
+        line = self._comment(1, 10, "a.py")
+        file_level = {**self._comment(2, 11, "b.md"), "subject_type": "file", "original_line": None}
+        reviews = [
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T00:00:02Z", "body": "", "user": {"login": "r"}},
+        ]
+        self._stub(monkeypatch, [line, file_level], reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert [[f["path"] for f in group] for group in rounds.values()] == [["a.py", "b.md"]]
+
+    def test_a_file_comment_hours_later_stays_its_own_round(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The owner's own file-level notes on #1173 came hours after the pass:
+        they are not its findings, so they do not fold into it."""
+        line = self._comment(1, 10, "a.py")
+        file_level = {**self._comment(2, 11, "b.md"), "subject_type": "file", "original_line": None}
+        reviews = [
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T02:00:00Z", "body": "", "user": {"login": "r"}},
+        ]
+        self._stub(monkeypatch, [line, file_level], reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert list(rounds) == [10, 11]
+
+    def test_an_empty_body_line_comment_stays_its_own_round(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Only file-level findings fold: a single line comment, such as an owner's
+        suggestion, is a submission of its own, as before."""
+        comments = [self._comment(1, 10, "a.py"), self._comment(2, 11, "a.py")]
+        reviews = [
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T00:00:02Z", "body": "", "user": {"login": "r"}},
+        ]
+        self._stub(monkeypatch, comments, reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert list(rounds) == [10, 11]
+
     def test_only_the_first_reply_in_a_thread_is_the_verdict(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """`/rvw-pr` never answers comments, so the first reply is the fix pass speaking."""
         comments = [

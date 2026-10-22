@@ -25,7 +25,8 @@ durable copy is the `review:` block written at the close.
 What it reuses, and why that matters
 ------------------------------------
 ``sdd/rfcs/rfc-0015-findings.py`` already classifies a PR's findings: it walks
-``pulls/<N>/comments`` paged, groups by ``pull_request_review_id``, orders the
+``pulls/<N>/comments`` paged, groups by ``pull_request_review_id`` (folding
+``/rvw-pr``'s ``gh``-posted file-level reviews into their pass), orders the
 groups by each submission's ``submitted_at``, blames ``original_line`` at the
 head the reviewer saw to tag origin, and reads the first reply in each thread
 for triage. Every one of those definitions is load-bearing for RFC-0015's
@@ -249,13 +250,14 @@ def rounds_with_findings(pr: int) -> tuple[OrderedDict[int, list[dict]], dict[in
     for c in sorted((c for c in comments if c.get("in_reply_to_id")), key=lambda c: c["created_at"]):
         first_reply.setdefault(c["in_reply_to_id"], c["body"])
 
-    review_ts = {
-        rv["id"]: fnd._ts(rv["submitted_at"]) for rv in fnd._gh(f"pulls/{pr}/reviews") if rv.get("submitted_at")
-    }
+    reviews = fnd._gh(f"pulls/{pr}/reviews")
+    review_ts = {rv["id"]: fnd._ts(rv["submitted_at"]) for rv in reviews if rv.get("submitted_at")}
+    folds = fnd.file_review_folds(findings, reviews)
 
     seen: OrderedDict[int, list[dict]] = OrderedDict()
     for f in findings:
-        seen.setdefault(f["pull_request_review_id"], []).append(f)
+        rid: int = f["pull_request_review_id"]
+        seen.setdefault(folds.get(rid, rid), []).append(f)
     unsubmitted = [rid for rid in seen if rid not in review_ts]
     ordered = sorted(seen, key=lambda rid: review_ts.get(rid, float("inf")))
     rounds: OrderedDict[int, list[dict]] = OrderedDict((rid, seen[rid]) for rid in ordered)

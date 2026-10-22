@@ -147,6 +147,34 @@ phases:
           an MCP pass no longer reads it; the total stays below master
           (check-process-budget)
         outcome: ok
+      - file: .claude/skills/rvw-pr/posting-gh.md
+        section: "(run) /rvw-pr 1174 with GitHub MCP, at 309ccf357"
+        read_type: verify
+        extract: >-
+          MCP route after the split: review 5609617428, count 8 to 10, both
+          comments on their lines. Findings: a retry on exit status alone could
+          post twice after a timeout, and each gh-posted FILE finding counts as
+          its own round in ship_report.py
+        outcome: misleading
+      - file: scripts/ship_report.py
+        section: "(probe) pending review via REST, then pulls/1174/comments subject_type=file"
+        read_type: verify
+        extract: >-
+          HTTP 422 "user_id can only have one pending review per pull request",
+          so REST cannot put a FILE comment in the pass's review; the pending
+          review was deleted unsubmitted. A FILE comment posted alone made
+          review 5609647160 with an empty body, COMMENTED; deleted, count back
+          to 10. Hence the fold in rfc-0015-findings.py. Over RFC-0015's 19 PRs
+          plus #1173/#1174 it folds only #968's 12 s file-level review; #1173's
+          owner notes, hours after the pass, stay apart by the 120 s window.
+          Re-running the RFC's derivation moved Table 2 r4/r5 unclassifiable
+          34/28 to 35/27 and Table 3's 92 submissions to 91, nothing else
+        outcome: ok
+surprising_ripples:
+  - scripts/ship_report.py
+  - sdd/rfcs/rfc-0015-findings.py
+  - sdd/rfcs/rfc-0015-ship-two-surfaces.md
+  - tests/scripts/test_ship_report.py
 decisions:
   - sdd/decisions/b301fcfb-c12a-4332-be83-7addd61e5d96.jsonl
   - sdd/decisions/caf9bbcd-11d7-471b-9c9e-a5ffd792c9b3.jsonl
