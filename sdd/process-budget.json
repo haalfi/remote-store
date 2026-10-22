@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 300326,
+  "total": 300664,
   "files": {
     "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2105,
@@ -21,8 +21,9 @@
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
     ".claude/skills/rvw-pr/measuring.md": 5482,
-    ".claude/skills/rvw-pr/posting.md": 3888,
-    ".claude/skills/rvw-pr/SKILL.md": 23338,
+    ".claude/skills/rvw-pr/posting-gh.md": 1848,
+    ".claude/skills/rvw-pr/posting.md": 2352,
+    ".claude/skills/rvw-pr/SKILL.md": 23358,
     ".claude/skills/ship/SKILL.md": 54247,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
@@ -30,7 +31,7 @@
     ".claude/agents/sdd-expert.md": 1799,
     ".claude/agents/store-backend-expert.md": 1903,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 65036,
+    "sdd/CLAUDE-REFERENCE.md": 65042,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [

@@ -141,8 +141,11 @@ phases:
           Owner review asked for the three-line pass on the whole change.
           posting.md condensed to its rules (evidence prose left to this
           trace), SKILL.md, /ship and the I/O split trimmed; the process total
-          fell to 300326 below master's 301224, so the three raises were
-          dropped and the cut locked in with --update
+          fell below master's 301224, so the three raises were dropped and the
+          cut locked in with --update. On the owner's follow-up the gh route
+          moved to posting-gh.md, read only when no MCP posting tool loads, so
+          an MCP pass no longer reads it; the total stays below master
+          (check-process-budget)
         outcome: ok
 decisions:
   - sdd/decisions/b301fcfb-c12a-4332-be83-7addd61e5d96.jsonl

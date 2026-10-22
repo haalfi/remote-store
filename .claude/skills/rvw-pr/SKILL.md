@@ -10,7 +10,7 @@ allowed-tools: Read, Grep, Glob, Bash, ToolSearch, mcp__MCP_DOCKER__pull_request
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
 
-**IMPORTANT — no local filesystem scouting.** Use Bash for six things and nothing else: `gh` CLI reads of PR content (Steps 0–1); **Step 1's pinned diff read when a review root is named** — `git -C <root> diff origin/master...HEAD -- . ':(exclude)sdd/decisions/'`, PR content taken from the certified commit rather than from `gh`, open to every pass with a root and not only a measuring one, because the diff is content, not feedback, and the pinned form is what the root is for; **Step 4's posted-count verification**, which is a `gh api` read of review *feedback* rather than content and is authorised here because Step 4 pins it (a count carries no content, so it primes nobody); **Step 4's `gh` post when no MCP posting tool loads** ([`posting.md`](posting.md)); **Step 1's metadata-only carve-out for a measuring pass verifying a claim about the comments endpoint**, pinned there on the same reasoning and bounded to paths, review ids and counts; and, when the invoking prompt designates a **measuring pass**, the allowlisted set in [`measuring.md`](measuring.md). Never to fix, write, regenerate, or locate memory files, home directories, or project paths. The review context is otherwise self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
+**IMPORTANT — no local filesystem scouting.** Use Bash for six things and nothing else: `gh` CLI reads of PR content (Steps 0–1); **Step 1's pinned diff read when a review root is named** — `git -C <root> diff origin/master...HEAD -- . ':(exclude)sdd/decisions/'`, PR content taken from the certified commit rather than from `gh`, open to every pass with a root and not only a measuring one, because the diff is content, not feedback, and the pinned form is what the root is for; **Step 4's posted-count verification**, which is a `gh api` read of review *feedback* rather than content and is authorised here because Step 4 pins it (a count carries no content, so it primes nobody); **Step 4's `gh` post when no MCP posting tool loads** ([`posting-gh.md`](posting-gh.md)); **Step 1's metadata-only carve-out for a measuring pass verifying a claim about the comments endpoint**, pinned there on the same reasoning and bounded to paths, review ids and counts; and, when the invoking prompt designates a **measuring pass**, the allowlisted set in [`measuring.md`](measuring.md). Never to fix, write, regenerate, or locate memory files, home directories, or project paths. The review context is otherwise self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
 
 **Measuring pass.** If the invoking prompt says **measuring**, read
 [`measuring.md`](measuring.md) in this skill's folder before Step 1 and follow
@@ -142,11 +142,11 @@ findings you return. Otherwise read [`posting.md`](posting.md) in this skill's
 folder and follow it: how to post, and how to verify the post.
 
 **No MCP posting tool?** If `ToolSearch` cannot load either prefix's
-`pull_request_review_write`, post with `posting.md`'s `gh` call, never as a
-top-level comment. If `gh` is missing, or the review call is refused or fails
+`pull_request_review_write`, post as [`posting-gh.md`](posting-gh.md) says,
+never as a top-level comment. If `gh` is missing, or the review call is refused or fails
 twice, return the findings as analyze-only does, under
 `## PR #N Review — X findings returned (not posted: <reason>)`; a partial post
-takes `posting.md`'s partial header. A cloud pass started before GitHub MCP
+takes `posting-gh.md`'s partial header. A cloud pass started before GitHub MCP
 connected also lacks the tools, and `gh` is unmeasured there: if it fails,
 re-run the pass later or the caller posts the findings.
 

@@ -10,27 +10,9 @@ file; the Comment rules stay in `SKILL.md` Step 4.
 2. `add_comment_to_pending_review` once per finding: `path`, `body`, and `subjectType: "LINE"` (with `line`, `side`, and `startLine`, `startSide` for a range) or `"FILE"`.
 3. `pull_request_review_write`, `method: "submit_pending"`, `event: "COMMENT"`, the summary as body.
 
-**Without them, post with `gh`: one review call, then one call per file-level finding.** `SKILL.md` Step 4 says when this applies:
+Without them, `SKILL.md` Step 4 sends you to [`posting-gh.md`](posting-gh.md) instead of these calls.
 
-```bash
-gh api --method POST repos/haalfi/remote-store/pulls/<N>/reviews --input - --jq '.id' <<'RVW_PR_JSON'
-{"commit_id": "<Step 0's full 40-character head SHA>", "event": "COMMENT", "body": "<summary>",
- "comments": [{"path": "<path>", "line": <line>, "side": "RIGHT", "body": "<Category: body>"}]}
-RVW_PR_JSON
-```
-
-- **JSON on stdin from a quoted heredoc, never `-f`/`-F` fields**: the quotes stop backticks and `$` in a body from running, `-F` rewrites `@file` and `{owner}`/`{repo}`/`{branch}`, and a `-f` `line` is a string (HTTP 422). Escape `"`, `\` and newlines (`\n`); no payload line may be the bare delimiter.
-- **`commit_id` is the full SHA, and `comments[]` takes no `subject_type`** (both HTTP 422). A FILE finding goes to `pulls/<N>/comments` as `{"commit_id", "path", "subject_type": "file", "body"}`.
-- **A failed call posts nothing: retry it once.** Never re-run a call that succeeded; it would post its comments twice.
-- **A worktree-isolated session refused this heredoc**, and a call whose body named git commands. A refusal is not retried: return the findings unposted.
-
-The HTTP 422s and refusals were measured for BK-481 on PRs #1173 and #1174;
-`sdd/traces/bk-481-rvw-pr-gh-post.yml` records each probe.
-
-**Verify (only when you posted comments): the count must rise by the number posted.** Count before the first post call and after the last; an absolute count proves nothing on a PR carrying earlier rounds.
-
-- **MCP short:** the submit dropped comments. Retry once from step 1, since a submitted review takes no more; if it is short again, report it in Step 5.
-- **`gh` short, or a FILE call failed twice:** not retried. Step 5's header is `## PR #N Review — X of Y comments posted (partial: <what failed>)`. Return the findings a failed call carried. If every call reported success, the count cannot say which comments are missing, so return every finding marked `compare with the PR before posting`.
+**Verify (only when you posted comments): the count must rise by the number posted.** Count before the first post call and after the last; an absolute count proves nothing on a PR carrying earlier rounds. If it is short, the submit dropped comments: retry once from step 1, since a submitted review takes no more, and if it is short again, report it in Step 5. A short count on the `gh` route follows `posting-gh.md` instead.
 
 **Take the count from exactly one instrument, walking its pages:**
 
