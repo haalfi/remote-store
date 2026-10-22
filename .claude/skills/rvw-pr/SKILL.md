@@ -141,14 +141,14 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 findings you return. Otherwise read [`posting.md`](posting.md) in this skill's
 folder and follow it: how to post, and how to verify the post.
 
-**No MCP posting tool?** If `ToolSearch` cannot load either prefix's
-`pull_request_review_write`, post as [`posting-gh.md`](posting-gh.md) says,
-never as a top-level comment. If `gh` is missing, or the review call is refused or fails
-twice, return the findings as analyze-only does, under
+**No MCP posting tool?** If neither prefix's `pull_request_review_write` is
+among your tools and `ToolSearch` cannot load one, post as
+[`posting-gh.md`](posting-gh.md) says, never as a top-level comment. If `gh` is
+missing, or the review call fails as `posting-gh.md` says, return the findings
+as analyze-only does, under
 `## PR #N Review — X findings returned (not posted: <reason>)`; a partial post
 takes `posting-gh.md`'s partial header. A cloud pass started before GitHub MCP
-connected also lacks the tools, and `gh` is unmeasured there: if it fails,
-re-run the pass later or the caller posts the findings.
+connected also lacks the tools; its `gh` review call posted on PR #1174.
 
 **Never** use APPROVE or REQUEST_CHANGES (owner token can't APPROVE).
 

@@ -1039,6 +1039,19 @@ class TestRoundsWithFindings:
         rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
         assert list(rounds) == [10, 11]
 
+    def test_another_authors_file_comment_stays_its_own_round(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The fold follows one author's pass: a file-level note another login
+        posts inside the window is not that pass's finding."""
+        line = self._comment(1, 10, "a.py")
+        file_level = {**self._comment(2, 11, "b.md"), "subject_type": "file", "original_line": None}
+        reviews = [
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T00:00:02Z", "body": "", "user": {"login": "other"}},
+        ]
+        self._stub(monkeypatch, [line, file_level], reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert list(rounds) == [10, 11]
+
     def test_an_empty_body_line_comment_stays_its_own_round(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Only file-level findings fold: a single line comment, such as an owner's
         suggestion, is a submission of its own, as before."""

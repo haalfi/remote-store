@@ -190,6 +190,22 @@ phases:
           measured. Its findings: SKILL.md Step 1 still said MCP only for
           writes, and the FILE call had a shape but no command
         outcome: misleading
+      - file: .claude/skills/rvw-pr/posting-gh.md
+        section: "(run) claude.ai/code session, /rvw-pr 1174 as its first message, at 9f5ab62af"
+        read_type: verify
+        extract: >-
+          No MCP posting tool loaded, so the pass took the gh route: the review
+          call posted review 5611195312 with two line comments (count 19 to
+          21), the first cloud gh post. Its FILE call was refused by a hook
+          that blocks any call containing `head`, and the pass returned that
+          finding unposted. Findings: the guard dropped "among your tools"
+          (ToolSearch does not load an already-loaded tool), the retry rules
+          contradicted each other and the comment count cannot decide a
+          zero-comment review call, and the RFC's #997 and pilot figures were
+          not re-run after the fold (re-run: #997 still 4 submissions, 20
+          findings; #1021-1023 still 14 and 69). A separate cloud review
+          (5610232200) found the fold's cross-author bound untested
+        outcome: misleading
 surprising_ripples:
   - scripts/ship_report.py
   - sdd/rfcs/rfc-0015-findings.py
