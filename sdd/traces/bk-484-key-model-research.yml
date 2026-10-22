@@ -196,3 +196,13 @@ phases:
         read_type: verify
         extract: "Azure HNS rewrites raw paths in the service and resolves `..` before authorisation; Azurite stores them as sent; AWS refused (stored key no longer valid), so its § 4 points stay open"
         outcome: ok
+      - file: sdd/research/bk-484-key-model/probes/check_quotes.py
+        section: "(run against every § 3 source, fresh cache)"
+        read_type: verify
+        extract: "85 of 85 quotes found after three wording fixes (ext4, SSHM charter, Graph) and four sources added that their subsections did not list; web searches found no documentation of Graph dot segments or of HNS trailing-dot and backslash rewriting, only Azure Files' trailing-dot rule"
+        outcome: ok
+      - file: sdd/research/research-backend-path-authorities.md
+        section: "§ 1 Derivation (as first landed)"
+        read_type: reference
+        extract: "Its quotes were near-verbatim through WebFetch's summariser; the byte check found three wrong and four unsourced"
+        outcome: misleading

@@ -20,6 +20,7 @@ and its tests are written at their own paths and do not extend this folder.
 | `lean/build.sh` | Builds the project in the repo's Lean image |
 | `probes/probe_paths.py` | Sends raw keys to a storage service or a local implementation and records what is stored, for `../research-backend-path-authorities.md` § 5 |
 | `probes/results-2026-10-22.json` | That probe's output, with account, resource, region and zone names redacted |
+| `probes/check_quotes.py` | Checks every quote in `../research-backend-path-authorities.md` § 3 word for word against the sources its subsection lists |
 
 No folder here is collected, built or run by any gate: `spike/` and `probes/`
 are outside `testpaths` and `hatch run lint`'s ruff paths (the pre-commit ruff
@@ -57,6 +58,15 @@ minio azurite sftp`) needs no account:
 ```
 hatch run python sdd/research/bk-484-key-model/probes/probe_paths.py --target minio,azurite,sftp --out tmp/probe-local.json
 ```
+
+The quote check fetches each source once into a cache outside the tracked
+tree:
+
+```
+hatch run python sdd/research/bk-484-key-model/probes/check_quotes.py --cache tmp/quote-cache
+```
+
+Expected: `85 of 85 quotes found in their section's sources` (2026-10-22).
 
 `--target s3,s3express,azure` reaches the accounts in `.env`. Each run
 creates and deletes a temporary bucket or container and costs a few dozen

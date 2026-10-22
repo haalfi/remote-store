@@ -27,9 +27,12 @@ authority; their key rules are remote-store-defined.
 
 **Derivation.** Every claim comes from a primary source fetched on 2026-10-21
 (WebFetch, or Python `urllib` / `pdftotext` for POSIX, Apple and Python
-pages). Quotes passed through WebFetch's extraction model: they are
-near-verbatim, not byte-checked. Before relying on a quote, check it against
-the raw source. Points that no primary source settles after two rounds
+pages). Every quote in § 3 was then checked word for word against the raw
+text of a source its subsection lists, on 2026-10-22, by
+[`bk-484-key-model/probes/check_quotes.py`](bk-484-key-model/probes/check_quotes.py),
+which folds only whitespace, typographic quote marks and dashes: 85 of 85
+found. The check corrected three quotes, narrowed one date and added the
+four sources it found missing. Points that no primary source settles after two rounds
 of search are marked "Not documented" and listed in § 4. Statements from SDK
 source, SDK issue trackers or emulators are labelled as such.
 
@@ -96,8 +99,8 @@ Applies to `http` and to Graph request URLs.
 - **Status**: RFC 3986 is STD 66, updated by RFC 7320 and RFC 8820, not
   obsoleted. Datatracker searches for "3986bis", "3986" and "uri" (active and
   expired drafts) found no revision of the generic syntax. The nearest attempt,
-  draft-ietf-6man-rfc6874bis (IPv6 zone IDs only), is "Expired (IESG: Dead)"
-  since 2023.
+  draft-ietf-6man-rfc6874bis (IPv6 zone IDs only), is "Expired (IESG: Dead)";
+  its latest revision is dated 2023-07-02.
 
 Sources:
 
@@ -105,6 +108,7 @@ Sources:
 - <https://www.rfc-editor.org/rfc/rfc8089.html>
 - <https://www.rfc-editor.org/rfc/rfc9110.html>
 - <https://www.rfc-editor.org/rfc/rfc9112.html>
+- <https://datatracker.ietf.org/doc/draft-ietf-6man-rfc6874bis/>
 
 ### 3.2 POSIX and Linux
 
@@ -144,7 +148,8 @@ one edition.
   minimums `_XOPEN_NAME_MAX` 255, `_XOPEN_PATH_MAX` 1024.
 - **Linux**: `NAME_MAX 255`, `PATH_MAX 4096` (incl. NUL) in
   `include/uapi/linux/limits.h`. The header comment says "chars", but ext4
-  stores "an arbitrary byte string" with names "no longer than 255 bytes".
+  stores "an arbitrary byte string", and "file names cannot be longer than 255
+  bytes".
   `NAME_MAX` is per filesystem in practice (`pathconf(_PC_NAME_MAX)`).
   `path_resolution(7)`: empty pathname gives `ENOENT`; "/.." is the same as
   "/". Neither `path_resolution(7)` nor the kernel's path-lookup docs mention
@@ -418,6 +423,12 @@ Sources:
   that figure belongs to Azure Files: "Individual components in the path can
   be a maximum of 255 characters in length" (Naming and Referencing Shares,
   Directories, Files, and Metadata).
+- **Trailing dots, Azure Files only**: the Files naming page states that by
+  default "dot (.) characters at the end of directory and file names in
+  request URLs are ignored or left out", unless the `x-ms-allow-trailing-dot`
+  header is set (version 2022-11-02 on). No Blob or Data Lake page states the
+  same for blob names; a search on 2026-10-22 found none. § 5 measured it on
+  an HNS account.
 - **Backslash**: no learn.microsoft.com page states a conversion. A merged
   Microsoft PR in azure-sdk-for-python (#48883, 2026-09-04) states "The service
   canonicalizes `\` to `/` when it rebuilds the signed resource to validate the
@@ -440,7 +451,8 @@ Sources:
 - **Not documented by Microsoft** (second search, 2026-10-21): how the service
   treats raw `.`, `..`, `//` or `\` in a name on either endpoint. Azurite
   (non-authoritative) stores `//` literally and converts `\` to `/` with the
-  comment "Azure Storage Server will replace "\" with "/" in the blob names".
+  comment "Azure Storage Server will replace '\' with '/' in the blob names"
+  (its quote marks rendered as `'` here).
   Settled only by a live probe that bypasses client normalisation (for example
   `curl --path-as-is`). § 5 records such a probe against an HNS account; the
   flat namespace is still unmeasured.
@@ -452,6 +464,9 @@ Sources:
 - <https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-known-issues>
 - <https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-namespace>
 - <https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-shares--directories--files--and-metadata>
+- <https://learn.microsoft.com/en-us/answers/questions/234817/data-lake-storage-gen2-this-operation-is-not-permi>
+- <https://github.com/Azure/azure-sdk-for-python/pull/48883>
+- <https://raw.githubusercontent.com/Azure/Azurite/main/src/blob/middlewares/blobStorageContext.middleware.ts>
 
 ### 3.8 SFTP
 
@@ -475,8 +490,8 @@ Sources:
   rename), `hardlink@openssh.com`, `expand-path@openssh.com` (tilde expansion),
   `home-directory`, `limits@openssh.com`. `SSH_FXP_SYMLINK` arguments are
   reversed relative to the draft and that order was kept.
-- **IETF status**: the SSHM working group charter includes documenting SFTP "as
-  currently implemented", but there is no adopted document.
+- **IETF status**: the SSHM working group charter includes documenting SFTP
+  "as they are currently implemented", but there is no adopted document.
   `draft-ietf-sshm-filexfer` does not exist. The only candidate is the expired
   individual draft `draft-spaghetti-sshm-filexfer-00` (2025-07-01), still v3,
   still "no syntax is defined for file names", adding that servers must stop
@@ -525,7 +540,7 @@ Sources:
   2017-09-10), on activation URLs, "less than the maximum URL length of 2048
   characters", without saying which component imposes that maximum.
 - **Graph addressing**: colon syntax `/drive/root:/path/to/file:/content`.
-  "Microsoft Graph expects that URLs conform to [RFC 3986]"; characters outside
+  "Microsoft Graph expects that URLs conform to RFC 3986"; characters outside
   `pchar` (e.g. `#`, space) must be percent-encoded; encode the segment, not
   the whole URL. Path addresses break on rename or move; item IDs do not.
 - **Graph reserved ABNF**: `/ \ * < > ? : |`, business adds `# %`. Omits `"`,
@@ -564,8 +579,8 @@ No source settles these, after two rounds of search:
 - Graph: that `a.txt` and `A.txt` cannot coexist is inferred from
   case-insensitive lookup, not stated.
 - Graph: `.`, `..` and empty segments in a path, and a trailing `/`. No
-  Microsoft page cited in § 3.9 states them; unlike the points above, these
-  were not searched for beyond those pages.
+  Microsoft page cited in § 3.9 states them, and a web search on 2026-10-22
+  found none; needs a live probe.
 
 ---
 
@@ -627,7 +642,8 @@ results.
 - **The Azure HNS service rewrites a raw path.** It collapses empty segments,
   drops a leading `/`, removes `.`, resolves `..`, converts `\` to `/` and
   strips a trailing `.`. Each rewritten key was stored under a name other than
-  the one sent, with no error. The `p/...` row fits dot-stripping leaving an
+  the one sent, with no error. Microsoft documents the trailing-dot rule only
+  for Azure Files (§ 3.7). The `p/...` row fits dot-stripping leaving an
   empty name, and the 200 on its GET fits that GET reaching the directory `p`.
   Both are inferences; neither was probed separately.
 - **On Azure, `..` resolves before authorisation.** The 403 means the
