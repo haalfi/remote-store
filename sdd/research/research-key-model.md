@@ -171,8 +171,9 @@ k ∈ L_b  only if  norm_b(s) = s for every segment s of k
 ```
 
 A rewrite that depends on a name's position is taken at the last segment,
-where it applies: by TREE-012 every segment is the last segment of a folder's
-Key, its prefix in k. So L_b is prefix-closed: a key whose folder could not
+where it applies: every segment is the last segment of some prefix of k, k
+itself included, and by TREE-012 every proper prefix is a folder's Key. So
+L_b is prefix-closed: a key whose folder could not
 itself be addressed is refused.
 
 **Sibling equivalence.** A backend with a coarser name equality
@@ -190,8 +191,9 @@ library never rewrites a name into a different key string.
 **What the authorities imply for these rules**, by section of
 [research-backend-path-authorities.md](research-backend-path-authorities.md):
 
-- **Rewriting beyond HFS+.** Win32 normalisation strips one trailing `.` from
-  every segment, and trailing spaces from the last (its § 3.4). An Azure HNS
+- **Rewriting beyond HFS+.** Win32 normalisation removes the period from a
+  segment ending in a single `.`, and all trailing periods and spaces from
+  the last segment (its § 3.4). An Azure HNS
   account stripped a trailing `.` from the last segment of a raw path (its
   § 5, a measurement of that position only; Microsoft documents the rule only
   for Azure Files). By the normal-form rule, taken at the last segment, L_b

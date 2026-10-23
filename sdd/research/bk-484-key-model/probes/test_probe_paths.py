@@ -15,8 +15,9 @@ BUCKET_HOST = "rs-private-bucket.s3.eu-central-1.amazonaws.com"
 
 @pytest.mark.parametrize("base", ["p", "upload/x", "a/b/c"])
 def test_above_root_climbs_one_level_past_the_root(base: str) -> None:
-    resolved = posixpath.normpath(f"/root/{base}/{above_root(base)}/x")
-    assert resolved == "/x"
+    # The root has a parent, so normpath's clamping at "/" cannot hide an extra "..".
+    resolved = posixpath.normpath(f"/outer/root/{base}/{above_root(base)}/x")
+    assert resolved == "/outer/x"
 
 
 @pytest.mark.parametrize(

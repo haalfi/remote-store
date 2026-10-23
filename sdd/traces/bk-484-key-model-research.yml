@@ -230,10 +230,11 @@ phases:
         section: "single trailing period; trailing periods and spaces"
         read_type: verify
         extract: >-
-          A single trailing period is removed from every segment, trailing spaces only when the path has no
-          trailing separator; the authorities table's Windows cell had said the opposite for `.`. The key
-          model's normal-form rule now takes a position-dependent rewrite at the last segment, which by
-          TREE-012 keeps L_b prefix-closed
+          A segment ending in a single period loses it (three or more periods are a valid name); the last
+          segment loses all trailing periods and spaces when the path has no trailing separator. The
+          authorities table's Windows cell had said the opposite for `.`, and my first rewording ("a single
+          trailing period from every segment") overstated it again. The key model's normal-form rule now
+          takes a position-dependent rewrite at the last segment, which by TREE-012 keeps L_b prefix-closed
         outcome: ok
       - file: "PR #1173 conversation (issue comments 6339559160 and 6339881662)"
         section: "Flat-namespace Azure measurement; 2026-10-21 handover"
