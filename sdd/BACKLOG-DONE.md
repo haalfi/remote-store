@@ -300,6 +300,14 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-486 — The decision log records session chores, so every commit needs a hand cleanup**
+  spec: — · effort: M · audience: contributor.process, contributor.tooling
+  Chores and post-cleanup master questions reached `sdd/decisions/` and were
+  stripped by hand. A dialog tagged `metadata.source: "housekeeping"` is skipped
+  (the tag reaches Pre only, so Post is dropped by `tool_use_id`); a base-branch
+  or detached event waits in the ignored `sdd/decisions/.pending/` until the
+  session's next dialog or commit on a work branch. RFC-0018 D1 and D2 amended.
+  Trace: [bk-486](traces/bk-486-decision-log-chores.yml).
 - [x] **BK-481 — `/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   A local `/rvw-pr 1173` returned six findings unposted: no MCP server here, and

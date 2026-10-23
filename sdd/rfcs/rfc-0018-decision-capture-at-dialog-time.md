@@ -11,7 +11,10 @@ amends the Summary, D1, D3 and D4. Built: steps 1 and 2 and D2's commit and
 exclusion mechanics. Step 3 is not. Step 2's review (2026-10-09) amends D2, by
 the maintainer's choice of remedy, to let a line that is not a record be
 deleted, and one of two differing answers to one dialog once the maintainer
-has picked the record.
+has picked the record. BK-486 (2026-10-23) amends D1, to leave a dialog tagged
+housekeeping unrecorded, and D2, to hold a base-branch or detached event until
+the session reaches a work branch (§ Follow-up: `metadata` reaches
+`PreToolUse` only).
 
 ## Summary
 
@@ -22,8 +25,9 @@ context, the options with their consequences, the agent's recommendation and the
 answer. It persists only in the session transcript, outside the repository, so
 the next session re-argues the why from the code. This RFC keeps the dialog
 verbatim: one hook, registered on two hook events, appends each asked and
-answered event to a per-session JSONL file,
-`sdd/decisions/<session_id>.jsonl`, committed with the work. Logs are bound to a
+answered event, less dialogs tagged housekeeping, to a per-session JSONL file,
+`sdd/decisions/<session_id>.jsonl`, committed with the work; an event on the
+base branch waits in an ignored file until the session reaches a work branch. Logs are bound to a
 branch when read, not when written. Three readers keep them from being
 write-only: the trace links them, `check_traces.py` validates them, and `/pr`
 renders them as the PR body's Decisions section.
@@ -108,6 +112,18 @@ raw `hook_event_name` rather than dropped, with its payload less the local
 paths every payload carries (`cwd`, `transcript_path`, `scratchpad_dir`),
 which a log committed to a public repository must not hold.
 
+**Housekeeping is not recorded.** A dialog whose answer only steers the
+session (watch a PR, rebase, merge, another round) records no design choice,
+yet it was committed beside real decisions and stripped by hand before each
+commit. The agent tags it `metadata: {"source": "housekeeping"}`, as
+[`interview.md`](../../.claude/output-styles/interview.md) defines the class,
+and the recorder skips both of its events. The tag reaches `PreToolUse` only
+(§ Follow-up: `metadata` reaches `PreToolUse` only), so the recorder keeps the
+tagged `tool_use_id` in the ignored `sdd/decisions/.pending/<session_id>.skip`
+and drops the `answered` event by it. Bound: the tag covers the whole call, so
+a decision batched with a chore is lost with it, and an untagged chore is
+recorded as before.
+
 ### D2. Storage: one append-only file per session, bound to work when read
 
 `sdd/decisions/<session_id>.jsonl`, one JSON object per line, appended and never
@@ -134,6 +150,19 @@ the PR diff shows the log beside the change it explains.
   follow-up): a commit protects the log only once it is pushed, since an
   unpushed commit would go with a reclaimed container.
 
+- **Held off the base branch.** An event recorded on the base branch (`master`
+  or `main`) or a detached HEAD goes to the ignored
+  `sdd/decisions/.pending/<session_id>.jsonl`, not the log. It moves into the
+  log, lines in order and unchanged, at whichever comes first: the same
+  session's next event on a work branch, or `gate-commit.sh` before that
+  session commits on one (it reads `session_id` from its own hook payload and
+  promotes that session only, so a shared checkout never ships another
+  session's records). A question asked after a session's cleanup is followed
+  by neither and never reaches a commit, while a design question asked before
+  the branch existed still does; D4.0 binds the promoted lines as before, from
+  their recorded branch. Bounds: an untagged chore held before a later commit
+  on a work branch is promoted with it, and held records sit in the project
+  directory, so the anchoring bound below applies to them too.
 - **No item ID in the path.** The ID is not knowable at capture time: branch
   names need not carry one (`CLAUDE.md` § Branching lists `fix-streaming-io`),
   and dialogs are asked *before* the work, often while HEAD is still the base
@@ -147,9 +176,10 @@ the PR diff shows the log beside the change it explains.
   the base ("Your local changes … would be overwritten"); a dialog on the base
   leaves an untracked log that blocks switching back to A ("untracked working
   tree files would be overwritten"); and if the session then starts branch B
-  from the base, merging A and B gives `CONFLICT (add/add)` on the log. The
-  remedy is open (BK-397, pending); a per-branch file name would clear the last
-  two cases but not the first. The same dirty-tracked-log shape stops a rebase
+  from the base, merging A and B gives `CONFLICT (add/add)` on the log. Holding
+  base-branch events (above) clears the second case, since a dialog on the base
+  no longer writes the log. The remedy for the others is open (BK-397,
+  pending); a per-branch file name would clear the third but not the first. The same dirty-tracked-log shape stops a rebase
   on one branch ("cannot rebase: You have unstaged changes", same scratch
   repo), and the branch freshness check's own rebase question produces it; that
   case is handled, because the check commits the tail before rebasing
@@ -626,6 +656,18 @@ of inactivity and the session's VM is reclaimed"; reopening "provision[s] a
 fresh VM with your conversation history restored" and background work is not
 restored. That confirms the restart is expiry-shaped and that the conversation
 survives; whether a pending dialog is re-shown is not documented.
+
+### Follow-up: `metadata` reaches `PreToolUse` only (2026-10-23)
+
+For BK-486, one local session (Claude Code on Windows) asked a two-question
+dialog with `metadata: {"source": "probe-bk-485"}` beside `questions`, with the
+recorder registered as D1 describes. Its log
+(`sdd/decisions/5fb010a8-2f05-48f0-bdc8-5982d8e390ac.jsonl`) holds the pair:
+the `asked` event's `tool_input` keys were `questions` and `metadata`, the
+latter `{"source": "probe-bk-485"}`; the `answered` event's `tool_input` keys
+were `answers` and `questions`, with no `metadata`. One dialog, one harness
+version: whether a later version also carries it into `PostToolUse` is not
+known, and the skip by `tool_use_id` works either way.
 
 ## References
 

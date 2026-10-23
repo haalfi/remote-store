@@ -1,0 +1,94 @@
+id: BK-486
+title: "The decision log records session chores, so every commit needs a hand cleanup"
+trigger: >-
+  The maintainer reported that sdd/decisions/ collects two kinds of noise they
+  strip by hand before each commit: questions asked on master after a session's
+  cleanup, and chores on feature branches (watch PR, fix and another round?).
+  record_decision.py filters on tool name only, and gate-commit.sh stages every
+  log in the checkout.
+source_items:
+  - BK-486
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - scripts/record_decision.py
+  - .claude/hooks/gate-commit.sh
+  - .gitignore
+  - .claude/output-styles/interview.md
+  - sdd/CLAUDE-REFERENCE.md
+  - sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/process-budget.json
+  - tests/scripts/test_record_decision.py
+orient:
+  - items: [BK-397]
+    verdict: constrains
+    evidence: >-
+      Owns RFC-0018, whose D1 (verbatim, every event) and D2 (one log per
+      session, staged by gate-commit.sh) this item amends. Its pending step 3,
+      the /pr Decisions section, reads the committed log only and is untouched.
+      Holding base-branch records in an ignored file clears case 2 of its
+      two-branch bound (an untracked log on the base blocks switching back);
+      cases 1 and 3 remain open there.
+phases:
+  - id: analyze
+    name: How much of the log is chores
+    steps:
+      - file: scripts/record_decision.py
+        section: "record()"
+        read_type: reference
+        extract: >-
+          The only filter is tool_name == AskUserQuestion; branch and head are
+          read from the project directory, so a session launched in the main
+          checkout records master even while it commits on a work branch
+        outcome: ok
+      - file: .claude/hooks/gate-commit.sh
+        section: "(full)"
+        read_type: reference
+        extract: "git add -- sdd/decisions before every commit, every session's log"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D2, D4.0"
+        read_type: gate
+        extract: >-
+          D4.0 binds a base-branch or detached event to the next work branch the
+          same session records on, so pre-branch design questions are wanted;
+          the held file makes that binding a file move instead of a read rule
+        outcome: ok
+      - file: sdd/decisions/*.jsonl
+        section: "(all asked events)"
+        read_type: reference
+        extract: >-
+          A keyword heuristic over 841 committed questions tagged about a fifth
+          as chores, and most master-branch records as design work; the
+          maintainer corrected the reading: committed logs are already
+          hand-cleaned, and master chores were deleted before any commit, so
+          the committed sample under-states the noise
+        outcome: misleading
+  - id: orient
+    name: Related open work
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-397"
+        read_type: gate
+        extract: "Per-cluster verdict in orient:"
+        outcome: ok
+  - id: probe
+    name: Does metadata reach the hook
+    steps:
+      - file: sdd/decisions/5fb010a8-2f05-48f0-bdc8-5982d8e390ac.jsonl
+        section: "probe-bk-485 dialog"
+        read_type: reference
+        extract: >-
+          metadata.source arrives in the PreToolUse tool_input and is absent
+          from the PostToolUse one, so the answered event is skipped by
+          remembering the tagged tool_use_id
+        outcome: ok
+discovery_followups: []
+surprising_ripples: []
+co_shipped_items: []
+decisions:
+  - sdd/decisions/5fb010a8-2f05-48f0-bdc8-5982d8e390ac.jsonl

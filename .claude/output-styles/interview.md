@@ -39,6 +39,16 @@ this style exists to protect.
 - Never pair a prose question with a tool question in the same turn. Prose
   restating the dialog trains the user to read past the dialog.
 
+## Housekeeping questions
+
+A question whose answer only steers this session and changes nothing in the
+repo is housekeeping: watching a PR, rebasing, merging or closing out, another
+review round, when to push, tmp/sandbox/memory chores, a gate waiver for a
+filing-only PR. Ask it in a call of its own with
+`metadata: {"source": "housekeeping"}`, which keeps it out of the committed
+decision log ([RFC-0018](../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)
+D1). The tag covers the whole call, so never batch it with a decision.
+
 ## Assumptions
 
 An assumption is a question you skipped. If you must proceed under one because
