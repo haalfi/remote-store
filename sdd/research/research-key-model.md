@@ -19,9 +19,11 @@ dossier, decision 6) refuses and normalises keys at the backend's entry,
 spec 053's BE-032 (from RFC-0021) resolves a Key against the tree, and spec
 015 composes a child store's keys. They differ from one another (§ 9).
 
-**Authority.** Only spec 051 governs this model. Where an existing spec or
-accepted RFC says otherwise (specs 004, 005, 015 and 053, RFC-0021), the
-difference is recorded as a delta (§ 9, § 10), not adopted.
+**Authority.** Only spec 051's TREE-001 to TREE-012 govern this model. Where
+an existing clause or accepted RFC says otherwise (specs 004, 005, 015 and
+053, RFC-0021, and spec 051's own § Layering, which names spec 004 as the
+input layer's owner), the difference is recorded as a delta (§ 9, § 10), not
+adopted.
 
 This document states one model for the layer between a caller's string and
 spec 051's Key, as definitions over spec 051's own terms, with no backend,

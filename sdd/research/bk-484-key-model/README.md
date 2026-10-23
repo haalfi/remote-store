@@ -21,7 +21,7 @@ and its tests are written at their own paths and do not extend this folder.
 | `probes/probe_paths.py` | Sends raw keys to a storage service or a local implementation and records what is stored, for `../research-backend-path-authorities.md` § 5 |
 | `probes/results-2026-10-22.json` | That probe's output, with account, resource, region and zone names and exception message text left out; its `sftp` entry is the 2026-10-23 re-run |
 | `probes/test_probe_paths.py`, `probes/pytest.ini` | Tests of the probe's above-root key and of what its output may contain; the ini anchors pytest's rootdir here |
-| `probes/check_quotes.py` | Checks every quote in `../research-backend-path-authorities.md` § 3 word for word against the sources its subsection lists |
+| `probes/check_quotes.py` | Checks every double-quoted passage in `../research-backend-path-authorities.md` § 3 against the sources its subsection lists, as a substring after the normalisation its docstring lists |
 
 No folder here is collected, built or run by any gate: `spike/` and `probes/`
 are outside `testpaths` and `hatch run lint`'s ruff paths (the pre-commit ruff
@@ -44,8 +44,14 @@ property).
 bash sdd/research/bk-484-key-model/lean/build.sh
 ```
 
-It needs the Docker image `remote-store-lean:4.34.1`, which
-`bash scripts/lean_check.sh` builds on its first run. The script mounts the
+It builds the Docker image `remote-store-lean:4.34.1` from
+`scripts/lean.Dockerfile` on its first run. The version is pinned here, in
+`build.sh` and `lean/lean-toolchain`, and is not on `scripts/lean_check.sh`'s
+bump list, so a repo-wide Lean bump leaves this build alone. The proofs were
+last checked on 2026-10-23 against `sdd/formal/lean` as of `45132599a`, the
+last commit to touch it. A later change there can break this build, and no
+gate runs it (BK-462): to reproduce the evidence, check out a commit where
+`git log -1 -- sdd/formal/lean` names `45132599a`. The script mounts the
 repo read-only, copies `sdd/formal/lean` and this project into the container
 with their relative layout, and runs `lake build`; warnings fail the build,
 and `#guard_msgs` pins the axioms of every theorem in the document's § 10
@@ -75,7 +81,7 @@ tree:
 hatch run python sdd/research/bk-484-key-model/probes/check_quotes.py --cache tmp/quote-cache
 ```
 
-Expected: `85 of 85 quotes found in their section's sources` (2026-10-22).
+Expected: `92 of 92 quotes found in their section's sources` (2026-10-23).
 
 `--target s3,s3express,azure` reaches the accounts in `.env`. Each run
 creates and deletes a temporary bucket or container and costs a few dozen

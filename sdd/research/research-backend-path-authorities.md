@@ -27,12 +27,15 @@ authority; their key rules are remote-store-defined.
 
 **Derivation.** Every claim comes from a primary source fetched on 2026-10-21
 (WebFetch, or Python `urllib` / `pdftotext` for POSIX, Apple and Python
-pages). Every quote in § 3 was then checked word for word against the raw
-text of a source its subsection lists, on 2026-10-22, by
-[`bk-484-key-model/probes/check_quotes.py`](bk-484-key-model/probes/check_quotes.py),
-which folds only whitespace, typographic quote marks and dashes: 85 of 85
-found. The check corrected three quotes, narrowed one date and added the
-four sources it found missing. Points that no primary source settles after two rounds
+pages). Every double-quoted passage in § 3, of any length, was then checked
+against the raw text of a source its subsection lists by
+[`bk-484-key-model/probes/check_quotes.py`](bk-484-key-model/probes/check_quotes.py):
+92 of 92 found on 2026-10-23. A passage counts as found when it occurs as a
+substring after the script's normalisation, which decodes HTML entities,
+collapses whitespace, folds quote marks, dashes and non-breaking spaces, and
+deletes backticks, `*` and zero-width characters (its docstring lists them);
+a very short quote can match by chance. The check corrected three quotes,
+narrowed one date and added the five sources it found missing. Points that no primary source settles after two rounds
 of search are marked "Not documented" and listed in § 4. Statements from SDK
 source, SDK issue trackers or emulators are labelled as such.
 
@@ -97,7 +100,7 @@ Applies to `http` and to Graph request URLs.
   in Appendix F. §4: names "SHOULD be encoded as octets according to the UTF-8
   character encoding scheme".
 - **Status**: RFC 3986 is STD 66, updated by RFC 7320 and RFC 8820, not
-  obsoleted. Datatracker searches for "3986bis", "3986" and "uri" (active and
+  obsoleted. Datatracker searches for `3986bis`, `3986` and `uri` (active and
   expired drafts) found no revision of the generic syntax. The nearest attempt,
   draft-ietf-6man-rfc6874bis (IPv6 zone IDs only), is "Expired (IESG: Dead)";
   its latest revision is dated 2023-07-02.
@@ -167,6 +170,7 @@ Sources:
 - <https://man7.org/linux/man-pages/man7/path_resolution.7.html>
 - <https://docs.kernel.org/filesystems/ext4/directory.html>
 - <https://raw.githubusercontent.com/torvalds/linux/master/fs/namei.c>
+- <https://raw.githubusercontent.com/torvalds/linux/master/include/uapi/linux/limits.h>
 
 ### 3.3 macOS
 

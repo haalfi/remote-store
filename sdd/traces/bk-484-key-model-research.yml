@@ -26,8 +26,8 @@ orient:
       accepted authority for resolution: A.1 resolves a Key to Item, Folder or
       Nothing with no depth and names spec 004 as the input layer's owner, and
       A.4 and A.5 make a write below an item InvalidPath. Missed at first
-      orient and raised by PR #1173's review; the research keeps spec 051 as
-      its only authority (maintainer) and records the depth and owner
+      orient and raised by PR #1173's review; the research keeps spec 051's
+      TREE-001 to TREE-012 as its only authority (maintainer) and records the depth and owner
       differences as deltas (§ 9.6, § 10).
   - items: [BK-435]
     verdict: unrelated
@@ -207,8 +207,17 @@ phases:
       - file: sdd/research/bk-484-key-model/probes/check_quotes.py
         section: "(run against every § 3 source, fresh cache)"
         read_type: verify
-        extract: "85 of 85 quotes found after three wording fixes (ext4, SSHM charter, Graph) and four sources added that their subsections did not list; web searches found no documentation of Graph dot segments or of HNS trailing-dot and backslash rewriting, only Azure Files' trailing-dot rule"
+        extract: "85 of 85 quotes of 12 characters or more found after three wording fixes (ext4, SSHM charter, Graph) and four sources added that their subsections did not list; web searches found no documentation of Graph dot segments or of HNS trailing-dot and backslash rewriting, only Azure Files' trailing-dot rule"
         outcome: ok
+      - file: sdd/research/bk-484-key-model/probes/check_quotes.py
+        section: "quotes_in, FOLD (re-read after the review of 403185f7a)"
+        read_type: verify
+        extract: >-
+          A 12-character filter left short quotes unchecked while the doc said every quote; without it the
+          run found 95, of which three were search terms (now code spans) and one, `chars`, lacked its
+          source (Linux `limits.h`, now listed): 92 of 92. The doc and README now state the substring
+          match and the full fold set
+        outcome: misleading
       - file: "PR #1173 conversation (issue comments 6339559160 and 6339881662)"
         section: "Flat-namespace Azure measurement; 2026-10-21 handover"
         read_type: reference

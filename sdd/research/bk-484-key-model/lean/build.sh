@@ -4,16 +4,24 @@
 #
 # The project requires sdd/formal/lean by relative path, so both are copied
 # into the container with their layout kept; the repo is mounted read-only.
-# The image is the one scripts/lean_check.sh builds on its first run.
+# This folder is frozen: it pins Lean 4.34.1 here and in lean-toolchain, and is
+# deliberately not on scripts/lean_check.sh's bump list. It builds its own
+# image for that version from scripts/lean.Dockerfile, so a later bump of the
+# repo's Lean leaves this script working. The README names the sdd/formal/lean
+# state the proofs were checked against.
 set -euo pipefail
 
 export MSYS_NO_PATHCONV=1
-IMAGE="remote-store-lean:4.34.1"
+LEAN_VERSION=4.34.1
+IMAGE="remote-store-lean:${LEAN_VERSION}"
 REPO_ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
 
 if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
-  echo "==> $IMAGE is missing: run 'bash scripts/lean_check.sh' once to build it" >&2
-  exit 2
+  echo "==> Building $IMAGE (first run only)"
+  (cd "$REPO_ROOT/scripts" && docker build --quiet \
+    --build-arg "LEAN_VERSION=${LEAN_VERSION}" \
+    -t "$IMAGE" \
+    -f lean.Dockerfile .)
 fi
 
 docker run --rm -v "$REPO_ROOT:/work:ro" "$IMAGE" bash -c 'set -e

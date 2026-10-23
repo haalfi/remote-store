@@ -4,8 +4,11 @@ For each § 3 subsection, the script takes every double-quoted passage in the
 body and the URLs in that subsection's "Sources:" list. It fetches each source
 once, reduces it to text (HTML tags dropped, PDFs through ``pdftotext``), and
 reports a quote as found when every fragment of it, split at ``…``, occurs in
-one source after normalisation: whitespace collapsed, typographic quotes and
-dashes folded, Markdown backticks dropped, case kept.
+one source as a substring after ``norm``: HTML entities decoded, whitespace
+collapsed, every quote mark folded to ``'``, en and em dashes to ``-``, three
+non-breaking or thin spaces to a space, and backticks, ``*``, the word joiner,
+zero-width space and byte-order mark deleted (``FOLD``); case kept. A very
+short quote can be found by chance, since it is matched as a substring.
 
 Run from the repo root::
 
@@ -112,7 +115,7 @@ def fetch(url: str, cache: Path) -> str:
 
 
 def quotes_in(text: str) -> list[str]:
-    """The double-quoted passages of at least 12 characters in ``text``.
+    """Every double-quoted passage in ``text``, whatever its length.
 
     A quote mark inside a code span is a literal character: such spans are
     hidden while quote marks are paired, then put back inside the quotes.
@@ -127,11 +130,7 @@ def quotes_in(text: str) -> list[str]:
         return f"\x00{len(spans) - 1}\x00"
 
     flat = re.sub(r"`[^`]*`", hide, flat)
-    return [
-        re.sub(r"\x00(\d+)\x00", lambda m: spans[int(m.group(1))], q)
-        for q in re.findall(r'"([^"]*)"', flat)
-        if len(q) >= 12
-    ]
+    return [re.sub(r"\x00(\d+)\x00", lambda m: spans[int(m.group(1))], q) for q in re.findall(r'"([^"]*)"', flat)]
 
 
 def sections(doc: str) -> list[tuple[str, list[str], list[str]]]:
