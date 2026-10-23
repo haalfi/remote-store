@@ -11734,7 +11734,7 @@ the command that produced it, with three named exceptions: the PR #997
 postscript reads that PR's head <code>3cd4acb</code>, the worktree timings are single
 runs on one container, and § Pilot result is pinned at <code>2bd34cc</code> and says so,
 because it measures deliveries that did not exist at the date above. The two commands that are longer than a line are
-committed beside this file as <code>rfc-0015-findings.py</code> and <code>rfc-0015-rounds.py</code>;
+committed in <code>rfc-0015/</code> beside this file as <code>findings.py</code> and <code>rounds.py</code>;
 the second takes <code>--at 2a1bbfe</code> so Table 1 can be re-derived at the pin
 rather than at whatever the working tree holds. The corpus moves on every
 merge, so re-run rather than quote.</p>
@@ -11757,7 +11757,7 @@ ends, which also tags each finding's origin and so gives BK-366 its data.</p>
 of everything before it, and the findings the added rounds produce sit on what
 the loop itself wrote. Three tables carry that, each with its derivation.</p>
 <p><strong>Table 1. <code>review_rounds</code> per trace, split at the whole-file gate's merge
-(<code>24d9464</code>).</strong> Derivation: <code>python sdd/rfcs/rfc-0015-rounds.py 24d9464 --at
+(<code>24d9464</code>).</strong> Derivation: <code>python sdd/rfcs/rfc-0015/rounds.py 24d9464 --at
 2a1bbfe</code>, whose docstring states the population (traces first added since the
 split, renames followed), the value rule and the exclusion rule. The field counts
 review-driven commits, so it is a proxy for rounds; the traces' own derivation
@@ -11809,7 +11809,7 @@ the load-bearing one. Tables 2 and 3 do not depend on the field.</p>
 Table 1's first row with <code>review_rounds</code> of five or more, mapped to their merge
 PRs by the <code>(#N)</code> suffix of <code>git log --format=%s 24d9464..HEAD</code>:</p>
 <h1 id="964-965-968-971-972-973-974-976-977-978-983-986-987-989-990-991">964 #965 #968 #971 #972 #973 #974 #976 #977 #978 #983 #986 #987 #989 #990 #991<a class="headerlink" href="#964-965-968-971-972-973-974-976-977-978-983-986-987-989-990-991" title="Permanent link">&para;</a></h1>
-<h1 id="992-994-996-derivation-python-sddrfcsrfc-0015-findingspy-those-19">992 #994 #996. Derivation: <code>python sdd/rfcs/rfc-0015-findings.py &lt;those 19&gt;</code>.<a class="headerlink" href="#992-994-996-derivation-python-sddrfcsrfc-0015-findingspy-those-19" title="Permanent link">&para;</a></h1>
+<h1 id="992-994-996-derivation-python-sddrfcsrfc-0015findingspy-those-19">992 #994 #996. Derivation: <code>python sdd/rfcs/rfc-0015/findings.py &lt;those 19&gt;</code>.<a class="headerlink" href="#992-994-996-derivation-python-sddrfcsrfc-0015findingspy-those-19" title="Permanent link">&para;</a></h1>
 <p>For each finding (a review comment with no <code>in_reply_to_id</code>) the script blames
 the commented line at the head the reviewer saw. The blamed commit is
 <strong>pre-existing</strong> if it is reachable from <code>origin/master</code>; otherwise its author
@@ -11858,14 +11858,14 @@ submissions in posting order.</p>
 <td>2</td>
 <td>27</td>
 <td>93%</td>
-<td>34</td>
+<td>35</td>
 </tr>
 <tr>
 <td>5</td>
 <td>4</td>
 <td>16</td>
 <td>80%</td>
-<td>28</td>
+<td>27</td>
 </tr>
 <tr>
 <td>6</td>
@@ -11934,7 +11934,9 @@ blame-failure finding. The comments endpoint's row order agreed with review
 submission order in every sampled PR, which the script now checks rather than
 assumes. The direction is unambiguous; the figures are not precise.
 <strong>A submission is not always a round</strong>: BUG-264's trace records eight rounds
-where the endpoint shows two submissions, so some rows merge rounds. <strong>A
+where the endpoint shows two submissions, so some rows merge rounds; and a
+file-level finding posted as its own review within two minutes of its pass
+counts in that pass, which moves one of #968's from round 5 to round 4. <strong>A
 commit authored before round 1 but pushed after it would read as original</strong>;
 the loop pushes before it spawns reviewers, so the case is not expected, and
 it is not measured. None of the four bounds moves a round-1 finding into a
@@ -12028,7 +12030,7 @@ so its 65% weighs as much in the conclusion as the late rounds do, and it is
 below the 77% Table 2 gives for the same round.</p>
 <p><strong>Table 3. What the findings are about.</strong> Same script, same sample, and
 unaffected by the origin classifier:
-92 submissions, <strong>190 findings on <code>src/</code> or <code>tests/</code> files and 351 on
+91 submissions, <strong>190 findings on <code>src/</code> or <code>tests/</code> files and 351 on
 everything else</strong>, and <strong>133 of the 351 sit on <code>sdd/traces/</code>, <code>sdd/BACKLOG.md</code>
 or <code>sdd/BACKLOG-DONE.md</code></strong>. A quarter of everything the loop found, it found
 in its own record. Bound: a docstring finding in <code>tests/</code> counts as code here,
@@ -12101,7 +12103,7 @@ clause; SFTP-031 says "whichever connect-time shape occurred", and round 9
 caught it. A measurement is a change to what the repo may claim, and nothing
 routed from the number to the clauses it bears on.</p>
 <p><strong>Its findings are mostly unclassifiable by the origin tag</strong>, which is
-Table 2's unclassifiable bound in its sharpest form: <code>python sdd/rfcs/rfc-0015-findings.py 997</code>
+Table 2's unclassifiable bound in its sharpest form: <code>python sdd/rfcs/rfc-0015/findings.py 997</code>
 at <code>3cd4acb</code> returns 4 submissions and 20 inline findings for nine rounds, ten
 of the twenty file-level, so the loop-introduced share can be read for rounds 1
 and 2 only (0% and 40%). Nine rounds of review left a record from which the
@@ -12413,7 +12415,7 @@ itself, and when it is reviewing itself the next fix pass retracts rather than
 corrects.</p>
 <p><strong>Mechanism.</strong></p>
 <ul>
-<li>Origin is the blame classification in <code>rfc-0015-findings.py</code>, run by
+<li>Origin is the blame classification in <code>rfc-0015/findings.py</code>, run by
   <code>ship-report</code>: original, pre-existing, loop-introduced.</li>
 <li>Posting discipline follows, in its conservative reading: a finding is
   anchored to its true line when that line falls inside a diff hunk, context
@@ -12452,7 +12454,7 @@ corrects.</p>
   over-fires, and the <code>LINE</code> discipline above raises its reach. Under that
   discipline a second bias runs the same direction: the dry run's clean count
   is <code>mf-original + mf-pre-existing</code> (<code>clean</code>, feeding <code>hot()</code>, in
-  <code>rfc-0015-findings.py</code>'s D5 dry run), and a finding anchored to a context
+  <code>rfc-0015/findings.py</code>'s D5 dry run), and a finding anchored to a context
   line blames a commit reachable from <code>origin/master</code> and is tagged
   pre-existing, a category the
   baseline has at zero (Table 2's first bound). So the trigger under-fires
@@ -12554,7 +12556,7 @@ runtime behaviour, no published page other than this RFC's own.</p>
 <li><strong>Cost:</strong> 25.6 s of environment creation once per round, measured once
   above (D3); script work of size S; skill rewrites of size M.</li>
 <li><strong>Acceptance criterion, stated before the run.</strong> Three deliveries run under
-  the rules, pooled, then <code>rfc-0015-findings.py</code> over them. Graduate to an ADR
+  the rules, pooled, then <code>rfc-0015/findings.py</code> over them. Graduate to an ADR
   if (1) the loop-introduced share of must-fix findings from round 3 on,
   over <code>original + loop-introduced</code>, is below 50% (Table 4's pooled rounds 3
   to 7: 80 of 105, 76%, summing its rows), (2) the derived trace block draws a
@@ -12580,7 +12582,7 @@ runtime behaviour, no published page other than this RFC's own.</p>
   its own round, which from round 3 are 77% to 93% loop-introduced (Table 2),
   it raises the share, so the bias runs against passing; the per-round
   unclassifiable count is what lets a reader see how much of the figure it
-  could account for. <code>rfc-0015-findings.py</code> prints clause 1 as one line, <code>POOLED r&gt;=3
+  could account for. <code>rfc-0015/findings.py</code> prints clause 1 as one line, <code>POOLED r&gt;=3
   must-fix</code>, over the PR numbers given, with <code>o</code>, <code>l</code>, <code>p</code> and <code>u</code> beside
   the share, and its <code>BY ROUND INDEX</code> share excludes pre-existing for the
   same reason; the per-finding classification is what Tables 2 to 4 rest
@@ -12624,7 +12626,7 @@ without D1 and D4 is the one taken: build them and re-measure.</p>
 (#1020, merged <code>2026-09-17T19:42Z</code>; the three opened at 20:38, 21:13 and
 <code>2026-09-18T19:34Z</code>, from <code>gh api repos/haalfi/remote-store/pulls/&lt;N&gt; --jq
 '{created_at, merged_at}'</code>), so no round in the sample ran under the old rules.
-Every figure below comes from <code>python sdd/rfcs/rfc-0015-findings.py 1021 1022
+Every figure below comes from <code>python sdd/rfcs/rfc-0015/findings.py 1021 1022
 1023</code> at <code>2bd34cc</code> unless it names another derivation; the triage-derived ones
 (Table 4 and the triage counts) are re-derived with the classifier as fixed by
 BUG-295. 69 findings over 14
@@ -12908,7 +12910,7 @@ read against § Impact's three clauses.</p>
 <li>Backlog: BK-365, BK-366, BK-348, BK-353, BK-349.</li>
 <li>Traces: BUG-274, BUG-265, BUG-264, BUG-272, BK-359, BK-360, BK-358, and
   BUG-275 (read at PR #997's head <code>3cd4acb</code>, merged as <code>4452d26</code>).</li>
-<li>Derivations: <code>rfc-0015-findings.py</code>, <code>rfc-0015-rounds.py</code>; the phrase set
+<li>Derivations: <code>rfc-0015/findings.py</code>, <code>rfc-0015/rounds.py</code>; the phrase set
   behind the 14-line count is
   <code>Retrospective|Annotated after|annotated after|until round \d|an earlier revision of this|this (line|sentence|figure|step) (said|read|was)|corrected in round|Round \d (caught|found|corrected)</code>
   over <code>sdd/specs/*.md</code>, <code>sdd/BACKLOG*.md</code>, <code>src/**/*.py</code>, <code>tests/**/*.py</code>,
