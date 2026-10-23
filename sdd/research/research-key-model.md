@@ -602,10 +602,12 @@ Key out of its scope, so the two meet only at the Key.
 - **Delta: the input layer's owner.** A.1 ("A Key is not a caller's input")
   names spec 004's `RemotePath` as the layer mapping input onto a Key, and
   A.2 attributes the refusal of `..` to PATH-003; ν climbs `..` (§ 3.3).
-- **Open there, answered here.** A.1 leaves undecided how a case-insensitive
-  or normalising encoding answers; § 3.2's sibling equivalence and normal-form
-  rule, and § 3.7's `AlreadyExists` for a clash, are one answer (BK-436 holds
-  the open decision).
+- **Open there, answered here for writes only.** A.1 leaves undecided how a
+  case-insensitive or normalising encoding answers; § 3.2's sibling
+  equivalence and normal-form rule, and § 3.7's `AlreadyExists` for a clash
+  on a write, are one answer for the write side. What a read, probe or delete
+  answers when only a sibling equal under ≡_b exists, and whether a write
+  with `overwrite=True` still clashes, stay open (BK-436 holds the decision).
 
 ### 9.7 Prior art
 

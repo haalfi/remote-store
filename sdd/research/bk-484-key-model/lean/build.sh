@@ -5,10 +5,11 @@
 # The project requires sdd/formal/lean by relative path, so both are copied
 # into the container with their layout kept; the repo is mounted read-only.
 # This folder is frozen: it pins Lean 4.34.1 here and in lean-toolchain, and is
-# deliberately not on scripts/lean_check.sh's bump list. It builds its own
-# image for that version from scripts/lean.Dockerfile, so a later bump of the
-# repo's Lean leaves this script working. The README names the sdd/formal/lean
-# state the proofs were checked against.
+# deliberately not on scripts/lean_check.sh's bump list. It builds its image
+# from scripts/lean.Dockerfile, whose archive checksum is pinned to the repo's
+# current Lean version: after a repo-wide bump, a fresh image build here fails
+# the checksum unless the image is already cached. The README names the commit
+# to check out to reproduce the proofs.
 set -euo pipefail
 
 export MSYS_NO_PATHCONV=1

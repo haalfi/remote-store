@@ -48,7 +48,11 @@ bash sdd/research/bk-484-key-model/lean/build.sh
 It builds the Docker image `remote-store-lean:4.34.1` from
 `scripts/lean.Dockerfile` on its first run. The version is pinned here, in
 `build.sh` and `lean/lean-toolchain`, and is not on `scripts/lean_check.sh`'s
-bump list, so a repo-wide Lean bump leaves this build alone. The proofs were
+bump list. The Dockerfile pins the archive checksum of the repo's current Lean
+version, so after a repo-wide bump the image builds only at the checkout
+below (`lean_check.sh`'s bump list includes `sdd/formal/lean`'s
+`lean-toolchain`, so a bump moves that folder's last commit too), or from a
+cached image. The proofs were
 last checked on 2026-10-23 against `sdd/formal/lean` as of `45132599a`, the
 last commit to touch it. A later change there can break this build, and no
 gate runs it (BK-462): to reproduce the evidence, check out a commit where

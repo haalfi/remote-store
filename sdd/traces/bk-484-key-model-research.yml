@@ -40,8 +40,8 @@ orient:
     evidence: >-
       BK-436's open decision includes how a backend's coarser name equality
       answers (BE-032 A.1); the research's § 3.2 sibling equivalence and
-      normal-form rule are a candidate answer, stated as such, without
-      closing BK-436.
+      normal-form rule are a candidate answer for writes, stated as such,
+      without closing BK-436; lookup and `overwrite=True` stay open there.
   - items: [BK-462]
     verdict: constrains
     evidence: >-
@@ -197,7 +197,7 @@ phases:
         extract: "Azure HNS rewrites raw paths in the service and resolves `..` before authorisation; Azurite stores them as sent; AWS refused (stored key no longer valid), so its § 4 points stay open"
         outcome: ok
       - file: sdd/research/bk-484-key-model/probes/probe_paths.py
-        section: "KEYS, redact (re-read after the review of 8f3095386)"
+        section: "KEYS, redact (re-read after a PR #1173 review, 2026-10-22)"
         read_type: verify
         extract: >-
           The shared `{B}/../../x` template reached only the chroot root from SFTP's two-segment base,
@@ -210,7 +210,7 @@ phases:
         extract: "85 of 85 quotes of 12 characters or more found after three wording fixes (ext4, SSHM charter, Graph) and four sources added that their subsections did not list; web searches found no documentation of Graph dot segments or of HNS trailing-dot and backslash rewriting, only Azure Files' trailing-dot rule"
         outcome: ok
       - file: sdd/research/bk-484-key-model/probes/check_quotes.py
-        section: "quotes_in, FOLD (re-read after the review of 403185f7a)"
+        section: "quotes_in, FOLD (re-read after a PR #1173 review, 2026-10-23)"
         read_type: verify
         extract: >-
           A 12-character filter left short quotes unchecked while the doc said every quote; without it the
@@ -219,7 +219,7 @@ phases:
           match and the full fold set
         outcome: misleading
       - file: sdd/research/bk-484-key-model/probes/check_quotes.py
-        section: "main, fragment match (re-read after the review of 94cd3b281)"
+        section: "main, fragment match (re-read after a later PR #1173 review, 2026-10-23)"
         read_type: verify
         extract: >-
           Its docstring stated the fragment rule; my § 1 and README text said substring and missed that
@@ -237,7 +237,7 @@ phases:
           takes a position-dependent rewrite at the last segment, which by TREE-012 keeps L_b prefix-closed
         outcome: ok
       - file: sdd/specs/053-contract-kernel.md
-        section: "Scope; BE-030 (re-read after the review of d40147b41)"
+        section: "Scope; BE-030 (re-read after a later PR #1173 review, 2026-10-23)"
         read_type: verify
         extract: >-
           BE-030 binds only a class on the kernel, and only `_memory.py` and `_memory_tree.py` under

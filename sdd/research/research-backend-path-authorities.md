@@ -31,7 +31,9 @@ authority; their key rules are remote-store-defined.
 fetched on 2026-10-21 (WebFetch, or Python `urllib` / `pdftotext` for POSIX,
 Apple and Python pages) unless its subsection dates a later search; of the
 five sources the quote check added below, four were fetched on 2026-10-22
-and one on 2026-10-23 (commits `2750d7d09` and `94cd3b281`). Every
+(the rfc6874bis datatracker page in § 3.1; the Microsoft Q&A answer, the
+`azure-sdk-for-python` pull request and the Azurite middleware in § 3.7) and
+one on 2026-10-23 (Linux `limits.h` in § 3.2). Every
 double-quoted passage in § 3, of any length, was then checked
 against the raw text of a source its subsection lists by
 [`bk-484-key-model/probes/check_quotes.py`](bk-484-key-model/probes/check_quotes.py):
