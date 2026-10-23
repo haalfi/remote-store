@@ -220,6 +220,8 @@ phases:
           --at 2a1bbfe crashes on a cp1252 decode after its first population
           on this Windows machine, identically for master's copy run in place
         outcome: misleading
+discovery_followups:
+  - BUG-340
 surprising_ripples:
   - scripts/ship_report.py
   - sdd/rfcs/rfc-0015/findings.py
