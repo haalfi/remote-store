@@ -1,12 +1,13 @@
-# Research: A spec-first reset toward v1, and how its specs are written
+# Research: A spec-first reset toward v1, and how its specs are written (BK-485)
 
 **Date:** 2026-10-23
-**Backlog items:** none yet; the reset RFC and the format RFC will file them.
-**Status:** Point-in-time decision record of one maintainer session
-(2026-10-22 to 2026-10-23). It holds the decisions taken, the options they
-rejected, the two external research results they rest on, and what is still
-open. Two RFCs are to follow from it: the reset RFC (§ 2 to § 4) and the format
-RFC (§ 5 to § 6), which amends [`sdd/SPEC-DESIGN.md`](../SPEC-DESIGN.md).
+**Backlog items:** BK-485 (The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour)
+**Status:** Research complete — ready for the reset RFC. A point-in-time
+decision record of one maintainer session (2026-10-22 to 2026-10-23): the
+decisions taken, the options they rejected, the two external research results
+they rest on, and what is still open. Two RFCs are to follow from it: the reset
+RFC (§ 2 to § 4) and the format RFC (§ 5 to § 6), which amends
+[`sdd/SPEC-DESIGN.md`](../SPEC-DESIGN.md). Next: § 9's order, from step 1.
 Decision log, for the dialogs it captured:
 `sdd/decisions/406930fa-086e-5256-a50d-e95aa881810e.jsonl`. Decisions taken
 after a worker restart on 2026-10-23 (F1 revised, F4 to F6, the deviation
@@ -202,6 +203,43 @@ contract for R-1 and the open question.
 10. Open backlog items that depend on 0.33 behaviour: keep, close, or move to
     `release/0.33.x`.
 11. How the two research reports enter this repo as input for the format RFC.
+
+---
+
+## 9. Results and recommendation
+
+**Result.** Two independent research runs on one unprimed brief (§ 5) agree on
+the method: Design by Contract extended with traces, assume-guarantee and
+refinement; named observers and an explicit environment; a form chosen per
+category as the weakest that still tells a conforming behaviour from a
+counterexample; a counterexample and a named check per clause; one contract
+whose profiles only select declared values. Neither finds a measured ranking
+of spec formats for coding agents; both find that executable checks outside
+the agent's write scope are what agents conform to. F1 to F6 (§ 6) take this
+into decisions; D1 to D11 and S1 to S5 (§ 2, § 4) fix the process around it.
+
+**Recommendation.** Make the reset binding with two small decisions, build the
+design tool, then run one complete flow on `read()` before anything is scaled.
+That flow is also the cheapest experiment for the open format question, so no
+separate bake-off precedes it. BK-485 tracks the steps.
+
+| Step | Work | Why here |
+|---|---|---|
+| 1 | Cut `release/0.33.x` (D2). Pause RFC-0017's migration steps: the Memory driver stays on the kernel, no further backend moves onto it until its specs exist (open point 5). | Kernel code is otherwise written against the specs being replaced. Both reports put the spec and an independent oracle before the implementation. |
+| 2 | The reset RFC: D1 to D11 and open points 1, 5, 9 and 10. Process only; format is step 6. | Turns this record into binding process. |
+| 3 | `/observe` with its hook, the ground register and the observation axes (S1 to S5, D11). The axes are drafted unprimed, from the reports' categories and F1 to F6. | Every later design session needs it. |
+| 4 | The key spec between 051 and 004 (BK-484; open point 8). | Spec 051 and the key spec are the ground `read()` needs; D11 forbids deciding keys on the side. |
+| 5 | The first flow, `read()`: an `/observe` session with § 7 as candidate input; the spec in the provisional F1 to F6 format; a reference model written fresh from the spec, with its counterexample mutants; the profile tables for Memory, Local, S3 and SFTP; the comparison with 0.33. | Tests the category cut and the form rule, both unproven on a real operation in both reports. Puts the independent check before any implementation, the one point where the agent evidence is strong. |
+| 6 | A minimal bake-off on the finished slice: the same clauses as normative prose with a conformance suite (the Claude report's shortlist 3), fresh agents implementing against each, scored on mutants killed and guarantees invented. Then the format RFC amends `SPEC-DESIGN.md` with F1 to F6 and the category list. | Holds the decisions fixed and varies only the form, which both reports name as the missing measurement. |
+
+Steps 3 and 4 can run in parallel; every other step closes a dependency of
+the next.
+
+**Not yet.** The "being superseded" header (D7) goes onto an old spec only
+when a new spec replaces its sections, not onto all fifty now. The Claude
+report's full bake-off design (several agents per form, a tamper protocol)
+waits until a slice exists. D10 is decided with the `read()` flow's evidence
+in hand.
 
 ---
 

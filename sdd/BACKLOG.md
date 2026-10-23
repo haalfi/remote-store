@@ -558,6 +558,14 @@ no clause of the contract ships unexercised.
   spec between 051 and 004. Open decision: its § 10's deltas against specs 004, 005, 015, 051, 053.
   Shared: BK-483 (an Azure listing of a refused name), BK-436 (lookup under a coarser name equality).
 
+- [ ] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
+  spec: — · effort: L · audience: library.maintainer, contributor.process
+  Specs 001 to 050 mix what a caller observes with how 0.33 achieves it, and RFC-0017's migration
+  steps build the kernel against them. `research-spec-first-reset.md` records the maintainer's
+  decisions for a spec-first reset (§ 2, § 4, § 6) and the order of the work (§ 9). Not done: the
+  reset RFC, `/observe`, the first flow on `read()`, the format RFC. Open decision: § 8's open
+  points. After BK-484, which gives the `read()` flow its key spec.
+
 - [ ] **BK-482 — Azure conformance runs on Azurite, which stores raw keys the HNS service rewrites**
   spec: BE-030, BE-032 · effort: M · audience: infra.test, library.maintainer
   `research-backend-path-authorities.md` § 5 (2026-10-22): sent raw, `a//b`, `.`, `..`, a leading `/` and a
