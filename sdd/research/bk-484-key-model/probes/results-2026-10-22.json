@@ -1,0 +1,531 @@
+{
+ "date": "2026-10-22",
+ "targets": {
+  "s3": {
+   "error": "ClientError: InvalidAccessKeyId"
+  },
+  "s3express": {
+   "error": "could not create a directory bucket"
+  },
+  "azure": {
+   "account_hns": true,
+   "results": [
+    {
+     "label": "control",
+     "key": "p/plain",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p",
+      "p/plain"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "name with dots",
+     "key": "p/...",
+     "put": 400,
+     "put_code": "InvalidUri",
+     "listed_new": [],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "empty segment",
+     "key": "p/a//b",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/a",
+      "p/a/b"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "empty segment after base",
+     "key": "p//c",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/c"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "dot segment",
+     "key": "p/./d",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/d"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "dot-dot inside",
+     "key": "p/e/../f",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/f"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "trailing slash",
+     "key": "p/g/",
+     "put": 400,
+     "put_code": "InvalidUri",
+     "listed_new": [],
+     "get_raw": 404,
+     "get_code": "BlobNotFound"
+    },
+    {
+     "label": "leading slash",
+     "key": "/p/h",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/h"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "backslash",
+     "key": "p/i\\j",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/i",
+      "p/i/j"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "trailing dot",
+     "key": "p/k.",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/k"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "dot-dot above root",
+     "key": "p/../../x",
+     "put": 403,
+     "put_code": "AuthenticationFailed",
+     "listed_new": [],
+     "get_raw": 403,
+     "get_code": "AuthenticationFailed"
+    }
+   ],
+   "listed_before_container_delete": [
+    "p",
+    "p/a",
+    "p/a/b",
+    "p/c",
+    "p/d",
+    "p/f",
+    "p/h",
+    "p/i",
+    "p/i/j",
+    "p/k",
+    "p/plain"
+   ]
+  },
+  "minio": {
+   "results": [
+    {
+     "label": "control",
+     "key": "p/plain",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "p/plain"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "name with dots",
+     "key": "p/...",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "p/..."
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "empty segment",
+     "key": "p/a//b",
+     "put": 400,
+     "put_code": "XMinioInvalidObjectName",
+     "listed_new": [],
+     "get_raw": 400,
+     "get_code": "XMinioInvalidObjectName"
+    },
+    {
+     "label": "empty segment after base",
+     "key": "p//c",
+     "put": 400,
+     "put_code": "XMinioInvalidObjectName",
+     "listed_new": [],
+     "get_raw": 400,
+     "get_code": "XMinioInvalidObjectName"
+    },
+    {
+     "label": "dot segment",
+     "key": "p/./d",
+     "put": 400,
+     "put_code": "XMinioInvalidResourceName",
+     "listed_new": [],
+     "get_raw": 400,
+     "get_code": "XMinioInvalidResourceName"
+    },
+    {
+     "label": "dot-dot inside",
+     "key": "p/e/../f",
+     "put": 400,
+     "put_code": "XMinioInvalidResourceName",
+     "listed_new": [],
+     "get_raw": 400,
+     "get_code": "XMinioInvalidResourceName"
+    },
+    {
+     "label": "trailing slash",
+     "key": "p/g/",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "p/g/"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "leading slash",
+     "key": "/p/h",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "p/h"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "backslash",
+     "key": "p/i\\j",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "p/i\\j"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "trailing dot",
+     "key": "p/k.",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "p/k."
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "dot-dot above root",
+     "key": "p/../../x",
+     "put": 400,
+     "put_code": "XMinioInvalidResourceName",
+     "listed_new": [],
+     "get_raw": 400,
+     "get_code": "XMinioInvalidResourceName"
+    }
+   ],
+   "cleanup_remaining": []
+  },
+  "azurite": {
+   "account_hns": false,
+   "results": [
+    {
+     "label": "control",
+     "key": "p/plain",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/plain"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "name with dots",
+     "key": "p/...",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/..."
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "empty segment",
+     "key": "p/a//b",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/a//b"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "empty segment after base",
+     "key": "p//c",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p//c"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "dot segment",
+     "key": "p/./d",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/./d"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "dot-dot inside",
+     "key": "p/e/../f",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/e/../f"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "trailing slash",
+     "key": "p/g/",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/g/"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "leading slash",
+     "key": "/p/h",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "/p/h"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "backslash",
+     "key": "p/i\\j",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/i/j"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "trailing dot",
+     "key": "p/k.",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/k."
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "dot-dot above root",
+     "key": "p/../../x",
+     "put": 201,
+     "put_code": "",
+     "listed_new": [
+      "p/../../x"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    }
+   ],
+   "listed_before_container_delete": [
+    "/p/h",
+    "p/...",
+    "p/../../x",
+    "p/./d",
+    "p//c",
+    "p/a//b",
+    "p/e/../f",
+    "p/g/",
+    "p/i/j",
+    "p/k.",
+    "p/plain"
+   ]
+  },
+  "sftp": {
+   "date": "2026-10-23",
+   "home": "/",
+   "base": "upload/<probe>",
+   "precreated_dirs": [
+    "a",
+    "e",
+    "g"
+   ],
+   "results": [
+    {
+     "label": "control",
+     "key": "upload/<probe>/plain",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "upload/<probe>/plain"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "name with dots",
+     "key": "upload/<probe>/...",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "upload/<probe>/..."
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "empty segment",
+     "key": "upload/<probe>/a//b",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "upload/<probe>/a/b"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "empty segment after base",
+     "key": "upload/<probe>//c",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "upload/<probe>/c"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "dot segment",
+     "key": "upload/<probe>/./d",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "upload/<probe>/d"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "dot-dot inside",
+     "key": "upload/<probe>/e/../f",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "upload/<probe>/f"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "trailing slash",
+     "key": "upload/<probe>/g/",
+     "put": -1,
+     "put_code": "OSError: Failure",
+     "listed_new": [],
+     "get_raw": -1,
+     "get_code": "OSError: Failure"
+    },
+    {
+     "label": "leading slash",
+     "key": "/upload/<probe>/h",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "upload/<probe>/h"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "backslash",
+     "key": "upload/<probe>/i\\j",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "upload/<probe>/i\\j"
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "trailing dot",
+     "key": "upload/<probe>/k.",
+     "put": 200,
+     "put_code": "",
+     "listed_new": [
+      "upload/<probe>/k."
+     ],
+     "get_raw": 200,
+     "get_code": ""
+    },
+    {
+     "label": "dot-dot above root",
+     "key": "upload/<probe>/../../../x",
+     "put": -1,
+     "put_code": "PermissionError: EACCES",
+     "listed_new": [],
+     "get_raw": -1,
+     "get_code": "FileNotFoundError: ENOENT"
+    }
+   ]
+  }
+ }
+}

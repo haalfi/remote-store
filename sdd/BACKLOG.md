@@ -550,13 +550,37 @@ no clause of the contract ships unexercised.
   Not done: §12's `@spec` tags (F1 needs BK-436); research § 10 step 3's Dafny operations
   (after BK-434). Open decision: none.
 
+- [~] **BK-484 — No key model connects spec 051's Key to the key parameter of `Store`**
+  spec: TREE-009 -- TREE-012, PATH-002 -- PATH-015, ERR-003, ERR-005, CHILD-001 -- CHILD-009, BE-030, BE-032 · effort: L · audience: library.maintainer, contributor.process
+  Spec 051 defines Key on entities; `RemotePath` (spec 004), the kernel's key rule (BE-030) and
+  `child()` (spec 015) each map a caller's string by their own rules. `research-key-model.md`
+  states one model, decided by the maintainer, spike-tested and proved in Lean. Not done: the
+  spec between 051 and 004. Open decision: its § 10's deltas against specs 004, 005, 015, 051, 053.
+  Shared: BK-483 (an Azure listing of a refused name), BK-436 (lookup under a coarser name equality).
+
+- [ ] **BK-482 — Azure conformance runs on Azurite, which stores raw keys the HNS service rewrites**
+  spec: BE-030, BE-032 · effort: M · audience: infra.test, library.maintainer
+  `research-backend-path-authorities.md` § 5 (2026-10-22): sent raw, `a//b`, `.`, `..`, a leading `/` and a
+  trailing `.` are stored as sent by Azurite 3.35.0 and rewritten by an HNS account; they agree only on the
+  control key and `\` becoming `/`. An assertion about such keys on Azurite may hold only on the emulator. A
+  flat account, measured through the SDK only for `//` and a leading or trailing `/`, stored them as sent.
+  Open decision: which assertions rerun on `azure_live` or are emulator-only, and whether a flat account is probed.
+
+- [ ] **BK-483 — A stored Azure name holding `..` may be read back at a different path**
+  spec: BE-030, PATH-003 · effort: M · audience: library.maintainer, user.api
+  The HNS service resolves `..` in a raw path before authorising (`research-backend-path-authorities.md`
+  § 5), and the SDK's urllib3 removes dot segments client-side (its § 3.7). A listed `..` name (possible on
+  a flat account, unmeasured) would be read, written or deleted at the resolved path, under an account key
+  maybe in another container; PATH-003 refuses only input. Open decision: whether Azure listings yield such
+  names, omitted or refused; BK-484's spec sets the general listing rule (its research's § 10).
+
 - [ ] **BK-436 — No backend's observed tree is checked against spec 051**
   spec: TREE-001 -- TREE-012, BE-032 · effort: M · audience: library.maintainer
   Spec 051's sections are tested only against a reference model (`tests/test_store_tree.py`). A
   flat backend can hold an item with keys below it (on the kernel listings omit them, keyed probes
   still find them: BE-032 A.3), and a case-insensitive or normalizing one merges names spec 051
-  keeps apart (its Name equality). Open decision: which listings and probes observe a backend's
-  tree, how each backend's name equality is measured, and how a coarser one answers (BE-032 A.1).
+  keeps apart. Open decision: which listings and probes observe a backend's tree, how its name
+  equality is measured, how a coarser one answers (BE-032 A.1; BK-484's research answers writes).
 
 - [ ] **BK-462 — Alloy and Lean run in no CI job, so no structure clause can be model-governed**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer, infra.ci
