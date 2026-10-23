@@ -231,12 +231,12 @@ decisions:
   - sdd/decisions/b301fcfb-c12a-4332-be83-7addd61e5d96.jsonl
   - sdd/decisions/caf9bbcd-11d7-471b-9c9e-a5ffd792c9b3.jsonl
 review:
-  # Derived by `hatch run ship-report 1174 --trace-block-only` at head aeb9097.
+  # Derived by `hatch run ship-report 1174 --trace-block-only` at head 6d114ce.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1174 --trace-block-only"
   pr: 1174
-  review_rounds: 8
+  review_rounds: 10
   submissions: 8
   findings: 15
   by_round:
@@ -312,20 +312,24 @@ review:
     - "tests/scripts/test_check_traces.py"
     - "tests/scripts/test_rfc_0015_findings.py"
   review_driven_commits:
-    - sha: "eb363f0"
+    - sha: "c3bf4db"
       subject: "fix: address PR #1174 review"
-    - sha: "49bace3"
+    - sha: "6847d55"
       subject: "fix: address PR #1174 review"
-    - sha: "309ccf3"
+    - sha: "a0c0f2e"
       subject: "BK-481: Move the gh posting route into posting-gh.md"
-    - sha: "823985a"
+    - sha: "f90580b"
       subject: "fix: address PR #1174 review"
-    - sha: "224228f"
+    - sha: "0f4de3f"
       subject: "fix: address PR #1174 review"
-    - sha: "9f5ab62"
+    - sha: "66478ec"
       subject: "fix: address PR #1174 review"
-    - sha: "55e4b4f"
+    - sha: "e16f34a"
       subject: "fix: address PR #1174 review"
-    - sha: "aeb9097"
+    - sha: "9802146"
       subject: "fix: address PR #1174 review"
-  ci: {verdict: PENDING, failed: 0, pending: 16}
+    - sha: "ffab9eb"
+      subject: "BK-481: Add the review block to the trace"
+    - sha: "6d114ce"
+      subject: "BUG-340: File the rounds.py Windows crash"
+  ci: {verdict: PENDING, failed: 0, pending: 24}
