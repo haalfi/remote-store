@@ -1089,7 +1089,7 @@ CHANGELOG the release body is built from — say what is actually true.
   accepted 2026-10-04, `failed` path omitted. Done: D5 steps 1 and 2 and D2's
   staging and exclusions. Pending: step 3 (`/pr` Decisions section, without
   priming `/ship`'s unprimed passes), which acceptance's delivery count waits
-  on, and a remedy for one session's log across two branches (D2 bound).
+  on, and a remedy for one session's log across two branches (D2 bound; BK-486 cleared its case 2).
 
 - [ ] **BK-402 — `ci.yml` says `tests/scripts/` does not exercise `remote_store`, and it does**
   spec: — · effort: S · audience: infra.ci

@@ -171,6 +171,11 @@ def _lines(repo: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
 
 
+def _held(repo: Path, session: str = SESSION) -> list[dict[str, Any]]:
+    held = repo / "sdd" / "decisions" / ".pending" / f"{session}.jsonl"
+    return [json.loads(line) for line in held.read_text(encoding="utf-8").splitlines()]
+
+
 @pytest.mark.parametrize("case", list(ANSWERED), ids=list(ANSWERED))
 def test_answered_dialog_appends_asked_then_answered(case: str, recorder: Any, repo: Path) -> None:
     pre, post = ANSWERED[case]
@@ -261,14 +266,38 @@ def test_appends_never_rewrites(recorder: Any, repo: Path) -> None:
 
 
 def test_detached_head_records_null_branch(recorder: Any, repo: Path) -> None:
-    """D4.0 binds a detached-HEAD event to the next work branch, so it must say it had none."""
+    """D4.0 binds a detached-HEAD event to the next work branch, so it must say it had none.
+
+    Held, not logged (BK-486): only the session's later commit on a work branch moves it into the log.
+    """
     head = _git(repo, "rev-parse", "HEAD")
     _git(repo, "checkout", "-q", "--detach")
     recorder.record(ANSWERED["a-followed"][0], repo, {})
 
-    (line,) = _lines(repo)
+    (line,) = _held(repo)
     assert line["branch"] is None
     assert line["head"] == head
+    assert not (repo / "sdd" / "decisions" / f"{SESSION}.jsonl").exists()
+
+
+def test_dialog_during_a_rebase_is_logged_not_held(recorder: Any, repo: Path) -> None:
+    """A rebase detaches HEAD, but the work is the branch being rebased, and
+    ``git rebase --continue`` is no commit that promotes (PR #1175 review)."""
+    _git(repo, "checkout", "-q", "-b", "master")
+    (repo / "f").write_text("master side")
+    _git(repo, "commit", "-q", "-am", "master side")
+    _git(repo, "checkout", "-q", "feature")
+    (repo / "f").write_text("feature side")
+    _git(repo, "commit", "-q", "-am", "feature side")
+    conflict = subprocess.run(["git", "-C", str(repo), "rebase", "master"], capture_output=True, check=False)
+    assert conflict.returncode != 0, "the rebase should stop on its conflict"
+    assert _git(repo, "branch", "--show-current") == ""
+
+    recorder.record(ANSWERED["a-followed"][0], repo, {})
+
+    assert not (repo / "sdd" / "decisions" / ".pending").exists()
+    (line,) = _lines(repo)
+    assert line["branch"] is None
 
 
 def test_remote_session_id_recorded_when_set(recorder: Any, repo: Path) -> None:
@@ -281,12 +310,11 @@ def test_remote_session_id_recorded_when_set(recorder: Any, repo: Path) -> None:
 
 
 def test_outside_a_git_repo_records_null_git_fields(recorder: Any, tmp_path: Path) -> None:
+    """A failed git call is not a detached HEAD, so the event is logged, not held (PR #1175 review)."""
     recorder.record(ANSWERED["a-followed"][0], tmp_path, {})
 
-    (line,) = [
-        json.loads(x)
-        for x in (tmp_path / "sdd" / "decisions" / f"{SESSION}.jsonl").read_text(encoding="utf-8").splitlines()
-    ]
+    assert not (tmp_path / "sdd" / "decisions" / ".pending").exists()
+    (line,) = _lines(tmp_path)
     assert line["branch"] is None
     assert line["head"] is None
 
@@ -323,6 +351,8 @@ def test_slow_git_degrades_to_null_fields_within_budget(
     killed there, the event would be lost instead of written with null git
     fields. The hang is injected by replacing the git command with a sleeper,
     so this pins the budget arithmetic, not any particular way git can hang.
+    A branch git could not read may be a work branch, so the event is logged,
+    not held (PR #1175 review).
     """
     monkeypatch.setattr(recorder, "_GIT_CMD", [sys.executable, "-c", "import time; time.sleep(30)"])
     monkeypatch.setattr(recorder, "_GIT_BUDGET_S", 1.0)
@@ -331,6 +361,7 @@ def test_slow_git_degrades_to_null_fields_within_budget(
     recorder.record(ANSWERED["a-followed"][0], repo, {})
     elapsed = time.monotonic() - started
 
+    assert not (repo / "sdd" / "decisions" / ".pending").exists()
     (line,) = _lines(repo)
     assert (line["branch"], line["head"]) == (None, None)
     # Both calls together, not each: two sequential 1 s timeouts would take ~2 s.
@@ -367,6 +398,145 @@ def test_utf8_answer_round_trips(recorder: Any, repo: Path) -> None:
 
     (line,) = _lines(repo)
     assert line["tool_response"]["answers"][Q_A2] == SENTINEL
+
+
+# --- held and skipped records (BK-486) ---------------------------------------
+
+
+def _tagged(payload: dict[str, Any]) -> dict[str, Any]:
+    """*payload* with the housekeeping tag, where the probe saw it: Pre's tool_input only."""
+    return dict(payload, tool_input=dict(payload["tool_input"], metadata={"source": "housekeeping"}))
+
+
+@pytest.mark.parametrize("base", ["master", "main"])
+def test_base_branch_dialog_is_held_not_logged(base: str, recorder: Any, repo: Path) -> None:
+    """A question on the base branch may be a post-cleanup chore, so nothing commits it yet."""
+    _git(repo, "checkout", "-q", "-b", base)
+    pre, post = ANSWERED["a-followed"]
+    recorder.record(pre, repo, {})
+    path = recorder.record(post, repo, {})
+
+    assert path == repo / "sdd" / "decisions" / ".pending" / f"{SESSION}.jsonl"
+    assert [(line["event"], line["branch"]) for line in _held(repo)] == [("asked", base), ("answered", base)]
+    assert not (repo / "sdd" / "decisions" / f"{SESSION}.jsonl").exists()
+
+
+def test_work_branch_dialog_leaves_held_records_held(recorder: Any, repo: Path) -> None:
+    """Only the session's own commit promotes (PR #1175 review). The branch is read
+    from the project directory's checkout, which another session may have switched:
+    a dialog there must not move this session's held chores into a log that
+    session's commit stages."""
+    _git(repo, "checkout", "-q", "-b", "master")
+    pre_a, post_a = ANSWERED["a-followed"]
+    recorder.record(pre_a, repo, {})
+    recorder.record(post_a, repo, {})
+    _git(repo, "checkout", "-q", "feature")  # another session's switch, in a shared checkout
+    pre_b, _ = ANSWERED["b-other"]
+    recorder.record(pre_b, repo, {})
+
+    assert [(line["tool_use_id"], line["branch"]) for line in _lines(repo)] == [(pre_b["tool_use_id"], "feature")]
+    assert [line["branch"] for line in _held(repo)] == ["master", "master"]
+
+
+def test_promotion_marker_binds_moved_lines_to_the_work_branch(recorder: Any, repo: Path) -> None:
+    """D4.0 binds a base-branch line to the next work branch the session records an
+    event on; a commit-time promotion records no dialog, so the marker is that event."""
+    _git(repo, "checkout", "-q", "-b", "master")
+    recorder.record(ANSWERED["a-followed"][0], repo, {})
+    _git(repo, "checkout", "-q", "feature")
+    head = _git(repo, "rev-parse", "HEAD")
+
+    assert recorder.promote(repo, SESSION) == 1
+
+    held, marker = _lines(repo)
+    assert held["branch"] == "master"
+    assert {k: marker[k] for k in ("event", "session_id", "branch", "head")} == {
+        "event": "promoted",
+        "session_id": SESSION,
+        "branch": "feature",
+        "head": head,
+    }
+    assert marker["ts"] >= held["ts"]
+    assert "tool_use_id" not in marker
+
+
+def test_promoted_lines_follow_lines_logged_since_they_were_held(recorder: Any, repo: Path) -> None:
+    """The log is in append order, not ``ts`` order, once promotion runs, and D4.0
+    reads "next" in that order (PR #1175 review): a line held on master, then a
+    dialog on A, then a commit on B binds the held line to B, where it ships."""
+    _git(repo, "checkout", "-q", "-b", "master")
+    pre_held, _ = ANSWERED["a-followed"]
+    recorder.record(pre_held, repo, {})
+    _git(repo, "checkout", "-q", "feature")
+    pre_a, _ = ANSWERED["b-other"]
+    recorder.record(pre_a, repo, {})
+    _git(repo, "checkout", "-q", "-b", "feature-b")
+
+    recorder.promote(repo, SESSION)
+
+    assert [(line.get("tool_use_id"), line["branch"]) for line in _lines(repo)] == [
+        (pre_a["tool_use_id"], "feature"),
+        (pre_held["tool_use_id"], "master"),
+        (None, "feature-b"),
+    ]
+
+
+def test_promote_with_nothing_held_is_a_noop(recorder: Any, repo: Path) -> None:
+    assert recorder.promote(repo, SESSION) == 0
+    assert not (repo / "sdd" / "decisions").exists()
+
+
+def test_promote_leaves_other_sessions_held_records(recorder: Any, repo: Path) -> None:
+    """The main checkout is shared: one session's commit must not ship another's chores."""
+    other = "0f0f0f0f-0000-4000-8000-000000000000"
+    _git(repo, "checkout", "-q", "-b", "master")
+    recorder.record(ANSWERED["a-followed"][0], repo, {})
+    recorder.record(dict(ANSWERED["b-other"][0], session_id=other), repo, {})
+
+    assert recorder.promote(repo, SESSION) == 1
+    assert [(line["session_id"], line["event"]) for line in _lines(repo)] == [(SESSION, "asked"), (SESSION, "promoted")]
+    assert [line["session_id"] for line in _held(repo, other)] == [other]
+
+
+def test_housekeeping_dialog_is_skipped_on_both_events(recorder: Any, repo: Path) -> None:
+    """The tag reaches Pre only (BK-486 probe), so Post is skipped by its tool_use_id."""
+    pre_a, post_a = ANSWERED["a-followed"]
+    pre_b, post_b = ANSWERED["b-other"]
+    assert recorder.record(_tagged(pre_a), repo, {}) is None
+    assert recorder.record(post_a, repo, {}) is None
+    recorder.record(pre_b, repo, {})
+    recorder.record(post_b, repo, {})
+
+    assert [line["tool_use_id"] for line in _lines(repo)] == [pre_b["tool_use_id"]] * 2
+
+
+def test_housekeeping_dialog_on_master_is_neither_held_nor_logged(recorder: Any, repo: Path) -> None:
+    _git(repo, "checkout", "-q", "-b", "master")
+    pre, post = ANSWERED["a-followed"]
+    recorder.record(_tagged(pre), repo, {})
+    recorder.record(post, repo, {})
+    _git(repo, "checkout", "-q", "feature")
+    assert recorder.promote(repo, SESSION) == 0
+
+    assert not (repo / "sdd" / "decisions" / f"{SESSION}.jsonl").exists()
+
+
+def test_other_metadata_sources_are_recorded(recorder: Any, repo: Path) -> None:
+    pre, _ = ANSWERED["a-followed"]
+    recorder.record(dict(pre, tool_input=dict(pre["tool_input"], metadata={"source": "remember"})), repo, {})
+
+    (line,) = _lines(repo)
+    assert line["tool_input"]["metadata"] == {"source": "remember"}
+
+
+def test_held_dir_is_gitignored() -> None:
+    """Ask git, not a hand matcher: gate-commit's `git add -- sdd/decisions` must skip it."""
+    result = subprocess.run(
+        ["git", "-C", str(ROOT), "check-ignore", "-q", f"sdd/decisions/.pending/{SESSION}.jsonl"],
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0
 
 
 # --- main(): the process boundary --------------------------------------------
@@ -474,10 +644,47 @@ def test_wrapper_runs_the_recorder(repo: Path) -> None:
 # --- gate-commit.sh staging (D2) ---------------------------------------------
 
 
-def _run_gate_commit(repo: Path) -> subprocess.CompletedProcess[str]:
+def _run_gate_commit(repo: Path, payload: str = "{}") -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [BASH, GATE_COMMIT.as_posix()], cwd=repo, input="{}", capture_output=True, text=True, check=False
+        [BASH, GATE_COMMIT.as_posix()], cwd=repo, input=payload, capture_output=True, text=True, check=False
     )
+
+
+def _commit_payload(session: str = SESSION) -> str:
+    """The Bash PreToolUse payload gate-commit.sh receives, cut to what it reads."""
+    return json.dumps({"session_id": session, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}})
+
+
+def _hold_on_master(recorder: Any, repo: Path, *sessions: str) -> None:
+    _git(repo, "checkout", "-q", "-b", "master")
+    for session in sessions or (SESSION,):
+        recorder.record(dict(ANSWERED["a-followed"][0], session_id=session), repo, {})
+
+
+def test_gate_commit_promotes_the_committing_sessions_held_records(recorder: Any, repo: Path) -> None:
+    """Design on master, branch, commit, no further dialog: the commit is what promotes."""
+    other = "0f0f0f0f-0000-4000-8000-000000000000"
+    _hold_on_master(recorder, repo, SESSION, other)
+    _git(repo, "checkout", "-q", "feature")
+
+    result = _run_gate_commit(repo, _commit_payload())
+
+    assert result.returncode == 0, result.stderr
+    assert [(line["event"], line["branch"]) for line in _lines(repo)] == [("asked", "master"), ("promoted", "feature")]
+    assert _git(repo, "diff", "--cached", "--name-only") == f"sdd/decisions/{SESSION}.jsonl"
+    assert not (repo / "sdd" / "decisions" / ".pending" / f"{SESSION}.jsonl").exists()
+    assert [line["session_id"] for line in _held(repo, other)] == [other]
+
+
+def test_gate_commit_on_detached_head_does_not_promote(recorder: Any, repo: Path) -> None:
+    _hold_on_master(recorder, repo)
+    _git(repo, "checkout", "-q", "--detach")
+
+    result = _run_gate_commit(repo, _commit_payload())
+
+    assert result.returncode == 0
+    assert len(_held(repo)) == 1
+    assert not (repo / "sdd" / "decisions" / f"{SESSION}.jsonl").exists()
 
 
 def test_gate_commit_stages_the_decision_log(repo: Path) -> None:

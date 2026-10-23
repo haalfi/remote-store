@@ -1,6 +1,9 @@
 # Temporary scratch files (Claude + manual)
 tmp/
 
+# Decision-log records held off the base branch until a work branch (RFC-0018 D2)
+sdd/decisions/.pending/
+
 # IDEs & tools
 .venv/
 .vscode/
