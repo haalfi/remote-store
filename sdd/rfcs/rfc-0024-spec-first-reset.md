@@ -58,7 +58,7 @@ row of the same number.
 | D5 | The `read()` slice is the first flow, end to end; key, error, lifecycle and consistency layers grow from what `read()` needs. | § 9 step 5 |
 | D6 | A spec defines abstract axes. Beside it, one profile table per axis records Memory, Local, S3 and SFTP, each cell citing a dated probe or a vendor document. | every flow |
 | D7 | A spec 001 to 050 gets a header marking it as 0.33 behaviour being superseded only when a new spec replaces sections of it. The new spec names each section it supersedes. A file left with no live section is deleted, and the ground register (D11) maps its old IDs to the new. | the flow that supersedes |
-| D8 | After the decisions, a separate pass compares a flow's spec with 0.33. The conformance suite is the evidence of what 0.33 does; a difference becomes a break record or a 0.33 defect, and the pass never changes a decision. No test cell is removed until a new one replaces it. | step 4 of each flow |
+| D8 | After the decisions, a separate pass compares a flow's spec with 0.33. The conformance suite on `release/0.33.x` is the evidence of what 0.33 does, not master's, which carries changes made after the tag (§ R2); a difference becomes a break record or a 0.33 defect, and the pass never changes a decision. No test cell is removed until a new one replaces it. | step 4 of each flow |
 | D9 | One 1.0.0 cut. Master publishes nothing until v1 is implemented; every release before it is a 0.33 patch from `release/0.33.x`. | § R2; [`CONTRIBUTING.md` § Release](../../CONTRIBUTING.md#release) |
 | D10 | **OPEN**, postponed by the maintainer: when kernel and driver work resumes. It is decided with the `read()` flow's evidence in hand ([research § 9](../research/research-spec-first-reset.md#9-results-and-recommendation), Not yet). Until then § R2's pause holds. | an RFC amending this one |
 | D11 | One file, the ground register, lists every ground artifact, the flow that admitted it and its status (`active` or `reopened`). The design tool's hook reads its allowlist from it. | § 9 step 3 creates it |
@@ -83,7 +83,11 @@ patch or no bump: bug fixes, patch-eligible floor raises, CI, docs and
 metadata. A change rated minor is refused there.
 
 **Master first.** A 0.33 fix merges to master and is cherry-picked to the
-branch, so master's conformance suite stays the one record of 0.33 (D8). Where
+branch, so that it ships in 1.0.0 as well; merging it forward from the branch
+would meet a master that has diverged since the tag. **The branch's suite, not
+master's, is the 0.33 record D8 reads:** master's carries the changes made after
+v0.33.0, the breaks among them listed in the migration guide's
+`## v0.33.0 to v1.0.0` section, and runs Memory on the kernel. Where
 the fixed code exists only on one line, the fix is ported rather than
 cherry-picked: Memory's code is hand-written at the tag and on the kernel on
 master. A fix that would break a caller, which the bump table rates minor,
@@ -155,8 +159,12 @@ by one; whoever works one classifies it by the table above first.
 
 **A spec in the ground binds code only once the flow implementing it begins.**
 Until then, a difference between it and 0.33 is a break record or a 0.33
-defect (D8), not a defect in either the code or the spec. This sentence is
-added to [`000-process.md` Rule 3](../000-process.md#rules). Rule 5's "not
+defect (D8), not a defect in either the code or the spec. **A ground clause
+that a binding spec incorporates by reference binds through that reference**,
+as far as that spec binds: spec 053's BE-032 states the store tree as spec
+051's TREE clauses, so a kernel or Memory answer contradicting one of them is
+a K defect. Both sentences are added to
+[`000-process.md` Rule 3](../000-process.md#rules). Rule 5's "not
 removed" gains D7's one exception: a file D7 deletes maps its IDs to their
 successors in the ground register. No ID changes meaning.
 
@@ -169,8 +177,11 @@ that RFC.
 
 ### R5. Break records (open point 9)
 
-**One register, `sdd/v1-breaks.md`, holds every break; the first comparison
-pass creates it.** A row per break:
+**One register, `sdd/v1-breaks.md`, holds every break that is decided and not
+yet implemented; the first comparison pass creates it.** An implemented break's
+record is the migration guide's `## v0.33.0 to v1.0.0` section, which already
+holds the breaks master made after v0.33.0 and takes a breaking K fix (§ R2)
+directly. A row per break:
 
 | Field | Holds |
 |---|---|
@@ -190,7 +201,8 @@ CHANGELOG entry under the existing rule
 migration-guide line), and sets the row's Status and Guide. The guide is
 published from master on every push (`docs.yml` `deploy-dev`), so a break
 written into it before its code would describe behaviour no version has.
-Before the 1.0.0 cut, every row is `implemented` or `withdrawn`.
+Before the 1.0.0 cut, every row is `implemented` or `withdrawn`, and the guide's
+section is then the whole list of breaks the cut ships.
 
 ## Alternatives Considered
 
@@ -200,9 +212,15 @@ session, all decided in the log above:
 - **Scope:** an RFC that edits only BK-485, leaving every D3 item's due date
   contradicting the pause until a later sweep; or a sweep of every open item,
   for a much larger PR whose U-class edits change nothing.
-- **Fix flow:** fixes on the branch first and merged forward, so master's
-  suite trails the 0.33 line between merges; or a fixable kernel during the
-  pause, which is the production kernel code D3 rules out.
+- **Fix flow:** fixes on the branch first and merged forward into a master
+  that has diverged since the tag; or a fixable kernel during the pause, which
+  is the production kernel code D3 rules out.
+- **The 0.33 record (fix pass, PR #1177):** the v0.33.0 tag's suite, from which
+  every patch fix must be subtracted by hand; or master's suite less the
+  migration guide's deltas, which list caller-visible breaks rather than every
+  changed cell.
+- **Spec 051 under Rule 3 (fix pass):** exempted by name, which leaves the next
+  ground spec an old spec cites undecided.
 - **A 0.33 defect also in the kernel:** fixed on the branch only, against the
   master-first rule; or fixed nowhere, so the 0.33 line ships it.
 - **Fixes only:** bug and security fixes alone, freezing the 0.33 line's
@@ -212,9 +230,11 @@ session, all decided in the log above:
   ADR beside this RFC for D1, D7, D8 and D9. The pause amends RFC-0017's D3,
   which ADR-0042 left to the RFC as process, so no ADR is amended.
 - **Break records:** each flow's research doc lists its own breaks and the
-  guide is written from all of them at the cut, which leaves no list to check
-  the cut against; or the guide grows as breaks are decided, publishing
-  behaviour no version has.
+  guide is written from all of them at the cut, which leaves no list of
+  decided breaks to check the cut against; or the guide grows as breaks are
+  decided, publishing behaviour no version has. In the fix pass: a register of
+  every break, backfilled with master's existing ones, which would give an
+  implemented break two homes.
 - **Authority:** amending CLAUDE.md principle 5 as well, at a recorded
   process-budget raise; or leaving Rule 3 for step 3, so that until then this
   RFC and Rule 3 disagree on paper.
@@ -236,8 +256,8 @@ session, all decided in the log above:
   (`rg --no-ignore --hidden -e 'code is wrong' -e 'spec is source of truth'
   CLAUDE.md .claude/ sdd/`): `CLAUDE.md` principle 5 and
   `.claude/agents/store-backend-expert.md`'s CONSTRAINTS. Both are left as they
-  are to spare a process-budget raise. They are wrong only for a spec in the
-  ground, and today spec 051 is the only one.
+  are to spare a process-budget raise. They are wrong only for a ground clause no
+  binding spec incorporates, and today spec 051 is the only ground spec.
 - **Testing:** none now. D8 keeps every conformance cell until a v1 cell
   replaces it.
 

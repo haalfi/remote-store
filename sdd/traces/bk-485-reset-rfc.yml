@@ -20,6 +20,8 @@ surprising_ripples:
   - docs-src/reference/migration.md
   - CHANGELOG.md
   - sdd/BACKLOG-DONE.md
+  - sdd/CLAUDE-REFERENCE.md
+  - sdd/process-budget.json
 orient:
   - items: [BK-450, BK-455, BK-451, BK-452, BK-439, BK-438, BK-446, BK-345, ID-244, BK-434]
     verdict: constrains

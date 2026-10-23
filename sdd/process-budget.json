@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 301041,
+  "total": 301351,
   "files": {
     "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2105,
@@ -31,7 +31,7 @@
     ".claude/agents/sdd-expert.md": 1799,
     ".claude/agents/store-backend-expert.md": 1903,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64798,
+    "sdd/CLAUDE-REFERENCE.md": 65108,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [
@@ -106,6 +106,12 @@
       "from": 301112,
       "to": 301224,
       "reason": "rvw-pr content-rules check points to CONTENT-RULES last pass"
+    },
+    {
+      "item": "BK-485",
+      "from": 301041,
+      "to": 301351,
+      "reason": "RFC-0024 D9: the ripple-check Breaking change row (both presentations) names v0.33.0 to v1.0.0 as a master break's pair until the 1.0.0 cut (PR 1177 review)"
     }
   ]
 }

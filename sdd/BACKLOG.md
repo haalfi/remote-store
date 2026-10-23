@@ -238,7 +238,7 @@ failure it was.
   `sqlalchemy.exc.NoSuchTableError` from reflection, where every other
   constructor rejects bad configuration with `ValueError`; refusing is right,
   the type is wrong. Open decision: whether BE-021's mapping covers
-  construction (RFC-0017 Open Question 5, deferred to D3 step 3, which RFC-0024 paused).
+  construction, decided here (RFC-0017 Open Question 5's deferral to D3 step 3 is paused by RFC-0024).
   Detail: [dossier](backlog/bug-245-sqlblob-no-such-table.md)
 
 - [ ] **BUG-253 — `GraphBackend.write` answers a file-ancestor path differently by payload size**
@@ -288,8 +288,8 @@ failure it was.
   `write("a/../b.txt", b"x")` and `write_atomic("a/../c.txt", b"x")` raise
   `InvalidPath`, yet the file exists afterwards (both measured at master
   `9caef6b`, BK-389's planning PR): `_resolve` accepts an in-root `..`, and the
-  refusal comes after the write. Open decision: refuse before writing in both
-  here, or wait for RFC-0017 step 5's kernel key rule, paused by RFC-0024.
+  refusal comes after the write. Open decision: none; refuse before writing in
+  both (the kernel key rule's route, RFC-0017 step 5, is paused by RFC-0024).
 
 - [ ] **BUG-292 — The file-ancestor gate fails open on every `SQLAlchemyError`, so it degrades to a no-op without a signal**
   spec: BE-008, BE-032, SQL-BLOB-031 · effort: M · audience: user.api, library.maintainer
@@ -311,8 +311,8 @@ failure it was.
 - [ ] **BUG-300 — `SQLBlobBackend.write("\\")` stores the row, then raises `InvalidPath`**
   spec: BE-008, WR-001 · effort: S · audience: user.api
   A direct `write("\\")` stores the row, raises, and `exists("\\")` is then
-  `True` (master `57d0797`); `Store` refuses first. BK-389's kernel refusal fixes it at D3
-  step 3, paused by RFC-0024. Open decision: refuse before storing here, or wait for D10.
+  `True` (master `57d0797`); `Store` refuses first. The kernel route (BK-389's refusal at D3
+  step 3) is paused by RFC-0024. Open decision: none; refuse before storing in `SQLBlobBackend`.
   - **(was BUG-297, absorbed here)** Its SQLBlob half; the Memory half
     shipped with BK-394. Evidence: BK-395's dossier.
 
