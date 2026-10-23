@@ -546,6 +546,13 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 <a id="release"></a>
 ## Release
 
+**Until 1.0.0, master releases nothing.** Its changes ship together as 1.0.0,
+and every release before that is a 0.33 patch from `release/0.33.x`, which
+takes only what [§ When to bump](#when-to-bump) rates patch or no bump. Each
+fix merges to master first and reaches the branch as a cherry-pick, or as a
+port where the code differs. The phases below are written for a release from master. A patch from the branch
+has no checklist yet, and none is cut before it has one.
+
 ### Phase 0: Pre-flight
 
 - [ ] Master is clean: `git status` shows no uncommitted changes

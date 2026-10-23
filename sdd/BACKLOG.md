@@ -238,7 +238,7 @@ failure it was.
   `sqlalchemy.exc.NoSuchTableError` from reflection, where every other
   constructor rejects bad configuration with `ValueError`; refusing is right,
   the type is wrong. Open decision: whether BE-021's mapping covers
-  construction (RFC-0017 Open Question 5, deferred to D3 step 3; BK-389 dossier).
+  construction (RFC-0017 Open Question 5, deferred to D3 step 3, which RFC-0024 paused).
   Detail: [dossier](backlog/bug-245-sqlblob-no-such-table.md)
 
 - [ ] **BUG-253 — `GraphBackend.write` answers a file-ancestor path differently by payload size**
@@ -272,7 +272,7 @@ failure it was.
   `PermissionError` from `get_file_info`, `exists`, `is_file`, and BUG-318's
   `glob` and `get_folder_info`. A looping-symlink key raises `RuntimeError` from
   `_resolve`, shared by the keyed operations (measured on `list_files`, `exists`:
-  3.11; not 3.14). Open decision: map it here, or leave it to RFC-0017's kernel (D3 step 5).
+  3.11; not 3.14). Open decision: the mapping; RFC-0024 paused the kernel alternative (D3 step 5).
   Detail: [dossier](backlog/bug-319-local-single-path-stat-leaks.md)
 
 - [ ] **BUG-334 — `LocalBackend.write` of a name Windows refuses leaks a raw `OSError`**
@@ -281,7 +281,7 @@ failure it was.
   from `write_bytes` (CI `test-cross-platform (windows-latest)`, PR #1154, run
   39010222112, Python 3.13.16); `write` maps only directory and permission
   errors. Other Windows-invalid names (`:`, `?`, `<`) and `write_atomic`, `move`
-  and `copy` are unmeasured. Open decision: `InvalidPath` here, or at D3 step 5.
+  and `copy` are unmeasured. Open decision: `InvalidPath` or another type; D3 step 5 is paused (RFC-0024).
 
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
   spec: BE-008, BE-010 · effort: S · audience: user.api
@@ -289,7 +289,7 @@ failure it was.
   `InvalidPath`, yet the file exists afterwards (both measured at master
   `9caef6b`, BK-389's planning PR): `_resolve` accepts an in-root `..`, and the
   refusal comes after the write. Open decision: refuse before writing in both
-  here, or leave it to RFC-0017 step 5's kernel key rule.
+  here, or wait for RFC-0017 step 5's kernel key rule, paused by RFC-0024.
 
 - [ ] **BUG-292 — The file-ancestor gate fails open on every `SQLAlchemyError`, so it degrades to a no-op without a signal**
   spec: BE-008, BE-032, SQL-BLOB-031 · effort: M · audience: user.api, library.maintainer
@@ -305,14 +305,14 @@ failure it was.
   BE-032 A.5 makes `glob` a folder-read over its literal prefix, but the
   kernel's flat `glob` neither `stat`s that prefix (A.3) nor omits a match below
   a matched item: a driver's glob iterator owes no byte order to track it with.
-  Due before the first flat driver with `GLOB` moves onto the kernel. Open
+  Due before the first flat driver with `GLOB` moves onto the kernel: paused (RFC-0024). Open
   decision: an ordering obligation for `glob`, or a buffered omission.
 
 - [ ] **BUG-300 — `SQLBlobBackend.write("\\")` stores the row, then raises `InvalidPath`**
   spec: BE-008, WR-001 · effort: S · audience: user.api
   A direct `write("\\")` stores the row, raises, and `exists("\\")` is then
-  `True` (master `57d0797`); `Store` refuses first. Fixed by BK-389's kernel
-  refusal when SQLBlob migrates at RFC-0017 D3 step 3. Open decision: none.
+  `True` (master `57d0797`); `Store` refuses first. BK-389's kernel refusal fixes it at D3
+  step 3, paused by RFC-0024. Open decision: refuse before storing here, or wait for D10.
   - **(was BUG-297, absorbed here)** Its SQLBlob half; the Memory half
     shipped with BK-394. Evidence: BK-395's dossier.
 
@@ -321,7 +321,7 @@ failure it was.
   BE-021's absent-container rule is verified only by per-backend suites, so a
   new backend that can delete passes CI without meeting it, as `GraphBackend`
   did until BUG-248. Its kernel half landed in BK-389; what stays here is the
-  gate, as per-driver `container_absent` cells from D3 step 2. Open decision:
+  gate, as per-driver `container_absent` cells from D3 step 2: paused (RFC-0024). Open decision:
   none of its own; depends on ID-244 (§ 2) for the seeding hook.
   Detail: [dossier](backlog/bk-345-absent-container-conformance.md)
 
@@ -330,8 +330,8 @@ failure it was.
   RFC-0017 § Impact lists amendments to specs 006, 008, 009, 026, 036, 044,
   the later drivers' half of 007 and 022, and the per-backend specs, each true only
   once a later D3 step lands (s3fs clauses at step 2, SFTP-010 at step 6).
-  Remainder of BK-387. Open decision: none; each lands in its step's PR, and
-  the dossier maps amendment to step.
+  Remainder of BK-387. Paused with D3 (RFC-0024). Open decision: none; each lands
+  in its step's PR, and the dossier maps amendment to step.
   Detail: [dossier](backlog/bk-390-rfc-0017-spec-amendments.md)
 
 ---
@@ -342,12 +342,20 @@ failure it was.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
+- [ ] **BUG-341 — A returned `FileInfo.metadata` is the stored file's own dict, and `copy` shares it**
+  spec: BE-019 · effort: S · audience: user.api
+  On `Store(MemoryBackend())`, setting a key on `get_file_info("a.txt").metadata` changes the
+  stored file's, and after `copy` to `b.txt` mutating `b.txt`'s changes `a.txt`'s (v0.33.0 and
+  master `74538f0`, 2026-10-23), against `FileInfo`'s immutable snapshot. Audit-023 T1 found it,
+  and the write side, on the kernel; v0.33.0's `_memory.py` has five such sites (`git grep -c
+  "metadata=[a-z_]*\.metadata" v0.33.0`). Open decision: none; copy at each, on both lines.
+
 - [ ] **BK-450 — The driver boundary has no single enforcement point, so each kernel site re-checks a driver by hand**
   spec: BE-021, BE-027, BE-030, BE-032, BE-033, CAP-007 · effort: L · audience: user.api, library.maintainer
-  The kernel takes driver records, streams and declarations at scattered sites: metadata handed
-  out live (audit-023 T1, a defect today), keys and declarations unchecked (T2, T9, T10), one
-  stream fault mapped three ways (T4, T5), flags meaning different things per runtime (T6),
-  checks owned by both `Store` and kernel (P6). Due before D3 step 2, after BK-449. Open
+  The kernel takes driver records, streams and declarations at scattered sites: keys and
+  declarations unchecked (audit-023 T2, T9, T10), one stream fault mapped three ways (T4, T5),
+  flags meaning different things per runtime (T6), checks owned by both `Store` and kernel (P6);
+  T1 left as BUG-341. Due before D3 step 2, after BK-449: paused (RFC-0024). Open
   decision: the mechanisms, and each item's owner (kernel, driver or `Session`).
   Detail: [dossier](backlog/bk-450-driver-boundary-enforcement.md)
 
@@ -356,7 +364,7 @@ no clause of the contract ships unexercised.
   BE-033 names the `Session`'s exits (`invalidate` closes the client at once, a cancel never
   invalidates, `unwrap` goes through `run`, a `close` racing in-flight calls), but no
   `Session` exists, so none of them has states or a cell. Due at RFC-0017 D3
-  step 2, with the first remote driver, after BK-450. Open decision: the state set, and
+  step 2, with the first remote driver, after BK-450: paused (RFC-0024). Open decision: the state set, and
   whether the close/run race gets a TLA+ model beside `sdd/formal/tla/` or cells only.
 
 - [ ] **BK-454 — A refusal surfaces at the call in one layer and at the first iteration in another**
@@ -364,7 +372,8 @@ no clause of the contract ships unexercised.
   BE-033's rule puts pure refusals at the call and a stream's I/O refusal at open, through a
   read handle (`with`/`async with store.read(...)`); the timing measured in the dossier has four
   layers that meet it in no column alike. Moving sync listing refusals to the call changes
-  behaviour. Open decision: the handle's shape, and whether bare `async for` stays lazy.
+  behaviour. Re-scoped by RFC-0024: candidate R-2 of `read()`'s flow. Open decision: the
+  handle's shape, and whether bare `async for` stays lazy.
   Detail: [dossier](backlog/bk-454-refusal-timing-read-handle.md)
 
 - [ ] **BK-460 — A lifetime's state diagram has no check against its TLA+ module, so no lifetime can take its spec form**
@@ -403,8 +412,9 @@ no clause of the contract ships unexercised.
   spec: GLOB-007, GLOB-011, GLOB-014, BE-032 · effort: M · audience: user.api, library.maintainer
   BE-032 A.5 approximates `glob` as a folder read over its literal prefix, so the kernel's `glob`
   raises where listings answer empty (audit-023 T7), and the shared `pattern_to_regex` lets `**`
-  and classes cross `/` where native glob does not (T8). Due before RFC-0017 D3 step 2. Open
-  decision: the defining clause, then the dialect, `\` included. BK-439 overlaps.
+  and classes cross `/` where native glob does not (T8). Re-scoped by RFC-0024: decided in
+  `glob`'s flow, as candidate input. Open decision: the defining clause, then the dialect, `\`
+  included. BK-439 overlaps.
   Detail: [dossier](backlog/bk-451-glob-tree-definition.md)
 
 - [ ] **BK-446 — No driver exercises the kernel's `glob`, because `MemoryDriver` declares no `GLOB`**
@@ -412,15 +422,15 @@ no clause of the contract ships unexercised.
   The kernel's `glob` (pattern rule, choke points, listing bound) runs only
   against the fake driver in `tests/_kernel/`; Memory, the template later
   drivers copy, declares no `GLOB`, so `glob_files` takes the fallback.
-  Open decision: give both Memory drivers `SupportsGlob`, which needs another
-  non-`GLOB` fixture for the fallback cells, or leave it to SFTP or Graph's step.
+  Paused with D3 (RFC-0024). Open decision: give both Memory drivers `SupportsGlob`, which
+  needs another non-`GLOB` fixture for the fallback cells, or leave it to SFTP or Graph's step.
 
 - [ ] **BK-452 — The template is Memory alone: no flat reference driver, unpinned Memory clauses, a stale checklist**
   spec: BE-032, MEM-004, MEM-015, MEM-016, MEM-016b · effort: L · audience: library.maintainer, contributor.process
   Both Memory drivers are hierarchical, so flat decoding and BE-032 A.3/A.4 run only against the
   test fake (audit-023 P4); Memory's counter and mtime clauses are unpinned and two misstate
   overwrites (T18, T19); CONTRIBUTING sends new backends to the `Backend` ABC (T17). Flat driver
-  due before RFC-0017 D3 step 2, the rest before step 8. Open decision: the reference set's
+  due before RFC-0017 D3 step 2, the rest before step 8: paused (RFC-0024). Open decision: the reference set's
   members and the cells each runs. BK-446 overlaps.
   Detail: [dossier](backlog/bk-452-template-reference-set.md)
 
@@ -448,7 +458,7 @@ no clause of the contract ships unexercised.
   gated on `Capability.WRITE` and a read-only backend reaches none of them:
   `ReadOnlyHttpBackend` never runs SIO-009's laziness cells. Open decision:
   where a per-fixture seeding hook binds (fixture, helper, or capability-neutral
-  classes); BK-345 (§ 1) consumes it, due before the registry registers drivers.
+  classes); BK-345 (§ 1, paused by RFC-0024) consumes it.
   Detail: [dossier](backlog/id-244-write-gated-conformance-cells.md)
 
 - [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
@@ -558,13 +568,13 @@ no clause of the contract ships unexercised.
   spec between 051 and 004. Open decision: its § 10's deltas against specs 004, 005, 015, 051, 053.
   Shared: BK-483 (an Azure listing of a refused name), BK-436 (lookup under a coarser name equality).
 
-- [ ] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
+- [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
-  Specs 001 to 050 mix what a caller observes with how 0.33 achieves it, and RFC-0017's migration
-  steps build the kernel against them. `research-spec-first-reset.md` records the maintainer's
-  decisions for a spec-first reset (§ 2, § 4, § 6) and the order of the work (§ 9). Not done: every
-  step of § 9, from cutting `release/0.33.x` and pausing RFC-0017 to the format RFC. Open decision:
-  § 8's open points. After BK-484, which gives the `read()` flow its key spec.
+  Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. `research-spec-first-reset.md`
+  records the reset's decisions; RFC-0024 makes them binding and pauses RFC-0017 D3, and
+  `release/0.33.x` is cut (§ 9 steps 1 and 2). Not done: the branch's CI triggers, protection and patch
+  checklist (RFC-0024 Open Question 2); § 9 steps 3 to 6. Open decision: D10 and § 8's open points
+  2 to 4, 6 to 8 and 11. After BK-484, which gives the `read()` flow its key spec.
 
 - [ ] **BK-482 — Azure conformance runs on Azurite, which stores raw keys the HNS service rewrites**
   spec: BE-030, BE-032 · effort: M · audience: infra.test, library.maintainer
@@ -603,8 +613,8 @@ no clause of the contract ships unexercised.
   RFC-0021 Open question 1: on the kernel, BE-030's omission makes a foreign `a/` or `a//b` an
   empty folder `a`, which A.6 rules out; today's S3 backends differ per shape (a file named `""`,
   a phantom `a/a`, an unlistable root; its table). Open decision: how such keys decode (leaning: an
-  empty folder, if the service holds a prefix with no object behind it). Before any flat driver
-  (S3, Azure, SQLAlchemy) moves onto the kernel; after BK-394.
+  empty folder, if the service holds a prefix with no object behind it). Re-scoped by RFC-0024:
+  a profile-table question of the listing flows (D6), the leaning as candidate input.
 
 - [ ] **BK-443 — A backend missing from the fixture registry gets no conformance coverage, and no test notices**
   spec: — · effort: S · audience: infra.test
@@ -931,8 +941,8 @@ CHANGELOG the release body is built from — say what is actually true.
   PR #1159's rounds kept finding one section of spec 003 contradicting another. In stages:
   IDs, "yet" and status blocks out (done; coverage sentences remain, dossier); a split by kind
   as a pure move (done: lifetime clauses to spec 052, the kernel's to 053, IDs unchanged); a
-  prune per file against `SPEC-DESIGN.md`, after BK-465 and BK-466, planned by audit 024.
-  Open decision: the contradictions and profiles audit 024 § 2 and § 3 list, per file.
+  prune per file against `SPEC-DESIGN.md`, planned by audit 024, paused by RFC-0024 (D7
+  supersedes spec 003 rather than reworking it). Open decision: none while paused.
   Detail: [dossier](backlog/bk-456-split-spec-003.md)
 
 - [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**

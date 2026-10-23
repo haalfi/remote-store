@@ -18,6 +18,11 @@ posture and `SupportsRemoveFolder` to D1 and key validation to D2, and split ste
 whose `parents` is `"explicit"` or `"implicit"`, so the acceptance reader
 checks it with the rest.
 
+**D3 steps 2 to 8 are paused** by
+[RFC-0024 § R2](rfc-0024-spec-first-reset.md#r2-step-1-the-033-line-and-the-pause)
+(2026-10-23), and the retirements inside them and D8 step 4 with them, until
+that RFC's D10 is decided. Step 1 stands, with Memory on the kernel.
+
 **Date:** 2026-09-28. Every figure below is pinned to `8fa22d6` and is either
 quoted from audit-021 with its derivation, or names its command here. The tree
 moves on every merge: re-run rather than quote.
