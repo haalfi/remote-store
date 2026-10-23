@@ -157,7 +157,9 @@ def repo_on_master(tmp_path: Path) -> Path:
         pytest.param("gate-commit.sh", "git commit -m x", id="commit"),
         pytest.param("gate-push.sh", "git push -u origin x", id="push"),
         pytest.param("gate-commit.sh", 'git -C "$PWD" commit -m x', id="commit-after-git-option"),
+        pytest.param("gate-commit.sh", "git -C /abs/repo commit -m x", id="commit-after-git-C-path"),
         pytest.param("gate-push.sh", "git -c push.default=current push", id="push-after-git-option"),
+        pytest.param("gate-push.sh", "git -C /abs/repo push -u origin x", id="push-after-git-C-path"),
         pytest.param("gate-commit.sh", 'if true; then git commit -m "$X"; fi', id="commit-after-keyword"),
     ],
 )
@@ -176,3 +178,25 @@ def test_gate_ignores_another_command_on_master(hook: str, repo_on_master: Path)
 
     assert result.returncode == 0
     assert result.stderr == ""
+
+
+@pytest.mark.parametrize("hook", ["gate-commit.sh", "gate-push.sh"])
+def test_gate_is_wired_without_an_if_filter(hook: str) -> None:
+    """The gates filter themselves (above), so ``settings.json`` must not pre-filter them.
+
+    Measured (BK-486 follow-up): ``if: "Bash(git commit*)"`` is a prefix match, so
+    ``git -C <path> commit``, the form cloud sessions use, never ran the gate. The
+    commit skipped the master block and lint, and held decision records stayed
+    in ``sdd/decisions/.pending/`` unpromoted.
+    """
+    settings = json.loads((_HOOKS.parent / "settings.json").read_text(encoding="utf-8"))
+    handlers = [
+        handler
+        for entry in settings["hooks"]["PreToolUse"]
+        if entry.get("matcher") == "Bash"
+        for handler in entry["hooks"]
+        if hook in handler.get("command", "")
+    ]
+
+    assert len(handlers) == 1, f"expected one Bash PreToolUse handler for {hook}, found {len(handlers)}"
+    assert "if" not in handlers[0], f"{hook} is pre-filtered by if: {handlers[0]['if']!r}"

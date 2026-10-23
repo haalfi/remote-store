@@ -1,6 +1,7 @@
 #!/bin/bash
 # PreToolUse gate: block pushes to master + run typecheck (skipped for docs-only)
-# `if:` also fires on commands it cannot parse, so re-check (command-check.sh).
+# Wired without `if:`, whose prefix match misses `git -C <path> push`, so it
+# runs on every Bash call and filters itself (command-check.sh).
 HOOK_INPUT=$(cat)
 source "$(dirname "$0")/command-check.sh"
 command_mentions git push || exit 0

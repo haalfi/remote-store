@@ -30,12 +30,10 @@
           },
           {
             "type": "command",
-            "if": "Bash(git commit*)",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gate-commit.sh"
           },
           {
             "type": "command",
-            "if": "Bash(git push*)",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gate-push.sh"
           },
           {

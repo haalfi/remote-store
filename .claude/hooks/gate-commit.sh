@@ -2,7 +2,8 @@
 # PreToolUse gate: block commits on master + run lint (skipped for docs-only).
 # Also stages the decision log, so it travels with the work it explains
 # (RFC-0018 D2), after promoting the session's held records into it.
-# `if:` also fires on commands it cannot parse, so re-check (command-check.sh).
+# Wired without `if:`, whose prefix match misses `git -C <path> commit`, so it
+# runs on every Bash call and filters itself (command-check.sh).
 HOOK_INPUT=$(cat)
 source "$(dirname "$0")/command-check.sh"
 command_mentions git commit || exit 0

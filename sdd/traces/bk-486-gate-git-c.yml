@@ -1,0 +1,65 @@
+id: BK-486
+title: "The commit and push gates never fire on `git -C <path>`, so held decision records go unpromoted"
+trigger: >-
+  Right after #1175 merged, a cloud session (branch bk-485-observe) found its
+  scope and ground-set dialogs, asked on a detached HEAD, still in
+  sdd/decisions/.pending/ after its first branch commit, and promoted them by
+  hand (8cb3ddc). The maintainer asked whether #1175 caused it.
+source_items:
+  - BK-486
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - .claude/settings.json
+  - .claude/hooks/gate-commit.sh
+  - .claude/hooks/gate-push.sh
+  - .claude/hooks/command-check.sh
+  - tests/scripts/test_hook_command_check.py
+  - sdd/BACKLOG-DONE.md
+orient:
+  - items: [BK-486]
+    verdict: subsumes
+    evidence: >-
+      The maintainer chose to ship this under BK-486, done in #1175: the bypass
+      predates it, but #1175 made its cost silent (held records sit in an
+      ignored file instead of showing in git status).
+phases:
+  - id: analyze
+    name: Why the gate did not promote
+    steps:
+      - file: scripts/record_decision.py
+        section: "promote(), record()"
+        read_type: reference
+        extract: >-
+          Correct: a direct run (detached dialog, branch, gate-commit.sh) moves
+          the held lines and writes the promoted marker
+        outcome: ok
+      - file: sdd/decisions/fc3aafcd-c062-554a-b992-005842325602.jsonl
+        section: "origin/bk-485-observe, per commit"
+        read_type: reference
+        extract: >-
+          1325910, the first branch commit, staged neither the held lines nor
+          the Budget dialog logged on the branch itself, so the gate did not run
+          at all; every later log line came in a hand-made decision log commit
+        outcome: ok
+      - file: .claude/settings.json
+        section: "PreToolUse Bash"
+        read_type: reference
+        extract: >-
+          if: "Bash(git commit*)" is a prefix match. Measured in this session on
+          master: `git commit --dry-run` was blocked, `git -C <repo> commit
+          --dry-run` ran; the other session commits only in the -C form
+        outcome: ok
+      - file: .claude/hooks/command-check.sh
+        section: "command_mentions"
+        read_type: reference
+        extract: >-
+          Already matches `git -C ... commit`, so dropping if: is enough; its
+          header described if: as the primary filter
+        outcome: misleading
+discovery_followups: []
+surprising_ripples: []
+co_shipped_items: []
+decisions:
+  - sdd/decisions/613d97f0-94fd-5231-8d1b-954f25e6bb16.jsonl
