@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 301250,
+  "total": 304767,
   "files": {
     "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2534,
@@ -16,14 +16,15 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
+    ".claude/skills/observe/SKILL.md": 3517,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
+    ".claude/skills/rvw-pr/SKILL.md": 23363,
     ".claude/skills/rvw-pr/measuring.md": 5482,
     ".claude/skills/rvw-pr/posting-gh.md": 2464,
     ".claude/skills/rvw-pr/posting.md": 2352,
-    ".claude/skills/rvw-pr/SKILL.md": 23363,
     ".claude/skills/ship/SKILL.md": 54247,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
@@ -112,6 +113,12 @@
       "from": 300668,
       "to": 301250,
       "reason": "interview.md tells housekeeping questions to carry their metadata tag, with three examples (+429); CLAUDE-REFERENCE Record row points to the skip and the held base-branch dialogs (+98); _schema.yml decisions says a promoted line is read silently (+55)"
+    },
+    {
+      "item": "BK-485",
+      "from": 301250,
+      "to": 304767,
+      "reason": "New /observe skill (research \u00a7 9 step 3), read only in /observe design sessions after its own Rule 7 pass; its axes (sdd/observe-axes.md) and ground register stay outside the budgeted set"
     }
   ]
 }

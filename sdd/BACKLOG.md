@@ -570,11 +570,11 @@ no clause of the contract ships unexercised.
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
-  Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. `research-spec-first-reset.md`
-  records the reset's decisions; RFC-0024 makes them binding and pauses RFC-0017 D3, and
-  `release/0.33.x` is cut (§ 9 steps 1 and 2). Not done: the branch's CI triggers, protection and patch
-  checklist (RFC-0024 Open Question 2); § 9 steps 3 to 6. Open decision: D10 and § 8's open points
-  2 to 4, 6 to 8 and 11. After BK-484, which gives the `read()` flow its key spec.
+  Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset
+  (§ 9 steps 1, 2); step 3 built `/observe`, its hook, `ground-register.md` and `observe-axes.md`.
+  Not done: the branch's CI triggers, protection and patch checklist (RFC-0024 Open Question 2);
+  `/observe`'s first live run; § 9 steps 4 to 6. Open decision: D10 and § 8's open points 2 to 4, 8
+  and 11. After BK-484, which gives the `read()` flow its key spec.
 
 - [ ] **BK-482 — Azure conformance runs on Azurite, which stores raw keys the HNS service rewrites**
   spec: BE-030, BE-032 · effort: M · audience: infra.test, library.maintainer
