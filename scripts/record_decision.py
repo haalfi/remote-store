@@ -10,7 +10,7 @@ One line per event::
 
     {"event": "asked" | "answered", "ts": "<UTC ISO-8601>Z",
      "session_id": ..., "tool_use_id": ...,
-     "branch": <name, or null when detached>, "head": <sha or null>,
+     "branch": <name, or null when detached or unread>, "head": <sha or null>,
      "remote_session_id": ...,          # only when CLAUDE_CODE_REMOTE_SESSION_ID is set
      "tool_input": {...},               # verbatim
      "tool_response": {...}}            # verbatim, answered only
@@ -20,11 +20,13 @@ amends them). One tagged ``metadata.source: "housekeeping"`` is not recorded:
 the tag reaches ``PreToolUse`` only, so its ``tool_use_id`` is kept in
 ``sdd/decisions/.pending/<session_id>.skip`` to drop the ``answered`` event too.
 One asked on the base branch or a detached HEAD is held in the gitignored
-``sdd/decisions/.pending/<session_id>.jsonl`` and moved into the log, in order,
+``sdd/decisions/.pending/<session_id>.jsonl`` (one whose branch git could not
+read is logged, since it may be a work branch) and moved into the log, in order,
 only by ``promote()``, which ``gate-commit.sh`` runs with ``--promote`` before
 that same session commits on a work branch. One
 ``{"event": "promoted", "ts", "session_id", "branch", "head"}`` line follows
-them, naming the work branch, which binds them there under D4.0. A dialog never
+them, naming the work branch, which binds them there under D4.0, read in the
+log's line order: the moved lines land after any the session logged since. A dialog never
 promotes: the branch it reads is the project directory's, which another session
 may have switched. So a question held after a session's cleanup reaches a
 commit only if that session later commits on a work branch, untagged.
@@ -74,6 +76,7 @@ _GIT_BUDGET_S = 4.0
 
 
 def _git(root: Path, deadline: float, *args: str) -> str | None:
+    """*args*' stripped output, possibly empty; None when git failed or ran out of budget."""
     remaining = deadline - time.monotonic()
     if remaining <= 0:
         return None
@@ -87,8 +90,7 @@ def _git(root: Path, deadline: float, *args: str) -> str | None:
         )
     except (OSError, subprocess.SubprocessError):
         return None
-    out = result.stdout.strip()
-    return out if result.returncode == 0 and out else None
+    return result.stdout.strip() if result.returncode == 0 else None
 
 
 def _safe_session(payload: Mapping[str, Any]) -> str:
@@ -138,8 +140,8 @@ def promote(root: Path, session_id: str) -> int:
     if not held.is_file():
         return 0
     deadline = time.monotonic() + _GIT_BUDGET_S
-    branch = _git(root, deadline, "branch", "--show-current")
-    head = _git(root, deadline, "rev-parse", "HEAD")
+    branch = _git(root, deadline, "branch", "--show-current") or None
+    head = _git(root, deadline, "rev-parse", "HEAD") or None
     text = held.read_text(encoding="utf-8")
     marker = {"event": "promoted", "ts": _now(), "session_id": session_id, "branch": branch, "head": head}
     _append(root / "sdd" / "decisions" / f"{session_id}.jsonl", text + json.dumps(marker) + "\n")
@@ -159,14 +161,15 @@ def record(payload: Mapping[str, Any], root: Path, env: Mapping[str, str]) -> Pa
         return None
 
     deadline = time.monotonic() + _GIT_BUDGET_S
+    # `branch --show-current` prints nothing on a detached HEAD; None means git failed.
+    branch = _git(root, deadline, "branch", "--show-current")
     line: dict[str, Any] = {
         "event": kind,
         "ts": _now(),
         "session_id": payload.get("session_id"),
         "tool_use_id": payload.get("tool_use_id"),
-        # `branch --show-current` prints nothing on a detached HEAD, which _git maps to None.
-        "branch": _git(root, deadline, "branch", "--show-current"),
-        "head": _git(root, deadline, "rev-parse", "HEAD"),
+        "branch": branch or None,
+        "head": _git(root, deadline, "rev-parse", "HEAD") or None,
     }
     remote = env.get("CLAUDE_CODE_REMOTE_SESSION_ID")
     if remote:
@@ -180,8 +183,9 @@ def record(payload: Mapping[str, Any], root: Path, env: Mapping[str, str]) -> Pa
 
     # Held lines are not promoted here: the branch is the project directory's,
     # which another session may have switched, so only this session's own
-    # commit (gate-commit.sh --promote) moves them.
-    if line["branch"] is None or line["branch"] in _BASE_BRANCHES:
+    # commit (gate-commit.sh --promote) moves them. A branch git could not read
+    # may be a work branch, so that event is logged with a null branch, as before.
+    if branch == "" or branch in _BASE_BRANCHES:
         target = _pending(root) / f"{session_id}.jsonl"
     else:
         target = root / "sdd" / "decisions" / f"{session_id}.jsonl"

@@ -307,7 +307,8 @@ if evidence changes; these are retired.
   (the tag reaches Pre only, so Post is dropped by `tool_use_id`); a base-branch
   or detached event waits in the ignored `sdd/decisions/.pending/` until the
   session commits on a work branch, then a `promoted` line binds
-  the moved lines to that branch (D4.0). RFC-0018 D1, D2 and D3 amended.
+  the moved lines to that branch (D4.0, read in line order). RFC-0018 D1, D2,
+  D3 and D4.0 amended.
   Trace: [bk-486](traces/bk-486-decision-log-chores.yml).
 - [x] **BK-481 — `/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can**
   spec: — · effort: S · audience: contributor.tooling, contributor.process

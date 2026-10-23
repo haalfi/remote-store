@@ -13,8 +13,9 @@ the maintainer's choice of remedy, to let a line that is not a record be
 deleted, and one of two differing answers to one dialog once the maintainer
 has picked the record. BK-486 (2026-10-23) amends D1, to leave a dialog tagged
 housekeeping unrecorded, D2, to hold a base-branch or detached event until
-the session commits on a work branch, and D3, for the `promoted` line that binds
-the moved events there (§ Follow-up: `metadata` reaches `PreToolUse` only).
+the session commits on a work branch, D3, for the `promoted` line that binds
+the moved events there, and D4.0, to read "next" in the log's line order
+(§ Follow-up: `metadata` reaches `PreToolUse` only).
 
 ## Summary
 
@@ -113,7 +114,8 @@ paths every payload carries (`cwd`, `transcript_path`, `scratchpad_dir`),
 which a log committed to a public repository must not hold.
 
 **Housekeeping is not recorded.** A dialog whose answer only steers the
-session (watch a PR, rebase, merge, another round) records no design choice,
+session (watch a PR, rebase, merge, another round, a gate waiver for a
+filing-only PR) records no design choice,
 yet it was committed beside real decisions and stripped by hand before each
 commit. The agent tags it `metadata: {"source": "housekeeping"}`, as
 [`interview.md`](../../.claude/output-styles/interview.md) defines the class,
@@ -152,7 +154,9 @@ the PR diff shows the log beside the change it explains.
 
 - **Held off the base branch.** An event recorded on the base branch (`master`
   or `main`) or a detached HEAD goes to the ignored
-  `sdd/decisions/.pending/<session_id>.jsonl`, not the log. It moves into the
+  `sdd/decisions/.pending/<session_id>.jsonl`, not the log. One whose branch
+  git could not read (a failure, or the recorder's time budget running out) is
+  logged with a null branch, since it may be a work branch. It moves into the
   log, lines in order and unchanged, only when `gate-commit.sh` runs before
   that same session commits on a work branch: the hook reads `session_id` from
   its own payload and promotes that session's held records alone. A dialog
@@ -165,7 +169,9 @@ the PR diff shows the log beside the change it explains.
   branch again. The moved lines keep their recorded branch, and a `promoted`
   line follows them, naming the work branch and HEAD they moved on: that is
   the session's event on the work branch, so D4.0 binds them there although
-  the commit recorded no dialog. Bounds: an untagged chore held before such a
+  the commit recorded no dialog. The moved lines land after any the session
+  logged on a work branch since, so the log is in line order, not `ts` order,
+  and D4.0 reads it in line order. Bounds: an untagged chore held before such a
   later commit is promoted with it; a session that never commits itself leaves
   its held records behind, even when another session commits its work; and
   held records sit in the project directory, so the anchoring bound below
@@ -286,7 +292,8 @@ and the question is classified by the rows below it.
    other than the base branch; detached HEAD is none. An event recorded on a
    work branch belongs to that branch and no other. An event recorded on the
    base branch or a detached HEAD belongs to the next work branch the same
-   session records an event on, if any. That captures dialogs asked before the
+   session records an event on, if any, "next" in the log's line order, not by
+   `ts`: a `promoted` line (D2) follows the moved lines. That captures dialogs asked before the
    branch existed without a manual move, and binds each event once. Whether a
    branch name carries an item ID plays no part. A session whose events never
    name a work branch is still bound when a `Claude-Session` trailer on

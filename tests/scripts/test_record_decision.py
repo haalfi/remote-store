@@ -290,9 +290,11 @@ def test_remote_session_id_recorded_when_set(recorder: Any, repo: Path) -> None:
 
 
 def test_outside_a_git_repo_records_null_git_fields(recorder: Any, tmp_path: Path) -> None:
+    """A failed git call is not a detached HEAD, so the event is logged, not held (PR #1175 review)."""
     recorder.record(ANSWERED["a-followed"][0], tmp_path, {})
 
-    (line,) = _held(tmp_path)
+    assert not (tmp_path / "sdd" / "decisions" / ".pending").exists()
+    (line,) = _lines(tmp_path)
     assert line["branch"] is None
     assert line["head"] is None
 
@@ -329,6 +331,8 @@ def test_slow_git_degrades_to_null_fields_within_budget(
     killed there, the event would be lost instead of written with null git
     fields. The hang is injected by replacing the git command with a sleeper,
     so this pins the budget arithmetic, not any particular way git can hang.
+    A branch git could not read may be a work branch, so the event is logged,
+    not held (PR #1175 review).
     """
     monkeypatch.setattr(recorder, "_GIT_CMD", [sys.executable, "-c", "import time; time.sleep(30)"])
     monkeypatch.setattr(recorder, "_GIT_BUDGET_S", 1.0)
@@ -337,7 +341,8 @@ def test_slow_git_degrades_to_null_fields_within_budget(
     recorder.record(ANSWERED["a-followed"][0], repo, {})
     elapsed = time.monotonic() - started
 
-    (line,) = _held(repo)
+    assert not (repo / "sdd" / "decisions" / ".pending").exists()
+    (line,) = _lines(repo)
     assert (line["branch"], line["head"]) == (None, None)
     # Both calls together, not each: two sequential 1 s timeouts would take ~2 s.
     assert elapsed < 1.8, f"git calls took {elapsed:.1f}s against a 1.0s shared budget"
@@ -433,6 +438,27 @@ def test_promotion_marker_binds_moved_lines_to_the_work_branch(recorder: Any, re
     }
     assert marker["ts"] >= held["ts"]
     assert "tool_use_id" not in marker
+
+
+def test_promoted_lines_follow_lines_logged_since_they_were_held(recorder: Any, repo: Path) -> None:
+    """The log is in append order, not ``ts`` order, once promotion runs, and D4.0
+    reads "next" in that order (PR #1175 review): a line held on master, then a
+    dialog on A, then a commit on B binds the held line to B, where it ships."""
+    _git(repo, "checkout", "-q", "-b", "master")
+    pre_held, _ = ANSWERED["a-followed"]
+    recorder.record(pre_held, repo, {})
+    _git(repo, "checkout", "-q", "feature")
+    pre_a, _ = ANSWERED["b-other"]
+    recorder.record(pre_a, repo, {})
+    _git(repo, "checkout", "-q", "-b", "feature-b")
+
+    recorder.promote(repo, SESSION)
+
+    assert [(line.get("tool_use_id"), line["branch"]) for line in _lines(repo)] == [
+        (pre_a["tool_use_id"], "feature"),
+        (pre_held["tool_use_id"], "master"),
+        (None, "feature-b"),
+    ]
 
 
 def test_promote_with_nothing_held_is_a_noop(recorder: Any, repo: Path) -> None:

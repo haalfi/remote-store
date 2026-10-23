@@ -8,10 +8,10 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 301149,
+  "total": 301188,
   "files": {
     "CLAUDE.md": 17648,
-    ".claude/output-styles/interview.md": 2488,
+    ".claude/output-styles/interview.md": 2527,
     ".claude/skills/audit/SKILL.md": 1465,
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
@@ -110,8 +110,8 @@
     {
       "item": "BK-486",
       "from": 300668,
-      "to": 301149,
-      "reason": "interview.md tells housekeeping questions to carry their metadata tag (+383); CLAUDE-REFERENCE Record row points to the skip and the held base-branch dialogs (+98)"
+      "to": 301188,
+      "reason": "interview.md tells housekeeping questions to carry their metadata tag, with three examples (+422); CLAUDE-REFERENCE Record row points to the skip and the held base-branch dialogs (+98)"
     }
   ]
 }
