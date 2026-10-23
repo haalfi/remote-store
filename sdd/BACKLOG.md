@@ -575,6 +575,7 @@ no clause of the contract ships unexercised.
   Not done: the branch's CI triggers, protection and patch checklist (RFC-0024 Open Question 2);
   `/observe`'s first live run; § 9 steps 4 to 6. Open decision: D10 and § 8's open points 2 to 4, 8
   and 11. After BK-484, which gives the `read()` flow its key spec.
+  Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-482 — Azure conformance runs on Azurite, which stores raw keys the HNS service rewrites**
   spec: BE-030, BE-032 · effort: M · audience: infra.test, library.maintainer

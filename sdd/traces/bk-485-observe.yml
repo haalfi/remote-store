@@ -121,6 +121,18 @@ phases:
         section: "module docstring"
         read_type: reference
         extract: "Growth costs a cut elsewhere or a recorded raise"
+  - id: critique
+    name: External critique
+    steps:
+      - file: sdd/observe-axes.md
+        section: "F3 note, AX-12 to AX-14"
+        read_type: reference
+        extract: >-
+          The maintainer passed on a ChatGPT critique of F1 to F6 after the draft.
+          It carried § 7's read() decisions (R-1 to R-6), so only generic
+          refinements within the binding F decisions reached the axes; F4's
+          baseline/refinement/deviation split went to the new BK-485 dossier
+          as format RFC input
   - id: verify
     name: Verify
     steps:

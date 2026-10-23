@@ -11,7 +11,9 @@ The observation axes are the fixed checklist an `/observe` session walks for one
 - **O3 out-of-band actor**: changes the backing storage without going through the API.
 - **Environment**: the one declared list of actions O2, O3 and the world may take, fault actions included. Axes reference it; they never restate it.
 
-**Non-commitment answers (F3).** Where a decision commits to no single outcome, it says so with one term: *unspecified* (one of a stated set), *profile-declared*, *optional (MAY)*, *indeterminate* (may or may not have taken effect), *deliberately not promised* (goes to AX-14). *Undefined* is not an allowed answer: no check can be written against it. A term is a decision; "not decided yet" is an open item, not a term.
+**Non-commitment answers (F3).** Where a decision commits to no single outcome, it says so with a term, and the terms answer different questions. What the contract leaves open: *unspecified* (one of a stated set), *optional (MAY)*, *deliberately not promised* (goes to AX-14). Who fixes it: *profile-declared* (AX-15). What the caller can know: *indeterminate* (may or may not have taken effect; AX-12). Every such answer still names the observations it admits, so an observation outside them is a violation a check can catch; *undefined* is not allowed for that reason. A term is a decision; "not decided yet" is an open item, not a term.
+
+**Facets, not boxes (F2).** A question that touches several categories, such as a failure while a handed-out resource is in use, has one home axis and cites the others.
 
 ## Axes
 
@@ -28,9 +30,9 @@ The observation axes are the fixed checklist an `/observe` session walks for one
 | AX-9 | Out-of-band view | multi-observer guarantee | What may O1 observe given O3 changes before or during the call? Does O3 get the same rights as O2 or different ones? | history predicate over interval operations | a recorded history with O3 that violates the predicate |
 | AX-10 | Failure category | failures | Which category does the caller see for each failure, per pre-state and resource state? | table row: (state, category) | a failure surfaces with a category its row does not list, or as an untyped error |
 | AX-11 | Failure phase | failures | In which phase can each failure be reported: at the call, at a later use of a handed-out resource, at close? | table row: failure, phase | a failure reported in a phase its row excludes |
-| AX-12 | Effect after failure | failures | After each failure, what may an observer conclude about the effect: none, complete, or indeterminate? | table cell, referencing AX-6 or AX-8 for temporal or multi-observer parts | an observer sees an effect state the failure's cell excludes |
-| AX-13 | Retry | failures | Could retrying repeat the failure, and does a retry after an indeterminate outcome change the result? | table column per failure | a retry produces an outcome the retry cell excludes |
-| AX-14 | Non-promises | non-promise register | Which observable properties (latency, request count, buffering, and the like) are deliberately not promised, with which scope? | register row: ID, scope | a test asserts a registered non-promise |
+| AX-12 | Effect after failure | failures | After each failure, what can the caller establish about the effect (none, complete, or indeterminate), and what may O2 or O3 observe of it, which may differ? | table cell, referencing AX-6 or AX-8 for temporal or multi-observer parts | an observer sees an effect state the failure's cell excludes |
+| AX-13 | Retry | failures | Could retrying repeat the failure, and does a retry after an indeterminate outcome change the result? Which guarantees of this operation does retry safety rest on (no mutation, same content, a condition the caller supplies)? | table column per failure | a retry produces an outcome the retry cell excludes |
+| AX-14 | Non-promises | non-promise register | Which observable properties (latency, request count, buffering, and the like) are deliberately not promised, with which scope? Only those a caller could plausibly infer from the operation's name or familiar prior art. | register row: ID, scope | a test explicitly asserts a registered non-promise |
 | AX-15 | Variation points | profile | Which claim's truth differs by backend, and what is its normal value? Which deviations exist, within which ordered range? Static or probed, and is a stronger guarantee requested by the caller (request or refuse)? | variation point row: normal value, declared deviations | a backend shows behaviour outside the normal value plus its declared deviations, or deviates undeclared |
 
 Splits: single call into AX-3 to AX-5, because the report gives the frame and termination their own form and check (frame clause; timeout assumption). Multi-observer into AX-8 and AX-9, because whether O2 and O3 need different rights is an open question the report names. Failures into AX-10 to AX-13, one per F6 part.
@@ -54,3 +56,8 @@ Drafted unprimed by an agent that read only the two sources below (research
 with F2 after the `read()` flow (research § 6).
 
 `haalfi/research`, branch `research/black-box-boundary-spec`, `reports/Black box boundary spec methods.md`; `sdd/research/research-spec-first-reset.md` § 4 to § 6.
+
+Refined after the draft from an unverified ChatGPT critique of F1 to F6, taking
+only what holds within them (F2 facets; F3's admitted observations; AX-12 to
+AX-14). The rest, F4 above all, is input to the format RFC and kept in the
+[BK-485 dossier](backlog/bk-485-spec-first-reset.md).
