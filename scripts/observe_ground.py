@@ -10,9 +10,17 @@ allowlist is the ground register plus files the maintainer names at the start).
   prompt blocked, when the session already used a tool (it is not fresh), when
   ``<op>`` is not a slug, or when a named path is missing or is 0.33 code, tests
   or a spec 001 to 050 (never ground, RFC-0024 § R1).
+* ``rearm`` (``SessionStart``): a resumed or compacted session whose
+  transcript opens with ``/observe`` is armed again, so it never resumes
+  unarmed, whatever became of its marker.
 * ``check`` (``PreToolUse``): in an armed session, a call passes only if it
-  stays inside the allowlist; every other session passes untouched.
-* ``disarm`` (``SessionEnd``): removes the session's marker.
+  stays inside the allowlist; every other session passes untouched, the
+  wrapper's fail-closed branch included.
+* ``disarm`` (``SessionEnd``): removes the marker only when the session is
+  cleared (``reason: clear``); a session that ends any other way may resume.
+
+The skill re-runs its canary before every axis as well, so an unarmed session
+stops even where these events do not reach.
 
 The allowlist is the method files, the ``active`` rows of the ground register,
 the named paths and the operation's research doc, the only file the session may
@@ -50,6 +58,8 @@ METHOD_FILES = (
 RESEARCH_DOC = "sdd/research/research-observe-{op}.md"
 
 _PROMPT = re.compile(r"\s*/observe(?:\s+(?P<args>.*))?\s*$", re.DOTALL)
+# How a transcript, and possibly UserPromptSubmit, records a typed slash command.
+_TAGGED = re.compile(r"<command-name>/?observe</command-name>.*?<command-args>(?P<args>.*?)</command-args>", re.DOTALL)
 _OP = re.compile(r"[a-z][a-z0-9_]*")
 _SAFE_ID = re.compile(r"[A-Za-z0-9_-]+")
 # A register row: `path` | flow | status |
@@ -87,14 +97,37 @@ def ground(root: Path) -> list[str]:
     return [m["path"] for m in map(_ROW.match, text.splitlines()) if m and m["status"] == "active"]
 
 
+def _observe_args(text: str) -> list[str] | None:
+    """The arguments of an ``/observe`` prompt, typed or in slash-command tag form; None otherwise."""
+    tagged = _TAGGED.search(text)
+    if tagged:
+        return tagged["args"].split()
+    m = _PROMPT.match(text)
+    return (m["args"] or "").split() if m else None
+
+
+def _first_prompt(transcript: Path) -> str | None:
+    """The text of the transcript's first user message that is not harness metadata."""
+    for line in transcript.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(entry, dict) or entry.get("type") != "user" or entry.get("isMeta"):
+            continue
+        content = (entry.get("message") or {}).get("content")
+        if isinstance(content, list):
+            content = " ".join(c.get("text", "") for c in content if isinstance(c, dict) and c.get("type") == "text")
+        if isinstance(content, str) and content.strip():
+            return content
+    return None
+
+
 def arm(payload: dict[str, Any], root: Path) -> str | None:
     """Write the marker for an ``/observe`` prompt; return its research doc, or None."""
-    m = _PROMPT.match(payload.get("prompt") or "")
-    if not m:
+    args = _observe_args(payload.get("prompt") or "")
+    if args is None:
         return None
-    args = (m["args"] or "").split()
-    if not args or not _OP.fullmatch(args[0]):
-        raise Refused("usage: /observe <operation> [path ...], operation as a lower-case slug")
     transcript = payload.get("transcript_path")
     if (
         transcript
@@ -102,6 +135,26 @@ def arm(payload: dict[str, Any], root: Path) -> str | None:
         and _TOOL_USE.search(Path(transcript).read_text(encoding="utf-8", errors="replace"))
     ):
         raise Refused("/observe needs a fresh session (S2): this one already used a tool. Run /clear first.")
+    return _write_marker(payload, root, args)
+
+
+def rearm(payload: dict[str, Any], root: Path) -> str | None:
+    """Re-arm a resumed or compacted session whose first prompt was ``/observe``; return its doc, or None.
+
+    Its marker may be gone (cleared, or a resume under a new session_id) while its
+    transcript still holds the design dialogue, so a resume never runs unarmed.
+    """
+    transcript = payload.get("transcript_path")
+    if not transcript or not Path(transcript).is_file():
+        return None
+    first = _first_prompt(Path(transcript))
+    args = _observe_args(first) if first else None
+    return None if args is None else _write_marker(payload, root, args)
+
+
+def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:
+    if not args or not _OP.fullmatch(args[0]):
+        raise Refused("usage: /observe <operation> [path ...], operation as a lower-case slug")
     named = []
     for path in args[1:]:
         rel = Path(_real(root, path)).relative_to(os.path.realpath(root)).as_posix() if _inside(root, path) else None
@@ -164,6 +217,9 @@ def check(payload: dict[str, Any], root: Path) -> None:
 
 
 def disarm(payload: dict[str, Any], root: Path) -> None:
+    """Drop the marker only when the session is cleared: any other end may be resumed."""
+    if payload.get("reason") != "clear":
+        return
     with contextlib.suppress(Refused):
         _marker(root, payload.get("session_id") or "").unlink(missing_ok=True)
 
@@ -174,7 +230,7 @@ def _concerns_observe(mode: str, raw: str, root: Path) -> bool:
         return "/observe" in raw
     if mode == "check":
         sid = re.search(r'"session_id"\s*:\s*"([A-Za-z0-9_-]+)"', raw)
-        return sid is None or (root / MARKER_DIR / f"{sid[1]}.json").is_file()
+        return sid is not None and (root / MARKER_DIR / f"{sid[1]}.json").is_file()
     return False
 
 
@@ -185,6 +241,8 @@ def main(argv: list[str], root: Path = ROOT) -> int:
         payload = json.loads(raw or "{}")
         if mode == "arm":
             arm(payload, root)
+        elif mode == "rearm":
+            rearm(payload, root)
         elif mode == "check":
             check(payload, root)
         elif mode == "disarm":

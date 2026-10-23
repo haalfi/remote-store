@@ -6,9 +6,8 @@ disable-model-invocation: true
 ---
 
 Decide what a caller can observe of one operation, `$ARGUMENTS`'s first word,
-with the implementation a black box. The method is binding: RFC-0024 D4 and
-D11, with S1 to S5 of `research-spec-first-reset.md` § 4. This session decides
-and records (flow steps 1 and 2); spec and comparison are later sessions.
+with the implementation a black box, by RFC-0024 D4 and D11 and research § 4's
+S1 to S5. This session decides and records; spec and comparison come later.
 
 ## Ground
 
@@ -21,17 +20,21 @@ use what you may know of this library's code, tests, docs or specs 001 to 050
 
 ## Steps
 
-1. **Canary.** Read `tmp/observe/canary-not-ground`. The hook must refuse it
-   with "outside the ground". Any other answer, "file does not exist" included,
-   means the session is not armed: stop and tell the maintainer to start a
-   fresh session with `/observe`.
+1. **Canary**, now and again before every axis, a resumed session included.
+   Read `tmp/observe/canary-not-ground`. The hook must refuse it with "outside
+   the ground". Any other answer, "file does not exist" included, means the
+   session is not armed: stop and tell the maintainer to start a fresh session
+   with `/observe`.
 2. **Load.** Read the register, the axes and each named path. If the research
    doc exists, this session continues it: read it and resume at its first
    axis that is neither decided, open nor not applicable. Otherwise create it
    from `sdd/templates/research-template.md`'s header (`**Date:**`,
    `**Backlog items:**` the item the maintainer names, `**Status:** In
-   progress`) with four sections: Session (date, operation, the ground read,
-   the named paths), Decisions, Axis status (one row per axis), Open items.
+   progress`) with five sections: Session (date, operation, the ground read,
+   the named paths), Environment, Decisions, Axis status (one row per axis),
+   Open items. Environment is the operation's one list of actions O2, O3 and
+   the world may take, faults included, each `<op>/E<n>`; axes cite its rows,
+   and a new action is added only through a decision.
 3. **Loop (S5).** Walk the axes in order. For each question an axis forces:
    - a concrete **scenario**: calls, observers and environment actions;
    - **options**, each with what callers and backends would see;
@@ -42,16 +45,15 @@ use what you may know of this library's code, tests, docs or specs 001 to 050
      shape, with the next ID `<op>/D<n>`, and its **consistency check**
      against earlier decisions and the ground, naming any conflict.
    An answer may be an F3 term; "not decided yet" goes to Open items with what
-   blocks it. Update the axis's row when it is decided, open or not
-   applicable with a one-line reason.
+   blocks it. Keep each axis's row current (decided, open, or not applicable
+   with a reason).
 4. **Ground conflict.** If a decision would contradict a ground artifact,
    stop on that point. Record a reopen decision as an open item: the artifact,
    the clause, the conflict, the dependent decisions. Never edit ground, the
    register or any file but the research doc; the reopen runs its own flow.
-5. **End (S4).** The session ends when every axis row is decided, open or not
-   applicable. Set `**Status:**` to `Research complete — ready for design
-   decisions`. Tell the maintainer: the doc is uncommitted, and committing,
-   the spec and the comparison with 0.33 happen in a normal session.
+5. **End (S4)** when every axis row is decided, open or not applicable. Set
+   `**Status:**` to `Research complete — ready for design decisions`, and tell
+   the maintainer the doc is uncommitted: `/clear`, then commit.
 
 ## Rules
 

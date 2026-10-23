@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 304767,
+  "total": 304954,
   "files": {
     "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2534,
@@ -16,7 +16,7 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 3517,
+    ".claude/skills/observe/SKILL.md": 3630,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -32,7 +32,7 @@
     ".claude/agents/sdd-expert.md": 1799,
     ".claude/agents/store-backend-expert.md": 1903,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64523,
+    "sdd/CLAUDE-REFERENCE.md": 64597,
     "sdd/traces/_schema.yml": 31990
   },
   "raises": [
@@ -119,6 +119,12 @@
       "from": 301250,
       "to": 304767,
       "reason": "New /observe skill (research \u00a7 9 step 3), read only in /observe design sessions after its own Rule 7 pass; its axes (sdd/observe-axes.md) and ground register stay outside the budgeted set"
+    },
+    {
+      "item": "BK-485",
+      "from": 304767,
+      "to": 304954,
+      "reason": "PR #1178 review: /observe canary before every axis and an Environment section in each research doc (SKILL.md +113, after a -161 Rule 7 pass); PR validation gates name the files test_observe_ground.py reads, now in HOOKS_PAT (CLAUDE-REFERENCE.md +74)"
     }
   ]
 }

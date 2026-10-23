@@ -9,7 +9,7 @@ The observation axes are the fixed checklist an `/observe` session walks for one
 - **O1 caller**: the one issuing the call under design.
 - **O2 concurrent caller**: another caller using the same API on the same store, overlapping in time.
 - **O3 out-of-band actor**: changes the backing storage without going through the API.
-- **Environment**: the one declared list of actions O2, O3 and the world may take, fault actions included. Axes reference it; they never restate it.
+- **Environment**: the one declared list of actions O2, O3 and the world may take, fault actions included. Axes reference it; they never restate it. It lives in the Environment section of the operation's research doc, rows `<op>/E<n>`; a missing action is added there by a decision (AX-7). Each operation keeps its own list until a shared one is admitted to the ground; the consistency check compares it with the lists of admitted operations.
 
 **Non-commitment answers (F3).** Where a decision commits to no single outcome, it says so with a term, and the terms answer different questions. What the contract leaves open: *unspecified* (one of a stated set), *optional (MAY)*, *deliberately not promised* (goes to AX-14). Who fixes it: *profile-declared* (AX-15). What the caller can know: *indeterminate* (may or may not have taken effect; AX-12). Every such answer still names the observations it admits, so an observation outside them is a violation a check can catch; *undefined* is not allowed for that reason. A term is a decision; "not decided yet" is an open item, not a term.
 

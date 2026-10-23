@@ -1,39 +1,47 @@
 #!/bin/bash
 # Confine an /observe design session to its ground (RFC-0024 D4, D11).
 #
-# Usage: observe-ground.sh arm|check|disarm, wired to UserPromptSubmit,
-# PreToolUse and SessionEnd in .claude/settings.json. The work is in
-# scripts/observe_ground.py; its docstring holds the rules.
+# Usage: observe-ground.sh arm|rearm|check|disarm, wired to UserPromptSubmit,
+# SessionStart, PreToolUse and SessionEnd in .claude/settings.json. The work is
+# in scripts/observe_ground.py; its docstring holds the rules.
 #
-# `check` runs on every tool call of every session, so it returns at once when
-# no session in this checkout is armed (no tmp/observe/*.json). Once one is,
-# the guard fails closed: a missing interpreter blocks the call instead of
-# letting an armed session read past its ground. `disarm` never blocks.
+# `check` runs on every tool call of every session, so it returns at once unless
+# this session's own marker (tmp/observe/<session_id>.json) exists. Only then
+# does it need python, and it fails closed: a missing interpreter or script
+# blocks the armed session's call instead of letting it read past its ground.
+# Other sessions are never blocked; nor is `disarm`, nor `arm` or `rearm` for a
+# session that is not an /observe one.
 #
-# Paths resolve from this file, as in record-decision.sh. `python` before
-# `python3` for the Windows Store stub reason that file gives.
+# Builtins only before python runs, so the fail-closed branch holds with
+# nothing on PATH but bash. `python` before `python3` for the Windows Store stub
+# reason record-decision.sh gives.
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+HOOK_DIR="${BASH_SOURCE[0]%/*}"
+ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
 SCRIPT="$ROOT/scripts/observe_ground.py"
 MODE="$1"
-PY=$(command -v python || command -v python3)
-
-if [ "$MODE" = "check" ]; then
-  compgen -G "$ROOT/tmp/observe/*.json" >/dev/null || exit 0
+IFS= read -r -d '' PAYLOAD
+SID=""
+if [[ $PAYLOAD =~ \"session_id\"[[:space:]]*:[[:space:]]*\"([A-Za-z0-9_-]+)\" ]]; then
+  SID="${BASH_REMATCH[1]}"
 fi
 
+if [ "$MODE" = "check" ] && { [ -z "$SID" ] || [ ! -f "$ROOT/tmp/observe/$SID.json" ]; }; then
+  exit 0
+fi
+
+PY=$(command -v python || command -v python3)
 if [ -z "$PY" ] || [ ! -f "$SCRIPT" ]; then
-  [ "$MODE" = "disarm" ] && exit 0
-  if [ "$MODE" = "arm" ]; then
-    # Unarmed sessions must not break: block only an /observe prompt.
-    PAYLOAD=$(cat)
-    case "$PAYLOAD" in *'"prompt":"/observe'* | *'"prompt": "/observe'*) ;; *) exit 0 ;; esac
-  fi
+  case "$MODE" in
+    check) ;;
+    arm) [[ $PAYLOAD =~ \"prompt\"[[:space:]]*:[[:space:]]*\"[[:space:]]*/observe ]] || exit 0 ;;
+    *) exit 0 ;;
+  esac
   echo "Blocked (/observe ground hook): no python or $SCRIPT; the ground cannot be enforced." >&2
   exit 2
 fi
 
-"$PY" "$SCRIPT" "$MODE"
+printf '%s' "$PAYLOAD" | "$PY" "$SCRIPT" "$MODE"
 STATUS=$?
 [ "$MODE" = "disarm" ] && exit 0
 exit $STATUS

@@ -243,12 +243,97 @@ def test_a_symlink_into_code_is_denied(repo: Path) -> None:
     assert _call(repo, "Read", file_path=str(link)).returncode == 2
 
 
-def test_disarm_ends_the_restriction(repo: Path) -> None:
+def test_clear_ends_the_restriction(repo: Path) -> None:
     _arm(repo, "/observe read")
-    assert _run(repo, "disarm", {"session_id": SESSION}).returncode == 0
+    assert _run(repo, "disarm", {"session_id": SESSION, "reason": "clear"}).returncode == 0
     assert not (repo / "tmp/observe" / f"{SESSION}.json").exists()
     assert _call(repo, "Bash", command="ls").returncode == 0
-    assert _run(repo, "disarm", {"session_id": SESSION}).returncode == 0
+    assert _run(repo, "disarm", {"session_id": SESSION, "reason": "clear"}).returncode == 0
+
+
+@pytest.mark.parametrize("reason", ["prompt_input_exit", "logout", "other", None])
+def test_any_other_session_end_keeps_the_marker_for_a_resume(repo: Path, reason: str | None) -> None:
+    _arm(repo, "/observe read")
+    assert _run(repo, "disarm", {"session_id": SESSION, "reason": reason}).returncode == 0
+    assert _call(repo, "Bash", command="ls").returncode == 2
+
+
+# --- resume ------------------------------------------------------------------
+
+_TYPED = '{"type":"user","message":{"role":"user","content":"/observe read sdd/research/prior.md"}}\n'
+_TAGGED = (
+    '{"type":"user","message":{"role":"user","content":"<command-message>observe</command-message>\\n'
+    '<command-name>/observe</command-name>\\n<command-args>read sdd/research/prior.md</command-args>"}}\n'
+)
+_META = '{"type":"user","isMeta":true,"message":{"role":"user","content":[{"type":"text","text":"skill body"}]}}\n'
+
+
+@pytest.mark.parametrize("first", [_TYPED, _TAGGED])
+def test_a_resumed_observe_session_is_armed_again(repo: Path, tmp_path: Path, first: str) -> None:
+    transcript = tmp_path / "resumed.jsonl"
+    tool_use = '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read"}]}}\n'
+    transcript.write_text(first + _META + tool_use, encoding="utf-8")
+    payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
+    assert _run(repo, "rearm", payload).returncode == 0
+    state = json.loads((repo / "tmp/observe" / f"{OTHER}.json").read_text(encoding="utf-8"))
+    assert state["named"] == ["sdd/research/prior.md"]
+    assert _call(repo, "Bash", session=OTHER, command="ls").returncode == 2
+
+
+def test_a_resumed_ordinary_session_stays_unarmed(repo: Path, tmp_path: Path) -> None:
+    transcript = tmp_path / "plain.jsonl"
+    transcript.write_text('{"type":"user","message":{"content":"fix the bug"}}\n' + _TYPED, encoding="utf-8")
+    payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
+    assert _run(repo, "rearm", payload).returncode == 0
+    assert not (repo / "tmp/observe").exists()
+
+
+def test_arm_reads_the_slash_command_tag_form(repo: Path) -> None:
+    prompt = "<command-name>/observe</command-name>\n<command-args>exists</command-args>"
+    assert _arm(repo, prompt).returncode == 0
+    state = json.loads((repo / "tmp/observe" / f"{SESSION}.json").read_text(encoding="utf-8"))
+    assert state["operation"] == "exists"
+
+
+# --- the wrapper without python or script --------------------------------------
+
+
+def _bash_only_path(tmp_path: Path) -> str:
+    bin_dir = tmp_path / "bin-bash-only"
+    bin_dir.mkdir()
+    (bin_dir / "bash").symlink_to(shutil.which("bash") or BASH)
+    return str(bin_dir)
+
+
+def _run_bare(repo: Path, path_env: str, mode: str, payload: dict[str, object]) -> subprocess.CompletedProcess[str]:
+    bash = Path(path_env.split(":")[0]) / "bash"
+    return subprocess.run(
+        [str(bash), str(repo / ".claude/hooks/observe-ground.sh"), mode],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+        env={"PATH": path_env},
+    )
+
+
+@pytest.mark.parametrize("missing", ["python", "script"])
+def test_wrapper_fails_closed_only_for_the_armed_session(repo: Path, tmp_path: Path, missing: str) -> None:
+    _arm(repo, "/observe read")
+    path_env = _bash_only_path(tmp_path)
+    if missing == "script":
+        (repo / "scripts/observe_ground.py").unlink()
+        path_env = f"{path_env}:{Path(sys.executable).parent}"
+    armed = {"session_id": SESSION, "tool_name": "Read", "tool_input": {}}
+    blocked = _run_bare(repo, path_env, "check", armed)
+    assert blocked.returncode == 2
+    assert "cannot be enforced" in blocked.stderr
+    other = {"session_id": OTHER, "tool_name": "Bash", "tool_input": {}}
+    assert _run_bare(repo, path_env, "check", other).returncode == 0
+    assert _run_bare(repo, path_env, "arm", {"session_id": OTHER, "prompt": "/observe read"}).returncode == 2
+    assert _run_bare(repo, path_env, "arm", {"session_id": OTHER, "prompt": "hello"}).returncode == 0
+    assert _run_bare(repo, path_env, "rearm", {"session_id": OTHER}).returncode == 0
+    assert _run_bare(repo, path_env, "disarm", {"session_id": SESSION, "reason": "clear"}).returncode == 0
 
 
 # --- the repository's own files ------------------------------------------------
@@ -267,15 +352,16 @@ def test_repository_register_admits_only_existing_ground_files() -> None:
         assert (ROOT / rel).is_file(), rel
 
 
-def test_settings_wire_all_three_modes() -> None:
+def test_settings_wire_all_four_modes() -> None:
     settings = (ROOT / ".claude/settings.json").read_text(encoding="utf-8")
     hooks = json.loads(settings)["hooks"]
     wired = {
         event: [h["command"] for entry in hooks[event] for h in entry["hooks"] if "observe-ground.sh" in h["command"]]
-        for event in ("UserPromptSubmit", "PreToolUse", "SessionEnd")
+        for event in ("UserPromptSubmit", "SessionStart", "PreToolUse", "SessionEnd")
     }
-    assert [re.findall(r"\b(arm|check|disarm)$", c) for e in wired.values() for c in e] == [
+    assert [re.findall(r" (arm|rearm|check|disarm)$", c) for e in wired.values() for c in e] == [
         ["arm"],
+        ["rearm"],
         ["check"],
         ["disarm"],
     ]

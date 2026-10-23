@@ -17,6 +17,8 @@ expected_ripples:
   - sdd/process-budget.json
 surprising_ripples:
   - sdd/research/research-spec-first-reset.md
+  - .github/workflows/ci.yml
+  - sdd/CLAUDE-REFERENCE.md
 orient:
   - items: [BK-397]
     verdict: constrains
@@ -143,6 +145,18 @@ phases:
           The two new sdd/ files are repo-only registers, not authority docs, so
           the process-doc row's back-references do not apply; the new test is not
           os_sensitive (bash hook, skipped on Windows, as test_claude_hooks.py records)
+      - file: .github/workflows/ci.yml
+        section: "HOOKS_PAT"
+        read_type: verify
+        extract: >-
+          Review round 1 found tooling-tests never ran on a register-only diff.
+          HOOKS_PAT's own comment states the widening rule; I did not read it
+          before adding tested files outside the code paths
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / New test file"
+        read_type: verify
+        extract: "The row asks only about OS sensitivity, not whether CI's path filters reach the files the new test reads"
+        outcome: unclear
       - file: .claude/hooks/gate-commit.sh
         section: "lint step"
         read_type: verify
