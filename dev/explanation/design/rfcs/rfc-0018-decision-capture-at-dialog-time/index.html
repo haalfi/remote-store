@@ -8299,6 +8299,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#follow-up-metadata-reaches-pretooluse-only-2026-10-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Follow-up: metadata reaches PreToolUse only (2026-10-23)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -12024,6 +12035,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#follow-up-metadata-reaches-pretooluse-only-2026-10-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Follow-up: metadata reaches PreToolUse only (2026-10-23)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -12068,7 +12090,11 @@ amends the Summary, D1, D3 and D4. Built: steps 1 and 2 and D2's commit and
 exclusion mechanics. Step 3 is not. Step 2's review (2026-10-09) amends D2, by
 the maintainer's choice of remedy, to let a line that is not a record be
 deleted, and one of two differing answers to one dialog once the maintainer
-has picked the record.</p>
+has picked the record. BK-486 (2026-10-23) amends D1, to leave a dialog tagged
+housekeeping unrecorded, D2, to hold a base-branch or detached event until
+the session commits on a work branch, D3, for the <code>promoted</code> line that binds
+the moved events there, and D4.0, to read "next" in the log's line order
+(§ Follow-up: <code>metadata</code> reaches <code>PreToolUse</code> only).</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Decisions in this repository are mostly taken mid-work in <code>AskUserQuestion</code>
 dialogs (<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#interview-mode"><code>CLAUDE.md</code> § Interview mode</a>). A
@@ -12077,9 +12103,10 @@ context, the options with their consequences, the agent's recommendation and the
 answer. It persists only in the session transcript, outside the repository, so
 the next session re-argues the why from the code. This RFC keeps the dialog
 verbatim: one hook, registered on two hook events, appends each asked and
-answered event to a per-session JSONL file,
-<code>sdd/decisions/&lt;session_id&gt;.jsonl</code>, committed with the work. Logs are bound to a
-branch when read, not when written. Three readers keep them from being
+answered event, less dialogs tagged housekeeping, to a per-session JSONL file,
+<code>sdd/decisions/&lt;session_id&gt;.jsonl</code>, committed with the work; an event on the
+base branch waits in an ignored file until the session commits on a work
+branch. Logs are bound to a branch when read, not when written. Three readers keep them from being
 write-only: the trace links them, <code>check_traces.py</code> validates them, and <code>/pr</code>
 renders them as the PR body's Decisions section.</p>
 <h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
@@ -12169,6 +12196,16 @@ other event, should the hook ever be registered on one, is appended under its
 raw <code>hook_event_name</code> rather than dropped, with its payload less the local
 paths every payload carries (<code>cwd</code>, <code>transcript_path</code>, <code>scratchpad_dir</code>),
 which a log committed to a public repository must not hold.</p>
+<p><strong>Housekeeping is not recorded.</strong> A dialog whose answer only steers the
+session records no design choice, yet it was committed beside real decisions
+and stripped by hand before each commit. The agent tags it <code>metadata: {"source": "housekeeping"}</code>, as
+<a href="https://github.com/haalfi/remote-store/blob/master/.claude/output-styles/interview.md"><code>interview.md</code></a> defines the class,
+and the recorder skips both of its events. The tag reaches <code>PreToolUse</code> only
+(§ Follow-up: <code>metadata</code> reaches <code>PreToolUse</code> only), so the recorder keeps the
+tagged <code>tool_use_id</code> in the ignored <code>sdd/decisions/.pending/&lt;session_id&gt;.skip</code>
+and drops the <code>answered</code> event by it. Bound: the tag covers the whole call, so
+a decision batched with a chore is lost with it, and an untagged chore is
+recorded as before.</p>
 <h3 id="d2-storage-one-append-only-file-per-session-bound-to-work-when-read">D2. Storage: one append-only file per session, bound to work when read<a class="headerlink" href="#d2-storage-one-append-only-file-per-session-bound-to-work-when-read" title="Permanent link">&para;</a></h3>
 <p><code>sdd/decisions/&lt;session_id&gt;.jsonl</code>, one JSON object per line, appended and never
 rewritten, with two exceptions, each deleted in a commit of its own. A line
@@ -12196,13 +12233,39 @@ the PR diff shows the log beside the change it explains.</p>
   unpushed commit would go with a reclaimed container.</p>
 </li>
 <li>
-<p><strong>No item ID in the path.</strong> The ID is not knowable at capture time: branch
+<p><strong>Held off the base branch.</strong> An event recorded on the base branch (<code>master</code>
+  or <code>main</code>) or a detached HEAD goes to the ignored
+  <code>sdd/decisions/.pending/&lt;session_id&gt;.jsonl</code>, not the log. One whose branch
+  git could not read (a failure, or the recorder's time budget running out) is
+  logged with a null branch, since it may be a work branch, and so is one
+  during a rebase: its detached HEAD is the branch being rebased, and
+  <code>git rebase --continue</code> is no commit that promotes. It moves into the
+  log, lines in order and unchanged, only when <code>gate-commit.sh</code> runs before
+  that same session commits on a work branch: the hook reads <code>session_id</code> from
+  its own payload and promotes that session's held records alone. A dialog
+  never promotes, because the branch the recorder reads is the project
+  directory's, and in a shared checkout another session may have switched it;
+  promoting there would move one session's chores into a log the other
+  session's commit stages. So a design question asked before the branch
+  existed ships with the session's first commit on it, and a question asked
+  after a session's cleanup does not, unless that session commits on a work
+  branch again. The moved lines keep their recorded branch, and a <code>promoted</code>
+  line follows them, naming the work branch and HEAD they moved on: that is
+  the session's event on the work branch, so D4.0 binds them there although
+  the commit recorded no dialog. The moved lines land after any the session
+  logged on a work branch since, so the log is in line order, not <code>ts</code> order,
+  and D4.0 reads it in line order. Bounds: an untagged chore held before such a
+  later commit is promoted with it; a session that never commits itself leaves
+  its held records behind, even when another session commits its work; and
+  held records sit in the project directory, so the anchoring bound below
+  applies to them too.</p>
+</li>
+<li><strong>No item ID in the path.</strong> The ID is not knowable at capture time: branch
   names need not carry one (<code>CLAUDE.md</code> § Branching lists <code>fix-streaming-io</code>),
   and dialogs are asked <em>before</em> the work, often while HEAD is still the base
   branch or detached (<code>/ship</code> Step 2 asks in plan mode, before Step 3 builds).
   This RFC's own branch, <code>rfc-decision-capture</code>, has no ID. Each event records
-  branch and HEAD instead, and D4 binds logs to work when they are read.</p>
-</li>
+  branch and HEAD instead, and D4 binds logs to work when they are read.</li>
 <li><strong>Per session.</strong> Two sessions never append to one file, so two sessions'
   logs cannot conflict on merge. <strong>Bound: one session that spans two branches
   can.</strong> Measured in a scratch repo (git 2.52.0.windows.1), with the log
@@ -12210,9 +12273,10 @@ the PR diff shows the log beside the change it explains.</p>
   the base ("Your local changes … would be overwritten"); a dialog on the base
   leaves an untracked log that blocks switching back to A ("untracked working
   tree files would be overwritten"); and if the session then starts branch B
-  from the base, merging A and B gives <code>CONFLICT (add/add)</code> on the log. The
-  remedy is open (BK-397, pending); a per-branch file name would clear the last
-  two cases but not the first. The same dirty-tracked-log shape stops a rebase
+  from the base, merging A and B gives <code>CONFLICT (add/add)</code> on the log. Holding
+  base-branch events (above) clears the second case, since a dialog on the base
+  no longer writes the log. The remedy for the others is open (BK-397,
+  pending); a per-branch file name would clear the third but not the first. The same dirty-tracked-log shape stops a rebase
   on one branch ("cannot rebase: You have unstaged changes", same scratch
   repo), and the branch freshness check's own rebase question produces it; that
   case is handled, because the check commits the tail before rebasing
@@ -12289,7 +12353,9 @@ what the answer was.</p>
 <p><strong>Unknown event kinds are tolerated.</strong> A reader that meets an event kind other
 than <code>asked</code> and <code>answered</code> skips it for classification and never fails on it,
 so a later registration (§ Open Questions 5) cannot break a reader written
-before it.</p>
+before it. The recorder's own <code>promoted</code> line (D2) is a known kind, not a hook
+event: it carries no <code>tool_use_id</code> and no dialog, a reader skips it for
+classification, and only D4.0 reads it, to bind the lines before it.</p>
 <p><strong>The sentinel is a harness string, matched by prefix, and that is a bound.</strong>
 It is undocumented and was seen once (a′), in full
 <code>[User dismissed — do not proceed, wait for next instruction]</code>. A reader matches
@@ -12325,7 +12391,8 @@ and the question is classified by the rows below it.</p>
    other than the base branch; detached HEAD is none. An event recorded on a
    work branch belongs to that branch and no other. An event recorded on the
    base branch or a detached HEAD belongs to the next work branch the same
-   session records an event on, if any. That captures dialogs asked before the
+   session records an event on, if any, "next" in the log's line order, not by
+   <code>ts</code>: a <code>promoted</code> line (D2) follows the moved lines. That captures dialogs asked before the
    branch existed without a manual move, and binds each event once. Whether a
    branch name carries an item ID plays no part. A session whose events never
    name a work branch is still bound when a <code>Claude-Session</code> trailer on
@@ -12678,6 +12745,16 @@ of inactivity and the session's VM is reclaimed"; reopening "provision[s] a
 fresh VM with your conversation history restored" and background work is not
 restored. That confirms the restart is expiry-shaped and that the conversation
 survives; whether a pending dialog is re-shown is not documented.</p>
+<h3 id="follow-up-metadata-reaches-pretooluse-only-2026-10-23">Follow-up: <code>metadata</code> reaches <code>PreToolUse</code> only (2026-10-23)<a class="headerlink" href="#follow-up-metadata-reaches-pretooluse-only-2026-10-23" title="Permanent link">&para;</a></h3>
+<p>For BK-486, one local session (Claude Code on Windows) asked a two-question
+dialog with <code>metadata: {"source": "probe-bk-485"}</code> beside <code>questions</code>, with the
+recorder registered as D1 describes. Its log
+(<code>sdd/decisions/5fb010a8-2f05-48f0-bdc8-5982d8e390ac.jsonl</code>) holds the pair:
+the <code>asked</code> event's <code>tool_input</code> keys were <code>questions</code> and <code>metadata</code>, the
+latter <code>{"source": "probe-bk-485"}</code>; the <code>answered</code> event's <code>tool_input</code> keys
+were <code>answers</code> and <code>questions</code>, with no <code>metadata</code>. One dialog, one harness
+version: whether a later version also carries it into <code>PostToolUse</code> is not
+known, and the skip by <code>tool_use_id</code> works either way.</p>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Host item: BK-397 (<code>sdd/BACKLOG.md</code> § 6).</li>
