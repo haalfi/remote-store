@@ -911,6 +911,13 @@ CHANGELOG the release body is built from — say what is actually true.
   and neither calls MkDocs. Found reviewing PR #1115. Open decision: correct
   the spec to the code, or move the strict build into the gate.
 
+- [ ] **BUG-340 — RFC-0015 Table 1's derivation, `rounds.py`, crashes on Windows**
+  spec: — · effort: S · audience: contributor.process
+  `python sdd/rfcs/rfc-0015/rounds.py 24d9464 --at 2a1bbfe` prints the first population (n=26),
+  then dies: `_git` decodes `git show` with the locale codec (cp1252, byte 0x90), and the
+  traces' `read` gets `None`. Without `--at`, `relative_to` spells paths with `\`, so none
+  match git's and `statistics.median([])` raises. master's copy fails identically (PR #1174).
+
 - [ ] **ID-235 — Backlog-file integrity lint (structure and inbound tracker citations)**
   spec: — · effort: S · audience: contributor.tooling
   `gen_backlogid.py`'s R1–R4 cover open items only: nothing checks
@@ -1028,7 +1035,7 @@ CHANGELOG the release body is built from — say what is actually true.
 - [ ] **BK-384 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
   spec: — · effort: M · audience: contributor.process
   Every RFC-0015 decision is in force, but its graduation criterion, three
-  deliveries pooled through `rfc-0015-findings.py`, has not been read; at
+  deliveries pooled through `rfc-0015/findings.py`, has not been read; at
   least nine traces carry a derived block for a PR after #1026, and the body
   names no rule for which count (dossier correction). Open decision: which
   deliveries form the sample, then graduate or return to Draft.

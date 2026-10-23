@@ -5,7 +5,8 @@ For each PR number given, walk ``pulls/<N>/comments`` (``per_page=100``,
 paged until a short page). Rows with no ``in_reply_to_id`` are *findings*;
 rows with one are the fixer's *replies* to them (``/rvw-pr`` never reads or
 answers comments, so every reply in a thread is the fix pass speaking).
-Findings are grouped by ``pull_request_review_id``; ``pulls/<N>/reviews``
+Findings are grouped by ``pull_request_review_id``, a file-only review with
+no body folded into its pass (``file_review_folds``); ``pulls/<N>/reviews``
 supplies each submission's ``submitted_at`` and the groups are **sorted by
 it**, so the round index is submission order by construction, not by the
 order the comments endpoint happens to return rows. A review with no
@@ -78,7 +79,7 @@ Requires ``gh`` authenticated and ``origin/master`` fetched.
 
 Usage::
 
-    python sdd/rfcs/rfc-0015-findings.py 964 965 968 971 972 973 974 976 977 \\
+    python sdd/rfcs/rfc-0015/findings.py 964 965 968 971 972 973 974 976 977 \\
         978 983 986 987 989 990 991 992 994 996
 """
 
@@ -93,7 +94,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 REPO = "haalfi/remote-store"
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 
 _OPEN_MUST_FIX = re.compile(r"^\s*\**(?:Must-fix|Fixed in\b)", re.I)
 _OPEN_FILED = re.compile(r"^\s*\**Filed as\b", re.I)
@@ -101,6 +102,8 @@ _OPEN_REFUTED = re.compile(r"^\s*\**(?:Refut|Not a defect|Declin|Rejected|Decide
 _FILED = re.compile(r"\bFiled as\b|\b(?:BK|BUG|ID)-\d+\b.{0,20}\b(?:filed|minted)\b", re.I)
 _REFUTED = re.compile(r"\brefut|\bnot a defect\b|\bdeclin|\brejected\b", re.I)
 _MUST_FIX = re.compile(r"\bFixed in\b|\bConfirmed\b|\bCorrect\b|\bTaken\b|\bAdded\b|\bAnnotated\b", re.I)
+
+FOLD_WINDOW = 120  # seconds; see file_review_folds
 
 UNCLASSIFIABLE = ("unclassifiable-file", "unclassifiable-left", "unclassifiable-noline", "unclassifiable-blame")
 
@@ -134,6 +137,32 @@ def _gh(path: str) -> list[dict]:
 
 def _ts(iso: str) -> int:
     return int(datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(UTC).timestamp())
+
+
+def file_review_folds(findings: list[dict], reviews: list[dict]) -> dict[int, int]:
+    """Map a review holding only file-level findings and no body to the pass that posted it.
+
+    `/rvw-pr`'s `gh` route cannot put a file-level comment in its review, so each
+    one posts after the summary as its own review with an empty body (measured on
+    PR #1174). It folds into the same author's review with a body when it follows
+    that review, or a review already folded into it, within ``FOLD_WINDOW``
+    seconds: #968's file-level finding came 12 s after its pass, the owner's own
+    file comments on #1173 hours later. Bound: an empty-body, file-only review
+    inside the window folds whoever posted it.
+    """
+    kinds: dict[int, set] = {}
+    for f in findings:
+        kinds.setdefault(f["pull_request_review_id"], set()).add(f.get("subject_type"))
+    folds: dict[int, int] = {}
+    last: dict[str | None, tuple[int, int]] = {}  # author -> (pass review id, latest submission ts)
+    for rv in sorted((rv for rv in reviews if rv.get("submitted_at")), key=lambda rv: _ts(rv["submitted_at"])):
+        author, ts = (rv.get("user") or {}).get("login"), _ts(rv["submitted_at"])
+        if rv.get("body"):
+            last[author] = (rv["id"], ts)
+        elif kinds.get(rv["id"]) == {"file"} and author in last and ts - last[author][1] <= FOLD_WINDOW:
+            folds[rv["id"]] = last[author][0]
+            last[author] = (last[author][0], ts)
+    return folds
 
 
 def artifact_class(path: str) -> str:
@@ -206,10 +235,13 @@ def main(prs: list[int]) -> None:
         first_reply: dict[int, str] = {}
         for c in sorted((c for c in comments if c.get("in_reply_to_id")), key=lambda c: c["created_at"]):
             first_reply.setdefault(c["in_reply_to_id"], c["body"])
-        review_ts = {rv["id"]: _ts(rv["submitted_at"]) for rv in _gh(f"pulls/{pr}/reviews") if rv.get("submitted_at")}
+        reviews = _gh(f"pulls/{pr}/reviews")
+        review_ts = {rv["id"]: _ts(rv["submitted_at"]) for rv in reviews if rv.get("submitted_at")}
+        folds = file_review_folds(findings, reviews)
         seen: OrderedDict[int, list[dict]] = OrderedDict()
         for f in findings:
-            seen.setdefault(f["pull_request_review_id"], []).append(f)
+            rid: int = f["pull_request_review_id"]
+            seen.setdefault(folds.get(rid, rid), []).append(f)
         unsubmitted = [rid for rid in seen if rid not in review_ts]
         ordered = sorted(seen, key=lambda rid: review_ts.get(rid, float("inf")))
         if ordered != list(seen):

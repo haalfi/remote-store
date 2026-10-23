@@ -1,0 +1,335 @@
+id: BK-481
+title: "`/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can"
+trigger: >-
+  A local `/rvw-pr 1173` finished with six findings and posted none: the
+  session had no GitHub MCP server, and Step 4's guard forbade posting through
+  `gh`. The main session then posted them by hand with `gh api --input` from a
+  temp JSON file (review 5601961745, six inline comments, each on its line).
+source_items:
+  - BK-481
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - .claude/skills/rvw-pr/SKILL.md
+  - .claude/skills/rvw-pr/posting.md
+  - .claude/skills/ship/SKILL.md
+  - sdd/CLAUDE-REFERENCE.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/process-budget.json
+orient:
+  - items: [BK-459]
+    verdict: constrains
+    evidence: >-
+      Done. It listed every GitHub tool under both server prefixes plus
+      ToolSearch, so a claude.ai/code pass loads the github MCP tools, and it
+      added the no-posting-tool guard this item narrows. The MCP path stays
+      first, so a session that has the tools posts exactly as before; the
+      tool lists and test_reviewer_tools.py are untouched.
+  - items: [BK-384]
+    verdict: constrains
+    evidence: >-
+      RFC-0015 D5 tags a finding's origin by blaming its anchored line, so the
+      gh call must keep the Comment rules' anchors: path, line and side per
+      LINE finding, and a FILE finding stays file-level rather than moving to
+      a nearby line.
+  - items: [ID-268, BK-445]
+    verdict: unrelated
+    evidence: >-
+      ID-268's dossier lists /ship's panel-posting paragraph among close-step
+      sites, but its decision is about pasting the review block, not how a
+      review is posted. BK-445 is the review root's `env -C` route in
+      rvw-pr/SKILL.md § Review root, a paragraph this change does not touch.
+phases:
+  - id: reproduce
+    name: Why the pass did not post
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 4, No posting tool?"
+        read_type: gate
+        extract: >-
+          With no pull_request_review_write under either prefix the pass must
+          not post another way, "not gh"; this machine has no GitHub MCP
+          server, so every local pass ends unposted
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "GitHub PR I/O split"
+        read_type: reference
+        extract: >-
+          Writes are MCP only. Its stated reasons: no approval prompt, and no
+          temp-JSON plus `gh api --input`, which the no-pipes hook forces and a
+          reviewer without Write cannot do. Neither reason rules out a gh call
+          built from fields alone
+        outcome: ok
+      - file: sdd/traces/bk-459-cloud-github-tools.yml
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Records no reason for excluding gh as a poster; the guard's job was
+          to stop a pass with no MCP tool from failing silently
+        outcome: ok
+  - id: orient
+    name: Related open work
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-384, ID-268, BK-445"
+        read_type: gate
+        extract: "Per-cluster verdicts in orient:"
+        outcome: ok
+  - id: design
+    name: Measure the gh call before writing it down
+    steps:
+      - file: .claude/skills/rvw-pr/posting.md
+        section: "(probe) gh api POST pulls/1173/reviews, pending, then deleted"
+        read_type: verify
+        extract: >-
+          Mixing -f and -F scrambled the comments: HTTP 422, a side with no
+          line, because gh sends every -f field before every -F one. With -F
+          only, a pending review (5602206513) was created holding two comments
+          with their own paths and bodies, a newline kept; then deleted, and
+          no pending review was left. The 422 also showed comments[] rejects
+          subject_type, so a file-level comment cannot ride in the review
+        outcome: ok
+      - file: .claude/skills/rvw-pr/posting.md
+        section: "(probe) gh api POST pulls/1173/comments subject_type=file, then deleted"
+        read_type: verify
+        extract: >-
+          Posted as its own one-comment review (comment 4338754328 in review
+          5602213230); deleting the comment removed that review too (404)
+        outcome: ok
+  - id: test_run
+    name: A real /rvw-pr pass on PR #1174, and the recipe it broke
+    steps:
+      - file: .claude/skills/rvw-pr/posting.md
+        section: "(run) /rvw-pr 1174 from the worktree-isolated session"
+        read_type: verify
+        extract: >-
+          Posted nothing: the session's worktree guard refused the -F call
+          because a finding body named git commands. Its 3 findings: double
+          quotes let a backtick span in a body run as a command; -F also
+          rewrites {owner}, {repo}, {branch} anywhere in a value (shown by a
+          GET); and a gh-route shortfall had no Step 5 header
+        outcome: misleading
+      - file: .claude/skills/rvw-pr/posting.md
+        section: "(probe) all -f fields, then JSON on stdin from a quoted heredoc"
+        read_type: verify
+        extract: >-
+          All -f: HTTP 422, line "19" is not a number, so -F cannot be dropped
+          and mixing breaks grouping past one comment. The worktree guard also
+          refused the heredoc, so the probe ran after leaving the worktree. A
+          short commit_id is HTTP 422; with the full SHA, pending review
+          5602600979 held two comments whose bodies (backticks, git, {owner},
+          $HOME, an apostrophe, a newline, @file, true) arrived unchanged;
+          deleted, no pending review left
+        outcome: ok
+      - file: .claude/skills/rvw-pr/posting.md
+        section: "(run) /rvw-pr 1174 root=<worktree> from a non-isolated session at 8cea5d238"
+        read_type: verify
+        extract: >-
+          Posted through the heredoc route: review 5602679326, comment count
+          0 to 3, each comment on its reported line (posting.md 30 and 28,
+          process-budget.json 119). Its findings: the partial-post return was
+          unattributable from a count, the worktree refusal was stated wider
+          than measured, and the first budget raise kept a stale +435 (the
+          file sizes at 0002d604a give SKILL.md +414 over master)
+        outcome: misleading
+      - file: sdd/CONTENT-RULES.md
+        section: "Last pass: three lines"
+        read_type: gate
+        extract: >-
+          Owner review asked for the three-line pass on the whole change.
+          posting.md condensed to its rules (evidence prose left to this
+          trace), SKILL.md, /ship and the I/O split trimmed; the process total
+          fell below master's 301224, so the three raises were dropped and the
+          cut locked in with --update. On the owner's follow-up the gh route
+          moved to posting-gh.md, read only when no MCP posting tool loads, so
+          an MCP pass no longer reads it; the total stays below master
+          (check-process-budget)
+        outcome: ok
+      - file: .claude/skills/rvw-pr/posting-gh.md
+        section: "(run) /rvw-pr 1174 with GitHub MCP, at 309ccf357"
+        read_type: verify
+        extract: >-
+          MCP route after the split: review 5609617428, count 8 to 10, both
+          comments on their lines. Findings: a retry on exit status alone could
+          post twice after a timeout, and each gh-posted FILE finding counts as
+          its own round in ship_report.py
+        outcome: misleading
+      - file: scripts/ship_report.py
+        section: "(probe) pending review via REST, then pulls/1174/comments subject_type=file"
+        read_type: verify
+        extract: >-
+          HTTP 422 "user_id can only have one pending review per pull request",
+          so REST cannot put a FILE comment in the pass's review; the pending
+          review was deleted unsubmitted. A FILE comment posted alone made
+          review 5609647160 with an empty body, COMMENTED; deleted, count back
+          to 10. Hence the fold in rfc-0015-findings.py. Over RFC-0015's 19 PRs
+          plus #1173/#1174 it folds only #968's 12 s file-level review; #1173's
+          owner notes, hours after the pass, stay apart by the 120 s window.
+          Re-running the RFC's derivation moved Table 2 r4/r5 unclassifiable
+          34/28 to 35/27 and Table 3's 92 submissions to 91, nothing else
+        outcome: ok
+      - file: .claude/skills/rvw-pr/posting-gh.md
+        section: "(run) /rvw-pr 1174 from a local session with --strict-mcp-config, at 823985a08"
+        read_type: verify
+        extract: >-
+          No MCP server, so no posting tool to search for: the pass posted
+          through the gh heredoc, review 5609728405, count 12 to 15, three line
+          comments each on its line, no retry. Findings: a refused FILE call
+          had no consistent outcome; the fold's chaining was untested; and the
+          condense had dropped the REST range and deleted-line spellings
+        outcome: misleading
+      - file: .claude/skills/rvw-pr/posting-gh.md
+        section: "(run) claude.ai/code session, at 224228fab"
+        read_type: verify
+        extract: >-
+          Not the no-MCP condition: GitHub MCP was connected, the reviewer was
+          told to avoid it and to use no heredoc, and printed the gh calls
+          instead of running them (issue comment 6334390644). No cloud gh post
+          measured. Its findings: SKILL.md Step 1 still said MCP only for
+          writes, and the FILE call had a shape but no command
+        outcome: misleading
+      - file: .claude/skills/rvw-pr/posting-gh.md
+        section: "(run) claude.ai/code session, /rvw-pr 1174 as its first message, at 9f5ab62af"
+        read_type: verify
+        extract: >-
+          No MCP posting tool loaded, so the pass took the gh route: the review
+          call posted review 5611195312 with two line comments (count 19 to
+          21), the first cloud gh post. Its FILE call was refused by a hook
+          that blocks any call containing `head`, and the pass returned that
+          finding unposted. Findings: the guard dropped "among your tools"
+          (ToolSearch does not load an already-loaded tool), the retry rules
+          contradicted each other and the comment count cannot decide a
+          zero-comment review call, and the RFC's #997 and pilot figures were
+          not re-run after the fold (re-run: #997 still 4 submissions, 20
+          findings; #1021-1023 still 14 and 69). A separate cloud review
+          (5610232200) found the fold's cross-author bound untested
+        outcome: misleading
+      - file: .claude/skills/rvw-pr/posting-gh.md
+        section: "(run) /rvw-pr 1174 on the machine with no GitHub MCP, at 55e4b4fe7"
+        read_type: verify
+        extract: >-
+          Posted through the gh route: review 5612116309, count 25 to 27, both
+          comments on their lines. Findings: the review-call recount had no
+          per_page and no baseline taken right before the call, and the
+          CLAUDE-REFERENCE rationale still claimed CLI writes need a temp JSON
+          file. The owner asked for the RFC-0015 scripts to move into a
+          subfolder; both moved to sdd/rfcs/rfc-0015/, live references
+          updated, older traces and BACKLOG-DONE left as recorded. rounds.py
+          --at 2a1bbfe crashes on a cp1252 decode after its first population
+          on this Windows machine, identically for master's copy run in place
+        outcome: misleading
+discovery_followups:
+  - BUG-340
+surprising_ripples:
+  - scripts/ship_report.py
+  - sdd/rfcs/rfc-0015/findings.py
+  - sdd/rfcs/rfc-0015-ship-two-surfaces.md
+  - tests/scripts/test_ship_report.py
+decisions:
+  - sdd/decisions/b301fcfb-c12a-4332-be83-7addd61e5d96.jsonl
+  - sdd/decisions/caf9bbcd-11d7-471b-9c9e-a5ffd792c9b3.jsonl
+review:
+  # Derived by `hatch run ship-report 1174 --trace-block-only` at head 6d114ce.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1174 --trace-block-only"
+  pr: 1174
+  review_rounds: 10
+  submissions: 8
+  findings: 15
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.25
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {unknown: 1}
+      duration_hours: 2.21
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 10.98
+    - round: 4
+      findings: 3
+      origin: {loop-introduced: 2, unclassifiable-blame: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.28
+    - round: 5
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 1.09
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 1.53
+    - round: 7
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {unknown: 1}
+      duration_hours: 1.25
+    - round: 8
+      findings: 2
+      origin: {loop-introduced: 1, pre-existing: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.0
+  by_file:
+    - path: ".claude/skills/rvw-pr/posting-gh.md"
+      findings: 6
+    - path: ".claude/skills/rvw-pr/posting.md"
+      findings: 3
+    - path: "sdd/rfcs/rfc-0015/findings.py"
+      findings: 2
+    - path: ".claude/skills/rvw-pr/SKILL.md"
+      findings: 1
+    - path: "sdd/CLAUDE-REFERENCE.md"
+      findings: 1
+    - path: "sdd/process-budget.json"
+      findings: 1
+    - path: "tests/scripts/test_ship_report.py"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/ship/SKILL.md"
+    - "scripts/ship_report.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-384-rfc-0015-graduation-measurement.md"
+    - "sdd/backlog/id-268-pr-close-step.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/b301fcfb-c12a-4332-be83-7addd61e5d96.jsonl"
+    - "sdd/decisions/caf9bbcd-11d7-471b-9c9e-a5ffd792c9b3.jsonl"
+    - "sdd/rfcs/rfc-0015-ship-two-surfaces.md"
+    - "sdd/rfcs/rfc-0015/rounds.py"
+    - "sdd/traces/_schema.yml"
+    - "sdd/traces/bk-481-rvw-pr-gh-post.yml"
+    - "tests/scripts/test_check_traces.py"
+    - "tests/scripts/test_rfc_0015_findings.py"
+  review_driven_commits:
+    - sha: "c3bf4db"
+      subject: "fix: address PR #1174 review"
+    - sha: "6847d55"
+      subject: "fix: address PR #1174 review"
+    - sha: "a0c0f2e"
+      subject: "BK-481: Move the gh posting route into posting-gh.md"
+    - sha: "f90580b"
+      subject: "fix: address PR #1174 review"
+    - sha: "0f4de3f"
+      subject: "fix: address PR #1174 review"
+    - sha: "66478ec"
+      subject: "fix: address PR #1174 review"
+    - sha: "e16f34a"
+      subject: "fix: address PR #1174 review"
+    - sha: "9802146"
+      subject: "fix: address PR #1174 review"
+    - sha: "ffab9eb"
+      subject: "BK-481: Add the review block to the trace"
+    - sha: "6d114ce"
+      subject: "BUG-340: File the rounds.py Windows crash"
+  ci: {verdict: PENDING, failed: 0, pending: 24}

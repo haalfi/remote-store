@@ -24,8 +24,9 @@ durable copy is the `review:` block written at the close.
 
 What it reuses, and why that matters
 ------------------------------------
-``sdd/rfcs/rfc-0015-findings.py`` already classifies a PR's findings: it walks
-``pulls/<N>/comments`` paged, groups by ``pull_request_review_id``, orders the
+``sdd/rfcs/rfc-0015/findings.py`` already classifies a PR's findings: it walks
+``pulls/<N>/comments`` paged, groups by ``pull_request_review_id`` (folding
+``/rvw-pr``'s ``gh``-posted file-level reviews into their pass), orders the
 groups by each submission's ``submitted_at``, blames ``original_line`` at the
 head the reviewer saw to tag origin, and reads the first reply in each thread
 for triage. Every one of those definitions is load-bearing for RFC-0015's
@@ -34,7 +35,7 @@ tables, so this script **imports** them rather than restating them
 "which round is this finding in" would eventually disagree, and the RFC's
 acceptance criterion is measured with one of them.
 
-The import is by path, because ``rfc-0015-findings.py`` is not a Python
+The import is by path, because ``rfc-0015/findings.py`` is not a Python
 identifier and ``import`` cannot name it. That is the cost of leaving the
 classifier where the RFC's derivation line points; moving it to ``scripts/``
 would falsify the command every figure in the RFC cites.
@@ -168,7 +169,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-_CLASSIFIER = ROOT / "sdd" / "rfcs" / "rfc-0015-findings.py"
+_CLASSIFIER = ROOT / "sdd" / "rfcs" / "rfc-0015" / "findings.py"
 
 
 def _load_classifier(path: Path = _CLASSIFIER) -> Any:
@@ -239,7 +240,7 @@ def rounds_with_findings(pr: int) -> tuple[OrderedDict[int, list[dict]], dict[in
     """Findings grouped by submission and ordered by submission time.
 
     Returns ``(rounds, review_ts, first_reply, unsubmitted)`` — the same
-    construction ``rfc-0015-findings.py`` makes, kept in one place so the round
+    construction ``rfc-0015/findings.py`` makes, kept in one place so the round
     index here is the round index there.
     """
     comments = fnd._gh(f"pulls/{pr}/comments")
@@ -249,13 +250,14 @@ def rounds_with_findings(pr: int) -> tuple[OrderedDict[int, list[dict]], dict[in
     for c in sorted((c for c in comments if c.get("in_reply_to_id")), key=lambda c: c["created_at"]):
         first_reply.setdefault(c["in_reply_to_id"], c["body"])
 
-    review_ts = {
-        rv["id"]: fnd._ts(rv["submitted_at"]) for rv in fnd._gh(f"pulls/{pr}/reviews") if rv.get("submitted_at")
-    }
+    reviews = fnd._gh(f"pulls/{pr}/reviews")
+    review_ts = {rv["id"]: fnd._ts(rv["submitted_at"]) for rv in reviews if rv.get("submitted_at")}
+    folds = fnd.file_review_folds(findings, reviews)
 
     seen: OrderedDict[int, list[dict]] = OrderedDict()
     for f in findings:
-        seen.setdefault(f["pull_request_review_id"], []).append(f)
+        rid: int = f["pull_request_review_id"]
+        seen.setdefault(folds.get(rid, rid), []).append(f)
     unsubmitted = [rid for rid in seen if rid not in review_ts]
     ordered = sorted(seen, key=lambda rid: review_ts.get(rid, float("inf")))
     rounds: OrderedDict[int, list[dict]] = OrderedDict((rid, seen[rid]) for rid in ordered)
@@ -430,7 +432,7 @@ def _yaml_list(items: list[str], indent: str) -> str:
 
 def trace_block(data: dict[str, Any]) -> str:
     """The trace's ``review:`` key, pasted verbatim. ``review_rounds`` stays at
-    a findable indent so ``rfc-0015-rounds.py`` still reads it."""
+    a findable indent so ``rfc-0015/rounds.py`` still reads it."""
     # Hoisted rather than nested in the f-string below: a same-quote nested
     # f-string needs PEP 701 (3.12), and this repo supports 3.11.
     # `--trace-block-only`, because `derivation` is declared "re-runnable as
@@ -494,7 +496,7 @@ def step5_report(data: dict[str, Any]) -> str:
         "",
         f"Derived by `hatch run ship-report {data['pr']}` at head `{data['head'][:7]}`, "
         f"base `{data['base_ref']}`. Classification comes from "
-        "`sdd/rfcs/rfc-0015-findings.py`, imported rather than reimplemented.",
+        "`sdd/rfcs/rfc-0015/findings.py`, imported rather than reimplemented.",
         "",
         "## Rounds and findings",
         "",

@@ -440,7 +440,7 @@ class TestOneLoader:
     def _consumers() -> dict[str, str]:
         """Every script under `scripts/` that reads the trace corpus, derived rather than listed.
 
-        **Bound**: `scripts/` only. `sdd/rfcs/rfc-0015-rounds.py` also reads
+        **Bound**: `scripts/` only. `sdd/rfcs/rfc-0015/rounds.py` also reads
         the corpus and is outside it — it text-scans rather than parsing
         YAML, so it cannot hit the last-wins defect today, but it is a live
         counterexample to a broader reading of this docstring.
