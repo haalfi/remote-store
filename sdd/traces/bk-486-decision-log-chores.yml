@@ -95,3 +95,67 @@ surprising_ripples:
 co_shipped_items: []
 decisions:
   - sdd/decisions/5fb010a8-2f05-48f0-bdc8-5982d8e390ac.jsonl
+review:
+  # Derived by `hatch run ship-report 1175 --trace-block-only` at head 58982c5.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1175 --trace-block-only"
+  pr: 1175
+  review_rounds: 5
+  submissions: 4
+  findings: 10
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 1.74
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.23
+    - round: 3
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {must-fix: 3}
+      duration_hours: 2.76
+    - round: 4
+      findings: 4
+      origin: {loop-introduced: 3, pre-existing: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.94
+  by_file:
+    - path: "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+      findings: 5
+    - path: ".claude/output-styles/interview.md"
+      findings: 2
+    - path: "scripts/record_decision.py"
+      findings: 2
+    - path: "scripts/check_traces.py"
+      findings: 1
+  untouched_files:
+    - ".claude/hooks/gate-commit.sh"
+    - ".gitignore"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/5fb010a8-2f05-48f0-bdc8-5982d8e390ac.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/traces/_schema.yml"
+    - "sdd/traces/bk-486-decision-log-chores.yml"
+    - "tests/scripts/test_check_traces.py"
+    - "tests/scripts/test_record_decision.py"
+  review_driven_commits:
+    - sha: "3a175ff"
+      subject: "fix: address PR #1175 review"
+    - sha: "6cff5e2"
+      subject: "fix: address PR #1175 review"
+    - sha: "3d4e127"
+      subject: "BK-486: Trim the housekeeping steering by the content-rules last pass"
+    - sha: "93ec9f4"
+      subject: "fix: address PR #1175 review"
+    - sha: "58982c5"
+      subject: "fix: address PR #1175 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
