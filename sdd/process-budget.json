@@ -8,10 +8,10 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 301188,
+  "total": 301250,
   "files": {
     "CLAUDE.md": 17648,
-    ".claude/output-styles/interview.md": 2527,
+    ".claude/output-styles/interview.md": 2534,
     ".claude/skills/audit/SKILL.md": 1465,
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
@@ -32,7 +32,7 @@
     ".claude/agents/store-backend-expert.md": 1903,
     ".claude/agents/testing-expert.md": 1602,
     "sdd/CLAUDE-REFERENCE.md": 64523,
-    "sdd/traces/_schema.yml": 31935
+    "sdd/traces/_schema.yml": 31990
   },
   "raises": [
     {
@@ -110,8 +110,8 @@
     {
       "item": "BK-486",
       "from": 300668,
-      "to": 301188,
-      "reason": "interview.md tells housekeeping questions to carry their metadata tag, with three examples (+422); CLAUDE-REFERENCE Record row points to the skip and the held base-branch dialogs (+98)"
+      "to": 301250,
+      "reason": "interview.md tells housekeeping questions to carry their metadata tag, with three examples (+429); CLAUDE-REFERENCE Record row points to the skip and the held base-branch dialogs (+98); _schema.yml decisions says a promoted line is read silently (+55)"
     }
   ]
 }

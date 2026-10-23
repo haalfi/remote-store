@@ -280,6 +280,26 @@ def test_detached_head_records_null_branch(recorder: Any, repo: Path) -> None:
     assert not (repo / "sdd" / "decisions" / f"{SESSION}.jsonl").exists()
 
 
+def test_dialog_during_a_rebase_is_logged_not_held(recorder: Any, repo: Path) -> None:
+    """A rebase detaches HEAD, but the work is the branch being rebased, and
+    ``git rebase --continue`` is no commit that promotes (PR #1175 review)."""
+    _git(repo, "checkout", "-q", "-b", "master")
+    (repo / "f").write_text("master side")
+    _git(repo, "commit", "-q", "-am", "master side")
+    _git(repo, "checkout", "-q", "feature")
+    (repo / "f").write_text("feature side")
+    _git(repo, "commit", "-q", "-am", "feature side")
+    conflict = subprocess.run(["git", "-C", str(repo), "rebase", "master"], capture_output=True, check=False)
+    assert conflict.returncode != 0, "the rebase should stop on its conflict"
+    assert _git(repo, "branch", "--show-current") == ""
+
+    recorder.record(ANSWERED["a-followed"][0], repo, {})
+
+    assert not (repo / "sdd" / "decisions" / ".pending").exists()
+    (line,) = _lines(repo)
+    assert line["branch"] is None
+
+
 def test_remote_session_id_recorded_when_set(recorder: Any, repo: Path) -> None:
     """Observation 4: D4.0's trailer fallback matches this variable, not ``session_id``."""
     env = {"CLAUDE_CODE_REMOTE_SESSION_ID": "cse_01FPZRdRyQ4sj5AD4DZF1zg3"}

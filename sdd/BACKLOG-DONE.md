@@ -305,7 +305,8 @@ if evidence changes; these are retired.
   Chores and post-cleanup master questions reached `sdd/decisions/` and were
   stripped by hand. A dialog tagged `metadata.source: "housekeeping"` is skipped
   (the tag reaches Pre only, so Post is dropped by `tool_use_id`); a base-branch
-  or detached event waits in the ignored `sdd/decisions/.pending/` until the
+  or detached event (not one during a rebase, nor one whose branch git could not
+  read) waits in the ignored `sdd/decisions/.pending/` until the
   session commits on a work branch, then a `promoted` line binds
   the moved lines to that branch (D4.0, read in line order). RFC-0018 D1, D2,
   D3 and D4.0 amended.

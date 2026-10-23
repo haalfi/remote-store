@@ -114,10 +114,8 @@ paths every payload carries (`cwd`, `transcript_path`, `scratchpad_dir`),
 which a log committed to a public repository must not hold.
 
 **Housekeeping is not recorded.** A dialog whose answer only steers the
-session (watch a PR, rebase, merge, another round, a gate waiver for a
-filing-only PR) records no design choice,
-yet it was committed beside real decisions and stripped by hand before each
-commit. The agent tags it `metadata: {"source": "housekeeping"}`, as
+session records no design choice, yet it was committed beside real decisions
+and stripped by hand before each commit. The agent tags it `metadata: {"source": "housekeeping"}`, as
 [`interview.md`](../../.claude/output-styles/interview.md) defines the class,
 and the recorder skips both of its events. The tag reaches `PreToolUse` only
 (§ Follow-up: `metadata` reaches `PreToolUse` only), so the recorder keeps the
@@ -156,7 +154,9 @@ the PR diff shows the log beside the change it explains.
   or `main`) or a detached HEAD goes to the ignored
   `sdd/decisions/.pending/<session_id>.jsonl`, not the log. One whose branch
   git could not read (a failure, or the recorder's time budget running out) is
-  logged with a null branch, since it may be a work branch. It moves into the
+  logged with a null branch, since it may be a work branch, and so is one
+  during a rebase: its detached HEAD is the branch being rebased, and
+  `git rebase --continue` is no commit that promotes. It moves into the
   log, lines in order and unchanged, only when `gate-commit.sh` runs before
   that same session commits on a work branch: the hook reads `session_id` from
   its own payload and promotes that session's held records alone. A dialog

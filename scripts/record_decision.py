@@ -21,7 +21,8 @@ the tag reaches ``PreToolUse`` only, so its ``tool_use_id`` is kept in
 ``sdd/decisions/.pending/<session_id>.skip`` to drop the ``answered`` event too.
 One asked on the base branch or a detached HEAD is held in the gitignored
 ``sdd/decisions/.pending/<session_id>.jsonl`` (one whose branch git could not
-read is logged, since it may be a work branch) and moved into the log, in order,
+read is logged, since it may be a work branch, and so is one during a rebase,
+whose detached HEAD is the branch being rebased) and moved into the log, in order,
 only by ``promote()``, which ``gate-commit.sh`` runs with ``--promote`` before
 that same session commits on a work branch. One
 ``{"event": "promoted", "ts", "session_id", "branch", "head"}`` line follows
@@ -91,6 +92,12 @@ def _git(root: Path, deadline: float, *args: str) -> str | None:
     except (OSError, subprocess.SubprocessError):
         return None
     return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _rebasing(root: Path, deadline: float) -> bool:
+    """True while a rebase runs, which detaches HEAD from the branch it rewrites."""
+    paths = _git(root, deadline, "rev-parse", "--git-path", "rebase-merge", "--git-path", "rebase-apply")
+    return bool(paths) and any((root / p).is_dir() for p in paths.splitlines())
 
 
 def _safe_session(payload: Mapping[str, Any]) -> str:
@@ -184,8 +191,10 @@ def record(payload: Mapping[str, Any], root: Path, env: Mapping[str, str]) -> Pa
     # Held lines are not promoted here: the branch is the project directory's,
     # which another session may have switched, so only this session's own
     # commit (gate-commit.sh --promote) moves them. A branch git could not read
-    # may be a work branch, so that event is logged with a null branch, as before.
-    if branch == "" or branch in _BASE_BRANCHES:
+    # may be a work branch, so that event is logged with a null branch, as before;
+    # so is one during a rebase, whose `rebase --continue` no hook promotes on.
+    detached = branch == "" and not _rebasing(root, deadline)
+    if detached or branch in _BASE_BRANCHES:
         target = _pending(root) / f"{session_id}.jsonl"
     else:
         target = root / "sdd" / "decisions" / f"{session_id}.jsonl"

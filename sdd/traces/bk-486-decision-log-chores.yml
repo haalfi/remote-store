@@ -91,6 +91,7 @@ discovery_followups: []
 surprising_ripples:
   - scripts/check_traces.py
   - tests/scripts/test_check_traces.py
+  - sdd/traces/_schema.yml
 co_shipped_items: []
 decisions:
   - sdd/decisions/5fb010a8-2f05-48f0-bdc8-5982d8e390ac.jsonl
