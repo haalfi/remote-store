@@ -562,9 +562,9 @@ no clause of the contract ships unexercised.
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it, and RFC-0017's migration
   steps build the kernel against them. `research-spec-first-reset.md` records the maintainer's
-  decisions for a spec-first reset (§ 2, § 4, § 6) and the order of the work (§ 9). Not done: the
-  reset RFC, `/observe`, the first flow on `read()`, the format RFC. Open decision: § 8's open
-  points. After BK-484, which gives the `read()` flow its key spec.
+  decisions for a spec-first reset (§ 2, § 4, § 6) and the order of the work (§ 9). Not done: every
+  step of § 9, from cutting `release/0.33.x` and pausing RFC-0017 to the format RFC. Open decision:
+  § 8's open points. After BK-484, which gives the `read()` flow its key spec.
 
 - [ ] **BK-482 — Azure conformance runs on Azurite, which stores raw keys the HNS service rewrites**
   spec: BE-030, BE-032 · effort: M · audience: infra.test, library.maintainer

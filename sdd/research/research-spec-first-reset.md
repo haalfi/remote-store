@@ -117,7 +117,7 @@ in the research repository (below).
 
 | Run | Where | Evidence handling |
 |---|---|---|
-| Claude Code, in an empty repository | `haalfi/research`, branch `research/black-box-boundary-spec`, `reports/Black box boundary spec methods.md` (v2) | Sources graded A to D; a verification pass over full texts, as the report states: 170 claims checked, 101 confirmed, 41 corrected, 5 refuted, 7 not found, 15 unverifiable |
+| Claude Code, in an empty repository | `haalfi/research`, branch `research/black-box-boundary-spec`, `reports/Black box boundary spec methods.md` (v2) | Sources graded A to D; a verification pass over full texts, as the report states: 170 claims checked, 101 confirmed, 41 corrected, 5 refuted, 7 not found, 15 unverifiable, 1 C/D row not re-read |
 | ChatGPT deep research | [shared result](https://chatgpt.com/s/t_6adb2684b1ec8191a63dd80f34ab1e86) | No source grades and no verification pass, which the brief required |
 
 **Where both agree independently:** Design by Contract extended with traces,
@@ -226,9 +226,9 @@ separate bake-off precedes it. BK-485 tracks the steps.
 | Step | Work | Why here |
 |---|---|---|
 | 1 | Cut `release/0.33.x` (D2). Pause RFC-0017's migration steps: the Memory driver stays on the kernel, no further backend moves onto it until its specs exist (open point 5). | Kernel code is otherwise written against the specs being replaced. Both reports put the spec and an independent oracle before the implementation. |
-| 2 | The reset RFC: D1 to D11 and open points 1, 5, 9 and 10. Process only; format is step 6. | Turns this record into binding process. |
+| 2 | The reset RFC: D1 to D11, with D10 recorded as open, and open points 5, 9 and 10. Process only; format is step 6. | Turns this record into binding process. |
 | 3 | `/observe` with its hook, the ground register and the observation axes (S1 to S5, D11). The axes are drafted unprimed, from the reports' categories and F1 to F6. | Every later design session needs it. |
-| 4 | The key spec between 051 and 004 (BK-484; open point 8). | Spec 051 and the key spec are the ground `read()` needs; D11 forbids deciding keys on the side. |
+| 4 | The key spec between 051 and 004 (BK-484; open point 8). | Recommended so the key layer is accepted ground before `read()` leans on it. D5 would also let key questions be decided inside the `read()` flow, and S3 lets the key research be named as a session addition; open point 8 keeps that choice. |
 | 5 | The first flow, `read()`: an `/observe` session with § 7 as candidate input; the spec in the provisional F1 to F6 format; a reference model written fresh from the spec, with its counterexample mutants; the profile tables for Memory, Local, S3 and SFTP; the comparison with 0.33. | Tests the category cut and the form rule, both unproven on a real operation in both reports. Puts the independent check before any implementation, the one point where the agent evidence is strong. |
 | 6 | A minimal bake-off on the finished slice: the same clauses as normative prose with a conformance suite (the Claude report's shortlist 3), fresh agents implementing against each, scored on mutants killed and guarantees invented. Then the format RFC amends `SPEC-DESIGN.md` with F1 to F6 and the category list. | Holds the decisions fixed and varies only the form, which both reports name as the missing measurement. |
 
