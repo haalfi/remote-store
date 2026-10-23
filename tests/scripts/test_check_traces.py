@@ -783,6 +783,14 @@ class TestDecisionLogs:
         assert "PostToolUseFailure" in report.notes[0].message
         assert "line 2" in report.notes[0].message
 
+    def test_a_promotion_marker_is_read_silently(self, tmp_path):
+        # The recorder writes it (RFC-0018 D2, BK-486) with no tool_use_id: a
+        # known kind, so neither the unknown-kind nor the id note fires.
+        marker = {"event": "promoted", "session_id": "s", "branch": "feature", "head": "abc", "ts": "t"}
+        report = self._run(tmp_path, [_asked(), _answered(), marker])
+        assert report.violations == []
+        assert report.notes == []
+
     def test_the_live_schema_confines_listed_paths_to_the_log_directory(self):
         # Anything else (an absolute path, a `..` escape, another extension) is
         # not a recorder log; the pattern mirrors record_decision.py's session-id rule.

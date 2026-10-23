@@ -63,7 +63,8 @@ read. What an author may do about each failure is stated with the key, in
 question left ``unanswered`` (no ``answered`` event, no answer for it, or an
 answer starting with the dismissal prefix ``[User dismissed``), because
 declining a dialog is a legitimate act and the report is how it stays visible;
-an event of a kind other than ``asked`` and ``answered``, so a later hook
+an event of a kind other than ``asked``, ``answered`` and the recorder's
+``promoted`` marker (read silently: it binds held lines, D2), so a later hook
 registration cannot break this reader (D3); an ``asked`` event whose
 ``tool_input.questions`` is not a list of objects, which would otherwise drop
 out of the unanswered report silently; an ``answered`` event with no
@@ -274,6 +275,10 @@ def _check_decision_log(root: Path, name: str, *, source: str, path: str) -> Rep
             violations.append(Violation(source, path, f"{name} line {lineno}: not a JSON object"))
             continue
         kind, tool_use_id = event.get("event"), event.get("tool_use_id")
+        if kind == "promoted":
+            # The recorder's marker after held lines move into the log (RFC-0018
+            # D2): it binds them to a work branch and carries no dialog.
+            continue
         if not isinstance(tool_use_id, str):
             # Missing, null, a list or an object: none can pair. Null in
             # particular would pair unrelated id-less dialogs under one key.

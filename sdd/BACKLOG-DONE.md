@@ -306,7 +306,8 @@ if evidence changes; these are retired.
   stripped by hand. A dialog tagged `metadata.source: "housekeeping"` is skipped
   (the tag reaches Pre only, so Post is dropped by `tool_use_id`); a base-branch
   or detached event waits in the ignored `sdd/decisions/.pending/` until the
-  session's next dialog or commit on a work branch. RFC-0018 D1 and D2 amended.
+  session's next dialog or commit on a work branch, then a `promoted` line binds
+  the moved lines to that branch (D4.0). RFC-0018 D1, D2 and D3 amended.
   Trace: [bk-486](traces/bk-486-decision-log-chores.yml).
 - [x] **BK-481 — `/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can**
   spec: — · effort: S · audience: contributor.tooling, contributor.process

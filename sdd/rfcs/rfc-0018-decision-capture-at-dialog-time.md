@@ -12,9 +12,9 @@ exclusion mechanics. Step 3 is not. Step 2's review (2026-10-09) amends D2, by
 the maintainer's choice of remedy, to let a line that is not a record be
 deleted, and one of two differing answers to one dialog once the maintainer
 has picked the record. BK-486 (2026-10-23) amends D1, to leave a dialog tagged
-housekeeping unrecorded, and D2, to hold a base-branch or detached event until
-the session reaches a work branch (§ Follow-up: `metadata` reaches
-`PreToolUse` only).
+housekeeping unrecorded, D2, to hold a base-branch or detached event until
+the session reaches a work branch, and D3, for the `promoted` line that binds
+the moved events there (§ Follow-up: `metadata` reaches `PreToolUse` only).
 
 ## Summary
 
@@ -157,11 +157,14 @@ the PR diff shows the log beside the change it explains.
   session's next event on a work branch, or `gate-commit.sh` before that
   session commits on one (it reads `session_id` from its own hook payload and
   promotes that session only, so a shared checkout never ships another
-  session's records). A question asked after a session's cleanup is followed
-  by neither and never reaches a commit, while a design question asked before
-  the branch existed still does; D4.0 binds the promoted lines as before, from
-  their recorded branch. Bounds: an untagged chore held before a later commit
-  on a work branch is promoted with it, and held records sit in the project
+  session's held records). A question asked after a session's cleanup is
+  followed by neither and never reaches a commit, while a design question asked
+  before the branch existed still does. The moved lines keep their recorded
+  branch, and a `promoted` line follows them, naming the work branch and HEAD
+  they moved on: that is the session's event on the work branch, so D4.0 binds
+  them there even when a commit, not a dialog, promoted them. Bounds: an
+  untagged chore held before a later commit on a work branch is promoted with
+  it, and held records sit in the project
   directory, so the anchoring bound below applies to them too.
 - **No item ID in the path.** The ID is not knowable at capture time: branch
   names need not carry one (`CLAUDE.md` § Branching lists `fix-streaming-io`),
@@ -237,7 +240,9 @@ what the answer was.
 **Unknown event kinds are tolerated.** A reader that meets an event kind other
 than `asked` and `answered` skips it for classification and never fails on it,
 so a later registration (§ Open Questions 5) cannot break a reader written
-before it.
+before it. The recorder's own `promoted` line (D2) is a known kind, not a hook
+event: it carries no `tool_use_id` and no dialog, a reader skips it for
+classification, and only D4.0 reads it, to bind the lines before it.
 
 **The sentinel is a harness string, matched by prefix, and that is a bound.**
 It is undocumented and was seen once (a′), in full

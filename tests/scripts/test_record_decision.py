@@ -407,12 +407,35 @@ def test_next_work_branch_dialog_promotes_held_records_first(recorder: Any, repo
     recorder.record(pre_b, repo, {})
 
     lines = _lines(repo)
-    assert [(line["tool_use_id"], line["branch"]) for line in lines] == [
-        (pre_a["tool_use_id"], "master"),
-        (pre_a["tool_use_id"], "master"),
-        (pre_b["tool_use_id"], "feature"),
+    assert [(line["event"], line.get("tool_use_id"), line["branch"]) for line in lines] == [
+        ("asked", pre_a["tool_use_id"], "master"),
+        ("answered", pre_a["tool_use_id"], "master"),
+        ("promoted", None, "feature"),
+        ("asked", pre_b["tool_use_id"], "feature"),
     ]
     assert not (repo / "sdd" / "decisions" / ".pending" / f"{SESSION}.jsonl").exists()
+
+
+def test_promotion_marker_binds_moved_lines_to_the_work_branch(recorder: Any, repo: Path) -> None:
+    """D4.0 binds a base-branch line to the next work branch the session records an
+    event on; a commit-time promotion records no dialog, so the marker is that event."""
+    _git(repo, "checkout", "-q", "-b", "master")
+    recorder.record(ANSWERED["a-followed"][0], repo, {})
+    _git(repo, "checkout", "-q", "feature")
+    head = _git(repo, "rev-parse", "HEAD")
+
+    assert recorder.promote(repo, SESSION) == 1
+
+    held, marker = _lines(repo)
+    assert held["branch"] == "master"
+    assert {k: marker[k] for k in ("event", "session_id", "branch", "head")} == {
+        "event": "promoted",
+        "session_id": SESSION,
+        "branch": "feature",
+        "head": head,
+    }
+    assert marker["ts"] >= held["ts"]
+    assert "tool_use_id" not in marker
 
 
 def test_promote_with_nothing_held_is_a_noop(recorder: Any, repo: Path) -> None:
@@ -428,7 +451,7 @@ def test_promote_leaves_other_sessions_held_records(recorder: Any, repo: Path) -
     recorder.record(dict(ANSWERED["b-other"][0], session_id=other), repo, {})
 
     assert recorder.promote(repo, SESSION) == 1
-    assert [line["session_id"] for line in _lines(repo)] == [SESSION]
+    assert [(line["session_id"], line["event"]) for line in _lines(repo)] == [(SESSION, "asked"), (SESSION, "promoted")]
     assert [line["session_id"] for line in _held(repo, other)] == [other]
 
 
@@ -604,7 +627,7 @@ def test_gate_commit_promotes_the_committing_sessions_held_records(recorder: Any
     result = _run_gate_commit(repo, _commit_payload())
 
     assert result.returncode == 0, result.stderr
-    assert [line["branch"] for line in _lines(repo)] == ["master"]
+    assert [(line["event"], line["branch"]) for line in _lines(repo)] == [("asked", "master"), ("promoted", "feature")]
     assert _git(repo, "diff", "--cached", "--name-only") == f"sdd/decisions/{SESSION}.jsonl"
     assert not (repo / "sdd" / "decisions" / ".pending" / f"{SESSION}.jsonl").exists()
     assert [line["session_id"] for line in _held(repo, other)] == [other]

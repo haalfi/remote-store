@@ -15,16 +15,18 @@ One line per event::
      "tool_input": {...},               # verbatim
      "tool_response": {...}}            # verbatim, answered only
 
-Two kinds of dialog stay out of the committed log (RFC-0018 D1 and D2, as BK-486
+Two kinds of dialog stay out of the committed log (RFC-0018 D1 to D3, as BK-486
 amends them). One tagged ``metadata.source: "housekeeping"`` is not recorded:
 the tag reaches ``PreToolUse`` only, so its ``tool_use_id`` is kept in
 ``sdd/decisions/.pending/<session_id>.skip`` to drop the ``answered`` event too.
 One asked on the base branch or a detached HEAD is held in the gitignored
 ``sdd/decisions/.pending/<session_id>.jsonl`` and moved into the log, in order,
 by ``promote()``: at the session's next event on a work branch, or by
-``gate-commit.sh`` running ``--promote`` before the session commits on one. A
-question after a session's cleanup is never followed by either, so it never
-reaches a commit.
+``gate-commit.sh`` running ``--promote`` before the session commits on one, then
+followed by one ``{"event": "promoted", "ts", "session_id", "branch", "head"}``
+line naming the work branch, which binds them there under D4.0. A question
+after a session's cleanup is never followed by either, so it never reaches a
+commit.
 
 Payloads are stored as received and never interpreted: outcomes are derived by
 readers (RFC-0018 D3). An event other than the two registered ones is kept
@@ -118,13 +120,28 @@ def _skipped(payload: Mapping[str, Any], root: Path, session_id: str) -> bool:
     return skip.is_file() and tool_use_id in skip.read_text(encoding="utf-8").splitlines()
 
 
-def promote(root: Path, session_id: str) -> int:
-    """Move *session_id*'s held lines into its log under *root*, in order; return how many."""
+def _now() -> str:
+    # timezone.utc, not datetime.UTC: the host interpreter may predate 3.11.
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")  # noqa: UP017
+
+
+def promote(root: Path, session_id: str, where: tuple[str | None, str | None] | None = None) -> int:
+    """Move *session_id*'s held lines into its log under *root*, in order; return how many.
+
+    A ``promoted`` line follows them, naming the branch and HEAD they moved on
+    (*where*, else read from git). It is the session's event on that work
+    branch, so RFC-0018 D4.0 binds the moved lines there even when a commit,
+    not a dialog, promoted them.
+    """
     held = _pending(root) / f"{session_id}.jsonl"
     if not held.is_file():
         return 0
+    if where is None:
+        deadline = time.monotonic() + _GIT_BUDGET_S
+        where = (_git(root, deadline, "branch", "--show-current"), _git(root, deadline, "rev-parse", "HEAD"))
     text = held.read_text(encoding="utf-8")
-    _append(root / "sdd" / "decisions" / f"{session_id}.jsonl", text)
+    marker = {"event": "promoted", "ts": _now(), "session_id": session_id, "branch": where[0], "head": where[1]}
+    _append(root / "sdd" / "decisions" / f"{session_id}.jsonl", text + json.dumps(marker) + "\n")
     held.unlink()
     return len(text.splitlines())
 
@@ -143,8 +160,7 @@ def record(payload: Mapping[str, Any], root: Path, env: Mapping[str, str]) -> Pa
     deadline = time.monotonic() + _GIT_BUDGET_S
     line: dict[str, Any] = {
         "event": kind,
-        # timezone.utc, not datetime.UTC: the host interpreter may predate 3.11.
-        "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),  # noqa: UP017
+        "ts": _now(),
         "session_id": payload.get("session_id"),
         "tool_use_id": payload.get("tool_use_id"),
         # `branch --show-current` prints nothing on a detached HEAD, which _git maps to None.
@@ -164,7 +180,7 @@ def record(payload: Mapping[str, Any], root: Path, env: Mapping[str, str]) -> Pa
     if line["branch"] is None or line["branch"] in _BASE_BRANCHES:
         target = _pending(root) / f"{session_id}.jsonl"
     else:
-        promote(root, session_id)
+        promote(root, session_id, (line["branch"], line["head"]))
         target = root / "sdd" / "decisions" / f"{session_id}.jsonl"
     _append(target, json.dumps(line, ensure_ascii=False) + "\n")
     return target
