@@ -79,7 +79,7 @@ Requires ``gh`` authenticated and ``origin/master`` fetched.
 
 Usage::
 
-    python sdd/rfcs/rfc-0015-findings.py 964 965 968 971 972 973 974 976 977 \\
+    python sdd/rfcs/rfc-0015/findings.py 964 965 968 971 972 973 974 976 977 \\
         978 983 986 987 989 990 991 992 994 996
 """
 
@@ -94,7 +94,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 REPO = "haalfi/remote-store"
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 
 _OPEN_MUST_FIX = re.compile(r"^\s*\**(?:Must-fix|Fixed in\b)", re.I)
 _OPEN_FILED = re.compile(r"^\s*\**Filed as\b", re.I)

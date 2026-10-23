@@ -12,7 +12,7 @@ skills — D2, D3's worktree half and D5's posting half since #1020, D1 and D4
 with BK-378 — so the RFC has, for the first time, a state its acceptance
 criterion can be read against. Nothing has read it yet.
 **What is owed** is the criterion as § Impact wrote it: three deliveries run
-under the rules, pooled, then `rfc-0015-findings.py` over them. Graduate if
+under the rules, pooled, then `rfc-0015/findings.py` over them. Graduate if
 (1) the loop-introduced share of must-fix findings from round 3 on is below
 50%, (2) the derived trace block draws a finding in at most one round across
 the three, and (3) the retraction trigger fires at most once. **One delivery is

@@ -44,7 +44,7 @@ the command that produced it, with three named exceptions: the PR #997
 postscript reads that PR's head `3cd4acb`, the worktree timings are single
 runs on one container, and § Pilot result is pinned at `2bd34cc` and says so,
 because it measures deliveries that did not exist at the date above. The two commands that are longer than a line are
-committed beside this file as `rfc-0015-findings.py` and `rfc-0015-rounds.py`;
+committed in `rfc-0015/` beside this file as `findings.py` and `rounds.py`;
 the second takes `--at 2a1bbfe` so Table 1 can be re-derived at the pin
 rather than at whatever the working tree holds. The corpus moves on every
 merge, so re-run rather than quote.
@@ -73,7 +73,7 @@ of everything before it, and the findings the added rounds produce sit on what
 the loop itself wrote. Three tables carry that, each with its derivation.
 
 **Table 1. `review_rounds` per trace, split at the whole-file gate's merge
-(`24d9464`).** Derivation: `python sdd/rfcs/rfc-0015-rounds.py 24d9464 --at
+(`24d9464`).** Derivation: `python sdd/rfcs/rfc-0015/rounds.py 24d9464 --at
 2a1bbfe`, whose docstring states the population (traces first added since the
 split, renames followed), the value rule and the exclusion rule. The field counts
 review-driven commits, so it is a proxy for rounds; the traces' own derivation
@@ -109,7 +109,7 @@ the load-bearing one. Tables 2 and 3 do not depend on the field.
 Table 1's first row with `review_rounds` of five or more, mapped to their merge
 PRs by the `(#N)` suffix of `git log --format=%s 24d9464..HEAD`:
 #964 #965 #968 #971 #972 #973 #974 #976 #977 #978 #983 #986 #987 #989 #990 #991
-#992 #994 #996. Derivation: `python sdd/rfcs/rfc-0015-findings.py <those 19>`.
+#992 #994 #996. Derivation: `python sdd/rfcs/rfc-0015/findings.py <those 19>`.
 For each finding (a review comment with no `in_reply_to_id`) the script blames
 the commented line at the head the reviewer saw. The blamed commit is
 **pre-existing** if it is reachable from `origin/master`; otherwise its author
@@ -287,7 +287,7 @@ caught it. A measurement is a change to what the repo may claim, and nothing
 routed from the number to the clauses it bears on.
 
 **Its findings are mostly unclassifiable by the origin tag**, which is
-Table 2's unclassifiable bound in its sharpest form: `python sdd/rfcs/rfc-0015-findings.py 997`
+Table 2's unclassifiable bound in its sharpest form: `python sdd/rfcs/rfc-0015/findings.py 997`
 at `3cd4acb` returns 4 submissions and 20 inline findings for nine rounds, ten
 of the twenty file-level, so the loop-introduced share can be read for rounds 1
 and 2 only (0% and 40%). Nine rounds of review left a record from which the
@@ -629,7 +629,7 @@ corrects.
 
 **Mechanism.**
 
-- Origin is the blame classification in `rfc-0015-findings.py`, run by
+- Origin is the blame classification in `rfc-0015/findings.py`, run by
   `ship-report`: original, pre-existing, loop-introduced.
 - Posting discipline follows, in its conservative reading: a finding is
   anchored to its true line when that line falls inside a diff hunk, context
@@ -668,7 +668,7 @@ corrects.
   over-fires, and the `LINE` discipline above raises its reach. Under that
   discipline a second bias runs the same direction: the dry run's clean count
   is `mf-original + mf-pre-existing` (`clean`, feeding `hot()`, in
-  `rfc-0015-findings.py`'s D5 dry run), and a finding anchored to a context
+  `rfc-0015/findings.py`'s D5 dry run), and a finding anchored to a context
   line blames a commit reachable from `origin/master` and is tagged
   pre-existing, a category the
   baseline has at zero (Table 2's first bound). So the trigger under-fires
@@ -780,7 +780,7 @@ runtime behaviour, no published page other than this RFC's own.
 - **Cost:** 25.6 s of environment creation once per round, measured once
   above (D3); script work of size S; skill rewrites of size M.
 - **Acceptance criterion, stated before the run.** Three deliveries run under
-  the rules, pooled, then `rfc-0015-findings.py` over them. Graduate to an ADR
+  the rules, pooled, then `rfc-0015/findings.py` over them. Graduate to an ADR
   if (1) the loop-introduced share of must-fix findings from round 3 on,
   over `original + loop-introduced`, is below 50% (Table 4's pooled rounds 3
   to 7: 80 of 105, 76%, summing its rows), (2) the derived trace block draws a
@@ -806,7 +806,7 @@ runtime behaviour, no published page other than this RFC's own.
   its own round, which from round 3 are 77% to 93% loop-introduced (Table 2),
   it raises the share, so the bias runs against passing; the per-round
   unclassifiable count is what lets a reader see how much of the figure it
-  could account for. `rfc-0015-findings.py` prints clause 1 as one line, `POOLED r>=3
+  could account for. `rfc-0015/findings.py` prints clause 1 as one line, `POOLED r>=3
   must-fix`, over the PR numbers given, with `o`, `l`, `p` and `u` beside
   the share, and its `BY ROUND INDEX` share excludes pre-existing for the
   same reason; the per-finding classification is what Tables 2 to 4 rest
@@ -852,7 +852,7 @@ without D1 and D4 is the one taken: build them and re-measure.
 (#1020, merged `2026-09-17T19:42Z`; the three opened at 20:38, 21:13 and
 `2026-09-18T19:34Z`, from `gh api repos/haalfi/remote-store/pulls/<N> --jq
 '{created_at, merged_at}'`), so no round in the sample ran under the old rules.
-Every figure below comes from `python sdd/rfcs/rfc-0015-findings.py 1021 1022
+Every figure below comes from `python sdd/rfcs/rfc-0015/findings.py 1021 1022
 1023` at `2bd34cc` unless it names another derivation; the triage-derived ones
 (Table 4 and the triage counts) are re-derived with the classifier as fixed by
 BUG-295. 69 findings over 14
@@ -1027,7 +1027,7 @@ read against § Impact's three clauses.
 - Backlog: BK-365, BK-366, BK-348, BK-353, BK-349.
 - Traces: BUG-274, BUG-265, BUG-264, BUG-272, BK-359, BK-360, BK-358, and
   BUG-275 (read at PR #997's head `3cd4acb`, merged as `4452d26`).
-- Derivations: `rfc-0015-findings.py`, `rfc-0015-rounds.py`; the phrase set
+- Derivations: `rfc-0015/findings.py`, `rfc-0015/rounds.py`; the phrase set
   behind the 14-line count is
   `Retrospective|Annotated after|annotated after|until round \d|an earlier revision of this|this (line|sentence|figure|step) (said|read|was)|corrected in round|Round \d (caught|found|corrected)`
   over `sdd/specs/*.md`, `sdd/BACKLOG*.md`, `src/**/*.py`, `tests/**/*.py`,

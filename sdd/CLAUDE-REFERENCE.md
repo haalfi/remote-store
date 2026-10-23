@@ -501,10 +501,8 @@ reading as "the post failed" is what made pinning necessary.)
 | Read **any** PR data via Python | never |
 
 **Why `gh`-preferred for content reads:** quick, skips the MCP round-trip, needs
-no approval prompt. **Why MCP for writes:** posts without an approval prompt and
-avoids the temp-JSON + `gh api --input` dance the no-pipes/no-redirect hook
-forces on CLI writes. Identical in main session and forks. The `gh` fallback
-is not pre-approved.
+no approval prompt. **Why MCP for writes:** posts without an approval prompt; the `gh` fallback
+is not pre-approved. Identical in main session and forks.
 
 ---
 

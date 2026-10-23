@@ -42,8 +42,8 @@ import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPT = _REPO_ROOT / "scripts" / "ship_report.py"
-_CLASSIFIER = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-findings.py"
-_ROUNDS = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-rounds.py"
+_CLASSIFIER = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015" / "findings.py"
+_ROUNDS = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015" / "rounds.py"
 _SCHEMA = _REPO_ROOT / "sdd" / "traces" / "_schema.yml"
 
 
@@ -77,7 +77,7 @@ def _schema_gaps(node: dict, path: str) -> list[str]:
 
 
 def _load_rounds():
-    """Import `rfc-0015-rounds.py`, whose filename is not a Python identifier.
+    """Import `rfc-0015/rounds.py`, whose filename is not a Python identifier.
 
     The same `spec_from_file_location` route `ship_report` uses for the
     classifier. Without it the anchor that reads this emitter's output is
@@ -441,7 +441,7 @@ class TestTraceBlock:
     def test_review_rounds_stays_findable_by_the_rounds_script(self, data: dict) -> None:
         """Exercises the **real** anchor, not a transcription of it.
 
-        `rfc-0015-rounds.py` derives RFC-0015 Table 1's before/after populations
+        `rfc-0015/rounds.py` derives RFC-0015 Table 1's before/after populations
         from this field. Asserting the emitter's literal spelling pinned only
         one half of a two-file coupling: reverting the anchor would silently
         empty the entire "after" side and leave the suite green, which is the

@@ -206,9 +206,23 @@ phases:
           findings; #1021-1023 still 14 and 69). A separate cloud review
           (5610232200) found the fold's cross-author bound untested
         outcome: misleading
+      - file: .claude/skills/rvw-pr/posting-gh.md
+        section: "(run) /rvw-pr 1174 on the machine with no GitHub MCP, at 55e4b4fe7"
+        read_type: verify
+        extract: >-
+          Posted through the gh route: review 5612116309, count 25 to 27, both
+          comments on their lines. Findings: the review-call recount had no
+          per_page and no baseline taken right before the call, and the
+          CLAUDE-REFERENCE rationale still claimed CLI writes need a temp JSON
+          file. The owner asked for the RFC-0015 scripts to move into a
+          subfolder; both moved to sdd/rfcs/rfc-0015/, live references
+          updated, older traces and BACKLOG-DONE left as recorded. rounds.py
+          --at 2a1bbfe crashes on a cp1252 decode after its first population
+          on this Windows machine, identically for master's copy run in place
+        outcome: misleading
 surprising_ripples:
   - scripts/ship_report.py
-  - sdd/rfcs/rfc-0015-findings.py
+  - sdd/rfcs/rfc-0015/findings.py
   - sdd/rfcs/rfc-0015-ship-two-surfaces.md
   - tests/scripts/test_ship_report.py
 decisions:

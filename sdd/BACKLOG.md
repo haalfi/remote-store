@@ -1028,7 +1028,7 @@ CHANGELOG the release body is built from — say what is actually true.
 - [ ] **BK-384 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
   spec: — · effort: M · audience: contributor.process
   Every RFC-0015 decision is in force, but its graduation criterion, three
-  deliveries pooled through `rfc-0015-findings.py`, has not been read; at
+  deliveries pooled through `rfc-0015/findings.py`, has not been read; at
   least nine traces carry a derived block for a PR after #1026, and the body
   names no rule for which count (dossier correction). Open decision: which
   deliveries form the sample, then graduate or return to Draft.

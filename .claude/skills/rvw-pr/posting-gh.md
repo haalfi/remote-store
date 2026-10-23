@@ -21,7 +21,7 @@ Each is its own Bash call. With no line findings, `comments` is `[]`.
 - **JSON on stdin from a quoted heredoc, never `-f`/`-F` fields**: the quotes stop backticks and `$` in a body from running, `-F` rewrites `@file` and `{owner}`/`{repo}`/`{branch}`, and a `-f` `line` is a string (HTTP 422). Escape `"`, `\` and newlines (`\n`); no payload line may be the bare delimiter.
 - **REST spells the MCP fields in snake case**: a range adds `start_line` and `start_side`, a deleted line takes `"side": "LEFT"` with the base line number.
 - **`commit_id` is the full SHA, and `comments[]` takes no `subject_type`** (both HTTP 422), which is why a FILE finding takes the second call.
-- **Retry each call at most once.** A refused call never ran: resend it with the refused words reworded (hooks refused git commands and, in a cloud session, `head`). A failed call may have landed after a timeout: retry only if its count did not rise, `gh api repos/haalfi/remote-store/pulls/<N>/reviews --jq length` for the review call, the comment count for a FILE call.
+- **Retry each call at most once.** A refused call never ran: resend it with the refused words reworded (hooks refused git commands and, in a cloud session, `head`). A failed call may have landed after a timeout: retry only if its count, taken right before the call, did not rise. Count with `posting.md`'s paged walk: on `pulls/<N>/reviews` for the review call, on comments for a FILE call.
 - **A worktree-isolated session refused the heredoc itself.**
 
 `sdd/traces/bk-481-rvw-pr-gh-post.yml` records each HTTP 422 and refusal.

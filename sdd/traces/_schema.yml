@@ -432,7 +432,7 @@ properties:
           properties:
             round: {type: integer, minimum: 1}
             findings: {type: integer, minimum: 0}
-            origin: {type: object, description: "Origin tag counts, per sdd/rfcs/rfc-0015-findings.py."}
+            origin: {type: object, description: "Origin tag counts, per sdd/rfcs/rfc-0015/findings.py."}
             triage: {type: object, description: "Triage verdict counts, per the same classifier."}
             duration_hours:
               type: [number, "null"]

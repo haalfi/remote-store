@@ -50,8 +50,8 @@ populations.
 
 Usage::
 
-    python sdd/rfcs/rfc-0015-rounds.py 24d9464
-    python sdd/rfcs/rfc-0015-rounds.py 24d9464 --at 2a1bbfe
+    python sdd/rfcs/rfc-0015/rounds.py 24d9464
+    python sdd/rfcs/rfc-0015/rounds.py 24d9464 --at 2a1bbfe
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 RX = re.compile(r"^(?: {2})?review_rounds:[ \t]*(\d+)", re.M)
 
 
