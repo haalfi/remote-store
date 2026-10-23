@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 301402,
+  "total": 301387,
   "files": {
     "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2644,
@@ -31,7 +31,7 @@
     ".claude/agents/sdd-expert.md": 1799,
     ".claude/agents/store-backend-expert.md": 1903,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64620,
+    "sdd/CLAUDE-REFERENCE.md": 64605,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [
@@ -110,8 +110,8 @@
     {
       "item": "BK-486",
       "from": 300668,
-      "to": 301402,
-      "reason": "interview.md defines housekeeping questions and their metadata tag (+539); CLAUDE-REFERENCE Record row names the skip and the held base-branch records (+195)"
+      "to": 301387,
+      "reason": "interview.md defines housekeeping questions and their metadata tag (+539); CLAUDE-REFERENCE Record row names the skip and the held base-branch records (+180)"
     }
   ]
 }

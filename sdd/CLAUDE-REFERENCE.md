@@ -624,7 +624,7 @@ session and this is maintenance detail.
 | --- | --- |
 | Steering | An output style saying when a decision is the user's to make, and how to shape the options |
 | Notification | Bell plus desktop notification when a dialog opens or the session goes idle |
-| Record | Appends each dialog's asked and answered events to `sdd/decisions/<session_id>.jsonl`, staged by `gate-commit.sh`; skips a dialog tagged housekeeping, and holds one asked on the base branch or a detached HEAD in the ignored `sdd/decisions/.pending/` until the session's next dialog or commit on a work branch; a trace lists its logs under `decisions:`, which `check_traces.py` reads; design in [RFC-0018](rfcs/rfc-0018-decision-capture-at-dialog-time.md) |
+| Record | Appends each dialog's asked and answered events to `sdd/decisions/<session_id>.jsonl`, staged by `gate-commit.sh`; skips a dialog tagged housekeeping, and holds one asked on the base branch or a detached HEAD in the ignored `sdd/decisions/.pending/` until that session commits on a work branch; a trace lists its logs under `decisions:`, which `check_traces.py` reads; design in [RFC-0018](rfcs/rfc-0018-decision-capture-at-dialog-time.md) |
 
 Which events fire which layer is declared in `.claude/settings.json`. Read it
 there; a second copy here would rot.

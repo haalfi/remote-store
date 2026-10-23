@@ -13,7 +13,7 @@ the maintainer's choice of remedy, to let a line that is not a record be
 deleted, and one of two differing answers to one dialog once the maintainer
 has picked the record. BK-486 (2026-10-23) amends D1, to leave a dialog tagged
 housekeeping unrecorded, D2, to hold a base-branch or detached event until
-the session reaches a work branch, and D3, for the `promoted` line that binds
+the session commits on a work branch, and D3, for the `promoted` line that binds
 the moved events there (§ Follow-up: `metadata` reaches `PreToolUse` only).
 
 ## Summary
@@ -27,8 +27,8 @@ the next session re-argues the why from the code. This RFC keeps the dialog
 verbatim: one hook, registered on two hook events, appends each asked and
 answered event, less dialogs tagged housekeeping, to a per-session JSONL file,
 `sdd/decisions/<session_id>.jsonl`, committed with the work; an event on the
-base branch waits in an ignored file until the session reaches a work branch. Logs are bound to a
-branch when read, not when written. Three readers keep them from being
+base branch waits in an ignored file until the session commits on a work
+branch. Logs are bound to a branch when read, not when written. Three readers keep them from being
 write-only: the trace links them, `check_traces.py` validates them, and `/pr`
 renders them as the PR body's Decisions section.
 
@@ -153,19 +153,23 @@ the PR diff shows the log beside the change it explains.
 - **Held off the base branch.** An event recorded on the base branch (`master`
   or `main`) or a detached HEAD goes to the ignored
   `sdd/decisions/.pending/<session_id>.jsonl`, not the log. It moves into the
-  log, lines in order and unchanged, at whichever comes first: the same
-  session's next event on a work branch, or `gate-commit.sh` before that
-  session commits on one (it reads `session_id` from its own hook payload and
-  promotes that session only, so a shared checkout never ships another
-  session's held records). A question asked after a session's cleanup is
-  followed by neither and never reaches a commit, while a design question asked
-  before the branch existed still does. The moved lines keep their recorded
-  branch, and a `promoted` line follows them, naming the work branch and HEAD
-  they moved on: that is the session's event on the work branch, so D4.0 binds
-  them there even when a commit, not a dialog, promoted them. Bounds: an
-  untagged chore held before a later commit on a work branch is promoted with
-  it, and held records sit in the project
-  directory, so the anchoring bound below applies to them too.
+  log, lines in order and unchanged, only when `gate-commit.sh` runs before
+  that same session commits on a work branch: the hook reads `session_id` from
+  its own payload and promotes that session's held records alone. A dialog
+  never promotes, because the branch the recorder reads is the project
+  directory's, and in a shared checkout another session may have switched it;
+  promoting there would move one session's chores into a log the other
+  session's commit stages. So a design question asked before the branch
+  existed ships with the session's first commit on it, and a question asked
+  after a session's cleanup does not, unless that session commits on a work
+  branch again. The moved lines keep their recorded branch, and a `promoted`
+  line follows them, naming the work branch and HEAD they moved on: that is
+  the session's event on the work branch, so D4.0 binds them there although
+  the commit recorded no dialog. Bounds: an untagged chore held before such a
+  later commit is promoted with it; a session that never commits itself leaves
+  its held records behind, even when another session commits its work; and
+  held records sit in the project directory, so the anchoring bound below
+  applies to them too.
 - **No item ID in the path.** The ID is not knowable at capture time: branch
   names need not carry one (`CLAUDE.md` § Branching lists `fix-streaming-io`),
   and dialogs are asked *before* the work, often while HEAD is still the base

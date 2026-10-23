@@ -268,7 +268,7 @@ def test_appends_never_rewrites(recorder: Any, repo: Path) -> None:
 def test_detached_head_records_null_branch(recorder: Any, repo: Path) -> None:
     """D4.0 binds a detached-HEAD event to the next work branch, so it must say it had none.
 
-    Held, not logged (BK-486): only a later work-branch dialog or commit moves it into the log.
+    Held, not logged (BK-486): only the session's later commit on a work branch moves it into the log.
     """
     head = _git(repo, "rev-parse", "HEAD")
     _git(repo, "checkout", "-q", "--detach")
@@ -396,24 +396,21 @@ def test_base_branch_dialog_is_held_not_logged(base: str, recorder: Any, repo: P
     assert not (repo / "sdd" / "decisions" / f"{SESSION}.jsonl").exists()
 
 
-def test_next_work_branch_dialog_promotes_held_records_first(recorder: Any, repo: Path) -> None:
-    """D4.0's binding as a file move: held lines precede the work-branch line, unchanged."""
+def test_work_branch_dialog_leaves_held_records_held(recorder: Any, repo: Path) -> None:
+    """Only the session's own commit promotes (PR #1175 review). The branch is read
+    from the project directory's checkout, which another session may have switched:
+    a dialog there must not move this session's held chores into a log that
+    session's commit stages."""
     _git(repo, "checkout", "-q", "-b", "master")
     pre_a, post_a = ANSWERED["a-followed"]
     recorder.record(pre_a, repo, {})
     recorder.record(post_a, repo, {})
-    _git(repo, "checkout", "-q", "feature")
+    _git(repo, "checkout", "-q", "feature")  # another session's switch, in a shared checkout
     pre_b, _ = ANSWERED["b-other"]
     recorder.record(pre_b, repo, {})
 
-    lines = _lines(repo)
-    assert [(line["event"], line.get("tool_use_id"), line["branch"]) for line in lines] == [
-        ("asked", pre_a["tool_use_id"], "master"),
-        ("answered", pre_a["tool_use_id"], "master"),
-        ("promoted", None, "feature"),
-        ("asked", pre_b["tool_use_id"], "feature"),
-    ]
-    assert not (repo / "sdd" / "decisions" / ".pending" / f"{SESSION}.jsonl").exists()
+    assert [(line["tool_use_id"], line["branch"]) for line in _lines(repo)] == [(pre_b["tool_use_id"], "feature")]
+    assert [line["branch"] for line in _held(repo)] == ["master", "master"]
 
 
 def test_promotion_marker_binds_moved_lines_to_the_work_branch(recorder: Any, repo: Path) -> None:

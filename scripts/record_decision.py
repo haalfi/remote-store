@@ -21,12 +21,13 @@ the tag reaches ``PreToolUse`` only, so its ``tool_use_id`` is kept in
 ``sdd/decisions/.pending/<session_id>.skip`` to drop the ``answered`` event too.
 One asked on the base branch or a detached HEAD is held in the gitignored
 ``sdd/decisions/.pending/<session_id>.jsonl`` and moved into the log, in order,
-by ``promote()``: at the session's next event on a work branch, or by
-``gate-commit.sh`` running ``--promote`` before the session commits on one, then
-followed by one ``{"event": "promoted", "ts", "session_id", "branch", "head"}``
-line naming the work branch, which binds them there under D4.0. A question
-after a session's cleanup is never followed by either, so it never reaches a
-commit.
+only by ``promote()``, which ``gate-commit.sh`` runs with ``--promote`` before
+that same session commits on a work branch. One
+``{"event": "promoted", "ts", "session_id", "branch", "head"}`` line follows
+them, naming the work branch, which binds them there under D4.0. A dialog never
+promotes: the branch it reads is the project directory's, which another session
+may have switched. So a question held after a session's cleanup reaches a
+commit only if that session later commits on a work branch, untagged.
 
 Payloads are stored as received and never interpreted: outcomes are derived by
 readers (RFC-0018 D3). An event other than the two registered ones is kept
@@ -63,7 +64,7 @@ _SAFE_ID = re.compile(r"[A-Za-z0-9_-]+")
 _LOCAL_PATH_KEYS = frozenset({"cwd", "transcript_path", "scratchpad_dir"})
 _GIT_CMD = ["git"]
 # The pair gate-commit.sh refuses to commit on; an event there, or on a detached
-# HEAD, is held until the session reaches a work branch.
+# HEAD, is held until the session commits on a work branch.
 _BASE_BRANCHES = frozenset({"master", "main"})
 _HOUSEKEEPING = "housekeeping"
 # One deadline for both git calls, at most half the hook's 10 s timeout in
@@ -125,22 +126,22 @@ def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")  # noqa: UP017
 
 
-def promote(root: Path, session_id: str, where: tuple[str | None, str | None] | None = None) -> int:
+def promote(root: Path, session_id: str) -> int:
     """Move *session_id*'s held lines into its log under *root*, in order; return how many.
 
-    A ``promoted`` line follows them, naming the branch and HEAD they moved on
-    (*where*, else read from git). It is the session's event on that work
-    branch, so RFC-0018 D4.0 binds the moved lines there even when a commit,
-    not a dialog, promoted them.
+    Run by ``gate-commit.sh`` before that session commits on a work branch. A
+    ``promoted`` line follows the moved lines, naming the branch and HEAD they
+    moved on. It is the session's event on that work branch, so RFC-0018 D4.0
+    binds them there although the commit recorded no dialog.
     """
     held = _pending(root) / f"{session_id}.jsonl"
     if not held.is_file():
         return 0
-    if where is None:
-        deadline = time.monotonic() + _GIT_BUDGET_S
-        where = (_git(root, deadline, "branch", "--show-current"), _git(root, deadline, "rev-parse", "HEAD"))
+    deadline = time.monotonic() + _GIT_BUDGET_S
+    branch = _git(root, deadline, "branch", "--show-current")
+    head = _git(root, deadline, "rev-parse", "HEAD")
     text = held.read_text(encoding="utf-8")
-    marker = {"event": "promoted", "ts": _now(), "session_id": session_id, "branch": where[0], "head": where[1]}
+    marker = {"event": "promoted", "ts": _now(), "session_id": session_id, "branch": branch, "head": head}
     _append(root / "sdd" / "decisions" / f"{session_id}.jsonl", text + json.dumps(marker) + "\n")
     held.unlink()
     return len(text.splitlines())
@@ -177,10 +178,12 @@ def record(payload: Mapping[str, Any], root: Path, env: Mapping[str, str]) -> Pa
     else:
         line["payload"] = {k: v for k, v in payload.items() if k not in _LOCAL_PATH_KEYS}
 
+    # Held lines are not promoted here: the branch is the project directory's,
+    # which another session may have switched, so only this session's own
+    # commit (gate-commit.sh --promote) moves them.
     if line["branch"] is None or line["branch"] in _BASE_BRANCHES:
         target = _pending(root) / f"{session_id}.jsonl"
     else:
-        promote(root, session_id, (line["branch"], line["head"]))
         target = root / "sdd" / "decisions" / f"{session_id}.jsonl"
     _append(target, json.dumps(line, ensure_ascii=False) + "\n")
     return target
