@@ -77,7 +77,7 @@ Its tests, and the quote check's, need no service:
 hatch run python -m pytest sdd/research/bk-484-key-model/probes -q -p no:cacheprovider -p no:randomly
 ```
 
-Expected: `19 passed` (2026-10-23).
+Expected: `20 passed` (2026-10-23).
 
 The quote check fetches each source once into a cache outside the tracked
 tree:

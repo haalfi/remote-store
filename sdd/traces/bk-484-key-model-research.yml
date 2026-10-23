@@ -202,8 +202,9 @@ phases:
         extract: >-
           The shared `{B}/../../x` template reached only the chroot root from SFTP's two-segment base,
           and `redact` cut only ClientError text; fixed with `above_root` and `describe`, pinned by
-          `probes/test_probe_paths.py`, and the SFTP column re-run twice on 2026-10-23
-        outcome: misleading
+          `probes/test_probe_paths.py`, and the SFTP column re-run twice on 2026-10-23. My own miss in a
+          script written in this PR
+        outcome: ok
       - file: sdd/research/bk-484-key-model/probes/check_quotes.py
         section: "(run against every § 3 source, fresh cache)"
         read_type: verify
@@ -216,8 +217,8 @@ phases:
           A 12-character filter left short quotes unchecked while the doc said every quote; without it the
           run found 95, of which three were search terms (now code spans) and one, `chars`, lacked its
           source (Linux `limits.h`, now listed): 92 of 92. The doc and README now state the substring
-          match and the full fold set
-        outcome: misleading
+          match and the full fold set. My own miss in a script written in this PR
+        outcome: ok
       - file: sdd/research/bk-484-key-model/probes/check_quotes.py
         section: "main, fragment match (re-read after a later PR #1173 review, 2026-10-23)"
         read_type: verify

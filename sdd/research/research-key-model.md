@@ -322,13 +322,19 @@ same write to c ⊕ k in S would.
 | Absent, AbsentAncestor | no store of its own: its root resolves as c does in S (no folder there), and every other key as AbsentAncestor |
 | Found(e, item), BlockedByItem | no store of its own: its root resolves as c does in S, and every other key as BlockedByItem, so a write is `InvalidPath`, a read `NotFound` and a probe false (§ 3.7) |
 
+In the last two rows, the kⱼ that AbsentAncestor and BlockedByItem carry is a
+proper prefix of c (only Found(e, item) has kⱼ = c, the child's ε), so it has
+no spelling among the child's keys. What the child reports for it, its own
+root, no key, or S's key on purpose, is not decided here (§ 10).
+
 Keys compose by join: a child key string k is S's key string c ⊕ k.
 **Chaining** holds for a d the child accepts: if ν_c(d) ≠ Reject, then
 child(c).child(d) = child(c ⊕ ν_c(d)) (CHILD-005). A d that reduces to ε,
 such as `.`, gives child(c) itself, since c ⊕ ε = c. A d the child rejects
 creates no grandchild: under c = `a`, `../b` escapes the child, although S
 accepts c ⊕ `../b` = `b`.
-Walks start at the child's root, so a child never reaches the rest of S.
+Walks start at the child's root, so a child never reaches the rest of S,
+though an outcome's kⱼ can name it (above).
 **Acceptance runs on the composed string:** a whole-string limit applies to
 the backend's key, so a k that passes alone can fail under c. Sep_S and L_api
 are S's.
@@ -714,7 +720,7 @@ model-governed.
 **Recommendation.** Specify the model as a new spec between 051 and 004,
 owning key strings, acceptance, ν, ≈ and resolution; spec 004 becomes one
 realisation of ν, and specs 005, 015 and 053 link to it. The spec settles
-these deltas, each named in § 3.3 or § 9:
+these deltas and open points:
 
 - PATH-003, CHILD-003, ERR-005 (a)'s `..` clause and BE-032 A.2's attribution
   of the `..` refusal: `..` climbs. Spec 054 as proposed keeps PATH-003 (§ 9.8).
@@ -732,6 +738,9 @@ these deltas, each named in § 3.3 or § 9:
   kernel's rule, on every backend, and with any name it refuses on a backend
   not yet on the kernel, where BE-030 does not apply (BK-483 is the Azure
   case) (§ 6, costs).
+- What a child at an absent or item c reports for an outcome whose kⱼ lies
+  above its root, which reaches the `path` and message an error carries
+  (§ 3.6; spec 005).
 
 ---
 

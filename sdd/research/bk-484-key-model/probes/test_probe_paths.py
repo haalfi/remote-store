@@ -7,7 +7,7 @@ import posixpath
 import pytest
 from azure.core.exceptions import ResourceNotFoundError, ServiceRequestError
 from botocore.exceptions import ClientError, EndpointConnectionError
-from probe_paths import above_root, describe, redact
+from probe_paths import PROBE_PREFIX, above_root, describe, redact
 
 HOST = "probeacct7.blob.core.windows.net"
 BUCKET_HOST = "rs-private-bucket.s3.eu-central-1.amazonaws.com"
@@ -40,6 +40,12 @@ def test_describe_keeps_class_and_code_never_message_text(exc: BaseException, ex
     text = describe(exc)
     assert text == expected
     assert redact(text) == expected
+
+
+def test_redact_replaces_the_probes_own_resource_names() -> None:
+    name = f"{PROBE_PREFIX}-0123456789ab"
+    assert PROBE_PREFIX == "bk484-probe"
+    assert redact(f"upload/{name}/../x") == "upload/<probe>/../x"
 
 
 def test_redact_drops_names_and_keeps_attempt_codes() -> None:

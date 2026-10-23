@@ -48,6 +48,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 BODY = b"probe"
+# Prefix of every container and SFTP folder a run creates; `redact` replaces it.
+PROBE_PREFIX = "bk484-probe"
 
 # Probe keys relative to the run's base prefix B. "{B}" is replaced per run.
 KEYS: list[tuple[str, str]] = [
@@ -287,7 +289,7 @@ def _azure_target(conn_str: str) -> dict[str, Any]:
     from azure.storage.blob import BlobServiceClient, ContainerSasPermissions, generate_container_sas
 
     service = BlobServiceClient.from_connection_string(conn_str)
-    container = f"bk468-probe-{uuid.uuid4().hex[:12]}"
+    container = f"{PROBE_PREFIX}-{uuid.uuid4().hex[:12]}"
     cc = service.create_container(container)
     parts = dict(p.split("=", 1) for p in conn_str.strip(";").split(";") if "=" in p)
     sas = generate_container_sas(
@@ -347,7 +349,7 @@ def _sftp_target() -> dict[str, Any]:
     transport.connect(username=_settings.SFTP_USER, password=_settings.SFTP_PASS)
     sftp = paramiko.SFTPClient.from_transport(transport)
     assert sftp is not None
-    base = f"upload/bk468-probe-{uuid.uuid4().hex[:12]}"
+    base = f"upload/{PROBE_PREFIX}-{uuid.uuid4().hex[:12]}"
     # POSIX resolution is physical: a path through `e/` or `a/` needs the
     # directory, so the probe creates the ones the keys walk through.
     sftp.mkdir(base)
@@ -389,7 +391,7 @@ def _sftp_target() -> dict[str, Any]:
 
 
 _DROP = {"bucket", "container", "region", "az"}
-_RANDOM_NAME = re.compile(r"(rs-conformance|bk468-probe)-[0-9a-f]{12}(--[a-z0-9-]+--x-s3)?")
+_RANDOM_NAME = re.compile(rf"(rs-conformance|{PROBE_PREFIX})-[0-9a-f]{{12}}(--[a-z0-9-]+--x-s3)?")
 
 
 def redact(value: Any) -> Any:
