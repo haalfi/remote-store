@@ -410,7 +410,7 @@ if evidence changes; these are retired.
   `InvalidPath` on every backend. Breaking: on master such a pattern matched
   nothing, raised `InvalidPath` or, on Local with a null byte, raised a raw
   `ValueError`, by backend, root and position (measured in the trace); the
-  migration guide's v0.33.0 to v0.34.0 section says so. Spec 018
+  migration guide's v0.33.0 to v1.0.0 section says so. Spec 018
   GLOB-007, GLOB-011; STORE-018, ASYNC-053. Cross-tier
   cells in `tests/ext/test_glob.py`. Co-shipped: BUG-298. Detail:
   [dossier](backlog/bk-405-ext-glob-fallback-tier-split.md). Trace:
@@ -439,7 +439,7 @@ if evidence changes; these are retired.
   `ValueError` ahead of the `USER_METADATA` check, in the kernel's WR-010 gate
   (before any I/O, so no parent folder is made) and in `Store`'s validation,
   which `AsyncStore` and `ext.write` share. Breaking for `Store`, which took
-  `[]`, `0` or `""` for no metadata; the migration guide's v0.33.0 to v0.34.0
+  `[]`, `0` or `""` for no metadata; the migration guide's v0.33.0 to v1.0.0
   section says so. Spec 003 BE-030, 045 WR-011, 013 MEM-020. Co-shipped: BUG-330, BUG-331, BUG-333. Trace:
   [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
 

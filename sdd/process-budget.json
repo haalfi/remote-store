@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 301041,
+  "total": 300668,
   "files": {
     "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2105,
@@ -31,7 +31,7 @@
     ".claude/agents/sdd-expert.md": 1799,
     ".claude/agents/store-backend-expert.md": 1903,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64798,
+    "sdd/CLAUDE-REFERENCE.md": 64425,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [
