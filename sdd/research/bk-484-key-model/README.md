@@ -21,7 +21,8 @@ and its tests are written at their own paths and do not extend this folder.
 | `probes/probe_paths.py` | Sends raw keys to a storage service or a local implementation and records what is stored, for `../research-backend-path-authorities.md` § 5 |
 | `probes/results-2026-10-22.json` | That probe's output, with account, resource, region and zone names and exception message text left out; its `sftp` entry is the 2026-10-23 re-run |
 | `probes/test_probe_paths.py`, `probes/pytest.ini` | Tests of the probe's above-root key and of what its output may contain; the ini anchors pytest's rootdir here |
-| `probes/check_quotes.py` | Checks every double-quoted passage in `../research-backend-path-authorities.md` § 3 against the sources its subsection lists, as a substring after the normalisation its docstring lists |
+| `probes/check_quotes.py` | Checks every double-quoted passage in `../research-backend-path-authorities.md` § 3 against the sources its subsection lists, as a substring after the normalisation its docstring lists; a passage elided with `…` as fragments in its order |
+| `probes/test_check_quotes.py` | Tests of the quote check's matching rule |
 
 No folder here is collected, built or run by any gate: `spike/` and `probes/`
 are outside `testpaths` and `hatch run lint`'s ruff paths (the pre-commit ruff
@@ -66,13 +67,13 @@ minio azurite sftp`) needs no account:
 hatch run python sdd/research/bk-484-key-model/probes/probe_paths.py --target minio,azurite,sftp --out tmp/probe-local.json
 ```
 
-Its tests need no service:
+Its tests, and the quote check's, need no service:
 
 ```
 hatch run python -m pytest sdd/research/bk-484-key-model/probes -q -p no:cacheprovider -p no:randomly
 ```
 
-Expected: `12 passed` (2026-10-23).
+Expected: `19 passed` (2026-10-23).
 
 The quote check fetches each source once into a cache outside the tracked
 tree:

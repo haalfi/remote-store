@@ -3,8 +3,9 @@
 For each § 3 subsection, the script takes every double-quoted passage in the
 body and the URLs in that subsection's "Sources:" list. It fetches each source
 once, reduces it to text (HTML tags dropped, PDFs through ``pdftotext``), and
-reports a quote as found when every fragment of it, split at ``…``, occurs in
-one source as a substring after ``norm``: HTML entities decoded, whitespace
+reports a quote as found when its fragments, split at ``…``, occur in one
+source as substrings in the quote's order, each after the previous one ends
+(``found``), after ``norm``: HTML entities decoded, whitespace
 collapsed, every quote mark folded to ``'``, en and em dashes to ``-``, three
 non-breaking or thin spaces to a space, and backticks, ``*``, the word joiner,
 zero-width space and byte-order mark deleted (``FOLD``); case kept. A very
@@ -133,6 +134,22 @@ def quotes_in(text: str) -> list[str]:
     return [re.sub(r"\x00(\d+)\x00", lambda m: spans[int(m.group(1))], q) for q in re.findall(r'"([^"]*)"', flat)]
 
 
+def found(quote: str, text: str) -> bool:
+    """Whether ``quote``'s fragments, split at ``…``, occur in ``text`` in order.
+
+    ``text`` is already normalised; each fragment is normalised here.
+    """
+    pos = 0
+    for frag in (norm(f) for f in re.split(r"\s*…\s*", quote)):
+        if not frag:
+            continue
+        at = text.find(frag, pos)
+        if at < 0:
+            return False
+        pos = at + len(frag)
+    return True
+
+
 def sections(doc: str) -> list[tuple[str, list[str], list[str]]]:
     """(heading, quotes, urls) for each ### 3.x subsection."""
     out = []
@@ -167,8 +184,7 @@ def main() -> int:
                 print(f"  FETCH-FAIL {url}: {type(exc).__name__}: {str(exc)[:120]}")
         for q in quotes:
             total += 1
-            frags = [norm(f) for f in re.split(r"\s*…\s*", q) if norm(f)]
-            hit = next((u for u, t in texts.items() if all(f in t for f in frags)), None)
+            hit = next((u for u, t in texts.items() if found(q, t)), None)
             if hit is None:
                 missing += 1
                 print(f"MISSING [{heading[:40]}] {q[:110]}")

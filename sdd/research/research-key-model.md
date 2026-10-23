@@ -170,6 +170,11 @@ store's configuration.
 k ∈ L_b  only if  norm_b(s) = s for every segment s of k
 ```
 
+A rewrite that depends on a name's position is taken at the last segment,
+where it applies: by TREE-012 every segment is the last segment of a folder's
+Key, its prefix in k. So L_b is prefix-closed: a key whose folder could not
+itself be addressed is refused.
+
 **Sibling equivalence.** A backend with a coarser name equality
 (case-insensitive, normalising) has an equivalence ≡_b on N. It cannot be a
 language: `A` and `a` are each acceptable and conflict only as siblings.
@@ -189,10 +194,10 @@ library never rewrites a name into a different key string.
   every segment, and trailing spaces from the last (its § 3.4). An Azure HNS
   account stripped a trailing `.` from the last segment of a raw path (its
   § 5, a measurement of that position only; Microsoft documents the rule only
-  for Azure Files). By the normal-form rule, L_b refuses a name ending in `.`
-  on Windows, and on HNS at least as the last segment, `...` included (HNS
-  refused that PUT with `InvalidUri`); on Windows it also refuses a last
-  segment ending in a space. HNS's other rewrites never meet a key
+  for Azure Files). By the normal-form rule, taken at the last segment, L_b
+  refuses a name ending in `.` in every segment on Windows and on HNS, `...`
+  included (HNS refused that PUT with `InvalidUri`), and on Windows also a
+  name ending in a space. HNS's other rewrites never meet a key
   string: an empty segment and a leading or trailing `/` are outside L_core,
   whose segments are names, and `.`, `..` and `\` are outside the floor.
 - **Coarser equality, not rewriting.** APFS is normalisation-insensitive, and

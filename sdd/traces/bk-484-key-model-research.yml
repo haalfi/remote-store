@@ -218,6 +218,23 @@ phases:
           source (Linux `limits.h`, now listed): 92 of 92. The doc and README now state the substring
           match and the full fold set
         outcome: misleading
+      - file: sdd/research/bk-484-key-model/probes/check_quotes.py
+        section: "main, fragment match (re-read after the review of 94cd3b281)"
+        read_type: verify
+        extract: >-
+          Its docstring stated the fragment rule; my § 1 and README text said substring and missed that
+          elided quotes were matched in any order. The match now keeps the quote's order (`found`, pinned
+          by `probes/test_check_quotes.py`), and the re-run still found 92 of 92
+        outcome: ok
+      - file: ".NET \"File path formats\" § Path normalization (cached copy)"
+        section: "single trailing period; trailing periods and spaces"
+        read_type: verify
+        extract: >-
+          A single trailing period is removed from every segment, trailing spaces only when the path has no
+          trailing separator; the authorities table's Windows cell had said the opposite for `.`. The key
+          model's normal-form rule now takes a position-dependent rewrite at the last segment, which by
+          TREE-012 keeps L_b prefix-closed
+        outcome: ok
       - file: "PR #1173 conversation (issue comments 6339559160 and 6339881662)"
         section: "Flat-namespace Azure measurement; 2026-10-21 handover"
         read_type: reference
