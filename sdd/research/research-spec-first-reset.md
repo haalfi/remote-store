@@ -116,7 +116,7 @@ in the research repository (below).
 
 | Run | Where | Evidence handling |
 |---|---|---|
-| Claude Code, in an empty repository | `haalfi/research` PR #1, `reports/Black box boundary spec methods.md` (v2) | Sources graded A to D; a verification pass over full texts, as the report states: 170 claims checked, 101 confirmed, 41 corrected, 5 refuted, 7 not found, 15 unverifiable |
+| Claude Code, in an empty repository | `haalfi/research`, branch `research/black-box-boundary-spec`, `reports/Black box boundary spec methods.md` (v2) | Sources graded A to D; a verification pass over full texts, as the report states: 170 claims checked, 101 confirmed, 41 corrected, 5 refuted, 7 not found, 15 unverifiable |
 | ChatGPT deep research | [shared result](https://chatgpt.com/s/t_6adb2684b1ec8191a63dd80f34ab1e86) | No source grades and no verification pass, which the brief required |
 
 **Where both agree independently:** Design by Contract extended with traces,
@@ -210,7 +210,8 @@ contract for R-1 and the open question.
 - ChatGPT session "Architecture proposal for remote-store", 2026-10-21:
   https://chatgpt.com/share/6ada045e-5c90-83eb-8340-f4d07c592907
 - Claude Code deep research, report and brief:
-  https://github.com/haalfi/research/pull/1 (private repository)
+  https://github.com/haalfi/research/tree/research/black-box-boundary-spec
+  (private repository)
 - ChatGPT deep research, same brief:
   https://chatgpt.com/s/t_6adb2684b1ec8191a63dd80f34ab1e86
 - Tufano et al., Grounding AI Agents in Contracts: An Empirical Evaluation of
