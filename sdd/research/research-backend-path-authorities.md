@@ -593,7 +593,10 @@ local implementations did with eleven raw keys on one day.
 [`bk-484-key-model/probes/probe_paths.py`](bk-484-key-model/probes/probe_paths.py),
 and its output is
 [`results-2026-10-22.json`](bk-484-key-model/probes/results-2026-10-22.json),
-which carries no account, resource, region or zone name.
+which carries no account, resource, region or zone name and no exception
+message text. The OpenSSH column was re-run on 2026-10-23, after the last
+row's key was corrected to climb above the chroot root (see the note under
+the table).
 
 - For each key, the script sends a PUT byte for byte through `http.client`,
   so no SDK or urllib3 step rewrites the path (§ 3.7).
@@ -616,8 +619,11 @@ which carries no account, resource, region or zone name.
 
 AWS was not measured. The general-purpose bucket's `CreateBucket` was refused
 with `InvalidAccessKeyId` (the stored key no longer exists). The directory
-bucket's `CreateBucket` was refused with `AccessDenied` in all six zone IDs
-tried, with the same key, so whether the account's policy would allow a
+bucket's `CreateBucket` was refused in each of the six zone IDs the script
+tries, with the same key. The console showed `AccessDenied` for each, but the
+script of that run dropped the codes before writing the results file, which
+records only that no directory bucket was created; the script now keeps one
+code per zone (`attempt_codes`). Whether the account's policy would allow a
 directory bucket is not known.
 
 | Key sent | Azure HNS (service) | Azurite (emulator) | MinIO | OpenSSH |
@@ -634,8 +640,10 @@ directory bucket is not known.
 | `p/k.` | `p/k` | as sent | as sent | as sent |
 | `p/../../x` | 403 `AuthenticationFailed` | as sent | 400 `XMinioInvalidResourceName` | refused (`EACCES`) |
 
-OpenSSH names are relative to the probe folder. Both local runs gave the same
-results.
+OpenSSH names are relative to the probe folder, which is two segments below
+the chroot root. The last row climbs one level above the root on every
+target: OpenSSH was sent `<folder>/../../../x`, one `..` more than the others.
+Both runs of each local target gave the same results.
 
 **Readings.**
 
@@ -655,9 +663,11 @@ results.
   `\`.** It stores the other keys as sent.
 - **MinIO refuses empty, `.` and `..` segments and drops a leading `/`.**
   What AWS does with these remains open (§ 4).
-- **OpenSSH resolves paths in the server's filesystem.** A `..` above the
-  chroot root lands at the root (`/..` is `/`, § 3.2), where the write was
-  refused by permission, not by a path rule.
+- **OpenSSH resolves paths in the server's filesystem.** The write one level
+  above the chroot root was refused with `EACCES`, and the GET that followed
+  answered `ENOENT`. That fits `/..` resolving to `/` (§ 3.2), where the
+  root-owned chroot root refuses the write, but this probe cannot tell it
+  apart from a refusal of the escape itself.
 
 ---
 

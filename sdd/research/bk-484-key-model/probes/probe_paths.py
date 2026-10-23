@@ -24,14 +24,16 @@ Run from the repo root, for example::
 
 Credentials load inside the process (``.env`` for the cloud, ``infra/.env``
 through ``infra._settings`` for the local stack) and are never printed.
-Results are written as JSON to ``--out``, passed through ``redact`` first: no
-account, bucket, container, region or zone name, and no SDK message text.
+Results are written as JSON to ``--out``: exceptions are recorded through
+``describe`` (class and error code, no message text), and the whole result
+passes through ``redact`` (no account, bucket, container, region or zone name).
 """
 
 from __future__ import annotations
 
 import argparse
 import datetime as dt
+import errno
 import http.client
 import json
 import os
@@ -59,8 +61,45 @@ KEYS: list[tuple[str, str]] = [
     ("leading slash", "/{B}/h"),
     ("backslash", "{B}/i\\j"),
     ("trailing dot", "{B}/k."),
-    ("dot-dot above root", "{B}/../../x"),
+    ("dot-dot above root", "{B}/{UP}/x"),
 ]
+
+
+def above_root(base: str) -> str:
+    """The `..` run that climbs one level above the root from inside `base`."""
+    return "/".join([".."] * (base.count("/") + 2))
+
+
+def describe(exc: BaseException) -> str:
+    """An exception as its class and, where one exists, a fixed error code.
+
+    Message text is never kept: an SDK puts the request host, which names the
+    account or bucket, into the message of a connection or authentication error.
+    """
+    code = None
+    response = getattr(exc, "response", None)
+    if isinstance(response, dict):  # botocore ClientError
+        code = response.get("Error", {}).get("Code")
+    elif getattr(exc, "error_code", None):  # azure-core HttpResponseError
+        code = str(exc.error_code)  # type: ignore[attr-defined]
+    elif isinstance(exc, OSError) and exc.errno is not None:
+        code = errno.errorcode.get(exc.errno)
+    elif isinstance(exc, OSError) and str(exc) in _SFTP_STATUS:
+        code = str(exc)
+    return f"{type(exc).__name__}: {code}" if code else type(exc).__name__
+
+
+# paramiko raises a bare OSError carrying one of these fixed SFTP status texts.
+_SFTP_STATUS = {
+    "End of file",
+    "No such file",
+    "Permission denied",
+    "Failure",
+    "Bad message",
+    "No connection",
+    "Connection lost",
+    "Operation unsupported",
+}
 
 
 def quote(key: str) -> str:
@@ -101,17 +140,17 @@ def run_keys(
     """Probe every key: PUT, the names it added to a listing, GET."""
     out = []
     for label, template in KEYS:
-        key = template.replace("{B}", base)
+        key = template.replace("{B}", base).replace("{UP}", above_root(base))
         before = list_names()
         try:
             put_status, put_code = put(key)
         except Exception as exc:  # noqa: BLE001 -- a refusal is a result
-            put_status, put_code = -1, type(exc).__name__ + ": " + str(exc)[:200]
+            put_status, put_code = -1, describe(exc)
         added = sorted(list_names() - before)
         try:
             get_status, get_code = get(key)
         except Exception as exc:  # noqa: BLE001
-            get_status, get_code = -1, type(exc).__name__ + ": " + str(exc)[:200]
+            get_status, get_code = -1, describe(exc)
         out.append(
             {
                 "label": label,
@@ -170,7 +209,7 @@ def _s3_target(endpoint: str | None, express: bool) -> dict[str, Any]:
         if zone_prefix is None:
             return {**info, "error": f"no AZ-id prefix known for {region}"}
         bucket = None
-        errors = []
+        codes = []
         for n in range(1, 7):
             az = f"{zone_prefix}-az{n}"
             name = f"rs-conformance-{hexid}--{az}--x-s3"
@@ -185,9 +224,10 @@ def _s3_target(endpoint: str | None, express: bool) -> dict[str, Any]:
                 bucket, info["az"] = name, az
                 break
             except Exception as exc:  # noqa: BLE001
-                errors.append(f"{az}: {type(exc).__name__}: {str(exc)[:160]}")
+                codes.append(describe(exc))
         if bucket is None:
-            return {**info, "error": "could not create a directory bucket", "attempts": errors}
+            # One code per zone tried, in zone order; the zone IDs name the region.
+            return {**info, "error": "could not create a directory bucket", "attempt_codes": codes}
         host = f"{bucket}.s3express-{info['az']}.{region}.amazonaws.com"
         sess = client.create_session(Bucket=bucket)["Credentials"]
         from botocore.credentials import Credentials
@@ -348,28 +388,23 @@ def _sftp_target() -> dict[str, Any]:
     return {"home": home, "base": base, "precreated_dirs": ["a", "e", "g"], "results": results}
 
 
-_DROP = {"bucket", "container", "region", "az", "attempts"}
+_DROP = {"bucket", "container", "region", "az"}
 _RANDOM_NAME = re.compile(r"(rs-conformance|bk468-probe)-[0-9a-f]{12}(--[a-z0-9-]+--x-s3)?")
-_AWS_CODE = re.compile(r"An error occurred \((\w+)\)")
 
 
 def redact(value: Any) -> Any:
     """Strip what could identify an account or a run from a result.
 
-    Resource names, region and zone are dropped, the random folder names are
-    replaced by a placeholder, and an SDK error is cut to its class and error
-    code, so no message text (which may name an account or a resource) is kept.
+    Resource names, region and zone are dropped and the random folder names
+    are replaced by a placeholder. Exceptions reach the result only through
+    ``describe``, which keeps no message text.
     """
     if isinstance(value, dict):
         return {k: redact(v) for k, v in value.items() if k not in _DROP}
     if isinstance(value, list):
         return [redact(v) for v in value]
     if isinstance(value, str):
-        value = _RANDOM_NAME.sub("<probe>", value)
-        if value.startswith("ClientError:"):
-            m = _AWS_CODE.search(value)
-            value = f"ClientError: {m.group(1)}" if m else "ClientError"
-        return value
+        return _RANDOM_NAME.sub("<probe>", value)
     return value
 
 
@@ -392,7 +427,7 @@ def main() -> None:
         try:
             report["targets"][name] = runners[name]()
         except Exception as exc:  # noqa: BLE001
-            report["targets"][name] = {"error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+            report["targets"][name] = {"error": describe(exc)}
         report["targets"][name] = redact(report["targets"][name])
         print(json.dumps({name: report["targets"][name]}, indent=1, ensure_ascii=False))
     if args.out:

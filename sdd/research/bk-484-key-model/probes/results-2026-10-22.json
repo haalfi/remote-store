@@ -399,6 +399,7 @@
    ]
   },
   "sftp": {
+   "date": "2026-10-23",
    "home": "/",
    "base": "upload/<probe>",
    "precreated_dirs": [
@@ -517,12 +518,12 @@
     },
     {
      "label": "dot-dot above root",
-     "key": "upload/<probe>/../../x",
+     "key": "upload/<probe>/../../../x",
      "put": -1,
-     "put_code": "PermissionError: [Errno 13] Permission denied",
+     "put_code": "PermissionError: EACCES",
      "listed_new": [],
      "get_raw": -1,
-     "get_code": "FileNotFoundError: [Errno 2] No such file"
+     "get_code": "FileNotFoundError: ENOENT"
     }
    ]
   }

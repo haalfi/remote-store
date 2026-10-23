@@ -196,6 +196,14 @@ phases:
         read_type: verify
         extract: "Azure HNS rewrites raw paths in the service and resolves `..` before authorisation; Azurite stores them as sent; AWS refused (stored key no longer valid), so its § 4 points stay open"
         outcome: ok
+      - file: sdd/research/bk-484-key-model/probes/probe_paths.py
+        section: "KEYS, redact (re-read after the review of 8f3095386)"
+        read_type: verify
+        extract: >-
+          The shared `{B}/../../x` template reached only the chroot root from SFTP's two-segment base,
+          and `redact` cut only ClientError text; fixed with `above_root` and `describe`, pinned by
+          `probes/test_probe_paths.py`, and the SFTP column re-run twice on 2026-10-23
+        outcome: misleading
       - file: sdd/research/bk-484-key-model/probes/check_quotes.py
         section: "(run against every § 3 source, fresh cache)"
         read_type: verify
