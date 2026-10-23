@@ -20346,7 +20346,7 @@ Breaking changes and upgrade paths between `remote-store` versions.
 
 `remote-store` has been published on PyPI since v0.11.0 (first Beta release). The core Store API is stable, but extensions may evolve. This page documents changes that require action when upgrading.
 
-## v0.33.0 to v0.34.0
+## v0.33.0 to v1.0.0
 
 **A `LocalBackend` listing that the OS refuses raises `PermissionDenied`:**
 

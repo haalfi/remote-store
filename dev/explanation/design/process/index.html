@@ -8401,6 +8401,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfcs/rfc-0024-spec-first-reset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0024: RFC-0024: A spec-first reset toward v1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11971,9 +11999,9 @@
 <ol>
 <li><strong>No code without a spec</strong>: every testable contract must have a spec section ID.</li>
 <li><a id="spec-test-traceability"></a><strong>No spec without tests</strong>: every spec section must have at least one test with <code>@pytest.mark.spec("ID")</code>.</li>
-<li><strong>The spec and its governing model are authoritative</strong>: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which <a href="#intent-attribution">Rule 7</a> qualifies: that makes the claim undecided, not the code right. Where a formal model bound to the code by a bridge governs a clause (<a href="../spec-design/#governing-layer"><code>SPEC-DESIGN.md</code> Rule 4</a>), that model is the clause's spec, as far as the bridge reaches.</li>
+<li><strong>The spec and its governing model are authoritative</strong>: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which <a href="#intent-attribution">Rule 7</a> qualifies: that makes the claim undecided, not the code right. Where a formal model bound to the code by a bridge governs a clause (<a href="../spec-design/#governing-layer"><code>SPEC-DESIGN.md</code> Rule 4</a>), that model is the clause's spec, as far as the bridge reaches. A spec in the reset's ground binds the code only once the flow implementing it begins; until then a difference from 0.33 is a break record or a 0.33 defect. A ground clause a binding spec incorporates by reference binds through that reference (<a href="../rfcs/rfc-0024-spec-first-reset/#r4-how-a-v1-spec-relates-to-033-code-and-to-spec-designmd">RFC-0024 § R4</a>).</li>
 <li><strong>ADRs are immutable once Accepted</strong>: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.</li>
-<li><strong>IDs are stable</strong>: once assigned, a section ID never changes meaning. Deprecated sections are marked <code>[DEPRECATED]</code>, not removed.</li>
+<li><strong>IDs are stable</strong>: once assigned, a section ID never changes meaning. Deprecated sections are marked <code>[DEPRECATED]</code>, not removed, except a spec file RFC-0024 D7 deletes once superseded, whose IDs the ground register maps to their successors.</li>
 <li><a id="workflows"></a><strong>Workflows</strong>:<ul>
 <li><strong>Features</strong>: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.</li>
 <li><strong>Bug fixes</strong>: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec. The reproduction lives in the item's dossier where it has one (<a href="#backlog">§ Backlog</a>).</li>
