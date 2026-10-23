@@ -236,6 +236,15 @@ phases:
           trailing period from every segment") overstated it again. The key model's normal-form rule now
           takes a position-dependent rewrite at the last segment, which by TREE-012 keeps L_b prefix-closed
         outcome: ok
+      - file: sdd/specs/053-contract-kernel.md
+        section: "Scope; BE-030 (re-read after the review of d40147b41)"
+        read_type: verify
+        extract: >-
+          BE-030 binds only a class on the kernel, and only `_memory.py` and `_memory_tree.py` under
+          src/remote_store/backends import it; the key model's § 1, § 6 costs, § 9.3 and § 9.6 had read it
+          as covering every backend. Narrowed, and § 10's delta list now names the listing of a refused
+          name on a backend not yet on the kernel (BK-483 is the Azure case)
+        outcome: ok
       - file: "PR #1173 conversation (issue comments 6339559160 and 6339881662)"
         section: "Flat-namespace Azure measurement; 2026-10-21 handover"
         read_type: reference

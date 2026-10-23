@@ -15,7 +15,8 @@ or what lookup answers for a key no entity has.
 
 Four existing clauses answer parts of this, each by its own rules: spec 004's
 `RemotePath` normalises input, the kernel's key rule (BE-030, BK-389's
-dossier, decision 6) refuses and normalises keys at the backend's entry,
+dossier, decision 6) refuses and normalises keys at the entry of a backend
+on the kernel,
 spec 053's BE-032 (from RFC-0021) resolves a Key against the tree, and spec
 015 composes a child store's keys. They differ from one another (§ 9).
 
@@ -240,8 +241,9 @@ time. A position is a sequence of names; the empty sequence is the root.
 | exactly `.` | stay |
 | empty (two adjacent separators, a leading or a trailing one) | stay |
 
-**Navigation** is every step that is not *down*. A segment is navigation only
-if it **equals** `.` or `..`: `a..b`, `...`, `.hidden` and `..x` are names.
+**Navigation** is every step that is not *down*. A non-empty segment is
+navigation only if it **equals** `.` or `..`: `a..b`, `...`, `.hidden` and
+`..x` are names.
 The walk is lexical: positions are names, not entities, so `f/..` returns to
 the start whether `f` exists, is a folder or is an item. An escape is never
 clamped. There is no other starting point: the store API has no working
@@ -455,11 +457,15 @@ the session's decision log (`sdd/decisions/`, listed in the BK-484 trace).
 
 **Costs the decisions accept.** A name holding `\`, NUL, or one equal to `.`
 or `..`, or one outside a backend's normal form or Σ, can exist in a backend
-and is not addressable through `Store`. For keys the kernel's rule refuses or
-rewrites, BE-030 already says what a listing does: it omits them, logs them,
-and leaves them reachable through addressing and `unwrap()`. Names this model
-refuses beyond the kernel's rule (a tier, a normal form) have no such clause
-yet (§ 10).
+and is not addressable through `Store`. On a class on the kernel, for keys the
+kernel's rule refuses or rewrites, BE-030 already says what a listing does: it
+omits them, logs them, and leaves them reachable through addressing and
+`unwrap()`. Only Memory is on the kernel so far (the files under
+`src/remote_store/backends` that import the kernel are `_memory.py` and
+`_memory_tree.py`), so on every other backend no clause says what a listing
+yields for such a name; BK-483 is that case on Azure. Names this model refuses
+beyond the kernel's rule (a tier, a normal form) have no such clause on any
+backend (§ 10).
 
 ---
 
@@ -551,8 +557,8 @@ BK-395 completed). It sits below this model and agrees with it: § 4 shows the
 library's keys are inside the kernel's domain, so a key reduced by ν passes
 the kernel unchanged. Its per-operation root table is one instance of § 3.7's
 "the operation decides". Its addressing (`native_path`, `resolve`) passes a
-refused key raw, which is why a stored key this model cannot address stays
-reachable through addressing (§ 6, costs).
+refused key raw, which is why, on a class on the kernel, a stored key this
+model cannot address stays reachable through addressing (§ 6, costs).
 
 ### 9.4 Spec 005 and spec 015
 
@@ -585,10 +591,10 @@ Key out of its scope, so the two meet only at the Key.
 
 - **Agrees.** A Key names at most one entity (A.1, TREE-010); writing below an
   item, or an item over a folder, is `InvalidPath` (A.4, D4; § 3.7's
-  BlockedByItem row and its Found-with-the-other-kind row); a stored key
-  holding `\`, `..` or NUL is outside the library's addressable subset,
-  omitted from listings and reached through addressing and `unwrap()` (A.2,
-  BE-030; § 6, costs).
+  BlockedByItem row and its Found-with-the-other-kind row); on a class on the
+  kernel, a stored key holding `\`, `..` or NUL is outside the library's
+  addressable subset, omitted from listings and reached through addressing
+  and `unwrap()` (A.2, BE-030; § 6, costs).
 - **Delta: depth.** A.1 resolves to `Item`, `Folder` or `Nothing` and states
   "Resolutions carry no depth", since `ensure_parents(key)` creates every
   missing folder from the key alone. § 3.7 tells Absent from AbsentAncestor by
@@ -721,7 +727,9 @@ these deltas, each named in § 3.3 or § 9:
 - ERR-005 (b) and ERR-003: the two widenings of § 3.7.
 - The `\` opt-out and the portability opt-in: new configuration.
 - What a listing does with a stored name this model refuses beyond the
-  kernel's rule (§ 6, costs), next to BE-030.
+  kernel's rule, on every backend, and with any name it refuses on a backend
+  not yet on the kernel, where BE-030 does not apply (BK-483 is the Azure
+  case) (§ 6, costs).
 
 ---
 

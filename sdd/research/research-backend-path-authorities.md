@@ -15,7 +15,9 @@ from memory rather than read.
 
 This document is a reference: for each externally governed backend, what its
 own authoritative source permits in a path or key, with the source cited.
-§ 2 to § 4 record the external authorities only. § 5 adds dated
+§ 2 to § 4 record the external authorities, with labelled measurements where
+no authority speaks: § 2's cells marked "measured", § 3.5's CPython runs,
+§ 3.7's SDK URL capture and § 4's references to § 5. § 5 holds the dated
 measurements of what services and local implementations did, labelled as
 measurements and not authorities. The document decides nothing and states
 nothing about what remote-store accepts.
@@ -25,9 +27,12 @@ nothing about what remote-store accepts.
 `graph`, `http`. `memory`, `sql-blob` and `sql-query` have no external
 authority; their key rules are remote-store-defined.
 
-**Derivation.** Every claim comes from a primary source fetched on 2026-10-21
-(WebFetch, or Python `urllib` / `pdftotext` for POSIX, Apple and Python
-pages). Every double-quoted passage in § 3, of any length, was then checked
+**Derivation.** Every claim about an authority comes from a primary source,
+fetched on 2026-10-21 (WebFetch, or Python `urllib` / `pdftotext` for POSIX,
+Apple and Python pages) unless its subsection dates a later search; of the
+five sources the quote check added below, four were fetched on 2026-10-22
+and one on 2026-10-23 (commits `2750d7d09` and `94cd3b281`). Every
+double-quoted passage in § 3, of any length, was then checked
 against the raw text of a source its subsection lists by
 [`bk-484-key-model/probes/check_quotes.py`](bk-484-key-model/probes/check_quotes.py):
 92 of 92 found on 2026-10-23. A passage counts as found when it occurs in
@@ -40,7 +45,8 @@ deletes backticks, `*` and zero-width characters (its docstring lists them);
 a very short quote can match by chance. The check corrected three quotes,
 narrowed one date and added the five sources it found missing. Points that no primary source settles after two rounds
 of search are marked "Not documented" and listed in § 4. Statements from SDK
-source, SDK issue trackers or emulators are labelled as such.
+source, SDK issue trackers, Microsoft Q&A answers or emulators, and
+measurements, are labelled as such.
 
 ---
 
