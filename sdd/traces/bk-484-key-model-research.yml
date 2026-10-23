@@ -209,6 +209,15 @@ phases:
         read_type: verify
         extract: "85 of 85 quotes found after three wording fixes (ext4, SSHM charter, Graph) and four sources added that their subsections did not list; web searches found no documentation of Graph dot segments or of HNS trailing-dot and backslash rewriting, only Azure Files' trailing-dot rule"
         outcome: ok
+      - file: "PR #1173 conversation (issue comments 6339559160 and 6339881662)"
+        section: "Flat-namespace Azure measurement; 2026-10-21 handover"
+        read_type: reference
+        extract: >-
+          The maintainer's flat-account run through the SDK settles `//`, a leading `/` and a trailing `/`
+          (stored as sent) and leaves raw `.`, `..` and `\` open, since urllib3 removes dot segments; cited in
+          the authorities doc § 5 and narrowed into § 2, § 3.7, § 4 and BK-482. The handover's tier
+          implications went into the key model's § 3.2, each narrowed to what its source section shows
+        outcome: ok
       - file: sdd/research/research-backend-path-authorities.md
         section: "§ 1 Derivation (as first landed)"
         read_type: reference

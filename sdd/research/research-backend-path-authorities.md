@@ -1,7 +1,7 @@
 # Research: What each backend's authority allows in a path or key
 
 **Date:** 2026-10-21
-**Status:** Research complete — a reference table, with one dated measurement (§ 5)
+**Status:** Research complete — a reference table, with dated measurements (§ 5)
 
 ---
 
@@ -15,9 +15,9 @@ from memory rather than read.
 
 This document is a reference: for each externally governed backend, what its
 own authoritative source permits in a path or key, with the source cited.
-§ 2 to § 4 record the external authorities only. § 5 adds one dated
-measurement of what services and local implementations did, labelled as a
-measurement and not an authority. The document decides nothing and states
+§ 2 to § 4 record the external authorities only. § 5 adds dated
+measurements of what services and local implementations did, labelled as
+measurements and not authorities. The document decides nothing and states
 nothing about what remote-store accepts.
 
 **Scope.** The externally governed backends of remote-store v0.33.0
@@ -54,7 +54,7 @@ cell marked "measured" comes from § 5.
 | Python `pathlib.PurePosixPath` (lexical model, not a backend) | Python 3.15 `pathlib` docs | — (none of its own) | `/`; no I/O | — | — | `.` collapsed; `..` kept (only `resolve()` removes it) | `a//b` → `a/b`; leading `//` kept, `///` → `/` | Dropped | Case-sensitive (`PureWindowsPath`: insensitive) | `str`; POSIX filenames decoded with `surrogateescape` |
 | `s3`, `s3-pyarrow` general-purpose bucket | AWS "Naming Amazon S3 objects"; `PutObject`; `ListObjectsV2` | UTF-8 bytes; key 1–1024 | Flat; `/` is only a convention | `..` where cumulative `..` count exceeds preceding normal segments (REST, CLI, SDK, console) | Period-only segments; control chars 0–31, 127; `\ { } ^ % \` [ ] " < > ~ # \|`; bytes 128–255 | Stored literally if valid (see Forbidden); tools may normalise | Not documented; SDK issue reports indicate stored literally (§ 3.6) | Allowed (REST/SDK; console cannot upload) | Case-sensitive | UTF-8; list needs `encoding-type=url` for XML-unsafe chars |
 | S3 directory bucket (Express One Zone) | AWS "Working with directory buckets"; "Differences for directory buckets" | UTF-8 bytes; key ≤ 1024 | Real directories; `/` only delimiter; prefixes must end in `/` | `DeleteObjects` keys: all-whitespace, control chars except `\n \t \r` | — | Not documented (live probe) | Not documented (live probe) | Not documented (live probe) for PUT; `RenameObject` fails on it | Not documented for directory buckets (general-purpose keys are case-sensitive) | UTF-8; listing unsorted |
-| `azure` flat namespace | MS "Naming and Referencing Containers, Blobs, and Metadata" | Characters; blob name 1–1024; ≤ 254 segments | Flat; virtual hierarchy via any delimiter | Control chars 0x00–0x1F, invalid Unicode code points; URL-invalid chars may fail | Names or segments ending in `.`, `/`, `\`; U+0080–009F and noncharacters | Not documented (live probe) (only "no segment should end with `.`") | Not documented (live probe) | Avoid | Case-sensitive | Reserved URL chars must be escaped |
+| `azure` flat namespace | MS "Naming and Referencing Containers, Blobs, and Metadata" | Characters; blob name 1–1024; ≤ 254 segments | Flat; virtual hierarchy via any delimiter | Control chars 0x00–0x1F, invalid Unicode code points; URL-invalid chars may fail | Names or segments ending in `.`, `/`, `\`; U+0080–009F and noncharacters | Not documented (live probe) (only "no segment should end with `.`") | Not documented; measured through the SDK: stored as sent (§ 5) | Avoid; measured through the SDK: stored as a blob of its own (§ 5) | Case-sensitive | Reserved URL chars must be escaped |
 | `azure` HNS (ADLS Gen2) | Same page; ADLS "Path - Create"; Data Lake known issues | Characters; name 1–1024; ≤ 63 segments incl. account and container | Real directories; `/` only delimiter | As flat | As flat; measured: a trailing `.` is stripped and `\` becomes `/` (§ 5) | Not documented; measured: resolved by the service, `..` before authorisation (§ 5) | Not documented; measured: collapsed, a leading `/` dropped (§ 5) | Avoid; measured: PUT refused, `InvalidUri` (§ 5) | Case-sensitive | As flat |
 | `sftp` (protocol v3, OpenSSH) | draft-ietf-secsh-filexfer-02 §6.2; OpenSSH `PROTOCOL` §4 | — (protocol sets none; server FS rules apply) | `/` assumed; relative to home | — (no syntax defined) | — | Servers SHOULD treat as parent/current | Not defined (server FS); an empty *path* is the home directory | — | Server FS | Opaque strings (UTF-8 only from v6, which OpenSSH lacks) |
 | `graph` (OneDrive / SharePoint) | MS "Restrictions and limitations"; SharePoint limits; Graph "Addressing driveItems" | Characters; decoded path ≤ 400 | Folders, addressed by `/` paths | `" * : < > ? / \ \|`; `#` `%` on some business tenants; names `.lock CON PRN AUX NUL COM0–9 LPT0–9 _vti_ desktop.ini`; `~$` prefix; `_vti_` anywhere; leading/trailing spaces; folder ending in `.` and name starting with `~` (Graph page only) | — | Not documented | Not documented | Not documented | Path lookup case-insensitive, case-preserving | Percent-encoded UTF-8 per RFC 3986 |
@@ -454,8 +454,9 @@ Sources:
   comment "Azure Storage Server will replace '\' with '/' in the blob names"
   (its quote marks rendered as `'` here).
   Settled only by a live probe that bypasses client normalisation (for example
-  `curl --path-as-is`). § 5 records such a probe against an HNS account; the
-  flat namespace is still unmeasured.
+  `curl --path-as-is`). § 5 records such a probe against an HNS account. For
+  a flat account it records a measurement through the SDK only, which leaves
+  raw `.`, `..` and `\` unmeasured.
 
 Sources:
 
@@ -570,10 +571,11 @@ No source settles these, after two rounds of search:
   probe covers them, but its 2026-10-22 run could not create a bucket.
 - S3 general-purpose: `//` stored literally (indicative SDK issue reports
   only). § 5's probe covers it; the same run was refused at authentication.
-- Azure flat namespace: service treatment of raw `.`, `..`, `//` and `\`.
+- Azure flat namespace: service treatment of raw `.`, `..` and `\`.
   Microsoft documents none; needs a live probe with an unnormalised request
-  path. The HNS endpoint is measured in § 5; Azurite, a flat emulator, is not
-  an authority for the service.
+  path. Through the SDK, `//`, a leading `/` and a trailing `/` were stored as
+  sent (§ 5). The HNS endpoint is measured in § 5; Azurite, a flat emulator,
+  is not an authority for the service.
 - Graph: whether a reserved name with an extension (`CON.txt`) is blocked.
   Microsoft documents it nowhere; needs a test upload.
 - Graph: that `a.txt` and `A.txt` cannot coexist is inferred from
@@ -587,7 +589,8 @@ No source settles these, after two rounds of search:
 ## 5. Measured: raw keys against a service and local implementations (2026-10-22)
 
 This section is not an authority. It records what one Azure account and three
-local implementations did with eleven raw keys on one day.
+local implementations did with eleven raw keys, and what a second,
+flat Azure account did with keys sent through the SDK.
 
 **Method.** The script is
 [`bk-484-key-model/probes/probe_paths.py`](bk-484-key-model/probes/probe_paths.py),
@@ -669,11 +672,32 @@ Both runs of each local target gave the same results.
   root-owned chroot root refuses the write, but this probe cannot tell it
   apart from a refusal of the escape itself.
 
+**A flat account, through the SDK (2026-10-22).** The maintainer measured a
+flat-namespace account separately and posted the output on
+[PR #1173](https://github.com/haalfi/remote-store/pull/1173#issuecomment-6339559160):
+`azure-storage-blob` 12.31.0, Entra sign-in, blobs under a random prefix in an
+existing container. The account's HNS flag was not read
+(`get_account_information` answered 403), so its flat namespace rests on the
+repo's storage configuration and fits the results; it was not checked.
+
+- `m//b` and `q//` were stored as sent, so an empty segment is a level of
+  its own.
+- A leading `/` was kept.
+- `m/` was stored as a blob of its own, and `m` did not exist.
+- `r/./s` was stored as `r/s` and `r/../t` as `t`. urllib3 removes dot
+  segments before sending (§ 3.7), so this run does not show what the service
+  does with them.
+- `\` and a trailing `.` were not sent.
+
+The SDK sends `//` unchanged and `BlobClient` strips no `/` (§ 3.7), so the
+first three keys reached the service as written. That is an inference from
+the client capture, not a raw probe.
+
 ---
 
 ## 6. Using this reference
 
 § 2 is the overview; cite the § 3 subsection, not the table, for any claim
 that rests on a backend's rule. Treat the points of § 4 as unknown, not as
-permitted. § 5 is one day's measurement of one instance per target; cite it
-as such, never as a rule.
+permitted. § 5 records dated measurements of one instance per target; cite
+them as such, never as a rule.

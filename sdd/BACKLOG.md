@@ -559,11 +559,11 @@ no clause of the contract ships unexercised.
 
 - [ ] **BK-482 — Azure conformance runs on Azurite, which stores raw keys the HNS service rewrites**
   spec: BE-030, BE-032 · effort: M · audience: infra.test, library.maintainer
-  `research-backend-path-authorities.md` § 5 (2026-10-22): sent raw, `a//b`, `.`, `..`, a leading `/`
-  and a trailing `.` are stored as sent by Azurite 3.35.0 and rewritten by an HNS account; they agree
-  only on the control key and `\` becoming `/`. An assertion about such keys on the Azurite fixtures may
-  hold only on the emulator; the flat namespace is unmeasured. Open decision: which assertions rerun on
-  `azure_live` or are marked emulator-only, and whether a flat account is probed.
+  `research-backend-path-authorities.md` § 5 (2026-10-22): sent raw, `a//b`, `.`, `..`, a leading `/` and a
+  trailing `.` are stored as sent by Azurite 3.35.0 and rewritten by an HNS account; they agree only on the
+  control key and `\` becoming `/`. An assertion about such keys on Azurite may hold only on the emulator. A
+  flat account, measured through the SDK only for `//` and a leading or trailing `/`, stored them as sent.
+  Open decision: which assertions rerun on `azure_live` or are emulator-only, and whether a flat account is probed.
 
 - [ ] **BK-483 — A stored Azure name holding `..` may be read back at a different path**
   spec: BE-030, PATH-003 · effort: M · audience: library.maintainer, user.api

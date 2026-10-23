@@ -180,6 +180,32 @@ b represents S  iff  for every folder p, the names of p's children are pairwise 
 It is checked when an operation would create the collision, not by ν. The
 library never rewrites a name into a different key string.
 
+**What the authorities imply for these rules**, by section of
+[research-backend-path-authorities.md](research-backend-path-authorities.md):
+
+- **Rewriting beyond HFS+.** Win32 normalisation strips one trailing `.` from
+  every segment, and trailing spaces from the last (its § 3.4). An Azure HNS
+  account stripped a trailing `.` from the last segment of a raw path (its
+  § 5, a measurement of that position only; Microsoft documents the rule only
+  for Azure Files). By the normal-form rule, L_b refuses a name ending in `.`
+  on Windows, and on HNS at least as the last segment, `...` included (HNS
+  refused that PUT with `InvalidUri`); on Windows it also refuses a last
+  segment ending in a space. HNS's other rewrites never meet a key
+  string: an empty segment and a leading or trailing `/` are outside L_core,
+  whose segments are names, and `.`, `..` and `\` are outside the floor.
+- **Coarser equality, not rewriting.** APFS is normalisation-insensitive, and
+  case-insensitive by default, but stores names as written (its § 3.3), Windows
+  is case-insensitive and case-preserving (its § 3.4), and Graph looks paths up
+  case-insensitively (its § 3.9). These fall under sibling equivalence, not
+  the normal-form rule.
+- **A whole-string rule besides length: a segment count.** Azure caps a blob
+  name at 254 segments on a flat account, and at 63 on an HNS account counting
+  the account and container (its § 3.7).
+- **The client layer.** Of the client libraries, only the Azure Python SDK was
+  examined (its § 3.7). The model needs no guarantee from a client, since no
+  key string carries navigation, but a listed name that another tool wrote
+  does (BK-483).
+
 ### 3.3 Separators and the walk
 
 **Separators.** The only separator in a key string is `/`. In a caller's
