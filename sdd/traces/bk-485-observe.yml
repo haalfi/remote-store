@@ -148,6 +148,17 @@ phases:
           file, whose § 10 names InvalidPath and the flat-store undecodable
           state the session used as E5. Row dropped; recommendations now cite
           a source or are marked unsourced
+  - id: placement
+    name: Placement
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?; Directory defaults"
+        read_type: reference
+        extract: >-
+          The maintainer moved all /observe work into sdd/observe/ (axes,
+          ground register, records/), as the records are per-operation
+          decision records, not research; they are repo-only, so no kind glob,
+          nav or index follows, and the research template no longer applies
   - id: verify
     name: Verify
     steps:

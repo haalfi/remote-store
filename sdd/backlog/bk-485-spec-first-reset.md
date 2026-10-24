@@ -9,8 +9,8 @@ made binding by [RFC-0024](../rfcs/rfc-0024-spec-first-reset.md).
 
 ## First `/observe` run (`exists`, 2026-10-23)
 
-**A throwaway test of the tool, kept off master:** the research doc and its
-decision log are on branch `throwaway/bk-485-observe-research` (`92fe4fc`). The
+**A throwaway test of the tool, kept off master:** its record (then still a
+research doc under `sdd/research/`) and decision log are on branch `throwaway/bk-485-observe-research` (`92fe4fc`). The
 maintainer typed `/observe exists` in a fresh session on `bk-485-observe`.
 
 - **What held.** The hook armed the session; the canary was refused before
@@ -44,7 +44,7 @@ It is unverified: like that tool's deep-research run (research § 5), it grades
 no sources. Its mapping of `read()` decisions onto the categories is left out,
 because those are research § 7's candidates and would prime a design session.
 What fits within the binding F decisions already went into
-[`observe-axes.md`](../observe-axes.md); the rest waits for this RFC.
+[`observe/axes.md`](../observe/axes.md); the rest waits for this RFC.
 
 | F | Critique | Verdict for the RFC |
 |---|---|---|

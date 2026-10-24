@@ -9,7 +9,7 @@ The observation axes are the fixed checklist an `/observe` session walks for one
 - **O1 caller**: the one issuing the call under design.
 - **O2 concurrent caller**: another caller using the same API on the same store, overlapping in time.
 - **O3 out-of-band actor**: changes the backing storage without going through the API.
-- **Environment**: the one declared list of actions O2, O3 and the world may take, fault actions included. Axes reference it; they never restate it. It lives in the Environment section of the operation's research doc, rows `<op>/E<n>`, drafted and decided when the doc is created; AX-7 checks it is complete, and a missing action is added there by a decision. Each operation keeps its own list until a shared one is admitted to the ground; the consistency check compares it with the lists of admitted operations.
+- **Environment**: the one declared list of actions O2, O3 and the world may take, fault actions included. Axes reference it; they never restate it. It lives in the Environment section of the operation's record (`sdd/observe/records/<op>.md`), rows `<op>/E<n>`, drafted and decided when the doc is created; AX-7 checks it is complete, and a missing action is added there by a decision. Each operation keeps its own list until a shared one is admitted to the ground; the consistency check compares it with the lists of admitted operations.
 
 **Non-commitment answers (F3).** Where a decision commits to no single outcome, it says so with a term, and the terms answer different questions. What the contract leaves open: *unspecified* (one of a stated set), *optional (MAY)*, *deliberately not promised* (goes to AX-14). Who fixes it: *profile-declared* (AX-15). What the caller can know: *indeterminate* (may or may not have taken effect; AX-12). Every such answer still names the observations it admits, so an observation outside them is a violation a check can catch; *undefined* is not allowed for that reason. A term is a decision; "not decided yet" is an open item, not a term.
 
@@ -39,7 +39,7 @@ Splits: single call into AX-3 to AX-5, because the report gives the frame and te
 
 ## Per-question loop
 
-Each question an axis raises becomes one entry in the operation's research doc (S5):
+Each question an axis raises becomes one entry in the operation's record (S5):
 
 1. **Decision ID** (`<op>/D<n>`, numbered in order, never reused) and the axis it answers.
 2. **Scenario**: one concrete sequence of calls and environment actions that makes the question bite.
@@ -47,7 +47,7 @@ Each question an axis raises becomes one entry in the operation's research doc (
 4. **Recommendation**, with its reason and its source: a ground clause ID or a named prior-art reference, else marked `unsourced`.
 5. **Decision**: an option, or an F3 term.
 6. **Consistency check** against earlier decisions and the ground (S1); conflicts named.
-7. **Open items** it raises, as IDs of entries in the doc's one Open items section.
+7. **Open items** it raises, as IDs of entries in the record's one Open items section.
 
 ## Sources
 
@@ -60,4 +60,4 @@ with F2 after the `read()` flow (research § 6).
 Refined after the draft from an unverified ChatGPT critique of F1 to F6, taking
 only what holds within them (F2 facets; F3's admitted observations; AX-12 to
 AX-14). The rest, F4 above all, is input to the format RFC and kept in the
-[BK-485 dossier](backlog/bk-485-spec-first-reset.md).
+[BK-485 dossier](../backlog/bk-485-spec-first-reset.md).

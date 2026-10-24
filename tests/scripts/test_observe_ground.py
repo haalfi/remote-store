@@ -7,7 +7,7 @@ copy tests the shipped files against a register and marker this test controls.
 
 What must hold, and why each is pinned: an unarmed session is never blocked,
 since the PreToolUse hook runs on every call of every session; an armed one
-reads only its allowlist and writes only its research doc; 0.33 code, tests and
+reads only its allowlist and writes only its record; 0.33 code, tests and
 specs 001 to 050 cannot be named into it; and the repository's own register and
 wiring point at files that exist.
 
@@ -50,8 +50,8 @@ def repo(tmp_path: Path) -> Path:
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(ROOT / rel, tmp_path / rel)
     files = {
-        "sdd/ground-register.md": REGISTER,
-        "sdd/observe-axes.md": "axes",
+        "sdd/observe/ground-register.md": REGISTER,
+        "sdd/observe/axes.md": "axes",
         ".claude/skills/observe/SKILL.md": "skill",
         "sdd/specs/051-store-tree.md": "tree",
         "sdd/specs/003-backend-adapter-contract.md": "0.33",
@@ -99,13 +99,13 @@ def _call(repo: Path, tool: str, session: str = SESSION, **tool_input: object) -
 # --- arming ------------------------------------------------------------------
 
 
-def test_observe_prompt_arms_the_session_with_its_research_doc(repo: Path) -> None:
+def test_observe_prompt_arms_the_session_with_its_record(repo: Path) -> None:
     result = _arm(repo, "/observe read sdd/research/prior.md")
     assert result.returncode == 0, result.stderr
     state = json.loads((repo / "tmp/observe" / f"{SESSION}.json").read_text(encoding="utf-8"))
     assert state == {
         "operation": "read",
-        "research_doc": "sdd/research/research-observe-read.md",
+        "record": "sdd/observe/records/read.md",
         "named": ["sdd/research/prior.md"],
     }
 
@@ -180,13 +180,13 @@ def test_a_crash_blocks_the_armed_session(repo: Path) -> None:
     ("tool", "tool_input"),
     [
         ("Read", {"file_path": "sdd/specs/051-store-tree.md"}),
-        ("Read", {"file_path": "sdd/observe-axes.md"}),
-        ("Read", {"file_path": "sdd/ground-register.md"}),
+        ("Read", {"file_path": "sdd/observe/axes.md"}),
+        ("Read", {"file_path": "sdd/observe/ground-register.md"}),
         ("Read", {"file_path": ".claude/skills/observe/SKILL.md"}),
         ("Read", {"file_path": "sdd/research/prior.md"}),
         ("Grep", {"pattern": "TREE", "path": "sdd/specs/051-store-tree.md"}),
-        ("Write", {"file_path": "sdd/research/research-observe-read.md", "content": "x"}),
-        ("Edit", {"file_path": "sdd/research/research-observe-read.md"}),
+        ("Write", {"file_path": "sdd/observe/records/read.md", "content": "x"}),
+        ("Edit", {"file_path": "sdd/observe/records/read.md"}),
         ("AskUserQuestion", {"questions": []}),
         ("Skill", {"skill": "observe"}),
         ("WebSearch", {"query": "Hadoop FileSystem specification open"}),
@@ -234,7 +234,7 @@ def test_the_skill_canary_is_refused_only_when_armed(repo: Path) -> None:
     assert result.returncode == 2
     assert "outside the ground" in result.stderr
     # The refusal names every readable non-ground file, since Glob is denied.
-    for rel in (".claude/skills/observe/SKILL.md", "sdd/observe-axes.md", "sdd/research/research-observe-read.md"):
+    for rel in (".claude/skills/observe/SKILL.md", "sdd/observe/axes.md", "sdd/observe/records/read.md"):
         assert rel in result.stderr
 
 

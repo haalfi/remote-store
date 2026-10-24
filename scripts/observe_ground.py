@@ -23,7 +23,7 @@ The skill re-runs its canary before every axis as well, so an unarmed session
 stops even where these events do not reach.
 
 The allowlist is the method files, the ``active`` rows of the ground register,
-the named paths and the operation's research doc, the only file the session may
+the named paths and the operation's record, the only file the session may
 write. Reads go through Read, or Grep on one allowed file. Glob, Bash, Agent and
 every tool not listed below are denied: a path inside a shell command cannot be
 checked. WebSearch and WebFetch pass unless they name remote-store, whose code
@@ -46,16 +46,15 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-REGISTER = "sdd/ground-register.md"
+REGISTER = "sdd/observe/ground-register.md"
 MARKER_DIR = "tmp/observe"
 # Read by every session; none of them is ground.
 METHOD_FILES = (
     ".claude/skills/observe/SKILL.md",
-    "sdd/observe-axes.md",
-    "sdd/templates/research-template.md",
+    "sdd/observe/axes.md",
     REGISTER,
 )
-RESEARCH_DOC = "sdd/research/research-observe-{op}.md"
+RECORD = "sdd/observe/records/{op}.md"
 
 _PROMPT = re.compile(r"\s*/observe(?:\s+(?P<args>.*))?\s*$", re.DOTALL)
 # How a transcript, and possibly UserPromptSubmit, records a typed slash command.
@@ -124,7 +123,7 @@ def _first_prompt(transcript: Path) -> str | None:
 
 
 def arm(payload: dict[str, Any], root: Path) -> str | None:
-    """Write the marker for an ``/observe`` prompt; return its research doc, or None."""
+    """Write the marker for an ``/observe`` prompt; return its record, or None."""
     args = _observe_args(payload.get("prompt") or "")
     if args is None:
         return None
@@ -139,7 +138,7 @@ def arm(payload: dict[str, Any], root: Path) -> str | None:
 
 
 def rearm(payload: dict[str, Any], root: Path) -> str | None:
-    """Re-arm a resumed or compacted session whose first prompt was ``/observe``; return its doc, or None.
+    """Re-arm a resumed or compacted session whose first prompt was ``/observe``; return its record, or None.
 
     Its marker may be gone (cleared, or a resume under a new session_id) while its
     transcript still holds the design dialogue, so a resume never runs unarmed.
@@ -163,11 +162,11 @@ def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:
         if _NEVER_GROUND.match(rel):
             raise Refused(f"{rel}: 0.33 code, tests and specs 001 to 050 are never ground (RFC-0024 § R1)")
         named.append(rel)
-    doc = RESEARCH_DOC.format(op=args[0])
+    doc = RECORD.format(op=args[0])
     marker = _marker(root, payload.get("session_id") or "")
     marker.parent.mkdir(parents=True, exist_ok=True)
     marker.write_text(
-        json.dumps({"operation": args[0], "research_doc": doc, "named": named}), encoding="utf-8", newline="\n"
+        json.dumps({"operation": args[0], "record": doc, "named": named}), encoding="utf-8", newline="\n"
     )
     return doc
 
@@ -196,10 +195,10 @@ def check(payload: dict[str, Any], root: Path) -> None:
         if _OWN_SURFACE.search(target):
             raise Refused(f"{tool}: remote-store's own code and docs are 0.33, never ground (S1)")
         return
-    doc = _real(root, state["research_doc"])
+    doc = _real(root, state["record"])
     if tool in ("Write", "Edit"):
         if _real(root, args.get("file_path") or "", cwd) != doc:
-            raise Refused(f"{tool}: this session writes only {state['research_doc']} (S4)")
+            raise Refused(f"{tool}: this session writes only {state['record']} (S4)")
         return
     if tool in ("Read", "Grep"):
         target = args.get("file_path") if tool == "Read" else args.get("path")
@@ -210,8 +209,8 @@ def check(payload: dict[str, Any], root: Path) -> None:
         if not target or real not in allowed or _NEVER_GROUND.match(rel) or rel.startswith("../"):
             raise Refused(
                 f"{tool}: {target or '(no path)'} is outside the ground. Allowed: the files {REGISTER} "
-                f"lists as active, the method files {', '.join(METHOD_FILES)}, the research doc "
-                f"{state['research_doc']} and the paths named at /observe (S3)."
+                f"lists as active, the method files {', '.join(METHOD_FILES)}, the record "
+                f"{state['record']} and the paths named at /observe (S3)."
             )
         return
     raise Refused(f"{tool}: not available in an /observe session (S2). Read allowed files with Read.")

@@ -1,6 +1,6 @@
 ---
 name: observe
-description: Unprimed design session for one Store operation, deciding its observable semantics axis by axis with the maintainer into its research doc. Use only when the maintainer types /observe in a fresh session. Not for the spec or the 0.33 comparison, later steps of the flow.
+description: Unprimed design session for one Store operation, deciding its observable semantics axis by axis with the maintainer into its record. Use only when the maintainer types /observe in a fresh session. Not for the spec or the 0.33 comparison, later steps of the flow.
 argument-hint: "<operation> [path ...]"
 disable-model-invocation: true
 ---
@@ -11,10 +11,9 @@ axes state it. This session decides and records; spec and comparison follow.
 
 ## Ground
 
-**You read only** `sdd/ground-register.md` and its `active` rows,
-`sdd/observe-axes.md`, `sdd/templates/research-template.md`, this skill, the
-paths typed after the operation, and `sdd/research/research-observe-<op>.md`,
-the one file you write. A hook refuses anything else, and Bash, Glob and Agent
+**You read only** `sdd/observe/ground-register.md` and its `active` rows,
+`sdd/observe/axes.md`, this skill, the paths typed after the operation, and
+`sdd/observe/records/<op>.md`, the record, the one file you write. A hook refuses anything else, and Bash, Glob and Agent
 outright. Never use what you may know of this library's code, tests, docs or
 specs 001 to 050 (S1); discard any web result about it.
 
@@ -26,11 +25,12 @@ specs 001 to 050 (S1); discard any web result about it.
    and tell the maintainer to start a fresh one with `/observe`.
 2. **Load.** Read the register, the axes, every active spec row and each named
    path; read a formal model row when a decision cites a clause it checks. If
-   the research doc exists, continue it from its first axis not yet closed.
-   Otherwise create it from `sdd/templates/research-template.md`'s header
-   (`**Date:**`, `**Backlog items:**`, `**Status:** In progress`) with five
-   sections: Session (date, operation, ground read, named paths),
-   Environment, Decisions, Axis status (one row per axis), Open items.
+   the record exists, continue it from its first axis not yet closed.
+   Otherwise create it: title `# <op>: observable semantics`, the marker
+   `<!-- doc: repo-only -->`, lines `**Date:**`, `**Backlog items:**` and
+   `**Status:** In progress`, then five sections: Session (date, operation,
+   ground read, named paths), Environment, Decisions, Axis status (one row per
+   axis), Open items.
    Draft the Environment (the axes file defines it) and decide it, with the
    backlog item if none was named, in the first dialog.
 3. **Loop (S5).** Walk the axes in order. For each question an axis forces:
@@ -38,7 +38,7 @@ specs 001 to 050 (S1); discard any web result about it.
    - **options**, each with what callers and backends would see;
    - your **recommendation**, its reason and its **source**: a ground clause
      ID or a named prior-art reference. A recommendation, category or term
-     with neither is marked `unsourced`, in the dialog and the doc;
+     with neither is marked `unsourced`, in the dialog and the record;
    - ask through `AskUserQuestion`, related questions of one axis batched,
      recommendation first and marked `(Recommended)`; it takes at most four
      options per question, so more alternatives become two questions;
@@ -50,10 +50,10 @@ specs 001 to 050 (S1); discard any web result about it.
 4. **Ground conflict.** If a decision would contradict a ground artifact,
    stop on that point. Record a reopen decision as an open item: the artifact,
    the clause, the conflict, the dependent decisions. Never edit ground, the
-   register or any file but the research doc; the reopen runs its own flow.
-5. **End (S4)** when every axis row is closed. Set `**Status:**` to `Research
-   complete — ready for design decisions`, and tell the maintainer the doc is
-   uncommitted: `/clear`, then commit. A stop hook asking this session to
+   register or any file but the record; the reopen runs its own flow.
+5. **End (S4)** when every axis row is closed. Set `**Status:**` to
+   `Complete`, and tell the maintainer the record is uncommitted: `/clear`,
+   then commit. A stop hook asking this session to
    commit cannot be obeyed here; answer it the same way.
 
 ## Rules
