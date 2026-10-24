@@ -153,14 +153,14 @@ co_shipped_items: []
 decisions:
   - sdd/decisions/613d97f0-94fd-5231-8d1b-954f25e6bb16.jsonl
 review:
-  # Derived by `hatch run ship-report 1179 --trace-block-only` at head 814c188.
+  # Derived by `hatch run ship-report 1179 --trace-block-only` at head dd633a2.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1179 --trace-block-only"
   pr: 1179
-  review_rounds: 7
-  submissions: 5
-  findings: 12
+  review_rounds: 10
+  submissions: 6
+  findings: 13
   by_round:
     - round: 1
       findings: 3
@@ -187,6 +187,11 @@ review:
       origin: {loop-introduced: 4}
       triage: {must-fix: 4}
       duration_hours: 0.49
+    - round: 6
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.69
   by_file:
     - path: ".claude/hooks/gate-commit.sh"
       findings: 3
@@ -197,6 +202,8 @@ review:
     - path: ".claude/hooks/gate-push.sh"
       findings: 1
     - path: ".githooks/pre-commit"
+      findings: 1
+    - path: "sdd/CLAUDE-REFERENCE.md"
       findings: 1
     - path: "tests/scripts/test_githooks.py"
       findings: 1
@@ -211,9 +218,7 @@ review:
     - "scripts/pre_commit_install.py"
     - "scripts/record_decision.py"
     - "sdd/BACKLOG-DONE.md"
-    - "sdd/CLAUDE-REFERENCE.md"
     - "sdd/decisions/613d97f0-94fd-5231-8d1b-954f25e6bb16.jsonl"
-    - "sdd/process-budget.json"
     - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
     - "sdd/traces/bk-486-gate-git-c.yml"
     - "tests/scripts/test_pre_commit_install.py"
@@ -233,4 +238,10 @@ review:
       subject: "BK-486: Move the commit and push gates into git's own hooks"
     - sha: "814c188"
       subject: "BK-486: Stage on commit -a, share one hooks path, keep pre-commit installable"
+    - sha: "6c5fdc8"
+      subject: "BK-486: Record the review block for #1179"
+    - sha: "1745288"
+      subject: "Merge remote-tracking branch 'origin/master' into bk-486-gate-git-c"
+    - sha: "dd633a2"
+      subject: "BK-486: decision log"
   ci: {verdict: GREEN, failed: 0, pending: 0}
