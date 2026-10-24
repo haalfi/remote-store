@@ -191,7 +191,7 @@ def check(payload: dict[str, Any], root: Path) -> None:
     if tool in ("WebSearch", "WebFetch"):
         target = args.get("query") or args.get("url") or ""
         if _OWN_SURFACE.search(target):
-            raise Refused(f"{tool}: remote-store's own code and docs are 0.33, never ground (S1)")
+            raise Refused(f"{tool}: remote-store's own code and docs describe version 0.33, never ground (S1)")
         return
     doc = _real(root, state["record"])
     if tool in ("Write", "Edit"):

@@ -27,8 +27,14 @@ maintainer typed `/observe exists` in a fresh session on `bk-485-observe`.
   `permission-denied`) match 0.33's error classes without any ground file
   naming them, so the skill now makes each recommendation cite a ground clause
   or named prior art, else mark it `unsourced`.
-- **Not exercised:** the Bash, Glob, WebFetch and write-elsewhere probes; unit
-  tests cover them. A short probe-only run is still owed.
+- **Probed separately (2026-10-24).** A fresh session armed by `/observe
+  probe`, with the maintainer's go-ahead, tried ten calls once each: a `src/`
+  read, Bash, Glob, a Grep over `src`, a WebFetch and a WebSearch naming
+  remote-store, a write to spec 051 and an Agent call were refused, each
+  naming its rule (S1 to S4); reading the axes and writing the record were
+  allowed. Its `send_message` to the orchestrating session was refused too.
+  The S1 refusal read as garbled to it, so it now says "describe version
+  0.33".
 - **The session's own report** listed 13 problems. The tool-level ones were
   fixed in PR #1178 (method files named by path, which ground to read,
   the backlog item asked in the first dialog, the canary on axes closed

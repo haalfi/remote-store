@@ -572,9 +572,9 @@ no clause of the contract ships unexercised.
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
-  Not done: the branch's CI triggers, protection and patch checklist (RFC-0024 Open Question 2);
-  a probe-only `/observe` run (the first, on `exists`, is in the dossier); § 9 steps 4 to 6. Open decision: D10 and § 8's open points 2 to 4, 8
-  and 11. After BK-484, which gives the `read()` flow its key spec.
+  Its test runs are in the dossier. Not done: the branch's CI triggers, protection and patch
+  checklist (RFC-0024 Open Question 2); § 9 steps 4 to 6. Open decision: D10 and § 8's open points
+  2 to 4, 8 and 11. After BK-484, which gives the `read()` flow its key spec.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-482 — Azure conformance runs on Azurite, which stores raw keys the HNS service rewrites**
