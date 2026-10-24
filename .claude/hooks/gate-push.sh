@@ -16,6 +16,9 @@ fi
 [ -n "$TREES" ] || exit 0
 
 while IFS= read -r TREE; do
+  # A tree that is no work tree (an unexpanded `$VAR`, a `$(...)`) is judged as
+  # the cwd, as before BK-486: an empty branch must mean detached, not unknown.
+  git -C "$TREE" rev-parse --is-inside-work-tree >/dev/null 2>&1 || TREE=$PWD
   BRANCH=$(git -C "$TREE" branch --show-current 2>/dev/null)
   if [ "$BRANCH" = "master" ] || [ "$BRANCH" = "main" ]; then
     echo "Blocked: never push directly to master/main." >&2

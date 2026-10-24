@@ -50,6 +50,14 @@ def git_target() -> Any:
         pytest.param("ls\ngit commit", ["/cwd"], id="second-line"),
         pytest.param("git commit -m a && git -C /o commit -m b", ["/cwd", "/o"], id="two-invocations"),
         pytest.param("git commit -m 'unbalanced", ["/cwd"], id="unsplittable-falls-back-to-cwd"),
+        pytest.param("nice -n 10 git commit", ["/cwd"], id="wrapper-valued-option"),
+        pytest.param("timeout -s KILL 60 git commit", ["/cwd"], id="timeout-signal-and-duration"),
+        pytest.param("sudo -u someone git commit", ["/cwd"], id="sudo-user"),
+        pytest.param("env -u FOO BAR=1 git commit", ["/cwd"], id="env-unset-then-assignment"),
+        pytest.param("env -C /other git commit", ["/other"], id="env-chdir-followed"),
+        pytest.param("env --chdir=/other git -C sub commit", ["/other/sub"], id="env-chdir-then-C"),
+        pytest.param("/usr/bin/git commit", ["/cwd"], id="absolute-git-path"),
+        pytest.param("env -C /other ls; git commit", ["/cwd"], id="wrapper-chdir-ends-at-separator"),
     ],
 )
 def test_finds_each_invocation_and_its_tree(git_target: Any, command: str, expected: list[str]) -> None:

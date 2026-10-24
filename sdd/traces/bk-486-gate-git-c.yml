@@ -74,6 +74,17 @@ phases:
           Fixed with scripts/git_target.py (git in command position, cd and -C
           followed); 9 new hook cases failed on the first fix's gates
         outcome: ok
+      - file: scripts/git_target.py
+        section: "_skip_wrapper, gate tree fallback"
+        read_type: reference
+        extract: >-
+          Unprimed re-review of 4fc4ddc: an unresolved tree ($R set in the
+          same command, a $(...)) read as a detached HEAD and skipped the
+          master block, and wrapper options with a value (nice -n 10) or
+          /usr/bin/git hid the run. Gates now judge the cwd for a tree that is
+          no work tree; wrappers skip their valued options and follow env -C;
+          10 new cases failed on 4fc4ddc
+        outcome: ok
 discovery_followups: []
 surprising_ripples: []
 co_shipped_items: []

@@ -241,6 +241,24 @@ def test_gate_blocks_a_target_on_master_from_a_branch_cwd(
     assert "Blocked: never" in result.stderr
 
 
+@pytest.mark.parametrize(
+    ("hook", "command"),
+    [
+        pytest.param("gate-commit.sh", "R=/nowhere; git -C $R commit -m x", id="commit-same-command-var"),
+        pytest.param(
+            "gate-commit.sh", 'cd "$(git rev-parse --show-toplevel)" && git commit', id="commit-cd-substitution"
+        ),
+        pytest.param("gate-push.sh", "R=/nowhere; git -C $R push", id="push-same-command-var"),
+    ],
+)
+def test_gate_judges_the_cwd_when_the_tree_does_not_resolve(hook: str, command: str, repo_on_master: Path) -> None:
+    """An unresolved tree must not read as a detached HEAD and skip the master block."""
+    result = _run(hook, _payload(command), cwd=repo_on_master)
+
+    assert result.returncode == 2
+    assert "Blocked: never" in result.stderr
+
+
 def test_gate_commit_promotes_into_the_target_not_the_cwd(tmp_path: Path) -> None:
     """Held records in the cwd stay held when the commit lands in another tree."""
     session = "s-1"
