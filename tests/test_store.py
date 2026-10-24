@@ -50,16 +50,14 @@ class TestStoreBasics:
         with pytest.raises(InvalidPath):
             store.read("../escape")
 
-    @pytest.mark.spec("STORE-002", "KEY-005")
+    @pytest.mark.spec("STORE-002")
     def test_empty_path_resolves_to_root(self, store: Store) -> None:
         store.write("file.txt", b"data")
         assert store.is_folder("")
         assert list(store.list_files("")) == list(store.list_files("", recursive=False))
 
-    @pytest.mark.spec("STORE-002", "KEY-005")
-    @pytest.mark.parametrize(
-        "root", ["", ".", "./", "/", "\\"], ids=["empty", "dot", "dot-slash", "slash", "backslash"]
-    )
+    @pytest.mark.spec("STORE-002")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
     @pytest.mark.parametrize(
         "call",
         [
@@ -84,15 +82,14 @@ class TestStoreBasics:
     def test_file_targeted_methods_reject_root(
         self, store: Store, call: Callable[[Store, str], object], root: str
     ) -> None:
-        """STORE-002, KEY-005: file-targeted methods raise InvalidPath on an input naming the root.
+        """STORE-002: file-targeted methods raise InvalidPath on ``""`` and ``"."``.
 
         The clause's *folder* half is covered by
         ``test_empty_path_resolves_to_root`` above; this is the other half,
         which had no test (BK-324 facet 4). Every method STORE-002 names is
-        enumerated, and each root spelling is exercised — ``_require_file_path``
-        rejects ``""`` and ``"."`` in one condition, so a regression that dropped
-        either arm would otherwise pass on the surviving one; ``"./"``, ``"/"``
-        and ``"\\"`` take the KEY-005 half spec 054 adds.
+        enumerated, and both root spellings are exercised — ``_require_file_path``
+        rejects them in one condition, so a regression that dropped either
+        arm would otherwise pass on the surviving one.
 
         ``move`` and ``copy`` appear twice each: the guard applies to *both*
         operands, and a fix that validated only ``src`` would leave the

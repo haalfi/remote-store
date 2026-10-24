@@ -344,7 +344,7 @@ def test_names_compare_exactly() -> None:
 
 # --- Structures drawn by Hypothesis ---
 
-# "." and "\\" are ordinary names here (spec 054 governs input); ε, "/" and "a/b" are not names.
+# "." and "\\" are ordinary names here (spec 004 governs input); ε, "/" and "a/b" are not names.
 _VALID_NAMES = st.sampled_from(["a", "b", "c", "d", "e", "f", ".", "\\"])
 _INVALID_NAMES = st.sampled_from(["", "/", "a/b"])
 # Hypothesis favours simple and boundary draws, so a rare branch is keyed to a

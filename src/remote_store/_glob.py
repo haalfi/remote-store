@@ -24,7 +24,7 @@ def normalize_pattern(pattern: str) -> str:
     >>> normalize_pattern("/./data//*.csv")
     'data/*.csv'
     """
-    # Spec 018 GLOB-007, applying spec 054 PATH-003 to PATH-007 to a pattern.
+    # Spec 018 GLOB-007, applying spec 004 PATH-003 to PATH-007 to a pattern.
     if "\0" in pattern:
         raise InvalidPath("Pattern contains null byte", path=pattern)
     if ".." in pattern.split("/"):

@@ -10,12 +10,16 @@ audience:
   - library.maintainer
 decisions:
   - sdd/decisions/f26dd04d-9f53-5e2c-8e68-0cddadfe681d.jsonl
-# The clauses the code breaks today (spec 054 KEY-002, KEY-005, KEY-008,
-# KEY-009 on Windows Local, and KEY-003's and KEY-006's surrogate arms).
+  - sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
+co_shipped_items:
+  - BK-484
+# BK-469 was born as the code-breakage item and re-scoped by the rework to
+# the D8 comparison; BL-012 was born and then decided against (RFC-0024 D9).
 discovery_followups:
   - BK-469
   - BL-012
   - BK-480
+  - BK-487
 expected_ripples:
   - sdd/specs/004-path-model.md
   - sdd/specs/051-store-tree.md
@@ -38,6 +42,10 @@ surprising_ripples:
   - scripts/check_spec_marks.py
   - tests/test_store.py
   - tests/test_store_keys.py
+  # The rework reverted every 0.33 ripple above and met these instead.
+  - sdd/formal/README.md
+  - sdd/formal/lean/lakefile.toml
+  - sdd/observe/ground-register.md
 orient:
   - items: [BK-456]
     verdict: constrains
@@ -83,6 +91,37 @@ orient:
       TREE-009, BE-025, STORE-002 and STORE-011 found no item. Backend defects
       and test gaps on root and kernel clauses, and the Dafny refinement work;
       none decides which strings a store accepts.
+  # Rework orient (2026-10-24), after BK-484's research merged (#1173) and
+  # the maintainer chose to finish the key spec on this PR.
+  - items: [BK-484]
+    verdict: subsumes
+    evidence: >-
+      `hatch run backlog-show BK-484`: "Not done: the spec between 051 and
+      004", which is spec 054. research-key-model.md § 9.8 lists three
+      differences (`..` climbs with only an escape refused; the `\` opt-out;
+      § 3.7's four resolution outcomes) and § 10 the deltas to specs 004,
+      005, 015, 051 and 053. The research's § 6 decisions govern; 054 takes them.
+  - items: [BK-469, BL-012]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BK-469 BL-012`: the code-breakage item and its
+      release blocker. `src/remote_store/_path.py:39` refuses every `..`
+      segment, so a climbing `..` is new breakage, either fixed here or added
+      to BK-469 and BL-012.
+  - items: [BK-480]
+    verdict: constrains
+    evidence: >-
+      With RFC-0023: that RFC (draft, this branch) makes a backend's limits an exact driver
+      declaration: the research's L_b tiers, with D2's `trailing` as § 3.2's
+      normal-form rule. Neither it nor BK-480 states the research's store-level
+      portability opt-in (L_api = L_floor ∩ L_shared).
+  - items: [BK-483, BK-482, BK-436]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BK-483 BK-482 BK-436`: BK-483 waits on "BK-484's
+      spec sets the general listing rule"; BK-436 on how a coarser name
+      equality answers (research § 3.2 answers writes only). BK-482 is
+      conformance infrastructure and decides no clause.
 phases:
   - id: orient
     name: Orient
@@ -202,3 +241,59 @@ phases:
           KEY-008 the maintainer chose a kernel-enforced driver declaration
           with exact semantics, drafted as RFC-0023 with Rule 5's amendment
         outcome: unclear
+  - id: rework
+    name: Rework onto the key model and RFC-0024 (2026-10-24)
+    steps:
+      - file: sdd/research/research-key-model.md
+        section: "§ 1 to § 10"
+        read_type: gate
+        extract: >-
+          § 9.8 names three differences from the draft (`..` climbs; the `\` opt-out;
+          resolution) and § 10 the deltas; § 6's decisions govern. Σ as scalar values
+          left a surrogate in a dropped segment undecided: the maintainer chose a
+          raw-input refusal, as for NUL
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "R1 to R5"
+        read_type: gate
+        extract: >-
+          The draft could never be ground: it named 0.33 types and errors, moved
+          PATH IDs whose meaning `..` changes (D7, R4 "No ID changes meaning"),
+          shipped tests of a v1 spec against 0.33 code (D8's job) and an RFC for
+          paused kernel work (R2). Rewritten as an abstract layer with new KEY IDs,
+          a D6 profile table, and evidence in a formal and a reference model
+        outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 2, § 3, § 9"
+        read_type: reference
+        extract: "A flow's output joins the ground once its spec and formal model are accepted; step 4 is this spec"
+        outcome: ok
+      - file: sdd/research/research-backend-path-authorities.md
+        section: "§ 2 to § 5"
+        read_type: reference
+        extract: "Every cell of the profile table cites its § 3 subsection or § 5's measurement"
+        outcome: ok
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rules 2, 3, 5, 6, 7"
+        read_type: gate
+        extract: >-
+          Resolution is a function of (S, k), so one kind holds; an assumption row is a
+          section for both gates, so KEY-A-02 (the table is accurate) was dropped as
+          untestable by the reference model rather than given a hollow mark
+        outcome: ok
+      - file: scripts/check_formal_trace.py
+        section: "R1 to R4"
+        read_type: verify
+        extract: >-
+          Per file, R2 needs every section of a restated spec tagged, assumptions
+          included, so the two research Lean files were merged into one KeyModel.lean
+          (15/15 tagged); `lake build` with elan 4.34.1 natively builds it, 15 axiom pins
+        outcome: ok
+      - file: tests/test_store_key_model.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          78 passed; five mutants of the model (no surrogate refusal, escape clamped,
+          acceptance ignoring the base, no rewrite check, NUL judged on the result)
+          each killed by at least one test (scratch script, not committed)
+        outcome: ok

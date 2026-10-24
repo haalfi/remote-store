@@ -8,15 +8,15 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 305378,
+  "total": 305162,
   "files": {
-    "CLAUDE.md": 17887,
+    "CLAUDE.md": 17648,
     ".claude/output-styles/interview.md": 2534,
     ".claude/skills/audit/SKILL.md": 1465,
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 3795,
+    ".claude/skills/observe/SKILL.md": 3838,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -32,7 +32,7 @@
     ".claude/agents/sdd-expert.md": 1799,
     ".claude/agents/store-backend-expert.md": 1903,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64617,
+    "sdd/CLAUDE-REFERENCE.md": 64597,
     "sdd/traces/_schema.yml": 31990
   },
   "raises": [
@@ -131,12 +131,6 @@
       "from": 304954,
       "to": 305162,
       "reason": "First /observe run (exists): SKILL.md names its method files by path, has each recommendation cite a ground clause or prior art or be marked unsourced, notes the four-option dialog limit and the stop hook (+208 after a -345 Rule 7 pass)"
-    },
-    {
-      "item": "BL-012",
-      "from": 305162,
-      "to": 305378,
-      "reason": "Maintainer asked for the kernel-migration posture in CLAUDE.md (PR 1171, +239); re-recorded at the merge of master, whose own budget lagged its observe SKILL.md (-43) and CLAUDE-REFERENCE.md (+20)"
     }
   ]
 }

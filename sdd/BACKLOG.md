@@ -116,12 +116,6 @@ done entry are review-enforced.
 here only when shipping without it resolved would cost users more than delaying
 the release.
 
-- [ ] **BL-012 — Backends not yet on the kernel diverge from spec 054, which is accepted only while no release is planned**
-  spec: KEY-002, KEY-005, KEY-008, KEY-009, STORE-002 · effort: M · audience: user.api
-  The maintainer accepted BK-469's divergence for the kernel migration on the condition that no
-  release ships it (RFC-0023 § Alternatives, 2026-10-20). Closes when BK-469 closes, or when every
-  backend it names is on the kernel and meets spec 054. Open decision: none.
-
 ---
 
 <a id="predictable-failure"></a>
@@ -348,13 +342,6 @@ failure it was.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-- [ ] **BK-469 — The store breaks spec 054's surrogate, root, backend-refusal and admission clauses, so a key's outcome still depends on the backend**
-  spec: KEY-002, KEY-003, KEY-005, KEY-006, KEY-008, KEY-009, STORE-002 · effort: M · audience: user.api, library.maintainer
-  At `7491289`: `Store` takes `"\ud800"` (Memory stores it, Local leaks `UnicodeEncodeError`),
-  against KEY-002, KEY-003 and KEY-006; refuses `"./"`, `"/"`, `"\\"` on folder-shaped calls
-  (KEY-005, STORE-002); Local leaks `OSError` [Errno 36] for a 300-character name (KEY-008). On
-  windows-latest at `74271f9c4`, Local aliases `a `, `a.`, `d/x. `, `a./b` and writes `a/     ` onto
-  folder `a` as `PermissionDenied` (KEY-009; BUG-334). Open decision: RFC-0023, then timing.
 - [ ] **BUG-341 — A returned `FileInfo.metadata` is the stored file's own dict, and `copy` shares it**
   spec: BE-019 · effort: S · audience: user.api
   On `Store(MemoryBackend())`, setting a key on `get_file_info("a.txt").metadata` changes the
@@ -573,21 +560,13 @@ no clause of the contract ships unexercised.
   Not done: §12's `@spec` tags (F1 needs BK-436); research § 10 step 3's Dafny operations
   (after BK-434). Open decision: none.
 
-- [~] **BK-484 — No key model connects spec 051's Key to the key parameter of `Store`**
-  spec: TREE-009 -- TREE-012, PATH-002 -- PATH-015, ERR-003, ERR-005, CHILD-001 -- CHILD-009, BE-030, BE-032 · effort: L · audience: library.maintainer, contributor.process
-  Spec 051 defines Key on entities; `RemotePath` (spec 004), the kernel's key rule (BE-030) and
-  `child()` (spec 015) each map a caller's string by their own rules. `research-key-model.md`
-  states one model, decided by the maintainer, spike-tested and proved in Lean. Not done: the
-  spec between 051 and 004. Open decision: its § 10's deltas against specs 004, 005, 015, 051, 053.
-  Shared: BK-483 (an Azure listing of a refused name), BK-436 (lookup under a coarser name equality).
-
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
-  Its test runs are in the dossier. Not done: the branch's CI triggers, protection and patch
-  checklist (RFC-0024 Open Question 2); § 9 steps 4 to 6. Open decision: D10 and § 8's open points
-  2 to 4, 8 and 11. After BK-484, which gives the `read()` flow its key spec.
+  Its test runs are in the dossier; step 4 is spec 054. Not done: the branch's CI triggers,
+  protection and patch checklist (RFC-0024 Open Question 2); § 9 steps 5 and 6. Open decision:
+  D10 and § 8's open points 2 to 4 and 11.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-482 — Azure conformance runs on Azurite, which stores raw keys the HNS service rewrites**
@@ -604,7 +583,7 @@ no clause of the contract ships unexercised.
   § 5), and the SDK's urllib3 removes dot segments client-side (its § 3.7). A listed `..` name (possible on
   a flat account, unmeasured) would be read, written or deleted at the resolved path, under an account key
   maybe in another container; PATH-003 refuses only input. Open decision: whether Azure listings yield such
-  names, omitted or refused; BK-484's spec sets the general listing rule (its research's § 10).
+  names, omitted or refused; spec 054 leaves the general listing rule to the listing operations' specs.
 
 - [ ] **BK-436 — No backend's observed tree is checked against spec 051**
   spec: TREE-001 -- TREE-012, BE-032 · effort: M · audience: library.maintainer
@@ -612,7 +591,7 @@ no clause of the contract ships unexercised.
   flat backend can hold an item with keys below it (on the kernel listings omit them, keyed probes
   still find them: BE-032 A.3), and a case-insensitive or normalizing one merges names spec 051
   keeps apart. Open decision: which listings and probes observe a backend's tree, how its name
-  equality is measured, how a coarser one answers (BE-032 A.1; BK-484's research answers writes).
+  equality is measured, how a coarser one answers (BE-032 A.1; `research-key-model.md` answers writes).
 
 - [ ] **BK-462 — Alloy and Lean run in no CI job, so no structure clause can be model-governed**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer, infra.ci
@@ -646,12 +625,12 @@ no clause of the contract ships unexercised.
 **Promise:** a user gets set up, picks the right backend, writes their own, or
 copies an example, without opening an issue.
 
-- [ ] **BK-480 — A caller cannot check whether a key is portable without copying spec 054's regex**
-  spec: KEY-007 · effort: S · audience: user.api, user.api_docs
-  Spec 054 defines the portable floor by two patterns, `PORTABLE_NAME` and `PORTABLE_KEY`, which
-  every backend must admit (KEY-007); a caller who wants keys that work everywhere has only the
-  spec text. Open decision: a public helper (such as `is_portable_key(key) -> bool`) with its own
-  spec section, or a documented pattern constant, and whether it also reports why a key fails.
+- [ ] **BK-480 — No API lets a caller set or read a store's separator set and acceptance language**
+  spec: KEY-007, KEY-008, KEY-009 · effort: S · audience: user.api, user.api_docs
+  Spec 054 makes the `\` opt-out and the portability opt-in store settings a caller can observe
+  (KEY-008, KEY-009), and defines the portable language by `PORTABLE_KEY`; no type or method
+  carries either, so a caller has only the spec text. Class F (RFC-0024 § R3): decided in the API's
+  flow, with a helper such as `is_portable_key(key) -> bool` as candidate input. Open decision: the shape.
 
 - [ ] **BUG-321 — A list that directly follows paragraph text renders as literal dashes on the docs site**
   spec: DOCFRAME-004 · effort: S · audience: user.site
@@ -792,6 +771,14 @@ or paying for our shortcut.
 
 **Promise:** nothing reaches a user that we did not test, publish, watch, or
 give them a way to absorb.
+
+- [ ] **BK-469 — Spec 054 has not been compared with 0.33, so the key layer's breaks have no record**
+  spec: KEY-002 -- KEY-006 · effort: M · audience: user.api, library.maintainer
+  RFC-0024 D8's pass for the key layer. Known differences: 0.33 refuses every `..` (PATH-003) where
+  ν climbs; at `7491289` `Store` took `"\ud800"` (Memory stored it, Local leaked `UnicodeEncodeError`)
+  and Local leaked `OSError` [Errno 36] for a 300-character name; on windows-latest at `74271f9c4`
+  Local stored `a `, `a.`, `d/x. ` and `a./b` under stripped names. Each becomes a `sdd/v1-breaks.md`
+  row or a 0.33 defect, read from `release/0.33.x`'s suite. Open decision: none.
 
 - [ ] **BK-409 — Python 3.15 is due 2026-10-09 and no spelling of the supported set names it**
   spec: — · effort: M · audience: user.api, infra.ci, contributor.tooling
@@ -940,6 +927,14 @@ give them a way to absorb.
 **Promise:** the artifacts maintainers coordinate through — this file, the
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
+
+- [ ] **BK-487 — Spec 051's Layering names spec 004 as the owner of input strings, which spec 054 now owns**
+  spec: — · effort: S · audience: library.maintainer, contributor.process
+  `051-store-tree.md` § Overview, Layering: "Spec 004 governs input strings". Spec 054 supersedes
+  PATH-002 to PATH-008, so the paragraph points a reader at the superseded layer. Spec 051 is ground
+  (`sdd/observe/ground-register.md`), and RFC-0024 § R1 forbids changing ground on the side.
+  Open decision: a recorded reopen of spec 051 that runs its own flow, or a ruling that a pointer
+  in a non-normative paragraph is not a change to ground.
 
 - [ ] **BK-465 — The spec template's Assumption IDs fail the spec-mark grammar, so no test can cite one**
   spec: — · effort: S · audience: contributor.process

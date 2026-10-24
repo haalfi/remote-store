@@ -1,13 +1,64 @@
 # Path Model Specification
 
+> **0.33 behaviour, being superseded** ([RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D7).
+> [Spec 054](054-store-key.md) supersedes PATH-002 to PATH-008; the other
+> sections stay live.
+
 ## Overview
 
-`RemotePath` is an immutable value object holding one Key of a store, with path manipulation utilities. `RemotePath(s)` holds [spec 054](054-store-key.md)'s store key K(s) of the input `s` where that is not the root, and raises `InvalidPath` where spec 054 refuses `s` or K(s) is the root (PATH-008); `RemotePath.ROOT` holds the root (PATH-015); which inputs map to which Key, and in what precedence, is spec 054's (PATH-002 to PATH-007 are its sections). This spec states the value object.
+`RemotePath` is an immutable value object representing a normalized, validated path within a remote store. It enforces safety invariants and provides path manipulation utilities.
 
 ## PATH-001: Immutability
 
 **Invariant:** A `RemotePath` instance cannot be modified after construction.
 **Postconditions:** All attributes are read-only. Attempting to set attributes raises `AttributeError`.
+
+## PATH-002: Backslash Normalization
+
+**Invariant:** Backslash characters (`\`) are converted to forward slashes (`/`) during normalization.
+**Example:**
+```python
+assert str(RemotePath("a\\b\\c")) == "a/b/c"
+```
+
+## PATH-003: Double-Dot Rejection
+
+**Invariant:** A path segment exactly equal to `..` is rejected. A segment that merely contains `..` as a substring (e.g. a filename like `a..b`) is allowed.
+**Raises:** `InvalidPath`
+**Example:**
+```python
+with pytest.raises(InvalidPath):
+    RemotePath("foo/../bar")
+```
+
+## PATH-004: Leading and Trailing Slash Stripping
+
+**Invariant:** Leading and trailing `/` characters are stripped from the normalized path.
+**Example:**
+```python
+assert str(RemotePath("/a/b/")) == "a/b"
+```
+
+## PATH-005: Consecutive Slash Collapsing
+
+**Invariant:** Consecutive `/` characters are collapsed to a single `/`.
+**Example:**
+```python
+assert str(RemotePath("a///b")) == "a/b"
+```
+
+## PATH-006: Dot Segment Removal
+
+**Invariant:** Single-dot (`.`) segments are removed during normalization.
+**Example:**
+```python
+assert str(RemotePath("a/./b")) == "a/b"
+```
+
+## PATH-007: Null Byte Rejection
+
+**Invariant:** Paths containing null bytes (`\0`) are rejected.
+**Raises:** `InvalidPath`
 
 ## PATH-008: Empty Path Rejection
 

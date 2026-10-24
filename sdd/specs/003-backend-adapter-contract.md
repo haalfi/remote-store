@@ -241,8 +241,7 @@ surface as `BackendUnavailable`.
 
 **Layering.** `Store` normalises `"."` and refuses a root delete (STORE-002 in
 [001-store-api.md](001-store-api.md)), so an application going through `Store`
-never depends on this clause; which inputs name the root at the store is
-[spec 054](054-store-key.md)'s KEY-005. It binds the layer below, which has its own
+never depends on this clause. It binds the layer below, which has its own
 callers: the adapter surface, `unwrap()` consumers, anything round-tripping a
 `FolderInfo.path` (rendered `"."` by `RemotePath.ROOT`) back into a query, and
 the conformance suite itself.

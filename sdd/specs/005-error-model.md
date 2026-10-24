@@ -55,7 +55,7 @@ connect-time context only `_connect` has (BUG-273).
 ## ERR-005: InvalidPath
 
 **Invariant:** Raised for malformed, unsafe, or out-of-scope paths, and for node-type mismatches at a valid path.
-**Preconditions:** Either (a) [spec 054](054-store-key.md) refuses the caller's key (PATH-003, PATH-007, KEY-002, KEY-005, KEY-008), or `RemotePath` refuses its input (PATH-008); or (b) the operation targets a valid path that names the wrong node type — e.g. `read()` on a directory, `delete()` on a directory, `get_file_info()` on a directory, or `move()`/`copy()` with a directory as source. In case (b) the path is well-formed; the error is about type, not syntax. See BE-021 for the canonical per-method mapping.
+**Preconditions:** Either (a) the caller provides a path containing `..`, null bytes, or that normalizes to empty; or (b) the operation targets a valid path that names the wrong node type — e.g. `read()` on a directory, `delete()` on a directory, `get_file_info()` on a directory, or `move()`/`copy()` with a directory as source. In case (b) the path is well-formed; the error is about type, not syntax. See BE-021 for the canonical per-method mapping.
 **Postconditions:** `path` attribute is set to the offending path.
 **Example (malformed path):**
 ```python
