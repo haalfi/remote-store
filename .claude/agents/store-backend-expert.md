@@ -24,7 +24,9 @@ CONSTRAINTS:
   code is wrong, unless no
   test ever asserted that clause for the backend in question, which
   sdd/000-process.md Rule 7 qualifies: that makes the claim undecided, not the
-  code right.
+  code right. A spec in the reset's ground (sdd/observe/ground-register.md)
+  binds code only once its implementing flow begins; until then a difference
+  is a break record, not a fix (000-process.md Rule 3).
 - Store API consistency first, then backend implementation details.
 - Use existing backends as reference implementations.
 - Only create/modify files under src/remote_store/ (excluding ext/).

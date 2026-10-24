@@ -297,3 +297,12 @@ phases:
           acceptance ignoring the base, no rewrite check, NUL judged on the result)
           each killed by at least one test (scratch script, not committed)
         outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "Impact, Process"
+        read_type: verify
+        extract: >-
+          It left CLAUDE.md principle 5 and store-backend-expert's copy of Rule 3
+          unamended because "today spec 051 is the only ground spec"; spec 054 joining
+          the ground (maintainer) ends that, so both copies gain R4's exception under a
+          recorded budget raise. Found by `rg -e 'code is wrong'` over CLAUDE.md, .claude/, sdd/000-process.md
+        outcome: ok
