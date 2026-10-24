@@ -1,10 +1,15 @@
 name = "store_axioms"
-defaultTargets = ["StoreAxioms"]
+defaultTargets = ["StoreAxioms", "KeyModel"]
 
 # Lean core only, no Mathlib. A warning fails the build, so a `sorry` (which
-# Lean reports as a warning) cannot pass as a proof. Only StoreAxioms.lean and
-# what it imports are built: a new file must be imported from it, or it is
-# never checked.
+# Lean reports as a warning) cannot pass as a proof. Only the default targets
+# and what they import are built: a new file must be imported from one, or
+# become a target of its own, or it is never checked.
 [[lean_lib]]
 name = "StoreAxioms"
+leanOptions = { warningAsError = true }
+
+# Spec 054's store key, over spec 051's definitions.
+[[lean_lib]]
+name = "KeyModel"
 leanOptions = { warningAsError = true }

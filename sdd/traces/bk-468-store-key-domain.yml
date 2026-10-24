@@ -1,0 +1,308 @@
+id: BK-468
+title: "No spec defines which strings a store accepts as a key (spec 054)"
+trigger: >-
+  The maintainer asked for a stand-alone spec of keys at the store level, ahead
+  of RFC-0017 D3 step 2 and BK-456 stage three, which both build on it.
+source_items:
+  - BK-468
+audience:
+  - user.api
+  - library.maintainer
+decisions:
+  - sdd/decisions/f26dd04d-9f53-5e2c-8e68-0cddadfe681d.jsonl
+  - sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
+co_shipped_items:
+  - BK-484
+# BK-469 was born as the code-breakage item and re-scoped by the rework to
+# the D8 comparison; BL-012 was born and then decided against (RFC-0024 D9).
+discovery_followups:
+  - BK-469
+  - BL-012
+  - BK-480
+  - BK-487
+expected_ripples:
+  - sdd/specs/004-path-model.md
+  - sdd/specs/051-store-tree.md
+  - sdd/specs/053-contract-kernel.md
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - CHANGELOG.md
+surprising_ripples:
+  # `rg -n "PATH-00[2-8]|004-path-model|[Ss]pec 004"` outside dated records:
+  # spec 001 STORE-002 restated the narrow root set; 018 GLOB-007 reads a
+  # pattern "as spec 004 reads a path"; two code comments and a test docstring.
+  - sdd/specs/001-store-api.md
+  - sdd/specs/018-glob.md
+  - src/remote_store/_glob.py
+  - tests/test_store_tree.py
+  - tests/test_path.py
+  # check_spec_marks fails a declared ID with no mark (drift), so a clause the
+  # code breaks needs an allowlist entry; satisfied clauses got new tests.
+  - scripts/check_spec_marks.py
+  - tests/test_store.py
+  - tests/test_store_keys.py
+  # The rework reverted every 0.33 ripple above and met these instead.
+  - sdd/formal/README.md
+  - sdd/formal/lean/lakefile.toml
+  - sdd/observe/ground-register.md
+orient:
+  - items: [BK-456]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BK-456`: stage three is "a prune per file against
+      SPEC-DESIGN.md"; the maintainer's scope keeps 003, 052 and 053 sections
+      unpruned here, so spec 054 is what stage three links to. Audit 024 row
+      "003 BE-029 vs PATH-008" (l.68, l.194): BE-029 says RemotePath normalises
+      "./" to the root, PATH-008 refuses it; the store-level answer lands here,
+      the BE-029 wording stays stage three's.
+  - items: [BK-438, BK-436]
+    verdict: constrains
+    evidence: >-
+      Both are about stored raw keys and a backend's name equality (BE-032 A.1,
+      A.2; spec 051 § Name equality), not about which inputs a store accepts.
+      Spec 054 states its own name equality as exact and leaves a coarser
+      backend's decoding to them; it must not decide BK-438's folder-marker
+      decoding or BK-436's measurement.
+  - items: [BUG-334]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BUG-334`: Windows-refused names leak a raw OSError
+      from LocalBackend.write, open decision "InvalidPath here, or at D3 step
+      5". Spec 054's backend-refusal profile is the clause BUG-334's fix
+      satisfies; no code fix and no bug item in this PR (maintainer's scope).
+  - items: [BK-433]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-show BK-433`: link policy and a links capability
+      (BE-032 A.7). Which node a key reaches through a link is resolution, after
+      the key is accepted.
+  - items: [BK-465]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BK-465`: template Assumption IDs `<PREFIX>-A01`
+      fail `check_spec_marks._SPEC_ID`; `BE-A-01` passes. Spec 054's Assumption
+      IDs take the `KEY-A-01` form the grammar accepts.
+  - items: [BUG-339, BK-345, BUG-260, ID-244, ID-247, ID-262, BK-450, BK-446, BK-434, BK-435]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-find --spec BE-029`, `--spec BE-030`, `--spec BE-021`;
+      `backlog-find --spec` for PATH-002 to PATH-008, PATH-015, TREE-007,
+      TREE-009, BE-025, STORE-002 and STORE-011 found no item. Backend defects
+      and test gaps on root and kernel clauses, and the Dafny refinement work;
+      none decides which strings a store accepts.
+  # Rework orient (2026-10-24), after BK-484's research merged (#1173) and
+  # the maintainer chose to finish the key spec on this PR.
+  - items: [BK-484]
+    verdict: subsumes
+    evidence: >-
+      `hatch run backlog-show BK-484`: "Not done: the spec between 051 and
+      004", which is spec 054. research-key-model.md § 9.8 lists three
+      differences (`..` climbs with only an escape refused; the `\` opt-out;
+      § 3.7's four resolution outcomes) and § 10 the deltas to specs 004,
+      005, 015, 051 and 053. The research's § 6 decisions govern; 054 takes them.
+  - items: [BK-469, BL-012]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BK-469 BL-012`: the code-breakage item and its
+      release blocker. `src/remote_store/_path.py:39` refuses every `..`
+      segment, so a climbing `..` is new breakage, either fixed here or added
+      to BK-469 and BL-012.
+  - items: [BK-480]
+    verdict: constrains
+    evidence: >-
+      With RFC-0023: that RFC (draft, this branch) makes a backend's limits an exact driver
+      declaration: the research's L_b tiers, with D2's `trailing` as § 3.2's
+      normal-form rule. Neither it nor BK-480 states the research's store-level
+      portability opt-in (L_api = L_floor ∩ L_shared).
+  - items: [BK-483, BK-482, BK-436]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BK-483 BK-482 BK-436`: BK-483 waits on "BK-484's
+      spec sets the general listing rule"; BK-436 on how a coarser name
+      equality answers (research § 3.2 answers writes only). BK-482 is
+      conformance infrastructure and decides no clause.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/SPEC-DESIGN.md
+        section: "(full)"
+        read_type: gate
+        extract: "Function kind: one invariant per section; profiles named and declared; Rule 6 skeleton"
+        outcome: ok
+      - file: sdd/adrs/0048-how-specs-are-designed.md
+        section: "(full)"
+        read_type: reference
+        extract: "Cut by kind; variation declared, never implied"
+        outcome: ok
+      - file: sdd/specs/004-path-model.md
+        section: "(full)"
+        read_type: reference
+        extract: "PATH-002 to PATH-008 are normalising steps with no order; every other string accepted"
+        outcome: ok
+      - file: sdd/specs/051-store-tree.md
+        section: "Layering, Name equality, Terms"
+        read_type: reference
+        extract: "Σ open; names compare exactly; 004 maps inputs onto Keys"
+        outcome: ok
+      - file: sdd/specs/001-store-api.md
+        section: "STORE-002, STORE-011"
+        read_type: reference
+        extract: "Store accepts \"\" and \".\" as the root; file-shaped calls refuse both"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-025, BE-029"
+        read_type: reference
+        extract: >-
+          BE-029: six slash-and-dot root spellings at the backend level; says
+          RemotePath normalises "./" to the root, which it refuses (audit 024)
+        outcome: misleading
+      - file: sdd/specs/053-contract-kernel.md
+        section: "BE-030, BE-032 A.1, A.2"
+        read_type: reference
+        extract: "Kernel refuses / -led and backslash keys; a stored a\\b is a Key outside the addressable subset"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0021-key-resolution-model.md
+        section: "D0, Open Questions"
+        read_type: reference
+        extract: "Input-to-Key is out of the RFC's scope; folder markers are BK-438"
+        outcome: ok
+      - file: sdd/adrs/0047-store-tree-key-resolution.md
+        section: "(full)"
+        read_type: reference
+        extract: "BK-438 and BK-436 are open"
+        outcome: ok
+      - file: sdd/formal/RootPath.dfy
+        section: "(full)"
+        read_type: reference
+        extract: "AddressesRoot is exactly the slash-and-dot spellings; backslash is not the root"
+        outcome: ok
+      - file: sdd/formal/StoreTree.dfy
+        section: "§1"
+        read_type: reference
+        extract: "Name: non-empty, no '/'; Key a sequence of names"
+        outcome: ok
+      - file: src/remote_store/_path.py
+        section: "RemotePath._normalize"
+        read_type: reference
+        extract: "NUL refused first, then \\ folded, then empty and . dropped, .. refused, empty refused"
+        outcome: ok
+      - file: sdd/backlog/bk-395-kernel-key-rule-addressing.md
+        section: "(full)"
+        read_type: reference
+        extract: "The kernel's backslash refusal was decided against PATH-002's fold to avoid d\\f colliding with d/f"
+        outcome: ok
+      - file: scripts/check_spec_marks.py
+        section: "compute_violations, allowlist"
+        read_type: reference
+        extract: "A declared ID with no mark is drift and fails the gate unless allowlisted"
+        outcome: ok
+  - id: build
+    name: Build
+    steps:
+      - file: sdd/research/bk-468-key-probe/probe_write.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          `hatch run python sdd/research/bk-468-key-probe/probe_write.py` at 7491289: Store.write of
+          "\ud800" ok on Memory, UnicodeEncodeError on Local; 300 x "x" ok on
+          Memory, OSError [Errno 36] on Local; "./", "/" and "\\" InvalidPath
+          on both; probe_read.py beside it: exists/is_folder/list_files of "./",
+          "/" and "\\" InvalidPath, "" and "." the root, on both
+        outcome: ok
+      - file: tests/test_store_keys.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Rule 7 per section: KEY-001, KEY-004 and KEY-007 hold today and carry
+          new marks (KEY-007 on Memory and Local only, unenforced for the other
+          backends); KEY-003 and KEY-006 hold except their surrogate arms,
+          which KEY-002's breakage breaks, so their marks sit on tests over
+          inputs without a surrogate; KEY-005 marks the STORE-002 tests, which assert its
+          file-shaped half for "", ".", "./", "/", "\\" and its folder-shaped
+          half for "" only; KEY-002 and KEY-008 are broken, so allowlisted in
+          check_spec_marks with BK-469 as owner; KEY-009 (added at the
+          maintainer's request after the Windows trailing-blank question) is
+          asserted on Memory and Linux Local, where a five-space folder and
+          `a.` beside `a` were measured distinct; on Windows Local it is a
+          strict xfail in the os_sensitive lane. CI's windows-latest job at
+          74271f9c4 measured it: `a `, `a.`, `d/x. ` and `a./b` alias their
+          stripped names (AssertionError), and `a/     ` lands on folder `a`
+          as PermissionDenied, which the narrowed xfail first reported as a
+          failure; each case's expected error is now pinned
+        outcome: ok
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rule 5"
+        read_type: gate
+        extract: >-
+          "declared by a capability or a driver flag" left a declaration in
+          prose unreadable at runtime; after three review rounds flagged
+          KEY-008 the maintainer chose a kernel-enforced driver declaration
+          with exact semantics, drafted as RFC-0023 with Rule 5's amendment
+        outcome: unclear
+  - id: rework
+    name: Rework onto the key model and RFC-0024 (2026-10-24)
+    steps:
+      - file: sdd/research/research-key-model.md
+        section: "§ 1 to § 10"
+        read_type: gate
+        extract: >-
+          § 9.8 names three differences from the draft (`..` climbs; the `\` opt-out;
+          resolution) and § 10 the deltas; § 6's decisions govern. Σ as scalar values
+          left a surrogate in a dropped segment undecided: the maintainer chose a
+          raw-input refusal, as for NUL
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "R1 to R5"
+        read_type: gate
+        extract: >-
+          The draft could never be ground: it named 0.33 types and errors, moved
+          PATH IDs whose meaning `..` changes (D7, R4 "No ID changes meaning"),
+          shipped tests of a v1 spec against 0.33 code (D8's job) and an RFC for
+          paused kernel work (R2). Rewritten as an abstract layer with new KEY IDs,
+          a D6 profile table, and evidence in a formal and a reference model
+        outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 2, § 3, § 9"
+        read_type: reference
+        extract: "A flow's output joins the ground once its spec and formal model are accepted; step 4 is this spec"
+        outcome: ok
+      - file: sdd/research/research-backend-path-authorities.md
+        section: "§ 2 to § 5"
+        read_type: reference
+        extract: "Every cell of the profile table cites its § 3 subsection or § 5's measurement"
+        outcome: ok
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rules 2, 3, 5, 6, 7"
+        read_type: gate
+        extract: >-
+          Resolution is a function of (S, k), so one kind holds; an assumption row is a
+          section for both gates, so KEY-A-02 (the table is accurate) was dropped as
+          untestable by the reference model rather than given a hollow mark
+        outcome: ok
+      - file: scripts/check_formal_trace.py
+        section: "R1 to R4"
+        read_type: verify
+        extract: >-
+          Per file, R2 needs every section of a restated spec tagged, assumptions
+          included, so the two research Lean files were merged into one KeyModel.lean
+          (15/15 tagged); `lake build` with elan 4.34.1 natively builds it, 15 axiom pins
+        outcome: ok
+      - file: tests/test_store_key_model.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          78 passed; five mutants of the model (no surrogate refusal, escape clamped,
+          acceptance ignoring the base, no rewrite check, NUL judged on the result)
+          each killed by at least one test (scratch script, not committed)
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "Impact, Process"
+        read_type: verify
+        extract: >-
+          It left CLAUDE.md principle 5 and store-backend-expert's copy of Rule 3
+          unamended because "today spec 051 is the only ground spec"; spec 054 joining
+          the ground (maintainer) ends that, so both copies gain R4's exception under a
+          recorded budget raise. Found by `rg -e 'code is wrong'` over CLAUDE.md, .claude/, sdd/000-process.md
+        outcome: ok

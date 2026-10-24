@@ -51,6 +51,12 @@ a decision *about* a diagnosis is still a decision and deleting both is how the
 same idea returns with the argument had from scratch. Re-file under a **new** ID
 if evidence changes; these are retired.
 
+- [x] **BL-012 — Backends not yet on the kernel diverge from spec 054, which is accepted only while no release is planned**
+  Filed on PR #1171 (never on master) to hold a release while 0.33 backends broke spec 054's
+  clauses during the kernel migration. RFC-0024 made it redundant: D9 lets master publish nothing
+  before v1, R4 makes a v1 spec bind code only once its implementing flow begins, and R2 pauses the
+  migration. A difference from 0.33 is a break record (BK-469), not a blocker.
+
 - [x] **— Lean 4 as a formal layer, as replacement for or extension of Dafny** *(evaluated on request; never had an ID)*
   Lean's kernel-checked proofs do not time out, and the traces record Dafny
   proofs that did, all in `MemoryBackend.dfy`: `EnsureParents` and `Copy`
@@ -300,6 +306,17 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-468 — No spec defines which strings a store accepts as a key, so one key works on one backend and fails on another**
+  spec: KEY-001 -- KEY-013 · effort: L · audience: library.maintainer, user.api
+  Spec 054 states the v1 key layer of `research-key-model.md`: reduction (`..` climbs, an escape is
+  refused), acceptance against a floor and each backend's language, and resolution's four outcomes,
+  with a profile table per backend (RFC-0024 D6). It supersedes spec 004 PATH-002 to PATH-008.
+  Evidence: `sdd/formal/lean/KeyModel.lean` and `tests/test_store_key_model.py`. The comparison
+  with 0.33 is BK-469. Trace: [bk-468](traces/bk-468-store-key-domain.yml).
+- [x] **BK-484 — No key model connects spec 051's Key to the key parameter of `Store`**
+  spec: KEY-001 -- KEY-013 · effort: L · audience: library.maintainer, contributor.process
+  `research-key-model.md` (PR #1173) decided the model; spec 054 specifies it, shipped with BK-468.
+  Traces: [research](traces/bk-484-key-model-research.yml), [spec](traces/bk-468-store-key-domain.yml).
 - [x] **BK-486 — The decision log records session chores, so every commit needs a hand cleanup**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
   Chores and post-cleanup master questions reached `sdd/decisions/` and were

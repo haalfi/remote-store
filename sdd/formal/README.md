@@ -128,6 +128,14 @@ Lean's boundary: it proves what the file states, so fidelity to spec
 rests on (the 10 at the end of `StoreAxioms.lean`); a new result is
 pinned only once a line is added for it.
 
+`KeyModel.lean` restates [spec 054](../specs/054-store-key.md), the store
+key, over `StoreAxioms.lean`'s definitions, and proves its derived sections
+and the research's lemmas K1 to K12
+([`research-key-model.md`](../research/research-key-model.md) § 7). Its
+acceptance language is a parameter, so the bounds spec 054 puts on it are
+checked by the reference model in `tests/test_store_key_model.py`, not here.
+It pins the axioms of its 15 headline results the same way.
+
 [`tex/`](tex/README.md) retells these proofs, and what the Alloy model
 adds, in prose for human readers. Its proofs are not machine-checked; its
 README says how to redo it when the Lean file changes.
@@ -263,7 +271,7 @@ age worse than the qualitative one.
 | Dafny (`.dfy`) | Machine-checkable per-operation contract | Dafny verifier | Function and single-call clauses |
 | TLA+ (`.tla`, under `sdd/formal/tla/`) | Cross-layer protocol properties | TLC (bounded model) | Lifetime and environment clauses; liveness as bounded obligations only |
 | Alloy (`.als`, under `sdd/formal/alloy/`) | Static store-model axioms: consistency, independence, lemmas in scope | Alloy Analyzer (bounded scope) | Structure clauses, bounded |
-| Lean 4 (`.lean`, under `sdd/formal/lean/`) | Static store-model lemmas over an unrestricted universe | Lean 4 kernel (`lake build`) | Structure clauses, unbounded |
+| Lean 4 (`.lean`, under `sdd/formal/lean/`) | Static store-model lemmas, and the store key's reduction, over an unrestricted universe | Lean 4 kernel (`lake build`) | Structure clauses, unbounded |
 | Python (`_backend.py`) | Runtime implementation | pytest + Hypothesis PBT | — |
 
 The last column is [`SPEC-DESIGN.md` Rule 4](../SPEC-DESIGN.md#governing-layer):
@@ -368,9 +376,10 @@ which is the quickest way to look at an instance a `run` found.
 
 Lean: `bash scripts/lean_check.sh` (or `hatch run verify-lean`) runs
 `lake build` on `sdd/formal/lean/` and exits non-zero on any error,
-a `sorry` or a changed axiom list included. It builds
-`StoreAxioms.lean` and what that file imports, so a new `.lean` file
-is checked only once it is imported there. It uses a native `lean` on
+a `sorry` or a changed axiom list included. It builds the lakefile's
+default targets, `StoreAxioms.lean` and `KeyModel.lean`, and what they
+import, so a new `.lean` file is checked only once it is imported from
+one or made a target itself. It uses a native `lean` on
 `PATH` that reports the pinned version from inside the project, and
 otherwise a Docker image built from `scripts/lean.Dockerfile`, which
 checks the release archive against a pinned sha256;
@@ -418,7 +427,8 @@ A formal statement names the spec section it encodes in a line comment:
   so a module that restates no spec sits in a subdirectory, which the
   check does not read: Alloy opens it as `open sub/Helper`, and Lean
   imports `lean/StoreAxioms/Helper.lean` as `StoreAxioms.Helper`.
-  `StoreAxioms.als` and `StoreAxioms.lean` each restate spec 051.
+  `StoreAxioms.als` and `StoreAxioms.lean` each restate spec 051, and
+  `KeyModel.lean` spec 054.
 
 **The spec governs the tags.** A section with no tag in a file that
 restates its spec, or a tag citing an ID no spec declares, is fixed in the

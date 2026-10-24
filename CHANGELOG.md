@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-468: No spec defines which strings a store accepts as a key, so one key works on one backend and fails on another
 - BUG-338: The docs site's RFC and ADR indexes print one status per kind, so every RFC reads "Proposed"
 - BK-449: No interaction protocol with states joins `Store`, kernel, driver and `Session`
 - BK-405: **Breaking**: `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier. See the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0330-to-v100)
