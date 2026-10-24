@@ -1,0 +1,40 @@
+#!/bin/bash
+# Git pre-push hook, active through core.hooksPath (see pre-commit). Git runs it
+# in the repository being pushed and passes the refs on stdin, so it judges the
+# remote ref actually updated: `git push origin HEAD:master` is caught as well
+# as a push from master (BK-486).
+#
+# Chains to .git/hooks/pre-push first. Then, for agent pushes only (CLAUDECODE
+# set): block an update of the remote master/main, and run typecheck when code
+# changed against origin/master.
+REFS=$(cat)
+LOCAL="$(git rev-parse --git-common-dir 2>/dev/null)/hooks/pre-push"
+if [ -x "$LOCAL" ] && [ ! "$LOCAL" -ef "$0" ]; then
+  printf '%s\n' "$REFS" | "$LOCAL" "$@" || exit $?
+fi
+[ -n "$CLAUDECODE" ] || exit 0
+
+# One line per ref: <local ref> <local sha> <remote ref> <remote sha>
+while read -r _ _ REMOTE_REF _; do
+  case $REMOTE_REF in
+    refs/heads/master | refs/heads/main)
+      echo "Blocked: never push directly to ${REMOTE_REF#refs/heads/}." >&2
+      exit 1
+      ;;
+  esac
+done <<< "$REFS"
+
+# Skip typecheck when no code files changed vs base
+if ! git diff origin/master...HEAD --name-only 2>/dev/null | grep -qE '^(src/|tests/|examples/)'; then
+  exit 0
+fi
+
+TOP=$(git rev-parse --show-toplevel 2>/dev/null)
+[ -n "$TOP" ] || exit 0
+OUTPUT=$(cd "$TOP" && env -u GIT_DIR -u GIT_WORK_TREE hatch run typecheck 2>&1 </dev/null)
+if [ $? -ne 0 ]; then
+  echo "Blocked: typecheck failed. Fix before pushing:" >&2
+  echo "$OUTPUT" >&2
+  exit 1
+fi
+exit 0

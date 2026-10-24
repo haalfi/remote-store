@@ -309,8 +309,12 @@ if evidence changes; these are retired.
   read) waits in the ignored `sdd/decisions/.pending/` until the
   session commits on a work branch, then a `promoted` line binds
   the moved lines to that branch (D4.0, read in line order). RFC-0018 D1, D2,
-  D3 and D4.0 amended.
-  Trace: [bk-486](traces/bk-486-decision-log-chores.yml).
+  D3 and D4.0 amended. Follow-up: the commit and push gates moved from Claude
+  hooks, whose `if:` prefix match never fired on `git -C <path> commit`, into
+  git's own `.githooks/pre-commit` and `pre-push`, which git runs in the
+  repository it commits to; `--no-verify` is denied.
+  Traces: [bk-486](traces/bk-486-decision-log-chores.yml),
+  [gate `-C`](traces/bk-486-gate-git-c.yml).
 - [x] **BK-481 — `/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   A local `/rvw-pr 1173` returned six findings unposted: no MCP server here, and

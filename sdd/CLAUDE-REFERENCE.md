@@ -534,7 +534,7 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `infra/*.py`,
-      `.claude/hooks/`, the `sdd/` scripts in CI's `HOOKS_PAT`, the two
+      `.claude/hooks/`, `.githooks/`, the `sdd/` scripts in CI's `HOOKS_PAT`, the two
       tool lists `tests/scripts/test_reviewer_tools.py` holds equal
       (`.claude/agents/reviewer.md`, `.claude/skills/rvw-pr/SKILL.md`, also in
       `HOOKS_PAT`), the files `test_observe_ground.py` reads (its `HOOKS_PAT`
@@ -625,7 +625,7 @@ session and this is maintenance detail.
 | --- | --- |
 | Steering | An output style saying when a decision is the user's to make, and how to shape the options |
 | Notification | Bell plus desktop notification when a dialog opens or the session goes idle |
-| Record | Appends each dialog's asked and answered events to `sdd/decisions/<session_id>.jsonl`, staged by `gate-commit.sh`, less housekeeping dialogs, and base-branch ones held until the session commits (RFC-0018 D1, D2); a trace lists its logs under `decisions:`, which `check_traces.py` reads; design in [RFC-0018](rfcs/rfc-0018-decision-capture-at-dialog-time.md) |
+| Record | Appends each dialog's asked and answered events to `sdd/decisions/<session_id>.jsonl`, staged by `.githooks/pre-commit`, less housekeeping dialogs, and base-branch ones held until the session commits (RFC-0018 D1, D2); a trace lists its logs under `decisions:`, which `check_traces.py` reads; design in [RFC-0018](rfcs/rfc-0018-decision-capture-at-dialog-time.md) |
 
 Which events fire which layer is declared in `.claude/settings.json`. Read it
 there; a second copy here would rot.

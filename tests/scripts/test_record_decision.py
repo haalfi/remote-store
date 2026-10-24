@@ -26,6 +26,7 @@ replaces the git command with a sleeper to force the timeout.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -41,7 +42,7 @@ from tests._helpers import hook_bash
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "scripts"
 WRAPPER = ROOT / ".claude" / "hooks" / "record-decision.sh"
-GATE_COMMIT = ROOT / ".claude" / "hooks" / "gate-commit.sh"
+PRE_COMMIT = ROOT / ".githooks" / "pre-commit"
 
 # Not a bare "bash" and not plain PATH order: on Windows both can reach WSL's
 # launcher in System32 instead of the Git Bash Claude Code runs hooks with
@@ -530,7 +531,7 @@ def test_other_metadata_sources_are_recorded(recorder: Any, repo: Path) -> None:
 
 
 def test_held_dir_is_gitignored() -> None:
-    """Ask git, not a hand matcher: gate-commit's `git add -- sdd/decisions` must skip it."""
+    """Ask git, not a hand matcher: pre-commit's `git add -- sdd/decisions` must skip it."""
     result = subprocess.run(
         ["git", "-C", str(ROOT), "check-ignore", "-q", f"sdd/decisions/.pending/{SESSION}.jsonl"],
         capture_output=True,
@@ -641,18 +642,14 @@ def test_wrapper_runs_the_recorder(repo: Path) -> None:
     assert [line["event"] for line in _lines(repo)] == ["asked", "answered"]
 
 
-# --- gate-commit.sh staging (D2) ---------------------------------------------
+# --- .githooks/pre-commit staging (D2) ----------------------------------------
 
 
-def _run_gate_commit(repo: Path, payload: str = "{}") -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [BASH, GATE_COMMIT.as_posix()], cwd=repo, input=payload, capture_output=True, text=True, check=False
-    )
-
-
-def _commit_payload(session: str = SESSION) -> str:
-    """The Bash PreToolUse payload gate-commit.sh receives, cut to what it reads."""
-    return json.dumps({"session_id": session, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}})
+def _run_gate_commit(repo: Path, session: str = SESSION) -> subprocess.CompletedProcess[str]:
+    """Run the git hook as git would for an agent commit: in *repo*, with Claude Code's env."""
+    env = dict(os.environ, CLAUDECODE="1", CLAUDE_CODE_SESSION_ID=session)
+    env.pop("GIT_INDEX_FILE", None)
+    return subprocess.run([BASH, PRE_COMMIT.as_posix()], cwd=repo, env=env, capture_output=True, text=True, check=False)
 
 
 def _hold_on_master(recorder: Any, repo: Path, *sessions: str) -> None:
@@ -667,7 +664,7 @@ def test_gate_commit_promotes_the_committing_sessions_held_records(recorder: Any
     _hold_on_master(recorder, repo, SESSION, other)
     _git(repo, "checkout", "-q", "feature")
 
-    result = _run_gate_commit(repo, _commit_payload())
+    result = _run_gate_commit(repo)
 
     assert result.returncode == 0, result.stderr
     assert [(line["event"], line["branch"]) for line in _lines(repo)] == [("asked", "master"), ("promoted", "feature")]
@@ -680,7 +677,7 @@ def test_gate_commit_on_detached_head_does_not_promote(recorder: Any, repo: Path
     _hold_on_master(recorder, repo)
     _git(repo, "checkout", "-q", "--detach")
 
-    result = _run_gate_commit(repo, _commit_payload())
+    result = _run_gate_commit(repo)
 
     assert result.returncode == 0
     assert len(_held(repo)) == 1

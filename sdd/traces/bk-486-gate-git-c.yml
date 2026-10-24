@@ -1,0 +1,247 @@
+id: BK-486
+title: "The commit and push gates never fire on `git -C <path>`, so held decision records go unpromoted"
+trigger: >-
+  Right after #1175 merged, a cloud session (branch bk-485-observe) found its
+  scope and ground-set dialogs, asked on a detached HEAD, still in
+  sdd/decisions/.pending/ after its first branch commit, and promoted them by
+  hand (8cb3ddc). The maintainer asked whether #1175 caused it.
+source_items:
+  - BK-486
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - .claude/settings.json
+  - .claude/hooks/gate-commit.sh
+  - .claude/hooks/gate-push.sh
+  - .claude/hooks/command-check.sh
+  - tests/scripts/test_hook_command_check.py
+  - sdd/BACKLOG-DONE.md
+  - scripts/git_target.py
+  - tests/scripts/test_git_target.py
+  - .githooks/pre-commit
+  - .githooks/pre-push
+  - .claude/hooks/install-githooks.sh
+  - .claude/hooks/deny-no-verify.sh
+  - scripts/record_decision.py
+  - tests/scripts/test_githooks.py
+  - tests/scripts/test_record_decision.py
+  - sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+  - sdd/CLAUDE-REFERENCE.md
+orient:
+  - items: [BK-486]
+    verdict: subsumes
+    evidence: >-
+      The maintainer chose to ship this under BK-486, done in #1175: the bypass
+      predates it, but #1175 made its cost silent (held records sit in an
+      ignored file instead of showing in git status).
+phases:
+  - id: analyze
+    name: Why the gate did not promote
+    steps:
+      - file: scripts/record_decision.py
+        section: "promote(), record()"
+        read_type: reference
+        extract: >-
+          Correct: a direct run (detached dialog, branch, gate-commit.sh) moves
+          the held lines and writes the promoted marker
+        outcome: ok
+      - file: sdd/decisions/fc3aafcd-c062-554a-b992-005842325602.jsonl
+        section: "origin/bk-485-observe, per commit"
+        read_type: reference
+        extract: >-
+          1325910, the first branch commit, staged neither the held lines nor
+          the Budget dialog logged on the branch itself, so the gate did not run
+          at all; every later log line came in a hand-made decision log commit
+        outcome: ok
+      - file: .claude/settings.json
+        section: "PreToolUse Bash"
+        read_type: reference
+        extract: >-
+          if: "Bash(git commit*)" is a prefix match. Measured in this session on
+          master: `git commit --dry-run` was blocked, `git -C <repo> commit
+          --dry-run` ran; the other session commits only in the -C form
+        outcome: ok
+      - file: .claude/hooks/command-check.sh
+        section: "command_mentions"
+        read_type: reference
+        extract: >-
+          Already matches `git -C ... commit`, so dropping if: is enough; its
+          header described if: as the primary filter
+        outcome: misleading
+  - id: review_1
+    name: The cwd is not the commit's tree
+    steps:
+      - file: .claude/hooks/gate-commit.sh
+        section: "BRANCH, TOP"
+        read_type: reference
+        extract: >-
+          Owner review of #1179: both gates read branch and toplevel from the
+          hook's cwd, so once if: was dropped a worktree commit from a master
+          cwd was blocked and one from another branch promoted the cwd's held
+          records; command_mentions also matched quoted text and arguments.
+          Fixed with scripts/git_target.py (git in command position, cd and -C
+          followed); 9 new hook cases failed on the first fix's gates
+        outcome: ok
+      - file: scripts/git_target.py
+        section: "_skip_wrapper, gate tree fallback"
+        read_type: reference
+        extract: >-
+          Unprimed re-review of 4fc4ddc: an unresolved tree ($R set in the
+          same command, a $(...)) read as a detached HEAD and skipped the
+          master block, and wrapper options with a value (nice -n 10) or
+          /usr/bin/git hid the run. Gates now judge the cwd for a tree that is
+          no work tree; wrappers skip their valued options and follow env -C;
+          10 new cases failed on 4fc4ddc
+        outcome: ok
+      - file: scripts/git_target.py
+        section: "_invocation"
+        read_type: reference
+        extract: >-
+          Second unprimed pass on fc3ce74: --work-tree was followed as if it
+          picked the repository, while --git-dir and GIT_DIR=, which do, were
+          ignored. Probed: inside a git dir `branch --show-current` reads the
+          branch and `rev-parse --is-inside-work-tree` exits 0, so the git dir
+          is printed as the tree; also time -p and cd -P. 9 cases failed on
+          fc3ce74
+        outcome: ok
+      - file: .claude/hooks/gate-commit.sh
+        section: "tree open"
+        read_type: reference
+        extract: >-
+          Third unprimed pass on cdb3e9d: `cd -- <dir>` took `--` as the
+          directory, and a linked worktree's .git file given as --git-dir
+          cannot be opened by `git -C`, so both fell back to the cwd. Git dirs
+          are now printed as gitdir:<path> and opened with --git-dir (probed:
+          reads the worktree's branch through its gitfile); cd steps past --
+        outcome: ok
+  - id: redesign
+    name: Let git say where the commit lands
+    steps:
+      - file: .githooks/pre-commit
+        section: "(new)"
+        read_type: reference
+        extract: >-
+          Four review passes found 3, 2, 1, 2 parser defects; the maintainer
+          asked for a simpler design. Git's own pre-commit/pre-push run in the
+          repository the commit lands in, so the parser, its tests and both
+          Claude gates were deleted. Probed: the Bash env carries CLAUDECODE=1
+          and CLAUDE_CODE_SESSION_ID equal to the hook payload's session_id;
+          a pathspec commit runs hooks on a temporary next-index lock, where a
+          `git add` commits the file but leaves the real index behind HEAD
+        outcome: ok
+      - file: .claude/hooks/install-githooks.sh
+        section: "(whole)"
+        read_type: reference
+        extract: >-
+          Unprimed pass on 31b0ca9: commit -a and -i run hooks on index.lock,
+          the real index (measured), so only next-index-* skips staging;
+          core.hooksPath is shared by worktrees, so it now names the main
+          worktree's .githooks; `pre-commit install` refuses while it is set
+          (measured) but installs into .git/hooks with it blanked through
+          GIT_CONFIG_COUNT, so hatch run pre-commit-install does that; lint and
+          typecheck are tested with a stub hatch; the --no-verify deny needs a
+          git word, as dafny has the flag too
+        outcome: ok
+discovery_followups: []
+surprising_ripples:
+  - .github/workflows/ci.yml
+  - pyproject.toml
+  - scripts/pre_commit_install.py
+  - tests/scripts/test_pre_commit_install.py
+co_shipped_items: []
+decisions:
+  - sdd/decisions/613d97f0-94fd-5231-8d1b-954f25e6bb16.jsonl
+review:
+  # Derived by `hatch run ship-report 1179 --trace-block-only` at head dd633a2.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1179 --trace-block-only"
+  pr: 1179
+  review_rounds: 10
+  submissions: 6
+  findings: 13
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 2, unknown: 1}
+      duration_hours: 9.32
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.46
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.12
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.11
+    - round: 5
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.49
+    - round: 6
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.69
+  by_file:
+    - path: ".claude/hooks/gate-commit.sh"
+      findings: 3
+    - path: "scripts/git_target.py"
+      findings: 3
+    - path: ".claude/hooks/install-githooks.sh"
+      findings: 2
+    - path: ".claude/hooks/gate-push.sh"
+      findings: 1
+    - path: ".githooks/pre-commit"
+      findings: 1
+    - path: "sdd/CLAUDE-REFERENCE.md"
+      findings: 1
+    - path: "tests/scripts/test_githooks.py"
+      findings: 1
+    - path: "tests/scripts/test_hook_command_check.py"
+      findings: 1
+  untouched_files:
+    - ".claude/hooks/deny-no-verify.sh"
+    - ".claude/settings.json"
+    - ".githooks/pre-push"
+    - ".github/workflows/ci.yml"
+    - "pyproject.toml"
+    - "scripts/pre_commit_install.py"
+    - "scripts/record_decision.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/decisions/613d97f0-94fd-5231-8d1b-954f25e6bb16.jsonl"
+    - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+    - "sdd/traces/bk-486-gate-git-c.yml"
+    - "tests/scripts/test_pre_commit_install.py"
+    - "tests/scripts/test_record_decision.py"
+  review_driven_commits:
+    - sha: "4fc4ddc"
+      subject: "BK-486: Judge each gated git run on the tree it runs in"
+    - sha: "7a62ea2"
+      subject: "BK-486: decision log"
+    - sha: "fc3ce74"
+      subject: "BK-486: Fail closed on an unresolved tree; see past wrapper options"
+    - sha: "cdb3e9d"
+      subject: "BK-486: Let --git-dir, not --work-tree, pick the gated repository"
+    - sha: "418ede4"
+      subject: "BK-486: Open git dirs with --git-dir; step past cd --"
+    - sha: "31b0ca9"
+      subject: "BK-486: Move the commit and push gates into git's own hooks"
+    - sha: "814c188"
+      subject: "BK-486: Stage on commit -a, share one hooks path, keep pre-commit installable"
+    - sha: "6c5fdc8"
+      subject: "BK-486: Record the review block for #1179"
+    - sha: "1745288"
+      subject: "Merge remote-tracking branch 'origin/master' into bk-486-gate-git-c"
+    - sha: "dd633a2"
+      subject: "BK-486: decision log"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

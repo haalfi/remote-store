@@ -120,7 +120,7 @@ jobs:
           # settings.json, the /observe skill and sdd/observe/'s method files (not
           # its records/) are here because test_observe_ground.py checks the hook
           # wiring and that every register row and method file exists.
-          HOOKS_PAT='^\.claude/hooks/|^\.claude/settings\.json$|^\.claude/skills/observe/SKILL\.md$|^sdd/observe/[^/]+\.md$|^\.claude/agents/reviewer\.md$|^\.claude/skills/rvw-pr/SKILL\.md$|^sdd/rfcs/rfc-0015-(findings|rounds)\.py$|^sdd/research/token-usage/[^/]+\.py$|^\.github/workflows/ci\.yml$'
+          HOOKS_PAT='^\.claude/hooks/|^\.githooks/|^\.claude/settings\.json$|^\.claude/skills/observe/SKILL\.md$|^sdd/observe/[^/]+\.md$|^\.claude/agents/reviewer\.md$|^\.claude/skills/rvw-pr/SKILL\.md$|^sdd/rfcs/rfc-0015-(findings|rounds)\.py$|^sdd/research/token-usage/[^/]+\.py$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$HOOKS_PAT"; then echo "hooks=true" >> "$GITHUB_OUTPUT"
           else echo "hooks=false" >> "$GITHUB_OUTPUT"; fi
       - name: Resolve Python versions
