@@ -152,3 +152,85 @@ surprising_ripples:
 co_shipped_items: []
 decisions:
   - sdd/decisions/613d97f0-94fd-5231-8d1b-954f25e6bb16.jsonl
+review:
+  # Derived by `hatch run ship-report 1179 --trace-block-only` at head 814c188.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1179 --trace-block-only"
+  pr: 1179
+  review_rounds: 7
+  submissions: 5
+  findings: 12
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 2, unknown: 1}
+      duration_hours: 9.32
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.46
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.12
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.11
+    - round: 5
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.49
+  by_file:
+    - path: ".claude/hooks/gate-commit.sh"
+      findings: 3
+    - path: "scripts/git_target.py"
+      findings: 3
+    - path: ".claude/hooks/install-githooks.sh"
+      findings: 2
+    - path: ".claude/hooks/gate-push.sh"
+      findings: 1
+    - path: ".githooks/pre-commit"
+      findings: 1
+    - path: "tests/scripts/test_githooks.py"
+      findings: 1
+    - path: "tests/scripts/test_hook_command_check.py"
+      findings: 1
+  untouched_files:
+    - ".claude/hooks/deny-no-verify.sh"
+    - ".claude/settings.json"
+    - ".githooks/pre-push"
+    - ".github/workflows/ci.yml"
+    - "pyproject.toml"
+    - "scripts/pre_commit_install.py"
+    - "scripts/record_decision.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/decisions/613d97f0-94fd-5231-8d1b-954f25e6bb16.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+    - "sdd/traces/bk-486-gate-git-c.yml"
+    - "tests/scripts/test_pre_commit_install.py"
+    - "tests/scripts/test_record_decision.py"
+  review_driven_commits:
+    - sha: "4fc4ddc"
+      subject: "BK-486: Judge each gated git run on the tree it runs in"
+    - sha: "7a62ea2"
+      subject: "BK-486: decision log"
+    - sha: "fc3ce74"
+      subject: "BK-486: Fail closed on an unresolved tree; see past wrapper options"
+    - sha: "cdb3e9d"
+      subject: "BK-486: Let --git-dir, not --work-tree, pick the gated repository"
+    - sha: "418ede4"
+      subject: "BK-486: Open git dirs with --git-dir; step past cd --"
+    - sha: "31b0ca9"
+      subject: "BK-486: Move the commit and push gates into git's own hooks"
+    - sha: "814c188"
+      subject: "BK-486: Stage on commit -a, share one hooks path, keep pre-commit installable"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
