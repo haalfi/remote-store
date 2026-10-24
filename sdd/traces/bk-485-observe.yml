@@ -1,0 +1,241 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (/observe, § 9 step 3)"
+trigger: >-
+  RFC-0024 (PR #1177) made the spec-first reset binding, with research § 9 step 3
+  next: every later flow needs an unprimed design session (D4, S1 to S5), a hook
+  that holds it to the ground, the ground register D11 names, and the
+  observation axes S5 walks. None of them existed.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - contributor.tooling
+decisions:
+  - sdd/decisions/fc3aafcd-c062-554a-b992-005842325602.jsonl
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/process-budget.json
+surprising_ripples:
+  - sdd/research/research-spec-first-reset.md
+  - .github/workflows/ci.yml
+  - sdd/CLAUDE-REFERENCE.md
+orient:
+  - items: [BK-397]
+    verdict: constrains
+    evidence: >-
+      The recorder hook logs AskUserQuestion dialogs (RFC-0018 D1; settings.json
+      wires record-decision.sh to Pre and PostToolUse), and S5 decides each
+      question with the maintainer. A subagent cannot call AskUserQuestion, so a
+      design session run as a subagent would leave its decisions unasked and
+      unlogged: the session has to be a top-level one, which is what the hook's
+      session-armed signal (open point 7) follows from. BK-397's pending step 3
+      ("without priming /ship's unprimed passes") is the same concern from the
+      other side and is untouched.
+  - items: [BK-484]
+    verdict: constrains
+    evidence: >-
+      RFC-0024 § R1: "PR #1173's key model, until the key spec is accepted (open
+      point 8), and spec 054 of open PR #1171" are not ground. The register's
+      start set therefore excludes research-key-model.md and spec 054, and says
+      so below its table; BK-484 admits the key spec as a flow when it lands.
+  - items: [BK-435, BK-436]
+    verdict: constrains
+    evidence: >-
+      Spec 051 is the start ground. Its Overview names its evidence as
+      research-store-model-axioms.md § 1 to § 9, formal/alloy/StoreAxioms.als and
+      formal/lean/StoreAxioms.lean; StoreTree.dfy is not named there, and BK-435
+      still has "§12's @spec tags" and "research § 10 step 3's Dafny operations"
+      to add to it. Admitting StoreTree.dfy would let BK-435 change ground on the
+      side (research § 3), so the maintainer kept it out. BK-436's backend probes
+      are 0.33 evidence for a later comparison, not ground.
+  - items: [BK-451, BK-438, BK-454]
+    verdict: unrelated
+    evidence: >-
+      RFC-0024 § R3 re-scopes them as class F, decided in their operation's flow
+      "its options as candidate input". They reach a design session as paths the
+      maintainer names at /observe (S3), which the hook supports; nothing in this
+      step's build depends on their content.
+  - items: [BK-465, BK-466]
+    verdict: unrelated
+    evidence: >-
+      SPEC-DESIGN.md defects RFC-0024 § R3 leaves to the format RFC (step 6).
+      /observe writes a research doc, not a spec, so no SPEC-DESIGN rule applies.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "(full)"
+        read_type: gate
+        extract: "D4, D11; § R1 start ground and its two exclusions; § R4 ID map; § R5 break register created by the first comparison pass, not here"
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 1 to § 6, § 8, § 9 (not § 7)"
+        read_type: gate
+        extract: "S1 to S5, F1 to F6; open points 6 and 7 are this step's; § 7 skipped so the axes stay unprimed"
+      - file: sdd/BACKLOG.md
+        section: "BK-485, BK-435, BK-397, BK-436, BK-484, BK-486"
+        read_type: gate
+        extract: "Clusters above; BK-485 spec: none, so the file half alone found them"
+      - file: .claude/skills/ship/SKILL.md
+        section: "Orient"
+        read_type: gate
+        extract: "Find, cluster, read, judge, record, one recommending dialog"
+      - file: sdd/traces/bk-485-reset-rfc.yml
+        section: "(full)"
+        read_type: reference
+        extract: "BK-485's earlier trace; this step gets its own file"
+      - file: sdd/specs/051-store-tree.md
+        section: "Overview"
+        read_type: reference
+        extract: "Names its evidence files; the start ground set follows that list"
+      - file: sdd/process-budget.json
+        section: "(full)"
+        read_type: reference
+        extract: "Skill files are budgeted by glob; a new skill is a raise or an equal cut"
+  - id: design
+    name: Design
+    steps:
+      - file: .claude/settings.json
+        section: "hooks"
+        read_type: reference
+        extract: "No UserPromptSubmit or SessionEnd hook existed; PreToolUse hooks block with exit 2"
+      - file: .claude/hooks/record-decision.sh
+        section: "(full)"
+        read_type: reference
+        extract: "Wrapper resolves the script from its own path, so tests run a copy"
+      - file: scripts/record_decision.py
+        section: "module docstring"
+        read_type: reference
+        extract: "Stdlib only, host python; the shape the ground hook copies"
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?; Directory defaults"
+        read_type: reference
+        extract: "sdd/*.md outside the kind dirs needs a marker; registers are repo-only like BACKLOG"
+      - file: sdd/templates/research-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "Date and Backlog items header lines are load-bearing for the research index"
+      - file: sdd/traces/_schema.yml
+        section: "audience, decisions, orient"
+        read_type: reference
+        extract: "contributor.process owes a CHANGELOG entry only for a user-facing framework; this tool is not one"
+      - file: scripts/check_process_budget.py
+        section: "module docstring"
+        read_type: reference
+        extract: "Growth costs a cut elsewhere or a recorded raise"
+  - id: critique
+    name: External critique
+    steps:
+      - file: sdd/observe-axes.md
+        section: "F3 note, AX-12 to AX-14"
+        read_type: reference
+        extract: >-
+          The maintainer passed on a ChatGPT critique of F1 to F6 after the draft.
+          It carried § 7's read() decisions (R-1 to R-6), so only generic
+          refinements within the binding F decisions reached the axes; F4's
+          baseline/refinement/deviation split went to the new BK-485 dossier
+          as format RFC input
+  - id: first_run
+    name: First /observe run
+    steps:
+      - file: sdd/research/research-observe-exists.md
+        section: "(full, on throwaway/bk-485-observe-research)"
+        read_type: verify
+        extract: >-
+          The maintainer saw 0.33's store API in the recommendations. Traced to
+          my register choice: spec 051 names only § 1 to § 9 of
+          research-store-model-axioms.md as rationale, but I admitted the whole
+          file, whose § 10 names InvalidPath and the flat-store undecodable
+          state the session used as E5. Row dropped; recommendations now cite
+          a source or are marked unsourced
+  - id: placement
+    name: Placement
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?; Directory defaults"
+        read_type: reference
+        extract: >-
+          The maintainer moved all /observe work into sdd/observe/ (axes,
+          ground register, records/), as the records are per-operation
+          decision records, not research; they are repo-only, so no kind glob,
+          nav or index follows, and the research template no longer applies
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / New test file, Backlog item touched, CHANGELOG entry, New authoritative process doc"
+        read_type: verify
+        extract: >-
+          The two new sdd/ files are repo-only registers, not authority docs, so
+          the process-doc row's back-references do not apply; the new test is not
+          os_sensitive (bash hook, skipped on Windows, as test_claude_hooks.py records)
+      - file: .github/workflows/ci.yml
+        section: "HOOKS_PAT"
+        read_type: verify
+        extract: >-
+          Review round 1 found tooling-tests never ran on a register-only diff.
+          HOOKS_PAT's own comment states the widening rule; I did not read it
+          before adding tested files outside the code paths
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / New test file"
+        read_type: verify
+        extract: "The row asks only about OS sensitivity, not whether CI's path filters reach the files the new test reads"
+        outcome: unclear
+      - file: .claude/hooks/gate-commit.sh
+        section: "lint step"
+        read_type: verify
+        extract: "Runs hatch run lint when tests/ is staged; hatch could not install here (PyPI denied), so the lint list ran through system python instead"
+        outcome: unclear
+review:
+  # Derived by `hatch run ship-report 1178 --trace-block-only` at head f77823e.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1178 --trace-block-only"
+  pr: 1178
+  review_rounds: 7
+  submissions: 1
+  findings: 4
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.39
+  by_file:
+    - path: ".claude/hooks/observe-ground.sh"
+      findings: 1
+    - path: "scripts/observe_ground.py"
+      findings: 1
+    - path: "sdd/observe-axes.md"
+      findings: 1
+    - path: "tests/scripts/test_observe_ground.py"
+      findings: 1
+  untouched_files:
+    - ".claude/settings.json"
+    - ".claude/skills/observe/SKILL.md"
+    - ".github/workflows/ci.yml"
+    - "sdd/BACKLOG.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/backlog/bk-485-spec-first-reset.md"
+    - "sdd/decisions/fc3aafcd-c062-554a-b992-005842325602.jsonl"
+    - "sdd/observe/axes.md"
+    - "sdd/observe/ground-register.md"
+    - "sdd/process-budget.json"
+    - "sdd/research/research-spec-first-reset.md"
+    - "sdd/traces/bk-485-observe.yml"
+  review_driven_commits:
+    - sha: "de8ad6f"
+      subject: "fix: address PR #1178 review"
+    - sha: "5c322e6"
+      subject: "BK-485: Close the first /observe run's ground leak and tool gaps"
+    - sha: "15cf15e"
+      subject: "BK-485: Move all /observe work into sdd/observe/"
+    - sha: "484b08d"
+      subject: "BK-485: Format observe_ground.py after the record rename"
+    - sha: "e30167d"
+      subject: "BK-485: decision log"
+    - sha: "f5815c2"
+      subject: "BK-485: decision log"
+    - sha: "f77823e"
+      subject: "BK-485: Record the /observe probe run; clarify the S1 refusal"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

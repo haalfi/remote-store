@@ -9,7 +9,12 @@ they rest on, and what is still open. Two RFCs are to follow from it: the reset
 RFC (§ 2 to § 4) and the format RFC (§ 5 to § 6), which amends
 [`sdd/SPEC-DESIGN.md`](../SPEC-DESIGN.md). § 9 steps 1 and 2 are done by
 [RFC-0024](../rfcs/rfc-0024-spec-first-reset.md), the reset RFC, which also
-answers open points 5, 9 and 10; next is step 3.
+answers open points 5, 9 and 10. Step 3 built `/observe`, which answers
+open points 6 and 7: the axes are [`observe/axes.md`](../observe/axes.md),
+drafted by a fresh agent from § 4 to § 6 and the Claude report, and the hook
+restricts the session whose first prompt is `/observe`
+([`observe_ground.py`](../../scripts/observe_ground.py)). The operation's
+"research doc" of § 3 and S4 is its record under `sdd/observe/records/`.
 Decision log, for the dialogs it captured:
 `sdd/decisions/406930fa-086e-5256-a50d-e95aa881810e.jsonl`. Decisions taken
 after a worker restart on 2026-10-23 (F1 revised, F4 to F6, the deviation
