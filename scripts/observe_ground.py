@@ -210,7 +210,8 @@ def check(payload: dict[str, Any], root: Path) -> None:
         if not target or real not in allowed or _NEVER_GROUND.match(rel) or rel.startswith("../"):
             raise Refused(
                 f"{tool}: {target or '(no path)'} is outside the ground. Allowed: the files {REGISTER} "
-                "lists as active, the method files and the paths named at /observe (S3)."
+                f"lists as active, the method files {', '.join(METHOD_FILES)}, the research doc "
+                f"{state['research_doc']} and the paths named at /observe (S3)."
             )
         return
     raise Refused(f"{tool}: not available in an /observe session (S2). Read allowed files with Read.")

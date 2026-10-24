@@ -233,6 +233,9 @@ def test_the_skill_canary_is_refused_only_when_armed(repo: Path) -> None:
     result = _call(repo, "Read", file_path=canary)
     assert result.returncode == 2
     assert "outside the ground" in result.stderr
+    # The refusal names every readable non-ground file, since Glob is denied.
+    for rel in (".claude/skills/observe/SKILL.md", "sdd/observe-axes.md", "sdd/research/research-observe-read.md"):
+        assert rel in result.stderr
 
 
 def test_a_symlink_into_code_is_denied(repo: Path) -> None:

@@ -20,7 +20,6 @@ reopened file is not on the allowlist until its flow re-admits it.
 | Artifact | Flow | Status |
 |---|---|---|
 | `sdd/specs/051-store-tree.md` | start | active |
-| `sdd/research/research-store-model-axioms.md` | start | active |
 | `sdd/formal/alloy/StoreAxioms.als` | start | active |
 | `sdd/formal/lean/StoreAxioms.lean` | start | active |
 | `sdd/formal/lean/lakefile.toml` | start | active |
@@ -29,7 +28,10 @@ reopened file is not on the allowlist until its flow re-admits it.
 | `sdd/formal/tex/store-axioms.tex` | start | active |
 
 Not ground, by RFC-0024 § R1: PR #1173's key model until the key spec is
-accepted, and spec 054 of PR #1171.
+accepted, and spec 054 of PR #1171. Nor is `research-store-model-axioms.md`,
+spec 051's rationale: the hook admits whole files, and its § 10 records 0.33
+and kernel design (error names, flat-store encodings) that reached the first
+`/observe` session's decisions.
 
 ## Retired IDs
 

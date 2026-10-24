@@ -135,6 +135,19 @@ phases:
           refinements within the binding F decisions reached the axes; F4's
           baseline/refinement/deviation split went to the new BK-485 dossier
           as format RFC input
+  - id: first_run
+    name: First /observe run
+    steps:
+      - file: sdd/research/research-observe-exists.md
+        section: "(full, on throwaway/bk-485-observe-research)"
+        read_type: verify
+        extract: >-
+          The maintainer saw 0.33's store API in the recommendations. Traced to
+          my register choice: spec 051 names only § 1 to § 9 of
+          research-store-model-axioms.md as rationale, but I admitted the whole
+          file, whose § 10 names InvalidPath and the flat-store undecodable
+          state the session used as E5. Row dropped; recommendations now cite
+          a source or are marked unsourced
   - id: verify
     name: Verify
     steps:
