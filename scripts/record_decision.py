@@ -23,8 +23,8 @@ One asked on the base branch or a detached HEAD is held in the gitignored
 ``sdd/decisions/.pending/<session_id>.jsonl`` (one whose branch git could not
 read is logged, since it may be a work branch, and so is one during a rebase,
 whose detached HEAD is the branch being rebased) and moved into the log, in order,
-only by ``promote()``, which ``gate-commit.sh`` runs with ``--promote`` before
-that same session commits on a work branch. One
+only by ``promote()``, which the git hook ``.githooks/pre-commit`` runs with
+``--promote`` when that same session commits on a work branch. One
 ``{"event": "promoted", "ts", "session_id", "branch", "head"}`` line follows
 them, naming the work branch, which binds them there under D4.0, read in the
 log's line order: the moved lines land after any the session logged since. A dialog never
@@ -66,7 +66,7 @@ _SAFE_ID = re.compile(r"[A-Za-z0-9_-]+")
 # repository, so the raw-name fallback drops them, as the test fixtures do.
 _LOCAL_PATH_KEYS = frozenset({"cwd", "transcript_path", "scratchpad_dir"})
 _GIT_CMD = ["git"]
-# The pair gate-commit.sh refuses to commit on; an event there, or on a detached
+# The pair .githooks/pre-commit refuses an agent commit on; an event there, or on a detached
 # HEAD, is held until the session commits on a work branch.
 _BASE_BRANCHES = frozenset({"master", "main"})
 _HOUSEKEEPING = "housekeeping"
@@ -138,7 +138,7 @@ def _now() -> str:
 def promote(root: Path, session_id: str) -> int:
     """Move *session_id*'s held lines into its log under *root*, in order; return how many.
 
-    Run by ``gate-commit.sh`` before that session commits on a work branch. A
+    Run by ``.githooks/pre-commit`` when that session commits on a work branch. A
     ``promoted`` line follows the moved lines, naming the branch and HEAD they
     moved on. It is the session's event on that work branch, so RFC-0018 D4.0
     binds them there although the commit recorded no dialog.
@@ -190,7 +190,7 @@ def record(payload: Mapping[str, Any], root: Path, env: Mapping[str, str]) -> Pa
 
     # Held lines are not promoted here: the branch is the project directory's,
     # which another session may have switched, so only this session's own
-    # commit (gate-commit.sh --promote) moves them. A branch git could not read
+    # commit (.githooks/pre-commit, --promote) moves them. A branch git could not read
     # may be a work branch, so that event is logged with a null branch, as before;
     # so is one during a rebase, whose `rebase --continue` no hook promotes on.
     detached = branch == "" and not _rebasing(root, deadline)

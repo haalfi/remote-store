@@ -1,11 +1,9 @@
 #!/bin/bash
-# Sourced by the PreToolUse Bash hooks that act on one command. Claude Code's
-# `if:` is best-effort: when it cannot tell which commands a Bash input runs
-# (measured: `${HOME}`, `$PWD`, `$HTTPS_PROXY`), it runs every such hook
-# regardless of its pattern (https://code.claude.com/docs/en/hooks). Each hook
-# therefore re-checks the command itself before acting. The git gates drop
-# `if:` (its prefix match missed `git -C <path> commit`, BK-486) and filter with
-# scripts/git_target.py, using this only when no python is found.
+# Sourced by the `if:`-gated PreToolUse Bash hooks. Claude Code's `if:` is
+# best-effort: when it cannot tell which commands a Bash input runs (measured:
+# `${HOME}`, `$PWD`, `$HTTPS_PROXY`), it runs every such hook regardless of its
+# pattern (https://code.claude.com/docs/en/hooks). So each hook re-checks the
+# command itself before acting.
 #
 # command_mentions WORD...: true unless the payload's `tool_input.command`
 # provably cannot run WORDs, which is when they do not all appear in it as

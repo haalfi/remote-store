@@ -16,6 +16,10 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-init.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/install-githooks.sh"
           }
         ]
       }
@@ -30,11 +34,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gate-commit.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gate-push.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-no-verify.sh"
           },
           {
             "type": "command",

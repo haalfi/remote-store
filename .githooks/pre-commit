@@ -1,0 +1,52 @@
+#!/bin/bash
+# Git pre-commit hook, active through core.hooksPath (.claude/hooks/
+# install-githooks.sh sets it at session start). Git runs it in the repository
+# the commit lands in, whatever form the command took (`git -C`, `cd`,
+# `--git-dir`, an alias, `bash -c`), so nothing parses the command line (BK-486).
+#
+# Chains to .git/hooks/pre-commit first (e.g. the pre-commit framework). Then,
+# for agent commits only (Claude Code sets CLAUDECODE): block master/main,
+# promote this session's held decision records and stage the log (RFC-0018 D2),
+# and run lint when code is staged. `--no-verify` is denied separately
+# (deny-no-verify.sh).
+LOCAL="$(git rev-parse --git-common-dir 2>/dev/null)/hooks/pre-commit"
+if [ -x "$LOCAL" ] && [ ! "$LOCAL" -ef "$0" ]; then
+  "$LOCAL" "$@" || exit $?
+fi
+[ -n "$CLAUDECODE" ] || exit 0
+
+BRANCH=$(git branch --show-current 2>/dev/null)
+if [ "$BRANCH" = "master" ] || [ "$BRANCH" = "main" ]; then
+  echo "Blocked: never commit directly to $BRANCH. Create a feature branch first." >&2
+  exit 1
+fi
+
+# Best-effort from here: a promote or staging failure must not block the commit.
+TOP=$(git rev-parse --show-toplevel 2>/dev/null)
+# The recorder is found beside this file, and `python` comes before `python3`,
+# as in record-decision.sh. Detached HEAD has no branch and promotes nothing.
+RECORDER="$(dirname "$0")/../scripts/record_decision.py"
+PY=$(command -v python || command -v python3)
+if [ -n "$TOP" ] && [ -n "$BRANCH" ] && [ -n "$PY" ] && [ -f "$RECORDER" ] && [ -n "$CLAUDE_CODE_SESSION_ID" ]; then
+  printf '{"session_id": "%s"}' "$CLAUDE_CODE_SESSION_ID" | "$PY" "$RECORDER" --promote "$TOP" >/dev/null 2>&1
+fi
+# Stage only into the real index. A pathspec commit (`git commit -- <paths>`)
+# runs hooks against a temporary index, and an add there would commit the log
+# while leaving the real index behind HEAD; that log rides the next commit.
+if [ -n "$TOP" ] && [ -d "$TOP/sdd/decisions" ] && [ "$(basename "${GIT_INDEX_FILE:-index}")" = "index" ]; then
+  # Held records never stage, even in a checkout whose .gitignore lacks the line.
+  git -C "$TOP" add -- sdd/decisions ':(exclude)sdd/decisions/.pending' >/dev/null 2>&1
+fi
+
+# Skip lint when no code files are staged
+if [ -z "$TOP" ] || ! git diff --cached --name-only | grep -qE '^(src/|tests/|examples/)'; then
+  exit 0
+fi
+
+OUTPUT=$(cd "$TOP" && env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE hatch run lint 2>&1 </dev/null)
+if [ $? -ne 0 ]; then
+  echo "Blocked: lint failed. Fix before committing:" >&2
+  echo "$OUTPUT" >&2
+  exit 1
+fi
+exit 0

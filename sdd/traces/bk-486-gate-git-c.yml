@@ -19,6 +19,15 @@ expected_ripples:
   - sdd/BACKLOG-DONE.md
   - scripts/git_target.py
   - tests/scripts/test_git_target.py
+  - .githooks/pre-commit
+  - .githooks/pre-push
+  - .claude/hooks/install-githooks.sh
+  - .claude/hooks/deny-no-verify.sh
+  - scripts/record_decision.py
+  - tests/scripts/test_githooks.py
+  - tests/scripts/test_record_decision.py
+  - sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+  - sdd/CLAUDE-REFERENCE.md
 orient:
   - items: [BK-486]
     verdict: subsumes
@@ -106,8 +115,24 @@ phases:
           are now printed as gitdir:<path> and opened with --git-dir (probed:
           reads the worktree's branch through its gitfile); cd steps past --
         outcome: ok
+  - id: redesign
+    name: Let git say where the commit lands
+    steps:
+      - file: .githooks/pre-commit
+        section: "(new)"
+        read_type: reference
+        extract: >-
+          Four review passes found 3, 2, 1, 2 parser defects; the maintainer
+          asked for a simpler design. Git's own pre-commit/pre-push run in the
+          repository the commit lands in, so the parser, its tests and both
+          Claude gates were deleted. Probed: the Bash env carries CLAUDECODE=1
+          and CLAUDE_CODE_SESSION_ID equal to the hook payload's session_id;
+          a pathspec commit runs hooks on a temporary next-index lock, where a
+          `git add` commits the file but leaves the real index behind HEAD
+        outcome: ok
 discovery_followups: []
-surprising_ripples: []
+surprising_ripples:
+  - .github/workflows/ci.yml
 co_shipped_items: []
 decisions:
   - sdd/decisions/613d97f0-94fd-5231-8d1b-954f25e6bb16.jsonl
