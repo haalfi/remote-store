@@ -222,8 +222,9 @@ properties:
       no dialog may be answered twice. A question left unanswered, an event
       of unknown kind, an `asked` event with no readable questions, an
       `answered` event with no `asked` one, and an event whose `tool_use_id`
-      is not a string (missing, null, a list or an object) are printed as
-      notes and do not fail the gate.
+      is not a string (missing, null, a list or an object; a `promoted` line
+      is read silently, RFC-0018 D3) are printed as notes and do not fail the
+      gate.
 
       **The log governs** (`DRIFT-RULES.md` Rule 4): it is the record, and
       this list only points at it. A listed log that does not exist is the
@@ -432,7 +433,7 @@ properties:
           properties:
             round: {type: integer, minimum: 1}
             findings: {type: integer, minimum: 0}
-            origin: {type: object, description: "Origin tag counts, per sdd/rfcs/rfc-0015-findings.py."}
+            origin: {type: object, description: "Origin tag counts, per sdd/rfcs/rfc-0015/findings.py."}
             triage: {type: object, description: "Triage verdict counts, per the same classifier."}
             duration_hours:
               type: [number, "null"]

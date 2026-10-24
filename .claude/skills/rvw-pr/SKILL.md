@@ -5,12 +5,12 @@ context: fork
 agent: reviewer
 argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, Bash, ToolSearch, mcp__MCP_DOCKER__pull_request_read, mcp__github__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__github__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__github__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__github__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__github__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review, mcp__github__add_comment_to_pending_review
-# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads, Step 1's pinned diff read from a review root, Step 4's posted-count verification, Step 1's metadata-only carve-out for a measuring pass verifying a claim about the comments endpoint, and — in a measuring pass — the allowlisted gates (never for fixing, regenerating, or filesystem scouting). Five uses; the body's opening paragraph enumerates the same five and the two must be changed together. A pass gets exactly .claude/agents/reviewer.md's `tools:` (unresolved names drop silently), so that list governs; allowed-tools only pre-approves, and tests/scripts/test_reviewer_tools.py holds it equal. Both server prefixes (MCP_DOCKER local, github cloud) and ToolSearch are listed for cloud sessions (BK-459).
+# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads, Step 1's pinned diff read from a review root, Step 4's posted-count verification, Step 4's `gh` post when no MCP posting tool loads, Step 1's metadata-only carve-out for a measuring pass verifying a claim about the comments endpoint, and — in a measuring pass — the allowlisted gates (never for fixing, regenerating, or filesystem scouting). Six uses; the body's opening paragraph enumerates the same six and the two must be changed together. A pass gets exactly .claude/agents/reviewer.md's `tools:` (unresolved names drop silently), so that list governs; allowed-tools only pre-approves, and tests/scripts/test_reviewer_tools.py holds it equal. Both server prefixes (MCP_DOCKER local, github cloud) and ToolSearch are listed for cloud sessions (BK-459).
 ---
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
 
-**IMPORTANT — no local filesystem scouting.** Use Bash for five things and nothing else: `gh` CLI reads of PR content (Steps 0–1); **Step 1's pinned diff read when a review root is named** — `git -C <root> diff origin/master...HEAD -- . ':(exclude)sdd/decisions/'`, PR content taken from the certified commit rather than from `gh`, open to every pass with a root and not only a measuring one, because the diff is content, not feedback, and the pinned form is what the root is for; **Step 4's posted-count verification**, which is a `gh api` read of review *feedback* rather than content and is authorised here because Step 4 pins it (a count carries no content, so it primes nobody); **Step 1's metadata-only carve-out for a measuring pass verifying a claim about the comments endpoint**, pinned there on the same reasoning and bounded to paths, review ids and counts; and, when the invoking prompt designates a **measuring pass**, the allowlisted set in [`measuring.md`](measuring.md). Never to fix, write, regenerate, or locate memory files, home directories, or project paths. The review context is otherwise self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
+**IMPORTANT — no local filesystem scouting.** Use Bash for six things and nothing else: `gh` CLI reads of PR content (Steps 0–1); **Step 1's pinned diff read when a review root is named** — `git -C <root> diff origin/master...HEAD -- . ':(exclude)sdd/decisions/'`, PR content taken from the certified commit rather than from `gh`, open to every pass with a root and not only a measuring one, because the diff is content, not feedback, and the pinned form is what the root is for; **Step 4's posted-count verification**, which is a `gh api` read of review *feedback* rather than content and is authorised here because Step 4 pins it (a count carries no content, so it primes nobody); **Step 4's `gh` post when no MCP posting tool loads** ([`posting-gh.md`](posting-gh.md)); **Step 1's metadata-only carve-out for a measuring pass verifying a claim about the comments endpoint**, pinned there on the same reasoning and bounded to paths, review ids and counts; and, when the invoking prompt designates a **measuring pass**, the allowlisted set in [`measuring.md`](measuring.md). Never to fix, write, regenerate, or locate memory files, home directories, or project paths. The review context is otherwise self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
 
 **Measuring pass.** If the invoking prompt says **measuring**, read
 [`measuring.md`](measuring.md) in this skill's folder before Step 1 and follow
@@ -68,7 +68,7 @@ Read the PR state via `gh api repos/haalfi/remote-store/pulls/<resolved PR numbe
 
 ## Step 1: Gather context
 
-Read PR **content** via `gh` CLI when available; fall back to MCP when `gh` is absent. Use MCP only for the write/post path (Step 4). This split is identical to the main session — see [`sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split](../../../sdd/CLAUDE-REFERENCE.md#github-pr-io-split). The fork is not an exception.
+Read PR **content** via `gh` CLI when available; fall back to MCP when `gh` is absent. Write (Step 4) through MCP, or through `gh` where no MCP posting tool loads. This split is identical to the main session — see [`sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split](../../../sdd/CLAUDE-REFERENCE.md#github-pr-io-split). The fork is not an exception.
 
 **Never read `sdd/decisions/`**, in the diff or as a file. It is the decision log ([RFC-0018](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md) D2), committed with the work, and during a `/ship` loop it holds the fix-pass dialogs about earlier findings and how each was resolved — the conversation this step refuses to read below, by another route. So the diff is read without it, and so are searches: pass `glob: "!**/sdd/decisions/**"` on every `Grep` and `Glob` (measured: an unfiltered `Grep` in a root returned the log among its matches, the glob removed it), and give any allowlisted `git show` or `git log -p` the pathspec `-- . ':(exclude)sdd/decisions/'`. Without a root, read the per-file patches from `gh api "repos/haalfi/remote-store/pulls/$ARGUMENTS/files?per_page=100&page=1" --jq '.[] | select(.filename | startswith("sdd/decisions/") | not) | "--- \(.filename) (\(.status)\(if .previous_filename then ", from \(.previous_filename)" else "" end))\n\(.patch // "(no patch in the API response: read the file whole)")"'`, then `page=2` and on while the previous page held 100 files (`--jq 'length'` on the same URL), the explicit walk Step 4 prefers to `--paginate`. The API omits `patch` for binary files and very large diffs, which the marker makes visible rather than printing `null`. `gh pr diff` takes no path filter; fall back to `pull_request_read` when `gh` is unavailable, skipping those files. **With a `root=` flag, read it from the root instead**: `git -C <path> diff origin/master...HEAD -- . ':(exclude)sdd/decisions/'`, with `origin/master` as `/pr`'s freshness check last fetched it. The PR API returns the PR's *current* head, and the root is pinned at the commit `/ship` certifies; a push during the round would otherwise pair files at one commit with a diff at another. Read every changed file outside `sdd/decisions/` **in full** for surrounding context — from the review root when a `root=` flag names one, else from the local checkout via `Read`, or `get_file_contents` with `ref` set to Step 0's head SHA for the PR-head version.
 
@@ -139,16 +139,16 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 
 **Analyze-only: skip to Step 5**, keeping the Comment rules below for the
 findings you return. Otherwise read [`posting.md`](posting.md) in this skill's
-folder and follow it: the pending-review flow, its posted-count verification,
-and the one instrument that count is taken with.
+folder and follow it: how to post, and how to verify the post.
 
-**No posting tool?** If neither prefix's `pull_request_review_write` is among
-your tools and `ToolSearch` cannot load it, do not post another way (not `gh`,
-not a top-level comment): return the findings as analyze-only mode does, under
-the header `## PR #N Review — X findings returned (not posted: no posting tool)`,
-and name the missing tool. In the cloud, the pass started before GitHub MCP
-connected (`/rvw-pr` as a session's first prompt): re-run it later, or the
-caller posts the findings.
+**No MCP posting tool?** If neither prefix's `pull_request_review_write` is
+among your tools and `ToolSearch` cannot load one, post as
+[`posting-gh.md`](posting-gh.md) says, never as a top-level comment. If `gh` is
+missing, or the review call fails as `posting-gh.md` says, return the findings
+as analyze-only does, under
+`## PR #N Review — X findings returned (not posted: <reason>)`; a partial post
+takes `posting-gh.md`'s partial header. A cloud pass started before GitHub MCP
+connected also lacks the tools; its `gh` review call posted on PR #1174.
 
 **Never** use APPROVE or REQUEST_CHANGES (owner token can't APPROVE).
 

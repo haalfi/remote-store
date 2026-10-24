@@ -42,8 +42,8 @@ import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPT = _REPO_ROOT / "scripts" / "ship_report.py"
-_CLASSIFIER = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-findings.py"
-_ROUNDS = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-rounds.py"
+_CLASSIFIER = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015" / "findings.py"
+_ROUNDS = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015" / "rounds.py"
 _SCHEMA = _REPO_ROOT / "sdd" / "traces" / "_schema.yml"
 
 
@@ -77,7 +77,7 @@ def _schema_gaps(node: dict, path: str) -> list[str]:
 
 
 def _load_rounds():
-    """Import `rfc-0015-rounds.py`, whose filename is not a Python identifier.
+    """Import `rfc-0015/rounds.py`, whose filename is not a Python identifier.
 
     The same `spec_from_file_location` route `ship_report` uses for the
     classifier. Without it the anchor that reads this emitter's output is
@@ -441,7 +441,7 @@ class TestTraceBlock:
     def test_review_rounds_stays_findable_by_the_rounds_script(self, data: dict) -> None:
         """Exercises the **real** anchor, not a transcription of it.
 
-        `rfc-0015-rounds.py` derives RFC-0015 Table 1's before/after populations
+        `rfc-0015/rounds.py` derives RFC-0015 Table 1's before/after populations
         from this field. Asserting the emitter's literal spelling pinned only
         one half of a two-file coupling: reverting the anchor would silently
         empty the entire "after" side and leave the suite green, which is the
@@ -980,6 +980,89 @@ class TestRoundsWithFindings:
         rounds, _ts, _fr, unsubmitted = _mod.rounds_with_findings(1)
         assert unsubmitted == [99]
         assert [group[0]["path"] for group in rounds.values()] == ["stamped.py", "no-stamp.py"]
+
+    def test_a_gh_posted_file_finding_counts_in_its_pass(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """`/rvw-pr`'s `gh` route posts each FILE finding as its own review, with an
+        empty body, after the pass's summary review (measured on PR #1174). It is
+        one round, not two."""
+        line = self._comment(1, 10, "a.py")
+        file_level = {**self._comment(2, 11, "b.md"), "subject_type": "file", "original_line": None}
+        reviews = [
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T00:00:02Z", "body": "", "user": {"login": "r"}},
+        ]
+        self._stub(monkeypatch, [line, file_level], reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert [[f["path"] for f in group] for group in rounds.values()] == [["a.py", "b.md"]]
+
+    def test_the_window_runs_from_the_previous_file_review(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A pass with several FILE findings posts one review per finding, so the
+        last can land past the window from the summary but inside it from the
+        previous one: all of them are still that pass."""
+        line = self._comment(1, 10, "a.py")
+        files = [{**self._comment(i, 10 + i - 1, f"f{i}.md"), "subject_type": "file"} for i in (2, 3)]
+        reviews = [
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T00:01:40Z", "body": "", "user": {"login": "r"}},
+            {"id": 12, "submitted_at": "2026-09-01T00:03:20Z", "body": "", "user": {"login": "r"}},
+        ]
+        self._stub(monkeypatch, [line, *files], reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert [[f["path"] for f in group] for group in rounds.values()] == [["a.py", "f2.md", "f3.md"]]
+
+    def test_a_pass_with_only_file_findings_is_one_round(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The summary review then carries no finding of its own; the round is
+        keyed by it all the same, and sorts by its submission time."""
+        earlier = self._comment(1, 5, "a.py")
+        file_level = {**self._comment(2, 11, "b.md"), "subject_type": "file"}
+        reviews = [
+            {"id": 5, "submitted_at": "2026-08-31T00:00:00Z", "body": "round 1", "user": {"login": "r"}},
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T00:00:02Z", "body": "", "user": {"login": "r"}},
+        ]
+        self._stub(monkeypatch, [earlier, file_level], reviews)
+        rounds, review_ts, _fr, unsubmitted = _mod.rounds_with_findings(1)
+        assert list(rounds) == [5, 10]
+        assert unsubmitted == []
+        assert 10 in review_ts
+
+    def test_a_file_comment_hours_later_stays_its_own_round(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The owner's own file-level notes on #1173 came hours after the pass:
+        they are not its findings, so they do not fold into it."""
+        line = self._comment(1, 10, "a.py")
+        file_level = {**self._comment(2, 11, "b.md"), "subject_type": "file", "original_line": None}
+        reviews = [
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T02:00:00Z", "body": "", "user": {"login": "r"}},
+        ]
+        self._stub(monkeypatch, [line, file_level], reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert list(rounds) == [10, 11]
+
+    def test_another_authors_file_comment_stays_its_own_round(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The fold follows one author's pass: a file-level note another login
+        posts inside the window is not that pass's finding."""
+        line = self._comment(1, 10, "a.py")
+        file_level = {**self._comment(2, 11, "b.md"), "subject_type": "file", "original_line": None}
+        reviews = [
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T00:00:02Z", "body": "", "user": {"login": "other"}},
+        ]
+        self._stub(monkeypatch, [line, file_level], reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert list(rounds) == [10, 11]
+
+    def test_an_empty_body_line_comment_stays_its_own_round(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Only file-level findings fold: a single line comment, such as an owner's
+        suggestion, is a submission of its own, as before."""
+        comments = [self._comment(1, 10, "a.py"), self._comment(2, 11, "a.py")]
+        reviews = [
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z", "body": "summary", "user": {"login": "r"}},
+            {"id": 11, "submitted_at": "2026-09-01T00:00:02Z", "body": "", "user": {"login": "r"}},
+        ]
+        self._stub(monkeypatch, comments, reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert list(rounds) == [10, 11]
 
     def test_only_the_first_reply_in_a_thread_is_the_verdict(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """`/rvw-pr` never answers comments, so the first reply is the fix pass speaking."""

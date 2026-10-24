@@ -81,7 +81,7 @@ Read this before starting. One line per trigger.
 | Bug fix                       | BACKLOG item (reproduction in its dossier, if it has one), CHANGELOG stub under `[Unreleased]`, failing test **before** fix, spec if invariant contradicted |
 | Backlog item touched          | Live trace at `sdd/traces/<id>-<slug>.yml` ([CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring)), whose orient phase reads the item's dossier and those of related open items, judged in its `orient:` key ([CLAUDE.md § Backlog](../CLAUDE.md#backlog)) — not owed for an item decided against or absorbed, which carry a `BACKLOG-DONE.md` register entry instead; on close the `BACKLOG-DONE.md` entry links the dossier, if it has one, whatever the outcome; schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
 | CHANGELOG entry               | One-line `- <ID>: <Title>` at top of `[Unreleased]`, one per ID, within the prose budget; `check_changelog_unreleased.py` gates those three plus `user.`-tagged completed-item coverage, and no more |
-| Breaking change               | `**Breaking**` on the CHANGELOG stub **and** a `## vPREV to vNEXT` section in `docs-src/reference/migration.md`, both in the PR making the break — the version pair is knowable before any release stamps it ([CONTRIBUTING § When to bump](../CONTRIBUTING.md#versioning)). A fix that breaks an `except` clause without earning the marker owes the **section alone**, so a section with no marker is expected, not a breach. `check_breaking_migration_link.py` enforces the marked half: the entry must link the section, and the anchor must be a heading the guide really has |
+| Breaking change               | `**Breaking**` on the CHANGELOG stub **and** a `## vPREV to vNEXT` section in `docs-src/reference/migration.md`, both in the PR making the break — the version pair is knowable before any release stamps it ([CONTRIBUTING § When to bump](../CONTRIBUTING.md#versioning)); until the 1.0.0 cut a master break's pair is `v0.33.0 to v1.0.0`. A fix that breaks an `except` clause without earning the marker owes the **section alone**, so a section with no marker is expected, not a breach. `check_breaking_migration_link.py` enforces the marked half: the entry must link the section, and the anchor must be a heading the guide really has |
 | Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in [CONTRIBUTING § Phase 2](../CONTRIBUTING.md#phase-2) |
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
 | New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/agents/*.md` FOUNDATION lists, the `/rvw-pr` and `/audit` step lists if the doc is review-enforced, `docs-src/explanation/design/_nav.yml` plus that section's `_index.tmpl`, and this ripple-check |
@@ -362,39 +362,34 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | is [that file's CHANGELOG section order](../CONTRIBUTING.md#changelog-section-order), |
 |                            | its one home. Neither the sources nor the order are       |
 |                            | restated here — follow the links, and nothing gates them. |
-| **Breaking change**        | Two artifacts, both in the PR making the break:           |
+| **Breaking change**        | A break ships two artifacts in the PR making it:          |
 |                            | `**Breaking**` on the CHANGELOG stub, and a               |
 |                            | `## vPREV to vNEXT` section in                            |
 |                            | `docs-src/reference/migration.md` saying what a caller    |
-|                            | must change. The version pair is knowable at authoring    |
-|                            | time — [CONTRIBUTING § When to bump](../CONTRIBUTING.md#versioning) |
-|                            | fixes a pre-1.0 breaking change at a minor bump — so      |
-|                            | neither waits on a release to stamp it.                   |
-|                            | An **existing** section for that pair is appended to,     |
-|                            | not duplicated: one heading per version pair holds every  |
-|                            | break in the release.                                     |
-|                            | The published guide cannot cite the tracker ID it         |
-|                            | answers (`check_no_tracker_refs.py` scans all of          |
-|                            | `docs-src/`), so write the section by what a caller       |
-|                            | observes, and record the ID coordinate in the trace.      |
+|                            | must change. The pair is known at authoring time: a       |
+|                            | pre-1.0 break is a minor bump                             |
+|                            | ([CONTRIBUTING § When to bump](../CONTRIBUTING.md#versioning)), |
+|                            | and until the 1.0.0 cut a master break's pair is          |
+|                            | `v0.33.0 to v1.0.0`                                       |
+|                            | ([RFC-0024 § R2](rfcs/rfc-0024-spec-first-reset.md#r2-step-1-the-033-line-and-the-pause)). |
+|                            | An **existing** section for the pair is appended to, not  |
+|                            | duplicated. The published guide cannot cite the tracker   |
+|                            | ID (`check_no_tracker_refs.py` scans `docs-src/`), so the |
+|                            | section says what a caller observes and the trace records |
+|                            | the ID.                                                   |
 |                            | [CONTRIBUTING § Release Phase 1](../CONTRIBUTING.md#release) |
-|                            | is the backstop, not the owner: it catches what arrived   |
-|                            | without a section and decides the softer half — an entry  |
-|                            | a caller must act on that carries no marker.              |
-|                            | **The two artifacts are not a biconditional.** The softer |
-|                            | half owes the section and not the marker, so a section    |
-|                            | whose entry reads `**Fix**` is the rule working rather    |
-|                            | than a counterexample to it. Only the reverse — a marked  |
-|                            | entry with no section — is the breach this row prevents.  |
-|                            | `check_breaking_migration_link.py` (in `lint` and         |
-|                            | `docs-gate`) enforces the marked half mechanically: the   |
-|                            | entry must carry a link to the migration guide, and the   |
-|                            | anchor must resolve to a `## ` heading that guide really  |
-|                            | has — nothing else validates that fragment, so without it |
-|                            | the rule can be satisfied by a link to a section nobody   |
-|                            | wrote. It cannot check that the linked section covers     |
-|                            | *this* entry, and cannot see the softer half at all —     |
-|                            | see its docstring for the full bound list.                |
+|                            | is the backstop: it catches a break that arrived without  |
+|                            | a section, and decides the softer half, an entry a caller |
+|                            | must act on that carries no marker.                       |
+|                            | **Not a biconditional:** that half owes the section and   |
+|                            | not the marker, so a section whose entry reads `**Fix**`  |
+|                            | is the rule working; only a marked entry with no section  |
+|                            | is a breach. `check_breaking_migration_link.py` (in       |
+|                            | `lint` and `docs-gate`) enforces the marked half: the     |
+|                            | entry links the guide, and the anchor resolves to a `## ` |
+|                            | heading it really has, which nothing else validates. It   |
+|                            | cannot check that the section covers *this* entry, nor    |
+|                            | see the softer half; its docstring lists the bounds.      |
 | **Version number**         | Run `bump-my-version` (manages the files listed in        |
 |                            | `[[tool.bumpversion.files]]` in `pyproject.toml`);        |
 |                            | then `hatch run gen-graph` to re-stamp `graph.json`.      |
@@ -495,15 +490,14 @@ reading as "the post failed" is what made pinning necessary.)
 |-----------|------|
 | Read PR **content** (diff, changed files, body, state) | `gh api repos/haalfi/remote-store/pulls/<N>[/files]` **when `gh` is available**, local or cloud; `gh pr view`/`gh pr diff` locally only; fall back to MCP `pull_request_read` when `gh` is absent or the call fails. `/rvw-pr` reads the diff without the decision log, `sdd/decisions/`, so it uses its Step 1's filtered PR-files read instead of `gh pr diff`. One local exception by design: a `/rvw-pr` pass handed a review root by `/ship` reads the diff from that worktree's git (`git -C <root> diff origin/master...HEAD -- . ':(exclude)sdd/decisions/'`), because the PR API returns the PR's current head and the root is pinned at the commit being certified |
 | Read review **feedback with resolution state** (`isResolved`/`isOutdated`) | MCP dual-fetch (`get_review_comments`, whose threads carry their node `id`, + `get_comments`), or locally `gh api graphql` `reviewThreads` — but **not** plain `gh` content reads (`gh pr view`/`gh pr diff`), which omit resolution state |
-| **Write** (post review, inline comments) | MCP (`pull_request_review_write`, `add_comment_to_pending_review`) |
+| **Write** (post review, inline comments) | MCP (`pull_request_review_write`, `add_comment_to_pending_review`); without it, `/rvw-pr`'s [`posting-gh.md`](../.claude/skills/rvw-pr/posting-gh.md) |
 | Resolve/unresolve **threads** | MCP `resolve_review_thread` / `unresolve_review_thread`; locally a `gh api graphql` mutation where MCP lacks them |
 | Search **local repo code** | `Grep` / `Glob` / `Read` — never Bash, never Python. This row bounds *searching*; it does not bound *measuring* — a `/rvw-pr` measuring pass runs an allowlisted set of gates, read-only `git`, and `python` against the library, defined in that skill |
 | Read **any** PR data via Python | never |
 
 **Why `gh`-preferred for content reads:** quick, skips the MCP round-trip, needs
-no approval prompt. **Why MCP for writes:** posts without an approval prompt and
-avoids the temp-JSON + `gh api --input` dance the no-pipes/no-redirect hook
-forces on CLI writes. Identical in main session and forks.
+no approval prompt. **Why MCP for writes:** posts without an approval prompt; the `gh` fallback
+is not pre-approved. Identical in main session and forks.
 
 ---
 
@@ -540,10 +534,11 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `infra/*.py`,
-      `.claude/hooks/`, the `sdd/` scripts in CI's `HOOKS_PAT`, the two
+      `.claude/hooks/`, `.githooks/`, the `sdd/` scripts in CI's `HOOKS_PAT`, the two
       tool lists `tests/scripts/test_reviewer_tools.py` holds equal
       (`.claude/agents/reviewer.md`, `.claude/skills/rvw-pr/SKILL.md`, also in
-      `HOOKS_PAT`), `pyproject.toml`, or `.python-version`** → run `hatch run fast`, the
+      `HOOKS_PAT`), the files `test_observe_ground.py` reads (its `HOOKS_PAT`
+      members), `pyproject.toml`, or `.python-version`** → run `hatch run fast`, the
       members of `all` the change can affect (`scripts/fast_gate.py`). The
       `sdd/` scripts ride with `.claude/hooks/` below: they are pinned by
       `tests/scripts/` and gated in CI by the same `hooks` output. Other
@@ -630,7 +625,7 @@ session and this is maintenance detail.
 | --- | --- |
 | Steering | An output style saying when a decision is the user's to make, and how to shape the options |
 | Notification | Bell plus desktop notification when a dialog opens or the session goes idle |
-| Record | Appends each dialog's asked and answered events to `sdd/decisions/<session_id>.jsonl`, staged by `gate-commit.sh`; a trace lists its logs under `decisions:`, which `check_traces.py` reads; design in [RFC-0018](rfcs/rfc-0018-decision-capture-at-dialog-time.md) |
+| Record | Appends each dialog's asked and answered events to `sdd/decisions/<session_id>.jsonl`, staged by `.githooks/pre-commit`, less housekeeping dialogs, and base-branch ones held until the session commits (RFC-0018 D1, D2); a trace lists its logs under `decisions:`, which `check_traces.py` reads; design in [RFC-0018](rfcs/rfc-0018-decision-capture-at-dialog-time.md) |
 
 Which events fire which layer is declared in `.claude/settings.json`. Read it
 there; a second copy here would rot.

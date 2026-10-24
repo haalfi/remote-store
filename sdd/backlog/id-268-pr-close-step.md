@@ -28,7 +28,7 @@ worked out in detail; that is a direction to explore, not a choice.
   resolving at the squash merge.
 - **The script can run in a GitHub Actions job, given a deep checkout.**
   `scripts/ship_report.py` reads GitHub through `gh api` (`_gh_one`) and the
-  classifier it imports (`sdd/rfcs/rfc-0015-findings.py`), but it also runs git
+  classifier it imports (`sdd/rfcs/rfc-0015/findings.py`), but it also runs git
   against the checkout: `git log <base>..<head>` against `origin/<base>` for the
   review-driven commits, and `git blame` at the reviewed head for each finding's
   origin tag. Its docstring states "Requires `gh` authenticated and the base ref
@@ -59,7 +59,7 @@ worked out in detail; that is a direction to explore, not a choice.
 
 - **What reads a committed `review:` block.** The `*.py` files naming
   `review_rounds` or indexing a `review` key are three (Grep over the repo):
-  - `sdd/rfcs/rfc-0015-rounds.py`, the derivation of RFC-0015 Table 1. Its
+  - `sdd/rfcs/rfc-0015/rounds.py`, the derivation of RFC-0015 Table 1. Its
     `RX` anchor admits the two-space indent so it reads `review_rounds`
     *inside* the block, and its docstring names the "after" population
     emptying as the failure that widening prevents.
@@ -202,7 +202,7 @@ worked out in detail; that is a direction to explore, not a choice.
      - **The acceptance criterion's clause 2**, BK-384's graduation test: "the
        derived trace block draws a finding in at most one round". Without the
        block the clause has no referent.
-     - **Table 1's derivation**, `rfc-0015-rounds.py`, which loses every later
+     - **Table 1's derivation**, `rfc-0015/rounds.py`, which loses every later
        trace from its "after" population (Evidence, 2026-10-05).
 
      Outside the RFC: `CLAUDE.md` § Trace authoring and the `/ship` close step.

@@ -1,4 +1,4 @@
-"""Unit tests for ``sdd/rfcs/rfc-0015-findings.py``: ``triage()`` and how ``_gh``/``_git`` decode.
+"""Unit tests for ``sdd/rfcs/rfc-0015/findings.py``: ``triage()`` and how ``_gh``/``_git`` decode.
 
 BUG-326: ``TestSubprocessDecoding`` pins UTF-8 decoding of ``gh`` and ``git``
 output on a host whose locale encoding is cp1252.
@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_CLASSIFIER = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-findings.py"
+_CLASSIFIER = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015" / "findings.py"
 _FIXTURE = Path(__file__).parent / "fixtures" / "rfc_0015_first_replies.json"
 
 _spec = importlib.util.spec_from_file_location("rfc_0015_findings", _CLASSIFIER)

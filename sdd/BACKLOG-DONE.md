@@ -306,6 +306,29 @@ if evidence changes; these are retired.
   the store-level root, a portable floor, four backend refusal profiles and faithful admission; PATH-002 to PATH-007
   moved from 004 with IDs unchanged. The clauses the code breaks are BK-469.
   Trace: [bk-468](traces/bk-468-store-key-domain.yml).
+- [x] **BK-486 — The decision log records session chores, so every commit needs a hand cleanup**
+  spec: — · effort: M · audience: contributor.process, contributor.tooling
+  Chores and post-cleanup master questions reached `sdd/decisions/` and were
+  stripped by hand. A dialog tagged `metadata.source: "housekeeping"` is skipped
+  (the tag reaches Pre only, so Post is dropped by `tool_use_id`); a base-branch
+  or detached event (not one during a rebase, nor one whose branch git could not
+  read) waits in the ignored `sdd/decisions/.pending/` until the
+  session commits on a work branch, then a `promoted` line binds
+  the moved lines to that branch (D4.0, read in line order). RFC-0018 D1, D2,
+  D3 and D4.0 amended. Follow-up: the commit and push gates moved from Claude
+  hooks, whose `if:` prefix match never fired on `git -C <path> commit`, into
+  git's own `.githooks/pre-commit` and `pre-push`, which git runs in the
+  repository it commits to; `--no-verify` is denied.
+  Traces: [bk-486](traces/bk-486-decision-log-chores.yml),
+  [gate `-C`](traces/bk-486-gate-git-c.yml).
+- [x] **BK-481 — `/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  A local `/rvw-pr 1173` returned six findings unposted: no MCP server here, and
+  Step 4 forbade `gh`. MCP stays first; without it the pass posts `gh`'s REST
+  review call with its JSON on stdin from a quoted heredoc, so the read-only
+  reviewer needs no temp file and a body is never shell-expanded or rewritten
+  by `-F`. Probed on #1173 and #1174, probes deleted. Trace:
+  [bk-481](traces/bk-481-rvw-pr-gh-post.yml).
 - [x] **BK-464 — No review pass checks that a durable doc says one thing, first, in its own place**
   spec: — · effort: XS · audience: contributor.process
   A three-line last pass (Rules 7, 2, 4 and principle 8) found on PR #1166 what three
@@ -408,7 +431,7 @@ if evidence changes; these are retired.
   `InvalidPath` on every backend. Breaking: on master such a pattern matched
   nothing, raised `InvalidPath` or, on Local with a null byte, raised a raw
   `ValueError`, by backend, root and position (measured in the trace); the
-  migration guide's v0.33.0 to v0.34.0 section says so. Spec 018
+  migration guide's v0.33.0 to v1.0.0 section says so. Spec 018
   GLOB-007, GLOB-011; STORE-018, ASYNC-053. Cross-tier
   cells in `tests/ext/test_glob.py`. Co-shipped: BUG-298. Detail:
   [dossier](backlog/bk-405-ext-glob-fallback-tier-split.md). Trace:
@@ -437,7 +460,7 @@ if evidence changes; these are retired.
   `ValueError` ahead of the `USER_METADATA` check, in the kernel's WR-010 gate
   (before any I/O, so no parent folder is made) and in `Store`'s validation,
   which `AsyncStore` and `ext.write` share. Breaking for `Store`, which took
-  `[]`, `0` or `""` for no metadata; the migration guide's v0.33.0 to v0.34.0
+  `[]`, `0` or `""` for no metadata; the migration guide's v0.33.0 to v1.0.0
   section says so. Spec 003 BE-030, 045 WR-011, 013 MEM-020. Co-shipped: BUG-330, BUG-331, BUG-333. Trace:
   [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
 

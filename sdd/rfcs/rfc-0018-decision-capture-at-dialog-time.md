@@ -11,7 +11,14 @@ amends the Summary, D1, D3 and D4. Built: steps 1 and 2 and D2's commit and
 exclusion mechanics. Step 3 is not. Step 2's review (2026-10-09) amends D2, by
 the maintainer's choice of remedy, to let a line that is not a record be
 deleted, and one of two differing answers to one dialog once the maintainer
-has picked the record.
+has picked the record. BK-486 (2026-10-23) amends D1, to leave a dialog tagged
+housekeeping unrecorded, D2, to hold a base-branch or detached event until
+the session commits on a work branch, D3, for the `promoted` line that binds
+the moved events there, and D4.0, to read "next" in the log's line order
+(§ Follow-up: `metadata` reaches `PreToolUse` only). Its follow-up (2026-10-24)
+amends D2 to stage and promote from the git hook `.githooks/pre-commit`: the
+Claude hook it replaces fired on `git commit` only, never on `git -C <path>
+commit`, the form cloud sessions use.
 
 ## Summary
 
@@ -22,9 +29,10 @@ context, the options with their consequences, the agent's recommendation and the
 answer. It persists only in the session transcript, outside the repository, so
 the next session re-argues the why from the code. This RFC keeps the dialog
 verbatim: one hook, registered on two hook events, appends each asked and
-answered event to a per-session JSONL file,
-`sdd/decisions/<session_id>.jsonl`, committed with the work. Logs are bound to a
-branch when read, not when written. Three readers keep them from being
+answered event, less dialogs tagged housekeeping, to a per-session JSONL file,
+`sdd/decisions/<session_id>.jsonl`, committed with the work; an event on the
+base branch waits in an ignored file until the session commits on a work
+branch. Logs are bound to a branch when read, not when written. Three readers keep them from being
 write-only: the trace links them, `check_traces.py` validates them, and `/pr`
 renders them as the PR body's Decisions section.
 
@@ -108,6 +116,17 @@ raw `hook_event_name` rather than dropped, with its payload less the local
 paths every payload carries (`cwd`, `transcript_path`, `scratchpad_dir`),
 which a log committed to a public repository must not hold.
 
+**Housekeeping is not recorded.** A dialog whose answer only steers the
+session records no design choice, yet it was committed beside real decisions
+and stripped by hand before each commit. The agent tags it `metadata: {"source": "housekeeping"}`, as
+[`interview.md`](../../.claude/output-styles/interview.md) defines the class,
+and the recorder skips both of its events. The tag reaches `PreToolUse` only
+(§ Follow-up: `metadata` reaches `PreToolUse` only), so the recorder keeps the
+tagged `tool_use_id` in the ignored `sdd/decisions/.pending/<session_id>.skip`
+and drops the `answered` event by it. Bound: the tag covers the whole call, so
+a decision batched with a chore is lost with it, and an untagged chore is
+recorded as before.
+
 ### D2. Storage: one append-only file per session, bound to work when read
 
 `sdd/decisions/<session_id>.jsonl`, one JSON object per line, appended and never
@@ -119,9 +138,12 @@ which and why. The remedy per fault is stated with the trace key, in
 `sdd/traces/_schema.yml` `decisions`. Committed with the work, so git supplies a timestamped history and
 the PR diff shows the log beside the change it explains.
 
-- **Who commits it.** `gate-commit.sh`, which already runs before every
-  `git commit` the agent issues, stages `sdd/decisions/` into that commit, so
-  the log travels with the work it explains. Dialogs after the branch's last
+- **Who commits it.** The git hook `.githooks/pre-commit`, which git runs in
+  the repository of every agent commit whatever form the command took
+  (`CLAUDECODE` marks an agent commit), stages `sdd/decisions/` into that
+  commit, so the log travels with the work it explains. A pathspec commit runs
+  hooks on a temporary index, where staging would leave the real index behind
+  HEAD, so its log rides the next commit. Dialogs after the branch's last
   commit leave a tail, committed as a separate `decision log` commit pinned to
   `sdd/decisions/` by pathspec. `/pr` commits it after its last step that can
   ask and before it drafts the PR body, which covers its own questions; its
@@ -134,6 +156,33 @@ the PR diff shows the log beside the change it explains.
   follow-up): a commit protects the log only once it is pushed, since an
   unpushed commit would go with a reclaimed container.
 
+- **Held off the base branch.** An event recorded on the base branch (`master`
+  or `main`) or a detached HEAD goes to the ignored
+  `sdd/decisions/.pending/<session_id>.jsonl`, not the log. One whose branch
+  git could not read (a failure, or the recorder's time budget running out) is
+  logged with a null branch, since it may be a work branch, and so is one
+  during a rebase: its detached HEAD is the branch being rebased, and
+  `git rebase --continue` is no commit that promotes. It moves into the
+  log, lines in order and unchanged, only when `.githooks/pre-commit` runs as
+  that same session commits on a work branch: the hook reads the session from
+  `CLAUDE_CODE_SESSION_ID`, which equals the hook payload's `session_id`, and
+  promotes that session's held records alone. A dialog
+  never promotes, because the branch the recorder reads is the project
+  directory's, and in a shared checkout another session may have switched it;
+  promoting there would move one session's chores into a log the other
+  session's commit stages. So a design question asked before the branch
+  existed ships with the session's first commit on it, and a question asked
+  after a session's cleanup does not, unless that session commits on a work
+  branch again. The moved lines keep their recorded branch, and a `promoted`
+  line follows them, naming the work branch and HEAD they moved on: that is
+  the session's event on the work branch, so D4.0 binds them there although
+  the commit recorded no dialog. The moved lines land after any the session
+  logged on a work branch since, so the log is in line order, not `ts` order,
+  and D4.0 reads it in line order. Bounds: an untagged chore held before such a
+  later commit is promoted with it; a session that never commits itself leaves
+  its held records behind, even when another session commits its work; and
+  held records sit in the project directory, so the anchoring bound below
+  applies to them too.
 - **No item ID in the path.** The ID is not knowable at capture time: branch
   names need not carry one (`CLAUDE.md` § Branching lists `fix-streaming-io`),
   and dialogs are asked *before* the work, often while HEAD is still the base
@@ -147,9 +196,10 @@ the PR diff shows the log beside the change it explains.
   the base ("Your local changes … would be overwritten"); a dialog on the base
   leaves an untracked log that blocks switching back to A ("untracked working
   tree files would be overwritten"); and if the session then starts branch B
-  from the base, merging A and B gives `CONFLICT (add/add)` on the log. The
-  remedy is open (BK-397, pending); a per-branch file name would clear the last
-  two cases but not the first. The same dirty-tracked-log shape stops a rebase
+  from the base, merging A and B gives `CONFLICT (add/add)` on the log. Holding
+  base-branch events (above) clears the second case, since a dialog on the base
+  no longer writes the log. The remedy for the others is open (BK-397,
+  pending); a per-branch file name would clear the third but not the first. The same dirty-tracked-log shape stops a rebase
   on one branch ("cannot rebase: You have unstaged changes", same scratch
   repo), and the branch freshness check's own rebase question produces it; that
   case is handled, because the check commits the tail before rebasing
@@ -178,8 +228,8 @@ the PR diff shows the log beside the change it explains.
   passes, which read the body; it is settled with step 3.
 - **Anchored at the project directory.** The hook is registered as
   `"$CLAUDE_PROJECT_DIR"/.claude/hooks/record-decision.sh`, so the log is
-  written under `$CLAUDE_PROJECT_DIR`, while `gate-commit.sh` stages under the
-  toplevel of the shell's working directory. Bound: a session that commits in a
+  written under `$CLAUDE_PROJECT_DIR`, while `.githooks/pre-commit` stages under
+  the toplevel of the repository the commit lands in. Bound: a session that commits in a
   different checkout than its project directory leaves the log behind in the
   project directory, uncommitted.
 - **Committed verbatim, decided by the maintainer** (§ Decided while drafting).
@@ -207,7 +257,9 @@ what the answer was.
 **Unknown event kinds are tolerated.** A reader that meets an event kind other
 than `asked` and `answered` skips it for classification and never fails on it,
 so a later registration (§ Open Questions 5) cannot break a reader written
-before it.
+before it. The recorder's own `promoted` line (D2) is a known kind, not a hook
+event: it carries no `tool_use_id` and no dialog, a reader skips it for
+classification, and only D4.0 reads it, to bind the lines before it.
 
 **The sentinel is a harness string, matched by prefix, and that is a bound.**
 It is undocumented and was seen once (a′), in full
@@ -247,7 +299,8 @@ and the question is classified by the rows below it.
    other than the base branch; detached HEAD is none. An event recorded on a
    work branch belongs to that branch and no other. An event recorded on the
    base branch or a detached HEAD belongs to the next work branch the same
-   session records an event on, if any. That captures dialogs asked before the
+   session records an event on, if any, "next" in the log's line order, not by
+   `ts`: a `promoted` line (D2) follows the moved lines. That captures dialogs asked before the
    branch existed without a manual move, and binds each event once. Whether a
    branch name carries an item ID plays no part. A session whose events never
    name a work branch is still bound when a `Claude-Session` trailer on
@@ -308,7 +361,8 @@ and the question is classified by the rows below it.
   `scripts/record_decision.py`, inside `lint` and `format` by location;
   `tests/scripts/test_claude_hooks.py` and CI's `HOOKS_PAT`, per the
   ripple-check row for a test whose subject is outside `src/`;
-  `.claude/hooks/gate-commit.sh`, which stages the log;
+  `.githooks/pre-commit`, which stages the log, and
+  `.claude/hooks/install-githooks.sh`, which points git at it;
   `sdd/traces/_schema.yml`; `scripts/check_traces.py` and its tests;
   `.claude/skills/pr/SKILL.md`, both the tail commit and the
   rendering; `.claude/skills/fix-pr/SKILL.md`, whose trace update lists
@@ -357,7 +411,7 @@ observations and the text below is kept as asked.
    `unanswered` is still derived from a lone `asked` event, which is why D3 does
    not depend on it.
 3. **Secrets in free text.** Verbatim capture commits whatever the maintainer
-   types. Whether `gate-commit.sh` should scan `sdd/decisions/` for credential
+   types. Whether `.githooks/pre-commit` should scan `sdd/decisions/` for credential
    shapes is open.
 4. **Does the hook's `session_id` match the `Claude-Session` trailer?** The
    trailer carries a claude.ai session URL; the hook payload carries a
@@ -626,6 +680,18 @@ of inactivity and the session's VM is reclaimed"; reopening "provision[s] a
 fresh VM with your conversation history restored" and background work is not
 restored. That confirms the restart is expiry-shaped and that the conversation
 survives; whether a pending dialog is re-shown is not documented.
+
+### Follow-up: `metadata` reaches `PreToolUse` only (2026-10-23)
+
+For BK-486, one local session (Claude Code on Windows) asked a two-question
+dialog with `metadata: {"source": "probe-bk-485"}` beside `questions`, with the
+recorder registered as D1 describes. Its log
+(`sdd/decisions/5fb010a8-2f05-48f0-bdc8-5982d8e390ac.jsonl`) holds the pair:
+the `asked` event's `tool_input` keys were `questions` and `metadata`, the
+latter `{"source": "probe-bk-485"}`; the `answered` event's `tool_input` keys
+were `answers` and `questions`, with no `metadata`. One dialog, one harness
+version: whether a later version also carries it into `PostToolUse` is not
+known, and the skip by `tool_use_id` works either way.
 
 ## References
 

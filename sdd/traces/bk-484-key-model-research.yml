@@ -1,0 +1,413 @@
+id: BK-484
+title: "No key model connects spec 051's Key to the key parameter of Store"
+trigger: >-
+  Spec 051 defined Key on entities while RemotePath (spec 004), the kernel's
+  key rule (BE-030) and child() (spec 015) each mapped a caller's string by
+  their own rules; a concept for the layer between was drafted outside the
+  repo, decided with the maintainer, spike-tested and proved in Lean, then
+  landed as a research doc.
+source_items:
+  - BK-484
+  - BK-435
+audience:
+  - library.maintainer
+  - contributor.process
+discovery_followups:
+  - BK-482
+  - BK-483
+decisions:
+  - sdd/decisions/fca785b7-259e-4b69-9457-132a2b61107a.jsonl
+  - sdd/decisions/1360c86a-3116-4ddc-b37c-d5fcfc84685e.jsonl
+orient:
+  - items: [BK-432]
+    verdict: constrains
+    evidence: >-
+      Done, but its RFC-0021 Appendix A landed as spec 053's BE-032, the
+      accepted authority for resolution: A.1 resolves a Key to Item, Folder or
+      Nothing with no depth and names spec 004 as the input layer's owner, and
+      A.4 and A.5 make a write below an item InvalidPath. Missed at first
+      orient and raised by PR #1173's review; the research keeps spec 051's
+      TREE-001 to TREE-012 as its only authority (maintainer) and records the depth and owner
+      differences as deltas (§ 9.6, § 10).
+  - items: [BK-435]
+    verdict: unrelated
+    evidence: >-
+      BK-435's open work is StoreTree.dfy §12's @spec tags and research
+      § 10 step 3's Dafny operations (its index entry); the key model is a
+      separate layer above spec 051 and closes neither.
+  - items: [BK-436]
+    verdict: constrains
+    evidence: >-
+      BK-436's open decision includes how a backend's coarser name equality
+      answers (BE-032 A.1); the research's § 3.2 sibling equivalence and
+      normal-form rule are a candidate answer for writes, stated as such,
+      without closing BK-436; lookup and `overwrite=True` stay open there.
+  - items: [BK-462]
+    verdict: constrains
+    evidence: >-
+      Lean and Alloy run in no CI job (BK-462's index entry), so the Lean
+      proofs land as evidence under sdd/research/ and govern no clause; the
+      research's § 10 says so.
+  - items: [BUG-299, BUG-300, BUG-334]
+    verdict: unrelated
+    evidence: >-
+      Kernel-step fixes for Local's `..` key, SQLBlob's `\` key and Windows-
+      refused names (their index entries); a research doc changes no code.
+      BUG-334 is cited only as an instance of a backend tier.
+  - items: [BK-468, BK-469]
+    verdict: constrains
+    evidence: >-
+      Open PR #1171 (branch claude/wonderful-bell-mqemmt, opened 2026-10-20)
+      minted BK-468 first for spec 054, the store key spec this research
+      recommends, and BK-469 for the code it breaks. Missed at first orient,
+      which searched master's backlog and not open PRs; found on 2026-10-22 by
+      `hatch run gen-backlogid --check --remote`. This item was re-minted as
+      BK-484. Spec 054 keeps PATH-003's `..` refusal while § 6 decides `..`
+      climbs; the maintainer keeps § 6, recorded as a delta (§ 9.8) and raised
+      on #1171.
+  - items: [BK-456]
+    verdict: unrelated
+    evidence: >-
+      Spec 003's split moves BE clauses (the kernel's to spec 053); the
+      research cites BE-030 by ID, which the split keeps.
+phases:
+  - id: design
+    name: Design the concept against the authorities (outside the repo, then here)
+    steps:
+      - file: sdd/specs/051-store-tree.md
+        section: "(full)"
+        read_type: gate
+        extract: "Key is defined on entities; TREE-011's shape is the key-string language; § Layering lets the library address a subset"
+        outcome: ok
+      - file: sdd/research/research-store-model-axioms.md
+        section: "§ 1 to § 10"
+        read_type: gate
+        extract: "Structure to align the new research doc with; § 6 admits `.` and `..` as names; § 10 Lean results to reuse"
+        outcome: ok
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-001 -- PATH-017"
+        read_type: gate
+        extract: "RemotePath is a stricter ν: rejects every `..`, converts `\\`, spells the root `.`"
+        outcome: ok
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-002, ERR-003, ERR-005"
+        read_type: reference
+        extract: "Map resolution outcomes onto errors; two widenings and one delta (ERR-005 (a), empty path)"
+        outcome: ok
+      - file: sdd/specs/015-store-child.md
+        section: "CHILD-001 -- CHILD-011"
+        read_type: reference
+        extract: "Child composition and round trip agree; `..` and the empty subpath differ; an absent or item c is undecided there"
+        outcome: ok
+  - id: orient
+    name: Orient against open and decided work
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-435, BK-436, BK-462, BUG-299, BUG-300, BUG-334, BK-456"
+        read_type: gate
+        extract: "Cluster verdicts for the orient note"
+        outcome: ok
+      - file: sdd/backlog/bk-395-kernel-key-rule-addressing.md
+        section: "(full)"
+        read_type: gate
+        extract: "The kernel refuses `\\` on every operation; the decision lives in BK-389's decision 6"
+        outcome: ok
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "Decisions / 6"
+        read_type: gate
+        extract: "The kernel's pipeline and table; L_api lies inside its domain (strictly, when a tier refuses a canonical name), so the concept sits above it and agrees"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "§5a WellFormedPath, Canonical"
+        read_type: verify
+        extract: "Clause-by-clause comparison: L_floor plus TREE-011 shape is Canonical's non-root domain"
+        outcome: ok
+  - id: verify
+    name: Spike and proofs
+    steps:
+      - file: sdd/formal/lean/StoreAxioms.lean
+        section: "§ 2 join, § 4 seqOf/Key, § 7 L3-L6, ofTrie"
+        read_type: reference
+        extract: "Reuse join_inj, join_shape, seqOf, Key and ofTrie instead of restating; Lemma C and the child view go through L6"
+        outcome: ok
+      - file: scripts/lean_check.sh
+        section: "(full)"
+        read_type: reference
+        extract: "It copies only the project dir into Docker, so a project requiring sdd/formal/lean by path needs its own build script"
+        outcome: unclear
+  - id: docs
+    name: Land the research doc
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "Item shape, attributes, next safe ID BK-468"
+        outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "sdd/research/research-*.md is dual by default; a PoC folder needs its own marker"
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Document types / Research"
+        read_type: gate
+        extract: "Companion code in a folder beside the doc, linked from it; point-in-time snapshot"
+        outcome: ok
+      - file: sdd/templates/research-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "The **Date:** header is load-bearing (check-sdd-index)"
+        outcome: ok
+      - file: sdd/research/bk-181-poc/README.md
+        section: "(full)"
+        read_type: reference
+        extract: "PoC folder convention: repo-only README, freezes once the finding lands, run commands name the path"
+        outcome: ok
+      - file: sdd/research/research-backend-path-authorities.md
+        section: "(full)"
+        read_type: reference
+        extract: "A second session's survey of each backend's own path authority, landed as is at the maintainer's request; back-linked from research-key-model.md § 3.2 as the input for each L_b, with its § 3.7 Azure dot-segment finding"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Docs navigation"
+        read_type: verify
+        extract: "No trigger names a new research doc; Docs navigation was the nearest, and research pages are indexed by check-sdd-index, not a _nav.yml entry"
+        outcome: unclear
+  - id: probe
+    name: Measure the authorities doc's open points (§ 4) with raw-key probes
+    steps:
+      - file: infra/docker-compose.yml
+        section: "(full)"
+        read_type: reference
+        extract: "MinIO (Chainguard latest-dev), Azurite 3.35.0 and atmoz/sftp:alpine are the local implementations probed"
+        outcome: ok
+      - file: tests/backends/fixtures/_live_env.py
+        section: "(full)"
+        read_type: reference
+        extract: "Credential variable names for the live tier; the Azurite signature check reused by the probe"
+        outcome: ok
+      - file: tests/backends/fixtures/s3_live.py
+        section: "module docstring, _factory"
+        read_type: reference
+        extract: "Temporary rs-conformance-<hex> buckets and the region's LocationConstraint; the probe follows the same lifecycle"
+        outcome: ok
+      - file: sdd/research/bk-484-key-model/probes/probe_paths.py
+        section: "(run: minio, azurite, sftp twice; s3, s3express, azure once)"
+        read_type: verify
+        extract: "Azure HNS rewrites raw paths in the service and resolves `..` before authorisation; Azurite stores them as sent; AWS refused (stored key no longer valid), so its § 4 points stay open"
+        outcome: ok
+      - file: sdd/research/bk-484-key-model/probes/probe_paths.py
+        section: "KEYS, redact (re-read after a PR #1173 review, 2026-10-22)"
+        read_type: verify
+        extract: >-
+          The shared `{B}/../../x` template reached only the chroot root from SFTP's two-segment base,
+          and `redact` cut only ClientError text; fixed with `above_root` and `describe`, pinned by
+          `probes/test_probe_paths.py`, and the SFTP column re-run twice on 2026-10-23. My own miss in a
+          script written in this PR
+        outcome: ok
+      - file: sdd/research/bk-484-key-model/probes/check_quotes.py
+        section: "(run against every § 3 source, fresh cache)"
+        read_type: verify
+        extract: "85 of 85 quotes of 12 characters or more found after three wording fixes (ext4, SSHM charter, Graph) and four sources added that their subsections did not list; web searches found no documentation of Graph dot segments or of HNS trailing-dot and backslash rewriting, only Azure Files' trailing-dot rule"
+        outcome: ok
+      - file: sdd/research/bk-484-key-model/probes/check_quotes.py
+        section: "quotes_in, FOLD (re-read after a PR #1173 review, 2026-10-23)"
+        read_type: verify
+        extract: >-
+          A 12-character filter left short quotes unchecked while the doc said every quote; without it the
+          run found 95, of which three were search terms (now code spans) and one, `chars`, lacked its
+          source (Linux `limits.h`, now listed): 92 of 92. The doc and README now state the substring
+          match and the full fold set. My own miss in a script written in this PR
+        outcome: ok
+      - file: sdd/research/bk-484-key-model/probes/check_quotes.py
+        section: "main, fragment match (re-read after a later PR #1173 review, 2026-10-23)"
+        read_type: verify
+        extract: >-
+          Its docstring stated the fragment rule; my § 1 and README text said substring and missed that
+          elided quotes were matched in any order. The match now keeps the quote's order (`found`, pinned
+          by `probes/test_check_quotes.py`), and the re-run still found 92 of 92
+        outcome: ok
+      - file: ".NET \"File path formats\" § Path normalization (cached copy)"
+        section: "single trailing period; trailing periods and spaces"
+        read_type: verify
+        extract: >-
+          A segment ending in a single period loses it (three or more periods are a valid name); the last
+          segment loses all trailing periods and spaces when the path has no trailing separator. The
+          authorities table's Windows cell had said the opposite for `.`, and my first rewording ("a single
+          trailing period from every segment") overstated it again. The key model's normal-form rule now
+          takes a position-dependent rewrite at the last segment, which by TREE-012 keeps L_b prefix-closed
+        outcome: ok
+      - file: sdd/specs/053-contract-kernel.md
+        section: "Scope; BE-030 (re-read after a later PR #1173 review, 2026-10-23)"
+        read_type: verify
+        extract: >-
+          BE-030 binds only a class on the kernel, and only `_memory.py` and `_memory_tree.py` under
+          src/remote_store/backends import it; the key model's § 1, § 6 costs, § 9.3 and § 9.6 had read it
+          as covering every backend. Narrowed, and § 10's delta list now names the listing of a refused
+          name on a backend not yet on the kernel (BK-483 is the Azure case)
+        outcome: ok
+      - file: "PR #1173 conversation (issue comments 6339559160 and 6339881662)"
+        section: "Flat-namespace Azure measurement; 2026-10-21 handover"
+        read_type: reference
+        extract: >-
+          The maintainer's flat-account run through the SDK settles `//`, a leading `/` and a trailing `/`
+          (stored as sent) and leaves raw `.`, `..` and `\` open, since urllib3 removes dot segments; cited in
+          the authorities doc § 5 and narrowed into § 2, § 3.7, § 4 and BK-482. The handover's tier
+          implications went into the key model's § 3.2, each narrowed to what its source section shows
+        outcome: ok
+      - file: sdd/research/research-backend-path-authorities.md
+        section: "§ 1 Derivation (as first landed)"
+        read_type: reference
+        extract: "Its quotes were near-verbatim through WebFetch's summariser; the byte check found three wrong and four unsourced"
+        outcome: misleading
+review:
+  # Derived by `hatch run ship-report 1173 --trace-block-only` at head cd3095a.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1173 --trace-block-only"
+  pr: 1173
+  review_rounds: 19
+  submissions: 14
+  findings: 36
+  by_round:
+    - round: 1
+      findings: 6
+      origin: {original: 6}
+      triage: {unknown: 6}
+      duration_hours: 1.85
+    - round: 2
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {unknown: 1}
+      duration_hours: 1.18
+    - round: 3
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {refuted: 1}
+      duration_hours: 2.14
+    - round: 4
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.04
+    - round: 5
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {refuted: 1}
+      duration_hours: 1.27
+    - round: 6
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {refuted: 1}
+      duration_hours: 0.08
+    - round: 7
+      findings: 3
+      origin: {original: 2, unclassifiable-blame: 1}
+      triage: {must-fix: 3}
+      duration_hours: 9.29
+    - round: 8
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.69
+    - round: 9
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 25.86
+    - round: 10
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 1.97
+    - round: 11
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 1.35
+    - round: 12
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.16
+    - round: 13
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.15
+    - round: 14
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.16
+  by_file:
+    - path: "sdd/research/research-key-model.md"
+      findings: 18
+    - path: "sdd/research/research-backend-path-authorities.md"
+      findings: 9
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+    - path: "sdd/research/bk-484-key-model/lean/build.sh"
+      findings: 2
+    - path: "sdd/research/bk-484-key-model/probes/probe_paths.py"
+      findings: 2
+    - path: "sdd/research/bk-484-key-model/probes/test_probe_paths.py"
+      findings: 1
+    - path: "sdd/research/bk-484-key-model/spike/test_keymodel.py"
+      findings: 1
+    - path: "sdd/traces/bk-484-key-model-research.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/decisions/1360c86a-3116-4ddc-b37c-d5fcfc84685e.jsonl"
+    - "sdd/decisions/fca785b7-259e-4b69-9457-132a2b61107a.jsonl"
+    - "sdd/research/bk-484-key-model/README.md"
+    - "sdd/research/bk-484-key-model/lean/KeyConcept.lean"
+    - "sdd/research/bk-484-key-model/lean/KeyStore.lean"
+    - "sdd/research/bk-484-key-model/lean/lakefile.toml"
+    - "sdd/research/bk-484-key-model/lean/lean-toolchain"
+    - "sdd/research/bk-484-key-model/probes/check_quotes.py"
+    - "sdd/research/bk-484-key-model/probes/pytest.ini"
+    - "sdd/research/bk-484-key-model/probes/results-2026-10-22.json"
+    - "sdd/research/bk-484-key-model/probes/test_check_quotes.py"
+    - "sdd/research/bk-484-key-model/spike/keymodel.py"
+    - "sdd/research/bk-484-key-model/spike/pytest.ini"
+  review_driven_commits:
+    - sha: "72eb9db"
+      subject: "fix: address PR #1173 review"
+    - sha: "1878a0e"
+      subject: "Land research-backend-path-authorities.md beside the key-model research"
+    - sha: "a76cd4a"
+      subject: "Fix seven internal inconsistencies in research-backend-path-authorities.md"
+    - sha: "8dd91bc"
+      subject: "Make research-backend-path-authorities.md a standalone reference table"
+    - sha: "a2b6c9e"
+      subject: "fix: address PR #1173 review"
+    - sha: "8a9c468"
+      subject: "fix: address PR #1173 review"
+    - sha: "e0a86b1"
+      subject: "BK-468: Measure raw keys against Azure HNS and the local stack"
+    - sha: "00cd5e9"
+      subject: "BK-468: File BK-482 and BK-483 from the Azure probe findings"
+    - sha: "8b9788a"
+      subject: "BK-484: Re-mint this PR's item from BK-468; record spec 054's delta"
+    - sha: "a82f2f9"
+      subject: "fix: address PR #1173 review"
+    - sha: "2750d7d"
+      subject: "BK-484: Check every authorities-doc quote word for word against its source"
+    - sha: "78eddcd"
+      subject: "fix: address PR #1173 review"
+    - sha: "9cbc623"
+      subject: "BK-484: Cite the flat-account Azure measurement; add the authorities' tier implications"
+    - sha: "94cd3b2"
+      subject: "fix: address PR #1173 review"
+    - sha: "f76b6ac"
+      subject: "fix: address PR #1173 review"
+    - sha: "d40147b"
+      subject: "fix: address PR #1173 review"
+    - sha: "15623da"
+      subject: "fix: address PR #1173 review"
+    - sha: "763aa48"
+      subject: "fix: address PR #1173 review"
+    - sha: "cd3095a"
+      subject: "fix: address PR #1173 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

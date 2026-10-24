@@ -142,37 +142,3 @@ def test_pr_advisory_fires_for_pr_creation(stdin: str) -> None:
     decision = json.loads(result.stdout)["hookSpecificOutput"]
     assert decision["permissionDecision"] == "allow"
     assert decision["additionalContext"].startswith("Direct PR creation detected.")
-
-
-@pytest.fixture
-def repo_on_master(tmp_path: Path) -> Path:
-    """A git repo on ``master``, where both gates block the command they gate."""
-    subprocess.run(["git", "init", "-q", "-b", "master", str(tmp_path)], check=True)
-    return tmp_path
-
-
-@pytest.mark.parametrize(
-    ("hook", "command"),
-    [
-        pytest.param("gate-commit.sh", "git commit -m x", id="commit"),
-        pytest.param("gate-push.sh", "git push -u origin x", id="push"),
-        pytest.param("gate-commit.sh", 'git -C "$PWD" commit -m x', id="commit-after-git-option"),
-        pytest.param("gate-push.sh", "git -c push.default=current push", id="push-after-git-option"),
-        pytest.param("gate-commit.sh", 'if true; then git commit -m "$X"; fi', id="commit-after-keyword"),
-    ],
-)
-def test_gate_blocks_its_command_on_master(hook: str, command: str, repo_on_master: Path) -> None:
-    result = _run(hook, _payload(command), cwd=repo_on_master)
-
-    assert result.returncode == 2
-    assert "Blocked: never" in result.stderr
-
-
-@pytest.mark.parametrize("hook", ["gate-commit.sh", "gate-push.sh"])
-def test_gate_ignores_another_command_on_master(hook: str, repo_on_master: Path) -> None:
-    """The misfire this pins blocked every unparseable command on master and,
-    on a branch, staged ``sdd/decisions`` and ran lint or typecheck for it."""
-    result = _run(hook, _payload('ls -d "${HOME}"'), cwd=repo_on_master)
-
-    assert result.returncode == 0
-    assert result.stderr == ""

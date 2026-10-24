@@ -16,11 +16,48 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-init.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/observe-ground.sh rearm"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/install-githooks.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/observe-ground.sh arm"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/observe-ground.sh disarm"
           }
         ]
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/observe-ground.sh check"
+          }
+        ]
+      },
       {
         "matcher": "Bash",
         "hooks": [
@@ -30,13 +67,7 @@
           },
           {
             "type": "command",
-            "if": "Bash(git commit*)",
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gate-commit.sh"
-          },
-          {
-            "type": "command",
-            "if": "Bash(git push*)",
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gate-push.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-no-verify.sh"
           },
           {
             "type": "command",
