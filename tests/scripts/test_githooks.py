@@ -8,9 +8,10 @@ decides where the hook runs; nothing hands the hook a payload.
 
 Bounds: Claude Code's environment is simulated by setting ``CLAUDECODE`` and
 ``CLAUDE_CODE_SESSION_ID`` (a cloud session measured both, the latter equal to
-the hook payload's ``session_id``). No test stages code, so lint and typecheck
-never run here. The wiring tests read ``settings.json``; when Claude Code fires
-a hook is not exercised.
+the hook payload's ``session_id``). Lint and typecheck run against a stub
+``hatch`` on ``PATH``, which fails and reports where it ran, so the real gates'
+own outcomes are not exercised here. The wiring tests read ``settings.json``;
+when Claude Code fires a hook is not exercised.
 """
 
 from __future__ import annotations
@@ -30,18 +31,34 @@ HOOKS = ROOT / ".claude" / "hooks"
 SESSION = "8f551ca6-684d-5d72-b7c0-d6da1ce729ee"
 
 
-def _env(*, agent: bool) -> dict[str, str]:
+def _env(*, agent: bool, path_prefix: Path | None = None) -> dict[str, str]:
     env = {k: v for k, v in os.environ.items() if not k.startswith(("GIT_", "CLAUDE"))}
     if agent:
         env.update(CLAUDECODE="1", CLAUDE_CODE_SESSION_ID=SESSION)
+    if path_prefix is not None:
+        env["PATH"] = f"{path_prefix}{os.pathsep}{env['PATH']}"
     return env
 
 
-def _git(*args: str, cwd: Path, agent: bool = True) -> subprocess.CompletedProcess[str]:
+def _git(
+    *args: str, cwd: Path, agent: bool = True, path_prefix: Path | None = None
+) -> subprocess.CompletedProcess[str]:
     ident = ["-c", "user.name=t", "-c", "user.email=t@t"]
-    return subprocess.run(
-        ["git", *ident, *args], cwd=cwd, env=_env(agent=agent), capture_output=True, text=True, check=False
+    env = _env(agent=agent, path_prefix=path_prefix)
+    return subprocess.run(["git", *ident, *args], cwd=cwd, env=env, capture_output=True, text=True, check=False)
+
+
+@pytest.fixture
+def failing_hatch(tmp_path: Path) -> Path:
+    """A ``hatch`` that fails, naming its arguments, cwd and any git index it inherited."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    stub = bin_dir / "hatch"
+    stub.write_text(
+        '#!/bin/sh\necho "stub-hatch $* in $PWD index=${GIT_INDEX_FILE-unset}" >&2\nexit 1\n', encoding="utf-8"
     )
+    stub.chmod(0o755)
+    return bin_dir
 
 
 def _ok(*args: str, cwd: Path) -> str:
@@ -156,6 +173,21 @@ def test_agent_commit_promotes_and_commits_the_held_records(on_feature: Path) ->
     assert events == ["asked", "promoted"]
 
 
+def test_commit_all_stages_the_log_into_the_real_index(on_feature: Path) -> None:
+    """``commit -a`` runs hooks on ``index.lock``, the real index, so the log is staged."""
+    (on_feature / "a.txt").write_text("a\n", encoding="utf-8")
+    _ok("add", "a.txt", cwd=on_feature)
+    _ok("commit", "-q", "-m", "a", cwd=on_feature)
+    _hold(on_feature)
+    (on_feature / "a.txt").write_text("b\n", encoding="utf-8")
+
+    result = _git("commit", "-a", "-m", "x", cwd=on_feature)
+
+    assert result.returncode == 0, result.stderr
+    shown = _ok("show", "--name-only", "--format=", "HEAD", cwd=on_feature).splitlines()
+    assert shown == ["a.txt", f"sdd/decisions/{SESSION}.jsonl"]
+
+
 def test_pathspec_commit_leaves_the_log_for_the_next_commit(on_feature: Path) -> None:
     """A pathspec commit runs hooks on a temporary index; staging there would
     commit the log while leaving the real index behind HEAD."""
@@ -171,6 +203,18 @@ def test_pathspec_commit_leaves_the_log_for_the_next_commit(on_feature: Path) ->
     assert _ok("status", "--porcelain", "--untracked-files=all", cwd=on_feature) == "?? sdd/decisions/" + (
         f"{SESSION}.jsonl"
     )
+
+
+def test_staged_code_runs_lint_at_the_toplevel_and_blocks_on_failure(on_feature: Path, failing_hatch: Path) -> None:
+    (on_feature / "src").mkdir()
+    (on_feature / "src" / "m.py").write_text("x = 1\n", encoding="utf-8")
+    _ok("add", "src/m.py", cwd=on_feature)
+
+    result = _git("-C", str(on_feature), "commit", "-m", "x", cwd=on_feature.parent, path_prefix=failing_hatch)
+
+    assert result.returncode != 0
+    assert "Blocked: lint failed" in result.stderr
+    assert f"stub-hatch run lint in {on_feature.resolve()} index=unset" in result.stderr
 
 
 # --- pre-push ------------------------------------------------------------------
@@ -207,6 +251,21 @@ def test_human_push_to_master_passes(with_remote: Path) -> None:
     assert result.returncode == 0, result.stderr
 
 
+def test_code_changed_against_origin_master_runs_typecheck_and_blocks(with_remote: Path, failing_hatch: Path) -> None:
+    _ok("push", "-q", "origin", "HEAD:master", cwd=with_remote)  # a person's push: origin/master exists
+    _ok("fetch", "-q", "origin", cwd=with_remote)
+    (with_remote / "src").mkdir()
+    (with_remote / "src" / "m.py").write_text("x = 1\n", encoding="utf-8")
+    _ok("add", "src/m.py", cwd=with_remote)
+    _ok("commit", "-q", "-m", "code", cwd=with_remote)
+
+    result = _git("push", "-q", "origin", "feature", cwd=with_remote, path_prefix=failing_hatch)
+
+    assert result.returncode != 0
+    assert "Blocked: typecheck failed" in result.stderr
+    assert f"stub-hatch run typecheck in {with_remote.resolve()}" in result.stderr
+
+
 # --- the Claude Code side: installer, --no-verify, wiring -----------------------
 
 
@@ -228,6 +287,22 @@ def test_installer_points_git_at_the_checkouts_githooks(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert Path(_ok("config", "--get", "core.hooksPath", cwd=repo)) == (repo / ".githooks").resolve()
+
+
+def test_installer_in_a_linked_worktree_names_the_main_worktrees_githooks(tmp_path: Path) -> None:
+    """core.hooksPath is shared; a linked worktree's path would die with the worktree."""
+    main = tmp_path / "main"
+    _ok("init", "-q", "-b", "feature", str(main), cwd=tmp_path)
+    _ok("commit", "-q", "--allow-empty", "-m", "init", cwd=main)
+    (main / ".githooks").mkdir()
+    tree = tmp_path / "linked"
+    _ok("worktree", "add", "-q", "-b", "other", str(tree), cwd=main)
+    (tree / ".githooks").mkdir()
+
+    result = _bash(HOOKS / "install-githooks.sh", cwd=tree)
+
+    assert result.returncode == 0
+    assert Path(_ok("config", "--get", "core.hooksPath", cwd=tree)) == (main / ".githooks").resolve()
 
 
 def test_installer_leaves_another_tools_hooks_path(tmp_path: Path) -> None:
@@ -267,6 +342,7 @@ def test_no_verify_is_denied(command: str, tmp_path: Path) -> None:
         pytest.param("git commit -m 'drop --no-verify from the docs'", id="in-single-quotes"),
         pytest.param('git commit -m "mention --no-verify"', id="in-double-quotes"),
         pytest.param("git log --oneline", id="unrelated"),
+        pytest.param("dafny translate py --no-verify x.dfy", id="another-tools-flag"),
     ],
 )
 def test_no_verify_in_quoted_text_passes(command: str, tmp_path: Path) -> None:

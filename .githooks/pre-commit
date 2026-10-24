@@ -31,12 +31,18 @@ if [ -n "$TOP" ] && [ -n "$BRANCH" ] && [ -n "$PY" ] && [ -f "$RECORDER" ] && [ 
   printf '{"session_id": "%s"}' "$CLAUDE_CODE_SESSION_ID" | "$PY" "$RECORDER" --promote "$TOP" >/dev/null 2>&1
 fi
 # Stage only into the real index. A pathspec commit (`git commit -- <paths>`)
-# runs hooks against a temporary index, and an add there would commit the log
-# while leaving the real index behind HEAD; that log rides the next commit.
-if [ -n "$TOP" ] && [ -d "$TOP/sdd/decisions" ] && [ "$(basename "${GIT_INDEX_FILE:-index}")" = "index" ]; then
-  # Held records never stage, even in a checkout whose .gitignore lacks the line.
-  git -C "$TOP" add -- sdd/decisions ':(exclude)sdd/decisions/.pending' >/dev/null 2>&1
-fi
+# runs hooks against a temporary `next-index-*.lock`, and an add there would
+# commit the log while leaving the real index behind HEAD; that log rides the
+# next commit. `commit -a` and `-i` run on `index.lock`, the real index (measured).
+case "$(basename "${GIT_INDEX_FILE:-index}")" in
+  next-index-*) ;;
+  *)
+    if [ -n "$TOP" ] && [ -d "$TOP/sdd/decisions" ]; then
+      # Held records never stage, even in a checkout whose .gitignore lacks the line.
+      git -C "$TOP" add -- sdd/decisions ':(exclude)sdd/decisions/.pending' >/dev/null 2>&1
+    fi
+    ;;
+esac
 
 # Skip lint when no code files are staged
 if [ -z "$TOP" ] || ! git diff --cached --name-only | grep -qE '^(src/|tests/|examples/)'; then

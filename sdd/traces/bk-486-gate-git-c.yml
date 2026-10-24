@@ -130,9 +130,25 @@ phases:
           a pathspec commit runs hooks on a temporary next-index lock, where a
           `git add` commits the file but leaves the real index behind HEAD
         outcome: ok
+      - file: .claude/hooks/install-githooks.sh
+        section: "(whole)"
+        read_type: reference
+        extract: >-
+          Unprimed pass on 31b0ca9: commit -a and -i run hooks on index.lock,
+          the real index (measured), so only next-index-* skips staging;
+          core.hooksPath is shared by worktrees, so it now names the main
+          worktree's .githooks; `pre-commit install` refuses while it is set
+          (measured) but installs into .git/hooks with it blanked through
+          GIT_CONFIG_COUNT, so hatch run pre-commit-install does that; lint and
+          typecheck are tested with a stub hatch; the --no-verify deny needs a
+          git word, as dafny has the flag too
+        outcome: ok
 discovery_followups: []
 surprising_ripples:
   - .github/workflows/ci.yml
+  - pyproject.toml
+  - scripts/pre_commit_install.py
+  - tests/scripts/test_pre_commit_install.py
 co_shipped_items: []
 decisions:
   - sdd/decisions/613d97f0-94fd-5231-8d1b-954f25e6bb16.jsonl
