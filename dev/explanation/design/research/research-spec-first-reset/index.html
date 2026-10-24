@@ -11933,7 +11933,12 @@ they rest on, and what is still open. Two RFCs are to follow from it: the reset
 RFC (§ 2 to § 4) and the format RFC (§ 5 to § 6), which amends
 <a href="../../spec-design/"><code>sdd/SPEC-DESIGN.md</code></a>. § 9 steps 1 and 2 are done by
 <a href="../../rfcs/rfc-0024-spec-first-reset/">RFC-0024</a>, the reset RFC, which also
-answers open points 5, 9 and 10; next is step 3.
+answers open points 5, 9 and 10. Step 3 built <code>/observe</code>, which answers
+open points 6 and 7: the axes are <a href="https://github.com/haalfi/remote-store/blob/master/sdd/observe/axes.md"><code>observe/axes.md</code></a>,
+drafted by a fresh agent from § 4 to § 6 and the Claude report, and the hook
+restricts the session whose first prompt is <code>/observe</code>
+(<a href="https://github.com/haalfi/remote-store/blob/master/scripts/observe_ground.py"><code>observe_ground.py</code></a>). The operation's
+"research doc" of § 3 and S4 is its record under <code>sdd/observe/records/</code>.
 Decision log, for the dialogs it captured:
 <code>sdd/decisions/406930fa-086e-5256-a50d-e95aa881810e.jsonl</code>. Decisions taken
 after a worker restart on 2026-10-23 (F1 revised, F4 to F6, the deviation
