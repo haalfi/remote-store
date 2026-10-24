@@ -17,6 +17,8 @@ expected_ripples:
   - .claude/hooks/command-check.sh
   - tests/scripts/test_hook_command_check.py
   - sdd/BACKLOG-DONE.md
+  - scripts/git_target.py
+  - tests/scripts/test_git_target.py
 orient:
   - items: [BK-486]
     verdict: subsumes
@@ -58,6 +60,20 @@ phases:
           Already matches `git -C ... commit`, so dropping if: is enough; its
           header described if: as the primary filter
         outcome: misleading
+  - id: review_1
+    name: The cwd is not the commit's tree
+    steps:
+      - file: .claude/hooks/gate-commit.sh
+        section: "BRANCH, TOP"
+        read_type: reference
+        extract: >-
+          Owner review of #1179: both gates read branch and toplevel from the
+          hook's cwd, so once if: was dropped a worktree commit from a master
+          cwd was blocked and one from another branch promoted the cwd's held
+          records; command_mentions also matched quoted text and arguments.
+          Fixed with scripts/git_target.py (git in command position, cd and -C
+          followed); 9 new hook cases failed on the first fix's gates
+        outcome: ok
 discovery_followups: []
 surprising_ripples: []
 co_shipped_items: []

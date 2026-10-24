@@ -157,9 +157,7 @@ def repo_on_master(tmp_path: Path) -> Path:
         pytest.param("gate-commit.sh", "git commit -m x", id="commit"),
         pytest.param("gate-push.sh", "git push -u origin x", id="push"),
         pytest.param("gate-commit.sh", 'git -C "$PWD" commit -m x', id="commit-after-git-option"),
-        pytest.param("gate-commit.sh", "git -C /abs/repo commit -m x", id="commit-after-git-C-path"),
         pytest.param("gate-push.sh", "git -c push.default=current push", id="push-after-git-option"),
-        pytest.param("gate-push.sh", "git -C /abs/repo push -u origin x", id="push-after-git-C-path"),
         pytest.param("gate-commit.sh", 'if true; then git commit -m "$X"; fi', id="commit-after-keyword"),
     ],
 )
@@ -178,6 +176,89 @@ def test_gate_ignores_another_command_on_master(hook: str, repo_on_master: Path)
 
     assert result.returncode == 0
     assert result.stderr == ""
+
+
+@pytest.mark.parametrize(
+    ("hook", "command"),
+    [
+        pytest.param("gate-commit.sh", 'gh pr create --body "run git -C x commit"', id="commit-in-quoted-text"),
+        pytest.param("gate-commit.sh", "git log --grep commit", id="commit-as-argument"),
+        pytest.param("gate-push.sh", 'git commit -m "then git push"', id="push-in-a-message"),
+    ],
+)
+def test_gate_ignores_a_mention_that_runs_nothing_on_master(hook: str, command: str, repo_on_master: Path) -> None:
+    """Without ``if:`` every Bash call reaches the gate; a mention must not block it."""
+    result = _run(hook, _payload(command), cwd=repo_on_master)
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+
+
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
+
+
+@pytest.fixture
+def worktree_on_branch(repo_on_master: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A second worktree of ``repo_on_master``, on branch ``feature``."""
+    _git(repo_on_master, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "--allow-empty", "-qm", "init")
+    tree = tmp_path_factory.mktemp("wt") / "feature"
+    _git(repo_on_master, "worktree", "add", "-q", "-b", "feature", str(tree))
+    return tree
+
+
+@pytest.mark.parametrize(
+    ("hook", "template"),
+    [
+        pytest.param("gate-commit.sh", "git -C {tree} commit -m x", id="commit-C"),
+        pytest.param("gate-commit.sh", "cd {tree} && git commit -m x", id="commit-after-cd"),
+        pytest.param("gate-push.sh", "git -C {tree} push -u origin feature", id="push-C"),
+    ],
+)
+def test_gate_judges_the_target_worktree_not_the_cwd(
+    hook: str, template: str, repo_on_master: Path, worktree_on_branch: Path
+) -> None:
+    """cwd on master, target on ``feature``: allowed. The reverse is blocked (below)."""
+    result = _run(hook, _payload(template.format(tree=worktree_on_branch)), cwd=repo_on_master)
+
+    assert result.returncode == 0, result.stderr
+    assert result.stderr == ""
+
+
+@pytest.mark.parametrize(
+    ("hook", "command"),
+    [
+        pytest.param("gate-commit.sh", "git -C {tree} commit -m x", id="commit"),
+        pytest.param("gate-push.sh", "git -C {tree} push", id="push"),
+    ],
+)
+def test_gate_blocks_a_target_on_master_from_a_branch_cwd(
+    hook: str, command: str, repo_on_master: Path, worktree_on_branch: Path
+) -> None:
+    result = _run(hook, _payload(command.format(tree=repo_on_master)), cwd=worktree_on_branch)
+
+    assert result.returncode == 2
+    assert "Blocked: never" in result.stderr
+
+
+def test_gate_commit_promotes_into_the_target_not_the_cwd(tmp_path: Path) -> None:
+    """Held records in the cwd stay held when the commit lands in another tree."""
+    session = "s-1"
+    cwd, target = tmp_path / "cwd", tmp_path / "target"
+    for repo, branch in ((cwd, "work-a"), (target, "work-b")):
+        subprocess.run(["git", "init", "-q", "-b", branch, str(repo)], check=True)
+    held = cwd / "sdd" / "decisions" / ".pending" / f"{session}.jsonl"
+    held.parent.mkdir(parents=True)
+    held.write_text('{"event": "asked"}\n', encoding="utf-8")
+    payload = json.dumps(
+        {"session_id": session, "tool_name": "Bash", "tool_input": {"command": f"git -C {target} commit -m x"}}
+    )
+
+    result = _run("gate-commit.sh", payload, cwd=cwd)
+
+    assert result.returncode == 0, result.stderr
+    assert held.read_text(encoding="utf-8") == '{"event": "asked"}\n'
+    assert not (cwd / "sdd" / "decisions" / f"{session}.jsonl").exists()
 
 
 @pytest.mark.parametrize("hook", ["gate-commit.sh", "gate-push.sh"])

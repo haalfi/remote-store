@@ -311,7 +311,8 @@ if evidence changes; these are retired.
   the moved lines to that branch (D4.0, read in line order). RFC-0018 D1, D2,
   D3 and D4.0 amended. Follow-up: the commit and push gates lose their
   prefix-matching `if:`, which `git -C <path> commit` never fired, so held
-  records went unpromoted; they filter themselves.
+  records went unpromoted; each now acts on the tree that a command's `git
+  commit` or `git push` runs in (`scripts/git_target.py`).
   Traces: [bk-486](traces/bk-486-decision-log-chores.yml),
   [gate `-C`](traces/bk-486-gate-git-c.yml).
 - [x] **BK-481 — `/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can**
