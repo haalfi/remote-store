@@ -165,9 +165,7 @@ def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:
     doc = RECORD.format(op=args[0])
     marker = _marker(root, payload.get("session_id") or "")
     marker.parent.mkdir(parents=True, exist_ok=True)
-    marker.write_text(
-        json.dumps({"operation": args[0], "record": doc, "named": named}), encoding="utf-8", newline="\n"
-    )
+    marker.write_text(json.dumps({"operation": args[0], "record": doc, "named": named}), encoding="utf-8", newline="\n")
     return doc
 
 
