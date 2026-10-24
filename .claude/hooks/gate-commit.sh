@@ -20,8 +20,9 @@ fi
 RECORDER="$HERE/../../scripts/record_decision.py"
 
 while IFS= read -r TREE; do
-  # A tree that is no work tree (an unexpanded `$VAR`, a `$(...)`) is judged as
-  # the cwd, as before BK-486: an empty branch must mean detached, not unknown.
+  # A tree git cannot open (an unexpanded `$VAR`, a `$(...)`) is judged as the
+  # cwd, as before BK-486: an empty branch must mean detached, not unknown. A git
+  # dir passes (exit 0, "false") and has no toplevel, so staging and lint skip.
   git -C "$TREE" rev-parse --is-inside-work-tree >/dev/null 2>&1 || TREE=$PWD
   BRANCH=$(git -C "$TREE" branch --show-current 2>/dev/null)
   if [ "$BRANCH" = "master" ] || [ "$BRANCH" = "main" ]; then

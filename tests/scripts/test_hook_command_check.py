@@ -242,6 +242,27 @@ def test_gate_blocks_a_target_on_master_from_a_branch_cwd(
 
 
 @pytest.mark.parametrize(
+    ("hook", "command", "cwd_is_master"),
+    [
+        pytest.param("gate-commit.sh", "git --git-dir={master}/.git commit -m x", False, id="commit-git-dir"),
+        pytest.param("gate-push.sh", "GIT_DIR={master}/.git git push", False, id="push-GIT_DIR"),
+        pytest.param("gate-commit.sh", "git --work-tree={wt} commit -m x", True, id="commit-work-tree"),
+    ],
+)
+def test_gate_judges_the_repository_git_dir_picks_not_the_work_tree(
+    hook: str, command: str, cwd_is_master: bool, repo_on_master: Path, worktree_on_branch: Path
+) -> None:
+    """``--git-dir``/``GIT_DIR`` choose the repository; ``--work-tree`` does not."""
+    cwd = repo_on_master if cwd_is_master else worktree_on_branch
+    payload = _payload(command.format(master=repo_on_master, wt=worktree_on_branch))
+
+    result = _run(hook, payload, cwd=cwd)
+
+    assert result.returncode == 2
+    assert "Blocked: never" in result.stderr
+
+
+@pytest.mark.parametrize(
     ("hook", "command"),
     [
         pytest.param("gate-commit.sh", "R=/nowhere; git -C $R commit -m x", id="commit-same-command-var"),

@@ -13,14 +13,17 @@ wrappers in ``_WRAPPERS`` with their options. So quoted text
 (``gh pr create --body "... git commit ..."``) and arguments
 (``git log --grep commit``, ``git cat-file commit HEAD``) do not count. The tree
 starts at the cwd, follows each earlier ``cd <dir>``, a wrapper's ``env -C`` or
-``sudo -D``, and the invocation's own ``-C`` and ``--work-tree``, with ``$VAR``
-and ``~`` expanded against the hook's environment (``$PWD`` as the cwd).
+``sudo -D`` and the invocation's own ``-C``, with ``$VAR`` and ``~`` expanded
+against the hook's environment (``$PWD`` as the cwd). A ``--git-dir`` or
+``GIT_DIR=`` names the repository, so that git dir is printed: git reads its
+branch there, and as it is no work tree the gates skip staging and lint for it.
+``--work-tree`` only swaps the checkout, not the repository, and is ignored.
 
-Bounds: a git run inside backticks, ``bash -c '...'``, an alias or behind a
-wrapper not in ``_WRAPPERS`` is not seen, so its gate does not act, as before
-BK-486. A tree that does not resolve (a variable set in the same command, a
+Bounds: a git run inside backticks, ``bash -c '...'``, ``env -S '...'``, an
+alias or behind a wrapper not in ``_WRAPPERS`` is not seen, so its gate does
+not act, as before BK-486. A tree that does not resolve (a variable set in the same command, a
 ``$(...)``, a backslashed Windows path) is printed as is; the gates judge the
-cwd for any tree that is not a work tree. A ``cd`` inside ``( ... )`` is taken
+cwd for any tree git cannot open. A ``cd`` inside ``( ... )`` is taken
 to persist past it, ``cd -`` or a bare ``cd`` is ignored, and heredoc lines are
 read as commands, which can only make a gate act. A command shlex cannot split
 (an unbalanced quote) falls back to a whole-word match, printing the cwd, so the
@@ -37,13 +40,14 @@ import shlex
 import sys
 
 _SEPARATORS = frozenset({";", "&&", "||", "|", "&", "(", ")", "|&", ";;"})
-_KEYWORDS = frozenset({"if", "then", "else", "elif", "do", "while", "until", "!", "{", "}", "time"})
+_KEYWORDS = frozenset({"if", "then", "else", "elif", "do", "while", "until", "!", "{", "}"})
 # Wrappers that run their argument as the command, each with its options that
 # take a separate value; options and timeout's duration are skipped.
 _WRAPPERS = {
     "command": frozenset(),
     "exec": frozenset({"-a"}),
     "nohup": frozenset(),
+    "time": frozenset({"-f", "--format", "-o", "--output"}),
     "env": frozenset({"-u", "--unset", "-C", "--chdir", "-S", "--split-string"}),
     "nice": frozenset({"-n", "--adjustment"}),
     "timeout": frozenset({"-s", "--signal", "-k", "--kill-after"}),
@@ -68,17 +72,28 @@ def _tokens(command: str) -> list[str]:
     return list(lexer)
 
 
-def _invocation(tokens: list[str], start: int, subcommand: str, cwd: str) -> tuple[str | None, int]:
-    """The tree of the git run starting at *start*, or None; and the index after its options."""
+def _invocation(
+    tokens: list[str], start: int, subcommand: str, cwd: str, git_dir: str | None
+) -> tuple[str | None, int]:
+    """The tree of the git run starting at *start*, or None; and the index after its options.
+
+    ``-C`` moves the directory; ``--git-dir`` (or a ``GIT_DIR=`` given as *git_dir*)
+    picks the repository, so the git dir itself is the tree; ``--work-tree``
+    only swaps the checkout and is ignored.
+    """
     tree, i = cwd, start + 1
     while i < len(tokens) and tokens[i].startswith("-") and tokens[i] not in _SEPARATORS:
-        option, _, value = tokens[i].partition("=")
-        if option in _VALUED and not value:
+        option, eq, value = tokens[i].partition("=")
+        if option in _VALUED and not eq:
             i += 1
             value = tokens[i] if i < len(tokens) else ""
-        if option in ("-C", "--work-tree") and value:
+        if option == "-C" and value:
             tree = _expand(value, tree)
+        elif option == "--git-dir" and value:
+            git_dir = value
         i += 1
+    if git_dir:
+        tree = _expand(git_dir, tree)
     return (tree if i < len(tokens) and tokens[i] == subcommand else None), i
 
 
@@ -111,21 +126,27 @@ def targets(command: str, subcommand: str, cwd: str) -> list[str]:
         return [cwd] if re.search(whole_words, command.replace("\n", " ")) else []
     found, at_command, i = [], True, 0
     here = cwd  # the directory of the current command; a wrapper may move it
+    git_dir = None  # a GIT_DIR= assignment on the current command
     while i < len(tokens):
         token = tokens[i]
         if token in _SEPARATORS:
-            at_command, here = True, cwd
-        elif not at_command or token in _KEYWORDS or _ASSIGNMENT.match(token):
+            at_command, here, git_dir = True, cwd, None
+        elif not at_command or token in _KEYWORDS:
             pass
+        elif _ASSIGNMENT.match(token):
+            if token.startswith("GIT_DIR="):
+                git_dir = token.partition("=")[2]
         elif token in _WRAPPERS:
             i, here = _skip_wrapper(tokens, i, here)
         elif token == "cd":
+            while i + 1 < len(tokens) and tokens[i + 1].startswith("-") and tokens[i + 1] not in ("-", "--"):
+                i += 1  # -L, -P, -e, -@
             if i + 1 < len(tokens) and tokens[i + 1] not in _SEPARATORS and tokens[i + 1] != "-":
                 i += 1
                 cwd = here = _expand(tokens[i], cwd)
             at_command = False
         elif os.path.basename(token) == "git":
-            tree, i = _invocation(tokens, i, subcommand, here)
+            tree, i = _invocation(tokens, i, subcommand, here, git_dir)
             if tree is not None:
                 found.append(tree)
             at_command = False

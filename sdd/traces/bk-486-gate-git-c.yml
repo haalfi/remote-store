@@ -85,6 +85,17 @@ phases:
           no work tree; wrappers skip their valued options and follow env -C;
           10 new cases failed on 4fc4ddc
         outcome: ok
+      - file: scripts/git_target.py
+        section: "_invocation"
+        read_type: reference
+        extract: >-
+          Second unprimed pass on fc3ce74: --work-tree was followed as if it
+          picked the repository, while --git-dir and GIT_DIR=, which do, were
+          ignored. Probed: inside a git dir `branch --show-current` reads the
+          branch and `rev-parse --is-inside-work-tree` exits 0, so the git dir
+          is printed as the tree; also time -p and cd -P. 9 cases failed on
+          fc3ce74
+        outcome: ok
 discovery_followups: []
 surprising_ripples: []
 co_shipped_items: []
