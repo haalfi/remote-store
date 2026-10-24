@@ -12094,7 +12094,10 @@ has picked the record. BK-486 (2026-10-23) amends D1, to leave a dialog tagged
 housekeeping unrecorded, D2, to hold a base-branch or detached event until
 the session commits on a work branch, D3, for the <code>promoted</code> line that binds
 the moved events there, and D4.0, to read "next" in the log's line order
-(§ Follow-up: <code>metadata</code> reaches <code>PreToolUse</code> only).</p>
+(§ Follow-up: <code>metadata</code> reaches <code>PreToolUse</code> only). Its follow-up (2026-10-24)
+amends D2 to stage and promote from the git hook <code>.githooks/pre-commit</code>: the
+Claude hook it replaces fired on <code>git commit</code> only, never on <code>git -C &lt;path&gt;
+commit</code>, the form cloud sessions use.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Decisions in this repository are mostly taken mid-work in <code>AskUserQuestion</code>
 dialogs (<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#interview-mode"><code>CLAUDE.md</code> § Interview mode</a>). A
@@ -12217,9 +12220,12 @@ which and why. The remedy per fault is stated with the trace key, in
 the PR diff shows the log beside the change it explains.</p>
 <ul>
 <li>
-<p><strong>Who commits it.</strong> <code>gate-commit.sh</code>, which already runs before every
-  <code>git commit</code> the agent issues, stages <code>sdd/decisions/</code> into that commit, so
-  the log travels with the work it explains. Dialogs after the branch's last
+<p><strong>Who commits it.</strong> The git hook <code>.githooks/pre-commit</code>, which git runs in
+  the repository of every agent commit whatever form the command took
+  (<code>CLAUDECODE</code> marks an agent commit), stages <code>sdd/decisions/</code> into that
+  commit, so the log travels with the work it explains. A pathspec commit runs
+  hooks on a temporary index, where staging would leave the real index behind
+  HEAD, so its log rides the next commit. Dialogs after the branch's last
   commit leave a tail, committed as a separate <code>decision log</code> commit pinned to
   <code>sdd/decisions/</code> by pathspec. <code>/pr</code> commits it after its last step that can
   ask and before it drafts the PR body, which covers its own questions; its
@@ -12240,9 +12246,10 @@ the PR diff shows the log beside the change it explains.</p>
   logged with a null branch, since it may be a work branch, and so is one
   during a rebase: its detached HEAD is the branch being rebased, and
   <code>git rebase --continue</code> is no commit that promotes. It moves into the
-  log, lines in order and unchanged, only when <code>gate-commit.sh</code> runs before
-  that same session commits on a work branch: the hook reads <code>session_id</code> from
-  its own payload and promotes that session's held records alone. A dialog
+  log, lines in order and unchanged, only when <code>.githooks/pre-commit</code> runs as
+  that same session commits on a work branch: the hook reads the session from
+  <code>CLAUDE_CODE_SESSION_ID</code>, which equals the hook payload's <code>session_id</code>, and
+  promotes that session's held records alone. A dialog
   never promotes, because the branch the recorder reads is the project
   directory's, and in a shared checkout another session may have switched it;
   promoting there would move one session's chores into a log the other
@@ -12305,8 +12312,8 @@ the PR diff shows the log beside the change it explains.</p>
   passes, which read the body; it is settled with step 3.</li>
 <li><strong>Anchored at the project directory.</strong> The hook is registered as
   <code>"$CLAUDE_PROJECT_DIR"/.claude/hooks/record-decision.sh</code>, so the log is
-  written under <code>$CLAUDE_PROJECT_DIR</code>, while <code>gate-commit.sh</code> stages under the
-  toplevel of the shell's working directory. Bound: a session that commits in a
+  written under <code>$CLAUDE_PROJECT_DIR</code>, while <code>.githooks/pre-commit</code> stages under
+  the toplevel of the repository the commit lands in. Bound: a session that commits in a
   different checkout than its project directory leaves the log behind in the
   project directory, uncommitted.</li>
 <li><strong>Committed verbatim, decided by the maintainer</strong> (§ Decided while drafting).
@@ -12453,7 +12460,8 @@ and the question is classified by the rows below it.</p>
   <code>scripts/record_decision.py</code>, inside <code>lint</code> and <code>format</code> by location;
   <code>tests/scripts/test_claude_hooks.py</code> and CI's <code>HOOKS_PAT</code>, per the
   ripple-check row for a test whose subject is outside <code>src/</code>;
-  <code>.claude/hooks/gate-commit.sh</code>, which stages the log;
+  <code>.githooks/pre-commit</code>, which stages the log, and
+  <code>.claude/hooks/install-githooks.sh</code>, which points git at it;
   <code>sdd/traces/_schema.yml</code>; <code>scripts/check_traces.py</code> and its tests;
   <code>.claude/skills/pr/SKILL.md</code>, both the tail commit and the
   rendering; <code>.claude/skills/fix-pr/SKILL.md</code>, whose trace update lists
@@ -12500,7 +12508,7 @@ observations and the text below is kept as asked.</p>
    <code>unanswered</code> is still derived from a lone <code>asked</code> event, which is why D3 does
    not depend on it.</li>
 <li><strong>Secrets in free text.</strong> Verbatim capture commits whatever the maintainer
-   types. Whether <code>gate-commit.sh</code> should scan <code>sdd/decisions/</code> for credential
+   types. Whether <code>.githooks/pre-commit</code> should scan <code>sdd/decisions/</code> for credential
    shapes is open.</li>
 <li><strong>Does the hook's <code>session_id</code> match the <code>Claude-Session</code> trailer?</strong> The
    trailer carries a claude.ai session URL; the hook payload carries a
