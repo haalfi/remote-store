@@ -20,18 +20,25 @@ fi
 RECORDER="$HERE/../../scripts/record_decision.py"
 
 while IFS= read -r TREE; do
-  # A tree git cannot open (an unexpanded `$VAR`, a `$(...)`) is judged as the
-  # cwd, as before BK-486: an empty branch must mean detached, not unknown. A git
-  # dir passes (exit 0, "false") and has no toplevel, so staging and lint skip.
-  git -C "$TREE" rev-parse --is-inside-work-tree >/dev/null 2>&1 || TREE=$PWD
-  BRANCH=$(git -C "$TREE" branch --show-current 2>/dev/null)
+  # A git dir (`gitdir:<path>`, from --git-dir or GIT_DIR) is opened with
+  # --git-dir, which takes a worktree's .git file too; it has no toplevel the
+  # gate can name, so staging and lint skip. A tree git cannot open (an
+  # unexpanded `$VAR`, a `$(...)`) is judged as the cwd, as before BK-486: an
+  # empty branch must mean detached, not unknown.
+  case $TREE in
+    gitdir:*) GIT=(git --git-dir="${TREE#gitdir:}") ;;
+    *) GIT=(git -C "$TREE") ;;
+  esac
+  "${GIT[@]}" rev-parse --git-dir >/dev/null 2>&1 || { TREE=$PWD; GIT=(git -C "$TREE"); }
+  BRANCH=$("${GIT[@]}" branch --show-current 2>/dev/null)
   if [ "$BRANCH" = "master" ] || [ "$BRANCH" = "main" ]; then
     echo "Blocked: never commit directly to $BRANCH. Create a feature branch first." >&2
     exit 2
   fi
 
   # Best-effort: a staging failure must not block the commit.
-  TOP=$(git -C "$TREE" rev-parse --show-toplevel 2>/dev/null)
+  TOP=
+  case $TREE in gitdir:*) ;; *) TOP=$(git -C "$TREE" rev-parse --show-toplevel 2>/dev/null) ;; esac
   # On a work branch, first move this session's held base-branch records into
   # its log (BK-486). Detached HEAD has no branch and promotes nothing.
   if [ -n "$TOP" ] && [ -n "$BRANCH" ] && [ -n "$PY" ] && [ -f "$RECORDER" ]; then

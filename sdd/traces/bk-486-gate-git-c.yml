@@ -96,6 +96,16 @@ phases:
           is printed as the tree; also time -p and cd -P. 9 cases failed on
           fc3ce74
         outcome: ok
+      - file: .claude/hooks/gate-commit.sh
+        section: "tree open"
+        read_type: reference
+        extract: >-
+          Third unprimed pass on cdb3e9d: `cd -- <dir>` took `--` as the
+          directory, and a linked worktree's .git file given as --git-dir
+          cannot be opened by `git -C`, so both fell back to the cwd. Git dirs
+          are now printed as gitdir:<path> and opened with --git-dir (probed:
+          reads the worktree's branch through its gitfile); cd steps past --
+        outcome: ok
 discovery_followups: []
 surprising_ripples: []
 co_shipped_items: []

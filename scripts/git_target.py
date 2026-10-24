@@ -3,8 +3,8 @@
 Run by ``.claude/hooks/gate-commit.sh`` and ``gate-push.sh``, which are wired
 without ``if:`` (its prefix match misses ``git -C <path> commit``, BK-486) and
 so see every Bash call. Usage: ``git_target.py SUBCOMMAND`` with the PreToolUse
-payload on stdin. Prints one absolute directory per invocation, in order, and
-nothing when the command runs no such subcommand.
+payload on stdin. Prints one absolute directory (or ``gitdir:<path>``, below)
+per invocation, in order, and nothing when the command runs no such subcommand.
 
 An invocation counts only with ``git`` (or a path ending in ``/git``) in
 command position: at the start, after ``;``, ``&&``, ``||``, ``|``, ``&``,
@@ -15,9 +15,11 @@ wrappers in ``_WRAPPERS`` with their options. So quoted text
 starts at the cwd, follows each earlier ``cd <dir>``, a wrapper's ``env -C`` or
 ``sudo -D`` and the invocation's own ``-C``, with ``$VAR`` and ``~`` expanded
 against the hook's environment (``$PWD`` as the cwd). A ``--git-dir`` or
-``GIT_DIR=`` names the repository, so that git dir is printed: git reads its
-branch there, and as it is no work tree the gates skip staging and lint for it.
-``--work-tree`` only swaps the checkout, not the repository, and is ignored.
+``GIT_DIR=`` names the repository, so that git dir is printed as
+``gitdir:<path>``: the gates read its branch with ``git --git-dir=<path>``
+(which also takes a linked worktree's ``.git`` file) and skip staging and lint
+for it, as it has no work tree they can name. ``--work-tree`` only swaps the
+checkout, not the repository, and is ignored.
 
 Bounds: a git run inside backticks, ``bash -c '...'``, ``env -S '...'``, an
 alias or behind a wrapper not in ``_WRAPPERS`` is not seen, so its gate does
@@ -59,6 +61,9 @@ _CHDIR = frozenset({("env", "-C"), ("env", "--chdir"), ("sudo", "-D"), ("sudo", 
 # git's global options that take a separate value (`-C dir`, not `-Cdir`).
 _VALUED = frozenset({"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--config-env", "--exec-path"})
 _ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
+# Marks a printed git dir: the gates open it with `git --git-dir=`, which also
+# takes a linked worktree's `.git` file, where `git -C` cannot.
+_GIT_DIR_PREFIX = "gitdir:"
 
 
 def _expand(path: str, cwd: str) -> str:
@@ -93,7 +98,7 @@ def _invocation(
             git_dir = value
         i += 1
     if git_dir:
-        tree = _expand(git_dir, tree)
+        tree = _GIT_DIR_PREFIX + _expand(git_dir, tree)
     return (tree if i < len(tokens) and tokens[i] == subcommand else None), i
 
 
@@ -141,6 +146,8 @@ def targets(command: str, subcommand: str, cwd: str) -> list[str]:
         elif token == "cd":
             while i + 1 < len(tokens) and tokens[i + 1].startswith("-") and tokens[i + 1] not in ("-", "--"):
                 i += 1  # -L, -P, -e, -@
+            if i + 1 < len(tokens) and tokens[i + 1] == "--":
+                i += 1
             if i + 1 < len(tokens) and tokens[i + 1] not in _SEPARATORS and tokens[i + 1] != "-":
                 i += 1
                 cwd = here = _expand(tokens[i], cwd)

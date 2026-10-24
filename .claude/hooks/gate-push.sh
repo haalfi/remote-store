@@ -16,16 +16,23 @@ fi
 [ -n "$TREES" ] || exit 0
 
 while IFS= read -r TREE; do
-  # A tree git cannot open (an unexpanded `$VAR`, a `$(...)`) is judged as the
-  # cwd, as before BK-486: an empty branch must mean detached, not unknown.
-  git -C "$TREE" rev-parse --is-inside-work-tree >/dev/null 2>&1 || TREE=$PWD
-  BRANCH=$(git -C "$TREE" branch --show-current 2>/dev/null)
+  # A git dir (`gitdir:<path>`) is opened with --git-dir, which takes a
+  # worktree's .git file too, and has no toplevel to typecheck. A tree git
+  # cannot open (an unexpanded `$VAR`, a `$(...)`) is judged as the cwd, as
+  # before BK-486: an empty branch must mean detached, not unknown.
+  case $TREE in
+    gitdir:*) GIT=(git --git-dir="${TREE#gitdir:}") ;;
+    *) GIT=(git -C "$TREE") ;;
+  esac
+  "${GIT[@]}" rev-parse --git-dir >/dev/null 2>&1 || { TREE=$PWD; GIT=(git -C "$TREE"); }
+  BRANCH=$("${GIT[@]}" branch --show-current 2>/dev/null)
   if [ "$BRANCH" = "master" ] || [ "$BRANCH" = "main" ]; then
     echo "Blocked: never push directly to master/main." >&2
     exit 2
   fi
 
   # Skip typecheck when no code files changed vs base
+  case $TREE in gitdir:*) continue ;; esac
   if ! git -C "$TREE" diff origin/master...HEAD --name-only 2>/dev/null | grep -qE '^(src/|tests/|examples/)'; then
     continue
   fi

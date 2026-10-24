@@ -247,6 +247,7 @@ def test_gate_blocks_a_target_on_master_from_a_branch_cwd(
         pytest.param("gate-commit.sh", "git --git-dir={master}/.git commit -m x", False, id="commit-git-dir"),
         pytest.param("gate-push.sh", "GIT_DIR={master}/.git git push", False, id="push-GIT_DIR"),
         pytest.param("gate-commit.sh", "git --work-tree={wt} commit -m x", True, id="commit-work-tree"),
+        pytest.param("gate-commit.sh", "cd -- {master} && git commit -m x", False, id="commit-cd-end-of-options"),
     ],
 )
 def test_gate_judges_the_repository_git_dir_picks_not_the_work_tree(
@@ -275,6 +276,37 @@ def test_gate_judges_the_repository_git_dir_picks_not_the_work_tree(
 def test_gate_judges_the_cwd_when_the_tree_does_not_resolve(hook: str, command: str, repo_on_master: Path) -> None:
     """An unresolved tree must not read as a detached HEAD and skip the master block."""
     result = _run(hook, _payload(command), cwd=repo_on_master)
+
+    assert result.returncode == 2
+    assert "Blocked: never" in result.stderr
+
+
+@pytest.fixture
+def master_worktree(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]:
+    """A repo whose linked worktree is on ``master``; returns (main tree on ``feature``, worktree)."""
+    main = tmp_path_factory.mktemp("gitfile") / "main"
+    subprocess.run(["git", "init", "-q", "-b", "feature", str(main)], check=True)
+    _git(main, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "--allow-empty", "-qm", "init")
+    tree = main.parent / "on-master"
+    _git(main, "worktree", "add", "-q", "-b", "master", str(tree))
+    assert (tree / ".git").is_file()  # a gitfile, not a directory
+    return main, tree
+
+
+@pytest.mark.parametrize(
+    ("hook", "command"),
+    [
+        pytest.param("gate-commit.sh", "git --git-dir={wt}/.git commit -m x", id="commit"),
+        pytest.param("gate-push.sh", "GIT_DIR={wt}/.git git push", id="push"),
+    ],
+)
+def test_gate_reads_the_branch_through_a_worktree_gitfile(
+    hook: str, command: str, master_worktree: tuple[Path, Path]
+) -> None:
+    """``git -C`` cannot open a ``.git`` file; ``--git-dir`` can, so the master worktree is blocked."""
+    main, tree = master_worktree
+
+    result = _run(hook, _payload(command.format(wt=tree)), cwd=main)
 
     assert result.returncode == 2
     assert "Blocked: never" in result.stderr
