@@ -1,0 +1,98 @@
+id: BK-488
+title: "Master carries a frozen contract kernel that no v1 flow will keep, so its code is not 0.33's"
+trigger: >-
+  After RFC-0024 paused the kernel migration, the maintainer proposed moving
+  everything built for the kernel since v0.33.0 onto a frozen branch and
+  returning master's library code to the release, keeping the spec-first work,
+  process and tooling on master, and renumbering spec 054 to 052.
+source_items:
+  - BK-488
+audience:
+  - library.maintainer
+  - contributor.process
+decisions:
+  - sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BK-485` and RFC-0024 R1 to R3: R2 keeps Memory on
+      the kernel and the kernel frozen on master, D2 and D9 split the 0.33 line
+      onto `release/0.33.x`. RFC-0025 amends exactly those clauses and R3's
+      class P disposition; D1, D3 to D8 and D11 stand.
+  - items: [BK-456]
+    verdict: subsumes
+    evidence: >-
+      `hatch run backlog-show BK-456`: stage two split spec 003 into 052 and 053;
+      the revert undoes it for 003 (BE-020 and BE-028 return) and freezes 052 and
+      053. Stage three is open draft PR #1172, a prune of spec 052, which then has
+      no subject (RFC-0025 Open Question 2).
+  - items: [BK-435]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BK-435`: its open work is `StoreTree.dfy` §12's tags
+      and its Dafny operations; the maintainer froze `StoreTree.dfy`, so that work
+      parks with it, while spec 051's Lean and Alloy stay as ground.
+  - items: [BK-468, BK-487]
+    verdict: constrains
+    evidence: >-
+      Open draft PR #1171 adds spec 054; the maintainer renumbers it to 052 once
+      052 leaves master, and holds the PR as is until the revert merges (PR 3 of
+      RFC-0025's delivery).
+  - items: [BK-469]
+    verdict: constrains
+    evidence: >-
+      Filed on #1171 as the key layer's D8 comparison with 0.33. With master's code
+      back at 0.33, master's own suite is the record it reads (RFC-0025 D5).
+  - items: [BK-462, BK-465, BK-466]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-show BK-462`: Alloy and Lean in CI, unaffected since spec
+      051's models stay. BK-465 and BK-466 (open draft PR #1170) amend
+      SPEC-DESIGN.md, which stays.
+phases:
+  - id: orient
+    name: Measure what changed since v0.33.0
+    steps:
+      - file: "git history v0.33.0..814c1f6"
+        section: "rev-list, log -- src, diff --stat -- src"
+        read_type: verify
+        extract: >-
+          92 commits; 9 touch src (6 kernel, BUG-280 alone, BK-405 with BUG-298,
+          #1151 mixing BUG-329/330/331/333 with kernel); src diff 30 files,
+          +5,978/-1,506. The clone was shallow at first: #1115 showed as a root
+          commit and hid 42 earlier ones until `git fetch --unshallow`
+        outcome: ok
+      - file: "git history v0.33.0..814c1f6"
+        section: "log -- sdd/specs and the spec 051 model paths"
+        read_type: verify
+        extract: >-
+          15 commits edit specs 001 to 050, kernel and process mixed; spec 051, its
+          Lean and Alloy models and RFC-0021 first landed in the kernel PR #1127,
+          so the revert goes by path, not by commit
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v1.0.0"
+        read_type: reference
+        extract: >-
+          Four subsections: BUG-280 (no Breaking marker, owes a section), metadata
+          (BUG-329), glob (BK-405 with BUG-298's newline sentence), drivers (kernel)
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "When to bump; Release"
+        read_type: gate
+        extract: "Bug fixes are patch; § Release names release/0.33.x as the only 0.33 line, which D5 retires"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "R1 to R5"
+        read_type: gate
+        extract: "The clauses RFC-0025 amends: D2, D9, D10, R2, R3 class P"
+        outcome: ok
+  - id: draft
+    name: Draft RFC-0025
+    steps:
+      - file: sdd/templates/rfc-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "Status, Summary, Motivation, Proposal, Alternatives, Impact, Open Questions, References"
+        outcome: ok
