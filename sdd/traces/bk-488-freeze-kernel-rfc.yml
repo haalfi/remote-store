@@ -18,8 +18,10 @@ orient:
     evidence: >-
       `hatch run backlog-show BK-485` and RFC-0024 R1 to R3: R2 keeps Memory on
       the kernel and the kernel frozen on master, D2 and D9 split the 0.33 line
-      onto `release/0.33.x`. RFC-0025 amends exactly those clauses and R3's
-      class P disposition; D1, D3 to D8 and D11 stand.
+      onto `release/0.33.x`. RFC-0025 amends D2, D8, D9, D10, R2 (the pause and
+      freeze, and the breaking-fix rule), R3's classes K and P, and R5, all while
+      master's code is 0.33; D1, D3 to D7 and D11 stand. A first draft listed only
+      D2, D9, D10, R2 and R3 class P; PR #1180's review found the rest.
   - items: [BK-456]
     verdict: subsumes
     evidence: >-
@@ -44,6 +46,28 @@ orient:
     evidence: >-
       Filed on #1171 as the key layer's D8 comparison with 0.33. With master's code
       back at 0.33, master's own suite is the record it reads (RFC-0025 D5).
+  - items: [BK-390, BK-439, BK-446, BK-455, BK-434, BK-450]
+    verdict: subsumes
+    evidence: >-
+      RFC-0024 § R3's class P list, each dossier read in full (phase orient-p).
+      Their whole subject is kernel, driver, `Session` or migration work: BK-390
+      "that driver's step, 2 to 8"; BK-455 "no `Session` exists"; BK-439 and
+      BK-446 glob on the kernel; BK-434 `StoreTree.dfy` refinement. BK-450's T1
+      is BUG-341, and its decision log 062e5181 must travel to the host dossier.
+      Absorbing BK-446 overrides BK-452's "stays its own item".
+  - items: [BK-452, BK-345, ID-140, ID-181, BUG-341]
+    verdict: constrains
+    evidence: >-
+      Parts of these exist in v0.33.0, checked against the tag: BUG-341 at
+      v0.33.0 `backends/_memory.py:379,428,459,619,754` (metadata passed
+      uncopied); BK-452's Memory pins, where v0.33.0 spec 013 l.339 and l.357
+      misstate an overwriting move and copy; ID-140, where v0.33.0
+      `_sqlalchemy.py:47` withholds LAZY_READ; ID-181, where v0.33.0
+      `_sftp.py:412` patches paramiko process-wide; BK-345, which before its
+      2026-10-02 re-scope named a registry cell v0.33.0's conformance suite
+      lacks. They stay on master; only their kernel placement lines and parts
+      move (RFC-0025 D7). A first draft absorbed all ten; PR #1180's review
+      asked for this cluster.
   - items: [BK-462, BK-465, BK-466]
     verdict: unrelated
     evidence: >-
@@ -87,6 +111,49 @@ phases:
         section: "R1 to R5"
         read_type: gate
         extract: "The clauses RFC-0025 amends: D2, D9, D10, R2, R3 class P"
+        outcome: ok
+  - id: orient-p
+    name: Read the class P items' dossiers against v0.33.0 (delegated reader, after PR #1180's review)
+    steps:
+      - file: sdd/backlog/bk-450-driver-boundary-enforcement.md
+        section: "(full)"
+        read_type: gate
+        extract: "Kernel boundary work; T1 is BUG-341; decision log 062e5181 to carry over"
+        outcome: ok
+      - file: sdd/backlog/bk-452-template-reference-set.md
+        section: "(full)"
+        read_type: gate
+        extract: "Flat reference driver is kernel; Memory pins T18, T19 hold on v0.33.0's spec 013"
+        outcome: ok
+      - file: sdd/backlog/bk-345-absent-container-conformance.md
+        section: "(full)"
+        read_type: gate
+        extract: "Original registry-cell gap predates the kernel; the 2026-10-02 correction re-scoped it to drivers"
+        outcome: ok
+      - file: sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+        section: "(full)"
+        read_type: gate
+        extract: "Every row is a D3 step's amendment; the table travels as is"
+        outcome: ok
+      - file: sdd/backlog/bk-434-trait-refinement-against-storetree.md
+        section: "(full)"
+        read_type: gate
+        extract: "StoreTree.dfy refinement; BackendContract.dfy drift (T3, T14) to re-check on master's model"
+        outcome: ok
+      - file: sdd/backlog/id-140-sqlblob-lazy-reads.md
+        section: "(full)"
+        read_type: gate
+        extract: "A 0.33 SQLBlob feature; only its D3 step-3 placement is kernel"
+        outcome: ok
+      - file: sdd/backlog/id-181-per-backend-ssh-rsa-opt-in.md
+        section: "(full)"
+        read_type: gate
+        extract: "A 0.33 SFTP feature; only its D3 step-6 placement is kernel"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-455, BK-439, BK-446, BUG-341 (backlog-show)"
+        read_type: gate
+        extract: "BK-455, BK-439, BK-446 kernel-only; BUG-341 a v0.33.0 defect, open decision none"
         outcome: ok
   - id: draft
     name: Draft RFC-0025

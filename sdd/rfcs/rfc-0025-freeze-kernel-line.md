@@ -3,8 +3,10 @@
 ## Status
 
 Draft, 2026-10-25. Tracked as **BK-488**. Amends
-[RFC-0024](rfc-0024-spec-first-reset.md) R1's D2, D9 and D10 rows, R2 and R3's
-class P disposition. Decisions taken in this RFC's session: decision log
+[RFC-0024](rfc-0024-spec-first-reset.md) R1's D2, D8, D9 and D10 rows, R2, R3's
+class K and class P dispositions and R5, and
+[`000-process.md`](../000-process.md) Rule 5 (§ What changes in RFC-0024 and
+elsewhere). Decisions taken in this RFC's session: decision log
 `sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl`.
 
 ## Summary
@@ -64,12 +66,32 @@ break record (RFC-0024 § R5).
 ### D3. Specs and formal models
 
 - **Specs 052 and 053 leave master.**
-- **In specs 001 to 050 only the kernel's edits are reverted.** Spec 003 returns
-  to its text before BK-456's split, so BE-020 and BE-028 are back in it with
-  unchanged meaning. Specs 013, 029 and the others lose their kernel sections.
-  The process and correctness edits made since stay: BUG-337's contradictions,
-  BK-456 stage one, the formatting fixes. The per-file list is the revert's
-  derivation, recorded in its trace.
+- **In specs 001 to 050 only the kernel's edits are reverted.** Each edit made
+  since the tag stays or leaves with the change it belongs to; the per-file list
+  is the revert's derivation, recorded in its trace.
+    - **Spec 003** returns to v0.33.0's text plus the edits that belong to what
+      stays: BUG-280's, BUG-337's outside the kernel sections, and BK-456 stage
+      one. #1151's edits to it all sit in kernel text or are BUG-329's
+      (`git show a62295f2a -- sdd/specs/003-backend-adapter-contract.md`), so
+      none of them stays. BE-020 and BE-028, which stage two moved to spec 052,
+      return with unchanged meaning (both are in v0.33.0's spec 003: `git grep
+      -n -E '^#+ BE-0(20|28)' v0.33.0 -- sdd/specs/003-backend-adapter-contract.md`).
+    - **BE-030 to BE-033 leave.** They entered spec 003 with the kernel PRs
+      from #1127 on (`git log -S BE-030 v0.33.0..814c1f6 -- sdd/specs/003-backend-adapter-contract.md`),
+      and v0.33.0's spec 003 has none of them (BE-029 is its highest). BUG-337's
+      edits to BE-032 leave with BE-032.
+    - Specs 013, 029 and the others lose their kernel sections. The other
+      process and correctness edits stay: BK-456 stage one, the formatting fixes.
+- **A pointer is not ground.** Changing a cross-spec pointer in a ground spec's
+  non-normative paragraph (its Layering or Tested against) does not change the
+  ground, so it needs no reopen (RFC-0024 § R1). The ground register records
+  each such edit. Spec 051's Layering cites spec 053's BE-032 and names spec 004
+  as the input layer's owner: PR 2 drops the BE-032 sentence, and PR 3 points
+  input strings at the key spec. That ruling closes BK-487.
+- **Spec 051's test stays.** `tests/test_store_tree.py`, the reference model
+  spec 051 is tested against, holds every TREE mark (`git grep -l
+  'mark.spec(.*"TREE-0' -- tests`). It stays with the spec, though it came
+  after the tag.
 - **Formal models.** `StoreTree.dfy`, `KernelProtocol.dfy` and its generated
   oracle, and the kernel parts of `BackendContract.dfy` and `MemoryBackend.dfy`
   leave with the kernel. Spec 051, its Lean and Alloy models and their TeX
@@ -104,31 +126,60 @@ master. Its section IDs do not change. Records written before this RFC that cite
 "spec 052" or "spec 053" mean the frozen specs. The ground register says so in
 one line, since those records are never edited. No section ID changes meaning:
 BE-020 and BE-028 return to spec 003 as they were, and BE-030 to BE-033 retire
-with the snapshot and are not reused.
+with the snapshot (`## Retired IDs`, below) and are not reused.
 
 ### D7. Backlog
 
-- **Kernel and driver items.** The open items about kernel, driver,
-  `Session` or migration work (RFC-0024 R3's class P) are absorbed into one
-  host item, reviving or rewriting the frozen line, which is D10. Its dossier
-  lists each absorbed ID with its diagnosis.
+- **Kernel and driver items.** One host item, reviving or rewriting the frozen
+  line, which is D10, absorbs the open class P items of RFC-0024 § R3 whose
+  whole subject is the kernel, a driver, the `Session` or the migration. Its
+  dossier lists each absorbed ID with its diagnosis and the records it cites.
+  Each verdict below comes from reading the item's dossier against v0.33.0
+  (the trace's orient):
+    - **Absorbed whole:** BK-390, BK-439, BK-446, BK-455 and BK-434. BK-434's
+      drift findings on `BackendContract.dfy` are re-checked against the model
+      master keeps.
+    - **Absorbed, linking its record:** BK-450. Its T1 is BUG-341, and its
+      decision log `062e5181-cc50-5b17-963f-e9da78bad8ee` travels to the host
+      dossier.
+    - **Split:** BK-452. Its flat reference driver goes to the host. Its Memory
+      clauses stay on master: MEM-016 and MEM-016b misstate the overwrite case
+      in v0.33.0's spec 013, and the mtime clauses are unpinned.
+    - **Kept on master:**
+        - BUG-341, a defect in v0.33.0 (`backends/_memory.py` passes the stored
+          `metadata` dict out uncopied).
+        - ID-140 and ID-181, features of 0.33 backends. Their "Placement: D3
+          step" lines revert.
+        - BK-345, whose gap (no absent-container cell over the `Backend`
+          registry) predates the kernel. It goes back to its scope before the
+          2026-10-02 re-scope to drivers.
 - **BK-456.** Its stage two is reverted with spec 003, and its stage three
   (PR #1172, the prune of spec 052) has no subject left.
 - **BK-435.** Its open work on `StoreTree.dfy` is parked with that model.
 
-### What changes in RFC-0024
+### What changes in RFC-0024 and elsewhere
+
+Each row holds until v1 implementation begins on master. From then, RFC-0024's
+own text applies again, with a `release/0.33.x` cut as D5 says.
 
 | Clause | Becomes |
 |---|---|
-| D2 | Spec work runs on master. Until v1 implementation begins there, so do 0.33 patches (D5 here). |
+| D2 | Spec work runs on master, and so do 0.33 patches (D5 here). |
+| D8 | Master's suite is the evidence of what 0.33 does, since master's code is 0.33 plus patch fixes. |
 | D9 | Master publishes nothing but 0.33 patches before 1.0.0. |
 | D10 | When, and whether, the frozen kernel line is revived or rewritten. Still open. |
-| R2 | The pause and the freeze apply to the snapshot, not to master. Memory is not on the kernel on master. |
+| R2, the pause and the freeze | Apply to the snapshot, not to master. Memory is not on the kernel on master. |
+| R2, the breaking-fix rule | A fix the bump table rates minor does not land on master. Every master commit ships in a 0.33 patch, so such a fix is recorded as a candidate break for its operation's flow (R5) instead. |
+| R3, class K | Fixed on master, and shipped in the next 0.33 patch. No cherry-pick. |
 | R3, class P | Absorbed into D10's host item (D7 here). |
+| R5 | The register is unchanged. `## v0.33.0 to v1.0.0` in the migration guide holds a break only once its v1 implementation lands. A patch fix that owes a subsection (BUG-280 does) is written under its 0.33 patch's own heading. |
+| `000-process.md` Rule 5 | Keeps "not removed" with a second exception: a spec file this RFC freezes leaves master. Its section IDs get rows in the ground register's `## Retired IDs` with the successor `—` and a note naming the snapshot, so no ID is reused. These are BE-030 to BE-033; BE-020 and BE-028 return to spec 003 and are not retired. |
 
-RFC-0024 gets an "Amended by RFC-0025" line. RFC-0017, ADR-0042 and ADR-0047
-each get "Implementation frozen on `frozen/kernel-driver` (RFC-0025)". Their
-decisions are not withdrawn, and D10 decides whether they stand.
+RFC-0024 gets an "Amended by RFC-0025" line. RFC-0017, RFC-0021, ADR-0042 and
+ADR-0047 each get "Implementation frozen on `frozen/kernel-driver`
+(RFC-0025)". RFC-0021's text still names `StoreTree.dfy` and CI's
+`verify-formal` job as its check, and both leave master. None of these decisions
+is withdrawn, and D10 decides whether they stand.
 
 ### Delivery
 
@@ -167,11 +218,14 @@ The maintainer decided each in this RFC's session:
 - **Backwards compatibility:** master behaves as v0.33.0 plus four bug fixes.
   BUG-280 changes which exception a refused Local listing raises, so it keeps its
   migration-guide subsection.
-- **Testing:** the library suite is v0.33.0's plus the four fixes' tests.
-  Tooling tests stay.
-- **Process:** `CONTRIBUTING.md` § Release, the ground register's numbering
-  line, the CLAUDE-REFERENCE and GATE-INVENTORY rows of the tooling that
-  leaves.
+- **Testing:** the library suite is v0.33.0's plus the four fixes' tests and
+  spec 051's `tests/test_store_tree.py` (D3). Tooling tests stay.
+- **Process:**
+    - `000-process.md` Rule 5 gains the exception above.
+    - The ground register gains the numbering line (D6), the `## Retired IDs`
+      rows and a record of the pointer edits (D3).
+    - `CONTRIBUTING.md` § Release (D5).
+    - The CLAUDE-REFERENCE and GATE-INVENTORY rows of the tooling that leaves.
 
 ## Open Questions
 
