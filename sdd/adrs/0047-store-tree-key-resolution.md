@@ -9,6 +9,10 @@
 | Superseded by | —        |
 | Amends        | —        |
 
+Implementation frozen on `frozen/kernel-driver`
+([RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md)). The decision is not
+withdrawn; RFC-0024 D10 decides whether it stands.
+
 Records the design stances of
 [RFC-0021](../rfcs/rfc-0021-key-resolution-model.md) (BK-432), accepted by the
 maintainer on 2026-10-13: its D1 to D4 and D8. Accepted in BK-394's PR together

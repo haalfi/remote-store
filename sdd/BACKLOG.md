@@ -921,6 +921,13 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
+- [~] **BK-488 — Master carries a frozen contract kernel that no v1 flow will keep, so its code is not 0.33's**
+  spec: — · effort: L · audience: library.maintainer, contributor.process
+  RFC-0024 paused the kernel migration but left the kernel, Memory on it and specs 052 and 053 on
+  master (`git diff --stat v0.33.0 814c1f6 -- src`: 30 files, +5,978/-1,506), so 0.33 fixes go
+  through `release/0.33.x`. RFC-0025 (accepted 2026-10-25) moves them to `frozen/kernel-driver`
+  and returns master's code to v0.33.0 plus three fixes. Open: the revert, its PR 2.
+
 - [ ] **BK-465 — The spec template's Assumption IDs fail the spec-mark grammar, so no test can cite one**
   spec: — · effort: S · audience: contributor.process
   `templates/spec-template.md` gives `<PREFIX>-A01`; `check_spec_marks._SPEC_ID` fully matches
