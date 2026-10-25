@@ -155,6 +155,21 @@ phases:
         read_type: gate
         extract: "BK-455, BK-439, BK-446 kernel-only; BUG-341 a v0.33.0 defect, open decision none"
         outcome: ok
+  - id: review_two
+    name: Scoped review pass on RFC-0025 at 51f2c06 (maintainer-requested), and its fixes
+    steps:
+      - file: "PR #1180 review 5642985114"
+        section: "12 findings: 2 Bug, 2 Spec, 4 Consistency, 4 Ripple"
+        read_type: verify
+        extract: >-
+          Each verified before fixing. `git show --stat a62295f2a -- src tests`: BUG-333's fix and
+          test sit only in the kernel's streams, so three fixes are re-applied, not four.
+          `git grep 'verify-formal:' v0.33.0 -- .github/workflows/ci.yml` finds l.642, so the job
+          stays. `git show --stat 52448e023 -- sdd/specs docs-src`: #1154 also edits the glob guide
+          and migration guide. `git diff v0.33.0 origin/master -- docs-src/index.md
+          docs-src/context7.json` shows driver text the reviewer's page list missed. My first
+          draft had taken BUG-333 into D2 from its CHANGELOG title without opening its diff
+        outcome: ok
   - id: draft
     name: Draft RFC-0025
     steps:

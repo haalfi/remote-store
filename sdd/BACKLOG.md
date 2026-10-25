@@ -926,7 +926,7 @@ CHANGELOG the release body is built from — say what is actually true.
   RFC-0024 paused the kernel migration but left the kernel, Memory on it and specs 052 and 053 on
   master (`git diff --stat v0.33.0 814c1f6 -- src`: 30 files, +5,978/-1,506), so 0.33 fixes go
   through `release/0.33.x`. RFC-0025 (draft) moves them to `frozen/kernel-driver` and returns
-  master's code to v0.33.0 plus four fixes. Open decision: RFC-0025's acceptance.
+  master's code to v0.33.0 plus three fixes. Open decision: RFC-0025's acceptance.
 
 - [ ] **BK-465 — The spec template's Assumption IDs fail the spec-mark grammar, so no test can cite one**
   spec: — · effort: S · audience: contributor.process
