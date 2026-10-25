@@ -333,6 +333,14 @@ no clause of the contract ships unexercised.
   and the write side, on the kernel; v0.33.0's `_memory.py` has five such sites (`git grep -c
   "metadata=[a-z_]*\.metadata" v0.33.0`). Open decision: none; copy at each.
 
+- [ ] **BUG-342 — `MemoryBackend.write` stores a truncated file from a stream whose `read()` answers `None`**
+  spec: BE-008, BE-010 · effort: S · audience: user.api
+  Its read loop takes a `None` chunk for the end (`git show v0.33.0:src/remote_store/backends/_memory.py`,
+  `write`; `write_atomic` delegates), so a stream answering `b"ab", None, b"c"` stores `b"ab"` on
+  `write` and `write_atomic` (reproduced on master after RFC-0025's revert, 2026-10-25). BUG-328
+  fixed this on the kernel's Memory driver, now frozen; BUG-330 fixed the adapter's twin. Open
+  decision: none; raise `TypeError` as BUG-330 does (patch-rated, RFC-0025 R3 class K).
+
 - [ ] **BK-454 — A refusal surfaces at the call in one layer and at the first iteration in another**
   spec: ASYNC-006 · effort: M · audience: user.api
   `Store` raises a read's I/O refusal at the call, `AsyncStore` at the first `__anext__`; a
@@ -347,7 +355,7 @@ no clause of the contract ships unexercised.
   the phase transitions of a small TLC configuration, in a declared subset (flat states,
   `[*]`, `A --> B : Action`) read by an in-repo parser. Neither the parser nor the check
   exists, so lifetime clauses stay prose tables. Due with the first lifetime given a module
-  (BK-454 or BK-455). Open decision: phases from a named variable or a declared action map.
+  (a v1 flow's; BK-455's candidate froze with RFC-0025). Open decision: phases from a named variable or a declared action map.
 
 - [ ] **BK-463 — The compiled Dafny oracles have no Rule 8 statement, so no Dafny model governs a clause**
   spec: — · effort: S · audience: library.maintainer, infra.test
@@ -361,8 +369,8 @@ no clause of the contract ships unexercised.
   spec: — · effort: L · audience: infra.test, library.maintainer
   ADR-0048 gates a TLA+ module from the PR that bridges it; RFC-0022 D5's first
   bridge is model-generated ITF traces replayed by pytest, and no Python ITF replayer
-  exists (research-spec-design § 9). Likely first module: BK-455's close/run race, whose
-  gating splits `verify-tla` per module; ID-270 decides the rest there. Open decision:
+  exists (research-spec-design § 9). The first module's gating splits `verify-tla` per
+  module (BK-455's close/run race, the likely one, froze with RFC-0025); ID-270 decides the rest. Open decision:
   which checker emits the traces, and how a model action maps onto API calls.
 
 - [ ] **BK-451 — `glob` has no definition in tree terms and no single pattern dialect**
@@ -859,13 +867,20 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
+- [~] **BK-488 — Master carries a frozen contract kernel that no v1 flow will keep, so its code is not 0.33's**
+  spec: — · effort: L · audience: library.maintainer, contributor.process, user.api_docs
+  RFC-0025 (PR #1180) froze the kernel line on `frozen/kernel-driver` at 814c1f6; its PR 2
+  returned `src/` and the library tests to v0.33.0 plus BUG-280, BUG-298 and BUG-330, removed
+  specs 052 and 053 and the kernel's tooling and docs, and moved 14 done entries to § Frozen;
+  class P went to BK-489. Not done: PR 3 (#1171 renumbered to spec 052, the register's
+  numbering line, spec 051's Layering pointer, BK-487). Open decision: none.
 
 - [ ] **BK-465 — The spec template's Assumption IDs fail the spec-mark grammar, so no test can cite one**
   spec: — · effort: S · audience: contributor.process
   `templates/spec-template.md` gives `<PREFIX>-A01`; `check_spec_marks._SPEC_ID` fully matches
   `BE-A-01` and neither `BE-A01` nor `KERN-A01` (run with `re.fullmatch`), so a template-form
   row is never declared and a mark citing it goes unfound, against `SPEC-DESIGN.md` Rule 6.4.
-  One prefix spanning specs (BE- over 003, 052, 053) would also collide. Open decision: change
+  One prefix spanning specs (BE- over 003, 052, 053 before RFC-0025) would also collide. Open decision: change
   the template or the grammar, and the prefix per spec. Found by audit 024 § 2.
 
 - [ ] **BK-466 — `SPEC-DESIGN.md` Rule 1 relocates mechanism to a design note, which has no home**

@@ -470,15 +470,6 @@ ships them.
 
 ## Unreleased
 
-- [x] **BK-488 — Master carries a frozen contract kernel that no v1 flow will keep, so its code is not 0.33's**
-  spec: — · effort: L · audience: library.maintainer, contributor.process, user.api_docs
-  RFC-0025 (PR #1180) froze the kernel line on `frozen/kernel-driver` at 814c1f6; this PR
-  returns `src/` and the library tests to v0.33.0 plus BUG-280, BUG-298 and BUG-330, removes
-  specs 052 and 053 (BE-030 to BE-033 retired in the ground register), the kernel's Dafny models,
-  tooling and driver docs, and moves 14 done entries to § Frozen. Class P items went to the new
-  host BK-489. Traces: [rfc](traces/bk-488-freeze-kernel-rfc.yml),
-  [revert](traces/bk-488-revert-kernel.yml).
-
 - [x] **BK-486 — The decision log records session chores, so every commit needs a hand cleanup**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
   Chores and post-cleanup master questions reached `sdd/decisions/` and were
@@ -521,11 +512,12 @@ ships them.
   [rfc](traces/bk-457-spec-design-rfc.yml), [adr](traces/bk-457-spec-design-adr.yml).
 
 - [x] **BUG-337 — Spec 003 contradicts itself on a move onto an existing file and on the write precondition order**
-  spec: BE-008, BE-010, BE-018, BE-021, BE-032 · effort: S · audience: library.maintainer
+  spec: BE-008, BE-010, BE-018, BE-021 · effort: S · audience: library.maintainer
   Spec-only, in `003-backend-adapter-contract.md`: BE-021's table moves the `move`/`copy` destination to
   the file-operation row and names a destination file as BE-018's `AlreadyExists`; BE-008's order
-  now opens with the closed guard and ranks the WR-010 gate after the root, as the Dafny `Write`
-  does, binding the gate where a class runs it (Graph breaks that order: BUG-339); BE-010,
+  now opens with the closed guard, and its WR-010 gate binds only where a class runs it (its
+  placement after the root left with RFC-0025's revert, since v0.33.0's Dafny `Write` ranks the
+  gate after the type and overwrite checks; Graph: BUG-339); BE-010,
   ASYNC-008 and spec 044 link to it; BE-018/BE-019 carry BE-021's destination scope; BE-028 says
   "operating system". Dossier: [BUG-337](backlog/bug-337-spec-003-contradictions.md). Trace:
   [bug-337](traces/bug-337-spec-003-contradictions.yml).
@@ -595,7 +587,7 @@ ships them.
   Detail: [dossier](backlog/bk-444-repo-traps-lint.md). Trace: [bk-444](traces/bk-444-repo-traps-lint.yml).
 
 - [x] **BUG-330 — A sync stream read answering `None` through `AsyncBackendSyncAdapter` stores a truncated file**
-  spec: BE-030, ASYNC-091 · effort: S · audience: user.api
+  spec: ASYNC-091 · effort: S · audience: user.api
   The adapter's stream bridge raises `TypeError` on a `None` read instead of
   ending the upload, on `write` and `write_atomic`. Spec 029 ASYNC-091. Trace:
   [bug-329](traces/bug-329-content-and-metadata-shapes.yml).

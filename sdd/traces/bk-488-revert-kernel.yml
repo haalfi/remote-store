@@ -14,6 +14,7 @@ decisions:
   - sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
 discovery_followups:
   - BK-489
+  - BUG-342
 orient:
   - items: [BK-488]
     verdict: subsumes
@@ -46,7 +47,7 @@ phases:
           BUG-330's), BUG-298's SQLBlob clause, and test infrastructure changed by
           non-kernel commits (BUG-301, BUG-314, BUG-315, BK-403, BK-410, BK-419,
           BK-456 stage one). Hand-applied: BUG-298's `\Z` anchor in `_glob.py` and
-          its tests. BUG-330's test mark loses the retired BE-030
+          its tests. BUG-330's test mark loses the retired BE-030, leaving ASYNC-091
         outcome: ok
       - file: "tests/"
         section: "pytest on the re-applied fixes; then hatch run fast"
@@ -67,6 +68,18 @@ phases:
           nor two 0.33-true MEM edits inside kernel PR #1144; a verification agent
           found the MEM edits, and I kept BK-398 with GraphBackend alone named
         outcome: unclear
+      - file: "git diff v0.33.0 HEAD -- sdd/specs"
+        section: "D3's per-file list: each spec that differs from v0.33.0, and the commit of each kept edit"
+        read_type: verify
+        extract: >-
+          003: BUG-280 (25ac75a3f), BUG-337 outside its gate placement (02cbafc4d), BK-456 stage one
+          (4694e7a1c), BK-398 Graph-only (b7deb551c). 009, 019, 031, 047: BUG-320 (897a5dcb7). 010:
+          BK-398 (b7deb551c). 013: MEM-002, MEM-003, MEM-DS-002 `metadata` (b7deb551c, 0.33-true).
+          018, 040: BUG-298 (52448e023; 040 also BUG-320). 029: BUG-337 (02cbafc4d), BUG-330's
+          sentence (a62295f2a). 044: BUG-337. 047: BUG-338 (e8d4275c9). 050: BK-403 (576f28b56). 051:
+          stays whole, minus its BE-032 Layering sentence. Every other spec 001 to 050 equals v0.33.0;
+          052 and 053 are deleted
+        outcome: ok
       - file: sdd/formal/BackendContract.dfy
         section: "Write (v0.33.0)"
         read_type: verify
@@ -136,6 +149,20 @@ phases:
           v0.33.0 (reproduced on the reverted src where it mattered), or none.
           D7's 51f2c06 list missed BUG-300 and BK-485; § Absorbed entries whose
           host froze (BUG-297, ID-261, BK-325, BK-448) were re-hosted
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "D7 per-item verdicts"
+        read_type: verify
+        extract: >-
+          Absorbed into BK-489: BK-390, BK-439, BK-446, BK-455, BK-434, BK-450, BK-467, BK-435. Split:
+          BK-452. Kept, placement reverted: BUG-341, ID-140, ID-181; BK-345 back to its pre-2026-10-02
+          scope. Retired IDs dropped: BUG-323, BUG-292, BUG-310, BK-484, BK-482, BK-483, BK-436,
+          BK-438, BK-456, BK-465. Re-scoped to v0.33.0: BUG-300, BK-454, BK-451, BK-332, BK-433,
+          BK-485. Pointer fixed: BK-460, BK-461. None (mention stays true): BUG-276, BUG-299, BUG-319,
+          BUG-245, BUG-257, BUG-324, BUG-318, BUG-279, BK-366. Dossier placement notes: BK-242,
+          BK-339, BK-382, BUG-266, BUG-287, BUG-288, BUG-289, ID-217. New: BUG-342, BUG-328's Memory
+          `None`-read half, which v0.33.0's `MemoryBackend.write` ships (reproduced; found by PR
+          review, not D2)
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "Unreleased"
