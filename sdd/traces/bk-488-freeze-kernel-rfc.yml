@@ -49,7 +49,7 @@ orient:
   - items: [BK-390, BK-439, BK-446, BK-455, BK-434, BK-450]
     verdict: subsumes
     evidence: >-
-      RFC-0024 § R3's class P list, each dossier read in full (phase orient-p).
+      RFC-0024 § R3's class P list, each dossier read in full (phase orient_p).
       Their whole subject is kernel, driver, `Session` or migration work: BK-390
       "that driver's step, 2 to 8"; BK-455 "no `Session` exists"; BK-439 and
       BK-446 glob on the kernel; BK-434 `StoreTree.dfy` refinement. BK-450's T1
@@ -112,7 +112,7 @@ phases:
         read_type: gate
         extract: "The clauses RFC-0025 amends: D2, D9, D10, R2, R3 class P"
         outcome: ok
-  - id: orient-p
+  - id: orient_p
     name: Read the class P items' dossiers against v0.33.0 (delegated reader, after PR #1180's review)
     steps:
       - file: sdd/backlog/bk-450-driver-boundary-enforcement.md
