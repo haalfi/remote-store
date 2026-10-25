@@ -9,6 +9,10 @@
 | Superseded by | —                                      |
 | Amends        | ADR-0001, ADR-0011, ADR-0012, ADR-0025 |
 
+Implementation frozen on `frozen/kernel-driver`
+([RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md)). The decision is not
+withdrawn; RFC-0024 D10 decides whether it stands.
+
 Proposed by BK-387 with RFC-0017's Open Questions 1, 4, 6 and 7 answered by
 the maintainer. **Accepted in BK-394's PR**, which lands the first backend on
 this design (RFC-0017 D3 step 1): `MemoryBackend` and `AsyncMemoryBackend` are

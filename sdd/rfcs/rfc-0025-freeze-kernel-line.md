@@ -2,7 +2,8 @@
 
 ## Status
 
-Draft, 2026-10-25. Tracked as **BK-488**. Amends
+Accepted, 2026-10-25, by the maintainer. Drafted 2026-10-25. Tracked as
+**BK-488**. Amends
 [RFC-0024](rfc-0024-spec-first-reset.md) R1's D2, D8, D9 and D10 rows, R2, R3's
 class K and class P dispositions, R4, R5 and § Impact's Process bullet, and
 [`000-process.md`](../000-process.md) Rule 5 (§ What changes in RFC-0024 and
