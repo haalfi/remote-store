@@ -8,8 +8,6 @@ snippets execute correctly.
 """
 
 # ruff: noqa: F401, F811
-# mypy: disable-error-code="abstract"
-# (the custom-backend region's MyDriver elides its members on purpose)
 
 from __future__ import annotations
 
@@ -86,22 +84,14 @@ def _capabilities() -> None:
 def _custom_backend() -> None:
     # Verify the import and class structure work — we don't instantiate.
     # --8<-- [start:custom-backend]
-    from remote_store import Store
-    from remote_store.drivers import Driver, DriverBackend
+    from remote_store import Backend, Store
 
-    class MyDriver(Driver):
-        """The wire primitives for your storage: stat, get, put, list_page, ..."""
+    class MyBackend(Backend):
+        """Implement the Backend protocol for your storage."""
 
         ...
 
-    class MyBackend(DriverBackend):
-        """Paths, root, errors and listing rules come from the kernel."""
-
-        def __init__(self, **options: object) -> None:
-            super().__init__(MyDriver(**options))
-
     # --8<-- [end:custom-backend]
-    assert issubclass(MyBackend, DriverBackend)
 
 
 if __name__ == "__main__":

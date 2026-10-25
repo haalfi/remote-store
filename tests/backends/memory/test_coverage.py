@@ -4,14 +4,10 @@ from __future__ import annotations
 
 import concurrent.futures
 import io
-from typing import Any
 
 import pytest
 
-from remote_store import Store
-from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._errors import AlreadyExists, CapabilityNotSupported, DirectoryNotEmpty, InvalidPath, NotFound
-from remote_store.aio.backends._memory import AsyncMemoryBackend
+from remote_store._errors import DirectoryNotEmpty, InvalidPath, NotFound
 from remote_store.backends._memory import MemoryBackend
 
 
@@ -21,7 +17,7 @@ def mb() -> MemoryBackend:
 
 
 # ---------------------------------------------------------------------------
-# Key validation (the kernel's, BE-030) and the tree's traversal
+# _split_path / _traverse / _ensure_parents validation
 # ---------------------------------------------------------------------------
 
 
@@ -30,7 +26,7 @@ def mb() -> MemoryBackend:
     ("path", "match"),
     [
         pytest.param("a/\0b", "null byte", id="null_byte"),
-        pytest.param("/root/file", "must not start with '/'", id="absolute"),
+        pytest.param("/root/file", "Absolute", id="absolute"),
         pytest.param("a/../b", "\\.\\.", id="dotdot"),
     ],
 )
@@ -56,7 +52,7 @@ def test_traverse_through_file_returns_false(mb: MemoryBackend, method: str) -> 
 @pytest.mark.spec("MEM-DS-005")
 def test_file_blocks_intermediate_directory(mb: MemoryBackend) -> None:
     mb.write("a/b", b"data")
-    with pytest.raises(InvalidPath, match="ancestor of the path is a file"):
+    with pytest.raises(InvalidPath, match="exists as a file"):
         mb.write("a/b/c/d", b"nested")
 
 
@@ -77,19 +73,19 @@ def test_is_file_root(mb: MemoryBackend, path: str) -> None:
     [pytest.param(("", b"data"), id="empty"), pytest.param((".", b"data"), id="dot")],
 )
 def test_write_empty_path_rejected(mb: MemoryBackend, args: tuple) -> None:
-    with pytest.raises(InvalidPath, match="Cannot write to the store root"):
+    with pytest.raises(InvalidPath, match="must not be empty"):
         mb.write(*args)
 
 
 @pytest.mark.spec("BE-012")
 def test_delete_empty_path_rejected(mb: MemoryBackend) -> None:
-    with pytest.raises(InvalidPath, match="store root is a folder, not a file"):
+    with pytest.raises(InvalidPath, match="must not be empty"):
         mb.delete("")
 
 
-@pytest.mark.spec("BE-031")
+@pytest.mark.spec("MEM-014")
 def test_delete_folder_empty_path_rejected(mb: MemoryBackend) -> None:
-    with pytest.raises(InvalidPath, match="Cannot delete the store root"):
+    with pytest.raises(InvalidPath, match="must not be empty"):
         mb.delete_folder("")
 
 
@@ -104,7 +100,7 @@ def test_delete_folder_empty_path_rejected(mb: MemoryBackend) -> None:
 def test_write_special_cases(mb: MemoryBackend, label: str, data: bytes, expected: bytes | None) -> None:
     if label == "directory":
         mb.write("a/b/c", b"file-under-b")
-        with pytest.raises(InvalidPath, match="Is a folder, not a file"):
+        with pytest.raises(InvalidPath, match="exists as a directory"):
             mb.write("a/b", data)
     else:
         mb.write("file.txt", data)
@@ -127,7 +123,7 @@ def test_write_special_cases(mb: MemoryBackend, label: str, data: bytes, expecte
 def test_delete_folder_parent_is_file(mb: MemoryBackend, missing_ok: bool, expect_raise: bool) -> None:
     mb.write("a/b", b"data")
     if expect_raise:
-        with pytest.raises(NotFound, match="Not found"):
+        with pytest.raises(NotFound, match="Folder not found"):
             mb.delete_folder("a/b/sub", missing_ok=missing_ok)
     else:
         mb.delete_folder("a/b/sub", missing_ok=missing_ok)
@@ -154,7 +150,7 @@ def test_get_file_info_on_root_raises_invalid_path(mb: MemoryBackend, root: str)
     Was ``NotFound``, which made this the one backend where the root's verdict
     depended on which file-shaped method you asked.
     """
-    with pytest.raises(InvalidPath, match="store root is a folder, not a file"):
+    with pytest.raises(InvalidPath, match="Not a file"):
         mb.get_file_info(root)
 
 
@@ -176,10 +172,10 @@ def test_get_folder_info_with_nested_subdirectories(mb: MemoryBackend) -> None:
 @pytest.mark.parametrize(
     ("op", "src", "dst", "match"),
     [
-        pytest.param("move", "", "dst", "store root is a folder, not a file", id="move_empty_src"),
-        pytest.param("move", "src", "", "Cannot write to the store root", id="move_empty_dst"),
-        pytest.param("copy", "", "dst", "store root is a folder, not a file", id="copy_empty_src"),
-        pytest.param("copy", "src", "", "Cannot write to the store root", id="copy_empty_dst"),
+        pytest.param("move", "", "dst", "Source path must not be empty", id="move_empty_src"),
+        pytest.param("move", "src", "", "Destination path must not be empty", id="move_empty_dst"),
+        pytest.param("copy", "", "dst", "Source path must not be empty", id="copy_empty_src"),
+        pytest.param("copy", "src", "", "Destination path must not be empty", id="copy_empty_dst"),
     ],
 )
 def test_move_copy_empty_paths(mb: MemoryBackend, op: str, src: str, dst: str, match: str) -> None:
@@ -191,7 +187,7 @@ def test_move_copy_empty_paths(mb: MemoryBackend, op: str, src: str, dst: str, m
 def test_dst_is_directory(mb: MemoryBackend, op: str) -> None:
     mb.write("src", b"data")
     mb.write("dst/child", b"nested")
-    with pytest.raises(InvalidPath, match="Is a folder, not a file"):
+    with pytest.raises(InvalidPath, match="exists as a directory"):
         getattr(mb, op)("src", "dst")
 
 
@@ -209,14 +205,14 @@ def test_move_same_path_exists(mb: MemoryBackend) -> None:
 
 @pytest.mark.spec("MEM-016")
 def test_move_same_path_not_found(mb: MemoryBackend) -> None:
-    with pytest.raises(NotFound, match="Not found"):
+    with pytest.raises(NotFound, match="Source not found"):
         mb.move("missing", "missing")
 
 
 @pytest.mark.spec("MEM-016")
 def test_move_same_path_directory_raises_invalid_path(mb: MemoryBackend) -> None:
     mb.write("a/b/c", b"data")
-    with pytest.raises(InvalidPath, match="Is a folder, not a file"):
+    with pytest.raises(InvalidPath, match="Source is a directory"):
         mb.move("a/b", "a/b")
 
 
@@ -247,28 +243,8 @@ class TestMemoryListingCorrectness:
     @pytest.mark.spec("BK-006")
     def test_open_atomic_empty_path_raises_invalid_path(self, mb: MemoryBackend) -> None:
         """open_atomic('') raises InvalidPath — empty path is invalid for file ops."""
-        with pytest.raises(InvalidPath, match="Cannot write to the store root"), mb.open_atomic(""):
+        with pytest.raises(InvalidPath, match="empty"), mb.open_atomic(""):
             pass
-
-    @pytest.mark.spec("SAW-012")
-    def test_open_atomic_refuses_an_existing_file_on_entry(self, mb: MemoryBackend) -> None:
-        """Without overwrite an existing file is refused before the body runs, not at commit."""
-        mb.write("f.txt", b"old")
-        entered = False
-        with pytest.raises(AlreadyExists), mb.open_atomic("f.txt"):
-            entered = True
-        assert entered is False
-        assert mb.read_bytes("f.txt") == b"old"
-
-    @pytest.mark.spec("SAW-012")
-    def test_open_atomic_buffers_in_memory_never_on_disk(self, mb: MemoryBackend) -> None:
-        """The temporary is the driver's own buffer, so nothing spills to a file."""
-        import tempfile
-
-        with mb.open_atomic("f.bin") as stream:
-            assert not isinstance(stream, tempfile.SpooledTemporaryFile)
-            stream.write(b"x" * 10)
-        assert mb.read_bytes("f.bin") == b"x" * 10
 
     @pytest.mark.spec("BK-123")
     @pytest.mark.spec("MEM-025")
@@ -481,77 +457,6 @@ class TestMemoryConstruction:
         mb = MemoryBackend()
         mb.write("c.txt", b"x")  # top-level file: no intermediate folders created
         assert repr(mb) == "MemoryBackend(files=1, folders=0)"
-
-    @pytest.mark.spec("MEM-004")
-    def test_repr_does_not_wait_for_the_lock(self) -> None:
-        # A debugger evaluates repr in a thread that may be paused inside a locked
-        # step; the lock is not reentrant, so repr must not take it.
-        mb = MemoryBackend()
-        mb.write("c.txt", b"x")
-        lock = mb._driver._lock  # type: ignore[attr-defined]
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            lock.acquire()
-            try:
-                shown = pool.submit(repr, mb).result(timeout=5)
-            finally:
-                lock.release()
-        assert shown == "MemoryBackend(files=1, folders=0)"
-
-
-class TestMemoryCapabilityOverride:
-    """MEM-003: a subclass's ``CAPABILITIES`` is the set the store gates on, in both runtimes."""
-
-    @staticmethod
-    def _narrowed(base: type) -> Any:
-        class Narrow(base):  # type: ignore[misc, valid-type]
-            CAPABILITIES = CapabilitySet({Capability.READ, Capability.WRITE, Capability.LIST})
-
-        return Narrow()
-
-    @pytest.mark.spec("MEM-003")
-    @pytest.mark.parametrize("base", [MemoryBackend, AsyncMemoryBackend], ids=["sync", "async"])
-    def test_a_narrowed_set_is_the_declared_one(self, base: type) -> None:
-        backend = self._narrowed(base)
-        assert backend.capabilities.supports(Capability.WRITE)
-        assert not backend.capabilities.supports(Capability.COPY)
-
-    @pytest.mark.spec("MEM-003")
-    def test_a_narrowed_set_gates_the_store(self) -> None:
-        store = Store(backend=self._narrowed(MemoryBackend))
-        store.write("a", b"x")
-        with pytest.raises(CapabilityNotSupported):
-            store.copy("a", "b")
-
-    @pytest.mark.spec("MEM-003", "BE-021")
-    @pytest.mark.parametrize("base", [MemoryBackend, AsyncMemoryBackend], ids=["sync", "async"])
-    def test_a_set_the_driver_cannot_back_is_refused_at_construction(self, base: type) -> None:
-        class Overclaim(base):  # type: ignore[misc, valid-type]
-            CAPABILITIES = CapabilitySet(set(Capability))
-
-        with pytest.raises(ValueError, match="GLOB"):
-            Overclaim()
-
-    @pytest.mark.spec("MEM-003")
-    def test_a_capability_construction_does_not_gate_is_taken_as_declared(self) -> None:
-        # Only COPY, MOVE, ATOMIC_MOVE, ATOMIC_WRITE and GLOB need a backer.
-        class WithLazyRead(MemoryBackend):
-            CAPABILITIES = CapabilitySet({*MemoryBackend.CAPABILITIES, Capability.LAZY_READ})
-
-        assert WithLazyRead().capabilities.supports(Capability.LAZY_READ)
-
-    @pytest.mark.spec("MEM-003")
-    def test_a_capabilities_property_override_never_reaches_construction(self) -> None:
-        # The override is read after construction checked the driver's set, so an
-        # overclaim builds and fails at the call instead.
-        class PropertyGlob(MemoryBackend):
-            @property
-            def capabilities(self) -> CapabilitySet:
-                return CapabilitySet({*MemoryBackend.CAPABILITIES, Capability.GLOB})
-
-        backend = PropertyGlob()
-        assert backend.capabilities.supports(Capability.GLOB)
-        with pytest.raises(CapabilityNotSupported):
-            list(backend.glob("*"))
 
 
 class TestMemoryRegistration:

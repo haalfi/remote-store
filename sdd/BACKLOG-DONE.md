@@ -4,12 +4,14 @@
 Completed items, newest first. All items must use `[x]` status.
 Active work lives in [BACKLOG.md](BACKLOG.md).
 
-Three outcomes land here. Most entries are **work that shipped**, filed under
+Four outcomes land here. Most entries are **work that shipped**, filed under
 the release that carried it. Two sections hold retired IDs instead:
 [§ Decided against](#decided-against), items removed without being implemented,
 and [§ Absorbed](#absorbed), IDs folded into a surviving item whose work is
 still open. In both, `[x]` is this file's structural convention, not a claim the
-work happened — read the line.
+work happened — read the line. [§ Frozen](#frozen) holds work that was done and
+then left master with RFC-0025's revert: it is done, but on the branch
+`frozen/kernel-driver`, and no release ships it.
 
 Every retired ID gets an entry in one of the two, for two reasons: an inbound
 citation anywhere in `sdd/` still resolves, and `gen_backlogid.py` counts the
@@ -24,11 +26,19 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
-- [x] **BK-448 — The async kernel leaves a caller's content iterator suspended when it refuses a chunk or the write fails** → **BK-449**, whose exit owners include it (the kernel closes what it abandons, or the caller owns it). Filed by BUG-335 (PR #1156); absorbed when audit-023's items were filed. Dossier: [BK-449](backlog/bk-449-interaction-protocol-states.md).
+- [x] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes** → **BK-489**: its whole subject is the D3 steps, frozen by RFC-0025 D7. Dossier: [BK-390](backlog/bk-390-rfc-0017-spec-amendments.md).
+- [x] **BK-439 — `glob` on the kernel skips the store tree's flat rules, so a flat glob can match below an item** → **BK-489**: its whole subject is the kernel's `glob`, frozen by RFC-0025 D7.
+- [x] **BK-446 — No driver exercises the kernel's `glob`, because `MemoryDriver` declares no `GLOB`** → **BK-489**: its whole subject is the kernel and its Memory driver, frozen by RFC-0025 D7.
+- [x] **BK-455 — The `Session` has obligations in BE-033 but no state set, and its close/run race no model** → **BK-489**: its whole subject is the `Session`, frozen with BE-033 by RFC-0025 D7.
+- [x] **BK-434 — RFC-0021's encodings are verified in `StoreTree.dfy` alone, so the trait's operations are not refined against them** → **BK-489**: `StoreTree.dfy` and the kernel it drifts from are frozen by RFC-0025 D7, which re-checks its `BackendContract.dfy` findings against the model master keeps. Dossier: [BK-434](backlog/bk-434-trait-refinement-against-storetree.md).
+- [x] **BK-450 — The driver boundary has no single enforcement point, so each kernel site re-checks a driver by hand** → **BK-489**: its whole subject is the driver boundary, frozen by RFC-0025 D7; its T1 is BUG-341, and its decision log `062e5181-cc50-5b17-963f-e9da78bad8ee` is cited in the host's dossier. Dossier: [BK-450](backlog/bk-450-driver-boundary-enforcement.md).
+- [x] **BK-467 — Rule 4 cannot let the Dafny lifetime model or kernel-cell marks govern a clause** → **BK-489**: no Dafny lifetime model or BE-03x mark is left on master for Rule 4 to admit (RFC-0025 D7).
+- [x] **BK-435 — Spec 051's store tree is not yet tied to the store's operations, and `StoreTree.dfy` §12 carries no `@spec` tags** → **BK-489**: its open work is `StoreTree.dfy` §12 and the Dafny operations after BK-434, which RFC-0025 D7 parks with that model.
+- [x] **BK-448 — The async kernel leaves a caller's content iterator suspended when it refuses a chunk or the write fails** → **BK-489**, as a kernel-only finding. Absorbed first into BK-449, whose exit owners include it (the kernel closes what it abandons, or the caller owns it), which closed it on the kernel; BK-449 is frozen (RFC-0025 D7). Filed by BUG-335 (PR #1156). Dossier: [BK-449](backlog/bk-449-interaction-protocol-states.md).
 - [x] **BK-447 — A glob pattern reads `\` unlike a path: `exists("d\\a.csv")` is `True`, `glob("d\\*.csv")` is `[]`** → **BK-451**, one row of its dialect decision. Absorbed when audit-023's items were filed. Dossier: [BK-451](backlog/bk-451-glob-tree-definition.md).
-- [x] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`** → **BK-394**, its Memory half, and **BUG-300**, its SQLBlob half, each carrying the marker. Filed by BL-011 (PR #1054), absorbed into BK-395 in BK-389's planning PR (#1055) at the maintainer's request; BK-395 decided the fix (the kernel refuses a backslash before the driver) and closed in PR #1061, which moved the open work to those two hosts.
-- [x] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly** → **BK-389**, as fake-driver cells over an absent container. Dossier: [ID-261](backlog/id-261-root-order-unobservable.md).
-- [x] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps** → **BK-394**, which rewrites the guide as a driver. Dossier: [BK-325](backlog/bk-325-custom-backend-guide-gaps.md).
+- [x] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`** → **BUG-300**, both halves, carrying the marker. Filed by BL-011 (PR #1054), absorbed into BK-395 in BK-389's planning PR (#1055) at the maintainer's request; BK-395 decided the fix (the kernel refuses a backslash before the driver) and closed in PR #1061, which moved the Memory half to BK-394 and the SQLBlob half to BUG-300. BK-394's fix is frozen by RFC-0025, so BUG-300 holds the Memory half again.
+- [x] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly** → **BK-345**, as a registry cell over an absent container. First absorbed into BK-389 as fake-driver cells; RFC-0025 froze those cells with the kernel. Dossier: [ID-261](backlog/id-261-root-order-unobservable.md).
+- [x] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps** → **BK-332**, whose rehearsal checks them. First absorbed into BK-394, which rewrote the guide as a driver; the guide reverted with RFC-0025. Dossier: [BK-325](backlog/bk-325-custom-backend-guide-gaps.md).
 - [x] **BUG-241 — `SQLBlobBackend` builds prefix `LIKE` patterns without escaping `_` and `%`, so listings and folder deletes reach sibling keys** → **BL-011**. Dossier: [BUG-241](backlog/bug-241-sql-like-metacharacters.md).
 - [x] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate** → **BK-333**
 - [x] **BK-337 — Widening an authority doc's scope reaches no row that finds its restating copies** → **BK-346**, instance 5
@@ -298,7 +308,176 @@ if evidence changes; these are retired.
 
 ---
 
+<a id="frozen"></a>
+## Frozen on frozen/kernel-driver (RFC-0025)
+
+Completed work that left master's code with the revert of
+[RFC-0025](rfcs/rfc-0025-freeze-kernel-line.md) D2 and lives on, unchanged, on
+the branch `frozen/kernel-driver`. Each entry is verbatim from § Unreleased:
+the code, specs and tests it names are on that branch, and no 0.33 release
+ships them.
+
+- [x] **BK-449 — No interaction protocol with states joins `Store`, kernel, driver and `Session`**
+  spec: BE-033, BE-020, BE-022, SIO-010, ASYNC-006 · effort: L · audience: library.maintainer, user.api
+  Spec 003 BE-033 states the parties' states, each call per state, every exit's
+  owner and the refusal-timing rule with today's gap, and invariants I1 to I3,
+  proved in `sdd/formal/KernelProtocol.dfy`. The kernel's `unwrap` refuses after a
+  terminal close, the async `read` skips a condemned stream's close, a failed
+  `abort` or temporary delete is logged with its `connection_dead` verdict, and
+  an abandoned async content iterator is closed (was BK-448). Remainder: BK-454
+  (timing, read handle), BK-455 (`Session` states), a BK-450 row. Detail:
+  [dossier](backlog/bk-449-interaction-protocol-states.md). Trace:
+  [bk-449](traces/bk-449-interaction-protocol-states.yml).
+
+- [x] **BUG-335 — `CI Full Matrix` red on 3.13: the none-read cell leaves its async generator for GC**
+  spec: — · effort: S · audience: infra.test
+  `test_a_none_read_is_refused_on_every_write_route[async]` (#1148) abandoned
+  `_none_mid_chunks` suspended once the kernel refused its `None`; its finalizer
+  later failed an unrelated `sync` cell as `PytestUnraisableExceptionWarning`
+  (runs 39013016059 and 39014490746, a different cell each). The cell
+  `aclose()`d it until BK-449 made the kernel close it; the cell now asserts
+  that. Whether the kernel should: BK-448, absorbed into BK-449. Trace:
+  [bug-335](traces/bug-335-none-read-agen-gc-flake.yml).
+
+- [x] **BK-405 — `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier**
+  spec: GLOB-007, GLOB-010, GLOB-011, GLOB-012, GLOB-014 · effort: S · audience: user.api, library.maintainer
+  `Store.glob`, `AsyncStore.glob` and the fallback read a pattern as spec 004
+  reads a path (`_glob.normalize_pattern`): a leading `/`, `//` and `.` mean
+  the canonical spelling under every root, and `..` or a null byte is
+  `InvalidPath` on every backend. Breaking: on master such a pattern matched
+  nothing, raised `InvalidPath` or, on Local with a null byte, raised a raw
+  `ValueError`, by backend, root and position (measured in the trace); the
+  migration guide's v0.33.0 to v1.0.0 section says so. Spec 018
+  GLOB-007, GLOB-011; STORE-018, ASYNC-053. Cross-tier
+  cells in `tests/ext/test_glob.py`. Co-shipped: BUG-298. Detail:
+  [dossier](backlog/bk-405-ext-glob-fallback-tier-split.md). Trace:
+  [bk-405](traces/bk-405-glob-pattern-rule.yml).
+
+- [x] **BUG-329 — Metadata that is not a mapping, passed straight to a kernel class, fails inside `put` or is stored as a dict**
+  spec: WR-010, BE-030, MEM-020 · effort: S · audience: user.api
+  `metadata` that is neither `None` nor a `Mapping`, a falsy one included, is a
+  `ValueError` ahead of the `USER_METADATA` check, in the kernel's WR-010 gate
+  (before any I/O, so no parent folder is made) and in `Store`'s validation,
+  which `AsyncStore` and `ext.write` share. Breaking for `Store`, which took
+  `[]`, `0` or `""` for no metadata; the migration guide's v0.33.0 to v1.0.0
+  section says so. Spec 003 BE-030, 045 WR-011, 013 MEM-020. Co-shipped: BUG-330, BUG-331, BUG-333. Trace:
+  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
+
+- [x] **BUG-331 — A kernel driver that reads content with one unsized `read()` stores a truncated file from a non-blocking stream**
+  spec: BE-030 · effort: S · audience: library.maintainer, user.api_docs
+  The kernel's content proxy answers an unsized `read` and `readall` by
+  checked sized reads of the caller's stream, so a driver reading in full, the
+  guide's included, refuses a `None` mid-stream. Line reads stay outside the
+  guarantee, stated in BE-030 § Content. Trace:
+  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
+
+- [x] **BUG-333 — `open_atomic`'s two routes disagree on a strided `memoryview`: the handle route stores it, the spool refuses it as Python's files do; both now refuse it**
+  spec: SAW-013, BE-008 · effort: S · audience: user.api
+  Settled the other way: the kernel's handle-route stream takes a write
+  through a `BytesIO`, so a buffer that is not C-contiguous is refused with its
+  exporter's own error (`BufferError` for a `memoryview`, `ValueError` for a
+  numpy array), as the spool, `BytesIO` and `open(..., "wb")` do (measured,
+  3.13), and as v0.33.0's `MemoryBackend` `BytesIO` did. Spec 003 BE-030, 013
+  MEM-020. Trace:
+  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
+
+- [x] **BK-441 — A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing**
+  spec: BE-021, BE-030 · effort: S · audience: user.api_docs, library.maintainer
+  Construction refuses, with a `ValueError` naming it, a required primitive a
+  driver lacks or inherits as the protocol's own body; `probe` alone may be
+  inherited, as the exemption from probing, but not left out. The required set is derived from
+  the protocol, so the generated sync twin checks `Driver`'s. Spec 003 BE-030,
+  `drivers.md`, the guide and the kernel docstrings state it. Co-shipped:
+  BK-442, BUG-328, BK-440. Trace:
+  [bk-441](traces/bk-441-memory-driver-template.yml).
+
+- [x] **BK-442 — `from remote_store.drivers import Driver` imports the whole async package and its cloud SDKs**
+  spec: — · effort: S · audience: user.api
+  `remote_store.drivers` resolves `AsyncDriverBackend` through a module
+  `__getattr__` and lists it in `__dir__`, so importing the sync names loads
+  no `remote_store.aio` module (`tests/test_drivers_exports.py`). Trace:
+  [bk-441](traces/bk-441-memory-driver-template.yml).
+
+- [x] **BUG-328 — Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through, and the sync driver stores a truncated file from a stream whose read answers `None`**
+  spec: MEM-013, MEM-020 · effort: S · audience: user.api
+  The kernel hands every driver a `bytes` copy of a buffer, and of a buffer a
+  content stream yields; content that is no bytes source is a `TypeError`
+  after WR-010's gate and before any I/O, and a stream yielding non-bytes
+  (`None` included, which a sized read loop took for the end), a `readinto`
+  answering no count, a `readlines` answering no list, or an exception whose
+  class refuses new attributes, is
+  the caller's error passed through verbatim. None of them reaches `classify`.
+  Public `WritableContent` is unchanged. Spec 003 BE-030 § Content, MEM-020.
+  Trace: [bk-441](traces/bk-441-memory-driver-template.yml). Follow-up #1148.
+
+- [x] **BK-440 — `BackendContract.dfy`'s `Write` ranks WR-010's metadata gate below the type and overwrite checks the kernel answers after it**
+  spec: BE-030, WR-010 · effort: S · audience: library.maintainer
+  `Write` ranks the gate after the root and ahead of the observed checks, with
+  an unchanged-state frame, in the contract and both `MemoryBackend.dfy`
+  refinements; the compiled oracle is regenerated, and spec 003 BE-030 no
+  longer records a departure. Trace:
+  [bk-441](traces/bk-441-memory-driver-template.yml).
+
+- [x] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
+  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api, user.api_docs, contributor.process
+  `MemoryBackend` and `AsyncMemoryBackend` run on the contract kernel over
+  `MemoryDriver` and `AsyncMemoryDriver`, one lock-free `MemoryTree` under
+  each runtime's lock; names, imports and constructors kept. The kernel is
+  public as `remote_store.drivers`, and a caller's content error now passes
+  its choke point verbatim (ASYNC-091). ADR-0042, RFC-0017 and the new
+  ADR-0047 (RFC-0021's stances) are Accepted; specs 003, 005, 007, 010, 013,
+  022, 026, 029 and 037 carry their placements, `TESTING.md` Rule 13 is
+  stated over the driver's probe, and `BackendContract.dfy`'s `DeleteFolder`
+  is guarded by `CanonicalUnder`. The custom-backend guide teaches a driver.
+  New Memory cells: `tests/backends/memory/test_kernel_cells.py`. Item 7's
+  items carry their D3 placement in their dossiers. Co-shipped: BK-398.
+  Trace: [bk-394](traces/bk-394-memory-drivers-accept-adr-0042.yml). Detail:
+  [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md).
+
+- [x] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
+  spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, BE-030, BE-031, BE-032, ERR-001, ERR-009, DEPTH-003, PING-002 · effort: L · audience: library.maintainer, infra.test
+  The contract kernel, private under `src/remote_store/_kernel/`: the async
+  core and driver protocols, the sync twin `scripts/gen_sync_kernel.py`
+  generates with `unasync` (`--check` in `preflight`), and each runtime's own
+  layer. Spec 003 gains BE-030 (key rule), BE-031 (`delete_folder`), BE-032
+  (the store tree, RFC-0021's Appendix A, which the kernel's probes follow)
+  and BE-017's aggregation rule. Tests: `tests/_kernel/`, both runtimes, the
+  `delete_folder` cells checked against BK-396's decided model and BE-032's
+  two generated suites. Remainder: BK-394. Trace:
+  [bk-389](traces/bk-389-kernel-step-1.yml). Detail:
+  [dossier](backlog/bk-389-kernel-step-1-memory.md).
+
+- [x] **BK-432 — No logical model says what a key resolves to, so every operation re-derives it from driver refusals**
+  spec: BE-004, BE-005, BE-008, BE-013, BE-014, BE-017, BE-021, BE-030, BE-031, BE-032 · effort: L · audience: library.maintainer, user.api, contributor.process
+  RFC-0021 (accepted 2026-10-13, `StoreTree.dfy` verifying it) landed as spec
+  003's BE-032 with BK-389's kernel PR: one tree (spec 051), a partial
+  `decode` per encoding, one result table and one refusal table per
+  namespace, which BE-030's **What a key resolves to** and BE-031's probe rule
+  now point to. Links (A.7) are stated but wait for the first driver with links;
+  follow-ups BK-433, BK-434, BK-436, BK-438. Traces:
+  [bk-432](traces/bk-432-key-resolution-rfc.yml),
+  [bk-389](traces/bk-389-kernel-step-1.yml).
+
+- [x] **BK-399 — A stored key holding a backslash has no kernel answer, so migration may strand it**
+  spec: BE-025, BE-029, BE-030 · effort: S · audience: library.maintainer, user.api
+  Decided in BK-389's kernel PR and encoded there: a listed key the key rule
+  would refuse or rewrite is omitted from every listing, `glob` and the
+  folder aggregate, and logged; it stays reachable through addressing and
+  `unwrap()`. BE-030 states it; BK-389's dossier, decision 6, records it.
+  Reaches users when a class migrates (BK-394 for Memory).
+
+---
+
 ## Unreleased
+
+- [x] **BK-488 — Master carries a frozen contract kernel that no v1 flow will keep, so its code is not 0.33's**
+  spec: — · effort: L · audience: library.maintainer, contributor.process, user.api_docs
+  RFC-0025 (PR #1180) froze the kernel line on `frozen/kernel-driver` at 814c1f6; this PR
+  returns `src/` and the library tests to v0.33.0 plus BUG-280, BUG-298 and BUG-330, removes
+  specs 052 and 053 (BE-030 to BE-033 retired in the ground register), the kernel's Dafny models,
+  tooling and driver docs, and moves 14 done entries to § Frozen. Class P items went to the new
+  host BK-489. Traces: [rfc](traces/bk-488-freeze-kernel-rfc.yml),
+  [revert](traces/bk-488-revert-kernel.yml).
 
 - [x] **BK-486 — The decision log records session chores, so every commit needs a hand cleanup**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
@@ -315,6 +494,7 @@ if evidence changes; these are retired.
   repository it commits to; `--no-verify` is denied.
   Traces: [bk-486](traces/bk-486-decision-log-chores.yml),
   [gate `-C`](traces/bk-486-gate-git-c.yml).
+
 - [x] **BK-481 — `/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   A local `/rvw-pr 1173` returned six findings unposted: no MCP server here, and
@@ -323,6 +503,7 @@ if evidence changes; these are retired.
   reviewer needs no temp file and a body is never shell-expanded or rewritten
   by `-F`. Probed on #1173 and #1174, probes deleted. Trace:
   [bk-481](traces/bk-481-rvw-pr-gh-post.yml).
+
 - [x] **BK-464 — No review pass checks that a durable doc says one thing, first, in its own place**
   spec: — · effort: XS · audience: contributor.process
   A three-line last pass (Rules 7, 2, 4 and principle 8) found on PR #1166 what three
@@ -386,18 +567,6 @@ if evidence changes; these are retired.
   redirects, replaced `cmd && break || sleep` with `if cmd; then break; fi`, and
   dropped the opt-out. Trace: [bk-458](traces/bk-458-workflow-shellcheck.yml).
 
-- [x] **BK-449 — No interaction protocol with states joins `Store`, kernel, driver and `Session`**
-  spec: BE-033, BE-020, BE-022, SIO-010, ASYNC-006 · effort: L · audience: library.maintainer, user.api
-  Spec 003 BE-033 states the parties' states, each call per state, every exit's
-  owner and the refusal-timing rule with today's gap, and invariants I1 to I3,
-  proved in `sdd/formal/KernelProtocol.dfy`. The kernel's `unwrap` refuses after a
-  terminal close, the async `read` skips a condemned stream's close, a failed
-  `abort` or temporary delete is logged with its `connection_dead` verdict, and
-  an abandoned async content iterator is closed (was BK-448). Remainder: BK-454
-  (timing, read handle), BK-455 (`Session` states), a BK-450 row. Detail:
-  [dossier](backlog/bk-449-interaction-protocol-states.md). Trace:
-  [bk-449](traces/bk-449-interaction-protocol-states.yml).
-
 - [x] **BUG-336 — pytest-gremlins 1.11.4's coverage pre-scan dies on `filterwarnings = error`, so every gremlin runs its full scope**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
   1.11.4 starts the pre-scan via `-m pytest_gremlins.coverage.prescan_main`; pytest finds
@@ -406,30 +575,6 @@ if evidence changes; these are retired.
   Runs 38016030800 to 38989738880, mutate step: backends-ssh 139 to 340 min, 48 survivors to 0.
   A message-scoped `filterwarnings` ignore; `TestPrescanStartsUnderProjectFilterwarnings`
   drives the import order. Trace: [bug-336](traces/bug-336-gremlins-prescan-rewrite-warning.yml).
-
-- [x] **BUG-335 — `CI Full Matrix` red on 3.13: the none-read cell leaves its async generator for GC**
-  spec: — · effort: S · audience: infra.test
-  `test_a_none_read_is_refused_on_every_write_route[async]` (#1148) abandoned
-  `_none_mid_chunks` suspended once the kernel refused its `None`; its finalizer
-  later failed an unrelated `sync` cell as `PytestUnraisableExceptionWarning`
-  (runs 39013016059 and 39014490746, a different cell each). The cell
-  `aclose()`d it until BK-449 made the kernel close it; the cell now asserts
-  that. Whether the kernel should: BK-448, absorbed into BK-449. Trace:
-  [bug-335](traces/bug-335-none-read-agen-gc-flake.yml).
-
-- [x] **BK-405 — `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier**
-  spec: GLOB-007, GLOB-010, GLOB-011, GLOB-012, GLOB-014 · effort: S · audience: user.api, library.maintainer
-  `Store.glob`, `AsyncStore.glob` and the fallback read a pattern as spec 004
-  reads a path (`_glob.normalize_pattern`): a leading `/`, `//` and `.` mean
-  the canonical spelling under every root, and `..` or a null byte is
-  `InvalidPath` on every backend. Breaking: on master such a pattern matched
-  nothing, raised `InvalidPath` or, on Local with a null byte, raised a raw
-  `ValueError`, by backend, root and position (measured in the trace); the
-  migration guide's v0.33.0 to v1.0.0 section says so. Spec 018
-  GLOB-007, GLOB-011; STORE-018, ASYNC-053. Cross-tier
-  cells in `tests/ext/test_glob.py`. Co-shipped: BUG-298. Detail:
-  [dossier](backlog/bk-405-ext-glob-fallback-tier-split.md). Trace:
-  [bk-405](traces/bk-405-glob-pattern-rule.yml).
 
 - [x] **BUG-298 — `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`**
   spec: GLOB-014, BE-024 · effort: S · audience: user.api
@@ -448,38 +593,11 @@ if evidence changes; these are retired.
   dropping `{args}` for a script that takes options. It fixed what it found: 3 invisible characters
   on 2 lines, 14 calls and 10 aliases. Pinned by `tests/scripts/test_check_repo_traps.py`.
   Detail: [dossier](backlog/bk-444-repo-traps-lint.md). Trace: [bk-444](traces/bk-444-repo-traps-lint.yml).
-- [x] **BUG-329 — Metadata that is not a mapping, passed straight to a kernel class, fails inside `put` or is stored as a dict**
-  spec: WR-010, BE-030, MEM-020 · effort: S · audience: user.api
-  `metadata` that is neither `None` nor a `Mapping`, a falsy one included, is a
-  `ValueError` ahead of the `USER_METADATA` check, in the kernel's WR-010 gate
-  (before any I/O, so no parent folder is made) and in `Store`'s validation,
-  which `AsyncStore` and `ext.write` share. Breaking for `Store`, which took
-  `[]`, `0` or `""` for no metadata; the migration guide's v0.33.0 to v1.0.0
-  section says so. Spec 003 BE-030, 045 WR-011, 013 MEM-020. Co-shipped: BUG-330, BUG-331, BUG-333. Trace:
-  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
 
 - [x] **BUG-330 — A sync stream read answering `None` through `AsyncBackendSyncAdapter` stores a truncated file**
   spec: BE-030, ASYNC-091 · effort: S · audience: user.api
   The adapter's stream bridge raises `TypeError` on a `None` read instead of
   ending the upload, on `write` and `write_atomic`. Spec 029 ASYNC-091. Trace:
-  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
-
-- [x] **BUG-331 — A kernel driver that reads content with one unsized `read()` stores a truncated file from a non-blocking stream**
-  spec: BE-030 · effort: S · audience: library.maintainer, user.api_docs
-  The kernel's content proxy answers an unsized `read` and `readall` by
-  checked sized reads of the caller's stream, so a driver reading in full, the
-  guide's included, refuses a `None` mid-stream. Line reads stay outside the
-  guarantee, stated in BE-030 § Content. Trace:
-  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
-
-- [x] **BUG-333 — `open_atomic`'s two routes disagree on a strided `memoryview`: the handle route stores it, the spool refuses it as Python's files do; both now refuse it**
-  spec: SAW-013, BE-008 · effort: S · audience: user.api
-  Settled the other way: the kernel's handle-route stream takes a write
-  through a `BytesIO`, so a buffer that is not C-contiguous is refused with its
-  exporter's own error (`BufferError` for a `memoryview`, `ValueError` for a
-  numpy array), as the spool, `BytesIO` and `open(..., "wb")` do (measured,
-  3.13), and as v0.33.0's `MemoryBackend` `BytesIO` did. Spec 003 BE-030, 013
-  MEM-020. Trace:
   [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
 
 - [x] **BUG-332 — `gen_backlogid.py --help` regenerates `sdd/backlogid.json` instead of printing usage**
@@ -505,65 +623,13 @@ if evidence changes; these are retired.
   [bk-431](traces/bk-431-scoped-reviewer-input.yml),
   [bk-431 subagents](traces/bk-431-tokkit-subagents.yml).
 
-- [x] **BK-441 — A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing**
-  spec: BE-021, BE-030 · effort: S · audience: user.api_docs, library.maintainer
-  Construction refuses, with a `ValueError` naming it, a required primitive a
-  driver lacks or inherits as the protocol's own body; `probe` alone may be
-  inherited, as the exemption from probing, but not left out. The required set is derived from
-  the protocol, so the generated sync twin checks `Driver`'s. Spec 003 BE-030,
-  `drivers.md`, the guide and the kernel docstrings state it. Co-shipped:
-  BK-442, BUG-328, BK-440. Trace:
-  [bk-441](traces/bk-441-memory-driver-template.yml).
-
-- [x] **BK-442 — `from remote_store.drivers import Driver` imports the whole async package and its cloud SDKs**
-  spec: — · effort: S · audience: user.api
-  `remote_store.drivers` resolves `AsyncDriverBackend` through a module
-  `__getattr__` and lists it in `__dir__`, so importing the sync names loads
-  no `remote_store.aio` module (`tests/test_drivers_exports.py`). Trace:
-  [bk-441](traces/bk-441-memory-driver-template.yml).
-
-- [x] **BUG-328 — Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through, and the sync driver stores a truncated file from a stream whose read answers `None`**
-  spec: MEM-013, MEM-020 · effort: S · audience: user.api
-  The kernel hands every driver a `bytes` copy of a buffer, and of a buffer a
-  content stream yields; content that is no bytes source is a `TypeError`
-  after WR-010's gate and before any I/O, and a stream yielding non-bytes
-  (`None` included, which a sized read loop took for the end), a `readinto`
-  answering no count, a `readlines` answering no list, or an exception whose
-  class refuses new attributes, is
-  the caller's error passed through verbatim. None of them reaches `classify`.
-  Public `WritableContent` is unchanged. Spec 003 BE-030 § Content, MEM-020.
-  Trace: [bk-441](traces/bk-441-memory-driver-template.yml). Follow-up #1148.
-
-- [x] **BK-440 — `BackendContract.dfy`'s `Write` ranks WR-010's metadata gate below the type and overwrite checks the kernel answers after it**
-  spec: BE-030, WR-010 · effort: S · audience: library.maintainer
-  `Write` ranks the gate after the root and ahead of the observed checks, with
-  an unchanged-state frame, in the contract and both `MemoryBackend.dfy`
-  refinements; the compiled oracle is regenerated, and spec 003 BE-030 no
-  longer records a departure. Trace:
-  [bk-441](traces/bk-441-memory-driver-template.yml).
-
-- [x] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
-  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api, user.api_docs, contributor.process
-  `MemoryBackend` and `AsyncMemoryBackend` run on the contract kernel over
-  `MemoryDriver` and `AsyncMemoryDriver`, one lock-free `MemoryTree` under
-  each runtime's lock; names, imports and constructors kept. The kernel is
-  public as `remote_store.drivers`, and a caller's content error now passes
-  its choke point verbatim (ASYNC-091). ADR-0042, RFC-0017 and the new
-  ADR-0047 (RFC-0021's stances) are Accepted; specs 003, 005, 007, 010, 013,
-  022, 026, 029 and 037 carry their placements, `TESTING.md` Rule 13 is
-  stated over the driver's probe, and `BackendContract.dfy`'s `DeleteFolder`
-  is guarded by `CanonicalUnder`. The custom-backend guide teaches a driver.
-  New Memory cells: `tests/backends/memory/test_kernel_cells.py`. Item 7's
-  items carry their D3 placement in their dossiers. Co-shipped: BK-398.
-  Trace: [bk-394](traces/bk-394-memory-drivers-accept-adr-0042.yml). Detail:
-  [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md).
-
 - [x] **BK-398 — Three round-trip clauses promise `to_key(native_path(k)) == k` verbatim, which `GraphBackend` already breaks**
   spec: NPR-005, NPR-020, BE-029 · effort: S · audience: contributor.process, user.api_docs
   NPR-005, NPR-020 and BE-029 § Round-trip consequence now take BE-025's
   non-canonical exception: a non-canonical key's address inverts to its
-  canonical key, as `GraphBackend` and, with BK-394 in the same PR, both
-  Memory classes answer. Trace:
+  canonical key, as `GraphBackend` answers; the spec edits name Graph alone.
+  (Both Memory classes answered it too with BK-394, shipped in the same PR
+  and frozen by RFC-0025.) Trace:
   [bk-394](traces/bk-394-memory-drivers-accept-adr-0042.yml).
 
 - [x] **BUG-326 — `ship-report` crashes on Windows when a PR comment holds a character cp1252 cannot decode**
@@ -591,38 +657,6 @@ if evidence changes; these are retired.
   in CI stays out (`formal/README.md` § Running the verifier). `README.md`'s
   Quality & Testing now names the axioms and the Alloy and Lean checks. Trace:
   [bk-437](traces/bk-437-formal-restatement-tags.yml).
-
-- [x] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
-  spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, BE-030, BE-031, BE-032, ERR-001, ERR-009, DEPTH-003, PING-002 · effort: L · audience: library.maintainer, infra.test
-  The contract kernel, private under `src/remote_store/_kernel/`: the async
-  core and driver protocols, the sync twin `scripts/gen_sync_kernel.py`
-  generates with `unasync` (`--check` in `preflight`), and each runtime's own
-  layer. Spec 003 gains BE-030 (key rule), BE-031 (`delete_folder`), BE-032
-  (the store tree, RFC-0021's Appendix A, which the kernel's probes follow)
-  and BE-017's aggregation rule. Tests: `tests/_kernel/`, both runtimes, the
-  `delete_folder` cells checked against BK-396's decided model and BE-032's
-  two generated suites. Remainder: BK-394. Trace:
-  [bk-389](traces/bk-389-kernel-step-1.yml). Detail:
-  [dossier](backlog/bk-389-kernel-step-1-memory.md).
-
-- [x] **BK-432 — No logical model says what a key resolves to, so every operation re-derives it from driver refusals**
-  spec: BE-004, BE-005, BE-008, BE-013, BE-014, BE-017, BE-021, BE-030, BE-031, BE-032 · effort: L · audience: library.maintainer, user.api, contributor.process
-  RFC-0021 (accepted 2026-10-13, `StoreTree.dfy` verifying it) landed as spec
-  003's BE-032 with BK-389's kernel PR: one tree (spec 051), a partial
-  `decode` per encoding, one result table and one refusal table per
-  namespace, which BE-030's **What a key resolves to** and BE-031's probe rule
-  now point to. Links (A.7) are stated but wait for the first driver with links;
-  follow-ups BK-433, BK-434, BK-436, BK-438. Traces:
-  [bk-432](traces/bk-432-key-resolution-rfc.yml),
-  [bk-389](traces/bk-389-kernel-step-1.yml).
-
-- [x] **BK-399 — A stored key holding a backslash has no kernel answer, so migration may strand it**
-  spec: BE-025, BE-029, BE-030 · effort: S · audience: library.maintainer, user.api
-  Decided in BK-389's kernel PR and encoded there: a listed key the key rule
-  would refuse or rewrite is omitted from every listing, `glob` and the
-  folder aggregate, and logged; it stays reachable through addressing and
-  `unwrap()`. BE-030 states it; BK-389's dossier, decision 6, records it.
-  Reaches users when a class migrates (BK-394 for Memory).
 
 - [x] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**
   spec: — · effort: S · audience: contributor.process, infra.test

@@ -72,6 +72,17 @@ the conformance registry. *Corrected 2026-10-15: BK-394 left the registry
 constructing `MemoryBackend()`, so the precondition is the first PR that
 registers drivers there, as ID-244's entry says.*
 
+## Correction (2026-10-25, RFC-0025)
+
+[RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) D7 froze the kernel on
+`frozen/kernel-driver`, BK-389's fake-driver cells and the D3 steps with it, so
+the 2026-10-02 re-scope above no longer holds: the scope is again the one
+conformance cell parametrised over the `Backend` registry, as first written.
+ID-261, absorbed into BK-389 at that re-scope as fake-driver cells over an
+absent container, is absorbed here instead: an absent-container fixture is the
+one state that separates BE-029's orders
+([ID-261's dossier](id-261-root-order-unobservable.md)).
+
 ## Moved out of spec 003, 2026-10-19
 
 Verbatim from `sdd/specs/003-backend-adapter-contract.md` at master

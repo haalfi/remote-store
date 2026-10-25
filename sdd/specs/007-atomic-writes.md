@@ -8,7 +8,6 @@ Atomic writes ensure that a file is either fully written or not written at all. 
 
 **Invariant:** `write_atomic(path, content, overwrite=False)` writes content to a temporary location, then atomically renames it to the target path.
 **Postconditions:** From a reader's perspective, the file transitions from non-existent (or old content) to new content in a single operation. No partial content is ever visible.
-**On the kernel:** for a class on the contract kernel ([053](053-contract-kernel.md#contract-kernel)), `write_atomic` is the kernel's, chosen from the driver's declarations in this order: `put` where the driver declares `put_is_atomic`; else its `open_write` handle, committed; else a temporary key and the driver's `rename`, which must be able to replace. The temporary and its promotion are the kernel's; the kernel refuses to construct over a driver declaring `ATOMIC_WRITE` with none of the three. Both Memory classes take the first route: their drivers declare `put_is_atomic`, so `write_atomic` is `put` under the driver's lock, with no temporary ([013-memory-backend.md](013-memory-backend.md) MEM-013).
 
 ## AW-002: Capability Gate
 

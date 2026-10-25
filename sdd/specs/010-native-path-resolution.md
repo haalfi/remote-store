@@ -100,8 +100,7 @@ path cannot invert to two spellings. A non-canonical key is the other exception,
 [BE-025](003-backend-adapter-contract.md#be-025-native_path)'s: where
 `native_path` normalises, its address inverts to the canonical key, so
 `"d//f"`, `"d/./f"` and `"d/"` round-trip to `"d/f"`, `"d/f"` and `"d"`, and
-`"./"` to `""`. `GraphBackend` normalises so, and both Memory classes do on the
-contract kernel. All backends with a native root
+`"./"` to `""`. `GraphBackend` normalises so. All backends with a native root
 (Local, SFTP, S3, Azure) special-case the bare root to `""`; see BK-234.
 
 ### NPR-006: LocalBackend.to_key
@@ -284,9 +283,7 @@ returns its canonical key where `native_path` normalises (NPR-005,
 [BE-025](003-backend-adapter-contract.md#be-025-native_path)).
 **Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket),
 `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path),
-`AzureBackend` (prepends container). `MemoryBackend` and `AsyncMemoryBackend`
-take the contract kernel's normalisation over their driver's `native_path`,
-which is the identity on a canonical key.
+`AzureBackend` (prepends container). `MemoryBackend` inherits the identity default.
 
 ### NPR-021: Backend.native_path Contract
 

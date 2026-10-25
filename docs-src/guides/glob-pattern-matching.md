@@ -127,12 +127,8 @@ client-side using a regex compiled from the pattern.
 Patterns like `**error` where `**` is embedded within a segment raise
 `ValueError`.
 
-A pattern is read the way a path is, on every backend: `"/data/*.csv"`,
-`"./data/*.csv"` and `"data//*.csv"` all mean `"data/*.csv"`, and a `..`
-segment raises `InvalidPath`. Unlike a path, a pattern keeps a backslash as
-written instead of turning it into `/`, and a pattern that names the store
-root (`""`, `"/"`, `"."`) matches nothing instead of raising. Wildcards treat a newline in a key as an
-ordinary character, so `"*.csv"` matches `"a.csv"` but not `"a.csv\n"`.
+Wildcards treat a newline in a key as an ordinary character, so `"*.csv"`
+matches `"a.csv"` but not `"a.csv\n"`.
 
 ## Works with Store.child()
 

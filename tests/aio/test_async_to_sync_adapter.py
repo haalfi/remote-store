@@ -1319,9 +1319,9 @@ class _NoneMidStream(io.RawIOBase):
 
 
 class TestNoneReadIsRefused:
-    """BE-030 § Content, ASYNC-091: a ``None`` read is the caller's error, never the end of the upload."""
+    """ASYNC-091: a ``None`` read is the caller's error, never the end of the upload."""
 
-    @pytest.mark.spec("BE-030", "ASYNC-091")
+    @pytest.mark.spec("ASYNC-091")
     @pytest.mark.parametrize("method", ["write", "write_atomic"])
     @pytest.mark.parametrize("seeded", [False, True], ids=["free", "existing"])
     def test_a_none_read_is_a_type_error_and_stores_nothing(self, method: str, seeded: bool) -> None:

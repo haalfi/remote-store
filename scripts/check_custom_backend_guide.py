@@ -8,22 +8,14 @@ authorities that evolve independently of it, and each has drifted before:
    ``[end:region]`` pair), or the docs build silently renders an empty
    code block. A floor assertion catches the catastrophic case where the
    guide lost its includes entirely.
-2. **The driver protocols** — the guide's quick-reference tables must
-   mirror ``remote_store.drivers``: "Required driver members" lists exactly
-   the methods ``Driver`` declares, each row's parameters matching the
-   protocol signature; "Declared attributes" lists exactly ``Driver``'s
-   annotated attributes plus the optional ones its docstring names
-   (``_OPTIONAL_ATTRIBUTES``); "Optional protocols" lists exactly the sync
-   ``Supports*`` protocols, each row's member matching that protocol's
-   method signature. This is the prose twin of the executable guard in
-   ``tests/test_snippets.py``, which pins the tutorial driver itself to the
-   same signatures. The tables drifted from the ``Backend`` ABC twice when
-   that was the documented route, which is why they are gated at all. Step
-   2's capability table lists exactly the capabilities the kernel's
-   construction check refuses without a backer, each naming what backs it and
-   the setting a backer needs (``rename_replaces = True``, ``put_is_atomic =
-   True``), measured by asking that check (``_construction_terms``). A row repeated
-   in any table fails, since a lookup would keep only one of the two.
+2. **The Backend ABC** — the guide's "Abstract methods (must implement)"
+   table must list exactly ``Backend.__abstractmethods__`` (plus the
+   ``CAPABILITIES`` class attribute), and the "Optional overrides" table
+   must list the public non-abstract ``Backend`` methods, with each row's
+   parameter list matching the ABC signature. This is the prose twin of
+   the executable guard in ``tests/test_snippets.py`` (BUG-235:
+   ``max_depth`` was added to ``list_files`` and the guide never
+   followed; BK-320 found ``resolve()`` missing the same way).
 3. **The conformance suite** — every ``tests/backends/conformance/*.py``
    file the guide names must exist on disk.
 4. **The fixture registry** — the registration section's fenced TOML
@@ -37,15 +29,14 @@ truth (a region calling a nonexistent API) is covered by
 ``tests/test_snippets.py`` and ``hatch run examples``, which execute the
 snippet regions.
 
-Known scope limits, on purpose: only the sync protocols are gated (the
-async twins are generated from the same source, and the guide names their
-differences in prose); the attributes table is membership-checked only,
-since an attribute has no parameters; the optional attributes are a
-hand-kept set, checked only for still being named in ``Driver``'s
-docstring; the protocols table does not gate an optional protocol's extra
-attribute (``rename_replaces``), whose required value the capability table
-gates; and parameter comparison is by NAME only (kinds and defaults
-are covered by the executable guard).
+Known scope limits, on purpose: the abstract table gates every
+``__abstractmethods__`` member, abstract properties included, but the
+optional-overrides table covers plain methods only — non-abstract
+properties, classmethods, and class attributes (e.g.
+``close_is_terminal``) are invisible to ``inspect.isfunction``; the
+``CAPABILITIES`` row is membership-checked but has no parameters to
+compare; and parameter comparison skips property rows and compares by
+NAME only (kinds and defaults are covered by the executable guard).
 
 Wired into ``hatch run lint`` and ``hatch run docs-gate``.
 
@@ -56,9 +47,8 @@ Usage:
 Drift-gate::
 
     kind:       pair
-    compares: docs-src/guides/custom-backend-guide.md ↔ the remote_store.drivers protocols, the
-        kernel's construction check (_check_construction's refusals), the conformance suite
-        files and the fixture loader's closed vocabularies
+    compares: docs-src/guides/custom-backend-guide.md ↔ Backend.__abstractmethods__, the conformance
+        suite files and the fixture loader's closed vocabularies
     domain:     explanation ↔ realization
 """
 
@@ -75,18 +65,19 @@ _GUIDE = _ROOT / "docs-src" / "guides" / "custom-backend-guide.md"
 
 SNIPPET_REF = re.compile(r'--8<--\s+"([^":]+?)(?::([A-Za-z0-9_-]+))?"')
 CONFORMANCE_FILE = re.compile(r"tests/backends/conformance/([A-Za-z0-9_]+\.py)")
-CELL_CODE = re.compile(r"^\s*\[?`([^`]+)`")
-TABLE_CELL_SPLIT = re.compile(r"(?<!\\)\|")
+TABLE_FIRST_CELL_CODE = re.compile(r"^\|\s*\[?`([^`]+)`")
 TOML_FENCE = re.compile(r"```toml\n(.*?)```", re.DOTALL)
 
-_REQUIRED_HEADING = "### Required driver members"
-_ATTRIBUTES_HEADING = "### Declared attributes"
-_PROTOCOLS_HEADING = "### Optional protocols"
+# The one non-abstract member the table documents alongside the ABC surface:
+# the class-level capability declaration (spec 003, BE-003).
+_EXTRA_TABLE_MEMBERS = {"CAPABILITIES"}
 
-# Attributes the kernel reads with a default, so they carry no annotation on
-# ``Driver`` and cannot be derived from it. Each must still be named in the
-# ``Driver`` docstring, which is where the protocol documents them.
-_OPTIONAL_ATTRIBUTES = frozenset({"stream_catch", "size_probe"})
+# Escape hatch for the optional-overrides membership check: whether the
+# tutorial's table must name every public non-abstract method is a
+# judgment call (CONTRIBUTING's backend-order gate deliberately proves
+# order, not membership). Add a method here to exempt it from the
+# missing-row check instead of routing around the gate.
+_OPTIONAL_TABLE_EXEMPT: set[str] = set()
 
 
 def check_snippet_regions(guide_text: str, root: Path) -> list[str]:
@@ -130,17 +121,14 @@ def _parse_member_cell(cell: str) -> tuple[str, list[str] | None]:
     return name.strip(), params
 
 
-def _table_rows(guide_text: str, heading: str) -> list[list[str]]:
-    """The code spans opening each cell of the table rows under *heading*.
+def _table_members(guide_text: str, heading: str) -> dict[str, list[str] | None]:
+    """Extract ``{member: params-or-None}`` from the table under *heading*.
 
-    A row whose first cell opens with no code span (the header, the
-    separator) is skipped; a later cell with none yields ``""``. The scan
-    ends at the next Markdown heading of ANY level (``#``, ``##``,
-    ``####``, ...) so a future subheading inside the section cannot
-    silently absorb an unrelated table into the member set. Cells split on
-    unescaped pipes, so ``bytes \\| BinaryIO`` stays one cell.
+    The scan ends at the next Markdown heading of ANY level (``#``,
+    ``##``, ``####``, ...) so a future subheading inside the section
+    cannot silently absorb an unrelated table into the member set.
     """
-    rows: list[list[str]] = []
+    members: dict[str, list[str] | None] = {}
     in_section = False
     for line in guide_text.splitlines():
         if line.startswith(heading):
@@ -148,205 +136,87 @@ def _table_rows(guide_text: str, heading: str) -> list[list[str]]:
             continue
         if in_section and line.startswith("#"):
             break
-        if not in_section or not line.startswith("|"):
+        if not in_section:
             continue
-        cells = TABLE_CELL_SPLIT.split(line.strip().strip("|"))
-        codes = [m.group(1) if (m := CELL_CODE.match(cell)) else "" for cell in cells]
-        if codes and codes[0]:
-            rows.append(codes)
-    return rows
-
-
-def _own_methods(protocol: type) -> dict[str, list[str]]:
-    """``{method: parameter names without self}`` for the methods *protocol* itself declares."""
-    return {
-        name: [p for p in inspect.signature(member).parameters if p != "self"]
-        for name, member in vars(protocol).items()
-        if inspect.isfunction(member) and not name.startswith("_")
-    }
-
-
-def _membership(listed: set[str], expected: set[str], label: str, what: str) -> list[str]:
-    violations = [f"{label}: missing row for '{missing}'" for missing in sorted(expected - listed)]
-    violations += [f"{label}: row '{stale}' is not {what}" for stale in sorted(listed - expected)]
-    return violations
-
-
-def _param_drift(label: str, name: str, params: list[str] | None, signature: list[str]) -> list[str]:
-    if params != signature:
-        return [f"{label}: '{name}' params {params} != protocol signature {signature}"]
-    return []
-
-
-def check_required_table(guide_text: str) -> list[str]:
-    """The table must list exactly the methods ``Driver`` declares, with their parameters."""
-    from remote_store.drivers import Driver
-
-    rows = _table_rows(guide_text, _REQUIRED_HEADING)
-    if not rows:
-        return [f"required-members table not found (heading '{_REQUIRED_HEADING}' missing?)"]
-
-    label = "required-members table"
-    parsed = [_parse_member_cell(row[0]) for row in rows]
-    table = dict(parsed)
-    duplicates = _duplicates(label, [name for name, _ in parsed])
-    methods = _own_methods(Driver)
-    violations = duplicates + _membership(set(table), set(methods), label, "a method Driver declares")
-    for name in sorted(set(table) & set(methods)):
-        violations += _param_drift(label, name, table[name], methods[name])
-    return violations
-
-
-def check_attributes_table(guide_text: str) -> list[str]:
-    """The table must list ``Driver``'s annotated attributes and the optional ones its docstring names."""
-    from remote_store.drivers import Driver
-
-    rows = _table_rows(guide_text, _ATTRIBUTES_HEADING)
-    if not rows:
-        return [f"attributes table not found (heading '{_ATTRIBUTES_HEADING}' missing?)"]
-
-    label = "attributes table"
-    doc = Driver.__doc__ or ""
-    violations = [
-        f"{label}: optional attribute '{name}' is no longer named in the Driver docstring; "
-        "drop it from _OPTIONAL_ATTRIBUTES"
-        for name in sorted(_OPTIONAL_ATTRIBUTES)
-        if f"``{name}``" not in doc
-    ]
-    expected = set(Driver.__annotations__) | _OPTIONAL_ATTRIBUTES
-    violations += _duplicates(label, [row[0].strip() for row in rows])
-    violations += _membership({row[0].strip() for row in rows}, expected, label, "a Driver attribute")
-    return violations
-
-
-def check_protocols_table(guide_text: str) -> list[str]:
-    """The table must list exactly the sync ``Supports*`` protocols, each with its method's parameters."""
-    from remote_store import drivers
-
-    rows = _table_rows(guide_text, _PROTOCOLS_HEADING)
-    if not rows:
-        return [f"protocols table not found (heading '{_PROTOCOLS_HEADING}' missing?)"]
-
-    label = "protocols table"
-    protocols = {name: getattr(drivers, name) for name in drivers.__all__ if name.startswith("Supports")}
-    listed = {row[0].strip(): (row[1] if len(row) > 1 else "") for row in rows}
-    violations = _duplicates(label, [row[0].strip() for row in rows])
-    violations += _membership(set(listed), set(protocols), label, "a Supports* protocol in remote_store.drivers")
-    for name in sorted(set(listed) & set(protocols)):
-        member, params = _parse_member_cell(listed[name])
-        methods = _own_methods(protocols[name])
-        if member not in methods:
-            violations.append(f"{label}: '{name}' row names '{member}', not one of its methods {sorted(methods)}")
+        match = TABLE_FIRST_CELL_CODE.match(line)
+        if match is None:
             continue
-        violations += _param_drift(label, f"{name}.{member}", params, methods[member])
-    return violations
+        cell = match.group(1)
+        if cell.strip() in {"Member", "---"}:
+            continue
+        name, params = _parse_member_cell(cell)
+        members[name] = params
+    return members
 
 
-_CAPABILITY_HEADER = "| Capability | Backed by |"
-BACKER_NAME = re.compile(r"\b(Supports[A-Za-z]+|put_is_atomic)\b")
+def _check_member_params(table: dict[str, list[str] | None], expected: set[str], label: str) -> list[str]:
+    """Compare each expected table row's parameter list against the ABC signature.
 
-
-def _construction_terms() -> dict[str, dict[str, str | None]]:
-    """``{capability: {backer: the qualifier construction needs, or None}}``, measured by asking construction.
-
-    A bare driver declaring one capability and presenting nothing optional is
-    built for every capability; each one construction refuses is gated, and is
-    backed by every ``Supports*`` protocol (or ``put_is_atomic``) that, added
-    alone, makes construction accept it. A backer's qualifier is the setting it
-    backs the capability only with: ``put_is_atomic = True`` for the attribute,
-    and ``rename_replaces = True`` for a rename that construction refuses when
-    it does not replace (a rename is probed both ways).
+    Rows outside *expected* are skipped here — they are already reported
+    as stale by the membership check. Parameters are compared by NAME
+    only (see the module docstring's scope limits).
     """
-    from remote_store import drivers
-    from remote_store._capabilities import Capability, CapabilitySet
-    from remote_store._kernel._sync.kernel import _check_construction
+    from remote_store import Backend
 
-    protocols = {name: getattr(drivers, name) for name in drivers.__all__ if name.startswith("Supports")}
-    # Construction also refuses a required primitive left out, so the bare driver has them all.
-    required: dict[str, object] = {member: lambda *_a, **_k: None for member in _own_methods(drivers.Driver)}
-
-    def accepted(capability: Capability, extra: dict[str, object]) -> bool:
-        attrs: dict[str, object] = {
-            **required,
-            "name": "probe",
-            "namespace": "flat",
-            "parents": "none",
-            "put_is_atomic": False,
-            "capabilities": CapabilitySet({capability}),
-            **extra,
-        }
-        try:
-            _check_construction(type("_Probe", (), attrs)())  # type: ignore[arg-type]
-        except ValueError:
-            return False
-        return True
-
-    terms: dict[str, dict[str, str | None]] = {}
-    for capability in Capability:
-        if accepted(capability, {}):
-            continue
-        found: dict[str, str | None] = {}
-        if accepted(capability, {"put_is_atomic": True}):
-            found["put_is_atomic"] = "put_is_atomic = True"
-        for name, protocol in protocols.items():
-            stubs: dict[str, object] = {member: lambda *_a, **_k: None for member in _own_methods(protocol)}
-            if name != "SupportsRename":
-                if accepted(capability, stubs):
-                    found[name] = None
-            elif accepted(capability, {**stubs, "rename_replaces": False}):
-                found[name] = None
-            elif accepted(capability, {**stubs, "rename_replaces": True}):
-                found[name] = "rename_replaces = True"
-        terms[capability.name] = found
-    return terms
-
-
-def check_capability_table(guide_text: str) -> list[str]:
-    """Step 2's table must list exactly the capabilities construction gates, each with what backs it."""
-    lines = guide_text.splitlines()
-    try:
-        start = lines.index(_CAPABILITY_HEADER)
-    except ValueError:
-        return [f"capability table not found (header '{_CAPABILITY_HEADER}' missing?)"]
-
-    label = "capability table"
-    rows: dict[str, set[str]] = {}
-    texts: dict[str, str] = {}
     violations: list[str] = []
-    for line in lines[start + 2 :]:
-        if not line.startswith("|"):
-            break
-        first, _, rest = line.strip("|").partition("|")
-        capability = first.strip().strip("`")
-        if capability in rows:
-            violations.append(f"{label}: duplicate row for '{capability}'")
-        rows[capability] = set(BACKER_NAME.findall(rest))
-        texts[capability] = rest
-    terms = _construction_terms()
-    violations += _membership(set(rows), set(terms), label, "a capability construction gates")
-    for capability in sorted(set(rows) & set(terms)):
-        expected = set(terms[capability])
-        if rows[capability] != expected:
-            violations.append(
-                f"{label}: '{capability}' names {sorted(rows[capability])}, but construction accepts {sorted(expected)}"
-            )
-        # A backer that backs the capability only with a setting must say so.
-        violations += [
-            f"{label}: '{capability}' row omits '{qualifier}', which construction needs for {backer}"
-            for backer, qualifier in sorted(terms[capability].items())
-            if qualifier is not None and qualifier not in texts[capability]
-        ]
+    for name, params in sorted(table.items()):
+        if params is None or name not in expected or not hasattr(Backend, name):
+            continue
+        attr = inspect.getattr_static(Backend, name)
+        if isinstance(attr, property):
+            continue
+        abc_params = [p for p in inspect.signature(getattr(Backend, name)).parameters if p != "self"]
+        if params != abc_params:
+            violations.append(f"{label}: '{name}' params {params} != ABC signature {abc_params}")
     return violations
 
 
-def _duplicates(label: str, names: list[str]) -> list[str]:
-    seen: set[str] = set()
-    out = []
-    for name in names:
-        if name in seen:
-            out.append(f"{label}: duplicate row for '{name}'")
-        seen.add(name)
-    return out
+def check_abstract_table(guide_text: str) -> list[str]:
+    """The table must mirror ``Backend.__abstractmethods__`` name-for-name."""
+    from remote_store import Backend
+
+    table = _table_members(guide_text, "### Abstract methods")
+    if not table:
+        return ["abstract-methods table not found (heading '### Abstract methods' missing?)"]
+
+    violations: list[str] = []
+    expected = set(Backend.__abstractmethods__) | _EXTRA_TABLE_MEMBERS
+    listed = set(table)
+    for missing in sorted(expected - listed):
+        violations.append(f"abstract-methods table: missing row for '{missing}'")
+    for stale in sorted(listed - expected):
+        violations.append(f"abstract-methods table: row '{stale}' is not an abstract member of Backend")
+    violations.extend(_check_member_params(table, expected, "abstract-methods table"))
+    return violations
+
+
+def check_optional_overrides_table(guide_text: str) -> list[str]:
+    """The table must mirror the public non-abstract ``Backend`` methods.
+
+    This is the table BK-320 had to hand-repair (``resolve()`` was
+    missing), so it gets the same membership + parameter gating as the
+    abstract table, modulo the ``_OPTIONAL_TABLE_EXEMPT`` escape hatch.
+    """
+    from remote_store import Backend
+
+    table = _table_members(guide_text, "### Optional overrides")
+    if not table:
+        return ["optional-overrides table not found (heading '### Optional overrides' missing?)"]
+
+    violations: list[str] = []
+    abstract = set(Backend.__abstractmethods__)
+    expected = {
+        name
+        for name, member in inspect.getmembers(Backend, predicate=inspect.isfunction)
+        if not name.startswith("_") and name not in abstract
+    }
+    listed = set(table)
+    for missing in sorted(expected - listed - _OPTIONAL_TABLE_EXEMPT):
+        violations.append(f"optional-overrides table: missing row for '{missing}'")
+    for stale in sorted(listed - expected):
+        violations.append(f"optional-overrides table: row '{stale}' is not a public non-abstract Backend method")
+    violations.extend(_check_member_params(table, expected, "optional-overrides table"))
+    return violations
 
 
 def check_conformance_files(guide_text: str, root: Path) -> list[str]:
@@ -410,7 +280,7 @@ def check_registration_toml(guide_text: str, root: Path) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run every check; return 0 if clean, 1 on violations."""
+    """Run all five checks; return 0 if clean, 1 on violations."""
     guide = Path(argv[0]) if argv else _GUIDE
     if not guide.is_file():
         sys.stderr.write(f"error: guide not found: {guide}\n")
@@ -419,10 +289,8 @@ def main(argv: list[str] | None = None) -> int:
 
     violations = [
         *check_snippet_regions(guide_text, _ROOT),
-        *check_required_table(guide_text),
-        *check_attributes_table(guide_text),
-        *check_protocols_table(guide_text),
-        *check_capability_table(guide_text),
+        *check_abstract_table(guide_text),
+        *check_optional_overrides_table(guide_text),
         *check_conformance_files(guide_text, _ROOT),
         *check_registration_toml(guide_text, _ROOT),
     ]
@@ -432,11 +300,11 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(
             "\nThe Build Your Own Backend guide drifted from the code it documents.\n"
             "Update docs-src/guides/custom-backend-guide.md (and its snippet file\n"
-            "examples/snippets/custom_backend_guide.py) to match the driver protocols\n"
-            "in remote_store.drivers, the conformance suite, and the fixture loader.\n"
+            "examples/snippets/custom_backend_guide.py) to match the Backend ABC,\n"
+            "the conformance suite, and the fixture loader.\n"
         )
         return 1
-    print(f"check_custom_backend_guide: {guide.name} is in sync with the driver protocols and conformance suite.")
+    print(f"check_custom_backend_guide: {guide.name} is in sync with the Backend ABC and conformance suite.")
     return 0
 
 

@@ -1,0 +1,144 @@
+id: BK-488
+title: "Master carries a frozen contract kernel that no v1 flow will keep, so its code is not 0.33's"
+trigger: >-
+  RFC-0025 accepted (PR #1180). PR 2 of its delivery: the revert of D2 to D4
+  and D7, its amendment rows, and CHANGELOG [Unreleased] trimmed to what
+  master ships.
+source_items:
+  - BK-488
+audience:
+  - library.maintainer
+  - contributor.process
+  - user.api_docs
+decisions:
+  - sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
+discovery_followups:
+  - BK-489
+orient:
+  - items: [BK-488]
+    verdict: subsumes
+    evidence: >-
+      The orient of PR 1's trace (bk-488-freeze-kernel-rfc.yml) covers the
+      clusters; RFC-0025 D7 records their verdicts. This PR applies them, and
+      D7's query (`hatch run backlog-find "kernel|driver|StoreTree|spec
+      053|spec 052|BE-03[0-3]" --max 300`) was re-run over every open item
+      it lists (phase backlog).
+surprising_ripples:
+  - .github/workflows/codeql.yml
+  - sdd/CI-OPERATIONS.md
+  - scripts/mutate_scopes.py
+  - scripts/fast_gate.py
+  - sdd/research/research-key-model.md
+  - sdd/research/research-store-model-axioms.md
+  - sdd/specs/010-native-path-resolution.md
+  - sdd/specs/013-memory-backend.md
+phases:
+  - id: code
+    name: Return src/ and the library tests to v0.33.0 plus three fixes (D2)
+    steps:
+      - file: "git history v0.33.0..origin/master"
+        section: "per-file commit attribution of src/ and tests/ outside tests/scripts"
+        read_type: gate
+        extract: >-
+          Scratchpad script running `git log --follow` per changed path. Kept from
+          master: BUG-280's `_local.py` and listing-error suite, BUG-330's adapter
+          (`_async_to_sync_adapter.py`, touched only by #1151, whose hunk there is
+          BUG-330's), BUG-298's SQLBlob clause, and test infrastructure changed by
+          non-kernel commits (BUG-301, BUG-314, BUG-315, BK-403, BK-410, BK-419,
+          BK-456 stage one). Hand-applied: BUG-298's `\Z` anchor in `_glob.py` and
+          its tests. BUG-330's test mark loses the retired BE-030
+        outcome: ok
+      - file: "tests/"
+        section: "pytest on the re-applied fixes; then hatch run fast"
+        read_type: verify
+        extract: >-
+          Targeted run 1411 passed; `hatch run fast` FULL green: 11869 passed,
+          983 skipped, 2 xfailed, examples, notebooks, docs build
+        outcome: ok
+  - id: specs
+    name: Rebuild specs 001 to 050 and the formal README (D3)
+    steps:
+      - file: sdd/rfcs/rfc-0025-freeze-kernel-line.md
+        section: "D3"
+        read_type: gate
+        extract: >-
+          Each spec rebuilt as v0.33.0 plus the kept commits' diffs (`git apply
+          --3way`), conflicts resolved by hand. D3's stay-list named neither BK-398
+          nor two 0.33-true MEM edits inside kernel PR #1144; a verification agent
+          found the MEM edits, and I kept BK-398 with GraphBackend alone named
+        outcome: unclear
+      - file: sdd/formal/BackendContract.dfy
+        section: "Write (v0.33.0)"
+        read_type: verify
+        extract: >-
+          v0.33.0's `Write` ranks the WR-010 gate after the type and overwrite
+          checks, so BUG-337's placement of it after the root (written against the
+          kernel's model) leaves; its scope clauses stay, as v0.33.0's backends
+          leave the gate to Store. My first cut dropped the scope too; the
+          verification agent caught it
+        outcome: ok
+      - file: "git diff 4694e7a1c -- sdd/specs/003-backend-adapter-contract.md"
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Every difference from stage one's spec 003 is kernel text, BUG-329, the
+          BUG-337 gate placement or BE-020/BE-028 back in place (agent check)
+        outcome: ok
+  - id: tooling
+    name: Remove kernel-only tooling and docs (D4)
+    steps:
+      - file: pyproject.toml
+        section: "preflight, docs-gate, gen-* scripts, ruff per-file-ignores, dev deps"
+        read_type: reference
+        extract: "gen-sync-kernel, gen-protocol-diagram and unasync leave"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "verify-formal"
+        read_type: reference
+        extract: "StoreTree/KernelProtocol verify lines and the second-oracle step leave; the job stays"
+        outcome: ok
+      - file: .github/workflows/codeql.yml
+        section: "Drop placeholder-body results in kernel protocols"
+        read_type: reference
+        extract: "Kernel-only SARIF filter (#1128); back to v0.33.0, and CI-OPERATIONS loses its paragraph"
+        outcome: ok
+  - id: process
+    name: Apply RFC-0025's amendment rows and D5
+    steps:
+      - file: sdd/observe/ground-register.md
+        section: "Retired IDs; Pointer edits"
+        read_type: gate
+        extract: "BE-030 to BE-033 retired with no successor; spec 051's Layering edit recorded"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release; Phase 1 migration-guide bullet"
+        read_type: gate
+        extract: >-
+          0.33 patches from master; a patch fix's section is `## v0.33.0 to
+          v0.33.1`. The first draft cited RFC IDs, which `check_no_tracker_refs.py`
+          refuses on a published surface
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "R5"
+        read_type: reference
+        extract: >-
+          A break record needs a v1 clause, which no flow has yet, so BK-405 and
+          BUG-329 wait as candidate breaks in the D10 host's dossier
+        outcome: ok
+  - id: backlog
+    name: Apply D7 to every open item the query lists
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "D7 query hits, read per item (agent)"
+        read_type: gate
+        extract: >-
+          Verdicts per item: drop a retired ID, absorb into BK-489, re-scope to
+          v0.33.0 (reproduced on the reverted src where it mattered), or none.
+          D7's 51f2c06 list missed BUG-300 and BK-485; § Absorbed entries whose
+          host froze (BUG-297, ID-261, BK-325, BK-448) were re-hosted
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: gate
+        extract: "Entries for frozen work moved verbatim to § Frozen; CHANGELOG lines left with them"
+        outcome: ok

@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._errors import CapabilityNotSupported, InvalidPath
+from remote_store._errors import CapabilityNotSupported
 from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
@@ -130,39 +130,6 @@ class TestGlobFiles:
             store.write(name, data)
         results = sorted(str(f.path) for f in glob_files(store, "a?.txt"))
         assert results == ["a1.txt", "a2.txt", "ab.txt"]
-
-    @pytest.mark.spec("GLOB-007")
-    @pytest.mark.spec("GLOB-011")
-    @pytest.mark.parametrize("tier", ["native", "fallback"])
-    @pytest.mark.parametrize("root_path", ["", "data"], ids=["empty_root", "data_root"])
-    @pytest.mark.parametrize(
-        ("pattern", "expected"),
-        [
-            pytest.param("docs/*.md", ["docs/guide.md", "docs/readme.md"], id="canonical"),
-            pytest.param("/docs/*.md", ["docs/guide.md", "docs/readme.md"], id="leading_slash"),
-            pytest.param("./docs/*.md", ["docs/guide.md", "docs/readme.md"], id="leading_dot"),
-            pytest.param("docs//*.md", ["docs/guide.md", "docs/readme.md"], id="double_slash"),
-            pytest.param("docs/./*.md", ["docs/guide.md", "docs/readme.md"], id="inner_dot"),
-            pytest.param("docs/*/.", ["docs/guide.md", "docs/readme.md"], id="trailing_dot"),
-            pytest.param("/", [], id="root"),
-        ],
-    )
-    def test_tiers_agree_on_pattern_spelling(
-        self, tmp_path: Path, tier: str, root_path: str, pattern: str, expected: list[str]
-    ) -> None:
-        """BK-405: both tiers read a pattern through one rule, under any root."""
-        backend = LocalBackend(root=str(tmp_path)) if tier == "native" else MemoryBackend()
-        store = Store(backend=backend, root_path=root_path)
-        assert store.supports(Capability.GLOB) is (tier == "native")
-        _populate(store)
-        assert sorted(str(f.path) for f in glob_files(store, pattern)) == expected
-
-    @pytest.mark.spec("GLOB-011")
-    @pytest.mark.parametrize("pattern", ["../*.csv", "logs/../*.csv", "*.csv\0"])
-    def test_fallback_refuses_like_a_path(self, mem_store: Store, pattern: str) -> None:
-        """BK-405: the fallback refuses what Store.glob refuses."""
-        with pytest.raises(InvalidPath):
-            list(glob_files(mem_store, pattern))
 
     @pytest.mark.spec("GLOB-014")
     def test_fallback_excludes_trailing_newline_key(self) -> None:

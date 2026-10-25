@@ -728,8 +728,6 @@ jobs:
           dafny verify sdd/formal/DepthCounting.dfy
           dafny verify sdd/formal/ResourceSafety.dfy
           dafny verify sdd/formal/RootPath.dfy
-          dafny verify sdd/formal/StoreTree.dfy
-          dafny verify sdd/formal/KernelProtocol.dfy
       # Also runs in the lint job (CODE_PAT). Wired here too so a
       # BackendContract.dfy-only change (FORMAL_PAT, not CODE_PAT) still checks
       # Python ↔ Dafny capability parity. Stdlib-only; system python3 suffices.
@@ -751,11 +749,10 @@ jobs:
       # system python3 suffices.
       - name: Check Dafny twin parity
         run: python3 scripts/check_dafny_twin_parity.py
-      # The compiled oracles (sdd/formal/MemoryBackend-py/, KernelProtocol-py/)
-      # are generated from their .dfy entries and includes. Rebuild them with the
-      # dafny installed above and fail if a committed tree differs, so the tests
-      # below never run stale compiled code (ID-263). Stdlib-only; system
-      # python3 suffices.
+      # The compiled oracle (sdd/formal/MemoryBackend-py/) is generated from
+      # MemoryBackend.dfy and its includes. Rebuild it with the dafny installed
+      # above and fail if the committed tree differs, so the tests below never
+      # run stale compiled code (ID-263). Stdlib-only; system python3 suffices.
       - name: Check the compiled oracle matches its Dafny sources
         run: python3 scripts/check_dafny_oracle_fresh.py
       # The compiled oracle is exercised only by pytest, and the test jobs are
@@ -772,12 +769,6 @@ jobs:
       - run: uv pip install -e ".[dev]"
       - name: Run the compiled oracle's tests and conformance lanes
         run: pytest tests/backends/dafny tests/backends/conformance -k dafny -q
-      # The second oracle, sdd/formal/KernelProtocol-py/, drives the kernel through
-      # the exits its case builders enumerate (spec 052 BE-033), and spec 052's
-      # diagrams are drawn from it;
-      # same reason as above (BK-449): an sdd/-only rebuild reaches only this job.
-      - name: Run the kernel against the compiled protocol oracle
-        run: pytest tests/_kernel/test_protocol_oracle.py tests/scripts/test_gen_protocol_diagram.py -q
 
   # INFORMATIONAL: TLA+ model checks for the live informal layer under
   # sdd/formal/tla/. Not in the gate below by design — see

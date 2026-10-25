@@ -4,8 +4,6 @@
 
 The `Backend` ABC defines the contract all storage backends must implement. It is the most critical spec in the system — every operation, error condition, and capability is defined here. Backends declare capabilities via a `Capability` enum and `CapabilitySet`.
 
-The states between calls, the close posture (BE-020), the concurrent-use posture (BE-028) and the kernel's interaction protocol (BE-033), are [spec 052](052-backend-lifetime.md)'s. The contract kernel's single-call clauses (BE-030 to BE-032) are [spec 053](053-contract-kernel.md)'s.
-
 ---
 
 ## Capabilities
@@ -162,9 +160,7 @@ for exactly this reason.
 the cells below only where the root's own answer is wrong, and a present root
 often answers correctly by observation, so the order is unpinned there on every
 row. It matters once the container is absent, which no conformance fixture
-arranges (for a class on the kernel the fake-driver cells in
-`tests/_kernel/` observe it, BE-020 ranked first); the
-backends that can lose theirs pin it per backend.
+arranges; the backends that can lose theirs pin it per backend.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
 every operation in the table above except the addressing row raises
@@ -252,7 +248,7 @@ key: `to_key(native_path("."))` is `""`, not `"."`. The identity holds verbatim
 for every other canonical key. This is forced, not a concession — an inverse cannot
 return two spellings from one input. A non-canonical key's address inverts to
 its canonical key, as BE-025's non-canonical exception allows: `GraphBackend`
-and both Memory classes fold `"d//f"`, `"d/./f"`, `"d/"` and `"./"` that way.
+folds `"d//f"`, `"d/./f"`, `"d/"` and `"./"` that way.
 
 **A write *to* the root is refused before anything is transferred.**
 `write`, `write_atomic` and `open_atomic` MUST raise `InvalidPath` naming the
@@ -315,10 +311,7 @@ So a backslash-only key is **not** refused by this clause. It is the milder
 failure of the two — on a POSIX namespace it lands a file named `\` inside the
 container rather than occupying it — and it is stated here rather than closed,
 because closing it costs the addressing contract. A backend wanting to refuse it
-must do so without widening the predicate its addressing depends on. A class on
-the kernel does exactly that: [BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel) refuses a
-backslash on every operation, as a validation rule rather than a root rule, while
-its addressing passes the key raw.
+must do so without widening the predicate its addressing depends on.
 
 **The obligation this leaves is a normative one: within a backend, whether a key
 names a node and *which* node it names are decided by one predicate.** Both ways
@@ -362,20 +355,9 @@ destination that does not exist. A clause whose scope depends on a per-namespace
 reachability argument is a clause that is wrong on the namespace nobody checked.
 
 **Out of scope:** `delete_folder("")`, which is governed at the `Store` layer
-(STORE-002) — backend behaviour for it is undefined by this clause, except on a
-class on the kernel, where [BE-031](053-contract-kernel.md#be-031-delete_folder-on-the-kernel) refuses
-it with `InvalidPath`. Note
+(STORE-002) — backend behaviour for it is undefined by this clause. Note
 `delete("")` is **not** out of scope — it is a file-shaped operation on a folder,
 and the row above governs it.
-
-**On the kernel:** this clause's answers are the kernel's, not the driver's.
-The kernel decides the root on the canonical key, after the closed guard
-([BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel), steps 1 and 4), so every spelling
-that addresses the root reaches the driver as `""`, and only for a
-folder-shaped call or addressing; the probes answer the root from the key
-without a driver call. The driver owes a listing of `""` (`list_page`, and
-`folder_stats` where it aggregates natively) and its bare root from
-`native_path("")`.
 
 **Conformance:** `tests/backends/conformance/test_io.py::TestBackendRootPath`
 and its async sibling in `test_async_extended.py`, both gated on
@@ -419,19 +401,13 @@ reaches `SQLQueryBackend`, which is read-only.
 
 **Invariant:** `write(path, content, *, overwrite=False, metadata=None) -> WriteResult` creates or overwrites a file and returns a `WriteResult`.
 **Preconditions:** `content` is `bytes` or `BinaryIO`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if an ancestor of `path` exists as a regular file (file-as-directory-component). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out — `metadata=None` and `metadata={}` are both no-ops with respect to this gate), on a class that runs the gate itself; the order below says which do.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if an ancestor of `path` exists as a regular file (file-as-directory-component). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out — `metadata=None` and `metadata={}` are both no-ops with respect to this gate), on a class that runs the gate itself. A class that leaves the gate to `Store` (e.g. `LocalBackend`) does not raise it; `Store` runs it before the backend is called.
 **See also:** [045-write-result.md](045-write-result.md) (WR-001 through WR-005, WR-010 through WR-012).
 **Precondition evaluation order:** Backends MUST evaluate preconditions in this
 order: the closed guard — after a terminal close the call raises
-`BackendUnavailable`, ahead of every step below ([BE-020](052-backend-lifetime.md#be-020-close));
+`BackendUnavailable`, ahead of every step below ([BE-020](#be-020-close));
 (0) the root — if `path` is the store root, raises `InvalidPath`, decided
 from the key and before any request is issued ([BE-029](#be-029-root-path));
-the metadata gate — a non-empty `metadata` on a class without `USER_METADATA`
-raises `CapabilityNotSupported` (WR-010). A class that runs the gate itself runs
-it here, as every class on the kernel does
-([BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel)). A class that leaves the gate to
-`Store` (e.g. `LocalBackend`) does not raise it, and `Store` runs it before the
-backend is called;
 (1) path validity — if `path` names an
 existing *directory* OR any slash-aligned ancestor of `path` is a regular file
 (file-as-directory-component), raises `InvalidPath`; (2) overwrite
@@ -450,12 +426,10 @@ write end — the three writers and the `move`/`copy` destination — must refus
 [BE-029](#be-029-root-path), which states why a guard written as
 `if is_root(path)` is not conformant there. The source end is required only to
 refuse `is_root`. Seven of the eleven `WRITE`-capable classes meet that through
-the shared `_reject_root_as_file`, which is exactly `is_root`; the other four
-refuse the source under the **wider** predicate: `GraphBackend` and
-`SQLBlobBackend` as a by-product of their own key splitters, and
-`MemoryBackend` and `AsyncMemoryBackend` by the kernel's key rule
-([BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel)), so `move("./", dst)` raises there
-and not on the seven. That
+the shared `_reject_root_as_file`, which is exactly `is_root`; the other four —
+`GraphBackend`, `MemoryBackend`, `AsyncMemoryBackend`, `SQLBlobBackend` — refuse
+the source under the **wider** predicate as a by-product of their own key
+splitters, so `move("./", dst)` raises there and not on the seven. That
 divergence is permitted: the floor is `is_root` and a backend MAY exceed it.
 
 **What an unrecognised root spelling costs on the read side, stated rather than
@@ -497,11 +471,6 @@ while the default fixtures continue to skip the gate. The async sibling
 non-HNS opt-in path through `_acheck_no_file_ancestor` and the SDK
 `get_blob_properties` closure). For default-off flat-NS backends the
 effective order is the order above with step (1) skipped.
-**On the kernel no backend takes this exemption.** A class on the kernel
-refuses a write below a file and a write of a file over a folder on every
-namespace, unconditionally ([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel)'s
-A.4), so the opt-in walk and its fail-open sentence below bind only the
-classes not on the kernel.
 **Azure HNS caveat.** On Azure HNS accounts the kwarg short-circuits the
 walk because `hdi_isfolder` rejects the operation in the native write
 path. The backend detects the file ancestor on that native rejection and
@@ -521,12 +490,12 @@ for all backends, including SQLBlob.
 **Formal coverage:** `write()` is modelled in `sdd/formal/BackendContract.dfy`
 as `Write` with postconditions covering the precondition evaluation order
 (the closed guard `!Live() → BackendUnavailable` (BE-020) and the
-root refusal `AddressesRoot(path) → InvalidPath` (BE-029) first, then the
-WR-010 strict gate (`HasUserMetadata(metadata) ∧ CapUserMetadata !in
-capabilities → CapabilityNotSupported`, with empty-mapping carve-out encoded
-by `HasUserMetadata`, and an unchanged-state frame; BE-030 holds it ahead of
-any I/O), then `IsDir → InvalidPath`, `!AllAncestorsTraversable → InvalidPath`,
-`IsFile ∧ !overwrite → AlreadyExists`), the WR-001a schema (`r.value.path == path ∧ r.value.size
+root refusal `AddressesRoot(path) → InvalidPath` (BE-029) first, then
+`IsDir → InvalidPath`, `!AllAncestorsTraversable → InvalidPath`,
+`IsFile ∧ !overwrite → AlreadyExists`), the WR-010
+strict gate (`HasUserMetadata(metadata) ∧ CapUserMetadata !in capabilities →
+CapabilityNotSupported`, with empty-mapping carve-out encoded by
+`HasUserMetadata`), the WR-001a schema (`r.value.path == path ∧ r.value.size
 == |content|`), WR-004 (source Native iff `CapWriteResultNative`), WR-005
 (Basic source → rich fields None), WR-012 metadata echo, and WR-013
 round-trip (`fs[path].info.metadata` reflects what was stored). The model
@@ -538,8 +507,8 @@ clause on Write is what closes the loophole that would let a successful
 write break `Valid()`. Move / Copy carry the same file-ancestor clause on
 their destination paths. Verified in `MemoryBackend.dfy`. The model states
 the WR-010 gate for every `Backend`, so for a class that leaves the gate to
-`Store` it is stricter than the order above, which binds the gate only where a
-class runs it. Python backstop:
+`Store` it is stricter than the Raises line above, which binds the gate only
+where a class runs it. Python backstop:
 the WR-001a/004/005/012/013 postcondition chain is exercised against every
 backend by `tests/backends/conformance/test_atomic.py::TestWriteResultConformance`;
 the file-ancestor rejection is exercised by
@@ -554,7 +523,7 @@ the file-ancestor rejection is exercised by
 
 **Invariant:** `write_atomic(path, content, *, overwrite=False, metadata=None) -> WriteResult` writes via a temporary file + atomic rename and returns a `WriteResult`.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out), on a class that runs the gate itself, as BE-008 scopes it.
-**Precondition order:** [BE-008](#be-008-write)'s, every step of it, from the closed guard and the root through I/O. Flat-namespace exemption from BE-008 applies, except on the kernel, where no backend takes it ([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel), A.4).
+**Precondition order:** [BE-008](#be-008-write)'s, every step of it, from the closed guard and the root through I/O. Flat-namespace exemption from BE-008 applies.
 **See also:** [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
 **Formal coverage:** Delegates to BE-008 — at the Backend-contract level
 `write_atomic` shares the `Write` postcondition model (return type, precondition
@@ -646,15 +615,13 @@ discharged structurally. Verified in `MemoryBackend.dfy`.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
 **Flat-namespace backends are not exempt**: when the prefix listing comes back empty they probe the exact key and raise `InvalidPath` rather than `NotFound`. See [BE-021](#be-021-error-mapping) for the shared error-path rule and its cost model.
 **Root:** `get_folder_info("")` aggregates over the whole store rather than raising — see BE-029.
-**`modified_at` on a class on the kernel:** the latest known modification time of any file under the folder, recursively. A file whose time is the unknown sentinel (`datetime.min` in UTC, `FileInfo.modified_at`'s "cannot know") is skipped, and a folder with no known time answers `None`. The kernel computes it over a listing; a driver that aggregates natively returns the same value. Backends not on the kernel are outside this sentence.
 **Formal coverage:** `get_folder_info()` is modelled in `sdd/formal/BackendContract.dfy` as `GetFolderInfo` with postconditions `IsFile → InvalidPath`, `!PathExists → NotFound`, `IsDir → Ok`, `file_count == |ChildFiles(fs, path)|`, and `total_size == SumSizes(fs, ChildFiles(fs, path))`, each under BE-020's `Live()` guard; also an absent-container clause (BE-021 § Reach): the root aggregates to zero, any other path is `NotFound`. Verified in `MemoryBackend.dfy`. Property-based aggregate coverage against the compiled Dafny oracle lives in `tests/test_pbt_folder_info_aggregates.py`.
 
 ### BE-018: move()
 
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
-**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory (cannot overwrite a directory with a file; binds hierarchical backends and every class on the kernel, per [BE-021](#be-021-error-mapping)'s backend scope of the type-mismatch rows), or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move on a file is a no-op (Dafny: `Move: src == dst → Ok`); self-move on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory (cannot overwrite a directory with a file; binds hierarchical backends, per [BE-021](#be-021-error-mapping)'s backend scope of the type-mismatch rows), or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move on a file is a no-op (Dafny: `Move: src == dst → Ok`); self-move on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
 **Precondition order:** `src`-NotFound takes priority over dst-side preconditions; specifically `move(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`. `LocalBackend.move` enforces this naturally (the `mkdir_parents` walk that catches the file-ancestor case runs after the src-exists check); flat-namespace backends running the opt-in MUST defer the `_check_no_file_ancestor(dst)` walk until after the src-NotFound probe to match. This order is pinned to remove the cross-backend ambiguity that existed under BE-018 alone. **One dst-side check outranks src-NotFound: a `dst` that addresses the store root.** [BE-029](#be-029-root-path) decides it from the key before any request, so `move(missing_src, "")` MUST raise `InvalidPath(dst)`; a `src` that is the root is refused first, as `InvalidPath(src)`. "Is the root" there is `is_root`, the source end's floor: [BE-008](#be-008-write)'s two-predicate paragraph lets a backend refuse a wider source spelling first, and does not require it. That is the order the backends measured for it already take (`MemoryBackend`, `AsyncMemoryBackend` and `LocalBackend`, both root spellings, `move` and `copy`; `SFTPBackend`'s is pinned by `test_move_and_copy_destination_cannot_reach_the_corruption`), and the one `sdd/formal/BackendContract.dfy` verifies.
-**On the kernel:** the flat-namespace opt-in walk named here does not exist. A class on the kernel refuses a destination below a file or over a folder on every namespace, unconditionally, in BE-018's order: on a flat namespace by its own checks after the source check, on a hierarchical one by typing the wire's refusal ([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel), A.4 and A.8).
 **Metadata:** `move()` preserves the source file's user metadata: after a
 successful move, `get_file_info(dst)` MUST return the same `metadata`
 mapping the source file carried before the move — the WR-013 user-metadata
@@ -679,7 +646,6 @@ drops metadata fails to verify. Verified in `MemoryBackend.dfy`.
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory (on the backends BE-018 names), or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021.
 **Precondition order:** Same as BE-018 — `src`-NotFound takes priority over dst-side preconditions, so `copy(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`, except for a `dst` that addresses the store root, which BE-018 ranks ahead of it.
-**On the kernel:** the flat-namespace opt-in walk named here does not exist. A class on the kernel refuses a destination below a file or over a folder on every namespace, unconditionally, in BE-018's order: on a flat namespace by its own checks after the source check, on a hierarchical one by typing the wire's refusal ([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel), A.4 and A.8).
 **Metadata:** `copy()` preserves the source file's user metadata: after a
 successful copy, `get_file_info(dst)` MUST return the same `metadata`
 mapping as `get_file_info(src)` — the WR-013 user-metadata round-trip,
@@ -696,6 +662,18 @@ error is raised mid-operation.
 both `fs[dst].content == old(fs)[src].content` and
 `fs[dst].info.metadata == old(fs)[src].info.metadata`, so a refinement that
 drops metadata fails to verify. Verified in `MemoryBackend.dfy`.
+
+### BE-020: close()
+
+**Invariant:** `close()` is optional (default no-op). Called for resource cleanup.
+**Postconditions:** Whether the instance is reusable after `close()` is the backend's **close posture**, declared by the `close_is_terminal` class attribute:
+
+- `close_is_terminal = False` (the default — a backend need not restate it): the backend re-initialises its clients lazily and remains usable after `close()`. The posture of `LocalBackend`, `MemoryBackend`, `SFTPBackend`, `ReadOnlyHttpBackend`, and the SQL backends.
+- `close_is_terminal = True`: `close()` / `aclose()` is **terminal** — the flag flips at the *start* of `close()` and every lazy client accessor guards on it, so a subsequent operation raises `BackendUnavailable` rather than silently re-opening resources the caller cannot observe. The posture of `AzureBackend` (AZ-029), the three S3 backends (S3-019), and `GraphBackend` (GR-051).
+
+The use-after-close conformance lane (`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling) gates on this attribute, asserting the terminal error for terminal backends and re-initialisation for the rest.
+**Rationale:** A terminal close turns a use-after-close (a likely bug) into a clear typed error instead of a silent resource reopen, while leaving stateless/cheap backends freely reusable.
+**Formal coverage:** `sdd/formal/BackendContract.dfy` models the posture as `closeIsTerminal`, `closed` and `Live()`, with a `Close()` that sets `closed` and promises nothing about the store's contents. Every operation that returns a result, except `RequireCapability`, answers `BackendUnavailable` when `!Live()`, ahead of every other clause and with `fs` unchanged. `Close()` returns nothing and stays callable after a terminal close, and `DropContainer()` models the environment rather than an operation, so neither carries the guard; every other postcondition the other formal-coverage notes in this spec quote holds under `Live()`. `MemoryBackendMinimal` is the close-terminal witness in `MemoryBackend.dfy`.
 
 ### BE-021: Error Mapping
 
@@ -724,31 +702,11 @@ operations that can *fail* on a wrong-typed path: `read`, `read_bytes`,
 `write`, `write_atomic`, `open_atomic`, and the `move`/`copy` **destination** —
 binds hierarchical backends only. On a flat namespace a write to a key that
 shadows a prefix succeeds, so there is no error to reclassify; BE-008's
-flat-namespace exemption governs there instead, unchanged. On the kernel the
-write half binds every namespace too
-([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel), A.4). This is the single
+flat-namespace exemption governs there instead, unchanged. This is the single
 roster for both halves; the clauses below explain the mechanism behind the
 split and what it costs, and do not restate it.
 
 **Scope note:** This table covers *cross-cutting* scenarios that apply to multiple operations. Method-specific errors (e.g. `DirectoryNotEmpty` from `delete_folder`, `CapabilityNotSupported` from capability-gated operations) are documented per-method and intentionally omitted here.
-
-**On the kernel, each obligation has two halves.** For a class on the kernel the
-table below assigns each obligation of this clause to the kernel or to its
-driver; the obligations themselves, and the prose stating them, are unchanged.
-A class not on the kernel discharges both halves itself.
-
-| Obligation | Kernel | Driver |
-|---|---|---|
-| Native exceptions never leak (the invariant) | the choke point: a `RemoteStoreError` passes, any other `Exception` goes to `classify`, and a classifier that raises or answers a non-error still yields a `RemoteStoreError` ([ERR-001](005-error-model.md#err-001-base-error), [ERR-009](005-error-model.md#err-009-meaningful-string-representations)). An error raised by the caller's own content passes verbatim ([ASYNC-091](029-async-store-backend-api.md#async-091-write-side-binaryio-failure-mid-write)) | `classify` maps its wire's exceptions |
-| The type-mismatch and `NotFound` rows, and type mismatch outranking `missing_ok` | decided from the driver's observations by [BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel)'s A.5 and A.8 | `stat` and `list_page` observe, and refusals keep A.8's "What drivers owe instead" |
-| The `PermissionDenied` rows | passes the driver's type through | `classify` types a denial |
-| Parent creation fails on a path conflict | A.8's write and `ensure_parents` rows type a refusal | a write primitive or `ensure_parents` refuses an item above the key |
-| Flat namespaces' error-path obligation, fail-open probes, fail-closed determinants | A.3 and A.8 | — |
-| An absent container reads as an absent path | the choke point maps a refusal `container_absent` recognises to `NotFound`, which `missing_ok` and A.8's listing rows read | `container_absent` recognises its wire's shape |
-| § Reach's first-page bound | A.9, kept once per operation | `list_page` answers one `Page` per wire request |
-| The root decided before the probe | BE-030's step 4 | — |
-| The broad exception handler rule | `exists`, `is_file` and `is_folder` answer from `stat` | `classify` discriminates by type, `errno` or status |
-| A listing's denial is about the folder it lists | — (A.7) | `list_page` raises the denial of the folder it lists |
 
 **Flat-namespace backends: no exemption, but an error-path obligation.** A
 flat namespace stores keys, not nodes, so "this path is a directory" is not an
@@ -766,12 +724,7 @@ type verdict when the operation has already failed to find what it needed — on
 `MaxKeys=1` prefix listing for "is this a folder?", one HEAD / exact-key lookup
 for "is this a file?" — and converts the miss into `InvalidPath`. A call that
 *finds its target* never runs the probe, so the guarantee costs nothing on the
-hot path. A class on the kernel with a flat namespace departs from that: it
-also refuses the states a flat store can hold and no tree gives, so every
-non-root folder operation calls `stat` on its key and every write checks the
-key's ancestors and its prefix, success included
-([BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel), A.3 and A.4, whose cost table
-lists each).
+hot path.
 
 **Two cases both fail and succeed**, and both are the idempotent-delete idiom.
 They cost different things, because each spends the probe its own type verdict
@@ -784,10 +737,7 @@ needs:
 
 In both the probe runs and the call then returns cleanly, because `missing_ok`
 tolerates the miss; in a delete loop that is one extra round trip per absent
-path. A class on the kernel departs from the first row: its flat `delete`
-error path asks `stat` before the listing, two round trips, since a refusal
-may meet an existing file as well as a missing one; its costs are in
-[BE-032](053-contract-kernel.md#be-032-the-store-tree-on-the-kernel)'s cost table. Neither is avoidable by testing `missing_ok` first: `delete(folder,
+path. Neither is avoidable by testing `missing_ok` first: `delete(folder,
 missing_ok=True)` and `delete_folder(file, missing_ok=True)` must still raise
 `InvalidPath` (see "Type mismatch outranks `missing_ok`" below), and after a
 miss the probe is the only thing separating *this is the wrong type* from *this
@@ -886,9 +836,7 @@ prefixes.
 Backends whose listing API exposes no page boundary may satisfy this by marking
 each item the service returned *before* its own filters run; the residue is a
 truncated page carrying no items at all, which MUST then be stated in that
-backend's spec as a declared variation rather than left implied. That licence
-is for a class not on the kernel: a driver answers the kernel in `Page`s, so a
-migrated class has no unmarked page, and the kernel keeps the bound (BE-032's A.9).
+backend's spec as a declared variation rather than left implied.
 
 **The root is decided by BE-029, not here, and BE-029 wins.** This paragraph
 assigns answers per *operation*; it says nothing about the store root within
@@ -1013,7 +961,6 @@ follow them, as `LocalBackend`'s do.
 
 **Invariant:** `unwrap(type_hint)` returns the native backend handle if it matches the requested type.
 **Raises:** `CapabilityNotSupported` if the backend cannot provide the requested type.
-**On the kernel:** `unwrap` takes the closed guard, so after a terminal close it raises `BackendUnavailable` ([BE-033](052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)).
 **Rationale:** See [ADR-0003](../adrs/0003-fsspec-is-implementation-detail.md).
 
 ### BE-023: to_key()
@@ -1027,8 +974,7 @@ follow them, as `LocalBackend`'s do.
 **Invariant:** `native_path(path)` converts a backend-relative key to the backend-native path. The inverse of `to_key()`: `backend.to_key(backend.native_path(key)) == key`. The default implementation is the identity function — backends with a native root **must** override.
 **Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key **in canonical form** round-trips verbatim; a non-canonical one need not, and for the same reason — `native_path` normalises, and one address cannot invert to the several keys that produced it. Every lossy class is one `WellFormedPath` (PATH-002 through PATH-008) already excludes, though not every exclusion is lossy — `".."` segments and null bytes are excluded and do round-trip verbatim. The lossy ones are: a redundant `"."` segment, an empty segment (leading, trailing or doubled slash), and on backends that fold it, a backslash. Measured on `GraphBackend`, `native_path("a/./b")`, `native_path("dir/")`, `native_path("a//b")` and `native_path("/a")` each invert to the canonical key rather than the caller's spelling. So the identity is exact over the keys `to_key` produces and over every canonical key, and lossy over the wider set a caller holding a `Backend` directly may hand `native_path`. The identity-default implementation normalises both root spellings for the same reason.
 **Postconditions:** Pure, deterministic, total (never raises). The returned path is usable with the native handle from `unwrap()`.
-**On the kernel:** a class on the kernel normalises a key before its driver addresses it and passes a refused key raw, so a non-canonical key inverts to its canonical form and a `..` or null-byte key round-trips verbatim; the rule is [BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel)'s **Addressing stays total**.
-**Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container), `MemoryBackend` and `AsyncMemoryBackend` (the kernel's normalisation, over a driver whose `native_path` is the identity on a canonical key).
+**Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container).
 **Example:** `S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")` returns `"lake/data/file.parquet"`.
 **See also:** [001-store-api.md](001-store-api.md) (STORE-015), [014-pyarrow-filesystem-adapter.md](014-pyarrow-filesystem-adapter.md) (PA-010 Tier 1).
 
@@ -1043,7 +989,6 @@ follow them, as `LocalBackend`'s do.
 **Invariant:** `glob(pattern)` matches files against a glob pattern. Non-abstract — the default implementation raises `CapabilityNotSupported`. Backends with native glob support override this and declare `Capability.GLOB`.
 **Postconditions:** Returns only files (not folders). Paths in returned `FileInfo` objects are backend-relative (same convention as `list_files`).
 **Raises:** `CapabilityNotSupported` if the backend lacks `GLOB`.
-**On the kernel:** a class on the kernel refuses and normalises the pattern by the rule and order [BE-030](053-contract-kernel.md#be-030-key-rule-on-the-kernel) states, so the driver receives a canonical pattern.
 **See also:** [018-glob.md](018-glob.md) (GLOB-003 through GLOB-005), [ADR-0009](../adrs/0009-glob-three-tier-design.md).
 
 ### BE-027: Capability-Gated Methods (Graph IR Metadata)
@@ -1065,3 +1010,51 @@ follow them, as `LocalBackend`'s do.
 **Enforcement:** Runtime capability enforcement for these methods is performed by `Store._gate()`, not by `Backend` directly. `_BACKEND_GATING` is the authoritative source for graph-IR generation only; keeping it in sync with the Backend ABC is enforced by `tests/scripts/test_gen_graph.py::test_backend_gating_keys_match_backend_members`.
 **Async counterpart:** `AsyncBackend` carries the same table minus `read_seekable` / `open_atomic` in `_ASYNC_BACKEND_GATING` — see [ASYNC-045a](029-async-store-backend-api.md).
 **See also:** `sdd/CLAUDE-REFERENCE.md` ripple-check row for `_BACKEND_GATING`.
+
+---
+
+## Concurrency
+
+### BE-028: Concurrent-Use Posture
+
+**Invariant:** Every concrete `Backend` declares a **concurrent-use posture**,
+one of two values:
+
+- **`thread_safe`** (the default — a backend spec need not restate it): a single
+  instance is safe to share across threads, and each `Backend` operation is
+  atomic with respect to other operations on the same instance.
+- **`single_connection`**: a single instance is **not** safe under concurrent
+  use — it wraps a non-thread-safe native client (e.g. one SFTP channel, or a
+  `urllib` opener whose redirect counter is shared). Such a backend MUST document
+  the posture in its spec **and** class docstring, and MUST state the remedy: one
+  instance per thread, or an external serializing wrapper.
+
+No backend provides multi-operation transactionality: atomicity is per-operation
+only (MEM-026), and ordering between concurrent callers is not guaranteed.
+
+**Postconditions:**
+- `thread_safe` is the posture of `LocalBackend` (stateless; delegates to
+  `os`/`shutil`, serialised by the operating system), `MemoryBackend` (a single
+  `threading.Lock`, MEM-025), the cloud and SQL backends (their native clients —
+  the boto3/s3fs client, the Azure SDK service clients, the SQLAlchemy
+  engine/pool — are documented thread-safe for concurrent per-instance use), and
+  `GraphBackend` on the async axis (GR-059).
+- `single_connection` is the posture of `SFTPBackend` (SFTP-029) and
+  `ReadOnlyHttpBackend` on its default `urllib` transport (HTTP-CONC-001).
+- An **undeclared** posture is a contract violation, not a silent default: every
+  concrete backend states its posture, or inherits the `thread_safe` default by
+  the terms of this clause (`LocalBackend`, which has no numbered spec, is
+  `thread_safe` by this paragraph).
+
+**Rationale:** STORE-007 promises a `Store` is "safe to share across threads,"
+but a `Store` is immutable and merely delegates — the guarantee bottoms out in
+the backend. This clause turns "thread-safe" from an unstated assumption into an
+explicit per-backend obligation a caller can read from the spec without reading
+source. Like CAP-007's quality flags, declaring the posture gates no method; it
+documents a property every method has. The posture is the authoritative source
+for the machine-readable `concurrency` registry field the cross-backend
+concurrency conformance lane tests against.
+
+**See also:** [001-store-api.md](001-store-api.md) (STORE-007),
+[013-memory-backend.md](013-memory-backend.md) (MEM-025/026),
+[029-async-store-backend-api.md](029-async-store-backend-api.md) (ASYNC-094).

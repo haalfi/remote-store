@@ -186,8 +186,3 @@ class CapabilitySet:
 
     def __delattr__(self, name: str) -> None:
         raise AttributeError("CapabilitySet is immutable")
-
-    def __reduce__(self) -> tuple[type[CapabilitySet], tuple[set[Capability]]]:
-        # Rebuilt from its members: copy and pickle would otherwise set ``_caps``
-        # on a blank instance, which ``__setattr__`` refuses.
-        return (CapabilitySet, (set(self._caps),))

@@ -111,23 +111,9 @@ as GLOB-004.
 
 ### GLOB-007: Store.glob() Path Scoping
 
-**Invariant:** Store reads the pattern as spec 004 reads a path, then
-prepends `root_path` before delegating to `Backend.glob()`. Leading `/`, empty
-and `.` segments are dropped (PATH-004 to PATH-006). Three departures from
-spec 004: a trailing `/` is kept, since in a pattern it selects folders only; a
-`\` is kept as written rather than turned into `/` (PATH-002; open under
-BK-451); and a pattern that normalises to the root yields nothing, without
-reaching the backend, rather than raising (PATH-008). Returned `FileInfo.path`
-values are rebased to store-relative (same as `list_files`).
-**Raises:** `InvalidPath` for a `..` segment or a null byte (PATH-003,
-PATH-007).
-**Rationale:** A pattern is a predicate over Keys, and no Key has a leading
-`/` or an empty segment (spec 051 TREE-011), so those spellings name only what
-the canonical one names. Spec 051 admits `.` as a name; dropping a `.` segment
-is spec 004's input reading (PATH-006), which spec 051 § Layering assigns the
-mapping from input strings to Keys. Normalising here makes `"/d/*.csv"`
-mean `"d/*.csv"` under every `root_path`, as `read` and `list_files` already
-do; joining the raw pattern made the answer depend on the root (BK-405).
+**Invariant:** Store prepends `root_path` to the pattern before delegating to
+`Backend.glob()`. Returned `FileInfo.path` values are rebased to store-relative
+(same as `list_files`).
 
 ### GLOB-008: Store.glob() Capability Gating
 
@@ -153,11 +139,9 @@ relative to the store root.
 ### GLOB-011: Client-Side Fallback
 
 **Invariant:** When `store.supports(Capability.GLOB)` is `False`,
-`glob_files` normalises the pattern as GLOB-007 does, raising the same
-`InvalidPath`, then extracts the longest non-wildcard directory prefix from
-it, calls `store.list_files(prefix, recursive=...)`, and filters results
-client-side against the compiled pattern. Both tiers therefore answer one
-pattern spelling alike.
+`glob_files` extracts the longest non-wildcard directory prefix from the
+pattern, calls `store.list_files(prefix, recursive=...)`, and filters
+results client-side against the compiled pattern.
 
 ### GLOB-012: Prefix Extraction
 

@@ -342,4 +342,4 @@ backend.to_key("data/file.txt")               # -> "data/file.txt" (no prefix, u
 
 **Invariant:** `AzureBackend` is `thread_safe` (the BE-028 default): a single instance is safe to share across threads. The Azure SDK service clients (`BlobServiceClient`, `DataLakeServiceClient`) are immutable after construction and documented safe for concurrent use; per-blob operations are atomic at the object level. The async sibling `AsyncAzureBackend` meets the async mirror [ASYNC-094](029-async-store-backend-api.md#async-094): safe for concurrent coroutines on one loop, never across loops. On non-HNS accounts `move` is a non-atomic copy-then-delete (BE-018); HNS rename is server-side but still not transactional across a concurrent racer.
 
-**See also:** [052-backend-lifetime.md](052-backend-lifetime.md) (BE-028), [029-async-store-backend-api.md](029-async-store-backend-api.md) (ASYNC-094).
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md) (BE-028), [029-async-store-backend-api.md](029-async-store-backend-api.md) (ASYNC-094).

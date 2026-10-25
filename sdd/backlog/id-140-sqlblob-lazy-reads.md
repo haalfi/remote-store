@@ -112,3 +112,5 @@ rowid, per the custom-tables bullet, and whatever open decision 1 leaves
 eager) are unaffected. Found by PR #1051's review.
 
 **RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. Placement: step 3, as the SQLBlob driver's `get_range`.
+
+*Frozen 2026-10-25: [RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) froze RFC-0017's D3 steps on `frozen/kernel-driver`, so the placement above no longer applies; the work is `SQLBlobBackend`'s own ranged read, as framed above.*

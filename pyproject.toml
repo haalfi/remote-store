@@ -230,10 +230,6 @@ dev = [
   "pytest-randomly>=3.15",  # BK-277: randomised test order in the `test-isolation` proof lane
   "pytest-timeout>=2.3",  # BK-419: per-test bound that `scripts/run_tests.py` passes as `--timeout`; inert without one
   "markdown",  # BUG-320: G-08's tests check their fixtures against Python-Markdown's real output
-  # BK-389: scripts/gen_sync_kernel.py derives the sync contract kernel from the
-  # async one (RFC-0017 D6); its `--check` runs in `preflight`, and CI's
-  # tooling-tests import it. Pinned: its token pass is what the committed twin is.
-  "unasync==0.6.0",
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
   # vcrpy is a transitive of pytest-recording (which floors it at only >=2.0.1),
@@ -322,7 +318,7 @@ features = ["dev", "docs", "bench", "mutate"]
 # preflight` in the `lint` job (BK-269), so the script list is the single source.
 # Every entry is offline by construction; `check-support-windows` below is the
 # one support-window mechanism that reaches PyPI and so is deliberately absent.
-preflight = ["python scripts/check_hatch_python.py", "python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check", "python scripts/gen_python_support.py --check", "python scripts/check_process_budget.py", "python scripts/gen_sync_kernel.py --check", "python scripts/gen_protocol_diagram.py --check"]
+preflight = ["python scripts/check_hatch_python.py", "python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check", "python scripts/gen_python_support.py --check", "python scripts/check_process_budget.py"]
 lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_conda_recipe_pins.py", "python scripts/gen_conda_feedstock.py --check", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check", "python scripts/check_no_retrospective.py", "python scripts/check_repo_traps.py"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
@@ -421,8 +417,6 @@ gen-graph-viz = "python scripts/gen_graph_viz.py {args}"
 gen-graph-viz-check = "python scripts/gen_graph_viz.py --check"
 gen-backlogid = "python scripts/gen_backlogid.py {args}"
 gen-backlogid-check = "python scripts/gen_backlogid.py --check"
-gen-sync-kernel = "python scripts/gen_sync_kernel.py {args}"
-gen-sync-kernel-check = "python scripts/gen_sync_kernel.py --check"
 gen-adr-digest = "python scripts/gen_adr_digest.py {args}"
 gen-adr-digest-check = "python scripts/gen_adr_digest.py --check"
 gen-api-check = "python scripts/check_api_docs.py"
@@ -458,11 +452,6 @@ drift-docs-check = "python scripts/drift_check.py render-docs --check"
 # 0 when every raise is patch-eligible, 1 when one is breaking or undateable.
 gen-python-support = "python scripts/gen_python_support.py {args}"
 gen-python-support-check = "python scripts/gen_python_support.py --check"
-# `gen-protocol-diagram` draws spec 052 BE-033's state diagrams from the compiled
-# KernelProtocol oracle. Offline and byte-stable; its `--check` is in `preflight`
-# and, for an `sdd/`-only rebuild of the oracle, in `docs-gate` (DOCS_PAT).
-gen-protocol-diagram = "python scripts/gen_protocol_diagram.py {args}"
-gen-protocol-diagram-check = "python scripts/gen_protocol_diagram.py --check"
 check-support-windows = "python scripts/check_support_windows.py {args}"
 check-test-placement = "python scripts/check_test_placement.py tests"
 check-test-quality = ["python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests"]
@@ -598,7 +587,7 @@ docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 # The full set of checks that validate a docs/spec change, as one entry point CI
 # invokes once. Composed by reference so each sub-target stays the single source.
-docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "gen-conda-feedstock-check", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-no-retrospective", "check-formal-trace", "check-repo-traps", "check-links", "drift-docs-check", "gen-python-support-check", "gen-protocol-diagram-check", "check-process-budget", "docs-build"]
+docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "gen-conda-feedstock-check", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-no-retrospective", "check-formal-trace", "check-repo-traps", "check-links", "drift-docs-check", "gen-python-support-check", "check-process-budget", "docs-build"]
 # Beside the agent gates' core.hooksPath, which plain `pre-commit install` refuses.
 pre-commit-install = "python scripts/pre_commit_install.py {args}"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
@@ -837,12 +826,6 @@ extend-exclude = ["sdd/formal/*-py"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "BLE", "SIM", "TCH", "PT"]
 ignore = ["UP045"]
-
-[tool.ruff.lint.per-file-ignores]
-# Generated from `_async/` by scripts/gen_sync_kernel.py. The async source cannot
-# use `yield from` (not allowed in an async generator), so its sync twin keeps the
-# explicit loop; rewriting it here would make the generated file a hand edit.
-"src/remote_store/_kernel/_sync/{driver,kernel}.py" = ["UP028"]
 
 [tool.ruff.lint.flake8-pytest-style]
 # Note: ruff PT011 only resolves builtin/stdlib names; custom exception names

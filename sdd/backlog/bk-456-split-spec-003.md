@@ -88,8 +88,8 @@ each section's witness shape (`SPEC-DESIGN.md` Rule 2):
 | File | Sections | Kind |
 | --- | --- | --- |
 | [003](../specs/003-backend-adapter-contract.md) | CAP-001 to CAP-007, BE-001 to BE-019, BE-021 to BE-027, BE-029 | single call, at the Backend interface |
-| [052](../specs/052-backend-lifetime.md) | BE-020, BE-028, BE-033 | lifetime |
-| [053](../specs/053-contract-kernel.md) | § Contract kernel, BE-030 to BE-032 | single call, at the Backend interface of a class on the kernel, with the driver duties at the kernel-to-driver interface |
+| [052](https://github.com/haalfi/remote-store/blob/frozen/kernel-driver/sdd/specs/052-backend-lifetime.md) | BE-020, BE-028, BE-033 | lifetime |
+| [053](https://github.com/haalfi/remote-store/blob/frozen/kernel-driver/sdd/specs/053-contract-kernel.md) | § Contract kernel, BE-030 to BE-032 | single call, at the Backend interface of a class on the kernel, with the driver duties at the kernel-to-driver interface |
 
 - The orient candidate called BE-021, BE-029 and BE-032's encoding function
   clauses. Most of their witnesses need a state and a call, so they are

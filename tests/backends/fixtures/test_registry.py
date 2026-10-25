@@ -754,10 +754,10 @@ class TestFixtureCleanupContract:
     clients fired ``ResourceWarning`` at GC, which ``filterwarnings=error``
     promoted to unraisable exceptions that bit unrelated
     ``pytest.warns(ResourceWarning, ...)`` tests under 20-worker Windows
-    xdist. A backend that inherits the no-op default ``close`` (``local``)
-    needs no teardown, so the guard is conditional on actually overriding
-    the method — false-positiving it would force boilerplate. A class on
-    the contract kernel (``memory``) always overrides it.
+    xdist. In-memory backends (``memory`` / ``local``) legitimately
+    inherit the no-op default ``close`` and need no teardown,
+    so the guard is conditional on actually overriding the method —
+    false-positiving them would force boilerplate.
 
     Scope is deliberately narrow:
 

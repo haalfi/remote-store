@@ -67,15 +67,6 @@ def check_health(self) -> None: ...
 - Must not modify backend state (no writes, no deletes).
 - Must map native exceptions through the backend's error mapper.
 
-**On the kernel:** a class on the contract kernel
-([053](053-contract-kernel.md#contract-kernel)) does not take the
-default. Its `check_health()` is the kernel's: the closed guard, then the
-driver's required `probe()`, its errors mapped by the kernel's choke point. The
-`Driver` and `AsyncDriver` protocols give `probe` a no-op body, which a driver
-that declares no `probe` inherits; that inheritance is the kernel's form of the
-no-op default, and only a store that is always healthy may take it. A class not
-on the kernel keeps the default no-op above.
-
 ---
 
 ## Per-Backend Health Checks
@@ -140,13 +131,8 @@ with self._errors():
 
 ### PING-008: MemoryBackend
 
-**Strategy:** No-op. In-memory backend is always healthy. Declares no probe of
-its own (no override needed).
-**On the kernel:** `MemoryBackend` and `AsyncMemoryBackend` are on the contract
-kernel, so their `check_health()` is the kernel's (PING-002), not the
-`Backend` default. Their drivers, `MemoryDriver` and `AsyncMemoryDriver`,
-declare no `probe` and inherit the driver protocol's no-op body, which is this
-row's no-op.
+**Strategy:** No-op. In-memory backend is always healthy. Uses the default
+`Backend.check_health()` implementation (no override needed).
 
 ### PING-011: GraphBackend
 
