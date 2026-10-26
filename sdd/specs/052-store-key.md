@@ -12,19 +12,20 @@ walk ends, against a language the backend can hold unchanged.
 Scope: the reduction ν, the equivalence it decides, the languages it accepts
 against, and resolution Ω. Every section is a function: of the input and the
 configuration for ν, of the Key and one state for Ω; what the spec relies on
-from a backend is its one assumption. Out of scope, each with its owner:
+from a backend is in its assumptions. Out of scope, each with its owner:
 
 - Which operations accept the root, and which error or result an outcome
   becomes: each operation's own spec.
-- How a caller sets and reads the separator set and the acceptance choice, and
-  the type that carries a key: the API's spec.
+- How a caller sets and reads the separator set, the acceptance choice and
+  P_b, how a P_b smaller than L_shared is announced, and the type that carries
+  a key: the API's spec.
 - What a listing yields for a stored name outside L_api, and a write that
   would put two names equal under a backend's coarser name equality side by
   side: the listing and write operations' specs, under spec 051 § Name
   equality.
 - What a store rooted at a key c reports for an outcome's kⱼ that lies above
   c: the spec of the operation that makes such a store.
-- Which backends hold L_shared, and each backend's L_b: the
+- Each backend's L_b and P_b: the
   [profile table](profiles/052-store-key.md) beside this spec, by measurement
   or a cited authority.
 - How a key is displayed, the root included; `glob` patterns.
@@ -51,6 +52,7 @@ items. Names compare exactly (spec 051 § Name equality).
 | L_floor | The key strings none of whose segments holds U+0000 or `\`, or equals `.` or `..`. |
 | L_b | The store's backend language: a prefix-closed subset of L_core, the key strings the store's backend b holds at the store's location. A whole-key limit of b counts the location's own share, so L_b gets what the location leaves of it. KEY-A-02 is what the spec relies on b for. |
 | L_shared | The portable language: ε, and the key strings `PORTABLE_KEY` below fully matches. It is a library policy and names no backend. |
+| P_b | The store's portable set: a prefix-closed subset of L_shared ∩ L_b, declared explicitly for the store's backend at the store's location, never inferred. P_b = L_shared is the normal value; a smaller P_b is a declared deviation. |
 | L_api | The store's acceptance language (KEY-008). |
 | c · k | The key string whose segments are c's followed by k's; ε · k = k · ε = k. |
 | K(S) | The Keys of S: { Key(x) │ x ∈ U }. |
@@ -106,7 +108,8 @@ name the walk drops is never judged.
 ### KEY-008: Acceptance Language
 
 **Invariant:** L_api is L_floor ∩ L_b, unless the store opts into portability,
-when it is L_shared; the choice is part of the store's configuration.
+when it is P_b; a store opts in only where its P_b is declared, and the choice
+is part of the store's configuration.
 
 ### KEY-009: Separator Set
 
@@ -162,6 +165,7 @@ exactly one of:
 | ID | Assumption |
 | --- | --- |
 | KEY-A-02 | The store's backend holds every key string of L_b, and stores each of its names unchanged, judged for each name as the last segment of the prefix that ends in it. |
+| KEY-A-03 | The store's backend holds every key string of its declared P_b. |
 
 ## Notes
 
@@ -225,9 +229,13 @@ alone.
   before a `.`); and a key is at most 255 characters. Every portable name is a name of L_floor, and every key in
   L_shared is its own reduction.
   `sdd/research/bk-468-key-probe/check_portable_regex.py` checks the patterns
-  against that gloss. Under the opt-in, a key of L_shared outside a store's
-  L_b is accepted and fails at the backend; whether a backend holds L_shared
-  is a row of the profile table.
+  against that gloss.
+- **P_b.** Under the opt-in a store accepts its backend's portable set: the
+  whole of L_shared where the backend holds it, otherwise the subset declared
+  for it, so a key the backend could not hold is refused by ν, not at the
+  backend. A smaller P_b is a declared deviation from the normal value
+  L_shared, never a silent one; a portable store therefore refuses on one
+  backend a key it accepts on another only where a declaration says so.
 - **Backend languages as a profile table.** Each backend's L_b is recorded
   per axis beside this spec, every cell citing its source
   ([RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D6). `SPEC-DESIGN.md`

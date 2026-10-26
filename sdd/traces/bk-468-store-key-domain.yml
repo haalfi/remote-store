@@ -355,3 +355,14 @@ phases:
           superseded by spec 052. Its § 10 decisions on PATH-010, PATH-015, CHILD-001,
           CHILD-003, ERR-003 and ERR-005 have no flow yet: BK-490
         outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "Decisions, F4"
+        read_type: reference
+        extract: >-
+          The maintainer ruled that a backend short of the portable set must say so and
+          declare an explicit subset. F4 already decides the flag (a declared deviation from
+          a normal value, queryable, documented, DeviationWarning); RFC-0023's draft at
+          4e91fa66d had an exact runtime declaration but assumed every backend holds the
+          floor. Spec 052 gains P_b: under the opt-in L_api is P_b, KEY-A-03 has the backend
+          hold it, the profile row records each P_b, and BK-480 owns the announcement
+        outcome: ok

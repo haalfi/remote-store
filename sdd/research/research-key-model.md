@@ -654,8 +654,10 @@ opted-out `\`, and the model's inputs range over Σ, which holds no
 surrogate (§ 2), so it says nothing of `\ud800/..`, which spec 052 refuses
 rather than walking to ε. And its
 L_shared is a policy `PORTABLE_KEY` defines, which no backend is promised to
-hold, where § 3.2 has L_shared ⊆ L_b for every backend; a profile table
-beside the spec records which backend holds it.
+hold, where § 3.2 has L_shared ⊆ L_b for every backend; under the opt-in a
+store accepts its backend's declared portable set P_b ⊆ L_shared ∩ L_b, a
+smaller P_b being a declared deviation, and a profile table beside the spec
+records each backend's.
 
 PR #1171 proposes spec 054, "Store Key Specification" (*Read*: its branch,
 2026-10-22). It moves PATH-002 to PATH-007 out of spec 004 and adds KEY-001 to

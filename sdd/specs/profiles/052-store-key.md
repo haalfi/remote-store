@@ -23,7 +23,7 @@ permitted.
 | Segment count | The most names in one key. |
 | Rewrites | Names the backend stores under another spelling; none of them is in L_b, judged at every segment (KEY-A-02). |
 | Name equality | Spec 051 § Name equality, recorded here because it constrains siblings, not L_b. |
-| Holds L_shared | Whether every key of L_shared is in L_b, given a location that leaves 255 units of every whole-key limit; derived from the rows above. |
+| Portable set P_b | The subset of L_shared the backend holds (spec 052's P_b, KEY-A-03), given a location that leaves 255 units of every whole-key limit; derived from the rows above and declared. "= L_shared" is the normal value; anything less is a declared deviation. |
 
 ## Memory, Local, S3, SFTP
 
@@ -37,7 +37,7 @@ permitted.
 | Segment count | — | — | — | — | — | not documented (§ 3.6) | — |
 | Rewrites | — | — (§ 3.2) | — (normalisation-preserving, § 3.3) | a segment ending in a single `.` loses it; the last segment loses all trailing `.` and spaces (§ 3.4) | — (§ 3.6) | not documented (§ 3.6) | the server's file system (§ 3.8) |
 | Name equality | exact | exact (§ 3.2) | case-insensitive by default, normalisation-insensitive (§ 3.3) | case-insensitive, case-preserving (§ 3.4) | exact (§ 3.6) | not documented (§ 3.6) | the server's file system (§ 3.8) |
-| Holds L_shared | yes | yes | yes | only with long paths opted in: without, a folder's 248 units, drive and NUL included, are fewer than a portable key's 255 | yes | unverified: three rows not documented | the server's file system |
+| Portable set P_b | = L_shared | = L_shared | = L_shared | = L_shared with long paths opted in; without, L_shared less every key with a folder whose path, drive and NUL included, passes 248 units | = L_shared | undeclared, three rows not documented, so no portable store opens on it | the server's file system |
 
 The macOS column is APFS only; an HFS+ volume (255 UTF-16 units, names
 stored decomposed, authorities § 2 and § 3.3) has no column.

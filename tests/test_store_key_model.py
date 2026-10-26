@@ -11,7 +11,7 @@ sections, with spec 051 stores as finite tuples. Evidence of three kinds:
   collisions and navigation frequent; each derived section (KEY-010 to
   KEY-013) is checked against a computation that does not call the clause it
   tests where one exists, such as the walk's end position for KEY-011.
-- **The profile table.** Its "Holds L_shared" row is checked by drawing
+- **The profile table.** Its "Portable set P_b" row is checked by drawing
   L_shared keys through a configuration per column of
   ``sdd/specs/profiles/052-store-key.md``, so a regex, a cell and the row
   that disagree fail here.
@@ -115,8 +115,13 @@ def in_l_b(k: str, cfg: Config) -> bool:
     return cfg.key_max is None or cfg.key_max[0](k) <= cfg.key_max[1]
 
 
+def in_p_b(k: str, cfg: Config) -> bool:
+    """P_b: a stand-in declares the whole of L_shared ∩ L_b, the largest P_b it may."""
+    return in_l_shared(k) and in_l_b(k, cfg)
+
+
 def in_l_api(k: str, cfg: Config) -> bool:
-    return in_l_shared(k) if cfg.portable else in_l_floor(k) and in_l_b(k, cfg)
+    return in_p_b(k, cfg) if cfg.portable else in_l_floor(k) and in_l_b(k, cfg)
 
 
 def _has_surrogate(p: str) -> bool:
@@ -395,14 +400,14 @@ portable_names = st.from_regex(r"[A-Za-z0-9](?:[A-Za-z0-9._-]{0,14}[A-Za-z0-9_-]
 portable_keys = st.lists(portable_names, min_size=1, max_size=20).map("/".join).filter(in_l_shared)
 
 PROFILE_TABLE = Path(__file__).parents[1] / "sdd" / "specs" / "profiles" / "052-store-key.md"
-# The "Holds L_shared" row's columns, in the table's order, as stand-ins; SFTP takes the Linux column.
-HOLDS_L_SHARED = {
-    "memory": "yes",
-    "local-linux": "yes",
-    "local-apfs": "yes",
-    "local-windows": "only with long paths opted in",
-    "s3": "yes",
-    "s3-directory": "unverified",
+# The "Portable set P_b" row's columns, in the table's order, as stand-ins; SFTP takes the Linux column.
+PORTABLE_SET_ROW = {
+    "memory": "= L_shared",
+    "local-linux": "= L_shared",
+    "local-apfs": "= L_shared",
+    "local-windows": "= L_shared with long paths opted in; without, L_shared less",
+    "s3": "= L_shared",
+    "s3-directory": "undeclared",
     "sftp-openssh-linux": "the server's file system",
 }
 
@@ -416,31 +421,39 @@ def _within_room(cfg: Config) -> Config:
     return replace(cfg, key_max=cap(cfg.key_max), folder_max=cap(cfg.folder_max))
 
 
-def test_holds_l_shared_row_matches_the_table() -> None:
+def test_portable_set_row_matches_the_table() -> None:
     rows = [
-        line for line in PROFILE_TABLE.read_text(encoding="utf-8").splitlines() if line.startswith("| Holds L_shared")
+        line for line in PROFILE_TABLE.read_text(encoding="utf-8").splitlines() if line.startswith("| Portable set P_b")
     ]
     row = rows[-1]  # the first is the axis's own row in the Axes table
     cells = [c.strip() for c in row.strip("|").split("|")][1:]
-    assert len(cells) == len(HOLDS_L_SHARED)
-    for cell, want in zip(cells, HOLDS_L_SHARED.values(), strict=True):
+    assert len(cells) == len(PORTABLE_SET_ROW)
+    for cell, want in zip(cells, PORTABLE_SET_ROW.values(), strict=True):
         assert cell.startswith(want), (cell, want)
 
 
+@pytest.mark.spec("KEY-A-03")
 @pytest.mark.parametrize(
     "profile", ["memory", "local-linux", "local-apfs", "local-windows-long-paths", "s3", "sftp-openssh-linux"]
 )
 @given(k=portable_keys)
-def test_profiles_marked_yes_hold_every_portable_key(profile: str, k: str) -> None:
-    assert in_l_floor(k)
-    assert nu(k, _within_room(PROFILES[profile])) == k
+def test_columns_at_the_normal_value_hold_every_portable_key(profile: str, k: str) -> None:
+    """A column whose P_b is "= L_shared": its stand-in holds every L_shared key."""
+    cfg = _within_room(PROFILES[profile])
+    assert in_p_b(k, cfg)
+    assert nu(k, replace(cfg, portable=True)) == k
 
 
-def test_windows_without_long_paths_misses_a_portable_key() -> None:
+@pytest.mark.spec("KEY-008", "KEY-A-03")
+def test_portable_store_refuses_outside_a_declared_smaller_p_b() -> None:
+    """Windows without long paths declares a P_b smaller than L_shared; the opt-in refuses up front."""
     k = "a" * 250 + "/b"
     assert in_l_shared(k)
-    assert nu(k, _within_room(PROFILES["local-windows"])) == Refused("accept")
-    assert nu(k, _within_room(PROFILES["local-windows-long-paths"])) == k
+    without = replace(_within_room(PROFILES["local-windows"]), portable=True)
+    with_long = replace(_within_room(PROFILES["local-windows-long-paths"]), portable=True)
+    assert nu(k, without) == Refused("accept")
+    assert nu("a" * 200 + "/b", without) == "a" * 200 + "/b"
+    assert nu(k, with_long) == k
 
 
 @pytest.mark.spec("KEY-008")
@@ -451,11 +464,11 @@ def test_portable_name_excludes(name: str) -> None:
 
 @pytest.mark.spec("KEY-008")
 @given(key_strings | portable_keys)
-def test_portable_opt_in_accepts_exactly_l_shared(k: str) -> None:
+def test_portable_opt_in_accepts_exactly_p_b(k: str) -> None:
     assume(in_l_floor(k))
-    cfg = Config(portable=True)
-    assert ok(nu(k, cfg)) == in_l_shared(k)
-    assert nu(".", cfg) == ""
+    for cfg in (Config(portable=True), replace(PROFILES["local-windows"], portable=True)):
+        assert ok(nu(k, cfg)) == in_p_b(k, cfg)
+        assert nu(".", cfg) == ""
 
 
 @pytest.mark.spec("KEY-008")
