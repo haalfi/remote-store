@@ -9,7 +9,7 @@ defaultTargets = ["StoreAxioms", "KeyModel"]
 name = "StoreAxioms"
 leanOptions = { warningAsError = true }
 
-# Spec 054's store key, over spec 051's definitions.
+# Spec 052's store key, over spec 051's definitions.
 [[lean_lib]]
 name = "KeyModel"
 leanOptions = { warningAsError = true }

@@ -128,11 +128,11 @@ Lean's boundary: it proves what the file states, so fidelity to spec
 rests on (the 10 at the end of `StoreAxioms.lean`); a new result is
 pinned only once a line is added for it.
 
-`KeyModel.lean` restates [spec 054](../specs/054-store-key.md), the store
+`KeyModel.lean` restates [spec 052](../specs/052-store-key.md), the store
 key, over `StoreAxioms.lean`'s definitions, and proves its derived sections
 and the research's lemmas K1 to K12
 ([`research-key-model.md`](../research/research-key-model.md) § 7). Its
-acceptance language is a parameter, so the bounds spec 054 puts on it are
+acceptance language is a parameter, so the bounds spec 052 puts on it are
 checked by the reference model in `tests/test_store_key_model.py`, not here.
 It pins the axioms of its 15 headline results the same way.
 
@@ -426,7 +426,7 @@ A formal statement names the spec section it encodes in a line comment:
   check does not read: Alloy opens it as `open sub/Helper`, and Lean
   imports `lean/StoreAxioms/Helper.lean` as `StoreAxioms.Helper`.
   `StoreAxioms.als` and `StoreAxioms.lean` each restate spec 051, and
-  `KeyModel.lean` spec 054.
+  `KeyModel.lean` spec 052.
 
 **The spec governs the tags.** A section with no tag in a file that
 restates its spec, or a tag citing an ID no spec declares, is fixed in the

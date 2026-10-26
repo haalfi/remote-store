@@ -1,4 +1,4 @@
-"""Check spec 054's portable-name regex against its prose definition."""
+"""Check spec 052's portable-name regex against its prose definition."""
 
 import re
 

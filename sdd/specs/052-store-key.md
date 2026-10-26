@@ -1,4 +1,4 @@
-# 054: Store Key Specification
+# 052: Store Key Specification
 
 ## Overview
 
@@ -46,7 +46,7 @@ items. Names compare exactly (spec 051 § Name equality).
 | Position | A finite sequence of names; the empty sequence is the root. |
 | Base c | The key string a reduction starts from: ε for the store itself, or the key string c of a store rooted at c. |
 | L_floor | The key strings none of whose segments holds U+0000 or `\`, or equals `.` or `..`. |
-| L_b | Backend b's language: the key strings b holds, as KEY-006 bounds it; each backend's is in the [profile table](profiles/054-store-key.md). |
+| L_b | Backend b's language: the key strings b holds, as KEY-006 bounds it; each backend's is in the [profile table](profiles/052-store-key.md). |
 | L_shared | The portable language: ε, and the key strings `PORTABLE_KEY` below fully matches. |
 | L_api | The store's acceptance language (KEY-008). |
 | c · k | The key string whose segments are c's followed by k's; ε · k = k · ε = k. |

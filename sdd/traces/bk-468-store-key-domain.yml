@@ -13,6 +13,8 @@ decisions:
   - sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
 co_shipped_items:
   - BK-484
+  - BK-487
+  - BK-488
 # BK-469 was born as the code-breakage item and re-scoped by the rework to
 # the D8 comparison; BL-012 was born and then decided against (RFC-0024 D9).
 discovery_followups:
@@ -305,4 +307,18 @@ phases:
           unamended because "today spec 051 is the only ground spec"; spec 054 joining
           the ground (maintainer) ends that, so both copies gain R4's exception under a
           recorded budget raise. Found by `rg -e 'code is wrong'` over CLAUDE.md, .claude/, sdd/000-process.md
+        outcome: ok
+  - id: renumber
+    name: RFC-0025 PR 3, after master took the revert (#1181)
+    steps:
+      - file: sdd/rfcs/rfc-0025-freeze-kernel-line.md
+        section: "D3 (a pointer is not ground), D6, Delivery row 3"
+        read_type: gate
+        extract: >-
+          Merged master (conflicts: master's Rule 3 copies supersede this PR's, BACKLOG
+          keeps BK-434 and BK-435 absorbed into BK-489, BACKLOG-DONE keeps master's Frozen
+          structure, the decision log is the union). Spec 054 and its profile renamed to
+          052 with ; live references renumbered, records left as written; the
+          ground register gains a numbering line mapping old records and a second pointer
+          edit, spec 051's Layering now naming spec 052; BK-487 and BK-488 close
         outcome: ok

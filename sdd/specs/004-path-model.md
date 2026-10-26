@@ -1,7 +1,7 @@
 # Path Model Specification
 
 > **0.33 behaviour, being superseded** ([RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D7).
-> [Spec 054](054-store-key.md) supersedes PATH-002 to PATH-008; the other
+> [Spec 052](052-store-key.md) supersedes PATH-002 to PATH-008; the other
 > sections stay live.
 
 ## Overview

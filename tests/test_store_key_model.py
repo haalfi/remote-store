@@ -1,4 +1,4 @@
-"""Spec 054's store key (KEY-001 to KEY-013), checked against a reference model.
+"""Spec 052's store key (KEY-001 to KEY-013), checked against a reference model.
 
 The model is ν, Ω and the acceptance languages written from the spec's
 sections, with spec 051 stores as finite tuples. Evidence of three kinds:
@@ -12,7 +12,7 @@ sections, with spec 051 stores as finite tuples. Evidence of three kinds:
   KEY-013) is checked against a computation that does not call the clause it
   tests where one exists, such as the walk's end position for KEY-011.
 - **The profile table.** KEY-007 draws L_shared keys and runs them through a
-  configuration per column of ``sdd/specs/profiles/054-store-key.md``, so a
+  configuration per column of ``sdd/specs/profiles/052-store-key.md``, so a
   regex or a table cell that disagree fail here.
 
 Bounds: the model is finite and its backends are stand-ins for the table's
@@ -34,7 +34,7 @@ from hypothesis import strategies as st
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-# --- Reference model (spec 054) ---
+# --- Reference model (spec 052) ---
 
 
 @dataclass(frozen=True)
@@ -183,7 +183,7 @@ def resolve(k: str, s: Store) -> tuple:
     return ("absent",) if j == n - 1 else ("absent_ancestor", prefix(k, j))
 
 
-# --- Stand-ins for the profile table's columns (sdd/specs/profiles/054-store-key.md) ---
+# --- Stand-ins for the profile table's columns (sdd/specs/profiles/052-store-key.md) ---
 
 _WINDOWS_FORBIDDEN = set('<>:"|?*') | {chr(c) for c in range(1, 32)}
 _WINDOWS_DEVICES = {"CON", "PRN", "AUX", "NUL"} | {f"{d}{n}" for d in ("COM", "LPT") for n in "123456789¹²³"}

@@ -538,7 +538,7 @@ no clause of the contract ships unexercised.
   § 5), and the SDK's urllib3 removes dot segments client-side (its § 3.7). A listed `..` name (possible on
   a flat account, unmeasured) would be read, written or deleted at the resolved path, under an account key
   maybe in another container; PATH-003 refuses only input. Open decision: whether Azure listings yield such
-  names, omitted or refused; spec 054 leaves the general listing rule to the listing operations' specs.
+  names, omitted or refused; spec 052 leaves the general listing rule to the listing operations' specs.
 
 - [ ] **BK-436 — No backend's observed tree is checked against spec 051**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
@@ -582,7 +582,7 @@ copies an example, without opening an issue.
 
 - [ ] **BK-480 — No API lets a caller set or read a store's separator set and acceptance language**
   spec: KEY-007, KEY-008, KEY-009 · effort: S · audience: user.api, user.api_docs
-  Spec 054 makes the `\` opt-out and the portability opt-in store settings a caller can observe
+  Spec 052 makes the `\` opt-out and the portability opt-in store settings a caller can observe
   (KEY-008, KEY-009), and defines the portable language by `PORTABLE_KEY`; no type or method
   carries either, so a caller has only the spec text. Class F (RFC-0024 § R3): decided in the API's
   flow, with a helper such as `is_portable_key(key) -> bool` as candidate input. Open decision: the shape.
@@ -735,7 +735,7 @@ or paying for our shortcut.
 **Promise:** nothing reaches a user that we did not test, publish, watch, or
 give them a way to absorb.
 
-- [ ] **BK-469 — Spec 054 has not been compared with 0.33, so the key layer's breaks have no record**
+- [ ] **BK-469 — Spec 052 has not been compared with 0.33, so the key layer's breaks have no record**
   spec: KEY-002 -- KEY-006 · effort: M · audience: user.api, library.maintainer
   RFC-0024 D8's pass for the key layer. Known differences: 0.33 refuses every `..` (PATH-003) where
   ν climbs; at `7491289` `Store` took `"\ud800"` (Memory stored it, Local leaked `UnicodeEncodeError`)

@@ -1,9 +1,9 @@
 import StoreAxioms
 
 /-!
-# Spec 054's store key: reduction, acceptance, resolution
+# Spec 052's store key: reduction, acceptance, resolution
 
-Restates `sdd/specs/054-store-key.md` and proves its derived sections for
+Restates `sdd/specs/052-store-key.md` and proves its derived sections for
 every input, over any alphabet with distinct `/`, `\` and NUL, against spec
 051's own definitions in `StoreAxioms.lean` (`join`, `join_shape`, `seqOf`,
 `Key`, and L6's `ofTrie`). The research behind it is
@@ -17,7 +17,7 @@ is a parameter (`Cfg.tier`), so KEY-006 to KEY-008's bounds on it are stated
 by the spec and checked by the reference model, not here.
 -/
 
--- @restates sdd/specs/054-store-key.md
+-- @restates sdd/specs/052-store-key.md
 
 namespace KeyConcept
 open StoreAxioms

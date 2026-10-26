@@ -1,7 +1,7 @@
-# 054 Profiles: Backend Key Languages
-<!-- doc: dual dest=explanation/design/specs/054-store-key-profiles.md -->
+# 052 Profiles: Backend Key Languages
+<!-- doc: dual dest=explanation/design/specs/052-store-key-profiles.md -->
 
-**What each backend holds as a key, per axis of [spec 054](../054-store-key.md)'s
+**What each backend holds as a key, per axis of [spec 052](../052-store-key.md)'s
 L_b (KEY-006), each cell from a cited authority or a dated measurement.** A
 cell bounds L_b for that backend; the spec's clauses do not change with it.
 Sources are the sections of
