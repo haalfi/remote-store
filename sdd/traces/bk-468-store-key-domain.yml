@@ -388,3 +388,187 @@ phases:
           c = epsilon case, deleted the spike's Lean copy, and kept spec 004 untouched: the
           maintainer ruled that 051 and 052 answer to each other, not to 0.33
         outcome: misleading
+review:
+  # Derived by `hatch run ship-report 1171 --trace-block-only` at head 698ca74.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1171 --trace-block-only"
+  pr: 1171
+  review_rounds: 39
+  submissions: 10
+  findings: 61
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 1, refuted: 1, unknown: 1}
+      duration_hours: 0.08
+    - round: 2
+      findings: 6
+      origin: {loop-introduced: 2, original: 3, pre-existing: 1}
+      triage: {must-fix: 5, unknown: 1}
+      duration_hours: 0.13
+    - round: 3
+      findings: 6
+      origin: {loop-introduced: 3, original: 3}
+      triage: {must-fix: 5, unknown: 1}
+      duration_hours: 0.15
+    - round: 4
+      findings: 8
+      origin: {loop-introduced: 8}
+      triage: {must-fix: 8}
+      duration_hours: 2.11
+    - round: 5
+      findings: 1
+      origin: {original: 1}
+      triage: {unknown: 1}
+      duration_hours: 34.14
+    - round: 6
+      findings: 9
+      origin: {loop-introduced: 8, unclassifiable-file: 1}
+      triage: {must-fix: 8, unknown: 1}
+      duration_hours: 98.79
+    - round: 7
+      findings: 7
+      origin: {loop-introduced: 6, unclassifiable-file: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.53
+    - round: 8
+      findings: 5
+      origin: {loop-introduced: 5}
+      triage: {must-fix: 5}
+      duration_hours: 0.8
+    - round: 9
+      findings: 13
+      origin: {loop-introduced: 13}
+      triage: {filed: 1, must-fix: 8, unknown: 4}
+      duration_hours: 2.04
+    - round: 10
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.82
+  by_file:
+    - path: "sdd/specs/052-store-key.md"
+      findings: 24
+    - path: "sdd/rfcs/rfc-0023-key-limits-declaration.md"
+      findings: 8
+    - path: "sdd/specs/054-store-key.md"
+      findings: 8
+    - path: "sdd/research/research-key-model.md"
+      findings: 4
+    - path: "sdd/specs/profiles/052-store-key.md"
+      findings: 4
+    - path: "sdd/formal/lean/KeyModel.lean"
+      findings: 3
+    - path: "tests/test_store_keys.py"
+      findings: 3
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+    - path: "sdd/specs/018-glob.md"
+      findings: 2
+    - path: "sdd/specs/001-store-api.md"
+      findings: 1
+    - path: "sdd/specs/004-path-model.md"
+      findings: 1
+    - path: "tests/test_store_key_model.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl"
+    - "sdd/decisions/f26dd04d-9f53-5e2c-8e68-0cddadfe681d.jsonl"
+    - "sdd/formal/README.md"
+    - "sdd/formal/lean/lakefile.toml"
+    - "sdd/observe/ground-register.md"
+    - "sdd/research/bk-468-key-probe/check_portable_regex.py"
+    - "sdd/research/bk-468-key-probe/probe_read.py"
+    - "sdd/research/bk-468-key-probe/probe_write.py"
+    - "sdd/research/bk-484-key-model/README.md"
+    - "sdd/research/bk-484-key-model/lean/KeyStore.lean"
+    - "sdd/research/bk-484-key-model/lean/build.sh"
+    - "sdd/research/bk-484-key-model/lean/lakefile.toml"
+    - "sdd/research/bk-484-key-model/lean/lean-toolchain"
+    - "sdd/specs/051-store-tree.md"
+    - "sdd/traces/bk-468-store-key-domain.yml"
+  review_driven_commits:
+    - sha: "ce25c90"
+      subject: "fix: address PR #1171 review"
+    - sha: "11a6315"
+      subject: "fix: address PR #1171 review (round 2)"
+    - sha: "0ce4d21"
+      subject: "fix: address PR #1171 review (round 2, profile declaration note)"
+    - sha: "e90b11e"
+      subject: "fix: address PR #1171 review (round 3)"
+    - sha: "9deb1f1"
+      subject: "BK-468: decision log"
+    - sha: "fb53d04"
+      subject: "BK-468: decision log"
+    - sha: "2e4efc0"
+      subject: "BK-468: Spec 054's Terms as a glossary table; no normalisation and no .. resolution stated"
+    - sha: "2d0e3ed"
+      subject: "BK-468: Spec 054 in two stated layers, the key function and the Keys a backend admits"
+    - sha: "d13f53c"
+      subject: "BK-468: KEY-004 states and tests whitespace-only segments as names"
+    - sha: "a678fa7"
+      subject: "BK-468: KEY-009, a Key a backend admits reaches its own entity"
+    - sha: "000ed06"
+      subject: "BK-468: Portable name states why it excludes a space and a trailing dot"
+    - sha: "c05908f"
+      subject: "BK-468: decision log"
+    - sha: "fbf4559"
+      subject: "BK-468: RFC-0023 draft, key limits as a driver declaration"
+    - sha: "a6f315b"
+      subject: "BK-468: RFC-0023 records the maintainer's reason for the kernel over the store"
+    - sha: "00fab38"
+      subject: "BK-468: RFC-0023 takes BE-040, since BE-034 to BE-039 are BK-456's"
+    - sha: "5934f47"
+      subject: "BK-468: Portable regex in spec 054, BL-012 release blocker, kernel-migration posture in CLAUDE.md"
+    - sha: "1949964"
+      subject: "BK-468: File BK-480, a portability check for callers"
+    - sha: "fbc5ef0"
+      subject: "BK-468: RFC-0023 D6 changes one phrase of Rule 5, not its whole sentence"
+    - sha: "c498ecc"
+      subject: "fix: address PR #1171 focused review of RFC-0023 and spec 054"
+    - sha: "3e97160"
+      subject: "BK-468: KEY-009 measured on CI's Windows lane as a strict xfail"
+    - sha: "c49e948"
+      subject: "BK-468: decision log"
+    - sha: "74271f9"
+      subject: "BK-468: KEY-009's Windows xfail expects the alias assertion only"
+    - sha: "4e91fa6"
+      subject: "BK-468: Pin each Windows KEY-009 case's measured failure; record the measurement"
+    - sha: "6eb2cbe"
+      subject: "Merge master into claude/wonderful-bell-mqemmt"
+    - sha: "9831bec"
+      subject: "BK-468: Rework spec 054 onto the key model and RFC-0024"
+    - sha: "afdeff1"
+      subject: "BK-468: Give the two Rule 3 copies R4's exception, now that spec 054 is ground"
+    - sha: "5200e31"
+      subject: "Merge origin/master into claude/wonderful-bell-mqemmt"
+    - sha: "dc061b9"
+      subject: "BK-468: Renumber the store key to spec 052 (RFC-0025 PR 3)"
+    - sha: "c0e265a"
+      subject: "BK-468: Address the spec 052 review (environment clauses, portable language, examples)"
+    - sha: "4d1f59b"
+      subject: "BK-468: Address the second spec 052 review (labels, attributions, research deltas)"
+    - sha: "df97aa2"
+      subject: "BK-468: Portable opt-in accepts the backend's declared portable set P_b"
+    - sha: "01591be"
+      subject: "fix: address PR #1171 review"
+    - sha: "b676ae8"
+      subject: "BK-468: research-key-model.md compares spec 052, not a PR draft"
+    - sha: "5b6c669"
+      subject: "BK-468: PORTABLE_NAME's reserved-name lookahead ends on \\Z, not $"
+    - sha: "e4a672d"
+      subject: "BK-468: Spec 052 states why the portable set is ASCII while keys are Unicode"
+    - sha: "45fdc5f"
+      subject: "fix: address PR #1171 review"
+    - sha: "d1bc4e8"
+      subject: "BK-468: Record the spec 004 D7 header decision"
+    - sha: "8b00d17"
+      subject: "BK-468: Record the last-round decision"
+    - sha: "698ca74"
+      subject: "fix: address PR #1171 review"
+  ci: {verdict: PENDING, failed: 0, pending: 25}
