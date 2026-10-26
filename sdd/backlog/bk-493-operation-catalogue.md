@@ -45,8 +45,8 @@ ASYNC-046; its Tested against is `None.`, with the reason in its Notes.
 
 The deep research landed the same day and is filed as
 [`research-operation-catalogue.md`](../research/research-operation-catalogue.md);
-its filing note records what the catalogue took from it (RFC-0026 C5). Next:
-the gates and review rounds.
+its filing note records what the catalogue took from it (RFC-0026 C5). The
+maintainer accepted RFC-0026 in PR #1184's review, which closes this item.
 
 From an outside review on PR #1184 (the maintainer's dialog in
 `sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`): OP-22 and OP-23

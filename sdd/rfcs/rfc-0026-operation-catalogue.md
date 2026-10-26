@@ -2,7 +2,8 @@
 
 ## Status
 
-Draft, 2026-10-26. Tracked as **BK-493**. Amends
+Accepted, 2026-10-26, by the maintainer. Drafted 2026-10-26. Tracked as
+**BK-493**. Amends
 [RFC-0024](rfc-0024-spec-first-reset.md) in three places: step 4b joins the
 step table of [research § 9](../research/research-spec-first-reset.md#9-results-and-recommendation),
 which RFC-0024 makes binding (C1); step 4b's output joins the ground without a
@@ -169,8 +170,8 @@ All decided in the log above:
   method no entry serves, becomes a break record there.
 - **Process:** research § 9's step table, as RFC-0024 carries it; the ground
   register; D7 headers on specs 001 and 029; the research doc under
-  `sdd/research/`. RFC-0024 gets an "Amended by
-  RFC-0026" line on acceptance.
+  `sdd/research/`. RFC-0024 carries an "Amended by
+  RFC-0026" line.
 - **Testing:** none. Spec 053 is tested against nothing until a v1 surface
   exists (C3, its Notes); the flow that builds the surface adds a test that
   compares its public operations with the catalogue.

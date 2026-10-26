@@ -14,6 +14,11 @@ Amended by [RFC-0025](rfc-0025-freeze-kernel-line.md), accepted 2026-10-25:
 R1's D2, D8, D9 and D10 rows, R2, R3's classes K and P, R4, R5 and § Impact's
 Process bullet hold as RFC-0025 amends them while master's code is 0.33.
 
+Amended by [RFC-0026](rfc-0026-operation-catalogue.md), accepted 2026-10-26:
+§ 9's step table gains step 4b, the operation catalogue; step 4b's output
+joins the ground without a formal model; and § R4 gains a second exception,
+spec 053 having no test until a v1 surface exists.
+
 It changes no spec format. [`SPEC-DESIGN.md`](../SPEC-DESIGN.md) and
 [ADR-0048](../adrs/0048-how-specs-are-designed.md) stay the authority for what
 a spec states and the form it takes, with one bounded exception in § R4. The
