@@ -1333,9 +1333,6 @@ class MemoryBackend(Backend):
         if default__.AddressesRoot(path):
             r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
-        if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) not in ((self).capabilities)):
-            r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(Capability_CapUserMetadata()), (self).name))
-            return r
         if ((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
@@ -1348,6 +1345,9 @@ class MemoryBackend(Backend):
         d_0_ancestors__ok_ = out0_
         if not(d_0_ancestors__ok_):
             r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
+        if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) not in ((self).capabilities)):
+            r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(Capability_CapUserMetadata()), (self).name))
             return r
         (self).containerPresent = True
         (self).EnsureParents(path)
@@ -1874,9 +1874,6 @@ class MemoryBackendMinimal(Backend):
         if default__.AddressesRoot(path):
             r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
-        if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) not in ((self).capabilities)):
-            r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(Capability_CapUserMetadata()), (self).name))
-            return r
         if ((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
@@ -1889,6 +1886,9 @@ class MemoryBackendMinimal(Backend):
         d_0_ancestors__ok_ = out0_
         if not(d_0_ancestors__ok_):
             r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
+        if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) not in ((self).capabilities)):
+            r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(Capability_CapUserMetadata()), (self).name))
             return r
         (self).containerPresent = True
         (self).EnsureParents(path)

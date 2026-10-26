@@ -1627,7 +1627,7 @@ cannot help across loops.
   callers needing typed race outcomes serialise externally. Documented, not fixed
   — consistent with GR-044 / GR-026.
 
-**See also:** [052-backend-lifetime.md](052-backend-lifetime.md)
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
 (BE-028), [029-async-store-backend-api.md](029-async-store-backend-api.md)
 (ASYNC-094, ASYNC-089), GR-051 (close), GR-018 / GR-032 (overwrite), GR-015
 (shared client / range state).

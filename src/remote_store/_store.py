@@ -6,12 +6,10 @@ import contextlib
 import dataclasses
 import fnmatch
 import logging
-from collections.abc import Mapping
 from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath, NotFound
-from remote_store._glob import normalize_pattern
 from remote_store._models import FolderEntry, FolderInfo, WriteResult, _known_modified_at
 from remote_store._path import RemotePath
 
@@ -44,7 +42,7 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
     from datetime import datetime
     from types import TracebackType
 
@@ -207,8 +205,8 @@ class Store:
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
             InvalidPath: If *path* is empty.
-            ValueError: If *metadata* fails shape validation (a mapping
-                whose keys and values are ``str``, with bounded total size).
+            ValueError: If *metadata* fails shape validation (keys and
+                values must be ``str`` with bounded total size).
             CapabilityNotSupported: If *metadata* is non-empty and the
                 backend lacks ``USER_METADATA``.
         """
@@ -582,23 +580,17 @@ class Store:
         Requires ``Capability.GLOB``.
 
         Args:
-            pattern: Glob pattern (e.g. ``"data/**/*.parquet"``), read as a
-                path is: ``"/data/*.csv"`` and ``"./data//*.csv"`` mean
-                ``"data/*.csv"``.
+            pattern: Glob pattern (e.g. ``"data/**/*.parquet"``).
 
         Returns:
             Iterator of ``FileInfo`` with store-relative paths.
 
         Raises:
             CapabilityNotSupported: If the backend lacks ``GLOB``.
-            InvalidPath: If *pattern* holds a ``..`` segment or a null byte.
         """
         log.debug("glob pattern=%r", pattern, extra={"op": "glob", "path": pattern, "backend": self._backend.name})
         self._gate("glob")
-        canon = normalize_pattern(pattern)
-        if not canon:
-            return  # the root is a folder, and glob yields only files
-        full_pattern = f"{self._root}/{canon}" if self._root else canon
+        full_pattern = f"{self._root}/{pattern}" if self._root else pattern
         for info in self._backend.glob(full_pattern):
             yield self._rebase_file_info(info)
 
@@ -1102,7 +1094,6 @@ def _validate_metadata(metadata: Mapping[str, str] | None) -> None:
     Rules (mirrored from the ``metadata:`` parameter doc on every
     ``write*`` method):
 
-    * it must be a mapping (``None`` aside), even an empty one;
     * keys and values must both be ``str``;
     * keys must be non-empty ASCII without a leading underscore;
     * the combined key + value byte payload must not exceed 2048 bytes.
@@ -1112,11 +1103,8 @@ def _validate_metadata(metadata: Mapping[str, str] | None) -> None:
     Raises:
         ValueError: On any rule violation.
     """
-    if metadata is None:
+    if not metadata:
         return
-    if not isinstance(metadata, Mapping):
-        msg = f"metadata must be a mapping, not {type(metadata).__name__}"
-        raise ValueError(msg)
     total = 0
     for key, value in metadata.items():
         if not isinstance(key, str):

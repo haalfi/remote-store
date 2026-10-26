@@ -50,7 +50,7 @@ asserted on Memory only:
 
 Spec binding
 ------------
-The backend-level posture clause is **BK-287**: ``BE-028`` (sync, spec 052),
+The backend-level posture clause is **BK-287**: ``BE-028`` (sync, spec 003),
 ``ASYNC-094`` (async, spec 029), and the per-backend clauses ``S3-028`` /
 ``AZ-037`` / ``SFTP-029``. The lane carries those marks plus STORE-007 (the
 Store-layer share-across-threads property it generalises). The registry

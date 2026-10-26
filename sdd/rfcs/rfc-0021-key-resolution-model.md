@@ -7,9 +7,14 @@ Accepted, 2026-10-13, by the maintainer. Drafted 2026-10-12. Aligned with
 **BK-432**. PR #1127 (BK-389) was parked until this was decided, and resumes
 against it: its open `delete_folder` findings are answered from it. Appendix A
 landed as spec 003's
-[BE-032](../specs/053-contract-kernel.md#be-032-the-store-tree-on-the-kernel)
+[BE-032](https://github.com/haalfi/remote-store/blob/frozen/kernel-driver/sdd/specs/053-contract-kernel.md#be-032-the-store-tree-on-the-kernel)
 with PR #1127, which is now the authority; the appendix stays as drafted.
 Links (A.7) are stated there but not yet on the kernel.
+
+Implementation frozen on `frozen/kernel-driver` by
+[RFC-0025](rfc-0025-freeze-kernel-line.md) (2026-10-25), with `StoreTree.dfy`,
+this RFC's check; CI's `verify-formal` job stays. The decision is not
+withdrawn; RFC-0024 D10 decides whether it stands.
 
 ## Summary
 

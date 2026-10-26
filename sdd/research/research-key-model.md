@@ -625,7 +625,7 @@ source named, and each is narrower than the model.
   [`StoreAxioms.lean`](../formal/lean/StoreAxioms.lean) § 7. K(S) is such a
   set (TREE-012), and two of the Lean proofs go through it (§ 10).
 - **Path-keyed tree maps** (*Read*).
-  [`StoreTree.dfy`](../formal/StoreTree.dfy) § 1 states the tree as
+  [`StoreTree.dfy`](https://github.com/haalfi/remote-store/blob/frozen/kernel-driver/sdd/formal/StoreTree.dfy) § 1 states the tree as
   `map<Key, Kind>`, valid when the root is a folder and every proper prefix of
   a key is a folder. Its § 2 `Resolve` answers `RItem`, `RFolder`,
   `RThroughItem` or `RNothing`. That is § 3.7 with Absent and AbsentAncestor

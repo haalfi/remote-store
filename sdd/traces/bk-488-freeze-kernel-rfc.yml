@@ -1,0 +1,216 @@
+id: BK-488
+title: "Master carries a frozen contract kernel that no v1 flow will keep, so its code is not 0.33's"
+trigger: >-
+  After RFC-0024 paused the kernel migration, the maintainer proposed moving
+  everything built for the kernel since v0.33.0 onto a frozen branch and
+  returning master's library code to the release, keeping the spec-first work,
+  process and tooling on master, and renumbering spec 054 to 052.
+source_items:
+  - BK-488
+audience:
+  - library.maintainer
+  - contributor.process
+decisions:
+  - sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BK-485` and RFC-0024 R1 to R3: R2 keeps Memory on
+      the kernel and the kernel frozen on master, D2 and D9 split the 0.33 line
+      onto `release/0.33.x`. RFC-0025 amends D2, D8, D9, D10, R2 (the pause and
+      freeze, and the breaking-fix rule), R3's classes K and P, and R5, all while
+      master's code is 0.33; D1, D3 to D7 and D11 stand. A first draft listed only
+      D2, D9, D10, R2 and R3 class P; PR #1180's review found the rest.
+  - items: [BK-456]
+    verdict: subsumes
+    evidence: >-
+      `hatch run backlog-show BK-456`: stage two split spec 003 into 052 and 053;
+      the revert undoes it for 003 (BE-020 and BE-028 return) and freezes 052 and
+      053. Stage three is open draft PR #1172, a prune of spec 052, which then has
+      no subject (RFC-0025 Open Question 2).
+  - items: [BK-435]
+    verdict: constrains
+    evidence: >-
+      `hatch run backlog-show BK-435`: its open work is `StoreTree.dfy` §12's tags
+      and its Dafny operations; the maintainer froze `StoreTree.dfy`, so that work
+      parks with it, while spec 051's Lean and Alloy stay as ground.
+  - items: [BK-468, BK-487]
+    verdict: constrains
+    evidence: >-
+      Open draft PR #1171 adds spec 054; the maintainer renumbers it to 052 once
+      052 leaves master, and holds the PR as is until the revert merges (PR 3 of
+      RFC-0025's delivery).
+  - items: [BK-469]
+    verdict: constrains
+    evidence: >-
+      Filed on #1171 as the key layer's D8 comparison with 0.33. With master's code
+      back at 0.33, master's own suite is the record it reads (RFC-0025 D5).
+  - items: [BK-390, BK-439, BK-446, BK-455, BK-434, BK-450]
+    verdict: subsumes
+    evidence: >-
+      RFC-0024 § R3's class P list, each dossier read in full (phase orient_p).
+      Their whole subject is kernel, driver, `Session` or migration work: BK-390
+      "that driver's step, 2 to 8"; BK-455 "no `Session` exists"; BK-439 and
+      BK-446 glob on the kernel; BK-434 `StoreTree.dfy` refinement. BK-450's T1
+      is BUG-341, and its decision log 062e5181 must travel to the host dossier.
+      Absorbing BK-446 overrides BK-452's "stays its own item".
+  - items: [BK-452, BK-345, ID-140, ID-181, BUG-341]
+    verdict: constrains
+    evidence: >-
+      Parts of these exist in v0.33.0, checked against the tag: BUG-341 at
+      v0.33.0 `backends/_memory.py:379,428,459,619,754` (metadata passed
+      uncopied); BK-452's Memory pins, where v0.33.0 spec 013 l.339 and l.357
+      misstate an overwriting move and copy; ID-140, where v0.33.0
+      `_sqlalchemy.py:47` withholds LAZY_READ; ID-181, where v0.33.0
+      `_sftp.py:412` patches paramiko process-wide; BK-345, which before its
+      2026-10-02 re-scope named a registry cell v0.33.0's conformance suite
+      lacks. They stay on master; only their kernel placement lines and parts
+      move (RFC-0025 D7). A first draft absorbed all ten; PR #1180's review
+      asked for this cluster.
+  - items: [BK-462, BK-465, BK-466]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-show BK-462`: Alloy and Lean in CI, unaffected since spec
+      051's models stay. BK-465 and BK-466 (open draft PR #1170) amend
+      SPEC-DESIGN.md, which stays.
+phases:
+  - id: orient
+    name: Measure what changed since v0.33.0
+    steps:
+      - file: "git history v0.33.0..814c1f6"
+        section: "rev-list, log -- src, diff --stat -- src"
+        read_type: verify
+        extract: >-
+          92 commits; 9 touch src (6 kernel, BUG-280 alone, BK-405 with BUG-298,
+          #1151 mixing BUG-329/330/331/333 with kernel); src diff 30 files,
+          +5,978/-1,506. The clone was shallow at first: #1115 showed as a root
+          commit and hid 42 earlier ones until `git fetch --unshallow`
+        outcome: ok
+      - file: "git history v0.33.0..814c1f6"
+        section: "log -- sdd/specs and the spec 051 model paths"
+        read_type: verify
+        extract: >-
+          15 commits edit specs 001 to 050, kernel and process mixed; spec 051, its
+          Lean and Alloy models and RFC-0021 first landed in the kernel PR #1127,
+          so the revert goes by path, not by commit
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v1.0.0"
+        read_type: reference
+        extract: >-
+          Four subsections: BUG-280 (no Breaking marker, owes a section), metadata
+          (BUG-329), glob (BK-405 with BUG-298's newline sentence), drivers (kernel)
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "When to bump; Release"
+        read_type: gate
+        extract: "Bug fixes are patch; § Release names release/0.33.x as the only 0.33 line, which D5 retires"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "R1 to R5"
+        read_type: gate
+        extract: "The clauses RFC-0025 amends: D2, D9, D10, R2, R3 class P"
+        outcome: ok
+  - id: orient_p
+    name: Read the class P items' dossiers against v0.33.0 (delegated reader, after PR #1180's review)
+    steps:
+      - file: sdd/backlog/bk-450-driver-boundary-enforcement.md
+        section: "(full)"
+        read_type: gate
+        extract: "Kernel boundary work; T1 is BUG-341; decision log 062e5181 to carry over"
+        outcome: ok
+      - file: sdd/backlog/bk-452-template-reference-set.md
+        section: "(full)"
+        read_type: gate
+        extract: "Flat reference driver is kernel; Memory pins T18, T19 hold on v0.33.0's spec 013"
+        outcome: ok
+      - file: sdd/backlog/bk-345-absent-container-conformance.md
+        section: "(full)"
+        read_type: gate
+        extract: "Original registry-cell gap predates the kernel; the 2026-10-02 correction re-scoped it to drivers"
+        outcome: ok
+      - file: sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+        section: "(full)"
+        read_type: gate
+        extract: "Every row is a D3 step's amendment; the table travels as is"
+        outcome: ok
+      - file: sdd/backlog/bk-434-trait-refinement-against-storetree.md
+        section: "(full)"
+        read_type: gate
+        extract: "StoreTree.dfy refinement; BackendContract.dfy drift (T3, T14) to re-check on master's model"
+        outcome: ok
+      - file: sdd/backlog/id-140-sqlblob-lazy-reads.md
+        section: "(full)"
+        read_type: gate
+        extract: "A 0.33 SQLBlob feature; only its D3 step-3 placement is kernel"
+        outcome: ok
+      - file: sdd/backlog/id-181-per-backend-ssh-rsa-opt-in.md
+        section: "(full)"
+        read_type: gate
+        extract: "A 0.33 SFTP feature; only its D3 step-6 placement is kernel"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-455, BK-439, BK-446, BUG-341 (backlog-show)"
+        read_type: gate
+        extract: "BK-455, BK-439, BK-446 kernel-only; BUG-341 a v0.33.0 defect, open decision none"
+        outcome: ok
+  - id: review_two
+    name: Scoped review pass on RFC-0025 at 51f2c06 (maintainer-requested), and its fixes
+    steps:
+      - file: "PR #1180 review 5642985114"
+        section: "12 findings: 2 Bug, 2 Spec, 4 Consistency, 4 Ripple"
+        read_type: verify
+        extract: >-
+          Each verified before fixing. `git show --stat a62295f2a -- src tests`: BUG-333's fix and
+          test sit only in the kernel's streams, so three fixes are re-applied, not four.
+          `git grep 'verify-formal:' v0.33.0 -- .github/workflows/ci.yml` finds l.642, so the job
+          stays. `git show --stat 52448e023 -- sdd/specs docs-src`: #1154 also edits the glob guide
+          and migration guide. `git diff v0.33.0 origin/master -- docs-src/index.md
+          docs-src/context7.json` shows driver text the reviewer's page list missed. My first
+          draft had taken BUG-333 into D2 from its CHANGELOG title without opening its diff
+        outcome: ok
+  - id: draft
+    name: Draft RFC-0025
+    steps:
+      - file: sdd/templates/rfc-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "Status, Summary, Motivation, Proposal, Alternatives, Impact, Open Questions, References"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1180 --trace-block-only` at head 6c0bc00.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1180 --trace-block-only"
+  pr: 1180
+  review_rounds: 3
+  submissions: 2
+  findings: 18
+  by_round:
+    - round: 1
+      findings: 6
+      origin: {original: 6}
+      triage: {must-fix: 6}
+      duration_hours: 0.54
+    - round: 2
+      findings: 12
+      origin: {loop-introduced: 8, original: 4}
+      triage: {must-fix: 12}
+      duration_hours: 2.11
+  by_file:
+    - path: "sdd/rfcs/rfc-0025-freeze-kernel-line.md"
+      findings: 17
+    - path: "sdd/traces/bk-488-freeze-kernel-rfc.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl"
+  review_driven_commits:
+    - sha: "53bd780"
+      subject: "BK-488: Address PR #1180 review of RFC-0025"
+    - sha: "51f2c06"
+      subject: "BK-488: Trace phase ID orient_p matches the schema's pattern"
+    - sha: "6c0bc00"
+      subject: "BK-488: Address the scoped review of RFC-0025"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

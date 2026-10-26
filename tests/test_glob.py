@@ -19,17 +19,14 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
-from remote_store._errors import CapabilityNotSupported, InvalidPath
+from remote_store._errors import CapabilityNotSupported
 from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
     from pathlib import Path
-
-    from remote_store._models import FileInfo
 
 pytestmark = pytest.mark.os_sensitive
 
@@ -270,44 +267,6 @@ class TestTier2NativeGlob:
     def test_store_glob_round_trip(self, pop_local: Store) -> None:
         for info in pop_local.glob("**/*.csv"):
             assert len(pop_local.read_bytes(str(info.path))) > 0
-
-    @pytest.mark.spec("GLOB-007")
-    @pytest.mark.parametrize("root_path", ["", "data"], ids=["empty_root", "data_root"])
-    @pytest.mark.parametrize(
-        "pattern",
-        ["docs/*.md", "/docs/*.md", "//docs/*.md", "./docs/*.md", "docs//*.md", "docs/./*.md"],
-    )
-    def test_store_glob_normalizes_pattern(self, tmp_path: Path, root_path: str, pattern: str) -> None:
-        """A pattern names Keys as a path does (PATH-004 to PATH-006), under any root."""
-        store = Store(backend=LocalBackend(root=str(tmp_path)), root_path=root_path)
-        _populate(store)
-        assert sorted(str(f.path) for f in store.glob(pattern)) == ["docs/guide.md", "docs/readme.md"]
-
-    @pytest.mark.spec("GLOB-007")
-    @pytest.mark.parametrize("root_path", ["", "data"], ids=["empty_root", "data_root"])
-    @pytest.mark.parametrize("pattern", ["", ".", "/", "./", "//"])
-    def test_store_glob_root_pattern_yields_nothing(self, tmp_path: Path, root_path: str, pattern: str) -> None:
-        """Every spelling of the root names a folder, and glob yields only files, without asking the backend."""
-
-        class _Recording(LocalBackend):
-            seen: list[str] = []
-
-            def glob(self, pattern: str) -> Iterator[FileInfo]:
-                self.seen.append(pattern)
-                return super().glob(pattern)
-
-        backend = _Recording(root=str(tmp_path))
-        store = Store(backend=backend, root_path=root_path)
-        _populate(store)
-        assert list(store.glob(pattern)) == []
-        assert backend.seen == []
-
-    @pytest.mark.spec("GLOB-007")
-    @pytest.mark.parametrize("pattern", ["../*.csv", "docs/../*.csv", "*.csv\0"])
-    def test_store_glob_refuses_like_a_path(self, pop_local: Store, pattern: str) -> None:
-        """`..` and a null byte are refused as in PATH-003 and PATH-007."""
-        with pytest.raises(InvalidPath):
-            list(pop_local.glob(pattern))
 
     @pytest.mark.spec("GLOB-008")
     def test_store_glob_raises_without_capability(self, mem_store: Store) -> None:

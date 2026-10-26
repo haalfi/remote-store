@@ -35,3 +35,10 @@ which then runs this definition.
 
 **Due:** before RFC-0017 D3 step 2: `S3Boto3Backend` declares `GLOB`
 (`_s3_boto3.py:88`) and globs through `pattern_to_regex` (`:809`).
+
+*Re-scoped 2026-10-25 ([RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md)): the kernel and
+BE-032 left master, so T7 (the kernel's `glob` raising where listings answer empty) and the
+kernel `GLOB` driver's `InvalidPath` above are frozen with them, as are the D3-step due date
+and the BK-439 and BK-446 overlaps (both absorbed into BK-489). What stays is the shared
+`pattern_to_regex` against native Local glob (T8) and a defining clause for `glob` over the
+tree.*

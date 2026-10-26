@@ -8,7 +8,6 @@ import pytest
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
-    from pathlib import Path
 
 from datetime import UTC
 
@@ -424,7 +423,7 @@ class TestAsyncStoreMetadata:
 
     @pytest.mark.spec("ASYNC-046")
     async def test_get_file_info_not_found(self, async_store: AsyncStore) -> None:
-        with pytest.raises(NotFound, match="Not found"):
+        with pytest.raises(NotFound, match="not found"):
             await async_store.get_file_info("missing.txt")
 
     @pytest.mark.spec("ASYNC-046")
@@ -848,55 +847,6 @@ class TestAsyncStoreGlobInner:
             assert len(results) == 1
             assert results[0].name == "a.csv"
 
-    @pytest.mark.spec("GLOB-007")
-    @pytest.mark.parametrize("root_path", ["", "data"], ids=["empty_root", "data_root"])
-    @pytest.mark.parametrize("pattern", ["/sub/*.csv", "./sub/*.csv", "sub//*.csv"])
-    async def test_glob_normalizes_pattern(self, root_path: str, pattern: str) -> None:
-        """A pattern names Keys as a path does, under any root (sync twin in tests/test_glob.py)."""
-        import tempfile
-        from pathlib import Path
-
-        from remote_store.aio._sync_adapter import SyncBackendAdapter
-        from remote_store.backends._local import LocalBackend
-
-        with tempfile.TemporaryDirectory() as tmp:
-            sub = Path(tmp) / root_path / "sub"
-            sub.mkdir(parents=True)
-            (sub / "a.csv").write_bytes(b"1")
-            store = AsyncStore(SyncBackendAdapter(LocalBackend(root=tmp)), root_path=root_path)
-            assert [str(f.path) async for f in store.glob(pattern)] == ["sub/a.csv"]
-
-    @pytest.mark.spec("GLOB-007")
-    @pytest.mark.parametrize("root_path", ["", "data"], ids=["empty_root", "data_root"])
-    @pytest.mark.parametrize("pattern", ["", ".", "/", "./"])
-    async def test_glob_root_pattern_skips_backend(self, tmp_path: Path, root_path: str, pattern: str) -> None:
-        """A pattern naming the root yields nothing without asking the backend (sync twin in tests/test_glob.py)."""
-        from remote_store.aio._sync_adapter import SyncBackendAdapter
-        from remote_store.backends._local import LocalBackend
-
-        class _Recording(SyncBackendAdapter):
-            seen: list[str] = []
-
-            def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
-                self.seen.append(pattern)
-                return super().glob(pattern)
-
-        (tmp_path / root_path / "sub").mkdir(parents=True)
-        (tmp_path / root_path / "a.csv").write_bytes(b"1")
-        backend = _Recording(LocalBackend(root=str(tmp_path)))
-        store = AsyncStore(backend, root_path=root_path)
-        assert [f async for f in store.glob(pattern)] == []
-        assert backend.seen == []
-
-    @pytest.mark.spec("GLOB-007")
-    async def test_glob_refuses_dotdot_eagerly(self, tmp_path: Path) -> None:
-        from remote_store.aio._sync_adapter import SyncBackendAdapter
-        from remote_store.backends._local import LocalBackend
-
-        store = AsyncStore(SyncBackendAdapter(LocalBackend(root=str(tmp_path))))
-        with pytest.raises(InvalidPath):
-            store.glob("../*.csv")  # no iteration, as for the capability check
-
 
 # ---------------------------------------------------------------------------
 # _strip_root edge case (_async_store.py line 844)
@@ -934,7 +884,7 @@ class TestAsyncStoreHead:
         assert result.size == 3
 
     async def test_head_raises_not_found(self, async_store: AsyncStore) -> None:
-        with pytest.raises(NotFound, match="Not found"):
+        with pytest.raises(NotFound, match="not found"):
             await async_store.head("missing.txt")
 
     async def test_head_requires_metadata_capability(self) -> None:
@@ -994,16 +944,6 @@ class TestAsyncStoreMetadataGate:
         result = await getattr(async_store, method)("f.bin", content, metadata={"k": "v"})
         assert isinstance(result, WriteResult)
         assert result.metadata == {"k": "v"}
-
-    @pytest.mark.spec("WR-011")
-    @pytest.mark.parametrize("method", ["write", "write_atomic"])
-    @pytest.mark.parametrize("value", [5, [("k", "v")], []], ids=repr)
-    async def test_metadata_that_is_not_a_mapping_raises_value_error(
-        self, async_store: AsyncStore, method: str, value: object
-    ) -> None:
-        with pytest.raises(ValueError, match="must be a mapping"):
-            await getattr(async_store, method)("f.bin", b"x", metadata=value)
-        assert not await async_store.exists("f.bin")
 
     @pytest.mark.spec("WR-011")
     async def test_write_invalid_metadata_raises_value_error(self, async_store: AsyncStore) -> None:

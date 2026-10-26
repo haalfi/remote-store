@@ -121,12 +121,5 @@ whether done natively or client-side. The optimization is purely performance.
 prunes traversal natively or yields the full recursive result for the Store-level
 filter to trim. The two differ only in I/O cost, never in result — the reason
 this section declares no capability flag — so the spec states no per-backend
-strategy for a class not on the kernel. Which one such a backend uses is
-documented in its own `list_files()` docstring, next to the code that decides
-it; the paragraph below is the exception.
-
-**On the kernel the algorithm is decided once.** A class on the contract kernel
-([053](053-contract-kernel.md#contract-kernel)) answers a recursive
-`list_files` from one `delimiter=None` listing and filters its result by
-`max_depth`, only when `recursive=True`; the driver receives no depth and may
-read below it. Both Memory classes take this route.
+strategy. Which one a backend uses is documented in its own `list_files()`
+docstring, next to the code that decides it.

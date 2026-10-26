@@ -35,3 +35,5 @@ with no upper bound (`rg -n 'paramiko' pyproject.toml`), so both occur.
 option is unbuilt. Found by the ADR-0040 § 4 conversion.
 
 **RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. Placement: step 6, as an option of SFTP's driver and `Session`.
+
+*Frozen 2026-10-25: [RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) froze RFC-0017's D3 steps on `frozen/kernel-driver`, so the placement above no longer applies; the opt-in is an option of `SFTPBackend`, as sketched above.*

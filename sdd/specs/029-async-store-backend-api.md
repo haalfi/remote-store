@@ -16,7 +16,6 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-001: Abstract Base Class
 
 **Invariant:** `AsyncBackend` is an ABC. Subclasses must implement all abstract methods.
-**On the kernel:** `AsyncDriverBackend` is a complete `AsyncBackend` over an `AsyncDriver` of async wire primitives, the async route of the contract kernel ([053 § Contract kernel](053-contract-kernel.md#contract-kernel)); both are public in `remote_store.drivers`. A subclass builds its driver and need implement no abstract method itself. `AsyncMemoryBackend` is the first class on it.
 **See also:** [BE-001](003-backend-adapter-contract.md).
 
 ### ASYNC-002: Name Property
@@ -43,7 +42,6 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 **Invariant:** `async def read(path) -> AsyncIterator[bytes]`. Returns an async iterator of byte chunks for the file content.
 **Raises:** `NotFound` if the file does not exist.
-**When a refusal surfaces:** [BE-033](052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)'s **Refusal timing**.
 **See also:** [BE-006](003-backend-adapter-contract.md), ASYNC-020.
 
 ### ASYNC-007: read_bytes()
@@ -141,7 +139,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-022: aclose()
 
 **Invariant:** `async def aclose()` is optional (default no-op). Called for resource cleanup. Named `aclose` per Python convention (async generators, `asyncio.StreamWriter`).
-**See also:** [BE-020](052-backend-lifetime.md).
+**See also:** [BE-020](003-backend-adapter-contract.md).
 
 ### ASYNC-023: Async Context Manager
 
@@ -150,7 +148,6 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-024: Error Mapping
 
 **Invariant:** Backend-native exceptions never leak. All exceptions are mapped to `remote_store` error types.
-**On the kernel:** for a class on `AsyncDriverBackend` the mapping is the kernel's choke point over the driver's `classify`, split as BE-021's placement table states; a `read` stream's errors are mapped there too.
 **See also:** [BE-021](003-backend-adapter-contract.md), [005-error-model.md](005-error-model.md).
 
 ### ASYNC-025: unwrap()
@@ -182,7 +179,6 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-057: check_health()
 
 **Invariant:** `async def check_health() -> None` is a concrete method (default no-op). Native async backends override to verify connectivity (e.g., container probe). `SyncBackendAdapter` delegates to the sync backend's `check_health()` via `asyncio.to_thread()` (see ASYNC-037).
-**On the kernel:** `AsyncDriverBackend.check_health()` awaits the driver's `probe()` behind the closed guard, its errors mapped by the choke point (PING-002).
 **See also:** [026-health-check.md](026-health-check.md).
 
 ### ASYNC-058: resolve()
@@ -308,7 +304,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 ### ASYNC-053: glob()
 
-**Invariant:** `glob(pattern)` is capability-gated on `Capability.GLOB`. Pattern is relative to the store root and normalised as GLOB-007 states, refusals included, eagerly on call (ASYNC-045's rule for validation); `AsyncStore` prepends `root_path` before delegating. Returned `FileInfo.path` values are store-relative.
+**Invariant:** `glob(pattern)` is capability-gated on `Capability.GLOB`. Pattern is relative to the store root; `AsyncStore` prepends `root_path` before delegating. Returned `FileInfo.path` values are store-relative.
 **See also:** [STORE-018](001-store-api.md), [018-glob.md](018-glob.md).
 
 ### ASYNC-054: child()
@@ -612,8 +608,7 @@ record at `WARNING` level with message stem
 is reaped by process exit.  Passing `timeout=None` waits indefinitely.
 `__exit__` delegates to `close()`.
 **See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
-§ Lifecycle; for a wrapped class on the kernel, the states its `aclose()`
-moves through are [BE-033](052-backend-lifetime.md#be-033-interaction-protocol-on-the-kernel)'s.
+§ Lifecycle.
 
 ### ASYNC-089: Concurrent-callers No-deadlock Invariant
 
@@ -660,16 +655,7 @@ failure; for `write()`, whatever bytes reached the backend before the
 exception are visible per that backend's non-atomic write semantics.
 A `read()` answering `None`, a non-blocking stream's "no data yet", is a
 `TypeError` the adapter raises into the upload, rather than the end of a
-stream it would store truncated (BE-030 § Content).
-**On the kernel:** a class on the contract kernel, sync or async, passes an
-error raised by the caller's own content through its choke point verbatim on
-`write` and `write_atomic`, neither classified nor retyped, so the wrapped
-backend does not turn it into a backend error before the adapter sees it. A
-typed error the content raised is not answered from the target's row either.
-Pinned by `test_an_error_from_the_callers_content_passes_the_choke_point_verbatim`
-and `test_a_typed_error_from_the_callers_content_is_not_retyped_from_the_target`
-in `tests/_kernel/test_kernel.py`; the stream a sync driver receives keeps the
-caller's stream's reads, iteration and `with`, pinned in `tests/_kernel/test_io.py`.
+stream it would store truncated.
 **See also:** [007-atomic-writes.md](007-atomic-writes.md),
 [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md) § Write-side
 content.
@@ -732,7 +718,7 @@ async→sync *manufactures* thread-safety by funnelling through one loop. Encodi
 the asymmetry stops callers from assuming `SyncBackendAdapter` confers the
 protection `AsyncBackendSyncAdapter` does.
 
-**See also:** [052-backend-lifetime.md](052-backend-lifetime.md)
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
 (BE-028), ASYNC-055 (one-loop rule), ASYNC-089 (serialisation invariant),
 [009-sftp-backend.md](009-sftp-backend.md) (SFTP-029),
 [../adrs/0025-async-to-sync-backend-adapter.md](../adrs/0025-async-to-sync-backend-adapter.md).

@@ -1,4 +1,4 @@
-# BK-452 — The template is Memory alone: no flat reference driver, unpinned Memory clauses, a stale checklist
+# BK-452 — Memory's counter and mtime clauses are unpinned, and two misstate the overwrite case
 <!-- doc: repo-only -->
 
 The index entry holds the current diagnosis; this file is evidence and
@@ -6,6 +6,12 @@ advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 
 **Where this comes from.** [Audit 023](../audits/audit-023-kernel-migration-readiness.md),
 proposal P4 and findings T17, T18 and T19, at `52448e0`.
+
+*Split 2026-10-25 ([RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) D7): this item keeps
+Memory's pins, against v0.33.0's spec 013 and `MemoryBackend`/`AsyncMemoryBackend`; the flat
+reference driver went to [BK-489](bk-489-frozen-kernel-line.md) with the kernel; the
+checklist part lapsed, since v0.33.0's guide also teaches the `Backend` ABC, so CONTRIBUTING
+agrees with it. The parts below are as filed.*
 
 **Parts** (advisory; untracked sub-bullets, no IDs):
 

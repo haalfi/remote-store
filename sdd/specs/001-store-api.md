@@ -86,8 +86,8 @@
 
 ### STORE-018: glob()
 
-**Invariant:** `glob(pattern)` matches files against a glob pattern. Capability-gated on `Capability.GLOB`. Pattern is relative to the store root and normalised as a path is (GLOB-007); Store prepends `root_path` before delegating to `Backend.glob()`. Returned `FileInfo.path` values are store-relative (same rebasing as `list_files`).
-**Raises:** `CapabilityNotSupported` if the backend lacks `GLOB`; `InvalidPath` for a pattern GLOB-007 refuses.
+**Invariant:** `glob(pattern)` matches files against a glob pattern. Capability-gated on `Capability.GLOB`. Pattern is relative to the store root; Store prepends `root_path` before delegating to `Backend.glob()`. Returned `FileInfo.path` values are store-relative (same rebasing as `list_files`).
+**Raises:** `CapabilityNotSupported` if the backend lacks `GLOB`.
 **Rationale:** Like `unwrap()`, gives opt-in direct access to native backend capabilities. For portable pattern matching, use `list_files(pattern=…)` or `ext.glob.glob_files()`.
 **See also:** [018-glob.md](018-glob.md) (GLOB-006 through GLOB-008), [ADR-0009](../adrs/0009-glob-three-tier-design.md).
 

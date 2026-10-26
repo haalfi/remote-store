@@ -23,6 +23,10 @@ checks it with the rest.
 (2026-10-23), and the retirements inside them and D8 step 4 with them, until
 that RFC's D10 is decided. Step 1 stands, with Memory on the kernel.
 
+**Implementation frozen** on `frozen/kernel-driver` by
+[RFC-0025](rfc-0025-freeze-kernel-line.md) (2026-10-25), step 1 included. The
+decision is not withdrawn; RFC-0024 D10 decides whether it stands.
+
 **Date:** 2026-09-28. Every figure below is pinned to `8fa22d6` and is either
 quoted from audit-021 with its derivation, or names its command here. The tree
 moves on every merge: re-run rather than quote.

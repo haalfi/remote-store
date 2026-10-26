@@ -8,23 +8,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ## [Unreleased]
 
 - BK-468: No spec defines which strings a store accepts as a key, so one key works on one backend and fails on another
+- BK-488: The unreleased `remote_store.drivers` API and the driver-based custom-backend guide are withdrawn; master's code is 0.33.0's plus three fixes
 - BUG-338: The docs site's RFC and ADR indexes print one status per kind, so every RFC reads "Proposed"
-- BK-449: No interaction protocol with states joins `Store`, kernel, driver and `Session`
-- BK-405: **Breaking**: `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier. See the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0330-to-v100)
 - BUG-298: `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`
-- BUG-329: **Breaking**: Metadata that is not a mapping fails inside a kernel class's `put` or is stored as a dict, and `Store` takes `[]`, `0` or `""` for none; each is now `ValueError`. See the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0330-to-v100)
 - BUG-330: A sync stream read answering `None` through `AsyncBackendSyncAdapter` stores a truncated file
-- BUG-331: A kernel driver that reads content with one unsized `read()` stores a truncated file from a non-blocking stream
-- BUG-333: `open_atomic`'s two routes disagree on a strided `memoryview`: the handle route stores it, the spool refuses it as Python's files do; both now refuse it
-- BK-441: A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing
-- BK-442: `from remote_store.drivers import Driver` imports the whole async package and its cloud SDKs
-- BUG-328: Both Memory drivers refuse a `bytearray` or `memoryview` write, though the kernel passes either through, and the sync driver stores a truncated file from a stream whose read answers `None`
-- BK-440: `BackendContract.dfy`'s `Write` ranks WR-010's metadata gate below the type and overwrite checks the kernel answers after it
-- BK-394: No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed
 - BK-398: Three round-trip clauses promise `to_key(native_path(k)) == k` verbatim, which `GraphBackend` already breaks
-- BK-432: No logical model says what a key resolves to, so every operation re-derives it from driver refusals
 - BK-437: Spec 051's sections are restated in Alloy and Lean with no traceability check between them
-- BK-399: A stored key holding a backslash has no kernel answer, so migration may strand it
 - BUG-320: Nested lists indented for GitHub render flattened on the docs site
 - BUG-280: `LocalBackend`'s three listing methods leak a raw `PermissionError`
 - BUG-317: pymdown-extensions 12.2 breaks the docs build, so every docs job fails

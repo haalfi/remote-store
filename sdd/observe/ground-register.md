@@ -36,11 +36,26 @@ record 0.33 and kernel design: the first in its § 10 (error names, flat-store
 encodings), which reached the first `/observe` session's decisions; the second
 in § 3.7's error table and § 9's comparison with specs 004, 005, 015 and 053.
 
+## Pointer edits
+
+A cross-spec pointer in a ground spec's non-normative paragraph (its Layering
+or Tested against) changes without a reopen, since it changes no ground
+([RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) D3). Each such edit:
+
+| Artifact | Paragraph | Edit | By |
+|---|---|---|---|
+| `sdd/specs/051-store-tree.md` | Layering | Dropped the sentence naming spec 053's BE-032 as the tree's encoding, which left master | RFC-0025 PR 2 |
+
 ## Retired IDs
 
 When D7 deletes a spec 001 to 050 file with no live section left, its IDs map
-here to their successors (RFC-0024 § R4). No ID changes meaning.
+here to their successors (RFC-0024 § R4). A spec file
+[RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) freezes leaves master too,
+and its IDs retire here with no successor. No ID changes meaning.
 
 | Old ID | Successor |
 |---|---|
-| — | — |
+| BE-030 | — (frozen on frozen/kernel-driver, RFC-0025) |
+| BE-031 | — (frozen on frozen/kernel-driver, RFC-0025) |
+| BE-032 | — (frozen on frozen/kernel-driver, RFC-0025) |
+| BE-033 | — (frozen on frozen/kernel-driver, RFC-0025) |

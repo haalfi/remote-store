@@ -10,6 +10,10 @@ the research's open points 5, 9 and 10. Decisions taken in this RFC's own
 session: decision log
 `sdd/decisions/69e4bf99-0899-474b-bb47-606425c66a1a.jsonl`.
 
+Amended by [RFC-0025](rfc-0025-freeze-kernel-line.md), accepted 2026-10-25:
+R1's D2, D8, D9 and D10 rows, R2, R3's classes K and P, R4, R5 and § Impact's
+Process bullet hold as RFC-0025 amends them while master's code is 0.33.
+
 It changes no spec format. [`SPEC-DESIGN.md`](../SPEC-DESIGN.md) and
 [ADR-0048](../adrs/0048-how-specs-are-designed.md) stay the authority for what
 a spec states and the form it takes, with one bounded exception in § R4. The

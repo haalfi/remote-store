@@ -733,12 +733,11 @@ class TestLiveIndex:
     """
 
     def _live(self, mod):
-        import importlib
+        import remote_store
+        import remote_store.aio
+        import remote_store.backends
 
-        # The script's own namespace list, so a namespace added there is
-        # checked here too rather than reported as linked-but-not-public.
-        modules = [importlib.import_module(ns) for ns in mod._PUBLIC_NAMESPACES]
-        assert "remote_store.drivers" in mod._PUBLIC_NAMESPACES
+        modules = [remote_store, remote_store.backends, remote_store.aio]
         expected = mod.exports_symbols(modules)
         index = mod.index_link_symbols(mod.INDEX_PAGE.read_text(encoding="utf-8"))
         rendered = mod.directive_symbols(p.read_text(encoding="utf-8") for p in mod.API_DIR.rglob("*.md"))

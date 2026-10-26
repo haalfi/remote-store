@@ -6,7 +6,7 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
-## v0.33.0 to v1.0.0
+## v0.33.0 to v0.33.1
 
 **A `LocalBackend` listing that the OS refuses raises `PermissionDenied`:**
 
@@ -37,98 +37,9 @@ state. If you relied on a best-effort walk over a tree with unreadable parts,
 walk it yourself with `list_folders()` and `list_files()` per folder, catching
 `PermissionDenied` for each.
 
-**`metadata=` must be `None` or a mapping:**
+**`"*.csv"` no longer matches a key ending in a newline:**
 
-Every `Store` and `AsyncStore` call that takes `metadata=`, such as `write()`,
-`write_atomic()` and `write_text()`, and `write_with_hash()` and
-`open_atomic_with_hash()`, took an empty non-mapping such as `[]`, `()`, `0`
-or `""` for no metadata and wrote the file. They now raise `ValueError` and
-write nothing, for every value that is not a `collections.abc.Mapping`,
-including an object that only has `.items()`. Called directly,
-`MemoryBackend` and `AsyncMemoryBackend` also stored a list of pairs such as
-`[("k", "v")]` as a dict; they refuse it too, as does a backend you build on
-`DriverBackend` or `AsyncDriverBackend`. Other backend classes called
-directly, outside a `Store`,
-are unchanged. Pass `None` (the default) or `{}` for no metadata, and a
-`dict` or another mapping otherwise.
-
-**A glob pattern is read the way a path is:**
-
-`Store.glob()`, `AsyncStore.glob()` and `ext.glob.glob_files()` read a pattern
-as they read a path, so `"/data/*.csv"`, `"./data/*.csv"` and `"data//*.csv"`
-all match what `"data/*.csv"` matches, on every backend and under every
-`root_path`. A pattern holding a `..` segment or a null byte now raises
-`InvalidPath` on every backend, before anything is listed. What such a
-pattern did before depended on the backend, the `root_path` and where in the
-pattern the segment sat: some matched nothing (for example `"*/../a.csv"`, or
-`"../*.csv"` on `LocalBackend`), some already raised `InvalidPath`, and on
-`LocalBackend` a null byte could raise Python's own `ValueError`, which
-`InvalidPath` is not a subclass of. If you pass user-supplied patterns and
-treated an empty result as "no match", validate them first or catch
-`InvalidPath`; replace an `except ValueError` around `glob` with
-`except InvalidPath`. Separately, `"*.csv"` no longer matches a key that ends
-in a newline after `.csv`.
-
-**For backend authors: a backend is now written as a driver:**
-
-`remote_store.drivers` is new. A custom backend is now documented as a
-*driver*, a class implementing your storage system's primitives, wrapped in
-`DriverBackend` (or `AsyncDriverBackend`), which supplies the rest of the
-`Backend` contract. See [Build Your Own Backend](../guides/custom-backend-guide.md).
-**Nothing you have breaks:** a class that subclasses `Backend` or
-`AsyncBackend` directly keeps working and needs no change.
-
-*`MemoryBackend` and `AsyncMemoryBackend` are built on drivers.* They now
-subclass `DriverBackend` and `AsyncDriverBackend`, keeping their names, import
-paths and zero-argument constructors; their drivers are public as
-`MemoryDriver` (`remote_store.backends`) and `AsyncMemoryDriver`
-(`remote_store.aio`). What you might observe:
-
-- **Some error messages changed** to the kernel's wording, for example
-  `Cannot write to the store root`, `Is a folder, not a file: k` and
-  `Not found: k`. The error types are unchanged. If a test matches on the
-  message text, match on the type instead, or on the new text.
-- **Called directly on the backend, `native_path()` and `resolve()` normalise
-  the key**: `backend.native_path("./a//b")` returns `"a/b"`, and `resolve()`
-  keeps your spelling in the plan's `key`. A `Store` already hands the backend
-  a normalised key, so through a `Store` nothing changes.
-- **Called directly on the backend, a key holding a backslash is
-  `InvalidPath`** on every file and folder operation, `exists()` and the
-  listings included. A `Store` turns a backslash into `/` first, so
-  `store.write("a\\b", ...)` still writes `a/b`.
-- **`read()` and `read_seekable()` on a `MemoryBackend` store no longer return
-  an `io.BytesIO`.** Each returns a binary stream (an `io.RawIOBase`), so
-  `.getvalue()`, `.getbuffer()`, `.read1()` and an `isinstance(..., io.BytesIO)`
-  check stop working. Use `read_bytes()` for the whole value, or `.read()` on
-  the stream.
-- **The file `open_atomic()` yields is write-only.** It used to be an
-  `io.BytesIO`; now it answers `write()` and `tell()`, while `seek()` and
-  `read()` raise and `getvalue()` does not exist. To patch a header or read
-  back, build the bytes in your own `io.BytesIO` and write them once, or read
-  the file with `read_bytes()` after the block.
-- **`write_atomic()` and `open_atomic()` no longer call `write()`.** Each goes
-  to the driver directly, so a subclass overriding `write()` to inject faults or
-  record calls no longer sees atomic writes. Override each method you want to
-  intercept.
-- **A narrowed set now gates the backend too, and an overclaim is refused.**
-  Narrowing `CAPABILITIES` in a subclass, or overriding its `capabilities`
-  property, still narrows what the store allows. It now also refuses the calls
-  made on the backend directly: `copy()`, `move()`, `write_atomic()`,
-  `open_atomic()` and a `write()` with `metadata` raise `CapabilityNotSupported`
-  when the set lacks their capability, where they used to run. Seed a narrowed
-  test double through an unnarrowed backend. Adding to `CAPABILITIES` a
-  `COPY`, `MOVE`, `ATOMIC_MOVE`, `ATOMIC_WRITE` or `GLOB` the driver cannot back
-  (for Memory, `GLOB`) raises `ValueError` when the backend is built, rather
-  than failing at the call; a `capabilities` property override is not checked
-  this way.
-- **`open_atomic()` refuses a bad target on entry.** A folder at the key, or a
-  file above it, is `InvalidPath` before the `with` body runs. It used to be
-  refused on exit, so an exception the body raised came out instead.
-- **Called directly on the backend, not through a `Store`**,
-  `get_folder_info("./")`, `(".//")` and `("./.")` answer the root instead of
-  raising `InvalidPath`, and an error's `path` is the normalised key (`"d"` for
-  `"d/"`, `"d/x"` for `"d//x"`), not the spelling passed in. Through a `Store`
-  both are unchanged.
+`"*.csv"` no longer matches a key that ends in a newline after `.csv`.
 
 ## v0.32.0 to v0.33.0
 

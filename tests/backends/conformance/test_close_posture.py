@@ -26,7 +26,6 @@ import pytest
 
 from remote_store._capabilities import Capability
 from remote_store._errors import BackendUnavailable, InvalidPath
-from remote_store._kernel.backend import DriverBackend
 from tests.backends.conformance._helpers import _require
 
 if TYPE_CHECKING:
@@ -126,23 +125,6 @@ def test_close_posture_outranks_root_write_rejection(backend: Backend, root: str
         with pytest.raises(InvalidPath) as exc_info:
             backend.write(root, b"x")
         assert "is closed" not in str(exc_info.value)
-
-
-@pytest.mark.spec("BE-033")
-def test_a_repeated_close_keeps_the_posture(backend: Backend) -> None:
-    """On the kernel, a second ``close()`` is forwarded and accepted, and the posture holds after it.
-
-    BE-033 binds classes on the kernel only, so another backend is skipped.
-    """
-    if not isinstance(backend, DriverBackend):
-        pytest.skip("BE-033 binds classes on the kernel")
-    backend.close()
-    backend.close()
-    if backend.close_is_terminal:
-        with pytest.raises(BackendUnavailable, match="is closed"):
-            backend.exists(_PROBE)
-    else:
-        assert backend.exists(_PROBE) is False
 
 
 # **Every root-reaching read operation, enumerated rather than sampled.** This is

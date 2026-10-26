@@ -34,3 +34,5 @@ Not named above: both conda recipes also pin `aiohttp >=3.0`
 Found by the ADR-0040 § 5 conversion.
 
 **RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. Placement: independent of the kernel; due no later than step 4, which replaces the Azure classes.
+
+*Frozen 2026-10-25: [RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) froze RFC-0017's D3 steps on `frozen/kernel-driver`, so the placement above no longer applies; the item stands as framed, with no step to land by.*
