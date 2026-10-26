@@ -62,6 +62,12 @@ through OP-18's spec, the one place that answers what a store supports; the
 retired OPS-003 and OPS-004 are input to OP-18's session. RFC-0026 amends
 RFC-0024 § R4 for spec 053's missing test.
 
+From the verification round (same log): every row of the research's Q1 table
+now has a disposition in the catalogue's Not in v1 list, post-write metadata
+update as a form of OP-20. An outside formal-definition table (Gemini) was not
+adopted: it fixed signatures each entry's session decides, and its framing is
+already how an entry's spec is written (SPEC-DESIGN Rules 2 and 4).
+
 **Draft entries and the 0.33 omission check** (one per intent; 0.33
 counterpart checked against `src/remote_store/_store.py` and `ext/` at
 `e285319`; not ground, RFC-0026 C4):

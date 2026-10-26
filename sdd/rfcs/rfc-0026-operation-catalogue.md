@@ -181,9 +181,11 @@ All decided in the log above:
 1. **Shared decisions beyond the surface** grow from `read()` under D5, and
    spec 053 states none. Which shared layer each lands in is open; the
    research's advisory note 7 lists the ones comparables most often had to
-   retrofit (missing-key delete, no silent ignore of an unsupported option,
-   exception typing, retries tied to idempotency, a failure mid-write), as
-   input to `read()`'s session and each later one.
+   retrofit (`..` containment, missing-key delete, exception typing, sync and
+   async parity, retry coupled to idempotency, behaviour on an exception during
+   a streamed write), as input to `read()`'s session and each later one.
+   Containment is spec 052's and parity spec 053's; notes 2 and 5 add no
+   silent drop of a condition or an unsupported option.
 2. **Order of the flows after `read()`.** The catalogue lists entries, not the
    order their sessions run in.
 
