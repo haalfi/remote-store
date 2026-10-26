@@ -57,6 +57,12 @@ through this item's decision.
 | BK-405 | `glob` reads a pattern as a path: a leading `/`, `//` and `.` mean the canonical spelling, `..` or a null byte is `InvalidPath`. The tier split it fixed is back on master. | `glob()` | [bk-405](bk-405-ext-glob-fallback-tier-split.md) |
 | BUG-329 | `metadata` must be `None` or a `Mapping`, else `ValueError` before any I/O. | `write()` | — |
 
+## Parked pull requests
+
+PR #1172 (BK-456 stage three, branch `bk-456-prune-052`) is parked as a draft
+with the frozen line, revisited with D10; it answers RFC-0025 Open Question 2.
+Its base is #1170's branch, so it retargets to master if #1170 merges.
+
 ## Kernel-only finding: BK-448
 
 BK-448 (the async kernel leaves a caller's content iterator suspended when it

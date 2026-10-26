@@ -66,9 +66,10 @@ Two more, from the first `/observe` run's own report (above):
 - **Decisions that bind every operation have no home.** `exists`'s D2 (an
   unacceptable key is rejected identically by every operation) and its open
   items on a timeout bound and a profile surface are shared; the next
-  operation's session would rediscover them. A shared layer for such
-  decisions, as for the environment list, is the RFC's to place (D5 grows
-  shared layers from what operations need).
+  operation's session would rediscover them. Moved to
+  [BK-493](bk-493-operation-catalogue.md): spec 053 holds the decisions about
+  the surface as a whole, and whether it holds more is RFC-0026's Open
+  Question 2.
 - **F3 lacks "admitted, not required".** A failure category that may surface
   but need not (`exists`'s store-integrity failure on a non-store state) fits
   none of F3's terms; the session coined the phrase.

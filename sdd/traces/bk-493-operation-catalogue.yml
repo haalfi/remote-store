@@ -1,0 +1,123 @@
+id: BK-493
+title: "The v1 Store API has no agreed set of operations, so each design session would find its own scope"
+trigger: >-
+  After spec 052 merged, the maintainer asked for one step before the first
+  operation flow: besides what a store holds (spec 051) and how a key
+  addresses it (spec 052), v1's operations needed an agreed surface,
+  discussed and scoped before the `read()` design session.
+source_items:
+  - BK-493
+audience:
+  - contributor.process
+  - library.maintainer
+decisions:
+  - sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
+  - sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's dossier § Format RFC input, "Decisions that bind every operation
+      have no home", and RFC-0024's binding of research § 9's steps: step 4b
+      enters that table, and the bullet now points here (RFC-0026 C1, C2).
+  - items: [BK-480, BK-490, BK-454, BK-451]
+    verdict: constrains
+    evidence: >-
+      Their index entries (Grep of `sdd/BACKLOG.md`): each waits on an
+      operation's or the API's flow (BK-480 the API's shape, BK-490 the root,
+      parents and child stores, BK-454 `read()`'s R-2, BK-451 `glob`). The
+      catalogue names the entry each waits on (OP-18, OP-16, OP-01, OP-08) and
+      decides none of their questions.
+  - items: [BK-469, BK-489, BK-436, BK-438]
+    verdict: unrelated
+    evidence: >-
+      Their index entries: BK-469 compares spec 052 with 0.33, BK-489 is D10,
+      BK-436 observes backends against spec 051, BK-438 is a profile-table
+      question inside the listing entries' sessions, which no entry boundary
+      changes. BK-489 still gains a line for PR #1172, the maintainer's
+      decision in the first log.
+phases:
+  - id: orient
+    name: Read the dossier, the decision log and the documents step 4b amends
+    steps:
+      - file: sdd/backlog/bk-493-operation-catalogue.md
+        section: "(full)"
+        read_type: gate
+        extract: "Decisions taken, Status's five steps, the 24 draft entries, the research brief"
+        outcome: ok
+      - file: sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
+        section: "answered events from 2026-10-26"
+        read_type: gate
+        extract: >-
+          The catalogue dialogs; also confirms the #1172 parking choice, whose
+          BK-489 line the previous session handed over by message
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "Status, R1, R4"
+        read_type: gate
+        extract: >-
+          "§ 9" is the research doc's step table, made binding by RFC-0024;
+          R4 binds a ground spec to code only once its flow begins
+        outcome: unclear
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 2 to § 4, § 8, § 9"
+        read_type: gate
+        extract: "Step table, D5, the ground and reopen rule, S1 to S5, open point 2"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0025-freeze-kernel-line.md
+        section: "(full)"
+        read_type: reference
+        extract: "D3's pointer rule, D6 numbering; the ground register's sections"
+        outcome: ok
+      - file: sdd/observe/ground-register.md
+        section: "(full)"
+        read_type: gate
+        extract: "Rows feed the hook's allowlist; Not ground paragraph"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The first /observe run's priming came from 0.33 design in a register
+          row, which is why the catalogue carries no 0.33 column
+        outcome: ok
+      - file: sdd/observe/axes.md
+        section: "(full)"
+        read_type: reference
+        extract: "What each entry's session decides, so the catalogue leaves it out"
+        outcome: ok
+  - id: draft
+    name: Draft RFC-0026, the catalogue and spec 053
+    steps:
+      - file: sdd/templates/rfc-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "Status, Summary, Motivation, Proposal, Alternatives, Impact, Open Questions, References"
+        outcome: ok
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rules 1 to 7, Ready"
+        read_type: gate
+        extract: >-
+          No kind for an inventory; read as structure over the API surface.
+          Ready item 2 wants a test per section, which no v1 surface can give
+        outcome: ok
+      - file: sdd/templates/spec-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "Skeleton order; empty headings say None."
+        outcome: ok
+      - file: sdd/specs/052-store-key.md
+        section: "(full)"
+        read_type: reference
+        extract: "Spec beside a table it cites (its profile table); Supersedes line; D7 header on spec 004"
+        outcome: ok
+      - file: sdd/specs/001-store-api.md
+        section: "STORE-008"
+        read_type: verify
+        extract: "0.33's sync surface list, superseded by spec 053"
+        outcome: ok
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-046"
+        read_type: verify
+        extract: "0.33's async surface list, superseded by spec 053"
+        outcome: ok

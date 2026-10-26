@@ -31,29 +31,24 @@ From the dialogs in `sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl`:
 
 ## Status (2026-10-26)
 
-Done on branch `bk-493-operation-catalogue` (from master at `e285319`): this item's index entry and this dossier. Not yet written, in
-order:
+Done on branch `bk-493-operation-catalogue` (from master at `e285319`), all
+drafts: this item's index entry and dossier, the trace
+`sdd/traces/bk-493-operation-catalogue.yml`,
+[RFC-0026](../rfcs/rfc-0026-operation-catalogue.md),
+[`sdd/observe/catalogue.md`](../observe/catalogue.md) and
+[spec 053](../specs/053-store-operations.md), with the ground register's two
+rows and D7 headers on specs 001 and 029. Three decisions of the second
+session (`sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`) changed the plan
+above: the catalogue carries no 0.33 column, since it is ground (the table
+below is the omission check's record); spec 053 supersedes STORE-008 and
+ASYNC-046; its Tested against is `None.`, with the reason in its Notes.
 
-1. The trace `sdd/traces/bk-493-operation-catalogue.yml`, with the orient
-   verdicts: BK-485 constrains (§ 9 gains step 4b; its dossier's "decisions that
-   bind every operation have no home" moves here); BK-480, BK-490, BK-454 and
-   BK-451 constrain (the catalogue names the entry each waits on, decides none);
-   BK-469, BK-489, BK-436 and BK-438 unrelated.
-2. RFC-0026, amending RFC-0024 § 9 with step 4b and stating how it sits with
-   D5 (scope first, semantics still grow from `read()`). It also adds the
-   catalogue to the ground register.
-3. `sdd/observe/catalogue.md`: the draft entries below as rows, with ID,
-   intent, target, result kind, v1 or optional, use cases served, 0.33
-   counterpart, session status.
-4. `sdd/specs/053-store-operations.md`: the binding clauses (v1 offers exactly
-   the catalogue's entries; each has a sync and an async form; optional entries
-   are capability-gated; one entry per intent; the shared decisions), citing the
-   table.
-5. Then wait for the deep-research doc, file it under `sdd/research/`, revise
-   3 and 4 against it, and run the gates and review rounds.
+Next: wait for the deep-research doc, file it under `sdd/research/`, revise
+the catalogue and spec 053 against it, then run the gates and review rounds.
 
-**Draft entries** (one per intent; 0.33 counterpart checked against
-`src/remote_store/_store.py` and `ext/` at `e285319`):
+**Draft entries and the 0.33 omission check** (one per intent; 0.33
+counterpart checked against `src/remote_store/_store.py` and `ext/` at
+`e285319`; not ground, RFC-0026 C4):
 
 | ID | Intent | 0.33 counterpart |
 | --- | --- | --- |

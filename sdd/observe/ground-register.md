@@ -29,12 +29,17 @@ reopened file is not on the allowlist until its flow re-admits it.
 | `sdd/specs/052-store-key.md` | key | active |
 | `sdd/specs/profiles/052-store-key.md` | key | active |
 | `sdd/formal/lean/KeyModel.lean` | key | active |
+| `sdd/specs/053-store-operations.md` | catalogue | active |
+| `sdd/observe/catalogue.md` | catalogue | active |
 
 Not ground: `research-store-model-axioms.md`, spec 051's rationale, and
 `research-key-model.md`, spec 052's. The hook admits whole files, and both
 record 0.33 and kernel design: the first in its § 10 (error names, flat-store
 encodings), which reached the first `/observe` session's decisions; the second
 in § 3.7's error table and § 9's comparison with specs 004, 005, 015 and 053.
+Nor is BK-493's dossier, which maps each catalogue entry to 0.33's surface, or
+the catalogue's deep-research doc, whose per-entry notes would prime every
+other entry's session ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4).
 
 ## Pointer edits
 
