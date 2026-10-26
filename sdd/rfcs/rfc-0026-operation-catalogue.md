@@ -75,8 +75,10 @@ Spec 053 binds and the table details it, as spec 052 does with its profile
 table. The spec cites the table and never copies a row; the table's columns
 are defined in the table's own file. Spec 053 is a structure spec in
 [`SPEC-DESIGN.md`](../SPEC-DESIGN.md) Rule 2's sense: a witness of its
-violation is one public surface of the v1 API, so it takes Rule 3's form for
-structure and needs no exception to RFC-0024 § R4.
+violation is one public surface of the v1 API or one store's report of what it
+supports, so it takes Rule 3's form for structure and needs no exception to
+RFC-0024 § R4. Whether an operation does what its entry intends is the entry's
+spec, never spec 053's.
 
 **0.33 is an omission check, not a column.** The table carries no 0.33 name,
 since the table is ground and 0.33's surface in the ground is the priming the
@@ -93,7 +95,10 @@ lists of 0.33's surface, and both specs get RFC-0024 D7's header.
 
 The ground register gains two `active` rows with flow `catalogue`:
 `sdd/specs/053-store-operations.md` and `sdd/observe/catalogue.md`. Neither
-holds semantics, so admitting them primes a session with scope only. Not
+holds semantics, so admitting them primes a session with scope only. Step 4b
+is not one of research § 3's flows, which each take one operation to a spec
+and its formal model, so its output joins on this RFC's acceptance, with no
+formal model. Not
 ground: BK-493's dossier, which holds the 0.33 mapping, and the deep-research
 doc ([`research-operation-catalogue.md`](../research/research-operation-catalogue.md)),
 whose per-entry pitfalls are notes for each entry's session and would prime

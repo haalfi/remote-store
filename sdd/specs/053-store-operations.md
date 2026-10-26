@@ -7,7 +7,7 @@ v1's core API offers exactly the entries of the
 an entry, every entry is served in a sync and an async form, and an optional
 entry is offered only by a store whose backend declares it. This is a structure
 spec about the API's surface: a witness of its violation is one surface, or one
-store, and no call. Which entries exist, and each one's intent, target, result
+store's report of what it supports. Which entries exist, and each one's intent, target, result
 kind and offer, are the catalogue's rows; this spec cites them and never copies
 one.
 
@@ -15,9 +15,9 @@ Out of scope, each with its owner:
 
 - Each entry's operations, signatures, forms, outcomes and failures, stated
   once for both its forms: the entry's own spec.
-- How a caller learns which optional entries a store offers, and what an
-  operation of an entry the store does not offer answers: the spec of OP-18
-  and of the entry.
+- The form of a store's report of what it supports, and what an operation of
+  an entry the store does not offer answers: the spec of OP-18 and of the
+  entry.
 - Constructing and configuring a store, and the Python object protocol of the
   API's types (equality, hashing, representation): the API's spec.
 - How an input becomes a key: [spec 052](052-store-key.md).
@@ -36,8 +36,8 @@ Out of scope, each with its owner:
 | Core API | Store, AsyncStore and the library's public functions outside its extensions. |
 | Public operation | A method of Store or AsyncStore whose name has no leading underscore, a context-manager method of either, or a public function of the core API that takes a Store or an AsyncStore. Its form is sync when it takes or belongs to a Store, async when it takes or belongs to an AsyncStore. |
 | Entry | A row of the catalogue, named by its ID (`OP-NN`). Its Offer cell is `v1` or `optional`. |
-| Serves | A public operation serves an entry when it carries out the entry's intent, in a form the entry's spec decides. Which operations serve an entry is that spec's. |
-| Offers | A store offers an entry when the operations serving it carry out its intent on that store. |
+| Serves | A public operation serves an entry when the entry's spec names it as one of the entry's operations. What each one does is that spec's. |
+| Offers | A store offers an entry when it reports the entry as supported, by OP-18. That the operations serving the entry then carry out its intent is the entry's spec. |
 | Declares | A backend declares an optional entry by the means OP-18's spec decides. |
 
 ---
@@ -91,10 +91,11 @@ Not normative.
   when the surface's rules do
   ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C3).
 - **Checks.** Each section's witness is a public surface of the v1 API
-  (OPS-001, OPS-002) or one store of it (OPS-003, OPS-004); the sections bind
-  code once a flow implements that surface (RFC-0024 § R4).
+  (OPS-001, OPS-002) or one store's report of what it supports (OPS-003,
+  OPS-004); the sections bind code once a flow implements that surface
+  (RFC-0024 § R4).
 
 ## Tested against
 
-None: each section's witness is a v1 surface or one store of it (Notes,
+None: each section's witness is a v1 surface or one store's report (Notes,
 Checks).

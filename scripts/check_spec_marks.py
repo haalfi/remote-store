@@ -215,8 +215,8 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "ASYNC-062",  # 029 — open_atomic() deferral
         "RET-015",  # 025 — graph retry mapping (rides the Graph backend)
         "GR-011",  # 044 — item-id addressing deferred to a future RFC (reserved slot, no behavior)
-        # Spec 053 bounds the v1 surface; a witness is a v1 surface or store, which no
-        # code has until a flow implements it (RFC-0024 § R4; 053's Notes, Checks).
+        # Spec 053 bounds the v1 surface; a witness is a v1 surface or a store's report,
+        # which no code has until a flow implements it (RFC-0024 § R4; 053's Notes, Checks).
         "OPS-001",  # 053 — no operation outside the catalogue
         "OPS-002",  # 053 — every entry in both forms
         "OPS-003",  # 053 — entries every store offers

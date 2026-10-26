@@ -8,7 +8,8 @@ design hook (`scripts/observe_ground.py`) reads its allowlist from the
 `active` rows of the first table, so a row here is a file the hook lets the
 session read. What may join, and when, is RFC-0024 § R1 with research § 3: only
 the new layer, once its spec and formal model are accepted; 0.33's code, tests
-and specs 001 to 050 never.
+and specs 001 to 050 never. Step 4b's catalogue joins without a model
+([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4).
 
 ## Artifacts
 
