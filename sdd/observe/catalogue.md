@@ -5,8 +5,8 @@
 **Every operation v1's core API offers, one entry per intent, with what it
 targets and the kind of result it gives; no signatures and no semantics.**
 [Spec 053](../specs/053-store-operations.md) binds this table: v1 offers exactly
-these entries, each in a sync and an async form, and an optional entry only
-where its backend declares it. Each `/observe` session designs one entry, its
+these entries, each in a sync and an async form. The Offer column binds through
+OP-18's spec, the one place that answers what a store supports. Each `/observe` session designs one entry, its
 forms (bytes, text, stream) included; a session that finds the cut wrong
 records a reopen ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C2).
 
@@ -55,7 +55,7 @@ key`, `any, to a store` or `any and local path`. *Result* is the kind of thing a
 (an object read from at offsets), `outcome` (whether and how the call took
 effect), `listing`, `info`, `store`, `answer`, `address`, `adapter` (an object
 another library reads the store through), `client` (the backend's own). *Offer* is
-`v1` (every store) or `optional` (spec 053's gate).
+`v1` (every store) or `optional` (only where the backend declares it).
 
 | ID | Intent | Target | Result | Offer | Serves |
 |---|---|---|---|---|---|

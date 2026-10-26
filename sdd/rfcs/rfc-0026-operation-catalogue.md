@@ -3,10 +3,13 @@
 ## Status
 
 Draft, 2026-10-26. Tracked as **BK-493**. Amends
-[RFC-0024](rfc-0024-spec-first-reset.md) by adding step 4b to the step table
-of [research § 9](../research/research-spec-first-reset.md#9-results-and-recommendation),
-which RFC-0024 makes binding, and adds two rows to the
-[ground register](../observe/ground-register.md). Decisions taken in this RFC's
+[RFC-0024](rfc-0024-spec-first-reset.md) in three places: step 4b joins the
+step table of [research § 9](../research/research-spec-first-reset.md#9-results-and-recommendation),
+which RFC-0024 makes binding (C1); step 4b's output joins the ground without a
+formal model (C4); and § R4 gains a second exception, spec 053's sections
+having no test until a v1 surface exists (C3). It adds two rows and a
+numbering line to the [ground register](../observe/ground-register.md) (C4).
+Decisions taken in this RFC's
 sessions: decision logs `sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl`
 and, for the revision against the maintainer's deep research (C5),
 `sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`.
@@ -59,9 +62,11 @@ semantics, so D5 stands:
 - **What the catalogue decides:** which entries exist, each entry's intent,
   what it targets, the kind of result it gives, and whether it is in v1 or
   optional; and what v1's core leaves out, which an extension may still add
-  on top of the entries. Spec 053 adds the decisions about the surface as a whole: the set
-  is exact, every entry has a sync and an async form, and an optional entry is
-  served only where its backend declares it.
+  on top of the entries. Spec 053 adds the decisions about the surface as a
+  whole: the set is exact, and every entry has a sync and an async form. Which
+  stores offer an entry, `v1` on every store and `optional` only where the
+  backend declares it, is bound by OP-18's spec, the one place that answers
+  what a store supports; a clause in spec 053 would need a call to witness.
 - **What it leaves to each entry's session:** signatures, forms (bytes, text,
   stream), outcomes, failures and every axis of
   [`axes.md`](../observe/axes.md). The shared layers still grow from `read()`.
@@ -75,10 +80,15 @@ Spec 053 binds and the table details it, as spec 052 does with its profile
 table. The spec cites the table and never copies a row; the table's columns
 are defined in the table's own file. Spec 053 is a structure spec in
 [`SPEC-DESIGN.md`](../SPEC-DESIGN.md) Rule 2's sense: a witness of its
-violation is one public surface of the v1 API or one store's report of what it
-supports, so it takes Rule 3's form for structure and needs no exception to
-RFC-0024 § R4. Whether an operation does what its entry intends is the entry's
-spec, never spec 053's.
+violation is one public surface of the v1 API, read without a call, so it
+takes Rule 3's form for structure. Whether an operation does what its entry
+intends is the entry's spec, never spec 053's.
+
+**RFC-0024 § R4 gains a second exception.** § R4 makes `SPEC-DESIGN.md` bind
+every v1 spec, and its Ready item 2 wants a failing test per section. No test
+can witness spec 053 until a v1 surface exists, so its Tested against is
+`None.` and its IDs sit on `check_spec_marks.py`'s deferred-feature allowlist
+until the flow that builds the surface adds the test.
 
 **0.33 is an omission check, not a column.** The table carries no 0.33 name,
 since the table is ground and 0.33's surface in the ground is the priming the
@@ -98,8 +108,9 @@ The ground register gains two `active` rows with flow `catalogue`:
 holds semantics, so admitting them primes a session with scope only. Step 4b
 is not one of research § 3's flows, which each take one operation to a spec
 and its formal model, so its output joins on this RFC's acceptance, with no
-formal model. Not
-ground: BK-493's dossier, which holds the 0.33 mapping, and the deep-research
+formal model. The number 053 is reused after RFC-0025 froze the contract
+kernel's spec 053, so the register's Spec numbering section gains the same
+dated rule RFC-0025 D6 gave 052. Not ground: BK-493's dossier, which holds the 0.33 mapping, and the deep-research
 doc ([`research-operation-catalogue.md`](../research/research-operation-catalogue.md)),
 whose per-entry pitfalls are notes for each entry's session and would prime
 every other one; a session's maintainer may name its entry's part at the
@@ -159,7 +170,8 @@ All decided in the log above:
   `sdd/research/`. RFC-0024 gets an "Amended by
   RFC-0026" line on acceptance.
 - **Testing:** none. Spec 053 is tested against nothing until a v1 surface
-  exists (its Notes).
+  exists (C3, its Notes); the flow that builds the surface adds a test that
+  compares its public operations with the catalogue.
 
 ## Open Questions
 

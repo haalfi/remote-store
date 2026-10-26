@@ -60,6 +60,10 @@ before that merge which cites "spec 052" or "spec 053" means the spec frozen on
 `frozen/kernel-driver` (backend lifetime, contract kernel), and one that cites
 "spec 054" means the store key; such records are not edited
 ([RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) D6).
+Spec 053 is the store operations spec from PR #1184's merge onward; a record
+committed before that merge which cites "spec 053" means the frozen contract
+kernel spec, and is not edited either
+([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4).
 
 ## Retired IDs
 

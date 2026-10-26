@@ -4,20 +4,20 @@
 
 v1's core API offers exactly the entries of the
 [operation catalogue](../observe/catalogue.md): every public operation serves
-an entry, every entry is served in a sync and an async form, and an optional
-entry is offered only by a store whose backend declares it. This is a structure
-spec about the API's surface: a witness of its violation is one surface, or one
-store's report of what it supports. Which entries exist, and each one's intent, target, result
-kind and offer, are the catalogue's rows; this spec cites them and never copies
-one.
+an entry, and every entry is served in a sync and an async form. This is a
+structure spec about the API's surface: a witness of its violation is one
+surface, read without a call. Which entries exist, and each one's intent,
+target, result kind and offer, are the catalogue's rows; this spec cites them
+and never copies one.
 
 Out of scope, each with its owner:
 
 - Each entry's operations, signatures, forms, outcomes and failures, stated
   once for both its forms: the entry's own spec.
-- The form of a store's report of what it supports, and what an operation of
-  an entry the store does not offer answers: the spec of OP-18 and of the
-  entry.
+- Which entries a store offers, against the catalogue's Offer column (`v1` on
+  every store, `optional` only where the backend declares it), how a caller
+  learns it, and what an operation of an entry the store does not offer
+  answers: the spec of OP-18, which binds that column, and of the entry.
 - Constructing and configuring a store, and the Python object protocol of the
   API's types (equality, hashing, representation): the API's spec.
 - How an input becomes a key: [spec 052](052-store-key.md).
@@ -35,10 +35,8 @@ Out of scope, each with its owner:
 | Store, AsyncStore | The v1 API's synchronous and asynchronous types through which a caller acts on one store, under whatever names the API's spec gives them. |
 | Core API | Store, AsyncStore and the library's public functions outside its extensions. |
 | Public operation | A method of Store or AsyncStore whose name has no leading underscore, a context-manager method of either, or a public function of the core API that takes a Store or an AsyncStore. Its form is sync when it takes or belongs to a Store, async when it takes or belongs to an AsyncStore. |
-| Entry | A row of the catalogue, named by its ID (`OP-NN`). Its Offer cell is `v1` or `optional`. |
+| Entry | A row of the catalogue, named by its ID (`OP-NN`). |
 | Serves | A public operation serves an entry when the entry's spec names it as one of the entry's operations. What each one does is that spec's. |
-| Offers | A store offers an entry when it reports the entry as supported, by OP-18. That the operations serving the entry then carry out its intent is the entry's spec. |
-| Declares | A backend declares an optional entry by the means OP-18's spec decides. |
 
 ---
 
@@ -50,15 +48,6 @@ Out of scope, each with its owner:
 
 **Invariant:** Every entry is served by at least one public operation of the
 sync form and at least one of the async form.
-
-## OPS-003: Entries Every Store Offers
-
-**Invariant:** Every store offers every entry whose Offer is `v1`.
-
-## OPS-004: Optional Entries Are Declared
-
-**Invariant:** A store offers an entry whose Offer is `optional` only when its
-backend declares that entry.
 
 ---
 
@@ -77,9 +66,11 @@ Not normative.
   OPS-002 bound the surface from both sides without fixing that mapping.
 - **One contract for both forms.** OPS-002 makes both forms exist; that they
   behave alike is stated once, by the entry's own spec, which designs both.
-- **Variation inside an offered entry.** OPS-003 says every store offers a
-  `v1` entry; where part of it differs by backend, such as whether an
-  inspection carries an identity token, is a profile of the entry's spec
+- **Which stores offer an entry.** What a given store supports is answered in
+  one place, OP-18, so its spec binds the catalogue's Offer column rather than
+  this spec; a clause here would need a call to witness. Where part of an
+  entry differs by backend, such as whether an inspection carries an identity
+  token, is a profile of the entry's spec
   ([RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D6), not an optional
   entry.
 - **Extensions.** OPS-001 bounds the core only. An extension adds a feature
@@ -90,12 +81,12 @@ Not normative.
   table, which no section's form gives; the clauses that bind it change only
   when the surface's rules do
   ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C3).
-- **Checks.** Each section's witness is a public surface of the v1 API
-  (OPS-001, OPS-002) or one store's report of what it supports (OPS-003,
-  OPS-004); the sections bind code once a flow implements that surface
-  (RFC-0024 § R4).
+- **Checks.** Each section's witness is a public surface of the v1 API: its
+  public operations, and which entry's spec names each. The sections bind code
+  once a flow implements that surface (RFC-0024 § R4), and until then have no
+  test ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C3).
 
 ## Tested against
 
-None: each section's witness is a v1 surface or one store's report (Notes,
+None: each section's witness is a v1 surface, which no code has yet (Notes,
 Checks).

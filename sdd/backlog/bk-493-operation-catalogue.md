@@ -54,6 +54,12 @@ are optional, since a backend may have no native client or address; OP-05
 stays `v1`, and where a backend has no change token its profile refuses "if
 unchanged" rather than check it apart from the write.
 
+From review round 3 (same log): spec 053 keeps only OPS-001 and OPS-002, the
+closed surface, which can be checked without a call. The Offer column binds
+through OP-18's spec, the one place that answers what a store supports; the
+retired OPS-003 and OPS-004 are input to OP-18's session. RFC-0026 amends
+RFC-0024 § R4 for spec 053's missing test.
+
 **Draft entries and the 0.33 omission check** (one per intent; 0.33
 counterpart checked against `src/remote_store/_store.py` and `ext/` at
 `e285319`; not ground, RFC-0026 C4):
