@@ -736,6 +736,15 @@ or paying for our shortcut.
   listings (measured, RFC-0021). Open decision: the constructor option's name and
   the capability's shape.
 
+- [ ] **ID-272 — Backend breadth: Apache OpenDAL as a transport under remote-store's contract layer**
+  spec: — · effort: L · audience: user.api, library.maintainer
+  Waits on BK-489 (D10) and BK-485 (v1 specs), both § 2. OpenDAL is a transport layer covering
+  far more services than the nine sync backend types in `FEATURES.md` § Backends; remote-store
+  is the contract layer above one. No spec, ADR, RFC or doc covers OpenDAL (dossier § Evidence),
+  so nothing measures which contract clauses it keeps. Open decision: spike, then an RFC choosing
+  an OpenDAL driver, delegation, positioning only, or decline.
+  Detail: [dossier](backlog/id-272-opendal-positioning.md)
+
 ---
 
 <a id="no-release-surprises"></a>
