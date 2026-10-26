@@ -920,8 +920,8 @@ CHANGELOG the release body is built from — say what is actually true.
   spec: — · effort: S · audience: contributor.process
   Rule 5 states a per-backend behaviour as a profile "declared by a capability or a driver flag";
   D6 records each backend's cells in a table beside the spec, as spec 052's profile table does, and
-  R4 says `SPEC-DESIGN.md` binds every v1 spec. A reviewer applying Rule 5 flags the table (PR
-  #1171's review). Open decision: the format RFC amends Rule 5 to admit D6's table, or D6 yields.
+  R4 says `SPEC-DESIGN.md` binds every v1 spec, so a reviewer applying Rule 5 flags the table.
+  Open decision: the format RFC amends Rule 5 to admit D6's table, or D6 yields.
 
 - [~] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
   spec: BE-001 -- BE-029, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer

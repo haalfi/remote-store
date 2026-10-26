@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-21
 **Backlog items:** BK-484 (No key model connects spec 051's Key to the key parameter of `Store`)
-**Status:** Research complete — ready for design decisions. The decisions of § 6 were taken by the maintainer through the interview (2026-10-21); the model is tested by a property-based spike and proved in Lean 4 (§ 10). Specified as [spec 052](../specs/052-store-key.md), which § 9.8 calls spec 054 (its number before RFC-0025 D6).
+**Status:** Research complete — ready for design decisions. The decisions of § 6 were taken by the maintainer through the interview (2026-10-21); the model is tested by a property-based spike and proved in Lean 4 (§ 10). Specified as [spec 052](../specs/052-store-key.md); § 9.8 compares the two.
 
 ---
 
@@ -647,48 +647,31 @@ source named, and each is narrower than the model.
   nodes carry data and children at once, so it has no folder/item partition
   (TREE-001), and nothing like BlockedByItem arises.
 
-### 9.8 Spec 054 as proposed (PR #1171, not merged)
+### 9.8 Spec 052
 
-*Superseded:* this compares the draft of 2026-10-22, and the KEY IDs in the
-body below are that draft's, which name other clauses than spec 052's (the
-draft's KEY-009, one-to-one admission, is not 052's Separator Set). Spec 052,
-the spec that draft became, takes the model's side on the three points below: `..` climbs and only an
-escape is refused, the `\` opt-out is KEY-009, and resolution is KEY-013.
-It departs from the model in two places. Its KEY-002 also refuses a
-surrogate anywhere in the raw input: § 3.5 step 0 refuses only NUL and an
-opted-out `\`, and the model's inputs range over Σ, which holds no
-surrogate (§ 2), so it says nothing of `\ud800/..`, which spec 052 refuses
-rather than walking to ε. And its
-L_shared is a policy `PORTABLE_KEY` defines, which no backend is promised to
-hold, where § 3.2 has L_shared ⊆ L_b for every backend; under the opt-in a
-store accepts its backend's declared portable set P_b ⊆ L_shared ∩ L_b, a
-smaller P_b being a declared deviation, and a profile table beside the spec
-records each backend's.
+[Spec 052](../specs/052-store-key.md) is the spec § 10 recommends. It takes
+the model's side on reduction and resolution:
 
-PR #1171 proposes spec 054, "Store Key Specification" (*Read*: its branch,
-2026-10-22). It moves PATH-002 to PATH-007 out of spec 004 and adds KEY-001 to
-KEY-009. It is the spec § 10 recommends, written in parallel, and it agrees on
-most of the model:
+- The walk from the root, with `..` climbing and an escape refused, never
+  clamped (KEY-003, KEY-004).
+- Input refusals read on the raw input, as § 3.5 step 0 (KEY-002).
+- Acceptance only where the walk ends, judged on c · k (KEY-005).
+- The `\` opt-out (KEY-009) and resolution's four outcomes (KEY-013).
+- The normal-form rule, as what a backend must honour for its declared L_b
+  (KEY-A-02).
 
-- `\` is a separator (PATH-002).
-- Empty and `.` segments contribute nothing (PATH-004 to PATH-006).
-- ε is a Key that folder-shaped operations accept, which is one choice of
-  § 3.7's "the operation decides" (KEY-005).
-- A refusal inspects the whole raw input (KEY-003, as § 3.5 step 0).
-- Backends admit a portable floor and refuse more only under a declared
-  profile (KEY-007, KEY-008), one shape for § 3.2's tiers.
-- KEY-009's one-to-one admission serves the same end as § 3.2's normal-form
-  rule: no two key strings share one stored name.
+It departs from the model in two places:
 
-It differs in three places:
-
-- **`..`.** PATH-003 refuses every `..` segment, and spec 054's Notes say "A
-  `..` segment is refused, never resolved against its parent". § 6 decides that `..` climbs and only
-  an escape is refused (§ 5's escape row). The maintainer keeps § 6's
-  decision, so this is a delta for spec 054 to take, not for this model.
-- **The `\` opt-out.** Spec 054 has none.
-- **Resolution.** Spec 054 states no lookup outcomes; § 3.7's four remain this
-  model's own.
+- **Surrogates.** KEY-002 also refuses a surrogate anywhere in the raw
+  input. § 3.5 step 0 refuses only NUL and an opted-out `\`, and the model's
+  inputs range over Σ, which holds no surrogate (§ 2), so the model says
+  nothing of `\ud800/..`; spec 052 refuses it rather than walking to ε.
+- **The portable language.** L_shared is a policy `PORTABLE_KEY` defines,
+  which no backend is promised to hold, where § 3.2 has L_shared ⊆ L_b for
+  every backend. Under the opt-in a store accepts its backend's declared
+  portable set P_b ⊆ L_shared, a smaller P_b being a declared deviation, and
+  opts in only where P_b is declared; a profile table beside the spec records
+  each backend's.
 
 ---
 
@@ -746,8 +729,7 @@ realisation of ν, and specs 005, 015 and 053 link to it. The spec settles
 these deltas and open points:
 
 - PATH-003, CHILD-003, ERR-005 (a)'s `..` clause and BE-032 A.2's attribution
-  of the `..` refusal: `..` climbs. Spec 054 as proposed kept PATH-003 (§ 9.8);
-  spec 052 climbs (KEY-003, KEY-004).
+  of the `..` refusal: `..` climbs, as spec 052's KEY-003 and KEY-004 do.
 - BE-032 A.1: resolution's depth (Absent against AbsentAncestor), and its
   naming of spec 004 as the input layer's owner; spec 051's § Layering names
   spec 004 the same way.
