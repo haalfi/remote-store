@@ -187,7 +187,7 @@ dagster = ["dagster>=1.10.18"]
 # past the 6 h job cap unannounced. Raise the cap deliberately, after a full
 # mutation.yml dispatch on the new minor. Floor at 1.11.0 (BUG-307): earlier
 # releases counted every per-mutant timeout as a kill, inflating the score.
-mutate = ["pytest-gremlins>=1.11.0,<1.12"]
+mutate = ["pytest-gremlins>=1.11.0,<1.13"]
 
 # -- Benchmark suite (all backends + charting) --
 bench = [
