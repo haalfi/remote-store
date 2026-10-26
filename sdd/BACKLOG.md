@@ -658,6 +658,14 @@ copies an example, without opening an issue.
   - **(was BK-325, absorbed here)** The guide's remaining gaps, which the rehearsal checks.
   Detail: [dossier](backlog/bk-332-custom-backend-rehearsal.md)
 
+- [ ] **BUG-344 — The custom-backend guide's `RedisBackend` reads `*?[` in a path as wildcards and answers a wrong-kind path wrongly**
+  spec: BE-005, BE-014, BE-021 · effort: S · audience: user.api_docs
+  `examples/snippets/custom_backend_guide.py` (v0.33.0 and master) puts paths unescaped into SCAN
+  MATCH, so `list_files('w*', recursive=True)` also lists `w1/` and `w[1]/`; and `read_bytes` of a
+  folder is `NotFound`, `write` over a folder succeeds and `get_folder_info` of a file answers,
+  against BE-021 (reproduced 2026-10-26). Kernel PR #1144's rewrite fixed both and froze. Open
+  decision: none; escape MATCH, add the type checks.
+
 ---
 
 <a id="no-workarounds"></a>

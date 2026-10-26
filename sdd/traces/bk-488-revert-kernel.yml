@@ -16,6 +16,7 @@ discovery_followups:
   - BK-489
   - BUG-342
   - BUG-343
+  - BUG-344
 orient:
   - items: [BK-488]
     verdict: subsumes
@@ -164,7 +165,10 @@ phases:
           BK-339, BK-382, BUG-266, BUG-287, BUG-288, BUG-289, ID-217. New: BUG-342, BUG-328's Memory
           `None`-read half, which v0.33.0's `MemoryBackend.write` ships (reproduced; found by PR
           review, not D2); BUG-343, `CapabilitySet` copy and pickle, whose fix (`__reduce__`) rode
-          in kernel PR #1144 and left with it (reproduced; found by the maintainer's review)
+          in kernel PR #1144 and left with it (reproduced; found by the maintainer's review);
+          BUG-344, the guide's `RedisBackend` example, from a sweep of every non-kernel hunk the
+          revert removed from `src/` and `tests/`, master's removed tests run against this head
+          (agent; I re-ran its two repro scripts). The sweep found no further library defect
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "Unreleased"
