@@ -105,7 +105,7 @@ extension may add it on top of the entries, as it may add content hashing.
 | Multi-range read | Form of OP-02 |
 | Delete only a folder's contents, or only an empty folder | Form of OP-11 |
 | Update metadata or system properties after the write | Form of OP-20 |
-| Verify a checksum on upload | Form of OP-03 |
+| Backend-verified checksum on upload (Content-MD5, a checksum algorithm) | Form of OP-03 |
 | Touch (write an empty item) | Form of OP-03 |
 | Conditions on read, delete, copy or move | Not in v1; OP-05 conditions writes only |
 | Presigned URL | Not in v1 |

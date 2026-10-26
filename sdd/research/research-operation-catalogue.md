@@ -49,7 +49,7 @@ full text.
 | System properties (content type, cache control) apart from user metadata | HTTP serving | 7/10 |
 | Batch delete | Many keys in few requests | 6/10 |
 | Versioned access | History, recovery, pinned reads | 6/10 |
-| Integrity and identity tokens (checksums, ETag, version) | Verify transfers, detect change without reading | 6/10 |
+| Integrity and identity tokens (checksums, unique keys, verified MD5) | Verify transfers, detect change without reading | 6/10 |
 | Append | Logs | 6/10, always gated, sometimes emulated |
 | Conditional read | Skip the transfer if unchanged | 5/10 |
 | Abort an in-flight write | Drop a streamed or multipart upload | 5/10 |
@@ -64,7 +64,8 @@ full text.
 
 Absent almost everywhere: OP-07's depth limit (fsspec only), OP-18's
 capability query (OpenDAL only) and OP-24's health check (OpenDAL and gocloud
-only).
+only; the vendor SDKs' calls in § 5's row 24 check that a bucket or container
+exists, and are not counted as health checks, inference).
 
 ### Q2. The cut
 
@@ -242,7 +243,7 @@ names this document at the start of its session (research § 4, S3 of
 | 21 lifecycle | — (file `close` only; instance cache) | — (global `finalize_s3`) | — (Writer close/abort) | — (Drop) | `Bucket.Close` | file `close` | — (cache via GC) | `client.close()` | `close()`, context manager | `Client.close()` |
 | 22 address mapping | `unstrip_protocol`, `url_to_fs` | `from_uri` | `from_uri`, `info().root()` | `parse_url`, `Path::from_url_path` | `OpenBucket(url)` | `parse_uri` | `as_uri`, `from_uri` | — | `BlobClient.url` | `Blob.from_uri` (n/c) |
 | 23 native handle | `.s3`, `.service_client` | — | — | concrete store types | `As`, `ErrorAs`, `Before*` | `to_boto3`; inject | `S3Client.client` | (native) | (native) | (native) |
-| 24 health check | — | — | `check()` (missing root = healthy) | — | `IsAccessible` (missing root = false) | — | — | `head_bucket` | `ContainerClient.exists` | `lookup_bucket`, `Bucket.exists` |
+| 24 health check | — | — | `check()` (missing root = healthy) | — | `IsAccessible` (missing root = false) | — | — | `head_bucket` (existence probe) | `ContainerClient.exists` (existence probe) | `lookup_bucket`, `Bucket.exists` (existence probes) |
 
 The column headers use the comparables' names; the row labels are the draft
 entries' short names, matched to the catalogue by ID.

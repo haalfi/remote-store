@@ -17,9 +17,9 @@ Out of scope, each with its owner:
 - Which entries a store offers, against the catalogue's Offer column, how a
   caller learns it, and what an operation of an entry the store does not offer
   answers: the spec of OP-18, which binds that column, and of the entry.
-- Callables on the type, and core functions, that take no Store or AsyncStore
-  (constructors from configuration, key checks), and the equality, hashing,
-  representation, copying and pickling of the API's types: the API's spec.
+- How the public operations are spelled in the implementation language, what
+  the API offers that acts on no store (creating a store from configuration, a
+  key check), and the language-level behaviour of its handles: the API's spec.
 - How an input becomes a key: [spec 052](052-store-key.md).
 - Extensions, which build on the core's public operations and may offer what
   no entry does, and what sets an extension apart from the core: the API's
@@ -34,9 +34,9 @@ RTXT-003 and [spec 030](030-write-text.md) WTXT-003.
 
 | Term | Meaning |
 | --- | --- |
-| Store, AsyncStore | The v1 API's synchronous and asynchronous types through which a caller acts on one store, under whatever names the API's spec gives them. |
-| Core API | Store, AsyncStore and the library's public functions outside its extensions. |
-| Public operation | On an instance of Store or AsyncStore: anything a caller reaches through a name without a leading underscore (a method, a property, an attribute), and every special method the type defines rather than inherits unchanged from `object`. On the type, and as a function of the core API: a callable that takes a Store or an AsyncStore, constructors and factories included. Excluded: equality, hashing, representation, copying and pickling. Its form is sync when every Store or AsyncStore it takes or is reached on is a Store, async when every one is an AsyncStore; one that takes both has neither form. The table in Notes sets each kind of callable against the term. |
+| Store, AsyncStore | The v1 API's synchronous and asynchronous handles through which a caller acts on one store, under whatever names the API's spec gives them. |
+| Core API | The library's API apart from its extensions. |
+| Public operation | An operation the core API offers a caller on one or more stores, reached through a Store or an AsyncStore: one that reads, changes or inspects a store, or derives a store from one. Its form is sync when every store it acts on is reached through a Store, async when every one is reached through an AsyncStore; one acting on both has neither form. |
 | Entry | A row of the catalogue, named by its ID (`OP-NN`). |
 | Serves | A public operation serves an entry when the entry's spec names it as one of the entry's operations. What each one does is that spec's. |
 
@@ -66,10 +66,9 @@ Not normative.
   OP-01, designed in OP-01's session. A public operation may therefore serve
   two entries, and an entry be served by several operations: OPS-001 and
   OPS-002 bound the surface from both sides without fixing that mapping.
-- **Public operations.** The term has one rule per access path: on an
-  instance, everything the type offers counts; on the type or as a function, a
-  callable counts when it takes a store. The table after this list sets each
-  kind against it.
+- **Public operations.** The term names the library's interface, not a
+  language's: which language constructs carry the public operations, and
+  which carry none, is the API's spec.
 - **One contract for both forms.** OPS-002 makes both forms exist; that they
   behave alike is stated once, by the entry's own spec, which designs both.
 - **Which stores offer an entry.** What a given store supports is answered in
@@ -91,19 +90,6 @@ Not normative.
   public operations, and which entry's spec names each. The sections bind code
   once a flow implements that surface (RFC-0024 § R4); why no test witnesses
   them before it is [RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C3.
-
-| Callable | Public operation |
-| --- | --- |
-| On an instance: method, property or attribute with a public name, including one that returns a store derived from it (OP-16) | yes |
-| On an instance: special method the type defines (context manager, `__contains__`, `__iter__`, `__getitem__`, operators) | yes |
-| On an instance: special method inherited unchanged from `object` (`__setattr__`, `__dir__`, `__format__`, default ordering) | no: not the API's |
-| Equality, hashing, representation, copying, pickling | no: the API's spec |
-| Name with a leading underscore that is not a special method | no: not part of the API |
-| On the type: callable taking a Store or an AsyncStore (a constructor or factory from an existing store) | yes |
-| On the type: callable taking neither (a constructor from configuration, a key check) | no: the API's spec |
-| Core function taking a Store or an AsyncStore | yes |
-| Core function taking neither | no: the API's spec |
-| Extension function | no: spec 053 bounds the core only |
 
 ## Tested against
 

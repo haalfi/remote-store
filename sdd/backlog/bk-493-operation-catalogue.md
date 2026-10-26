@@ -70,8 +70,10 @@ for identity tokens) or a row in the catalogue's Not in v1 list, checked
 operation by operation against both tables. Post-write
 metadata update, checksum verification, `touch`, a key-value mapping view and
 rsync-style mirroring are forms of OP-20, OP-03, OP-03, OP-17 and OP-15. OP-14
-covers folders as well as files. Spec 053's public operation counts in by
-default and names its exclusions. An outside formal-definition table (Gemini) was not
+covers folders as well as files. Spec 053 defines a public operation as the
+store library's interface, with no implementation-language construct: five
+review rounds found a hole in each language-level definition, and how the
+operations are spelled in Python is the API's spec. An outside formal-definition table (Gemini) was not
 adopted: it fixed signatures each entry's session decides, and its framing is
 already how an entry's spec is written (SPEC-DESIGN Rules 2 and 4).
 
