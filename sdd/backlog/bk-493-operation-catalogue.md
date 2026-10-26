@@ -52,7 +52,9 @@ From an outside review on PR #1184 (the maintainer's dialog in
 `sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`): OP-22 and OP-23
 are optional, since a backend may have no native client or address; OP-05
 stays `v1`, and where a backend has no change token its profile refuses "if
-unchanged" rather than check it apart from the write.
+unchanged" rather than check it apart from the write. That last decision is
+semantics, so it is not in the ground: it is input the maintainer names at the
+start of OP-05's session (research § 4, S3).
 
 From review round 3 (same log): spec 053 keeps only OPS-001 and OPS-002, the
 closed surface, which can be checked without a call. The Offer column binds

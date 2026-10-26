@@ -7,10 +7,9 @@ Draft, 2026-10-26. Tracked as **BK-493**. Amends
 step table of [research § 9](../research/research-spec-first-reset.md#9-results-and-recommendation),
 which RFC-0024 makes binding (C1); step 4b's output joins the ground without a
 formal model (C4); and § R4 gains a second exception, spec 053's sections
-having no test until a v1 surface exists (C3). It adds two rows and a
-numbering line to the [ground register](../observe/ground-register.md) (C4).
-Decisions taken in this RFC's
-sessions: decision logs `sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl`
+having no test until a v1 surface exists (C3). It edits the
+[ground register](../observe/ground-register.md) (C4). Decisions taken in this
+RFC's sessions: decision logs `sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl`
 and, for the revision against the maintainer's deep research (C5),
 `sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`.
 
@@ -35,11 +34,14 @@ says which operations v1 has. Two costs follow:
   conditional write is a mode of writing or its own operation, would be decided
   by whichever session meets it first, from a primed context, and the next
   session would meet it again.
-- **Decisions that bind every operation have no home.** The first `/observe`
-  run (`exists`) decided one, an unacceptable key refused identically by every
-  operation, and left two shared open items; the next session would rediscover
-  them ([BK-485's dossier](../backlog/bk-485-spec-first-reset.md), the report
-  on that run).
+- **Decisions about the surface as a whole have no home.** Whether every
+  operation has an async twin, or whether a method may exist that no
+  operation's design covers, would be decided per session. Decisions that bind
+  every operation's behaviour are a different kind: the first `/observe` run
+  (`exists`) decided one, an unacceptable key refused identically by every
+  operation, and left two shared open items. Those are not this step's; they
+  grow from `read()` under D5 (Open Question 1) and stay tracked in
+  [BK-485's dossier](../backlog/bk-485-spec-first-reset.md).
 
 ## Proposal
 
@@ -132,8 +134,8 @@ no entry has.
 
 All decided in the log above:
 
-- **Depth:** inventory only, which leaves the decisions shared by every
-  operation without a home; or inventory with signatures and error kinds, which
+- **Depth:** inventory only, which leaves the decisions about the surface as a
+  whole (the exact set, both forms) without a home; or inventory with signatures and error kinds, which
   decides what each unprimed session exists to decide.
 - **Input:** 0.33's surface pruned, which anchors v1 on 0.33; or a fresh
   unprimed session, which needs the hook's allowlist and one more session.

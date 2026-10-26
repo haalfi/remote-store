@@ -518,8 +518,8 @@ no clause of the contract ships unexercised.
 
 - [~] **BK-493 — The v1 Store API has no agreed set of operations, so each design session would find its own scope**
   spec: OPS-001 -- OPS-002 · effort: M · audience: library.maintainer, user.api, contributor.process
-  RFC-0024 § 9 goes from the key (step 4) to `read()` (step 5) with no list of what v1 offers, and
-  the first `/observe` run found that decisions binding every operation have no home. RFC-0026 adds
+  RFC-0024 § 9 goes from the key (step 4) to `read()` (step 5) with no list of what v1 offers, so
+  each session would draw its own boundary and decide the surface's shape on its own. RFC-0026 adds
   step 4b: spec 053 binds a catalogue table beside it, one entry per intent, from use cases with 0.33
   as a check, revised against a deep research. Open decision: none; review and acceptance remain.
   Detail: [dossier](backlog/bk-493-operation-catalogue.md)

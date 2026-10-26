@@ -89,8 +89,7 @@ its spec states. Where part of it depends on the backend, such as OP-09's
 token, the entry stays `v1` and its session declares the variation as a
 profile of that contract (spec 053, Notes;
 [RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D6). OP-05's "if unchanged"
-rests on that token: where a backend offers none, the profile refuses the
-condition rather than check it apart from the write.
+rests on that token, so OP-05's profile follows OP-09's.
 
 ## Not in v1
 
