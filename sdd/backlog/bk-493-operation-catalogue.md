@@ -31,8 +31,7 @@ From the dialogs in `sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl`:
 
 ## Status (2026-10-26)
 
-Done on branch `claude/wonderful-bell-mqemmt` (restarted from master at
-`e285319`): this item's index entry and this dossier. Not yet written, in
+Done on branch `bk-493-operation-catalogue` (from master at `e285319`): this item's index entry and this dossier. Not yet written, in
 order:
 
 1. The trace `sdd/traces/bk-493-operation-catalogue.yml`, with the orient
