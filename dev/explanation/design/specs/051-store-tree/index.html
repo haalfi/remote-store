@@ -16,6 +16,8 @@
         <link rel="prev" href="../050-doc-graph-model/">
       
       
+        <link rel="next" href="../052-store-key/">
+      
       
         
       
@@ -11733,6 +11735,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../052-store-key/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    052: Store Key Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11966,9 +11996,10 @@ evidence behind it are kept in
 § 1 to § 9 as written when the model was accepted: a countermodel per clause,
 the bounded check in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/alloy/StoreAxioms.als"><code>formal/alloy/StoreAxioms.als</code></a>
 and the proofs in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/lean/StoreAxioms.lean"><code>formal/lean/StoreAxioms.lean</code></a>.</p>
-<p><strong>Layering.</strong> This spec governs Keys and the tree over them. Spec 004 governs
-input strings: <code>RemotePath</code> maps an accepted input onto a Key or rejects it, so
-the library addresses a subset of the Keys this spec admits.</p>
+<p><strong>Layering.</strong> This spec governs Keys and the tree over them.
+<a href="../052-store-key/">Spec 052</a> governs input strings: it maps an accepted input
+onto a Key or refuses it, so the library addresses a subset of the Keys this
+spec admits.</p>
 <p><strong>Tested against.</strong> The sections are tested against a reference model of the
 axioms (<code>tests/test_store_tree.py</code>).</p>
 <p><strong>Name equality.</strong> Names compare exactly, with no case folding and no Unicode
@@ -12088,6 +12119,22 @@ and are not sections of their own.</p>
             </div>
           </a>
         
+        
+          
+          <a href="../052-store-key/" class="md-footer__link md-footer__link--next" aria-label="Next: 052: Store Key Specification">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                052: Store Key Specification
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
         
       </nav>
     

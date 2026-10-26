@@ -9668,10 +9668,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#98-spec-054-as-proposed-pr-1171-not-merged" class="md-nav__link">
+  <a href="#98-spec-052" class="md-nav__link">
     <span class="md-ellipsis">
       
-        9.8 Spec 054 as proposed (PR #1171, not merged)
+        9.8 Spec 052
       
     </span>
   </a>
@@ -11879,6 +11879,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/052-store-key/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    052: Store Key Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12189,10 +12217,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#98-spec-054-as-proposed-pr-1171-not-merged" class="md-nav__link">
+  <a href="#98-spec-052" class="md-nav__link">
     <span class="md-ellipsis">
       
-        9.8 Spec 054 as proposed (PR #1171, not merged)
+        9.8 Spec 052
       
     </span>
   </a>
@@ -12246,7 +12274,7 @@
 <h1 id="research-a-key-model-between-the-store-tree-and-the-key-parameter-bk-484">Research: A key model between the store tree and the key parameter (BK-484)<a class="headerlink" href="#research-a-key-model-between-the-store-tree-and-the-key-parameter-bk-484" title="Permanent link">&para;</a></h1>
 <p><strong>Date:</strong> 2026-10-21
 <strong>Backlog items:</strong> BK-484 (No key model connects spec 051's Key to the key parameter of <code>Store</code>)
-<strong>Status:</strong> Research complete — ready for design decisions. The decisions of § 6 were taken by the maintainer through the interview (2026-10-21); the model is tested by a property-based spike and proved in Lean 4 (§ 10). Next: a spec between spec 051 and spec 004.</p>
+<strong>Status:</strong> Research complete — ready for design decisions. The decisions of § 6 were taken by the maintainer through the interview (2026-10-21); the model is tested by a property-based spike and proved in Lean 4 (§ 10). Specified as <a href="../../specs/052-store-key/">spec 052</a>; § 9.8 compares the two.</p>
 <hr />
 <h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
 <p><a href="../../specs/051-store-tree/">Spec 051</a> defines Key on the entities of one
@@ -12415,6 +12443,8 @@ units). The portable language is what every supported backend accepts:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>L_shared ⊆ L_b ⊆ L_core      for every backend b,
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>L_shared ⊆ ⋂_b L_b           (equal, or stricter as a deliberate policy)
 </code></pre></div>
+<p><em>Superseded by spec 052:</em> there L_shared is a policy that names no backend,
+so neither inclusion is promised (§ 9.8).</p>
 <p>What each backend's own authority permits, with sources, is collected in
 <a href="../research-backend-path-authorities/">research-backend-path-authorities.md</a>,
 the input for each L_b. Its § 3.7 also records that the Azure Python SDK's
@@ -12425,6 +12455,9 @@ before any key string reaches a backend.</p>
 under the floor stays reachable; a store may opt into portability, and then
 L_api = L_floor ∩ L_shared. The choice is a declared, observable part of the
 store's configuration.</p>
+<p><em>Superseded by spec 052:</em> under the opt-in L_api is the backend's declared
+portable set P_b ⊆ L_shared, and a store opts in only where P_b is declared
+(KEY-008, § 9.8).</p>
 <p><strong>A backend that rewrites names</strong> on storage has a function norm_b on N
 (HFS+ stores NFD). Its language holds only the names it stores unchanged:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>k ∈ L_b  only if  norm_b(s) = s for every segment s of k
@@ -13225,32 +13258,59 @@ source named, and each is narrower than the model.</p>
   nodes carry data and children at once, so it has no folder/item partition
   (TREE-001), and nothing like BlockedByItem arises.</li>
 </ul>
-<h3 id="98-spec-054-as-proposed-pr-1171-not-merged">9.8 Spec 054 as proposed (PR #1171, not merged)<a class="headerlink" href="#98-spec-054-as-proposed-pr-1171-not-merged" title="Permanent link">&para;</a></h3>
-<p>PR #1171 proposes spec 054, "Store Key Specification" (<em>Read</em>: its branch,
-2026-10-22). It moves PATH-002 to PATH-007 out of spec 004 and adds KEY-001 to
-KEY-009. It is the spec § 10 recommends, written in parallel, and it agrees on
-most of the model:</p>
+<h3 id="98-spec-052">9.8 Spec 052<a class="headerlink" href="#98-spec-052" title="Permanent link">&para;</a></h3>
+<p><a href="../../specs/052-store-key/">Spec 052</a> is the spec § 10 recommends. It takes
+the model's side on reduction and resolution:</p>
 <ul>
-<li><code>\</code> is a separator (PATH-002).</li>
-<li>Empty and <code>.</code> segments contribute nothing (PATH-004 to PATH-006).</li>
-<li>ε is a Key that folder-shaped operations accept, which is one choice of
-  § 3.7's "the operation decides" (KEY-005).</li>
-<li>A refusal inspects the whole raw input (KEY-003, as § 3.5 step 0).</li>
-<li>Backends admit a portable floor and refuse more only under a declared
-  profile (KEY-007, KEY-008), one shape for § 3.2's tiers.</li>
-<li>KEY-009's one-to-one admission serves the same end as § 3.2's normal-form
-  rule: no two key strings share one stored name.</li>
+<li>The walk from the root, with <code>..</code> climbing and an escape refused, never
+  clamped (KEY-003, KEY-004).</li>
+<li>Input refusals read on the raw input, as § 3.5 step 0 (KEY-002).</li>
+<li>Acceptance only where the walk ends, judged on c · k (KEY-005).</li>
+<li>The <code>\</code> opt-out (KEY-009) and resolution's four outcomes (KEY-013).</li>
+<li>The normal-form rule, as what a backend must honour for its declared L_b
+  (KEY-A-02).</li>
 </ul>
-<p>It differs in three places:</p>
+<p>It departs from the model in three places, each a term or clause of spec 052
+with no counterpart in §§ 3.1 to 3.7:</p>
 <ul>
-<li><strong><code>..</code>.</strong> PATH-003 refuses every <code>..</code> segment, and spec 054's Notes say "A
-  <code>..</code> segment is refused, never resolved against its parent". § 6 decides that <code>..</code> climbs and only
-  an escape is refused (§ 5's escape row). The maintainer keeps § 6's
-  decision, so this is a delta for spec 054 to take, not for this model.</li>
-<li><strong>The <code>\</code> opt-out.</strong> Spec 054 has none.</li>
-<li><strong>Resolution.</strong> Spec 054 states no lookup outcomes; § 3.7's four remain this
-  model's own.</li>
+<li><strong>The store's location.</strong> Spec 052's L_b and P_b depend on where the store
+  is rooted: a whole-key limit counts the location's share, and P_b is cut
+  to the keys within what the location leaves. § 3.2's tiers judge the key string alone, so a key the
+  model accepts on a 1024-byte backend can be refused under a long store
+  prefix.</li>
+<li><strong>Surrogates.</strong> KEY-002 also refuses a surrogate anywhere in the raw
+  input. § 3.5 step 0 refuses only NUL and an opted-out <code>\</code>, and the model's
+  inputs range over Σ, which holds no surrogate (§ 2), so the model says
+  nothing of <code>\ud800/..</code>; spec 052 refuses it rather than walking to ε.</li>
+<li><strong>The portable language.</strong> L_shared is a policy <code>PORTABLE_KEY</code> defines,
+  which no backend is promised to hold, where § 3.2 has L_shared ⊆ L_b for
+  every backend. Under the opt-in a store accepts its backend's declared
+  portable set P_b ⊆ L_shared, cut to its location, a smaller P_b being a
+  deviation, and opts in only where the backend's P_b is declared; a profile table beside the spec records
+  each backend's.</li>
 </ul>
+<p><strong>Why <code>PORTABLE_KEY</code> has the rules it has</strong>, one reason per rule:</p>
+<ul>
+<li><strong>ASCII letters, digits, <code>.</code>, <code>_</code> and <code>-</code>.</strong> Beyond ASCII, stores differ in
+  whether a composed and a decomposed spelling are one name or two, in how
+  case-insensitive comparison folds a letter, and in whether a length counts
+  bytes or UTF-16 units; an ASCII character has one spelling, one fold, and
+  is one byte and one unit. Σ stays the Unicode scalar values (§ 2): only the
+  opt-in narrows to ASCII.</li>
+<li><strong>A letter or digit first.</strong> No tool reads the name as hidden (<code>.a</code>) or as
+  an option (<code>-a</code>).</li>
+<li><strong>Neither <code>.</code> nor a space last.</strong> These are the endings a store that strips
+  them would alias (§ 3.2's rewriting).</li>
+<li><strong>No reserved device name.</strong> <code>CON</code>, <code>PRN</code>, <code>AUX</code>, <code>NUL</code>, <code>COM1</code> to <code>COM9</code>
+  and <code>LPT1</code> to <code>LPT9</code>, alone or before a <code>.</code>, after Microsoft's "Naming
+  Files, Paths, and Namespaces" (research-backend-path-authorities § 3.4),
+  widened by the digit 0 to <code>COM0</code> and <code>LPT0</code>, which OneDrive reserves too
+  (its § 3.9).</li>
+<li><strong>At most 255 characters.</strong> Room for the key in every whole-key limit the
+  profile table records, at a location that leaves 255 units.</li>
+</ul>
+<p><a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-468-key-probe/check_portable_regex.py"><code>bk-468-key-probe/check_portable_regex.py</code></a>
+compares the patterns with these rules on hand-picked cases.</p>
 <hr />
 <h2 id="10-results-and-recommendation">10. Results and recommendation<a class="headerlink" href="#10-results-and-recommendation" title="Permanent link">&para;</a></h2>
 <p><strong>Spike (2026-10-21).</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-484-key-model/README.md"><code>bk-484-key-model/spike/</code></a>
@@ -13260,8 +13320,9 @@ small name pools chosen so collisions and navigation are frequent, and over
 generated stores of at most ten entities. It found one defect: the <code>\</code> and
 NUL rules were checked on the result, giving § 5's first two rows; the fix is
 step 0. Run as the folder's README says, it reports <code>45 passed</code>.</p>
-<p><strong>Lean 4 (2026-10-21).</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-484-key-model/README.md"><code>bk-484-key-model/lean/</code></a>
-proves K1 to K12 with Lean 4.34.1, core library only, against spec 051's own
+<p><strong>Lean 4 (2026-10-21).</strong> The spike's Lean files, since merged into
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/lean/KeyModel.lean"><code>formal/lean/KeyModel.lean</code></a>, the proof of
+record, proved K1 to K12 with Lean 4.34.1, core library only, against spec 051's own
 definitions: it imports <code>join</code>, <code>join_inj</code>, <code>join_shape</code>, <code>seqOf</code>, <code>Key</code> and
 L6's <code>ofTrie</code> from <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/lean/StoreAxioms.lean"><code>StoreAxioms.lean</code></a>
 rather than restating them. Two results go through L6: Lemma C builds the
@@ -13276,70 +13337,57 @@ with the opt-out and the dependent proofs no longer checking and the
 <thead>
 <tr>
 <th>Lemma</th>
-<th>Theorem</th>
-<th>File</th>
+<th>Theorem in <code>KeyModel.lean</code></th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>K1</td>
 <td><code>nu_output</code>, <code>nu_key_shape</code></td>
-<td><code>KeyConcept.lean</code></td>
 </tr>
 <tr>
 <td>K2</td>
 <td><code>nu_fixed_point</code></td>
-<td><code>KeyConcept.lean</code></td>
 </tr>
 <tr>
 <td>K3</td>
 <td><code>nu_decides_equiv</code></td>
-<td><code>KeyConcept.lean</code></td>
 </tr>
 <tr>
 <td>K4</td>
 <td><code>join_continuation</code></td>
-<td><code>KeyConcept.lean</code></td>
 </tr>
 <tr>
 <td>K5</td>
 <td><code>opt_out_only_rejects_more</code></td>
-<td><code>KeyConcept.lean</code></td>
 </tr>
 <tr>
 <td>K6</td>
 <td><code>child_compose</code></td>
-<td><code>KeyConcept.lean</code></td>
 </tr>
 <tr>
 <td>K7</td>
 <td><code>segments_key</code></td>
-<td><code>KeyStore.lean</code></td>
 </tr>
 <tr>
 <td>K8</td>
 <td><code>name_eq_last</code>, <code>parent_eq_dropLast</code></td>
-<td><code>KeyStore.lean</code></td>
 </tr>
 <tr>
 <td>K9</td>
 <td><code>lemma_C</code></td>
-<td><code>KeyStore.lean</code></td>
 </tr>
 <tr>
 <td>K10</td>
 <td><code>occupied_take</code>, <code>resolution</code></td>
-<td><code>KeyStore.lean</code></td>
 </tr>
 <tr>
 <td>K11</td>
 <td><code>item_has_no_extension</code></td>
-<td><code>KeyStore.lean</code></td>
 </tr>
 <tr>
 <td>K12</td>
 <td><code>child_view</code></td>
-<td><code>KeyStore.lean</code></td>
 </tr>
 </tbody>
 </table>
@@ -13358,7 +13406,7 @@ realisation of ν, and specs 005, 015 and 053 link to it. The spec settles
 these deltas and open points:</p>
 <ul>
 <li>PATH-003, CHILD-003, ERR-005 (a)'s <code>..</code> clause and BE-032 A.2's attribution
-  of the <code>..</code> refusal: <code>..</code> climbs. Spec 054 as proposed keeps PATH-003 (§ 9.8).</li>
+  of the <code>..</code> refusal: <code>..</code> climbs, as spec 052's KEY-003 and KEY-004 do.</li>
 <li>BE-032 A.1: resolution's depth (Absent against AbsentAncestor), and its
   naming of spec 004 as the input layer's owner; spec 051's § Layering names
   spec 004 the same way.</li>
