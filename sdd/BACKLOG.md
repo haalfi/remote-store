@@ -916,6 +916,13 @@ CHANGELOG the release body is built from — say what is actually true.
   relocates mechanism (audit 024 § 2). Open decision: a placement for design notes, or
   Rule 1 drops the option and names ADRs and the custom-backend guide.
 
+- [ ] **BK-492 — The formal trace check makes a restating file tag sections it does not model**
+  spec: — · effort: S · audience: contributor.process
+  `check_formal_trace.py` R2 fails a restated spec's section that its Lean or Alloy file tags
+  nowhere, and offers no route for a section the file deliberately leaves out. `KeyModel.lean`
+  so tags KEY-008, KEY-A-02 and KEY-A-03 on `Cfg.tier`, an arbitrary predicate, and a reader of
+  the trace takes them as restated. Open decision: an explicit not-restated marker, or R2 skips assumptions.
+
 - [ ] **BK-491 — `SPEC-DESIGN.md` Rule 5 asks for a capability or driver flag where RFC-0024 D6 puts a profile table**
   spec: — · effort: S · audience: contributor.process
   Rule 5 states a per-backend behaviour as a profile "declared by a capability or a driver flag";

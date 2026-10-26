@@ -660,8 +660,14 @@ the model's side on reduction and resolution:
 - The normal-form rule, as what a backend must honour for its declared L_b
   (KEY-A-02).
 
-It departs from the model in two places:
+It departs from the model in three places, each a term or clause of spec 052
+with no counterpart in §§ 3.1 to 3.7:
 
+- **The store's location.** Spec 052's L_b and P_b are declared for a
+  backend at the store's location, and a whole-key limit counts the
+  location's share. § 3.2's tiers judge the key string alone, so a key the
+  model accepts on a 1024-byte backend can be refused under a long store
+  prefix.
 - **Surrogates.** KEY-002 also refuses a surrogate anywhere in the raw
   input. § 3.5 step 0 refuses only NUL and an opted-out `\`, and the model's
   inputs range over Σ, which holds no surrogate (§ 2), so the model says
@@ -672,6 +678,29 @@ It departs from the model in two places:
   portable set P_b ⊆ L_shared, a smaller P_b being a declared deviation, and
   opts in only where P_b is declared; a profile table beside the spec records
   each backend's.
+
+**Why `PORTABLE_KEY` has the rules it has**, one reason per rule:
+
+- **ASCII letters, digits, `.`, `_` and `-`.** Beyond ASCII, stores differ in
+  whether a composed and a decomposed spelling are one name or two, in how
+  case-insensitive comparison folds a letter, and in whether a length counts
+  bytes or UTF-16 units; an ASCII character has one spelling, one fold, and
+  is one byte and one unit. Σ stays the Unicode scalar values (§ 2): only the
+  opt-in narrows to ASCII.
+- **A letter or digit first.** No tool reads the name as hidden (`.a`) or as
+  an option (`-a`).
+- **Neither `.` nor a space last.** These are the endings a store that strips
+  them would alias (§ 3.2's rewriting).
+- **No reserved device name.** `CON`, `PRN`, `AUX`, `NUL`, `COM1` to `COM9`
+  and `LPT1` to `LPT9`, alone or before a `.`, after Microsoft's "Naming
+  Files, Paths, and Namespaces" (research-backend-path-authorities § 3.4),
+  widened by the digit 0 to `COM0` and `LPT0`, which OneDrive reserves too
+  (its § 3.9).
+- **At most 255 characters.** Room for the key in every whole-key limit the
+  profile table records, at a location that leaves 255 units.
+
+[`bk-468-key-probe/check_portable_regex.py`](bk-468-key-probe/check_portable_regex.py)
+compares the patterns with these rules on hand-picked cases.
 
 ---
 
@@ -685,8 +714,9 @@ generated stores of at most ten entities. It found one defect: the `\` and
 NUL rules were checked on the result, giving § 5's first two rows; the fix is
 step 0. Run as the folder's README says, it reports `45 passed`.
 
-**Lean 4 (2026-10-21).** [`bk-484-key-model/lean/`](bk-484-key-model/README.md)
-proves K1 to K12 with Lean 4.34.1, core library only, against spec 051's own
+**Lean 4 (2026-10-21).** The spike's Lean files, since merged into
+[`formal/lean/KeyModel.lean`](../formal/lean/KeyModel.lean), the proof of
+record, proved K1 to K12 with Lean 4.34.1, core library only, against spec 051's own
 definitions: it imports `join`, `join_inj`, `join_shape`, `seqOf`, `Key` and
 L6's `ofTrie` from [`StoreAxioms.lean`](../formal/lean/StoreAxioms.lean)
 rather than restating them. Two results go through L6: Lemma C builds the
@@ -698,20 +728,20 @@ mutation check, not committed, disabled step 0's `\` rule: the build failed,
 with the opt-out and the dependent proofs no longer checking and the
 `a\a/..` example evaluating to the wrong result.
 
-| Lemma | Theorem | File |
-|---|---|---|
-| K1 | `nu_output`, `nu_key_shape` | `KeyConcept.lean` |
-| K2 | `nu_fixed_point` | `KeyConcept.lean` |
-| K3 | `nu_decides_equiv` | `KeyConcept.lean` |
-| K4 | `join_continuation` | `KeyConcept.lean` |
-| K5 | `opt_out_only_rejects_more` | `KeyConcept.lean` |
-| K6 | `child_compose` | `KeyConcept.lean` |
-| K7 | `segments_key` | `KeyStore.lean` |
-| K8 | `name_eq_last`, `parent_eq_dropLast` | `KeyStore.lean` |
-| K9 | `lemma_C` | `KeyStore.lean` |
-| K10 | `occupied_take`, `resolution` | `KeyStore.lean` |
-| K11 | `item_has_no_extension` | `KeyStore.lean` |
-| K12 | `child_view` | `KeyStore.lean` |
+| Lemma | Theorem in `KeyModel.lean` |
+|---|---|
+| K1 | `nu_output`, `nu_key_shape` |
+| K2 | `nu_fixed_point` |
+| K3 | `nu_decides_equiv` |
+| K4 | `join_continuation` |
+| K5 | `opt_out_only_rejects_more` |
+| K6 | `child_compose` |
+| K7 | `segments_key` |
+| K8 | `name_eq_last`, `parent_eq_dropLast` |
+| K9 | `lemma_C` |
+| K10 | `occupied_take`, `resolution` |
+| K11 | `item_has_no_extension` |
+| K12 | `child_view` |
 
 **What neither covers.** Backend tiers are an arbitrary predicate in Lean and
 stand-ins in the spike (`CON`, a byte limit), not real rule sets. Resolution's

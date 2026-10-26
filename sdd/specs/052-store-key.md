@@ -11,7 +11,7 @@ walk ends, against a language the backend can hold unchanged.
 
 Scope: the reduction ν, the equivalence it decides, the languages it accepts
 against, and resolution Ω. Every section is a function: of the input and the
-configuration for ν, of the Key and one state for Ω; what the spec relies on
+configuration for ν, of the key string and one state for Ω; what the spec relies on
 from a backend is in its assumptions. Out of scope, each with its owner:
 
 - Which operations accept the root, and which error or result an outcome
@@ -49,13 +49,14 @@ items. Names compare exactly (spec 051 § Name equality).
 | Sep | The store's separator set: {`/`, `\`} or {`/`} (KEY-009). |
 | Navigation segment | A segment of an input split on Sep that is empty or equals `.` or `..`. A segment merely containing dots, such as `a..b`, `...` or `.hidden`, is a name. |
 | Position | A finite sequence of names; the empty sequence is the root. |
-| Base c | The key string a reduction starts from: ε for the store itself, or the key string c of a store rooted at c. |
+| Base c | The key string the store's root has in S: ε for the store itself, or c for a store rooted at c. The walk starts from the empty position whatever c is (KEY-003); c enters ν only through KEY-005's acceptance on c · k. |
 | L_floor | The key strings none of whose segments holds U+0000 or `\`, or equals `.` or `..`. |
 | L_b | The store's backend language: a prefix-closed subset of L_core declared for the store's backend b at the store's location. A whole-key limit of b counts the location's own share, so L_b gets what the location leaves of it. That b honours it is KEY-A-02. |
 | L_shared | The portable language: ε, and the key strings `PORTABLE_KEY` below fully matches. It is a library policy and names no backend. |
-| P_b | The store's portable set: a prefix-closed subset of L_shared declared explicitly for the store's backend at the store's location, never inferred. P_b = L_shared is the normal value; a smaller P_b is a declared deviation. That b honours it is KEY-A-03. |
+| P_b | The store's portable set: a prefix-closed subset of L_shared declared explicitly for the store's backend at the store's location, never inferred. P_b = L_shared is the normal value; a smaller P_b is a declared deviation. Like L_b, it gets what the location leaves of a whole-key limit: at a location leaving fewer than 255 units, P_b holds only the keys within what it leaves. That b honours it is KEY-A-03. |
 | L_api | The store's acceptance language (KEY-008). |
 | c · k | The key string whose segments are c's followed by k's; ε · k = k · ε = k. |
+| x / y | For a key string or input x and an input y, the input x followed by `/` and y; ε / y = y. |
 | K(S) | The Keys of S: { Key(x) │ x ∈ U }. |
 | ν_c(p) | The reduction of input p from base c: a key string, or refused (KEY-001). |
 | p ≈ q | p and q are equivalent: neither is refused by KEY-002, neither walk escapes, and both end at the same position. |
@@ -140,7 +141,7 @@ included: every key ν returns reduces to itself when passed back.
 ### KEY-012: Composition
 
 **Invariant:** A key a store rooted at c accepts is the key its parent store
-accepts for the composed input: if ν_c(p) = k then ν_ε(c/p) = c · k.
+accepts for the composed input: if ν_c(p) = k then ν_ε(c / p) = c · k.
 
 ---
 
@@ -181,8 +182,8 @@ alone.
   and KEY-013 defines Ω; KEY-001 and KEY-010 to KEY-012 follow. KEY-006,
   KEY-007 and KEY-A-01 are unassigned. KEY-001 holds by construction, ν being
   a total function of those parameters (`nu`). KEY-010 is K2 (`nu_fixed_point`), KEY-011 is K3
-  (`nu_decides_equiv`), KEY-012 is K6 (`child_compose`) with K4
-  (`join_continuation`), and KEY-013's cases are exhaustive by K10
+  (`nu_decides_equiv`), KEY-012 is K6 (`child_compose`) for c ≠ ε and
+  immediate at c = ε since ε / p = p, with K4 (`join_continuation`), and KEY-013's cases are exhaustive by K10
   (`resolution`, `occupied_take`); their disjointness follows from arithmetic
   and TREE-001. Every key ν returns has TREE-011's shape and lies in L_floor
   (K1, `nu_output`, `nu_key_shape`).
@@ -208,8 +209,8 @@ alone.
   of its own, the subtree below c (K12, `child_view`); at an absent or item c
   it has none, and every key below its root resolves as AbsentAncestor or
   BlockedByItem. Acceptance runs on c · k (KEY-005), so a whole-key limit can
-  refuse under c a k it accepts alone. A join k ⊕ p = ν_ε(k/p) continues the
-  walk: (k ⊕ p) ⊕ q = k ⊕ (p/q) whenever k ⊕ p is accepted (K4).
+  refuse under c a k it accepts alone. A join k ⊕ p = ν_ε(k / p) continues
+  the walk: (k ⊕ p) ⊕ q = k ⊕ (p / q) whenever k ⊕ p is accepted (K4).
 - **Examples.** The examples behind each section, such as `x␀/..` refused
   rather than ε, `../b` refused from base `a` although ν_ε(`a/../b`) = `b`,
   and ν_ε(`CON/../a`) = `a` where `CON` is outside L_b, are cases of the
@@ -219,25 +220,12 @@ alone.
   equality (case-insensitive, normalising) still holds both `A` and `a`; that
   they conflict as siblings is spec 051 § Name equality's, a constraint on the
   state rather than on a key string.
-- **L_shared.** A policy that `PORTABLE_KEY` defines, not a derivation from
-  any set of backends, and no backend is promised to hold it. Each rule has
-  its own reason. A portable name is ASCII letters, digits, `.`, `_` and `-`:
-  beyond ASCII, stores differ in whether a composed and a decomposed spelling
-  are one name or two, in how case-insensitive comparison folds a letter, and
-  in whether a length counts bytes or UTF-16 units, while an ASCII character
-  has one spelling, one fold, and is one byte and one unit. Σ stays the
-  Unicode scalar values: by default a store accepts every name of L_floor its
-  backend's L_b holds, `café` included (KEY-008), and only the opt-in
-  narrows to ASCII. A name
-  starts with a letter or digit, so no tool reads it as hidden or as an
-  option; it ends in neither `.` nor a space, the endings a store that strips
-  them would alias; it is no reserved device name (`CON`, `PRN`, `AUX`,
-  `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9` after Microsoft's "Naming Files, Paths,
-  and Namespaces", widened by the digit 0 to `COM0` and `LPT0`, alone or
-  before a `.`); and a key is at most 255 characters. Every portable name is
-  a name of L_floor, and every key in L_shared is its own reduction.
-  `sdd/research/bk-468-key-probe/check_portable_regex.py` checks the patterns
-  against that gloss.
+- **L_shared.** A policy that `PORTABLE_KEY` defines, which no backend is
+  promised to hold; the reason for each of its rules, ASCII among them, is in
+  research § 9.8. By default a store still accepts every name of L_floor its
+  L_b holds, `café` included (KEY-008). Every portable name is a name of
+  L_floor, and a portable key holds no navigation segment, `\` or U+0000, so
+  it is its own reduction wherever it lies in L_api.
 - **P_b.** Under the opt-in a store accepts its backend's portable set: the
   whole of L_shared where the backend holds it, otherwise the subset declared
   for it, so a key the backend could not hold is refused by ν, not at the
@@ -246,8 +234,7 @@ alone.
   backend a key it accepts on another only where a declaration says so.
 - **Backend languages as a profile table.** Each backend's L_b is recorded
   per axis beside this spec, every cell citing its source
-  ([RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D6). `SPEC-DESIGN.md`
-  Rule 5 asks for a capability or a driver flag instead; how a store shows
+  ([RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D6); how a store shows
   its language to a caller is the API's spec.
 
 ## Tested against

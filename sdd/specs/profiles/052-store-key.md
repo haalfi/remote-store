@@ -23,7 +23,7 @@ permitted.
 | Segment count | The most names in one key. |
 | Rewrites | Names the backend stores under another spelling; none of them is in L_b, judged at every segment (KEY-A-02). |
 | Name equality | Spec 051 § Name equality, recorded here because it constrains siblings, not L_b. |
-| Portable set P_b | The subset of L_shared the backend holds (spec 052's P_b, KEY-A-03), given a location that leaves 255 units of every whole-key limit; derived from the rows above and declared. "= L_shared" is the normal value; anything less is a declared deviation. |
+| Portable set P_b | The subset of L_shared the backend holds (spec 052's P_b, KEY-A-03), given a location that leaves 255 units of every whole-key limit; derived from the rows above and declared. "= L_shared" is the normal value; anything less is a declared deviation. At a location leaving fewer than 255 units, a column's P_b holds only the keys within what it leaves (spec 052 Terms, P_b). |
 
 ## Memory, Local, S3, SFTP
 

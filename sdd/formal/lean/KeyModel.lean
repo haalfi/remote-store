@@ -13,8 +13,10 @@ Positions are lists of names; the walk keeps its stack reversed (head = last
 name). A refusal is `none`. Inputs are lists over the alphabet α, so a
 surrogate (KEY-002), which is outside Σ, is not an input here; that arm is the
 reference model's (`tests/test_store_key_model.py`). The acceptance language
-is a parameter (`Cfg.tier`), so KEY-008, KEY-A-02 and KEY-A-03's bounds on it are stated
-by the spec and checked by the reference model, not here.
+is a parameter (`Cfg.tier`): KEY-008, KEY-A-02 and KEY-A-03 are tagged on it
+because the trace check asks every section for a tag (BK-492), not because
+this file restates them. KEY-012 is proved for c ≠ ε (`child_compose`); at c = ε it is
+immediate, since ε / p = p.
 -/
 
 -- @restates sdd/specs/052-store-key.md
@@ -22,7 +24,7 @@ by the spec and checked by the reference model, not here.
 namespace KeyConcept
 open StoreAxioms
 
--- Some lemmas need no decidable equality; the spike keeps one variable block.
+-- Some lemmas need no decidable equality; one variable block serves the file.
 set_option linter.unusedSectionVars false
 
 variable {α : Type} [DecidableEq α]
@@ -36,17 +38,21 @@ structure Sym (α : Type) where
   sl_ne_bs : sl ≠ bs
   sl_ne_nul : sl ≠ nul
 
-/-- A store's configuration: whether `\` ∈ Sep_S (§ 3.3), and its acceptance
-language as a predicate on the composed position (§ 3.2 tiers, § 3.6). -/
--- @spec KEY-008
--- @spec KEY-009
--- @spec KEY-A-02
--- @spec KEY-A-03
+/-- A store's configuration: its separator set and its acceptance language. -/
 structure Cfg (α : Type) where
+  -- @spec KEY-009
+  /-- Whether `\` ∈ Sep: the opt-out's two settings. -/
   bsSep : Bool
+  -- @spec KEY-008
+  -- @spec KEY-A-02
+  -- @spec KEY-A-03
+  /-- L_api as an arbitrary predicate on the composed position c · k (KEY-005).
+  Not a restatement: which language KEY-008 picks, and what KEY-A-02 and
+  KEY-A-03 rely on a backend for, are the spec's and the reference model's;
+  every proof here holds for any `tier`. -/
   tier : List (List α) → Bool
 
-/-! ## Splitting raw input on Sep_S -/
+/-! ## Splitting raw input on Sep -/
 
 def isSep (y : Sym α) (cfg : Cfg α) (c : α) : Bool :=
   decide (c = y.sl) || (cfg.bsSep && decide (c = y.bs))
@@ -147,7 +153,7 @@ theorem mem_splitBy (p : α → Bool) : ∀ {l w : List α} {c : α},
       · have := mem_splitBy p h hc
         exact ⟨List.mem_cons_of_mem _ this.1, this.2⟩
 
-/-! ## § 3.3 the walk -/
+/-! ## The walk (KEY-003, KEY-004) -/
 
 /-- One segment: skip empty and `.`, pop on `..` (none at the root: an
 escape), push any other. -/
@@ -201,7 +207,7 @@ theorem step_base (y : Sym α) {st st' : List (List α)} {s : List α} (base : L
     · rw [ite_eq_right h2] at h ⊢; injection h with h; rw [← h]; rfl
 
 /-- A walk that does not escape from the empty stack runs the same on top of
-any base: the base of a child store (§ 3.6). -/
+any base: the base c of a store rooted at c. -/
 theorem walkFrom_base (y : Sym α) (base : List (List α)) : ∀ (st ss r : List (List α)),
     walkFrom y st ss = some r → walkFrom y (st ++ base) ss = some (r ++ base)
   | st, [], r, h => by simp only [walkFrom] at h ⊢; injection h with h; rw [h]
@@ -244,31 +250,31 @@ theorem walkFrom_inv (y : Sym α) (P : List α → Prop) : ∀ (st ss r : List (
             exact hss _ List.mem_cons_self ⟨fun e => h1 (Or.inl e), fun e => h1 (Or.inr e), h2⟩
           · exact hst w hw
 
-/-! ## § 3.5 ν -/
+/-! ## ν (KEY-002 to KEY-005) -/
 
-/-- Step 0: NUL anywhere, or `\` when `\` ∉ Sep_S. -/
+/-- KEY-002: NUL anywhere, or `\` when `\` ∉ Sep. -/
 -- @spec KEY-002
 abbrev bad (y : Sym α) (cfg : Cfg α) (raw : List α) : Prop :=
   y.nul ∈ raw ∨ (cfg.bsSep = false ∧ y.bs ∈ raw)
 
-/-- Steps 0 and 1: the walk's end stack (reversed position), or Reject. -/
+/-- KEY-002 to KEY-004: the walk's end stack (reversed position), or refused. -/
 def walkRaw (y : Sym α) (cfg : Cfg α) (raw : List α) : Option (List (List α)) :=
   if bad y cfg raw then none else walkFrom y [] (splitBy (isSep y cfg) raw)
 
-/-- Step 2, on the composed position root ⊕ pos. -/
+/-- KEY-005, judged on the composed position c · pos. -/
 -- @spec KEY-005
 def finish (y : Sym α) (cfg : Cfg α) (root : List (List α)) :
     Option (List (List α)) → Option (List α)
   | none => none
   | some st => if cfg.tier (root ++ st.reverse) then some (join y.sl st.reverse) else none
 
-/-- ν, for a store whose root is `root` (ε, or a child's root, § 3.6); the
+/-- ν, for a store whose root is `root` (ε, or c for a store rooted at c); the
 result is the child-relative key string. -/
 -- @spec KEY-001
 def nu (y : Sym α) (cfg : Cfg α) (root : List (List α)) (raw : List α) : Option (List α) :=
   finish y cfg root (walkRaw y cfg raw)
 
-/-- A name in L_api's floor (§ 3.2): not navigation, no `/`, `\` or NUL. -/
+/-- A name of L_floor (Terms): not navigation, no `/`, `\` or NUL. -/
 def ApiName (y : Sym α) (w : List α) : Prop :=
   NotNav y w ∧ y.sl ∉ w ∧ y.bs ∉ w ∧ y.nul ∉ w
 
@@ -378,7 +384,7 @@ theorem nu_fixed_point (y : Sym α) (cfg : Cfg α) (root : List (List α)) {pos 
     unfold walkRaw; rw [ite_eq_right (not_bad_join y cfg h)]; exact walk_key y cfg pos h
   unfold nu; rw [hw]; simp [finish, ht]
 
-/-! ## K3: ν decides ≈ on accepted values (§ 3.5) -/
+/-! ## K3: ν decides ≈ on accepted values (KEY-011) -/
 
 -- @spec KEY-011
 theorem nu_decides_equiv (y : Sym α) (cfg : Cfg α) (root : List (List α)) {p q kp kq : List α}
@@ -398,7 +404,7 @@ theorem nu_decides_equiv (y : Sym α) (cfg : Cfg α) (root : List (List α)) {p 
       (fun w hw => inN_of_apiName (hnq w (List.mem_reverse.mp hw))) e
     rw [List.reverse_inj.mp this]
 
-/-! ## K4: join is walk continuation (§ 3.5) -/
+/-! ## K4: join is walk continuation (Notes, store rooted at c) -/
 
 theorem bad_sep_append (y : Sym α) (cfg : Cfg α) (a b : List α) :
     bad y cfg (a ++ y.sl :: b) ↔ bad y cfg a ∨ bad y cfg b := by
@@ -449,7 +455,7 @@ theorem join_continuation (y : Sym α) (cfg : Cfg α) (root : List (List α)) (k
       rfl
   unfold nu; rw [hL, hR]
 
-/-! ## K5: opting out of `\` only rejects more (§ 3.3) -/
+/-! ## K5: opting out of `\` only refuses more (KEY-009) -/
 
 theorem opt_out_only_rejects_more (y : Sym α) (t : List (List α) → Bool)
     (root : List (List α)) {raw k : List α} (h : nu y ⟨false, t⟩ root raw = some k) :
@@ -473,7 +479,7 @@ theorem opt_out_only_rejects_more (y : Sym α) (t : List (List α) → Bool)
   simp only [finish] at ht ⊢
   simp [ht]
 
-/-! ## K6: child keys compose with the parent's (§ 3.6, CHILD-005) -/
+/-! ## K6: keys of a store rooted at c compose with the parent's (KEY-012) -/
 
 -- @spec KEY-012
 theorem child_compose (y : Sym α) (cfg : Cfg α) {cpos : List (List α)}
@@ -495,13 +501,13 @@ theorem child_compose (y : Sym α) (cfg : Cfg α) {cpos : List (List α)}
   unfold nu; rw [hw']
   simp [finish, ht]
 
-/-! ## Examples over `Char`, including the spike's counterexample -/
+/-! ## Examples over `Char`, including the input-refusal counterexample -/
 
 def symC : Sym Char := ⟨'/', '\\', '\x00', '.', by decide, by decide⟩
 def cfgDefault : Cfg Char := ⟨true, fun _ => true⟩
 def cfgOptOut : Cfg Char := ⟨false, fun _ => true⟩
 
--- `a\a/..`: Reject after the opt-out (step 0), `a` by default.
+-- `a\a/..`: refused after the opt-out (KEY-002), `a` by default.
 example : nu symC cfgOptOut [] ['a', '\\', 'a', '/', '.', '.'] = none := by decide
 example : nu symC cfgDefault [] ['a', '\\', 'a', '/', '.', '.'] = some ['a'] := by decide
 -- `x\0/..`: NUL is rejected even in a popped name.
@@ -539,7 +545,7 @@ set_option linter.unusedSectionVars false
 
 variable {α : Type} [DecidableEq α]
 
-/-- `/`-only splitting: the segments of a key string (§ 4). -/
+/-- `/`-only splitting: the segments of a key string (Terms, Segments). -/
 def slashSep (sl : α) (c : α) : Bool := decide (c = sl)
 
 theorem take_append_length {β : Type} : ∀ (a b : List β), (a ++ b).take a.length = a
@@ -565,7 +571,7 @@ section Model
 variable {U : Type} {sl : α} {S : Structure α U} (h : Axioms sl S)
 include h
 
-/-! ## § 4 the operations on key strings agree with spec 051 -/
+/-! ## The operations on key strings agree with spec 051 -/
 
 /-- segments(Key(x)) = the names along the chain of x (TREE-009), x ≠ r. -/
 theorem segments_key (x : U) (hx : x ≠ S.r) : splitBy (slashSep sl) (Key h x) = seqOf h x := by
@@ -587,7 +593,7 @@ theorem name_eq_last (x : U) : (seqOf h x).getLast?.getD [] = S.name x := by
 theorem parent_eq_dropLast {p x : U} (hpx : S.C p x) : (seqOf h x).dropLast = seqOf h p := by
   rw [seqOf_step h hpx]; simp
 
-/-! ## § 3.7 resolution -/
+/-! ## Resolution (KEY-013) -/
 
 /-- Some entity has the position s. -/
 def Occupied (s : List (List α)) : Prop := ∃ x, seqOf h x = s
@@ -617,7 +623,7 @@ theorem item_has_no_extension {e : U} (he : S.I e) (w : List α) :
   have hp : p = e := seqOf_inj h _ p e rfl hpe
   exact h.ax1_disjoint e ⟨hp ▸ h.ax3 p x hpx, he⟩
 
-/-- § 3.7's table: with j the largest i ≤ n whose prefix kᵢ is occupied and e
+/-- KEY-013's table: with j the largest i ≤ n whose prefix kᵢ is occupied and e
 its entity, the prefixes up to j are all occupied, none beyond it is, j = n
 exactly when k is occupied, and one of Found, BlockedByItem, Absent,
 AbsentAncestor holds. The four are disjoint: j = n against j < n, I against F
@@ -651,7 +657,7 @@ theorem resolution (k : List (List α)) :
 /-- The root resolves to Found(r, folder): ε is r's position (TREE-002). -/
 theorem root_found : seqOf h S.r = [] ∧ S.F S.r := ⟨seqOf_root h, h.ax2⟩
 
-/-! ## § 3.6 the child store at a folder -/
+/-! ## A store rooted at a folder (Notes) -/
 
 /-- The child at e, as L6's pair: positions relative to e, and the items. -/
 def childTrie (e : U) : Trie α :=
@@ -685,7 +691,7 @@ theorem childTrie_WF {e : U} (heF : S.F e) : (childTrie h e).WF sl where
       rw [take_append_length, ← hx] at this
       exact item_has_no_extension h hI w this
 
-/-- § 3.6: the child at a folder e is a store per spec 051, and each of its
+/-- A store rooted at a folder e is a store per spec 051, and each of its
 entities t is the parent's entity at e's position followed by t's, with the
 same kind: keys compose by join. -/
 theorem child_view {e : U} (heF : S.F e) :
@@ -700,7 +706,7 @@ theorem child_view {e : U} (heF : S.F e) :
 
 end Model
 
-/-! ## § 4 Lemma C: every key string is a Key in some store -/
+/-! ## K9, Lemma C: every key string is a Key in some store -/
 
 /-- The prefixes of one sequence of names; `item` makes the last one an item. -/
 def chainTrie (ws : List (List α)) (item : Bool) : Trie α :=

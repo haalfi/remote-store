@@ -24,6 +24,7 @@ discovery_followups:
   - BK-487
   - BK-490
   - BK-491
+  - BK-492
 expected_ripples:
   - sdd/specs/004-path-model.md
   - sdd/specs/051-store-tree.md
@@ -376,3 +377,14 @@ phases:
           opt-in on an undeclared P_b is refused in the reference model, and the research's
           section 3.2 L_api line and section 9.8 draft IDs are marked superseded
         outcome: ok
+      - file: scripts/check_formal_trace.py
+        section: "R2"
+        read_type: verify
+        extract: >-
+          The maintainer's last review asked for KeyModel.lean's untrue Cfg tags to go;
+          R2 fails any restated section left untagged, so the tags stay with a doc saying
+          they are not restatements, and the missing route is BK-492. The same review moved
+          PORTABLE_KEY's rationale to research section 9.8, fixed Base c, x / y and KEY-012's
+          c = epsilon case, deleted the spike's Lean copy, and kept spec 004 untouched: the
+          maintainer ruled that 051 and 052 answer to each other, not to 0.33
+        outcome: misleading

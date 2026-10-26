@@ -462,6 +462,15 @@ def test_portable_store_refuses_outside_a_declared_smaller_p_b() -> None:
 
 
 @pytest.mark.spec("KEY-008")
+def test_p_b_shrinks_at_a_deep_location() -> None:
+    """S3 under a 924-byte prefix leaves 100 bytes: P_b holds only the keys within them."""
+    deep = replace(PROFILES["s3"], key_max=(_bytes, 1024 - 924), portable=True)
+    assert in_l_shared("a" * 150)
+    assert nu("a" * 150, deep) == Refused("accept")
+    assert nu("a" * 100, deep) == "a" * 100
+
+
+@pytest.mark.spec("KEY-008")
 def test_no_portable_store_where_p_b_is_undeclared() -> None:
     """The S3 directory bucket's P_b is undeclared, so its opt-in is refused."""
     with pytest.raises(ValueError, match="KEY-008"):
