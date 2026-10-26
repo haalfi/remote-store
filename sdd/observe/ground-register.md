@@ -26,12 +26,15 @@ reopened file is not on the allowlist until its flow re-admits it.
 | `sdd/formal/lean/lake-manifest.json` | start | active |
 | `sdd/formal/lean/lean-toolchain` | start | active |
 | `sdd/formal/tex/store-axioms.tex` | start | active |
+| `sdd/specs/052-store-key.md` | key | active |
+| `sdd/specs/profiles/052-store-key.md` | key | active |
+| `sdd/formal/lean/KeyModel.lean` | key | active |
 
-Not ground, by RFC-0024 § R1: PR #1173's key model until the key spec is
-accepted, and spec 054 of PR #1171. Nor is `research-store-model-axioms.md`,
-spec 051's rationale: the hook admits whole files, and its § 10 records 0.33
-and kernel design (error names, flat-store encodings) that reached the first
-`/observe` session's decisions.
+Not ground: `research-store-model-axioms.md`, spec 051's rationale, and
+`research-key-model.md`, spec 052's. The hook admits whole files, and both
+record 0.33 and kernel design: the first in its § 10 (error names, flat-store
+encodings), which reached the first `/observe` session's decisions; the second
+in § 3.7's error table and § 9's comparison with specs 004, 005, 015 and 053.
 
 ## Pointer edits
 
@@ -42,6 +45,15 @@ or Tested against) changes without a reopen, since it changes no ground
 | Artifact | Paragraph | Edit | By |
 |---|---|---|---|
 | `sdd/specs/051-store-tree.md` | Layering | Dropped the sentence naming spec 053's BE-032 as the tree's encoding, which left master | RFC-0025 PR 2 |
+| `sdd/specs/051-store-tree.md` | Layering | Input strings point at spec 052, the store key, instead of spec 004, whose PATH-002 to PATH-008 it supersedes | RFC-0025 PR 3 |
+
+## Spec numbering
+
+Spec 052 is the store key from PR #1171's merge onward. A record committed
+before that merge which cites "spec 052" or "spec 053" means the spec frozen on
+`frozen/kernel-driver` (backend lifetime, contract kernel), and one that cites
+"spec 054" means the store key; such records are not edited
+([RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) D6).
 
 ## Retired IDs
 

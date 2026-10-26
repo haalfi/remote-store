@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-468: No spec defines which strings a store accepts as a key, so one key works on one backend and fails on another
 - BK-488: The unreleased `remote_store.drivers` API and the driver-based custom-backend guide are withdrawn; master's code is 0.33.0's plus three fixes
 - BUG-338: The docs site's RFC and ADR indexes print one status per kind, so every RFC reads "Proposed"
 - BUG-298: `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`

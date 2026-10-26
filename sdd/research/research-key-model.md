@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-21
 **Backlog items:** BK-484 (No key model connects spec 051's Key to the key parameter of `Store`)
-**Status:** Research complete — ready for design decisions. The decisions of § 6 were taken by the maintainer through the interview (2026-10-21); the model is tested by a property-based spike and proved in Lean 4 (§ 10). Next: a spec between spec 051 and spec 004.
+**Status:** Research complete — ready for design decisions. The decisions of § 6 were taken by the maintainer through the interview (2026-10-21); the model is tested by a property-based spike and proved in Lean 4 (§ 10). Specified as [spec 052](../specs/052-store-key.md); § 9.8 compares the two.
 
 ---
 
@@ -152,6 +152,9 @@ L_shared ⊆ L_b ⊆ L_core      for every backend b,
 L_shared ⊆ ⋂_b L_b           (equal, or stricter as a deliberate policy)
 ```
 
+*Superseded by spec 052:* there L_shared is a policy that names no backend,
+so neither inclusion is promised (§ 9.8).
+
 What each backend's own authority permits, with sources, is collected in
 [research-backend-path-authorities.md](research-backend-path-authorities.md),
 the input for each L_b. Its § 3.7 also records that the Azure Python SDK's
@@ -163,6 +166,10 @@ before any key string reaches a backend.
 under the floor stays reachable; a store may opt into portability, and then
 L_api = L_floor ∩ L_shared. The choice is a declared, observable part of the
 store's configuration.
+
+*Superseded by spec 052:* under the opt-in L_api is the backend's declared
+portable set P_b ⊆ L_shared, and a store opts in only where P_b is declared
+(KEY-008, § 9.8).
 
 **A backend that rewrites names** on storage has a function norm_b on N
 (HFS+ stores NFD). Its language holds only the names it stores unchanged:
@@ -640,32 +647,60 @@ source named, and each is narrower than the model.
   nodes carry data and children at once, so it has no folder/item partition
   (TREE-001), and nothing like BlockedByItem arises.
 
-### 9.8 Spec 054 as proposed (PR #1171, not merged)
+### 9.8 Spec 052
 
-PR #1171 proposes spec 054, "Store Key Specification" (*Read*: its branch,
-2026-10-22). It moves PATH-002 to PATH-007 out of spec 004 and adds KEY-001 to
-KEY-009. It is the spec § 10 recommends, written in parallel, and it agrees on
-most of the model:
+[Spec 052](../specs/052-store-key.md) is the spec § 10 recommends. It takes
+the model's side on reduction and resolution:
 
-- `\` is a separator (PATH-002).
-- Empty and `.` segments contribute nothing (PATH-004 to PATH-006).
-- ε is a Key that folder-shaped operations accept, which is one choice of
-  § 3.7's "the operation decides" (KEY-005).
-- A refusal inspects the whole raw input (KEY-003, as § 3.5 step 0).
-- Backends admit a portable floor and refuse more only under a declared
-  profile (KEY-007, KEY-008), one shape for § 3.2's tiers.
-- KEY-009's one-to-one admission serves the same end as § 3.2's normal-form
-  rule: no two key strings share one stored name.
+- The walk from the root, with `..` climbing and an escape refused, never
+  clamped (KEY-003, KEY-004).
+- Input refusals read on the raw input, as § 3.5 step 0 (KEY-002).
+- Acceptance only where the walk ends, judged on c · k (KEY-005).
+- The `\` opt-out (KEY-009) and resolution's four outcomes (KEY-013).
+- The normal-form rule, as what a backend must honour for its declared L_b
+  (KEY-A-02).
 
-It differs in three places:
+It departs from the model in three places, each a term or clause of spec 052
+with no counterpart in §§ 3.1 to 3.7:
 
-- **`..`.** PATH-003 refuses every `..` segment, and spec 054's Notes say "A
-  `..` segment is refused, never resolved against its parent". § 6 decides that `..` climbs and only
-  an escape is refused (§ 5's escape row). The maintainer keeps § 6's
-  decision, so this is a delta for spec 054 to take, not for this model.
-- **The `\` opt-out.** Spec 054 has none.
-- **Resolution.** Spec 054 states no lookup outcomes; § 3.7's four remain this
-  model's own.
+- **The store's location.** Spec 052's L_b and P_b depend on where the store
+  is rooted: a whole-key limit counts the location's share, and P_b is cut
+  to the keys within what the location leaves. § 3.2's tiers judge the key string alone, so a key the
+  model accepts on a 1024-byte backend can be refused under a long store
+  prefix.
+- **Surrogates.** KEY-002 also refuses a surrogate anywhere in the raw
+  input. § 3.5 step 0 refuses only NUL and an opted-out `\`, and the model's
+  inputs range over Σ, which holds no surrogate (§ 2), so the model says
+  nothing of `\ud800/..`; spec 052 refuses it rather than walking to ε.
+- **The portable language.** L_shared is a policy `PORTABLE_KEY` defines,
+  which no backend is promised to hold, where § 3.2 has L_shared ⊆ L_b for
+  every backend. Under the opt-in a store accepts its backend's declared
+  portable set P_b ⊆ L_shared, cut to its location, a smaller P_b being a
+  deviation, and opts in only where the backend's P_b is declared; a profile table beside the spec records
+  each backend's.
+
+**Why `PORTABLE_KEY` has the rules it has**, one reason per rule:
+
+- **ASCII letters, digits, `.`, `_` and `-`.** Beyond ASCII, stores differ in
+  whether a composed and a decomposed spelling are one name or two, in how
+  case-insensitive comparison folds a letter, and in whether a length counts
+  bytes or UTF-16 units; an ASCII character has one spelling, one fold, and
+  is one byte and one unit. Σ stays the Unicode scalar values (§ 2): only the
+  opt-in narrows to ASCII.
+- **A letter or digit first.** No tool reads the name as hidden (`.a`) or as
+  an option (`-a`).
+- **Neither `.` nor a space last.** These are the endings a store that strips
+  them would alias (§ 3.2's rewriting).
+- **No reserved device name.** `CON`, `PRN`, `AUX`, `NUL`, `COM1` to `COM9`
+  and `LPT1` to `LPT9`, alone or before a `.`, after Microsoft's "Naming
+  Files, Paths, and Namespaces" (research-backend-path-authorities § 3.4),
+  widened by the digit 0 to `COM0` and `LPT0`, which OneDrive reserves too
+  (its § 3.9).
+- **At most 255 characters.** Room for the key in every whole-key limit the
+  profile table records, at a location that leaves 255 units.
+
+[`bk-468-key-probe/check_portable_regex.py`](bk-468-key-probe/check_portable_regex.py)
+compares the patterns with these rules on hand-picked cases.
 
 ---
 
@@ -679,8 +714,9 @@ generated stores of at most ten entities. It found one defect: the `\` and
 NUL rules were checked on the result, giving § 5's first two rows; the fix is
 step 0. Run as the folder's README says, it reports `45 passed`.
 
-**Lean 4 (2026-10-21).** [`bk-484-key-model/lean/`](bk-484-key-model/README.md)
-proves K1 to K12 with Lean 4.34.1, core library only, against spec 051's own
+**Lean 4 (2026-10-21).** The spike's Lean files, since merged into
+[`formal/lean/KeyModel.lean`](../formal/lean/KeyModel.lean), the proof of
+record, proved K1 to K12 with Lean 4.34.1, core library only, against spec 051's own
 definitions: it imports `join`, `join_inj`, `join_shape`, `seqOf`, `Key` and
 L6's `ofTrie` from [`StoreAxioms.lean`](../formal/lean/StoreAxioms.lean)
 rather than restating them. Two results go through L6: Lemma C builds the
@@ -692,20 +728,20 @@ mutation check, not committed, disabled step 0's `\` rule: the build failed,
 with the opt-out and the dependent proofs no longer checking and the
 `a\a/..` example evaluating to the wrong result.
 
-| Lemma | Theorem | File |
-|---|---|---|
-| K1 | `nu_output`, `nu_key_shape` | `KeyConcept.lean` |
-| K2 | `nu_fixed_point` | `KeyConcept.lean` |
-| K3 | `nu_decides_equiv` | `KeyConcept.lean` |
-| K4 | `join_continuation` | `KeyConcept.lean` |
-| K5 | `opt_out_only_rejects_more` | `KeyConcept.lean` |
-| K6 | `child_compose` | `KeyConcept.lean` |
-| K7 | `segments_key` | `KeyStore.lean` |
-| K8 | `name_eq_last`, `parent_eq_dropLast` | `KeyStore.lean` |
-| K9 | `lemma_C` | `KeyStore.lean` |
-| K10 | `occupied_take`, `resolution` | `KeyStore.lean` |
-| K11 | `item_has_no_extension` | `KeyStore.lean` |
-| K12 | `child_view` | `KeyStore.lean` |
+| Lemma | Theorem in `KeyModel.lean` |
+|---|---|
+| K1 | `nu_output`, `nu_key_shape` |
+| K2 | `nu_fixed_point` |
+| K3 | `nu_decides_equiv` |
+| K4 | `join_continuation` |
+| K5 | `opt_out_only_rejects_more` |
+| K6 | `child_compose` |
+| K7 | `segments_key` |
+| K8 | `name_eq_last`, `parent_eq_dropLast` |
+| K9 | `lemma_C` |
+| K10 | `occupied_take`, `resolution` |
+| K11 | `item_has_no_extension` |
+| K12 | `child_view` |
 
 **What neither covers.** Backend tiers are an arbitrary predicate in Lean and
 stand-ins in the spike (`CON`, a byte limit), not real rule sets. Resolution's
@@ -723,7 +759,7 @@ realisation of ν, and specs 005, 015 and 053 link to it. The spec settles
 these deltas and open points:
 
 - PATH-003, CHILD-003, ERR-005 (a)'s `..` clause and BE-032 A.2's attribution
-  of the `..` refusal: `..` climbs. Spec 054 as proposed keeps PATH-003 (§ 9.8).
+  of the `..` refusal: `..` climbs, as spec 052's KEY-003 and KEY-004 do.
 - BE-032 A.1: resolution's depth (Absent against AbsentAncestor), and its
   naming of spec 004 as the input layer's owner; spec 051's § Layering names
   spec 004 the same way.

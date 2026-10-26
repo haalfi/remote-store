@@ -507,20 +507,13 @@ no clause of the contract ships unexercised.
   and the outcome record never sees it. Open decision: fail the leg or flag it;
   BK-407's `-async-extended-graph`, whose tests never run its target, is the known exception.
 
-- [~] **BK-484 — No key model connects spec 051's Key to the key parameter of `Store`**
-  spec: TREE-009 -- TREE-012, PATH-002 -- PATH-015, ERR-003, ERR-005, CHILD-001 -- CHILD-009 · effort: L · audience: library.maintainer, contributor.process
-  Spec 051 defines Key on entities; `RemotePath` (spec 004) and `child()` (spec 015) each map a
-  caller's string by their own rules. `research-key-model.md`
-  states one model, decided by the maintainer, spike-tested and proved in Lean. Not done: the
-  spec between 051 and 004. Open decision: its § 10's deltas against specs 004, 005, 015, 051.
-  Shared: BK-483 (an Azure listing of a refused name), BK-436 (lookup under a coarser name equality).
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
-  Its test runs are in the dossier. Not done: § 9 steps 4 to 6. Open decision: § 8's open points
-  2 to 4, 8 and 11 (D10 is BK-489's). After BK-484, which gives the `read()` flow its key spec.
+  Its test runs are in the dossier; step 4 is spec 052. Not done: § 9 steps 5 and 6. Open
+  decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's).
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
@@ -545,15 +538,15 @@ no clause of the contract ships unexercised.
   § 5), and the SDK's urllib3 removes dot segments client-side (its § 3.7). A listed `..` name (possible on
   a flat account, unmeasured) would be read, written or deleted at the resolved path, under an account key
   maybe in another container; PATH-003 refuses only input. Open decision: whether Azure listings yield such
-  names, omitted or refused; BK-484's spec sets the general listing rule (its research's § 10).
+  names, omitted or refused; spec 052 leaves the general listing rule to the listing operations' specs.
 
 - [ ] **BK-436 — No backend's observed tree is checked against spec 051**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer
   Spec 051's sections are tested only against a reference model (`tests/test_store_tree.py`). A
   flat backend can hold an item with keys below it, and a case-insensitive or normalizing one
   merges names spec 051 keeps apart. Open decision: which listings and probes observe a
-  backend's tree, how its name equality is measured, how a coarser one answers (BK-484's
-  research answers writes).
+  backend's tree, how its name equality is measured, how a coarser one answers
+  (`research-key-model.md` answers writes).
 
 - [ ] **BK-462 — Alloy and Lean run in no CI job, so no structure clause can be model-governed**
   spec: TREE-001 -- TREE-012 · effort: M · audience: library.maintainer, infra.ci
@@ -586,6 +579,14 @@ no clause of the contract ships unexercised.
 
 **Promise:** a user gets set up, picks the right backend, writes their own, or
 copies an example, without opening an issue.
+
+- [ ] **BK-480 — No API lets a caller set or read a store's separator set and acceptance language**
+  spec: KEY-008, KEY-009 · effort: S · audience: user.api, user.api_docs
+  Spec 052 makes the `\` opt-out, the portability opt-in and the backend's declared portable set
+  P_b store settings (KEY-008, KEY-009) and leaves reading them, and announcing a P_b smaller than
+  L_shared, to the API's spec; no type or method carries any, so a caller cannot tell which holds.
+  F4 (`research-spec-first-reset.md`) fixes the form: queryable, documented, `DeviationWarning`. Class F (RFC-0024 § R3): decided in the API's
+  flow, with a helper such as `is_portable_key(key) -> bool` as candidate input. Open decision: the shape.
 
 - [ ] **BUG-321 — A list that directly follows paragraph text renders as literal dashes on the docs site**
   spec: DOCFRAME-004 · effort: S · audience: user.site
@@ -735,6 +736,21 @@ or paying for our shortcut.
 **Promise:** nothing reaches a user that we did not test, publish, watch, or
 give them a way to absorb.
 
+- [ ] **BK-469 — Spec 052 has not been compared with 0.33, so the key layer's breaks have no record**
+  spec: KEY-002 -- KEY-005, KEY-008, KEY-A-02 · effort: M · audience: user.api, library.maintainer
+  RFC-0024 D8's pass for the key layer. Known differences: 0.33 refuses every `..` (PATH-003) where
+  ν climbs; at `7491289` `Store` took `"\ud800"` (Memory stored it, Local leaked `UnicodeEncodeError`)
+  and Local leaked `OSError` [Errno 36] for a 300-character name; on windows-latest at `74271f9c4`
+  Local stored `a `, `a.`, `d/x. ` and `a./b` under stripped names. Each becomes a `sdd/v1-breaks.md`
+  row or a 0.33 defect, read from `release/0.33.x`'s suite. Open decision: none.
+
+- [ ] **BK-490 — The key model's decisions on the root, parents and child stores have no flow, so 0.33's sections stand**
+  spec: PATH-010, PATH-015, CHILD-001, CHILD-003, ERR-003, ERR-005 · effort: M · audience: user.api, library.maintainer
+  `research-key-model.md` § 10 decides that parent(`a`) is ε (PATH-010 has none), the root's name is
+  ε with no segments (PATH-015: `.`, `(".",)`), a child at ε is the store (CHILD-001 rejects it), a
+  subpath's `..` climbs (CHILD-003 refuses it), and ERR-005 and ERR-003 widen. Spec 052 leaves each to
+  the API's or the operation's spec, which no flow has written. Open decision: none; each flow takes its own.
+
 - [ ] **BK-409 — Python 3.15 is due 2026-10-09 and no spelling of the supported set names it**
   spec: — · effort: M · audience: user.api, infra.ci, contributor.tooling
   PEP 790 schedules `- 3.15.0 final: Friday, 2026-10-09`, so its security
@@ -883,13 +899,6 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
-- [~] **BK-488 — Master carries a frozen contract kernel that no v1 flow will keep, so its code is not 0.33's**
-  spec: — · effort: L · audience: library.maintainer, contributor.process, user.api_docs
-  RFC-0025 (PR #1180) froze the kernel line on `frozen/kernel-driver` at 814c1f6; its PR 2
-  returned `src/` and the library tests to v0.33.0 plus BUG-280, BUG-298 and BUG-330, removed
-  specs 052 and 053 and the kernel's tooling and docs, and moved 14 done entries to § Frozen;
-  class P went to BK-489. Not done: PR 3 (#1171 renumbered to spec 052, the register's
-  numbering line, spec 051's Layering pointer, BK-487). Open decision: none.
 
 - [ ] **BK-465 — The spec template's Assumption IDs fail the spec-mark grammar, so no test can cite one**
   spec: — · effort: S · audience: contributor.process
@@ -906,6 +915,20 @@ CHANGELOG the release body is built from — say what is actually true.
   finds nothing, and AUTHORING's placement table has no such type. Every BK-456 prune
   relocates mechanism (audit 024 § 2). Open decision: a placement for design notes, or
   Rule 1 drops the option and names ADRs and the custom-backend guide.
+
+- [ ] **BK-492 — The formal trace check makes a restating file tag sections it does not model**
+  spec: — · effort: S · audience: contributor.process
+  `check_formal_trace.py` R2 fails a restated spec's section that its Lean or Alloy file tags
+  nowhere, and offers no route for a section the file deliberately leaves out. `KeyModel.lean`
+  so tags KEY-008, KEY-A-02 and KEY-A-03 on `Cfg.tier`, an arbitrary predicate, and a reader of
+  the trace takes them as restated. Open decision: the form of an explicit not-restated marker.
+
+- [ ] **BK-491 — `SPEC-DESIGN.md` Rule 5 asks for a capability or driver flag where RFC-0024 D6 puts a profile table**
+  spec: — · effort: S · audience: contributor.process
+  Rule 5 states a per-backend behaviour as a profile "declared by a capability or a driver flag";
+  D6 records each backend's cells in a table beside the spec, as spec 052's profile table does, and
+  R4 says `SPEC-DESIGN.md` binds every v1 spec, so a reviewer applying Rule 5 flags the table.
+  Open decision: the format RFC amends Rule 5 to admit D6's table, or D6 yields.
 
 - [~] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
   spec: BE-001 -- BE-029, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer
