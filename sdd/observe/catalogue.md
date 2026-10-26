@@ -2,8 +2,9 @@
 
 <!-- doc: repo-only -->
 
-**Every operation v1's core API offers, one entry per intent, with what it
-targets and the kind of result it gives; no signatures and no semantics.**
+**The intents v1's core API serves through its store handles, one entry each,
+with what each targets and the kind of result it gives; no signatures and no
+semantics.**
 [Spec 053](../specs/053-store-operations.md) binds this table: v1 offers exactly
 these entries, each in a sync and an async form. The Offer column binds through
 OP-18's spec, the one place that answers what a store supports. Each `/observe` session designs one entry, its

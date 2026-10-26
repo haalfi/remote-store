@@ -41,7 +41,8 @@ Three decisions of the second
 session (`sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`) changed the plan
 above: the catalogue carries no 0.33 column, since it is ground (the table
 below is the omission check's record); spec 053 supersedes STORE-008 and
-ASYNC-046 (and, from review, ITER-003, RTXT-003 and WTXT-003); its Tested
+ASYNC-046 (and, from review, ITER-003, RTXT-003, WTXT-003, ASYNC-061 and
+ASYNC-062); its Tested
 against is `None.`, with the reason in RFC-0026 C3.
 
 The deep research landed the same day and is filed as

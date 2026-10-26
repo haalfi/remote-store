@@ -16,8 +16,9 @@ and, for the revision against the maintainer's deep research (C5),
 
 ## Summary
 
-**Before `read()`'s flow, v1's operations are fixed as a catalogue: what v1
-offers, one entry per intent, with no signatures and no semantics.**
+**Before `read()`'s flow, v1's operations are fixed as a catalogue: the
+intents its store handles serve, one entry each, with no signatures and no
+semantics.**
 [Spec 053](../specs/053-store-operations.md) binds it, and
 [`sdd/observe/catalogue.md`](../observe/catalogue.md) holds one row per entry;
 both join the ground. Each later `/observe` session designs exactly one entry,
@@ -102,9 +103,11 @@ run on the draft entries against `src/remote_store/_store.py` and `ext/` at
 comparison of each flow reads.
 
 **Spec 053 supersedes** spec 001's STORE-008 and spec 029's ASYNC-046, the two
-lists of 0.33's surface, and the three sections that only add a method to
+lists of 0.33's surface; the three sections that only add a method to
 STORE-008: spec 027's ITER-003, spec 028's RTXT-003 and spec 030's WTXT-003
 (Grep `^###? [A-Z-]+\d+[a-z]?: .*(Surface|STORE-008|ASYNC-046)` over
+`sdd/specs`); and the two that remove a method from the async surface, spec
+029's ASYNC-061 and ASYNC-062 (Grep `not available in the (async|sync)` over
 `sdd/specs`). All five specs get RFC-0024 D7's header.
 
 ### C4. Ground

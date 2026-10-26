@@ -18,15 +18,16 @@ Out of scope, each with its owner:
   caller learns it, and what an operation of an entry the store does not offer
   answers: the spec of OP-18, which binds that column, and of the entry.
 - How the public operations are spelled in the implementation language, what
-  the API offers that acts on no store (creating a store from configuration, a
-  key check), and the language-level behaviour of its handles: the API's spec.
+  the API offers without any handle (creating a store from configuration, a
+  key check that needs no store), and the language-level behaviour of its
+  handles: the API's spec.
 - How an input becomes a key: [spec 052](052-store-key.md).
 - Extensions, which build on the core's public operations and may offer what
   no entry does, and what sets an extension apart from the core: the API's
   spec.
 
 **Supersedes** [spec 001](001-store-api.md) STORE-008,
-[spec 029](029-async-store-backend-api.md) ASYNC-046,
+[spec 029](029-async-store-backend-api.md) ASYNC-046, ASYNC-061 and ASYNC-062,
 [spec 027](027-iter-children.md) ITER-003, [spec 028](028-read-text.md)
 RTXT-003 and [spec 030](030-write-text.md) WTXT-003.
 
@@ -36,20 +37,23 @@ RTXT-003 and [spec 030](030-write-text.md) WTXT-003.
 | --- | --- |
 | Store, AsyncStore | The v1 API's synchronous and asynchronous handles through which a caller acts on one store, under whatever names the API's spec gives them. |
 | Core API | The library's API apart from its extensions. |
-| Public operation | An operation the core API offers a caller through one or more Store or AsyncStore handles, whatever it does with them. Its form is sync when every store it acts on is reached through a Store, async when every one is reached through an AsyncStore; one acting on both has neither form. |
-| Entry | A row of the catalogue, named by its ID (`OP-NN`). |
-| Serves | A public operation serves an entry when the entry's spec names it as one of the entry's operations. What each one does is that spec's. |
+| Public operation | An operation the core API offers a caller through one or more Store or AsyncStore handles, whatever it does with them. P is the set of them. |
+| form(p) | The form of public operation p: `sync` when every handle it is offered through is a Store, `async` when every one is an AsyncStore, `neither` when it is offered through both. |
+| Entry | A row of the catalogue, named by its ID (`OP-NN`). E is the set of them. |
+| serves(p, e) | Public operation p serves entry e: e's spec names p as one of its operations. What each one does is that spec's. |
 
 ---
 
 ## OPS-001: No Operation Outside the Catalogue
 
-**Invariant:** Every public operation serves at least one entry.
+**Invariant:** Every public operation serves at least one entry:
+∀p ∈ P. ∃e ∈ E. serves(p, e).
 
 ## OPS-002: Every Entry in Both Forms
 
 **Invariant:** Every entry is served by at least one public operation of the
-sync form and at least one of the async form.
+sync form and at least one of the async form:
+∀e ∈ E. ∃p, q ∈ P. serves(p, e) ∧ serves(q, e) ∧ form(p) = `sync` ∧ form(q) = `async`.
 
 ---
 
@@ -68,7 +72,9 @@ Not normative.
   OPS-002 bound the surface from both sides without fixing that mapping.
 - **Public operations.** The term names the library's interface, not a
   language's: which language constructs carry the public operations, and
-  which carry none, is the API's spec.
+  which carry none, is the API's spec. An operation offered through a handle
+  counts even when it reads nothing from the store, such as a key check that
+  uses the store's configuration; one offered without a handle is the API's.
 - **One contract for both forms.** OPS-002 makes both forms exist; that they
   behave alike is stated once, by the entry's own spec, which designs both.
 - **Which stores offer an entry.** What a given store supports is answered in
