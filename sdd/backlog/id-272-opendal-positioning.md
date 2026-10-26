@@ -26,18 +26,30 @@ wraps or documents.
 
 ## Gate
 
-Class P under [RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) § R3: paused
-until kernel and driver work resumes (RFC-0024 D10), and then built against the
-v1 observable-semantics specs ([BK-485](bk-485-spec-first-reset.md)), not the
-0.33 backends. In the kernel/driver shape
-([ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md)), OpenDAL is a
-candidate thin driver beneath the contract kernel. The kernel line is frozen on
-`frozen/kernel-driver` ([RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md)).
+The work waits on two § 2 items. It starts only once
+[BK-489](bk-489-frozen-kernel-line.md) decides RFC-0024 D10 (revive, rewrite or
+drop the kernel line frozen on `frozen/kernel-driver` by
+[RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md)). It is then built against
+the v1 observable-semantics specs ([BK-485](bk-485-spec-first-reset.md)), not
+the 0.33 backends.
+
+This item is not class P, so RFC-0025 D7 does not absorb it into BK-489. D7
+absorbs items "whose whole subject is the kernel, a driver, the `Session` or the
+migration", and two of step 2's outcomes below (positioning, delegation) are
+neither. Standalone filing: maintainer, 2026-10-26.
+
+The OpenDAL adapter's shape follows D10:
+
+- **Kernel revived or rewritten:** a thin driver beneath the contract kernel
+  ([ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md)).
+- **Kernel dropped:** a backend implementing the v1 `Backend` contract directly.
 
 ## Evidence (2026-10-26)
 
-- **Repo side, measured.** `rg -i opendal` over the tree finds nothing: no spec,
-  ADR, research note or doc names it. `FEATURES.md` § Backends
+- **Repo side, measured.** Outside this item's own files (`sdd/BACKLOG.md`, this
+  dossier, `sdd/decisions/`), no file names OpenDAL. Checked with
+  `rg -il opendal`, whose only hits are those three paths, so no spec, ADR, RFC,
+  research note or doc covers it. `FEATURES.md` § Backends
   (`BEGIN_GENERATED:backends_main`) lists nine sync backend types and
   § Native async backends lists three classes.
 - **OpenDAL side, from recall, unverified.** Not fetched from
@@ -58,7 +70,10 @@ atomicity, cost and retry behaviour, `WriteResult` field provenance and a typed
 error vocabulary, and the conformance suite checks them. Not known to have an
 OpenDAL counterpart: `RegistryConfig` (TOML, YAML, Pydantic, `${ENV}`
 resolution, `Secret` masking), `Store.child()`, `write_atomic`/`open_atomic`
-with a stated per-backend guarantee, the SQL backends, and the `ext.*` surface.
+with a stated per-backend guarantee, `SQLQueryBackend`'s read-only
+query-as-files model, and the `ext.*` surface. OpenDAL's SQL-backed services
+(unverified, above) may or may not match `SQLBlobBackend`'s blob-table model.
+The spike settles that.
 OpenDAL wins on backend breadth, raw throughput (Rust core) and project bus
 factor.
 
