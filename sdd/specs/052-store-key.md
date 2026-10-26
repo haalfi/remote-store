@@ -49,11 +49,11 @@ items. Names compare exactly (spec 051 § Name equality).
 | Sep | The store's separator set: {`/`, `\`} or {`/`} (KEY-009). |
 | Navigation segment | A segment of an input split on Sep that is empty or equals `.` or `..`. A segment merely containing dots, such as `a..b`, `...` or `.hidden`, is a name. |
 | Position | A finite sequence of names; the empty sequence is the root. |
-| Base c | The key string the store's root has in S: ε for the store itself, or c for a store rooted at c. The walk starts from the empty position whatever c is (KEY-003); c enters ν only through KEY-005's acceptance on c · k. |
+| Base c | The key string a store is rooted at: ε for S itself, or c for a store rooted at c. The walk starts from the empty position whatever c is (KEY-003); c enters ν only through KEY-005's acceptance on c · k. |
 | L_floor | The key strings none of whose segments holds U+0000 or `\`, or equals `.` or `..`. |
 | L_b | The store's backend language: a prefix-closed subset of L_core declared for the store's backend b at the store's location. A whole-key limit of b counts the location's own share, so L_b gets what the location leaves of it. That b honours it is KEY-A-02. |
 | L_shared | The portable language: ε, and the key strings `PORTABLE_KEY` below fully matches. It is a library policy and names no backend. |
-| P_b | The store's portable set: a prefix-closed subset of L_shared declared explicitly for the store's backend at the store's location, never inferred. P_b = L_shared is the normal value; a smaller P_b is a declared deviation. Like L_b, it gets what the location leaves of a whole-key limit: at a location leaving fewer than 255 units, P_b holds only the keys within what it leaves. That b honours it is KEY-A-03. |
+| P_b | The store's portable set: the prefix-closed subset of L_shared declared explicitly for the store's backend at a location that leaves 255 units of every whole-key limit, cut to the keys within what the store's own location leaves. P_b = L_shared is the normal value; a smaller P_b, by declaration or by the cut, is a deviation. That b honours it is KEY-A-03. |
 | L_api | The store's acceptance language (KEY-008). |
 | c · k | The key string whose segments are c's followed by k's; ε · k = k · ε = k. |
 | x / y | For a key string or input x and an input y, the input x followed by `/` and y; ε / y = y. |
@@ -110,7 +110,7 @@ name the walk drops is never judged.
 ### KEY-008: Acceptance Language
 
 **Invariant:** L_api is L_floor ∩ L_b, unless the store opts into portability,
-when it is P_b; a store opts in only where its P_b is declared, and the choice
+when it is P_b; a store opts in only where its backend's P_b is declared, and the choice
 is part of the store's configuration.
 
 ### KEY-009: Separator Set
@@ -229,9 +229,11 @@ alone.
 - **P_b.** Under the opt-in a store accepts its backend's portable set: the
   whole of L_shared where the backend holds it, otherwise the subset declared
   for it, so a key the backend could not hold is refused by ν, not at the
-  backend. A smaller P_b is a declared deviation from the normal value
-  L_shared, never a silent one; a portable store therefore refuses on one
-  backend a key it accepts on another only where a declaration says so.
+  backend. A smaller P_b is a deviation from the normal value L_shared, by
+  the backend's declaration or by the cut at the store's location, both
+  stated rules and never a silent one; a portable store therefore refuses on
+  one backend a key it accepts on another only where one of them says so.
+  How a caller learns of either is the API's spec.
 - **Backend languages as a profile table.** Each backend's L_b is recorded
   per axis beside this spec, every cell citing its source
   ([RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D6); how a store shows

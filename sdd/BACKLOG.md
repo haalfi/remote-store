@@ -921,7 +921,7 @@ CHANGELOG the release body is built from — say what is actually true.
   `check_formal_trace.py` R2 fails a restated spec's section that its Lean or Alloy file tags
   nowhere, and offers no route for a section the file deliberately leaves out. `KeyModel.lean`
   so tags KEY-008, KEY-A-02 and KEY-A-03 on `Cfg.tier`, an arbitrary predicate, and a reader of
-  the trace takes them as restated. Open decision: an explicit not-restated marker, or R2 skips assumptions.
+  the trace takes them as restated. Open decision: the form of an explicit not-restated marker.
 
 - [ ] **BK-491 — `SPEC-DESIGN.md` Rule 5 asks for a capability or driver flag where RFC-0024 D6 puts a profile table**
   spec: — · effort: S · audience: contributor.process

@@ -15,7 +15,7 @@ surrogate (KEY-002), which is outside Σ, is not an input here; that arm is the
 reference model's (`tests/test_store_key_model.py`). The acceptance language
 is a parameter (`Cfg.tier`): KEY-008, KEY-A-02 and KEY-A-03 are tagged on it
 because the trace check asks every section for a tag (BK-492), not because
-this file restates them. KEY-012 is proved for c ≠ ε (`child_compose`); at c = ε it is
+this file restates them; a marker for that is BK-492's open decision. KEY-012 is proved for c ≠ ε (`child_compose`); at c = ε it is
 immediate, since ε / p = p.
 -/
 

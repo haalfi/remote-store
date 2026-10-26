@@ -663,9 +663,9 @@ the model's side on reduction and resolution:
 It departs from the model in three places, each a term or clause of spec 052
 with no counterpart in §§ 3.1 to 3.7:
 
-- **The store's location.** Spec 052's L_b and P_b are declared for a
-  backend at the store's location, and a whole-key limit counts the
-  location's share. § 3.2's tiers judge the key string alone, so a key the
+- **The store's location.** Spec 052's L_b and P_b depend on where the store
+  is rooted: a whole-key limit counts the location's share, and P_b is cut
+  to the keys within what the location leaves. § 3.2's tiers judge the key string alone, so a key the
   model accepts on a 1024-byte backend can be refused under a long store
   prefix.
 - **Surrogates.** KEY-002 also refuses a surrogate anywhere in the raw
@@ -675,8 +675,8 @@ with no counterpart in §§ 3.1 to 3.7:
 - **The portable language.** L_shared is a policy `PORTABLE_KEY` defines,
   which no backend is promised to hold, where § 3.2 has L_shared ⊆ L_b for
   every backend. Under the opt-in a store accepts its backend's declared
-  portable set P_b ⊆ L_shared, a smaller P_b being a declared deviation, and
-  opts in only where P_b is declared; a profile table beside the spec records
+  portable set P_b ⊆ L_shared, cut to its location, a smaller P_b being a
+  deviation, and opts in only where the backend's P_b is declared; a profile table beside the spec records
   each backend's.
 
 **Why `PORTABLE_KEY` has the rules it has**, one reason per rule:
