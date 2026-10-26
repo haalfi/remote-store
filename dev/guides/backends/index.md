@@ -22,17 +22,15 @@
 You can register your own backend using `register_backend`:
 
 ```
-from remote_store import register_backend
-from remote_store.drivers import DriverBackend
+from remote_store import register_backend, Backend
 
-class MyBackend(DriverBackend):
-    def __init__(self, **options) -> None:
-        super().__init__(MyDriver(**options))
+class MyBackend(Backend):
+    ...
 
 register_backend("my-backend", MyBackend)
 ```
 
-`MyDriver` implements your storage system's primitives. See the [Drivers API reference](https://docs.remotestore.dev/stable/reference/api/drivers/index.md) for the protocols to implement, and the [Build Your Own Backend](https://docs.remotestore.dev/stable/guides/custom-backend-guide/index.md) guide for a step-by-step walkthrough.
+See the [Backend API reference](https://docs.remotestore.dev/stable/reference/api/backend/index.md) for the full interface to implement, and the [Build Your Own Backend](https://docs.remotestore.dev/stable/guides/custom-backend-guide/index.md) guide for a step-by-step walkthrough.
 
 ## See also
 

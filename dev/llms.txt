@@ -75,7 +75,6 @@ The pages below carry the full detail and examples.
 - [Backend](https://docs.remotestore.dev/stable/reference/api/backend/index.md)
 - [Capabilities](https://docs.remotestore.dev/stable/reference/api/capabilities/index.md)
 - [Config](https://docs.remotestore.dev/stable/reference/api/config/index.md)
-- [Drivers](https://docs.remotestore.dev/stable/reference/api/drivers/index.md)
 - [Errors](https://docs.remotestore.dev/stable/reference/api/errors/index.md)
 - [Info](https://docs.remotestore.dev/stable/reference/api/info/index.md)
 - [Models](https://docs.remotestore.dev/stable/reference/api/models/index.md)

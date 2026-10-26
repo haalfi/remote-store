@@ -2,7 +2,7 @@
 
 Complete reference for all public exports of `remote-store`.
 
-Symbols below are grouped by role. The import path is `remote_store` unless a group says otherwise: storage backends live in `remote_store.backends`, the driver protocols for writing one in `remote_store.drivers`, extensions in `remote_store.ext`, and the entire async surface in `remote_store.aio` (see the [Async section](#async), whose layout mirrors this page).
+Symbols below are grouped by role. The import path is `remote_store` unless a group says otherwise: storage backends live in `remote_store.backends`, extensions in `remote_store.ext`, and the entire async surface in `remote_store.aio` (see the [Async section](#async), whose layout mirrors this page).
 
 Feeding this to a coding agent?
 
@@ -17,75 +17,36 @@ Feeding this to a coding agent?
 | [Registry](https://docs.remotestore.dev/stable/reference/api/registry/index.md) | Creates and manages backend instances and stores |
 | [Backend](https://docs.remotestore.dev/stable/reference/api/backend/index.md)   | Abstract base class for storage backends         |
 
-## Drivers
-
-The contract kernel and the protocols a backend is written against (`remote_store.drivers`). See [Build Your Own Backend](https://docs.remotestore.dev/stable/guides/custom-backend-guide/index.md).
-
-| Class                                                                                                                                    | Description                                                       |
-| ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [DriverBackend](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.DriverBackend)                           | The sync kernel: a complete `Backend` over a `Driver`             |
-| [AsyncDriverBackend](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncDriverBackend)                 | The async kernel: a complete `AsyncBackend` over an `AsyncDriver` |
-| [Driver](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.Driver)                                         | Required primitives and declared attributes of a sync driver      |
-| [AsyncDriver](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncDriver)                               | Required primitives and declared attributes of an async driver    |
-| [Entry](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.Entry)                                           | One node as a driver reports it                                   |
-| [Page](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.Page)                                             | One page of a driver listing                                      |
-| [PutResult](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.PutResult)                                   | What a driver write reports                                       |
-| [Op](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.Op)                                                 | The operation a `classify` call is asked about                    |
-| [SupportsRangeRead](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.SupportsRangeRead)                   | Optional: ranged reads for `read_seekable`                        |
-| [SupportsOpenWrite](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.SupportsOpenWrite)                   | Optional: a wire-side temporary for atomic writes                 |
-| [WriteHandle](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.WriteHandle)                               | The temporary `open_write` returns                                |
-| [SupportsAtomicMove](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.SupportsAtomicMove)                 | Optional: a move the wire performs whole                          |
-| [SupportsRename](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.SupportsRename)                         | Optional: a rename, atomically replacing or not                   |
-| [SupportsCopy](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.SupportsCopy)                             | Optional: a copy on the wire                                      |
-| [SupportsDeleteTree](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.SupportsDeleteTree)                 | Optional: a tree delete in one call                               |
-| [SupportsRemoveFolder](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.SupportsRemoveFolder)             | Optional: removal of one empty folder                             |
-| [SupportsEnsureParents](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.SupportsEnsureParents)           | Optional: parent creation before a write                          |
-| [SupportsFolderStats](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.SupportsFolderStats)               | Optional: a native folder aggregate                               |
-| [SupportsGlob](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.SupportsGlob)                             | Optional: native `glob`                                           |
-| [AsyncSupportsRangeRead](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncSupportsRangeRead)         | Async mirror of `SupportsRangeRead`                               |
-| [AsyncSupportsOpenWrite](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncSupportsOpenWrite)         | Async mirror of `SupportsOpenWrite`                               |
-| [AsyncWriteHandle](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncWriteHandle)                     | Async mirror of `WriteHandle`                                     |
-| [AsyncSupportsAtomicMove](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncSupportsAtomicMove)       | Async mirror of `SupportsAtomicMove`                              |
-| [AsyncSupportsRename](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncSupportsRename)               | Async mirror of `SupportsRename`                                  |
-| [AsyncSupportsCopy](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncSupportsCopy)                   | Async mirror of `SupportsCopy`                                    |
-| [AsyncSupportsDeleteTree](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncSupportsDeleteTree)       | Async mirror of `SupportsDeleteTree`                              |
-| [AsyncSupportsRemoveFolder](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncSupportsRemoveFolder)   | Async mirror of `SupportsRemoveFolder`                            |
-| [AsyncSupportsEnsureParents](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncSupportsEnsureParents) | Async mirror of `SupportsEnsureParents`                           |
-| [AsyncSupportsFolderStats](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncSupportsFolderStats)     | Async mirror of `SupportsFolderStats`                             |
-| [AsyncSupportsGlob](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.AsyncSupportsGlob)                   | Async mirror of `SupportsGlob`                                    |
-
 ## Backends
 
 Synchronous storage backends (`remote_store.backends`). Native async backends — including the async-only Microsoft Graph backend — live under [Async › Backends](https://docs.remotestore.dev/stable/reference/api/aio/backends/index.md).
 
-| Class                                                                                                                 | Description                                                  |
-| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [LocalBackend](https://docs.remotestore.dev/stable/reference/api/backends/local/index.md)                             | Local filesystem storage                                     |
-| [MemoryBackend](https://docs.remotestore.dev/stable/reference/api/backends/memory/index.md)                           | In-process storage for testing                               |
-| [MemoryDriver](https://docs.remotestore.dev/stable/reference/api/backends/memory/#remote_store.backends.MemoryDriver) | The driver `MemoryBackend` is built on                       |
-| [S3Backend](https://docs.remotestore.dev/stable/reference/api/backends/s3/index.md)                                   | Amazon S3 and S3-compatible services                         |
-| [S3PyArrowBackend](https://docs.remotestore.dev/stable/reference/api/backends/s3-pyarrow/index.md)                    | S3 via PyArrow C++ for higher throughput                     |
-| [AzureBackend](https://docs.remotestore.dev/stable/reference/api/backends/azure/index.md)                             | Azure Blob Storage and ADLS Gen2                             |
-| [SFTPBackend](https://docs.remotestore.dev/stable/reference/api/backends/sftp/index.md)                               | SSH/SFTP server storage via paramiko                         |
-| [ReadOnlyHttpBackend](https://docs.remotestore.dev/stable/reference/api/backends/http/index.md)                       | Read-only access to HTTP/HTTPS URLs                          |
-| [SQLBlobBackend](https://docs.remotestore.dev/stable/reference/api/backends/sql-blob/index.md)                        | SQL database blob storage via SQLAlchemy                     |
-| [SQLQueryBackend](https://docs.remotestore.dev/stable/reference/api/backends/sql-query/index.md)                      | Read-only SQL query materialization via SQLAlchemy + PyArrow |
+| Class                                                                                              | Description                                                  |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [LocalBackend](https://docs.remotestore.dev/stable/reference/api/backends/local/index.md)          | Local filesystem storage                                     |
+| [MemoryBackend](https://docs.remotestore.dev/stable/reference/api/backends/memory/index.md)        | In-process storage for testing                               |
+| [S3Backend](https://docs.remotestore.dev/stable/reference/api/backends/s3/index.md)                | Amazon S3 and S3-compatible services                         |
+| [S3PyArrowBackend](https://docs.remotestore.dev/stable/reference/api/backends/s3-pyarrow/index.md) | S3 via PyArrow C++ for higher throughput                     |
+| [AzureBackend](https://docs.remotestore.dev/stable/reference/api/backends/azure/index.md)          | Azure Blob Storage and ADLS Gen2                             |
+| [SFTPBackend](https://docs.remotestore.dev/stable/reference/api/backends/sftp/index.md)            | SSH/SFTP server storage via paramiko                         |
+| [ReadOnlyHttpBackend](https://docs.remotestore.dev/stable/reference/api/backends/http/index.md)    | Read-only access to HTTP/HTTPS URLs                          |
+| [SQLBlobBackend](https://docs.remotestore.dev/stable/reference/api/backends/sql-blob/index.md)     | SQL database blob storage via SQLAlchemy                     |
+| [SQLQueryBackend](https://docs.remotestore.dev/stable/reference/api/backends/sql-query/index.md)   | Read-only SQL query materialization via SQLAlchemy + PyArrow |
 
 ## Async
 
 The `remote_store.aio` namespace — the async counterpart of the core API, laid out to mirror this page. See the [async overview](https://docs.remotestore.dev/stable/reference/api/aio/index.md) for the full sync ↔ async map.
 
-| Class                                                                                                                          | Description                                                                  |
-| ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| [AsyncStore](https://docs.remotestore.dev/stable/reference/api/aio/store/index.md)                                             | Async counterpart to `Store` with coroutine methods for all operations       |
-| [AsyncBackend](https://docs.remotestore.dev/stable/reference/api/aio/backend/index.md)                                         | Abstract base class for native async backends                                |
-| [SyncBackendAdapter](https://docs.remotestore.dev/stable/reference/api/aio/adapters/#syncbackendadapter)                       | Wraps any synchronous backend for async use via thread-pool executor         |
-| [AsyncBackendSyncAdapter](https://docs.remotestore.dev/stable/reference/api/aio/adapters/#asyncbackendsyncadapter)             | Wraps any `AsyncBackend` as a synchronous `Backend` via a private event loop |
-| [AsyncMemoryBackend](https://docs.remotestore.dev/stable/reference/api/aio/backends/memory/index.md)                           | In-memory async backend for testing                                          |
-| [AsyncMemoryDriver](https://docs.remotestore.dev/stable/reference/api/aio/backends/memory/#remote_store.aio.AsyncMemoryDriver) | The driver `AsyncMemoryBackend` is built on                                  |
-| [AsyncAzureBackend](https://docs.remotestore.dev/stable/reference/api/aio/backends/azure/index.md)                             | Native async Azure Blob Storage and ADLS Gen2                                |
-| [GraphBackend](https://docs.remotestore.dev/stable/reference/api/aio/backends/graph/index.md)                                  | Microsoft Graph backend (OneDrive, SharePoint, Teams files)                  |
-| [AsyncWritableContent](https://docs.remotestore.dev/stable/reference/api/aio/adapters/#asyncwritablecontent)                   | Type alias: `bytes` or `AsyncIterator[bytes]`                                |
+| Class                                                                                                              | Description                                                                  |
+| ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| [AsyncStore](https://docs.remotestore.dev/stable/reference/api/aio/store/index.md)                                 | Async counterpart to `Store` with coroutine methods for all operations       |
+| [AsyncBackend](https://docs.remotestore.dev/stable/reference/api/aio/backend/index.md)                             | Abstract base class for native async backends                                |
+| [SyncBackendAdapter](https://docs.remotestore.dev/stable/reference/api/aio/adapters/#syncbackendadapter)           | Wraps any synchronous backend for async use via thread-pool executor         |
+| [AsyncBackendSyncAdapter](https://docs.remotestore.dev/stable/reference/api/aio/adapters/#asyncbackendsyncadapter) | Wraps any `AsyncBackend` as a synchronous `Backend` via a private event loop |
+| [AsyncMemoryBackend](https://docs.remotestore.dev/stable/reference/api/aio/backends/memory/index.md)               | In-memory async backend for testing                                          |
+| [AsyncAzureBackend](https://docs.remotestore.dev/stable/reference/api/aio/backends/azure/index.md)                 | Native async Azure Blob Storage and ADLS Gen2                                |
+| [GraphBackend](https://docs.remotestore.dev/stable/reference/api/aio/backends/graph/index.md)                      | Microsoft Graph backend (OneDrive, SharePoint, Teams files)                  |
+| [AsyncWritableContent](https://docs.remotestore.dev/stable/reference/api/aio/adapters/#asyncwritablecontent)       | Type alias: `bytes` or `AsyncIterator[bytes]`                                |
 
 ## Utilities
 

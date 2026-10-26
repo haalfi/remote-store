@@ -10,7 +10,7 @@ Every backend must implement all abstract methods. Backend-native exceptions mus
 
 Implementing a backend
 
-Write a driver and wrap it in [`DriverBackend`](https://docs.remotestore.dev/stable/reference/api/drivers/#remote_store.drivers.DriverBackend), which implements every method below over the driver's primitives. A direct `Backend` subclass still works, but then must implement every abstract method and map every native exception to a `remote_store` error itself.
+Subclass `Backend` and implement all abstract methods. Map every backend-native exception to a `remote_store` error — native exceptions must never leak to callers.
 
 ______________________________________________________________________
 

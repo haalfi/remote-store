@@ -403,7 +403,7 @@ Requires `Capability.GLOB`. Validation (capability check) happens eagerly on cal
 
 Parameters:
 
-- **`pattern`** (`str`) – Glob pattern (e.g. "data/\*\*/\*.parquet"), read as a path is: "/data/\*.csv" and "./data//\*.csv" mean "data/\*.csv".
+- **`pattern`** (`str`) – Glob pattern (e.g. "data/\*\*/\*.parquet").
 
 Returns:
 
@@ -412,7 +412,6 @@ Returns:
 Raises:
 
 - `CapabilityNotSupported` – If the backend lacks GLOB.
-- `InvalidPath` – If pattern holds a .. segment or a null byte.
 
 Requires `Capability.GLOB`
 

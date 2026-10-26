@@ -74,7 +74,7 @@ Context manager for streaming atomic writes with client-side hashing.
 
 Requires `Capability.ATOMIC_WRITE`. On successful exit, the yielded `HashingAtomicWriter.result` is a `WriteResult` with `digest` populated. On exception `result` remains `None`.
 
-**Metadata branch:** When *metadata* is non-empty, the implementation buffers all written bytes in memory (`io.BytesIO`) and then calls `store.write_atomic()` on exit. This means (a) the full payload is held in RAM, and (b) capability checks (`CapabilityNotSupported`) are raised after the caller has finished writing — not before. *metadata* is validated (`ValueError`) on entry. For large payloads, prefer calling `store.write()` directly with `metadata=`.
+**Metadata branch:** When *metadata* is non-empty, the implementation buffers all written bytes in memory (`io.BytesIO`) and then calls `store.write_atomic()` on exit. This means (a) the full payload is held in RAM, and (b) validation errors (`ValueError`) and capability checks (`CapabilityNotSupported`) are raised after the caller has finished writing — not before. For large payloads, prefer calling `store.write()` directly with `metadata=`.
 
 **`source` field:** Both branches always set `source="basic"` on the returned `WriteResult`. The metadata branch discards the `source` returned by `store.write_atomic()` because the rich- source contract cannot be honored for the no-metadata branch (`open_atomic` returns only a stream, not a `WriteResult`), so both branches use the same value for consistency.
 

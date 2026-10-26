@@ -941,14 +941,6 @@
          <lastmod>2026-10-26</lastmod>
     </url>
     <url>
-         <loc>https://docs.remotestore.dev/dev/explanation/design/specs/052-backend-lifetime/</loc>
-         <lastmod>2026-10-26</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/explanation/design/specs/053-contract-kernel/</loc>
-         <lastmod>2026-10-26</lastmod>
-    </url>
-    <url>
          <loc>https://docs.remotestore.dev/dev/guides/</loc>
          <lastmod>2026-10-26</lastmod>
     </url>
@@ -1118,10 +1110,6 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/reference/api/config/</loc>
-         <lastmod>2026-10-26</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/reference/api/drivers/</loc>
          <lastmod>2026-10-26</lastmod>
     </url>
     <url>

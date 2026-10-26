@@ -187,7 +187,7 @@ Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
 - `InvalidPath` – If path is empty.
-- `ValueError` – If metadata fails shape validation (a mapping whose keys and values are str, with bounded total size).
+- `ValueError` – If metadata fails shape validation (keys and values must be str with bounded total size).
 - `CapabilityNotSupported` – If metadata is non-empty and the backend lacks USER_METADATA.
 
 Backend-conditional argument: `metadata=`
@@ -474,7 +474,7 @@ Requires `Capability.GLOB`.
 
 Parameters:
 
-- **`pattern`** (`str`) – Glob pattern (e.g. "data/\*\*/\*.parquet"), read as a path is: "/data/\*.csv" and "./data//\*.csv" mean "data/\*.csv".
+- **`pattern`** (`str`) – Glob pattern (e.g. "data/\*\*/\*.parquet").
 
 Returns:
 
@@ -483,7 +483,6 @@ Returns:
 Raises:
 
 - `CapabilityNotSupported` – If the backend lacks GLOB.
-- `InvalidPath` – If pattern holds a .. segment or a null byte.
 
 Requires `Capability.GLOB`
 
