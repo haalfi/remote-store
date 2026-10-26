@@ -48,6 +48,12 @@ The deep research landed the same day and is filed as
 its filing note records what the catalogue took from it (RFC-0026 C5). Next:
 the gates and review rounds.
 
+From an outside review on PR #1184 (the maintainer's dialog in
+`sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`): OP-22 and OP-23
+are optional, since a backend may have no native client or address; OP-05
+stays `v1`, and where a backend has no change token its profile refuses "if
+unchanged" rather than check it apart from the write.
+
 **Draft entries and the 0.33 omission check** (one per intent; 0.33
 counterpart checked against `src/remote_store/_store.py` and `ext/` at
 `e285319`; not ground, RFC-0026 C4):

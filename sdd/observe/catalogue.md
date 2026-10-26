@@ -38,8 +38,8 @@ one or more needs, and every need is served.
 | N‑19 | Further, optional | Make a folder that holds nothing yet |
 | N‑20 | Further, optional | Attach key-value metadata and system properties (such as content type) to an item, and read them back, as far as the backend supports them |
 | N‑21 | Omission check | Release a store's resources when done with it |
-| N‑22 | Omission check | Map a key to the backend's own address of it, and back |
-| N‑23 | Omission check | Reach the backend's own client, outside the library's guarantees |
+| N‑22 | Omission check, optional | Map a key to the backend's own address of it, and back |
+| N‑23 | Omission check, optional | Reach the backend's own client, outside the library's guarantees |
 | N‑24 | Omission check | Tell cheaply, without changing anything, whether the store is reachable |
 
 N-21 to N-24 are no use case the maintainer chose; they were kept when the
@@ -48,9 +48,10 @@ draft entries were checked against 0.33's surface for omissions.
 ## Entries
 
 **Columns.** IDs in both tables are written with a non-breaking hyphen
-(U+2011) so they never wrap; search them as `OP.NN` or `N.NN`. *Target* is what the entry addresses: `item`, `folder`, `any`
-(item or folder), `pattern`, `store`, `store pair`, or a pair of those with a
-local path. *Result* is the kind of thing a caller gets: `content`, `reader`
+(U+2011) so they never wrap; search them as `OP.NN` or `N.NN`. *Target* is
+what the entry addresses: `item`, `folder`, `any` (item or folder), `pattern`
+or `store`; an entry with a destination names the source with it: `any, to a
+key`, `any, to a store` or `any and local path`. *Result* is the kind of thing a caller gets: `content`, `reader`
 (an object read from at offsets), `outcome` (whether and how the call took
 effect), `listing`, `info`, `store`, `answer`, `address`, `adapter` (an object
 another library reads the store through), `client` (the backend's own). *Offer* is
@@ -72,28 +73,32 @@ another library reads the store through), `client` (the backend's own). *Offer* 
 | OP‑12 | Move or rename | any, to a key | outcome | v1 | N‑11 |
 | OP‑13 | Copy within a store | any, to a key | outcome | v1 | N‑12 |
 | OP‑14 | Transfer to or from a local file | any and local path | outcome | v1 | N‑13 |
-| OP‑15 | Transfer between stores | store pair | outcome | v1 | N‑14 |
+| OP‑15 | Transfer between stores | any, to a store | outcome | v1 | N‑14 |
 | OP‑16 | Scope a store to a folder | folder | store | v1 | N‑15 |
 | OP‑17 | Hand items to other libraries | store | adapter | v1 | N‑16 |
 | OP‑18 | Ask what a store supports | store | answer | v1 | N‑18 |
 | OP‑19 | Create an empty folder | folder | outcome | optional | N‑19 |
 | OP‑20 | Attach and read item metadata: user metadata and system properties | item | info | optional | N‑20 |
 | OP‑21 | Close a store | store | outcome | v1 | N‑21 |
-| OP‑22 | Map a key to its native address, and back | any | address | v1 | N‑22 |
-| OP‑23 | Reach the native client | store | client | v1 | N‑23 |
+| OP‑22 | Map a key to its native address, and back | any | address | optional | N‑22 |
+| OP‑23 | Reach the native client | store | client | optional | N‑23 |
 | OP‑24 | Check health | store | answer | v1 | N‑24 |
 
-**Variation inside an entry.** Where part of a `v1` entry depends on the
-backend, such as OP-09's token, the entry stays `v1` and its session declares
-the variation in the entry's profile (spec 053, Notes).
+**What `v1` promises.** Every store offers a `v1` entry under the one contract
+its spec states. Where part of it depends on the backend, such as OP-09's
+token, the entry stays `v1` and its session declares the variation as a
+profile of that contract (spec 053, Notes;
+[RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D6). OP-05's "if unchanged"
+rests on that token: where a backend offers none, the profile refuses the
+condition rather than check it apart from the write.
 
 ## Not in v1
 
-Operations comparable libraries offer that no entry serves, from the deep
+Operations comparable libraries offer that no entry names, from the deep
 research ([`research-operation-catalogue.md`](../research/research-operation-catalogue.md),
-Q1). Each is out of v1's core; an extension may add one on top of the entries,
-as it may add content hashing. A form of an entry is designed in that entry's
-session.
+Q1). *Form of OP-NN* is undecided: that entry's session decides whether v1
+offers it as a form of the entry. *Not in v1* is out of v1's core; an
+extension may add it on top of the entries, as it may add content hashing.
 
 | Operation | Disposition |
 |---|---|
