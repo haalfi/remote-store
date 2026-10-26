@@ -299,9 +299,7 @@ that must move — see [`000-process.md` Rule
 | `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle, together with the files it includes (§ Compiled oracle lists them) |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
-| `KernelProtocol.dfy` | BE-033's interaction protocol on the kernel, standalone (nothing includes it) and compiled to an oracle of its own (§ Compiled oracle): the close posture as a transition function, with terminal absorption (`TerminalCloseAbsorbs`, I1) and every close forwarded (`CloseIsForwardedAndIdempotent`, I2); `KernelExit` over every exit the kernel observes, leaving no write handle open, every stream closed or, when its failure condemned the connection, released without a close, and no caller iterator with `aclose` suspended (`CleanupOnEveryExit`, I3). I1 covers the calls the closed guard covers; the addressing members are not modelled. The `Session` states are not modelled |
 | `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
-| `StoreTree.dfy` | RFC-0021's model, a sketch not yet wired into the trait. Its header lists §1 to §12: the store as a tree over spec 051's names (TREE-007), whose distinct Keys never join to the same string (TREE-010); a flat encoding's partial `decode`; agreement between a flat driver's lookups, listings, recursive `delete_folder` walk and `move`/`copy` and the tree; D4's write checks; that a flat encoding holds no empty folder; A.8's refusal rule for every call, namespace and row; and that a valid tree is the pair of spec 051's lemma L6, for finite stores only |
 
 Live TLA+ modules live in `sdd/formal/tla/`. The frozen PoC modules
 remain in `sdd/research/tla-poc/` as the historical record of the
@@ -456,7 +454,7 @@ small, stable, and maintainable:
   there for other spellings: `Write`, `Move` and `Copy` check
   `AddressesRoot` to rank the root refusal ahead of every observed check
   on `Root` itself (BE-029, BE-018's root-destination carve-out), and
-  `DeleteFolder` refuses `Root` (spec 053 BE-031 § The root). Spellings such as `"./"` or
+  `DeleteFolder` refuses `Root` (MEM-014). Spellings such as `"./"` or
   `"/"` are outside the methods' `WellFormedPath` domain; the raw-key
   entry in `RootPath.dfy` §5 folds them onto `Root` before the trait.
   `MemoryBackend.dfy` includes `RootPath.dfy` so that entry compiles into
@@ -508,7 +506,7 @@ small, stable, and maintainable:
   returns. `MemoryBackend` preserves `fs` on error paths by
   construction instead. The exception is a frame keyed on the pre-state
   rather than on `r`: the closed-guard and root-refusal frames of gaps 9
-  and 10, and `Write`'s WR-010 gate, are stated and verified.
+  and 10 are stated and verified.
 
 <a id="compiled-oracle"></a>
 ### Compiled oracle as conformance gate
@@ -533,38 +531,16 @@ the test itself has a bug and must be fixed.
 | `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
 | `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
 | `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |
-| `sdd/formal/KernelProtocol.dfy` | The second translation entry point: BE-033's interaction protocol, one named `module KernelProtocol`, including nothing and included by nothing |
-| `sdd/formal/KernelProtocol-py/KernelProtocol.py` | Its compiled Python: `KernelExit`, `KernelStep`, `KernelRun` and their datatypes (`module_.py` beside it is Dafny's stub entry, not this module) |
-| `tests/_kernel/test_protocol_oracle.py` | Drives the kernel through the exits its case builders enumerate (BE-033's "The model is the oracle") and compares the state it leaves with `KernelExit`'s and `KernelStep`'s answer |
-
-**The second oracle.** `KernelProtocol-py/` serves a different direction from
-`MemoryBackend-py/`: not "a test the oracle passes is a correct test", but "the
-kernel leaves the state the proved model computes". Its suite runs the products
-its case builders enumerate rather than sampling, maps what the fake driver observed onto the
-model's datatypes, and asks the compiled model for the expected state, so a
-lemma about `KernelExit` is a claim about the kernel only as far as that
-mapping is faithful. The mapping is stated in the suite's module docstring;
-read it before trusting a pass. Both oracles share the Dafny runtime (`_dafny/`,
-`System_/`), byte-identical under the one pin. The named module gives the
-second its own `KernelProtocol.py`, but Dafny still writes a stub `module_.py`
-beside it, and `KernelProtocol.py` imports it; on `sys.path` or cached in
-`sys.modules`, that stub shadows the first oracle's `module_` for any later
-import. So the suite puts `KernelProtocol-py/` on `sys.path` for its own import
-only, then removes it and restores `sys.modules["module_"]`, and a cell pins
-both. `scripts/gen_protocol_diagram.py` imports it the same way to draw spec
-052 BE-033's state diagrams from `KernelStep` and `KernelExit`, so after
-rebuilding this oracle run `hatch run gen-protocol-diagram` too, or
-`preflight` fails on the stale block.
 
 **Regenerating the compiled output.** Ghost-only changes (lemmas,
 invariants, ghost variables, postconditions) erase at compile time and
 produce no Python output — regeneration is not needed. Non-ghost changes
 (method bodies, datatype definitions, function implementations) do require
 regeneration, in any of the source files above, not only
-`MemoryBackend.dfy`. The sources govern: each `<stem>-py/` is derived, and a
+`MemoryBackend.dfy`. The sources govern: `MemoryBackend-py/` is derived, and a
 difference is fixed by regenerating, never by editing the output.
 `scripts/check_dafny_oracle_fresh.py` holds that in CI's `verify-formal` job: it
-rebuilds each oracle with the pinned Dafny and fails, naming each differing file
+rebuilds the oracle with the pinned Dafny and fails, naming each differing file
 and line, when the committed tree is not what the sources compile to. Its
 docstring states what it does not catch. After it, the same job runs
 `tests/backends/dafny` and the oracle's conformance lanes (`-k dafny`) against
@@ -577,9 +553,7 @@ bash scripts/dafny_translate.sh                    # translate + reorder
 ```
 
 The translate wrapper uses the same Dafny release and SHA-256 pin as
-`dafny_verify.sh`, writes `sdd/formal/MemoryBackend-py/` and
-`sdd/formal/KernelProtocol-py/` (its default `FILES` list, which the freshness
-check reads), and calls
+`dafny_verify.sh`, writes `sdd/formal/MemoryBackend-py/`, and calls
 `scripts/_dafny_classorder.py` on the output so classes are emitted in
 importable order (ADT types → `Backend` → `default__` → `MemoryBackend` →
 `MemoryBackendMinimal`).
@@ -599,9 +573,7 @@ python -c "import sys; sys.path.insert(0, 'sdd/formal/MemoryBackend-py'); import
 pytest tests/backends/dafny tests/backends/conformance -k dafny -q
 ```
 
-`verify-formal` runs it, and then `pytest tests/_kernel/test_protocol_oracle.py
-tests/scripts/test_gen_protocol_diagram.py` for the second oracle and the
-diagrams drawn from it. All tests should pass or self-skip
+The same command `verify-formal` runs. All tests should pass or self-skip
 (an opt-in the fixture leaves off, a capability the oracle does not declare,
 or a cell aimed at non-declaring backends). A conformance failure indicates a
 conformance suite bug; a failure under `tests/backends/dafny` is the adapter's.
@@ -654,12 +626,10 @@ written against them (RFC-0017 D7). The ranking they encode is the one
 spec 003 states: a closed terminal backend answers `BackendUnavailable` first
 (BE-029), the key-decided root checks come next, a root `move`/`copy`
 destination included (BE-018 § Precondition order), and every observed check
-follows. On `Write`, WR-010's metadata gate sits between the root and the
-observed checks, the order the kernel answers in (BE-030), since the gate is
-capability data and held ahead of any I/O.
-The first two, and `Write`'s gate, also state that nothing changed
-(`fs == old(fs)`): the only error-path frames the model carries, possible
-because each is keyed on the pre-state rather than on the result.
+follows.
+Both of the first two also state that nothing changed (`fs == old(fs)`):
+the one error-path frame the model carries, possible because it is keyed
+on the pre-state rather than on the result.
 `MemoryBackend` matches the Python class (non-terminal close, a container
 present from construction), so `MemoryBackendMinimal` witnesses the
 `BackendUnavailable` branches. Both classes carry a `DropContainer` method,
@@ -675,18 +645,7 @@ file-shaped operations reach the root through the `IsDir` clause, because
 `Valid()` keeps `Root` a `DirEntry` in every state. `DeleteFolder`'s clauses
 leave the root's own answer free, since BE-029 leaves `delete_folder("")`
 undefined, but not its survival; both refinements refuse it with
-`InvalidPath`, as a class on the kernel does (spec 053 BE-031 § The root),
-the Python `MemoryBackend` among them.
-
-`DeleteFolder` requires a recursive delete of a present folder to succeed and
-remove every key under it only when `CanonicalUnder(old(fs), path)` holds:
-every key below `path` is `Canonical`, the model of BE-030's `listable`. Over
-a key the rule omits, a walk on the kernel leaves it behind and answers
-`DirectoryNotEmpty`, so there the trait permits that error or success
-(spec 053 BE-031). The emptiness clauses carry the same guard. Both
-refinements keep the unguarded clauses, because they remove every key under
-`path`. `Canonical`'s comment in `BackendContract.dfy` states what it does
-not model.
+`InvalidPath`, as the Python `MemoryBackend` does (MEM-014).
 
 The trait takes well-formed paths, and on that domain `AddressesRoot` holds
 for `Root` alone, so the trait by itself states the root rule for the
@@ -734,10 +693,8 @@ Error-path frame conditions (gaps 1–2: `fs == old(fs)` on error) are
 not machine-checked — the `r.Err?` discriminator taints method bodies
 as specification-only in Dafny, preventing compiled assignments and
 returns. `MemoryBackend` preserves the state by construction instead.
-Gaps 9 and 10, and `Write`'s WR-010 gate, are the exception: their
-frames key on the pre-state (`!old(Live())`, `AddressesRoot`,
-`HasUserMetadata(metadata) && CapUserMetadata !in capabilities`), not on
-`r`, and are verified.
+Gaps 9 and 10 are the exception: their frames key on the pre-state
+(`!old(Live())`, `AddressesRoot`), not on `r`, and are verified.
 
 ### TLA+: the WR-018 bundling finding
 

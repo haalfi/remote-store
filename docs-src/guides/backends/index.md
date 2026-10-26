@@ -25,18 +25,15 @@ stays the same — the `Store` API is identical across all backends.
 You can register your own backend using `register_backend`:
 
 ```python
-from remote_store import register_backend
-from remote_store.drivers import DriverBackend
+from remote_store import register_backend, Backend
 
-class MyBackend(DriverBackend):
-    def __init__(self, **options) -> None:
-        super().__init__(MyDriver(**options))
+class MyBackend(Backend):
+    ...
 
 register_backend("my-backend", MyBackend)
 ```
 
-`MyDriver` implements your storage system's primitives. See the
-[Drivers API reference](../../reference/api/drivers.md) for the protocols to
+See the [Backend API reference](../../reference/api/backend.md) for the full interface to
 implement, and the [Build Your Own Backend](../custom-backend-guide.md) guide
 for a step-by-step walkthrough.
 

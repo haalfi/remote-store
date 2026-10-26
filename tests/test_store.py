@@ -977,15 +977,6 @@ class TestMetadataGate:
         assert result.size == 1
 
     @pytest.mark.spec("WR-011")
-    @pytest.mark.parametrize("method", ["write", "write_atomic"])
-    @pytest.mark.parametrize("value", [5, "ab", [("k", "v")], [], 0, ""], ids=repr)
-    def test_metadata_that_is_not_a_mapping_raises_value_error(self, store: Store, method: str, value: object) -> None:
-        # A falsy non-mapping is refused too, not taken for the empty-mapping carve-out.
-        with pytest.raises(ValueError, match="must be a mapping"):
-            getattr(store, method)("f.bin", b"x", metadata=value)
-        assert not store.exists("f.bin")
-
-    @pytest.mark.spec("WR-011")
     def test_metadata_empty_key_raises_value_error(self, store: Store) -> None:
         with pytest.raises(ValueError, match="empty"):
             store.write("f.bin", b"x", metadata={"": "value"})

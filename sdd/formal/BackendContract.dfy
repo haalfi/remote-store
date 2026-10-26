@@ -36,9 +36,9 @@
 //   for the reference implementation but NOT enforced by the abstract
 //   contract. See gap coverage table in README.  The exception (BK-388)
 //   is a frame keyed on the pre-state rather than on `r`: the closed
-//   guard (`!old(Live())`), the BE-029 root refusals and `Write`'s
-//   WR-010 metadata gate state `fs == old(fs)` directly, since those
-//   errors are decided before any effect.
+//   guard (`!old(Live())`) and the BE-029 root refusals state
+//   `fs == old(fs)` directly, since those errors are decided before any
+//   effect.
 // - Happy-path postconditions use `ensures <preconditions> ==> r.Ok?`
 //   to mandate success when no error condition applies.
 
@@ -330,78 +330,6 @@ ghost predicate WellFormedPath(s: string)
     && !HasSegment(s, ".")                   // PATH-006: no "." segment
     && !HasSegment(s, "..")                  // PATH-003: no ".." segment
   )
-}
-
-// BE-030: `p` is a key the kernel may list, i.e. `listable(p)` in
-// src/remote_store/_kernel/_keys.py: non-empty, `refusal(p)` is None (no
-// leading '/', no null byte, no backslash, no ".." segment) and
-// `canonical(p) == p` (no empty segment, so no trailing or doubled slash
-// either, and no "." segment).  That is exactly the non-root disjunct of
-// WellFormedPath above, stated separately because the two answer different
-// questions: WellFormedPath bounds what a caller passes, Canonical what a
-// store may hold and still show.  Not modelled: Python compares code points
-// and Dafny chars, which agree on the four ASCII characters tested here
-// ('\0', '\\', '/' and '.');
-// entries a listing omits for a reason other than the key rule (BE-032
-// A.3's key below a listed item on a flat namespace) and keys a concurrent
-// writer adds mid-walk, which lie outside this sequential model.
-// Cited in prose, not as an @spec tag: no conformance cell cites BE-030 or
-// BE-031, which scripts/check_formal_trace.py requires of a tag.
-ghost predicate Canonical(p: Path)
-{
-  '\0' !in p
-  && '\\' !in p
-  && p[0] != '/'
-  && p[|p| - 1] != '/'
-  && !ContainsSub(p, "//")
-  && !HasSegment(p, ".")
-  && !HasSegment(p, "..")
-}
-
-// BE-031: every key `fs` holds under `path` is one BE-030 lists.  When it
-// fails, a recursive walk on the kernel leaves the omitted key behind and
-// answers DirectoryNotEmpty (spec 053 BE-031, "A recursive delete may answer
-// DirectoryNotEmpty"), so DeleteFolder's recursive-success and emptiness
-// clauses hold under this guard only.  IsChildOf is the model's descendant
-// relation: any depth below `path`, not only direct children.
-ghost predicate CanonicalUnder(fs: Filesystem, path: Path)
-{
-  forall k: Path | k in fs && IsChildOf(k, path) :: Canonical(k)
-}
-
-// The guard is not vacuous: a canonical key passes, and each of BE-030's
-// rewritten shapes BE-031 names (an empty segment, a "." segment) fails,
-// so a folder over either fails CanonicalUnder.
-lemma CanonicalWitnesses()
-  ensures Canonical("a/b")
-  ensures !Canonical("a//b")
-  ensures !Canonical("a/./b")
-  ensures !CanonicalUnder(map["a" := DirEntry, "a//b" := DirEntry], "a")
-{
-  var s := "a/b";
-  // Every window of "a/b" holds a non-'/' at a slash position of the
-  // pattern, so none of "//", "/./", "/../" occurs.
-  forall i {:trigger s[i..i + 2]} | 0 <= i <= |s| - 2 ensures s[i..i + 2] != "//" {
-    assert s[i..i + 2][0] == s[i] && s[i..i + 2][1] == s[i + 1];
-  }
-  var dot := "/" + "." + "/";
-  assert |dot| == 3 && dot[0] == '/';
-  assert !ContainsSub(s, dot) by {
-    forall i {:trigger s[i..i + |dot|]} | 0 <= i <= |s| - |dot|
-      ensures s[i..i + |dot|] != dot
-    {
-      assert i == 0 && s[i..i + |dot|][0] == 'a';
-    }
-  }
-  assert s[..2] == "a/" && "." + "/" == "./";
-  assert s[|s| - 2..] == "/b" && "/" + "." == "/.";
-  assert !HasSegment(s, ".");
-  assert !HasSegment(s, "..");
-  assert "a//b"[1..3] == "//";
-  var t := "a/./b";
-  assert t[1..1 + |dot|] == dot;
-  assert ContainsSub(t, dot);
-  assert IsChildOf("a//b", "a");
 }
 
 // to_key / native_path model the bidirectional conversion between a
@@ -718,11 +646,15 @@ trait Backend {
   // WR-010 strict gate: HasUserMetadata(metadata) && CapUserMetadata
   // !in capabilities → CapabilityNotSupported before any I/O.
   //
-  // Order, as the kernel answers it (BE-030): closed (BE-020), the root
-  // from the key (BE-029), the WR-010 gate, then the observed checks — a
-  // folder at the key, a file above it, an existing file without
-  // overwrite.  The gate is capability data, so it outranks every check
-  // that reads fs; each observed clause below excludes the gated inputs.
+  // Ordering divergence vs the Python implementation: here the WR-010
+  // gate fires AFTER the IsDir/IsFile precondition chain, so for a
+  // directory-path + non-empty-metadata + non-declaring-backend input
+  // the Dafny contract returns InvalidPath while the Python Store layer
+  // (which evaluates WR-011 → WR-010 before dispatching to
+  // backend.write()) returns CapabilityNotSupported.  This is a known
+  // contract-level simplification: Dafny models the Backend trait in
+  // isolation; the Store-layer ordering (WR-011) is outside the trait.
+  // Tracked in the ID-151 "Out of scope" list.
   method Write(
     path: Path,
     content: seq<nat>,
@@ -751,24 +683,10 @@ trait Backend {
     // @spec BE-029
     ensures old(Live()) && AddressesRoot(path)
       ==> fs == old(fs) && containerPresent == old(containerPresent)
-    // WR-010 strict gate, right after the root: non-empty metadata on a
-    // backend without CapUserMetadata → CapabilityNotSupported, whatever
-    // the path holds (BE-030 holds it ahead of any I/O).
-    // @spec WR-010
-    ensures old(Live()) && !AddressesRoot(path) &&
-            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
-      ==> r == Err(CapabilityNotSupported(
-            CapabilityName(CapUserMetadata), name))
-    // WR-010: "before any I/O" — the refusal has no effect.
-    // @spec WR-010
-    ensures old(Live()) && !AddressesRoot(path) &&
-            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
-      ==> fs == old(fs) && containerPresent == old(containerPresent)
-    // Gap 1 / BE-008: precondition order — type check first among the
-    // observed checks (directory path → InvalidPath).
+    // Gap 1 / BE-008: precondition order — type check first (directory
+    // path → InvalidPath).
     // @spec BE-008
-    ensures old(Live()) && IsDir(old(fs), path) &&
-            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities)
+    ensures old(Live()) && IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     // ID-209 / BE-008: precondition order — path-validity also covers a
     // file-ancestor in the path.  Mutually exclusive with IsDir / IsFile
@@ -780,18 +698,27 @@ trait Backend {
     // explicitly rather than EnsureParents'ing into a Valid()-breaking
     // state.
     // @spec BE-008
-    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path) &&
-            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities)
+    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     // Gap 1 / BE-008: precondition order — overwrite conflict second.
     // @spec BE-008
     ensures old(Live()) && !AddressesRoot(path) &&
-            !(HasUserMetadata(metadata) && CapUserMetadata !in capabilities) &&
             !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
+    // WR-010 strict gate: non-empty metadata on a backend without
+    // CapUserMetadata → CapabilityNotSupported (pre-I/O).  ID-209 tightens
+    // the guard with AllAncestorsTraversable so this clause stays
+    // mutually exclusive with the new file-ancestor clause above.
+    // @spec WR-010
+    ensures old(Live()) && !AddressesRoot(path) &&
+            !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            AllAncestorsTraversable(old(fs), path) &&
+            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
+      ==> r == Err(CapabilityNotSupported(
+            CapabilityName(CapUserMetadata), name))
     // BE-008 happy path: no error condition → must succeed.  ID-209 adds
-    // the AllAncestorsTraversable conjunct so it stays mutually exclusive
-    // with the file-ancestor clause.  BK-388 adds old(containerPresent): what a write
+    // the AllAncestorsTraversable conjunct for the same reason as the
+    // WR-010 guard above.  BK-388 adds old(containerPresent): what a write
     // does against an absent container is a backend spec's to decide
     // (BE-021 § Reach), except at the root, which the BE-029 clause decides.
     // @spec BE-008
@@ -930,29 +857,18 @@ trait Backend {
     ensures old(Live()) && path != Root &&
             IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
-    // BE-013 happy path: empty dir, or recursive over a subtree whose every
-    // key BE-030 lists → must succeed.
+    // BE-013 happy path: empty dir or recursive → must succeed.
     // @spec BE-013
     ensures old(Live()) && path != Root && old(containerPresent) &&
-            IsDir(old(fs), path) &&
-            ((recursive && CanonicalUnder(old(fs), path)) || !HasChildren(old(fs), path))
+            IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
       ==> r.Ok?
-    // BE-031: a recursive delete over a key BE-030 omits may leave it behind
-    // and answer DirectoryNotEmpty; success stays permitted.
+    // On success, directory entry is removed.
     // @spec BE-013
-    ensures old(Live()) && path != Root && old(containerPresent) &&
-            IsDir(old(fs), path) && recursive && !CanonicalUnder(old(fs), path)
-      ==> r.Ok? || r == Err(DirectoryNotEmpty(path, name))
-    // On success, directory entry is removed.  The BE-031 guard is vacuous
-    // for an empty folder, so it narrows the recursive case only.
-    // @spec BE-013
-    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) &&
-            CanonicalUnder(old(fs), path) && r.Ok?
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && r.Ok?
       ==> !IsDir(fs, path)
-    // Recursive delete removes all children too, under the same guard.
+    // Recursive delete removes all children too.
     // @spec BE-013
-    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && recursive &&
-            CanonicalUnder(old(fs), path) && r.Ok? ==>
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
       forall p: Path | IsChildOf(p, path) :: !PathExists(fs, p)
 
   // ====================================================================

@@ -48,3 +48,5 @@ breaking. The import failure needs a floor install
 and was not re-run. Found by the ADR-0040 § 5 conversion.
 
 **RFC-0017 D3 placement (BK-394, 2026-10-15).** RFC-0017 § Impact assigned this item's re-homing to BK-394, at D3 step 1. `[s3-pyarrow]`'s floor retires with that lane at step 2; `[arrow]` and `[sql-query]` stay here.
+
+*Frozen 2026-10-25: [RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) froze RFC-0017's D3 steps on `frozen/kernel-driver`, so the placement above no longer applies: no lane retires at a step, so all three floors stay here.*

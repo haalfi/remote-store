@@ -8,15 +8,15 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 305162,
+  "total": 305629,
   "files": {
-    "CLAUDE.md": 17648,
+    "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
     ".claude/skills/audit/SKILL.md": 1465,
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 3838,
+    ".claude/skills/observe/SKILL.md": 3795,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -30,9 +30,9 @@
     ".claude/agents/extension-expert.md": 1670,
     ".claude/agents/reviewer.md": 970,
     ".claude/agents/sdd-expert.md": 1799,
-    ".claude/agents/store-backend-expert.md": 1903,
+    ".claude/agents/store-backend-expert.md": 2104,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64597,
+    "sdd/CLAUDE-REFERENCE.md": 64672,
     "sdd/traces/_schema.yml": 31990
   },
   "raises": [
@@ -131,6 +131,18 @@
       "from": 304954,
       "to": 305162,
       "reason": "First /observe run (exists): SKILL.md names its method files by path, has each recommendation cite a ground clause or prior art or be marked unsourced, notes the four-option dialog limit and the stop hook (+208 after a -345 Rule 7 pass)"
+    },
+    {
+      "item": "BK-488",
+      "from": 305162,
+      "to": 305617,
+      "reason": "RFC-0025 amendment row (RFC-0024 Impact, Process): CLAUDE.md principle 5 and store-backend-expert.md gain Rule 3's ground-spec exception; CLAUDE-REFERENCE Breaking change rows name the 0.33 patch pair"
+    },
+    {
+      "item": "BK-488",
+      "from": 305617,
+      "to": 305629,
+      "reason": "PR #1181 review: the two Rule 3 copies say 'a break record or a 0.33 defect', as Rule 3 does"
     }
   ]
 }

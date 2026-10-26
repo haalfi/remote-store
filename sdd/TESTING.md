@@ -113,9 +113,8 @@ enforces three rules at CI time, all derived from spec 048:
     — where an ABC method is concrete with a default, conformance asserts
     *override-or-declared-exemption*, both directions. Not overriding is a
     decision that must cost a list entry and a spec citation; otherwise
-    forgetting is indistinguishable from deciding. On the contract kernel
-    the default moves to the driver, and the rule is asked of the driver's
-    method. See [§ Declaring an exemption](#declaring-an-exemption).
+    forgetting is indistinguishable from deciding. See
+    [§ Declaring an exemption](#declaring-an-exemption).
 
 ## Guides
 
@@ -191,9 +190,9 @@ confirmed your own assumptions. Five ways a test lies green:
 ### Declaring an exemption (Rule 13) { #declaring-an-exemption }
 
 An ABC method that is concrete with a default has two silent readings, and
-the code cannot tell them apart. `MemoryBackend` declares no probe because an
-in-memory store is always healthy; a network backend that declares none has
-*no health check at all*. Both are the
+the code cannot tell them apart. `MemoryBackend` does not override
+`check_health()` because an in-memory store is always healthy; a network
+backend that does not override it has *no health check at all*. Both are the
 same absence. Asking "does it override?" therefore flags both or neither, and
 neither answer is useful.
 
@@ -201,11 +200,9 @@ So do not ask the code for intent — make the intent declared, and check the
 declaration in both directions:
 
 ```python
-# The exemption is the artifact. An entry costs a spec ID and a reason. Keyed by
-# class, not by `name`, so a sync and an async twin are two entries.
-_NO_PROBE: dict[type, str] = {
-    MemoryBackend: "PING-008 — in-memory, always healthy",
-    AsyncMemoryBackend: "PING-008 — in-memory, always healthy",
+# The exemption is the artifact. An entry costs a spec ID and a reason.
+_NO_PROBE = {
+    "memory": "PING-008 — in-memory, always healthy",
 }
 
 # Resolve the class that actually supplies the method. Do NOT compare against a
@@ -220,31 +217,15 @@ def _has_own_probe(cls: type) -> bool:
     owner = next(k for k in cls.__mro__ if "check_health" in k.__dict__)
     return owner not in _ABC_DEFAULTS
 
-def test_health_probe_is_declared(cls: type) -> None:
-    overrides = _has_own_probe(cls)
-    if cls in _NO_PROBE:
+def test_health_probe_is_declared(backend: Backend, backend_name: str) -> None:
+    overrides = _has_own_probe(type(backend))
+    if backend_name in _NO_PROBE:
         # Direction 2: an exemption that grew a real probe is stale.
-        assert not overrides, f"{cls.__name__} now probes; drop it from _NO_PROBE"
+        assert not overrides, f"{backend_name} now probes; drop it from _NO_PROBE"
     else:
         # Direction 1: silence is not consent.
-        assert overrides, f"{cls.__name__} inherits the no-op default; probe it or declare it"
+        assert overrides, f"{backend_name} inherits the no-op default; probe it or declare it"
 ```
-
-**On the contract kernel the decision moves to the driver.** A class on the
-kernel always supplies a `check_health`, the kernel's, which runs its driver's
-`probe()` (PING-002), so the question above would pass every such class whether
-or not its driver probes. A driver that declares no `probe` inherits the
-`Driver` / `AsyncDriver` protocol's no-op body, which is the same silent default
-one level down. So for a kernel class the test asks the driver class instead,
-by the same predicate: the class in the driver's MRO that supplies `probe`, and
-whether it is one of the two protocols. Each kernel class is mapped to its
-driver class (`_DRIVERS`); an unmapped kernel class fails, so a new class on
-the kernel cannot pass on the kernel's `check_health` alone, and a mapping
-discovery no longer finds fails too. The map is checked against the class: it
-must build the mapped driver and must not override the kernel's `check_health`. `DriverBackend` and `AsyncDriverBackend`
-themselves take any driver and are left out of discovery. The `_NO_PROBE`
-entries keep their meaning: `MemoryDriver` and `AsyncMemoryDriver` declare no
-`probe`, so the two Memory entries stay true (PING-008).
 
 Direction 1 is the one that catches the bug: a new backend cannot reach green
 by omission, because the default is no longer reachable without saying so.

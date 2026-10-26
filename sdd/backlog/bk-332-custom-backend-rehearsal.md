@@ -26,3 +26,12 @@ which names the rehearsal's placement and this search. The PR #932 run's record 
 `sdd/traces/bk-320-custom-backend-guide-refresh.yml`, and BK-324, one of its
 two findings, is done in `BACKLOG-DONE.md`. Found by the ADR-0040 § 3
 conversion.
+
+## Re-scoped, 2026-10-25 (RFC-0025)
+
+BK-394 rewrote the guide as a driver and absorbed BK-325's gaps;
+[RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) D4 froze that guide on
+`frozen/kernel-driver` and restored v0.33.0's `Backend`-ABC guide, so the
+rehearsal runs against the latter, and BK-325's gap list
+([its dossier](bk-325-custom-backend-guide-gaps.md)) is absorbed here, as
+what the rehearsal checks first.

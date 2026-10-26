@@ -9,28 +9,6 @@ from __future__ import annotations
 
 import re
 
-from remote_store._errors import InvalidPath
-from remote_store._kernel import _keys
-
-
-def normalize_pattern(pattern: str) -> str:
-    """Read *pattern* as a path is read: the key pattern it names.
-
-    Strips leading ``/`` and drops empty and ``.`` segments; refuses ``..``
-    and a null byte with ``InvalidPath``. A trailing ``/`` is kept, since in a
-    pattern it selects folders only. ``""`` names the root, which holds no
-    files to match.
-
-    >>> normalize_pattern("/./data//*.csv")
-    'data/*.csv'
-    """
-    # Spec 018 GLOB-007, applying spec 004 PATH-003 to PATH-007 to a pattern.
-    if "\0" in pattern:
-        raise InvalidPath("Pattern contains null byte", path=pattern)
-    if ".." in pattern.split("/"):
-        raise InvalidPath("Pattern contains '..' segment", path=pattern)
-    return _keys.canonical_pattern(pattern)
-
 
 def extract_prefix(pattern: str) -> str:
     """Extract the longest non-wildcard directory prefix.

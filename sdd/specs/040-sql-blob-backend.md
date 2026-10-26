@@ -485,5 +485,5 @@ write taking 0.74 s. The budget is a bound rather than a guarantee: contention
 heavy enough to exhaust it surfaces as `BackendUnavailable`, and SQL-BLOB-043
 sets no `busy_timeout` of its own.
 
-**See also:** [052-backend-lifetime.md](052-backend-lifetime.md)
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
 (BE-028).

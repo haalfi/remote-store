@@ -4,12 +4,14 @@
 Completed items, newest first. All items must use `[x]` status.
 Active work lives in [BACKLOG.md](BACKLOG.md).
 
-Three outcomes land here. Most entries are **work that shipped**, filed under
+Four outcomes land here. Most entries are **work that shipped**, filed under
 the release that carried it. Two sections hold retired IDs instead:
 [§ Decided against](#decided-against), items removed without being implemented,
 and [§ Absorbed](#absorbed), IDs folded into a surviving item whose work is
 still open. In both, `[x]` is this file's structural convention, not a claim the
-work happened — read the line.
+work happened — read the line. [§ Frozen](#frozen) holds work that was done and
+then left master with RFC-0025's revert: it is done, but on the branch
+`frozen/kernel-driver`, and no release ships it.
 
 Every retired ID gets an entry in one of the two, for two reasons: an inbound
 citation anywhere in `sdd/` still resolves, and `gen_backlogid.py` counts the
@@ -24,11 +26,19 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
-- [x] **BK-448 — The async kernel leaves a caller's content iterator suspended when it refuses a chunk or the write fails** → **BK-449**, whose exit owners include it (the kernel closes what it abandons, or the caller owns it). Filed by BUG-335 (PR #1156); absorbed when audit-023's items were filed. Dossier: [BK-449](backlog/bk-449-interaction-protocol-states.md).
+- [x] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes** → **BK-489**: its whole subject is the D3 steps, frozen by RFC-0025 D7. Dossier: [BK-390](backlog/bk-390-rfc-0017-spec-amendments.md).
+- [x] **BK-439 — `glob` on the kernel skips the store tree's flat rules, so a flat glob can match below an item** → **BK-489**: its whole subject is the kernel's `glob`, frozen by RFC-0025 D7.
+- [x] **BK-446 — No driver exercises the kernel's `glob`, because `MemoryDriver` declares no `GLOB`** → **BK-489**: its whole subject is the kernel and its Memory driver, frozen by RFC-0025 D7.
+- [x] **BK-455 — The `Session` has obligations in BE-033 but no state set, and its close/run race no model** → **BK-489**: its whole subject is the `Session`, frozen with BE-033 by RFC-0025 D7.
+- [x] **BK-434 — RFC-0021's encodings are verified in `StoreTree.dfy` alone, so the trait's operations are not refined against them** → **BK-489**: `StoreTree.dfy` and the kernel it drifts from are frozen by RFC-0025 D7, which re-checks its `BackendContract.dfy` findings against the model master keeps. Dossier: [BK-434](backlog/bk-434-trait-refinement-against-storetree.md).
+- [x] **BK-450 — The driver boundary has no single enforcement point, so each kernel site re-checks a driver by hand** → **BK-489**: its whole subject is the driver boundary, frozen by RFC-0025 D7; its T1 is BUG-341, and its decision log `062e5181-cc50-5b17-963f-e9da78bad8ee` is cited in the host's dossier. Dossier: [BK-450](backlog/bk-450-driver-boundary-enforcement.md).
+- [x] **BK-467 — Rule 4 cannot let the Dafny lifetime model or kernel-cell marks govern a clause** → **BK-489**: no Dafny lifetime model or BE-03x mark is left on master for Rule 4 to admit (RFC-0025 D7).
+- [x] **BK-435 — Spec 051's store tree is not yet tied to the store's operations, and `StoreTree.dfy` §12 carries no `@spec` tags** → **BK-489**: its open work is `StoreTree.dfy` §12 and the Dafny operations after BK-434, which RFC-0025 D7 parks with that model.
+- [x] **BK-448 — The async kernel leaves a caller's content iterator suspended when it refuses a chunk or the write fails** → **BK-489**, as a kernel-only finding. Absorbed first into BK-449, whose exit owners include it (the kernel closes what it abandons, or the caller owns it), which closed it on the kernel; BK-449 is frozen (RFC-0025 D7). Filed by BUG-335 (PR #1156). Dossier: [BK-449](backlog/bk-449-interaction-protocol-states.md).
 - [x] **BK-447 — A glob pattern reads `\` unlike a path: `exists("d\\a.csv")` is `True`, `glob("d\\*.csv")` is `[]`** → **BK-451**, one row of its dialect decision. Absorbed when audit-023's items were filed. Dossier: [BK-451](backlog/bk-451-glob-tree-definition.md).
-- [x] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`** → **BK-394**, its Memory half, and **BUG-300**, its SQLBlob half, each carrying the marker. Filed by BL-011 (PR #1054), absorbed into BK-395 in BK-389's planning PR (#1055) at the maintainer's request; BK-395 decided the fix (the kernel refuses a backslash before the driver) and closed in PR #1061, which moved the open work to those two hosts.
-- [x] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly** → **BK-389**, as fake-driver cells over an absent container. Dossier: [ID-261](backlog/id-261-root-order-unobservable.md).
-- [x] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps** → **BK-394**, which rewrites the guide as a driver. Dossier: [BK-325](backlog/bk-325-custom-backend-guide-gaps.md).
+- [x] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`** → **BUG-300**, both halves, carrying the marker. Filed by BL-011 (PR #1054), absorbed into BK-395 in BK-389's planning PR (#1055) at the maintainer's request; BK-395 decided the fix (the kernel refuses a backslash before the driver) and closed in PR #1061, which moved the Memory half to BK-394 and the SQLBlob half to BUG-300. BK-394's fix is frozen by RFC-0025, so BUG-300 holds the Memory half again.
+- [x] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly** → **BK-345**, as a registry cell over an absent container. First absorbed into BK-389 as fake-driver cells; RFC-0025 froze those cells with the kernel. Dossier: [ID-261](backlog/id-261-root-order-unobservable.md).
+- [x] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps** → **BK-332**, whose rehearsal checks them. First absorbed into BK-394, which rewrote the guide as a driver; the guide reverted with RFC-0025. Dossier: [BK-325](backlog/bk-325-custom-backend-guide-gaps.md).
 - [x] **BUG-241 — `SQLBlobBackend` builds prefix `LIKE` patterns without escaping `_` and `%`, so listings and folder deletes reach sibling keys** → **BL-011**. Dossier: [BUG-241](backlog/bug-241-sql-like-metacharacters.md).
 - [x] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate** → **BK-333**
 - [x] **BK-337 — Widening an authority doc's scope reaches no row that finds its restating copies** → **BK-346**, instance 5
@@ -298,93 +308,14 @@ if evidence changes; these are retired.
 
 ---
 
-## Unreleased
+<a id="frozen"></a>
+## Frozen on frozen/kernel-driver (RFC-0025)
 
-- [x] **BK-486 — The decision log records session chores, so every commit needs a hand cleanup**
-  spec: — · effort: M · audience: contributor.process, contributor.tooling
-  Chores and post-cleanup master questions reached `sdd/decisions/` and were
-  stripped by hand. A dialog tagged `metadata.source: "housekeeping"` is skipped
-  (the tag reaches Pre only, so Post is dropped by `tool_use_id`); a base-branch
-  or detached event (not one during a rebase, nor one whose branch git could not
-  read) waits in the ignored `sdd/decisions/.pending/` until the
-  session commits on a work branch, then a `promoted` line binds
-  the moved lines to that branch (D4.0, read in line order). RFC-0018 D1, D2,
-  D3 and D4.0 amended. Follow-up: the commit and push gates moved from Claude
-  hooks, whose `if:` prefix match never fired on `git -C <path> commit`, into
-  git's own `.githooks/pre-commit` and `pre-push`, which git runs in the
-  repository it commits to; `--no-verify` is denied.
-  Traces: [bk-486](traces/bk-486-decision-log-chores.yml),
-  [gate `-C`](traces/bk-486-gate-git-c.yml).
-- [x] **BK-481 — `/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can**
-  spec: — · effort: S · audience: contributor.tooling, contributor.process
-  A local `/rvw-pr 1173` returned six findings unposted: no MCP server here, and
-  Step 4 forbade `gh`. MCP stays first; without it the pass posts `gh`'s REST
-  review call with its JSON on stdin from a quoted heredoc, so the read-only
-  reviewer needs no temp file and a body is never shell-expanded or rewritten
-  by `-F`. Probed on #1173 and #1174, probes deleted. Trace:
-  [bk-481](traces/bk-481-rvw-pr-gh-post.yml).
-- [x] **BK-464 — No review pass checks that a durable doc says one thing, first, in its own place**
-  spec: — · effort: XS · audience: contributor.process
-  A three-line last pass (Rules 7, 2, 4 and principle 8) found on PR #1166 what three
-  external reviews and a scoped reviewer pass missed: ADR-0048 restating SPEC-DESIGN, SPEC-DESIGN Rule 4 leading
-  late. Now `CONTENT-RULES.md` § Last pass, run by `/rvw-pr`'s content-rules check.
-  Trace: [bk-464](traces/bk-464-three-line-last-pass.yml).
-
-- [x] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
-  spec: — · effort: L · audience: contributor.process, library.maintainer
-  RFC-0022 accepted 2026-10-19 with its open questions answered; decisions in ADR-0048,
-  rules in the new review-enforced authority doc `sdd/SPEC-DESIGN.md`. `000-process.md`
-  Rules 3 and 7, § Spec format and the spec template, `formal/README.md` rule 3 and its
-  layer table follow it. Follow-ups: BK-456, BK-460, BK-461, BK-462, BK-463. Dossier:
-  [BK-457](backlog/bk-457-declarative-spec-adr.md). Traces:
-  [rfc](traces/bk-457-spec-design-rfc.yml), [adr](traces/bk-457-spec-design-adr.yml).
-
-- [x] **BUG-337 — Spec 003 contradicts itself on a move onto an existing file and on the write precondition order**
-  spec: BE-008, BE-010, BE-018, BE-021, BE-032 · effort: S · audience: library.maintainer
-  Spec-only, in `003-backend-adapter-contract.md`: BE-021's table moves the `move`/`copy` destination to
-  the file-operation row and names a destination file as BE-018's `AlreadyExists`; BE-008's order
-  now opens with the closed guard and ranks the WR-010 gate after the root, as the Dafny `Write`
-  does, binding the gate where a class runs it (Graph breaks that order: BUG-339); BE-010,
-  ASYNC-008 and spec 044 link to it; BE-018/BE-019 carry BE-021's destination scope; BE-028 says
-  "operating system". Dossier: [BUG-337](backlog/bug-337-spec-003-contradictions.md). Trace:
-  [bug-337](traces/bug-337-spec-003-contradictions.yml).
-
-- [x] **BUG-338 — The docs site's RFC and ADR indexes print one status per kind, so every RFC reads "Proposed"**
-  spec: DOCFRAME-010 · effort: S · audience: user.site, contributor.tooling, contributor.process
-  `_index_row` printed `_path_rules.yml`'s per-kind constant: all 22 RFCs "Proposed",
-  ADR-0006/0016/0019/0032 "Accepted" though Superseded. The cell is now each document's
-  own status (ADRs via `gen_adr_digest.py`'s parser), `—` when absent; `check_sdd_index.py`
-  R3 fails a status kind's document with none in vocabulary. RFC-0003/0011/0013/0014 read
-  "Implemented" and now "Accepted"; the Research and RFC index intros were reworded.
-  Trace: [bug-338](traces/bug-338-sdd-index-status.yml).
-
-- [x] **BK-459 — The `reviewer` agent names its GitHub tools by the local server's prefix, so a cloud pass cannot post**
-  spec: — · effort: S · audience: contributor.tooling, contributor.process
-  A cloud `/rvw-pr` pass of PR #1162 got `Read, Grep, Glob, Bash` only: the
-  `mcp__MCP_DOCKER__*` entries dropped silently and no `ToolSearch` was granted.
-  `reviewer.md` now lists each tool under both prefixes plus `ToolSearch`, held to
-  `rvw-pr`'s list by `test_reviewer_tools.py`; a pass with no posting tool returns
-  its findings. Cloud `gh` has no GraphQL, so `rvw-pr`, `fix-pr`, `ship`, `drift`
-  and `mutation` read via REST or MCP. `if:` hooks firing on unparseable commands
-  now re-check them. Trace: [bk-459](traces/bk-459-cloud-github-tools.yml).
-
-- [x] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
-  spec: — · effort: S · audience: library.maintainer, infra.ci
-  Re-deferred 2026-10-18: no catch, and none is reachable, since TLC checks
-  `Observer.tla` against itself and no bridge ties it to `ext/observe.py`.
-  Gating follows the bridge (RFC-0022 Open Question 3); rule 3's cadence
-  trades its amendment count for the first bridge. Successor: **ID-270**. Detail:
-  [dossier](backlog/id-150-verify-tla-revisit.md). Trace:
-  [id-150](traces/id-150-verify-tla-revisit.yml).
-
-- [x] **BK-458 — CI's actionlint runs with `-shellcheck=`, so 31 shellcheck findings in three workflows go unreported**
-  spec: — · effort: S · audience: infra.ci
-  actionlint 1.7.7 with shellcheck 0.11.0 reported 31 findings in `ci.yml`,
-  `drift-guard.yml` and `mutation.yml` (SC2086 18, SC2034 5, SC2015 5, SC2129 3;
-  `actionlint -oneline`); the same patterns sat in the composite action, which
-  actionlint does not lint. Quoted the expansions, grouped the `>> $GITHUB_*`
-  redirects, replaced `cmd && break || sleep` with `if cmd; then break; fi`, and
-  dropped the opt-out. Trace: [bk-458](traces/bk-458-workflow-shellcheck.yml).
+Completed work that left master's code with the revert of
+[RFC-0025](rfcs/rfc-0025-freeze-kernel-line.md) D2 and lives on, unchanged, on
+the branch `frozen/kernel-driver`. Each entry is verbatim from § Unreleased:
+the code, specs and tests it names are on that branch, and no 0.33 release
+ships them.
 
 - [x] **BK-449 — No interaction protocol with states joins `Store`, kernel, driver and `Session`**
   spec: BE-033, BE-020, BE-022, SIO-010, ASYNC-006 · effort: L · audience: library.maintainer, user.api
@@ -397,15 +328,6 @@ if evidence changes; these are retired.
   (timing, read handle), BK-455 (`Session` states), a BK-450 row. Detail:
   [dossier](backlog/bk-449-interaction-protocol-states.md). Trace:
   [bk-449](traces/bk-449-interaction-protocol-states.yml).
-
-- [x] **BUG-336 — pytest-gremlins 1.11.4's coverage pre-scan dies on `filterwarnings = error`, so every gremlin runs its full scope**
-  spec: — · effort: S · audience: infra.ci, contributor.tooling
-  1.11.4 starts the pre-scan via `-m pytest_gremlins.coverage.prescan_main`; pytest finds
-  the plugin imported and warns `PytestAssertRewriteWarning`, fatal here, so the pre-scan
-  exits 1 with no coverage (output discarded; the log shows only "returned no data").
-  Runs 38016030800 to 38989738880, mutate step: backends-ssh 139 to 340 min, 48 survivors to 0.
-  A message-scoped `filterwarnings` ignore; `TestPrescanStartsUnderProjectFilterwarnings`
-  drives the import order. Trace: [bug-336](traces/bug-336-gremlins-prescan-rewrite-warning.yml).
 
 - [x] **BUG-335 — `CI Full Matrix` red on 3.13: the none-read cell leaves its async generator for GC**
   spec: — · effort: S · audience: infra.test
@@ -431,23 +353,6 @@ if evidence changes; these are retired.
   [dossier](backlog/bk-405-ext-glob-fallback-tier-split.md). Trace:
   [bk-405](traces/bk-405-glob-pattern-rule.yml).
 
-- [x] **BUG-298 — `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`**
-  spec: GLOB-014, BE-024 · effort: S · audience: user.api
-  `pattern_to_regex` anchors with `\Z` and compiles with `re.DOTALL`, so no
-  wildcard stops at a newline and none matches past the end. Its callers
-  follow (`git grep 'pattern_to_regex(' -- src/`): `SQLBlobBackend` and
-  `SQLQueryBackend` `glob`, S3 (`_s3_base`, `_s3_boto3`), sync and async
-  Azure, and `ext.glob`; SQLBlob's `LIKE` narrowing drops its trailing-newline
-  alternative (SQL-BLOB-033). Spec 018 GLOB-014. Trace:
-  [bk-405](traces/bk-405-glob-pattern-rule.yml).
-
-- [x] **BK-444 — Three repo traps cost sessions retries that a check would catch before commit**
-  spec: — · effort: S · audience: contributor.tooling, internal.style
-  `scripts/check_repo_traps.py`, in `lint` and `docs-gate`, refuses 24 invisible code points in
-  the UTF-8 files git lists, outside `sdd/decisions/` and the paths git marks `binary`, a `write_text` under `scripts/` without an LF-writing `newline=`, and a bare hatch alias
-  dropping `{args}` for a script that takes options. It fixed what it found: 3 invisible characters
-  on 2 lines, 14 calls and 10 aliases. Pinned by `tests/scripts/test_check_repo_traps.py`.
-  Detail: [dossier](backlog/bk-444-repo-traps-lint.md). Trace: [bk-444](traces/bk-444-repo-traps-lint.yml).
 - [x] **BUG-329 — Metadata that is not a mapping, passed straight to a kernel class, fails inside `put` or is stored as a dict**
   spec: WR-010, BE-030, MEM-020 · effort: S · audience: user.api
   `metadata` that is neither `None` nor a `Mapping`, a falsy one included, is a
@@ -456,12 +361,6 @@ if evidence changes; these are retired.
   which `AsyncStore` and `ext.write` share. Breaking for `Store`, which took
   `[]`, `0` or `""` for no metadata; the migration guide's v0.33.0 to v1.0.0
   section says so. Spec 003 BE-030, 045 WR-011, 013 MEM-020. Co-shipped: BUG-330, BUG-331, BUG-333. Trace:
-  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
-
-- [x] **BUG-330 — A sync stream read answering `None` through `AsyncBackendSyncAdapter` stores a truncated file**
-  spec: BE-030, ASYNC-091 · effort: S · audience: user.api
-  The adapter's stream bridge raises `TypeError` on a `None` read instead of
-  ending the upload, on `write` and `write_atomic`. Spec 029 ASYNC-091. Trace:
   [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
 
 - [x] **BUG-331 — A kernel driver that reads content with one unsized `read()` stores a truncated file from a non-blocking stream**
@@ -481,29 +380,6 @@ if evidence changes; these are retired.
   3.13), and as v0.33.0's `MemoryBackend` `BytesIO` did. Spec 003 BE-030, 013
   MEM-020. Trace:
   [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
-
-- [x] **BUG-332 — `gen_backlogid.py --help` regenerates `sdd/backlogid.json` instead of printing usage**
-  spec: — · effort: S · audience: contributor.tooling
-  `main()` parses with argparse: `--help` prints usage and an unknown argument, a prefix
-  such as `--che` included, exits 2, both before anything is written. Generate mode prints
-  "Updated" only when the content changed and "is current" otherwise. Pinned by `TestMain` and `TestGenerate` in
-  `tests/scripts/test_gen_backlogid.py`. Trace: [bug-332](traces/bug-332-gen-backlogid-help.yml).
-
-- [x] **BK-431 — Review subagents pay the session prefix again, and no smaller reviewer input is tested**
-  spec: — · effort: M · audience: contributor.process, contributor.tooling
-  Kept. `/ship`'s passes run as the `reviewer` agent unless a persona staffs
-  the lens, and `rvw-pr` keeps its measuring and posting rules in
-  `measuring.md` and `posting.md`, which a non-measuring, analyze-only pass
-  skips (#1125, with [ADR-0046](adrs/0046-review-tools-come-from-the-agent.md)).
-  On BK-389, its RFC-0021 detour and BK-394, all 82 passes ran as `reviewer`
-  and opened at 19.5k to 34.6k tokens against run B's 42.9k to 43.9k, and the
-  session prefix fell from 40.6% of a run B pass's context to 16 to 32%
-  ([§ 6](research/research-token-spend-kernel-deliveries.md#6-what-this-changes)).
-  Passes did not get cheaper, because the PR's own files took the room, and
-  with no A run the defects shipped are not compared. ADR-0036's persona
-  staffing is unchanged. Traces:
-  [bk-431](traces/bk-431-scoped-reviewer-input.yml),
-  [bk-431 subagents](traces/bk-431-tokkit-subagents.yml).
 
 - [x] **BK-441 — A driver that omits a required primitive inherits the protocol's empty body, so the call silently does nothing**
   spec: BE-021, BE-030 · effort: S · audience: user.api_docs, library.maintainer
@@ -558,40 +434,6 @@ if evidence changes; these are retired.
   Trace: [bk-394](traces/bk-394-memory-drivers-accept-adr-0042.yml). Detail:
   [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md).
 
-- [x] **BK-398 — Three round-trip clauses promise `to_key(native_path(k)) == k` verbatim, which `GraphBackend` already breaks**
-  spec: NPR-005, NPR-020, BE-029 · effort: S · audience: contributor.process, user.api_docs
-  NPR-005, NPR-020 and BE-029 § Round-trip consequence now take BE-025's
-  non-canonical exception: a non-canonical key's address inverts to its
-  canonical key, as `GraphBackend` and, with BK-394 in the same PR, both
-  Memory classes answer. Trace:
-  [bk-394](traces/bk-394-memory-drivers-accept-adr-0042.yml).
-
-- [x] **BUG-326 — `ship-report` crashes on Windows when a PR comment holds a character cp1252 cannot decode**
-  spec: — · effort: S · audience: contributor.tooling
-  `_gh` and `_git` in `sdd/rfcs/rfc-0015-findings.py`, and `ship_report.py`'s own
-  `_gh_one`, ran `subprocess.run(..., text=True)` with no `encoding`, so on Windows
-  `gh` output was decoded as cp1252: on PR #1130 a byte 0x81 left `.stdout` `None`
-  and `json.loads` raised `TypeError`. All three now go through one `_run` that
-  decodes UTF-8 with `errors="replace"`, because a strict failure in Windows'
-  reader thread surfaces only as that `TypeError`. Review found the output side:
-  a piped stdout is cp1252 and strict, so a title outside it raised
-  `UnicodeEncodeError`; `main` now writes UTF-8. Tests, seen failing first:
-  `tests/scripts/test_rfc_0015_findings.py` `TestSubprocessDecoding`,
-  `tests/scripts/test_ship_report.py` `TestGhOneDecoding` and
-  `TestMain::test_a_cp1252_stdout_gets_the_report_as_utf8`. Trace:
-  [bug-326](traces/bug-326-ship-report-utf8.yml).
-
-- [x] **BK-437 — Spec 051's sections are restated in Alloy and Lean with no traceability check between them**
-  spec: TREE-001 -- TREE-012 · effort: S · audience: contributor.tooling, infra.ci, user.discoverability.human
-  `StoreAxioms.als` and `StoreAxioms.lean` carry `-- @spec TREE-n` tags and a
-  `-- @restates` line; `check_formal_trace.py` fails on a tag citing no section,
-  a restated section left untagged, an unknown restated spec, or a file with
-  no `@restates` line, and joins
-  `docs-gate` so an `.als`- or `.lean`-only diff reaches it. Running the solvers
-  in CI stays out (`formal/README.md` § Running the verifier). `README.md`'s
-  Quality & Testing now names the axioms and the Alloy and Lean checks. Trace:
-  [bk-437](traces/bk-437-formal-restatement-tags.yml).
-
 - [x] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
   spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, BE-030, BE-031, BE-032, ERR-001, ERR-009, DEPTH-003, PING-002 · effort: L · audience: library.maintainer, infra.test
   The contract kernel, private under `src/remote_store/_kernel/`: the async
@@ -623,6 +465,190 @@ if evidence changes; these are retired.
   folder aggregate, and logged; it stays reachable through addressing and
   `unwrap()`. BE-030 states it; BK-389's dossier, decision 6, records it.
   Reaches users when a class migrates (BK-394 for Memory).
+
+---
+
+## Unreleased
+
+- [x] **BK-486 — The decision log records session chores, so every commit needs a hand cleanup**
+  spec: — · effort: M · audience: contributor.process, contributor.tooling
+  Chores and post-cleanup master questions reached `sdd/decisions/` and were
+  stripped by hand. A dialog tagged `metadata.source: "housekeeping"` is skipped
+  (the tag reaches Pre only, so Post is dropped by `tool_use_id`); a base-branch
+  or detached event (not one during a rebase, nor one whose branch git could not
+  read) waits in the ignored `sdd/decisions/.pending/` until the
+  session commits on a work branch, then a `promoted` line binds
+  the moved lines to that branch (D4.0, read in line order). RFC-0018 D1, D2,
+  D3 and D4.0 amended. Follow-up: the commit and push gates moved from Claude
+  hooks, whose `if:` prefix match never fired on `git -C <path> commit`, into
+  git's own `.githooks/pre-commit` and `pre-push`, which git runs in the
+  repository it commits to; `--no-verify` is denied.
+  Traces: [bk-486](traces/bk-486-decision-log-chores.yml),
+  [gate `-C`](traces/bk-486-gate-git-c.yml).
+
+- [x] **BK-481 — `/rvw-pr` cannot post where no GitHub MCP server is connected, though `gh` can**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  A local `/rvw-pr 1173` returned six findings unposted: no MCP server here, and
+  Step 4 forbade `gh`. MCP stays first; without it the pass posts `gh`'s REST
+  review call with its JSON on stdin from a quoted heredoc, so the read-only
+  reviewer needs no temp file and a body is never shell-expanded or rewritten
+  by `-F`. Probed on #1173 and #1174, probes deleted. Trace:
+  [bk-481](traces/bk-481-rvw-pr-gh-post.yml).
+
+- [x] **BK-464 — No review pass checks that a durable doc says one thing, first, in its own place**
+  spec: — · effort: XS · audience: contributor.process
+  A three-line last pass (Rules 7, 2, 4 and principle 8) found on PR #1166 what three
+  external reviews and a scoped reviewer pass missed: ADR-0048 restating SPEC-DESIGN, SPEC-DESIGN Rule 4 leading
+  late. Now `CONTENT-RULES.md` § Last pass, run by `/rvw-pr`'s content-rules check.
+  Trace: [bk-464](traces/bk-464-three-line-last-pass.yml).
+
+- [x] **BK-457 — No rule says what a spec owes, where it ends, which form it takes, or which layer governs it**
+  spec: — · effort: L · audience: contributor.process, library.maintainer
+  RFC-0022 accepted 2026-10-19 with its open questions answered; decisions in ADR-0048,
+  rules in the new review-enforced authority doc `sdd/SPEC-DESIGN.md`. `000-process.md`
+  Rules 3 and 7, § Spec format and the spec template, `formal/README.md` rule 3 and its
+  layer table follow it. Follow-ups: BK-456, BK-460, BK-461, BK-462, BK-463. Dossier:
+  [BK-457](backlog/bk-457-declarative-spec-adr.md). Traces:
+  [rfc](traces/bk-457-spec-design-rfc.yml), [adr](traces/bk-457-spec-design-adr.yml).
+
+- [x] **BUG-337 — Spec 003 contradicts itself on a move onto an existing file and on the write precondition order**
+  spec: BE-008, BE-010, BE-018, BE-021 · effort: S · audience: library.maintainer
+  Spec-only, in `003-backend-adapter-contract.md`: BE-021's table moves the `move`/`copy` destination to
+  the file-operation row and names a destination file as BE-018's `AlreadyExists`; BE-008's order
+  now opens with the closed guard, and its WR-010 gate binds only where a class runs it (its
+  placement after the root left with RFC-0025's revert, since v0.33.0's Dafny `Write` ranks the
+  gate after the type and overwrite checks; Graph: BUG-339); BE-010,
+  ASYNC-008 and spec 044 link to it; BE-018/BE-019 carry BE-021's destination scope; BE-028 says
+  "operating system". Dossier: [BUG-337](backlog/bug-337-spec-003-contradictions.md). Trace:
+  [bug-337](traces/bug-337-spec-003-contradictions.yml).
+
+- [x] **BUG-338 — The docs site's RFC and ADR indexes print one status per kind, so every RFC reads "Proposed"**
+  spec: DOCFRAME-010 · effort: S · audience: user.site, contributor.tooling, contributor.process
+  `_index_row` printed `_path_rules.yml`'s per-kind constant: all 22 RFCs "Proposed",
+  ADR-0006/0016/0019/0032 "Accepted" though Superseded. The cell is now each document's
+  own status (ADRs via `gen_adr_digest.py`'s parser), `—` when absent; `check_sdd_index.py`
+  R3 fails a status kind's document with none in vocabulary. RFC-0003/0011/0013/0014 read
+  "Implemented" and now "Accepted"; the Research and RFC index intros were reworded.
+  Trace: [bug-338](traces/bug-338-sdd-index-status.yml).
+
+- [x] **BK-459 — The `reviewer` agent names its GitHub tools by the local server's prefix, so a cloud pass cannot post**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  A cloud `/rvw-pr` pass of PR #1162 got `Read, Grep, Glob, Bash` only: the
+  `mcp__MCP_DOCKER__*` entries dropped silently and no `ToolSearch` was granted.
+  `reviewer.md` now lists each tool under both prefixes plus `ToolSearch`, held to
+  `rvw-pr`'s list by `test_reviewer_tools.py`; a pass with no posting tool returns
+  its findings. Cloud `gh` has no GraphQL, so `rvw-pr`, `fix-pr`, `ship`, `drift`
+  and `mutation` read via REST or MCP. `if:` hooks firing on unparseable commands
+  now re-check them. Trace: [bk-459](traces/bk-459-cloud-github-tools.yml).
+
+- [x] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
+  spec: — · effort: S · audience: library.maintainer, infra.ci
+  Re-deferred 2026-10-18: no catch, and none is reachable, since TLC checks
+  `Observer.tla` against itself and no bridge ties it to `ext/observe.py`.
+  Gating follows the bridge (RFC-0022 Open Question 3); rule 3's cadence
+  trades its amendment count for the first bridge. Successor: **ID-270**. Detail:
+  [dossier](backlog/id-150-verify-tla-revisit.md). Trace:
+  [id-150](traces/id-150-verify-tla-revisit.yml).
+
+- [x] **BK-458 — CI's actionlint runs with `-shellcheck=`, so 31 shellcheck findings in three workflows go unreported**
+  spec: — · effort: S · audience: infra.ci
+  actionlint 1.7.7 with shellcheck 0.11.0 reported 31 findings in `ci.yml`,
+  `drift-guard.yml` and `mutation.yml` (SC2086 18, SC2034 5, SC2015 5, SC2129 3;
+  `actionlint -oneline`); the same patterns sat in the composite action, which
+  actionlint does not lint. Quoted the expansions, grouped the `>> $GITHUB_*`
+  redirects, replaced `cmd && break || sleep` with `if cmd; then break; fi`, and
+  dropped the opt-out. Trace: [bk-458](traces/bk-458-workflow-shellcheck.yml).
+
+- [x] **BUG-336 — pytest-gremlins 1.11.4's coverage pre-scan dies on `filterwarnings = error`, so every gremlin runs its full scope**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  1.11.4 starts the pre-scan via `-m pytest_gremlins.coverage.prescan_main`; pytest finds
+  the plugin imported and warns `PytestAssertRewriteWarning`, fatal here, so the pre-scan
+  exits 1 with no coverage (output discarded; the log shows only "returned no data").
+  Runs 38016030800 to 38989738880, mutate step: backends-ssh 139 to 340 min, 48 survivors to 0.
+  A message-scoped `filterwarnings` ignore; `TestPrescanStartsUnderProjectFilterwarnings`
+  drives the import order. Trace: [bug-336](traces/bug-336-gremlins-prescan-rewrite-warning.yml).
+
+- [x] **BUG-298 — `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`**
+  spec: GLOB-014, BE-024 · effort: S · audience: user.api
+  `pattern_to_regex` anchors with `\Z` and compiles with `re.DOTALL`, so no
+  wildcard stops at a newline and none matches past the end. Its callers
+  follow (`git grep 'pattern_to_regex(' -- src/`): `SQLBlobBackend` and
+  `SQLQueryBackend` `glob`, S3 (`_s3_base`, `_s3_boto3`), sync and async
+  Azure, and `ext.glob`; SQLBlob's `LIKE` narrowing drops its trailing-newline
+  alternative (SQL-BLOB-033). Spec 018 GLOB-014. Trace:
+  [bk-405](traces/bk-405-glob-pattern-rule.yml).
+
+- [x] **BK-444 — Three repo traps cost sessions retries that a check would catch before commit**
+  spec: — · effort: S · audience: contributor.tooling, internal.style
+  `scripts/check_repo_traps.py`, in `lint` and `docs-gate`, refuses 24 invisible code points in
+  the UTF-8 files git lists, outside `sdd/decisions/` and the paths git marks `binary`, a `write_text` under `scripts/` without an LF-writing `newline=`, and a bare hatch alias
+  dropping `{args}` for a script that takes options. It fixed what it found: 3 invisible characters
+  on 2 lines, 14 calls and 10 aliases. Pinned by `tests/scripts/test_check_repo_traps.py`.
+  Detail: [dossier](backlog/bk-444-repo-traps-lint.md). Trace: [bk-444](traces/bk-444-repo-traps-lint.yml).
+
+- [x] **BUG-330 — A sync stream read answering `None` through `AsyncBackendSyncAdapter` stores a truncated file**
+  spec: ASYNC-091 · effort: S · audience: user.api
+  The adapter's stream bridge raises `TypeError` on a `None` read instead of
+  ending the upload, on `write` and `write_atomic`. Spec 029 ASYNC-091. Trace:
+  [bug-329](traces/bug-329-content-and-metadata-shapes.yml).
+
+- [x] **BUG-332 — `gen_backlogid.py --help` regenerates `sdd/backlogid.json` instead of printing usage**
+  spec: — · effort: S · audience: contributor.tooling
+  `main()` parses with argparse: `--help` prints usage and an unknown argument, a prefix
+  such as `--che` included, exits 2, both before anything is written. Generate mode prints
+  "Updated" only when the content changed and "is current" otherwise. Pinned by `TestMain` and `TestGenerate` in
+  `tests/scripts/test_gen_backlogid.py`. Trace: [bug-332](traces/bug-332-gen-backlogid-help.yml).
+
+- [x] **BK-431 — Review subagents pay the session prefix again, and no smaller reviewer input is tested**
+  spec: — · effort: M · audience: contributor.process, contributor.tooling
+  Kept. `/ship`'s passes run as the `reviewer` agent unless a persona staffs
+  the lens, and `rvw-pr` keeps its measuring and posting rules in
+  `measuring.md` and `posting.md`, which a non-measuring, analyze-only pass
+  skips (#1125, with [ADR-0046](adrs/0046-review-tools-come-from-the-agent.md)).
+  On BK-389, its RFC-0021 detour and BK-394, all 82 passes ran as `reviewer`
+  and opened at 19.5k to 34.6k tokens against run B's 42.9k to 43.9k, and the
+  session prefix fell from 40.6% of a run B pass's context to 16 to 32%
+  ([§ 6](research/research-token-spend-kernel-deliveries.md#6-what-this-changes)).
+  Passes did not get cheaper, because the PR's own files took the room, and
+  with no A run the defects shipped are not compared. ADR-0036's persona
+  staffing is unchanged. Traces:
+  [bk-431](traces/bk-431-scoped-reviewer-input.yml),
+  [bk-431 subagents](traces/bk-431-tokkit-subagents.yml).
+
+- [x] **BK-398 — Three round-trip clauses promise `to_key(native_path(k)) == k` verbatim, which `GraphBackend` already breaks**
+  spec: NPR-005, NPR-020, BE-029 · effort: S · audience: contributor.process, user.api_docs
+  NPR-005, NPR-020 and BE-029 § Round-trip consequence now take BE-025's
+  non-canonical exception: a non-canonical key's address inverts to its
+  canonical key, as `GraphBackend` answers; the spec edits name Graph alone.
+  (Both Memory classes answered it too with BK-394, shipped in the same PR
+  and frozen by RFC-0025.) Trace:
+  [bk-394](traces/bk-394-memory-drivers-accept-adr-0042.yml).
+
+- [x] **BUG-326 — `ship-report` crashes on Windows when a PR comment holds a character cp1252 cannot decode**
+  spec: — · effort: S · audience: contributor.tooling
+  `_gh` and `_git` in `sdd/rfcs/rfc-0015-findings.py`, and `ship_report.py`'s own
+  `_gh_one`, ran `subprocess.run(..., text=True)` with no `encoding`, so on Windows
+  `gh` output was decoded as cp1252: on PR #1130 a byte 0x81 left `.stdout` `None`
+  and `json.loads` raised `TypeError`. All three now go through one `_run` that
+  decodes UTF-8 with `errors="replace"`, because a strict failure in Windows'
+  reader thread surfaces only as that `TypeError`. Review found the output side:
+  a piped stdout is cp1252 and strict, so a title outside it raised
+  `UnicodeEncodeError`; `main` now writes UTF-8. Tests, seen failing first:
+  `tests/scripts/test_rfc_0015_findings.py` `TestSubprocessDecoding`,
+  `tests/scripts/test_ship_report.py` `TestGhOneDecoding` and
+  `TestMain::test_a_cp1252_stdout_gets_the_report_as_utf8`. Trace:
+  [bug-326](traces/bug-326-ship-report-utf8.yml).
+
+- [x] **BK-437 — Spec 051's sections are restated in Alloy and Lean with no traceability check between them**
+  spec: TREE-001 -- TREE-012 · effort: S · audience: contributor.tooling, infra.ci, user.discoverability.human
+  `StoreAxioms.als` and `StoreAxioms.lean` carry `-- @spec TREE-n` tags and a
+  `-- @restates` line; `check_formal_trace.py` fails on a tag citing no section,
+  a restated section left untagged, an unknown restated spec, or a file with
+  no `@restates` line, and joins
+  `docs-gate` so an `.als`- or `.lean`-only diff reaches it. Running the solvers
+  in CI stays out (`formal/README.md` § Running the verifier). `README.md`'s
+  Quality & Testing now names the axioms and the Alloy and Lean checks. Trace:
+  [bk-437](traces/bk-437-formal-restatement-tags.yml).
 
 - [x] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**
   spec: — · effort: S · audience: contributor.process, infra.test

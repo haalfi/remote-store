@@ -10,6 +10,11 @@ recorded in `sdd/decisions/ad497154-50c4-54f3-9b47-d86d1878741d.jsonl` ("Where
 is the refusal-timing rule implemented?": "With the handle item (Rec.)"). That
 section's table is the measurement; this dossier does not copy it.
 *Corrected 2026-10-20 (BK-456): the table left spec 003 and is under § Moved out of spec 003 below.*
+*Re-scoped 2026-10-25 ([RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md)): BE-033 and the
+kernel classes left master, so the table's two kernel rows and the fake-driver cells are
+frozen with them; the item is the `Store` and `AsyncStore` rows. Re-measured on v0.33.0's
+Memory for a missing file: `Store(MemoryBackend()).read` raises `NotFound` at the call,
+`AsyncStore(AsyncMemoryBackend()).read` at the first `__anext__`.*
 
 **How the table was measured.** Each cell called the member and recorded
 whether the refusal raised at the call or at the first `next`/`__anext__`

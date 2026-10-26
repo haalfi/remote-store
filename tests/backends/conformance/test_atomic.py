@@ -123,18 +123,6 @@ class TestBackendOpenAtomic:
             f.write(b"streaming atomic")
         assert backend.read_bytes("oat.txt") == b"streaming atomic"
 
-    @pytest.mark.spec("SAW-013")
-    def test_open_atomic_yields_a_file_that_tells_its_position(self, backend: Backend) -> None:
-        # Every route (a wire temporary, a spool, a local temp file) must answer
-        # tell(); a writer recording offsets (zipfile, tarfile) depends on it.
-        with backend.open_atomic("oat_tell.txt") as f:
-            assert f.tell() == 0
-            f.write(b"hello")
-            assert f.tell() == 5
-            f.write(b"!")
-            assert f.tell() == 6
-        assert backend.read_bytes("oat_tell.txt") == b"hello!"
-
     @pytest.mark.spec("SAW-006")
     def test_open_atomic_overwrite(self, backend: Backend) -> None:
         backend.write("oat2.txt", b"first")

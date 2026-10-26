@@ -257,30 +257,3 @@ class TestOpenAtomicWithHash:
 
         assert captured
         assert getattr(captured[0], "result", None) is None
-
-
-_NOT_A_MAPPING = [[], 0, "", [("k", "v")]]
-
-
-@pytest.mark.spec("WR-011")
-@pytest.mark.parametrize("value", _NOT_A_MAPPING, ids=repr)
-def test_write_with_hash_refuses_metadata_that_is_not_a_mapping(store: Store, value: object) -> None:
-    from remote_store.ext.write import write_with_hash
-
-    with pytest.raises(ValueError, match="must be a mapping"):
-        write_with_hash(store, "f.bin", b"x", metadata=value)  # type: ignore[arg-type]
-    assert not store.exists("f.bin")
-
-
-@pytest.mark.spec("WR-011")
-@pytest.mark.parametrize("value", _NOT_A_MAPPING, ids=repr)
-def test_open_atomic_with_hash_refuses_metadata_that_is_not_a_mapping(store: Store, value: object) -> None:
-    # A falsy one used to take the no-metadata branch and write the file.
-    from remote_store.ext.write import open_atomic_with_hash
-
-    with (
-        pytest.raises(ValueError, match="must be a mapping"),
-        open_atomic_with_hash(store, "f.bin", metadata=value) as writer,  # type: ignore[arg-type]
-    ):
-        writer.write(b"x")
-    assert not store.exists("f.bin")

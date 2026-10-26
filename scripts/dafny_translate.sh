@@ -1,8 +1,7 @@
 #!/bin/bash
 # Translate Dafny formal specs to Python via Docker (dotnet/sdk + dafny release).
 # Usage: bash scripts/dafny_translate.sh [file.dfy ...]
-# No args = translate every file with a committed oracle: the default FILES
-# list below, MemoryBackend.dfy and KernelProtocol.dfy.
+# No args = translate MemoryBackend.dfy (the one with a committed oracle).
 #
 # For each <stem>.dfy, writes sdd/formal/<stem>-py/ with the compiled oracle
 # plus the Dafny Python runtime (_dafny/, System_/), then applies the class
@@ -13,9 +12,8 @@
 # inspect its output.  Every file MemoryBackend.dfy includes, directly or not,
 # still compiles into its oracle (sdd/formal/README.md § Compiled oracle), so a
 # non-ghost edit to any of them needs this script rerun.
-# scripts/check_dafny_oracle_fresh.py reads this file's default `FILES=(...)`,
-# `cp /work/...` and `dafny build` lines; keep them in the grammar its
-# docstring states.
+# scripts/check_dafny_oracle_fresh.py reads this file's `cp /work/...` and
+# `dafny build` lines; keep them in the grammar its docstring states.
 #
 # Requires Docker Desktop running.  Uses the same SDK image and Dafny release
 # as scripts/dafny_verify.sh so the SHA256 pin stays in one place per release.
@@ -30,7 +28,7 @@ IMAGE=mcr.microsoft.com/dotnet/sdk:8.0
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 if [ $# -eq 0 ]; then
-  FILES=(MemoryBackend.dfy KernelProtocol.dfy)
+  FILES=(MemoryBackend.dfy)
 else
   FILES=("$@")
 fi

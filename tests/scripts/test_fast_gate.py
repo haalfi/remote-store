@@ -210,12 +210,6 @@ def test_dafny_oracle_changes_select_its_conformance_cells_and_tests(repo, path:
     assert "tests/backends/dafny/" in sel.targets
 
 
-def test_kernel_protocol_oracle_changes_select_its_oracle_suite(repo) -> None:
-    sel = _select(repo, "sdd/formal/KernelProtocol-py/KernelProtocol.py")
-    assert not sel.full
-    assert "tests/_kernel/test_protocol_oracle.py" in sel.targets
-
-
 def test_step_order_is_alls_member_order() -> None:
     scripts = tomllib.loads((_SCRIPT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
     members = scripts["tool"]["hatch"]["envs"]["default"]["scripts"]["all"]

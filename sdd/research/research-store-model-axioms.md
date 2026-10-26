@@ -531,7 +531,7 @@ ordinary mathematical prose ([PDF](../formal/tex/store-axioms.pdf)), with a
 section on what the Alloy checks add. It is an exposition, not
 machine-checked: the Lean file stays the authority for the proofs.
 
-**Relation to existing formal work.** [`sdd/formal/StoreTree.dfy`](../formal/StoreTree.dfy) §1 models the
+**Relation to existing formal work.** [`sdd/formal/StoreTree.dfy`](https://github.com/haalfi/remote-store/blob/frozen/kernel-driver/sdd/formal/StoreTree.dfy) §1 models the
 store as `Tree = map<Key, Kind>` with `Key = seq<Name>`, requiring the root
 to be a folder and every proper prefix of a node's key to be a folder. That
 reads as the keys-as-words presentation of §4's trie view, with L6 as the
