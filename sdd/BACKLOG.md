@@ -581,7 +581,7 @@ no clause of the contract ships unexercised.
 copies an example, without opening an issue.
 
 - [ ] **BK-480 — No API lets a caller set or read a store's separator set and acceptance language**
-  spec: KEY-007, KEY-008, KEY-009 · effort: S · audience: user.api, user.api_docs
+  spec: KEY-008, KEY-009 · effort: S · audience: user.api, user.api_docs
   Spec 052 makes the `\` opt-out and the portability opt-in store settings a caller can observe
   (KEY-008, KEY-009), and defines the portable language by `PORTABLE_KEY`; no type or method
   carries either, so a caller has only the spec text. Class F (RFC-0024 § R3): decided in the API's
@@ -736,12 +736,19 @@ or paying for our shortcut.
 give them a way to absorb.
 
 - [ ] **BK-469 — Spec 052 has not been compared with 0.33, so the key layer's breaks have no record**
-  spec: KEY-002 -- KEY-006 · effort: M · audience: user.api, library.maintainer
+  spec: KEY-002 -- KEY-005, KEY-008, KEY-A-02 · effort: M · audience: user.api, library.maintainer
   RFC-0024 D8's pass for the key layer. Known differences: 0.33 refuses every `..` (PATH-003) where
   ν climbs; at `7491289` `Store` took `"\ud800"` (Memory stored it, Local leaked `UnicodeEncodeError`)
   and Local leaked `OSError` [Errno 36] for a 300-character name; on windows-latest at `74271f9c4`
   Local stored `a `, `a.`, `d/x. ` and `a./b` under stripped names. Each becomes a `sdd/v1-breaks.md`
   row or a 0.33 defect, read from `release/0.33.x`'s suite. Open decision: none.
+
+- [ ] **BK-490 — The key model's decisions on the root, parents and child stores have no flow, so 0.33's sections stand**
+  spec: PATH-010, PATH-015, CHILD-001, CHILD-003, ERR-003, ERR-005 · effort: M · audience: user.api, library.maintainer
+  `research-key-model.md` § 10 decides that parent(`a`) is ε (PATH-010 has none), the root's name is
+  ε with no segments (PATH-015: `.`, `(".",)`), a child at ε is the store (CHILD-001 rejects it), a
+  subpath's `..` climbs (CHILD-003 refuses it), and ERR-005 and ERR-003 widen. Spec 052 leaves each to
+  the API's or the operation's spec, which no flow has written. Open decision: none; each flow takes its own.
 
 - [ ] **BK-409 — Python 3.15 is due 2026-10-09 and no spelling of the supported set names it**
   spec: — · effort: M · audience: user.api, infra.ci, contributor.tooling
@@ -907,6 +914,13 @@ CHANGELOG the release body is built from — say what is actually true.
   finds nothing, and AUTHORING's placement table has no such type. Every BK-456 prune
   relocates mechanism (audit 024 § 2). Open decision: a placement for design notes, or
   Rule 1 drops the option and names ADRs and the custom-backend guide.
+
+- [ ] **BK-491 — `SPEC-DESIGN.md` Rule 5 asks for a capability or driver flag where RFC-0024 D6 puts a profile table**
+  spec: — · effort: S · audience: contributor.process
+  Rule 5 states a per-backend behaviour as a profile "declared by a capability or a driver flag";
+  D6 records each backend's cells in a table beside the spec, as spec 052's profile table does, and
+  R4 says `SPEC-DESIGN.md` binds every v1 spec. A reviewer applying Rule 5 flags the table (PR
+  #1171's review). Open decision: the format RFC amends Rule 5 to admit D6's table, or D6 yields.
 
 - [~] **BK-456 — Spec 003 is too long to keep free of contradictions, so it is split**
   spec: BE-001 -- BE-029, CAP-001 -- CAP-007 · effort: M · audience: library.maintainer

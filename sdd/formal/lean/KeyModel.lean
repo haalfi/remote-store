@@ -13,7 +13,7 @@ Positions are lists of names; the walk keeps its stack reversed (head = last
 name). A refusal is `none`. Inputs are lists over the alphabet α, so a
 surrogate (KEY-002), which is outside Σ, is not an input here; that arm is the
 reference model's (`tests/test_store_key_model.py`). The acceptance language
-is a parameter (`Cfg.tier`), so KEY-006 to KEY-008's bounds on it are stated
+is a parameter (`Cfg.tier`), so KEY-008 and KEY-A-02's bounds on it are stated
 by the spec and checked by the reference model, not here.
 -/
 
@@ -38,11 +38,9 @@ structure Sym (α : Type) where
 
 /-- A store's configuration: whether `\` ∈ Sep_S (§ 3.3), and its acceptance
 language as a predicate on the composed position (§ 3.2 tiers, § 3.6). -/
--- @spec KEY-006
--- @spec KEY-007
 -- @spec KEY-008
 -- @spec KEY-009
--- @spec KEY-A-01
+-- @spec KEY-A-02
 structure Cfg (α : Type) where
   bsSep : Bool
   tier : List (List α) → Bool

@@ -10,9 +10,9 @@ navigate and an escape above the root is refused; it accepts only where the
 walk ends, against a language the backend can hold unchanged.
 
 Scope: the reduction ν, the equivalence it decides, the languages it accepts
-against, and resolution Ω. Every clause is a function: of the input and the
-configuration for ν, of the Key and one state for Ω. Out of scope, each with
-its owner:
+against, and resolution Ω. Every section is a function: of the input and the
+configuration for ν, of the Key and one state for Ω; what the spec relies on
+from a backend is its one assumption. Out of scope, each with its owner:
 
 - Which operations accept the root, and which error or result an outcome
   becomes: each operation's own spec.
@@ -24,6 +24,9 @@ its owner:
   equality.
 - What a store rooted at a key c reports for an outcome's kⱼ that lies above
   c: the spec of the operation that makes such a store.
+- Which backends hold L_shared, and each backend's L_b: the
+  [profile table](profiles/052-store-key.md) beside this spec, by measurement
+  or a cited authority.
 - How a key is displayed, the root included; `glob` patterns.
 
 **Supersedes** [spec 004](004-path-model.md) PATH-002 to PATH-008.
@@ -38,7 +41,7 @@ items. Names compare exactly (spec 051 § Name equality).
 | --- | --- |
 | Σ | The Unicode scalar values: every code point except the surrogates U+D800 to U+DFFF. |
 | Input | A string of code points passed as a key; it may hold a surrogate. |
-| Examples | Quote inputs literally, except that `␀` stands for U+0000 and `\ud800` for that surrogate; every other `\` is a backslash. |
+| Quoted input | Read literally, except that `␀` stands for U+0000 and `\ud800` for that surrogate; every other `\` is a backslash. |
 | Key string | ε, or one or more names of N joined by `/`: TREE-011's Key shape. L_core is the set of them. |
 | Segments | Of a key string k = s₁/…/sₙ, the names (s₁, …, sₙ); ε has none. kᵢ = s₁/…/sᵢ is its prefix of length i, k₀ = ε. |
 | Sep | The store's separator set: {`/`, `\`} or {`/`} (KEY-009). |
@@ -46,14 +49,15 @@ items. Names compare exactly (spec 051 § Name equality).
 | Position | A finite sequence of names; the empty sequence is the root. |
 | Base c | The key string a reduction starts from: ε for the store itself, or the key string c of a store rooted at c. |
 | L_floor | The key strings none of whose segments holds U+0000 or `\`, or equals `.` or `..`. |
-| L_b | Backend b's language: the key strings b holds, as KEY-006 bounds it; each backend's is in the [profile table](profiles/052-store-key.md). |
-| L_shared | The portable language: ε, and the key strings `PORTABLE_KEY` below fully matches. |
+| L_b | The store's backend language: a prefix-closed subset of L_core, the key strings the store's backend b holds at the store's location. A whole-key limit of b counts the location's own share, so L_b gets what the location leaves of it. KEY-A-02 is what the spec relies on b for. |
+| L_shared | The portable language: ε, and the key strings `PORTABLE_KEY` below fully matches. It is a library policy and names no backend. |
 | L_api | The store's acceptance language (KEY-008). |
 | c · k | The key string whose segments are c's followed by k's; ε · k = k · ε = k. |
 | K(S) | The Keys of S: { Key(x) │ x ∈ U }. |
 | ν_c(p) | The reduction of input p from base c: a key string, or refused (KEY-001). |
 | p ≈ q | p and q are equivalent: neither is refused by KEY-002, neither walk escapes, and both end at the same position. |
 | Ω_S(k) | The resolution of key string k against store S (KEY-013). |
+| Store rooted at c | For c ∈ L_api of a store S: the store that reduces inputs by ν_c and resolves its key string k as Ω_S(c · k), with S's Sep and L_api. At c = ε it is S. |
 
 `PORTABLE_KEY`, in Python `re` syntax, is the definition of L_shared; a name in
 it is a portable name.
@@ -76,8 +80,8 @@ store's state.
 ### KEY-002: Input Refusal
 
 **Invariant:** ν_c(p) is refused when p holds U+0000, a surrogate, or, when
-`\` ∉ Sep, a `\`, wherever it stands in p: `x␀/..` and `\ud800/..` are refused,
-not ε.
+`\` ∉ Sep, a `\`, wherever it stands in p, a segment the walk would drop
+included.
 
 ### KEY-003: The Walk
 
@@ -92,40 +96,18 @@ empty position, one segment at a time:
 
 ### KEY-004: Escape Refusal
 
-**Invariant:** ν_c(p) is refused when the walk of p escapes, and an escape is
-never clamped to the root: `..`, `/..` and `a/../..` are refused from every
-base, and `../b` from base `a` is refused although ν_ε(`a/../b`) = `b`.
+**Invariant:** ν_c(p) is refused when the walk of p escapes, from every base c;
+an escape is never clamped to the root.
 
 ### KEY-005: Acceptance at the End
 
 **Invariant:** For a walk of p that ends at position (s₁, …, sₙ), ν_c(p) is
-s₁/…/sₙ (ε when n = 0) if c · s₁/…/sₙ is in L_api, and refused otherwise; the
-names a walk drops are never judged: ν_ε(`CON/../a`) = ν_ε(`a`).
-
-| Input (Sep = {`/`, `\`}, a tier refusing `CON`) | ν_ε |
-| --- | --- |
-| `a/b`, `a//b`, `/a/b/`, `a/./b`, `a/c/../b`, `a\b`, `a\.\b` | `a/b` |
-| `` (empty), `/`, `.`, `a/..`, `\` | ε |
-| `a..b`, `.hidden` | the input |
-| `CON`, `a/CON` | refused |
-| `A/b` | `A/b`, a key distinct from `a/b` |
+s₁/…/sₙ (ε when n = 0) if c · s₁/…/sₙ is in L_api, and refused otherwise; a
+name the walk drops is never judged.
 
 ---
 
 ## Acceptance
-
-### KEY-006: Backend Language
-
-**Invariant:** L_b ⊆ L_core holds a key string only if b stores every one of
-its names unchanged, judged for each name as the last segment of the prefix
-that ends in it; so L_b is closed under prefixes, and a backend that rewrites a
-name (to a normal form, or by dropping a trailing character) holds none of
-the names it rewrites.
-
-### KEY-007: Portable Floor
-
-**Invariant:** L_shared ⊆ L_floor ∩ L_b for every backend b of the profile
-table, within KEY-A-01.
 
 ### KEY-008: Acceptance Language
 
@@ -181,7 +163,7 @@ exactly one of:
 
 | ID | Assumption |
 | --- | --- |
-| KEY-A-01 | Where a backend holds a store's keys below a location of its own, that location leaves room for a further 255 bytes of key in every limit of L_b that counts the whole key. |
+| KEY-A-02 | The store's backend holds every key string of L_b, and stores each of its names unchanged, judged for each name as the last segment of the prefix that ends in it. |
 
 ## Notes
 
@@ -193,8 +175,8 @@ range over Σ, so KEY-002's surrogate arm is checked by the reference model
 alone.
 
 - **Axioms and lemmas.** KEY-002 to KEY-005, KEY-008 and KEY-009 define ν;
-  KEY-006 and KEY-007 bound its parameters; KEY-001 and KEY-010 to KEY-013
-  follow. KEY-010 is K2 (`nu_fixed_point`), KEY-011 is K3
+  KEY-001 and KEY-010 to KEY-013 follow. KEY-006, KEY-007 and KEY-A-01 are
+  unassigned. KEY-010 is K2 (`nu_fixed_point`), KEY-011 is K3
   (`nu_decides_equiv`), KEY-012 is K6 (`child_compose`) with K4
   (`join_continuation`), and KEY-013's cases are exhaustive by K10
   (`resolution`, `occupied_take`); their disjointness follows from arithmetic
@@ -217,26 +199,41 @@ alone.
   write below an item can succeed: no Key extends an item's Key (K11,
   `item_has_no_extension`). Absent tells "create in place" from
   AbsentAncestor's "create with the missing folders".
-- **A store rooted at c.** It resolves k as S resolves c · k. At a folder c it
-  is a store per spec 051 of its own, the subtree below c (K12, `child_view`);
-  at c = ε it is S. Acceptance runs on c · k (KEY-005), so a whole-key limit
-  can refuse under c a k it accepts alone. A join k ⊕ p = ν_ε(k/p) continues
-  the walk: (k ⊕ p) ⊕ q = k ⊕ (p/q) whenever k ⊕ p is accepted (K4).
+- **A store rooted at c.** It is defined by composition (Terms), so it never
+  disagrees with S about one entity. At a folder c it is a store per spec 051
+  of its own, the subtree below c (K12, `child_view`); at an absent or item c
+  it has none, and every key below its root resolves as AbsentAncestor or
+  BlockedByItem. Acceptance runs on c · k (KEY-005), so a whole-key limit can
+  refuse under c a k it accepts alone. A join k ⊕ p = ν_ε(k/p) continues the
+  walk: (k ⊕ p) ⊕ q = k ⊕ (p/q) whenever k ⊕ p is accepted (K4).
+- **Examples.** The examples behind each section, such as `x␀/..` refused
+  rather than ε, `../b` refused from base `a` although ν_ε(`a/../b`) = `b`,
+  and ν_ε(`CON/../a`) = `a` where `CON` is outside L_b, are cases of the
+  reference model's tests, each marked with its section.
 - **No Unicode normalisation or case folding.** Every name of ν_c(p) is a
   segment of p, code point for code point. A backend with a coarser name
   equality (case-insensitive, normalising) still holds both `A` and `a`; that
   they conflict as siblings is spec 051 § Name equality's, a constraint on the
   state rather than on a key string.
-- **L_shared.** Every portable name is a name of L_floor, and every key in
-  L_shared is its own reduction. `PORTABLE_NAME` excludes a trailing `.` and a
-  space, the endings a backend that strips them would alias, and the device
-  names of Microsoft's "Naming Files, Paths, and Namespaces".
+- **L_shared.** A policy, not a derivation from any set of backends: the
+  names that file systems and object stores in common use keep apart and
+  store unchanged. A portable name is ASCII letters, digits, `.`, `_` and
+  `-`; it starts with a letter or digit, so no tool reads it as hidden or as
+  an option; it ends in neither `.` nor a space, the endings a store that
+  strips them would alias; it is no reserved device name (`CON`, `PRN`,
+  `AUX`, `NUL`, `COM0`–`COM9`, `LPT0`–`LPT9`, alone or before a `.`, after
+  Microsoft's "Naming Files, Paths, and Namespaces"); and a key is at most 255
+  characters. Every portable name is a name of L_floor, and every key in
+  L_shared is its own reduction.
   `sdd/research/bk-468-key-probe/check_portable_regex.py` checks the patterns
-  against that gloss.
-- **Backend tiers as a profile table.** Each backend's L_b is recorded per
-  axis beside this spec, every cell citing its source, rather than as a
-  capability or driver flag ([`SPEC-DESIGN.md` Rule 5](../SPEC-DESIGN.md#profiles-and-assumptions)):
-  how a store shows its language to a caller is the API's spec.
+  against that gloss. Under the opt-in, a key of L_shared outside a store's
+  L_b is accepted and fails at the backend; whether a backend holds L_shared
+  is a row of the profile table.
+- **Backend languages as a profile table.** Each backend's L_b is recorded
+  per axis beside this spec, every cell citing its source
+  ([RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D6). `SPEC-DESIGN.md`
+  Rule 5 asks for a capability or a driver flag instead; how a store shows
+  its language to a caller is the API's spec.
 
 ## Tested against
 

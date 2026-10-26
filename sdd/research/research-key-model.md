@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-21
 **Backlog items:** BK-484 (No key model connects spec 051's Key to the key parameter of `Store`)
-**Status:** Research complete — ready for design decisions. The decisions of § 6 were taken by the maintainer through the interview (2026-10-21); the model is tested by a property-based spike and proved in Lean 4 (§ 10). Next: a spec between spec 051 and spec 004.
+**Status:** Research complete — ready for design decisions. The decisions of § 6 were taken by the maintainer through the interview (2026-10-21); the model is tested by a property-based spike and proved in Lean 4 (§ 10). Specified as [spec 052](../specs/052-store-key.md), which § 9.8 calls spec 054 (its number before RFC-0025 D6).
 
 ---
 
@@ -642,6 +642,10 @@ source named, and each is narrower than the model.
 
 ### 9.8 Spec 054 as proposed (PR #1171, not merged)
 
+*Superseded:* this compares the draft of 2026-10-22. Spec 052, the spec
+that draft became, takes the model's side on the three points below: `..` climbs and only an
+escape is refused, the `\` opt-out is KEY-009, and resolution is KEY-013.
+
 PR #1171 proposes spec 054, "Store Key Specification" (*Read*: its branch,
 2026-10-22). It moves PATH-002 to PATH-007 out of spec 004 and adds KEY-001 to
 KEY-009. It is the spec § 10 recommends, written in parallel, and it agrees on
@@ -723,7 +727,8 @@ realisation of ν, and specs 005, 015 and 053 link to it. The spec settles
 these deltas and open points:
 
 - PATH-003, CHILD-003, ERR-005 (a)'s `..` clause and BE-032 A.2's attribution
-  of the `..` refusal: `..` climbs. Spec 054 as proposed keeps PATH-003 (§ 9.8).
+  of the `..` refusal: `..` climbs. Spec 054 as proposed kept PATH-003 (§ 9.8);
+  spec 052 climbs (KEY-003, KEY-004).
 - BE-032 A.1: resolution's depth (Absent against AbsentAncestor), and its
   naming of spec 004 as the input layer's owner; spec 051's § Layering names
   spec 004 the same way.

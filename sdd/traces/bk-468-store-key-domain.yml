@@ -22,6 +22,8 @@ discovery_followups:
   - BL-012
   - BK-480
   - BK-487
+  - BK-490
+  - BK-491
 expected_ripples:
   - sdd/specs/004-path-model.md
   - sdd/specs/051-store-tree.md
@@ -318,7 +320,38 @@ phases:
           Merged master (conflicts: master's Rule 3 copies supersede this PR's, BACKLOG
           keeps BK-434 and BK-435 absorbed into BK-489, BACKLOG-DONE keeps master's Frozen
           structure, the decision log is the union). Spec 054 and its profile renamed to
-          052 with ; live references renumbered, records left as written; the
+          052 with `git mv`; live references renumbered, records left as written; the
           ground register gains a numbering line mapping old records and a second pointer
           edit, spec 051's Layering now naming spec 052; BK-487 and BK-488 close
+        outcome: ok
+  - id: review
+    name: The maintainer's focused review of spec 052 (nine threads)
+    steps:
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rules 2, 3, 5, 6"
+        read_type: verify
+        extract: >-
+          KEY-006 and KEY-007 had environment witnesses (a backend's behaviour), so
+          KEY-006 became L_b's term plus assumption KEY-A-02 and KEY-007 left the spec;
+          examples left the sections for the tests (Rule 3). Rule 5's capability-or-flag
+          contradicts RFC-0024 D6's profile table, which the spec now cites: BK-491
+        outcome: ok
+      - file: sdd/specs/052-store-key.md
+        section: "Terms (L_shared, L_b), KEY-007, Notes"
+        read_type: verify
+        extract: >-
+          The maintainer ruled that the key spec knows no real backend: L_shared is a
+          policy defined by PORTABLE_KEY with backend-neutral reasons, and which backend
+          holds it is a profile-table row (Windows only with long paths, its folders
+          capped at MAX_PATH - 12; the directory bucket unverified). L_b is net of the
+          store's location, which retires KEY-A-01; a store rooted at c is a definition
+          in Terms, its folder case K12
+        outcome: ok
+      - file: sdd/research/research-key-model.md
+        section: "Status, 9.8, 10"
+        read_type: verify
+        extract: >-
+          Its status and § 9.8 described the 2026-10-22 draft as the spec; annotated as
+          superseded by spec 052. Its § 10 decisions on PATH-010, PATH-015, CHILD-001,
+          CHILD-003, ERR-003 and ERR-005 have no flow yet: BK-490
         outcome: ok

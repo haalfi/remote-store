@@ -3,17 +3,18 @@
 The model is ν, Ω and the acceptance languages written from the spec's
 sections, with spec 051 stores as finite tuples. Evidence of three kinds:
 
-- **Rows from the spec and the research.** KEY-005's table and the
-  counterexamples of ``research-key-model.md`` § 5, each a hand-written case
-  a wrong ν fails.
+- **Rows from the spec and the research.** The examples spec 052's Notes
+  point here and the counterexamples of ``research-key-model.md`` § 5, each
+  a hand-written case a wrong ν fails.
 - **Properties over drawn inputs.** Small token pools (navigation, `\\`,
   U+0000, a surrogate, NFC and NFD spellings, a reserved name) make
   collisions and navigation frequent; each derived section (KEY-010 to
   KEY-013) is checked against a computation that does not call the clause it
   tests where one exists, such as the walk's end position for KEY-011.
-- **The profile table.** KEY-007 draws L_shared keys and runs them through a
-  configuration per column of ``sdd/specs/profiles/052-store-key.md``, so a
-  regex or a table cell that disagree fail here.
+- **The profile table.** Its "Holds L_shared" row is checked by drawing
+  L_shared keys through a configuration per column of
+  ``sdd/specs/profiles/052-store-key.md``, so a regex, a cell and the row
+  that disagree fail here.
 
 Bounds: the model is finite and its backends are stand-ins for the table's
 cells, not the backends; the unbounded proofs are
@@ -24,7 +25,8 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -60,7 +62,7 @@ def _same(s: str) -> str:
 
 @dataclass(frozen=True)
 class Config:
-    """Sep (KEY-009), L_api's choice (KEY-008) and one backend's L_b (KEY-006)."""
+    """Sep (KEY-009), L_api's choice (KEY-008) and one backend's L_b (KEY-A-02)."""
 
     native_backslash: bool = False
     backslash_separator: bool = True
@@ -69,6 +71,7 @@ class Config:
     stored_as_last: Callable[[str], str] = _same  # the name's spelling once stored as a last segment
     name_max: tuple[Callable[[str], int], int] | None = None
     key_max: tuple[Callable[[str], int], int] | None = None
+    folder_max: tuple[Callable[[str], int], int] | None = None  # a proper prefix's limit
 
     def __post_init__(self) -> None:
         if self.native_backslash and not self.backslash_separator:
@@ -104,6 +107,10 @@ def in_l_b(k: str, cfg: Config) -> bool:
         if not cfg.name_ok(s) or cfg.stored_as_last(s) != s:
             return False
         if cfg.name_max is not None and cfg.name_max[0](s) > cfg.name_max[1]:
+            return False
+    if cfg.folder_max is not None:
+        unit, limit = cfg.folder_max
+        if any(unit(prefix(k, i)) > limit for i in range(1, len(segments(k)))):
             return False
     return cfg.key_max is None or cfg.key_max[0](k) <= cfg.key_max[1]
 
@@ -211,6 +218,14 @@ PROFILES = {
         stored_as_last=_windows_stored_as_last,
         name_max=(_utf16, 255),
         key_max=(_utf16, 259),
+        folder_max=(_utf16, 247),
+    ),
+    "local-windows-long-paths": Config(
+        native_backslash=True,
+        name_ok=_windows_name_ok,
+        stored_as_last=_windows_stored_as_last,
+        name_max=(_utf16, 255),
+        key_max=(_utf16, 32766),
     ),
     "s3": Config(key_max=(_bytes, 1024)),
     "s3-directory": Config(name_ok=_s3_directory_name_ok, key_max=(_bytes, 1024)),
@@ -354,7 +369,7 @@ def test_accepted_key_is_in_l_api(p: str, cfg: Config, c: str) -> None:
 # --- Acceptance ---
 
 
-@pytest.mark.spec("KEY-006")
+@pytest.mark.spec("KEY-A-02")
 @pytest.mark.parametrize("p", ["a.", "a./b", "a /b", "d/x. "])
 def test_rewritten_name_refused_at_every_segment(p: str) -> None:
     """A name a backend would store under another spelling is outside L_b at any depth."""
@@ -362,42 +377,73 @@ def test_rewritten_name_refused_at_every_segment(p: str) -> None:
     assert nu(p, PROFILES["local-linux"]) == p.replace("\\", "/")
 
 
-@pytest.mark.spec("KEY-006")
+@pytest.mark.spec("KEY-A-02")
 def test_normal_form_backend() -> None:
     assert nu(NFC_E, NFD_BACKEND) == Refused("accept")
     assert nu(NFD_E, NFD_BACKEND) == NFD_E
 
 
-@pytest.mark.spec("KEY-006")
-@given(raw)
-def test_l_b_is_prefix_closed(p: str) -> None:
-    k = nu(p, PROFILES["local-windows"])
+@pytest.mark.spec("KEY-A-02")
+@given(raw, st.sampled_from(sorted(PROFILES)))
+def test_l_b_is_prefix_closed(p: str, profile: str) -> None:
+    k = nu(p, PROFILES[profile])
     assume(ok(k))
-    assert all(in_l_b(prefix(k, i), PROFILES["local-windows"]) for i in range(len(segments(k)) + 1))
+    assert all(in_l_b(prefix(k, i), PROFILES[profile]) for i in range(len(segments(k)) + 1))
 
 
 portable_names = st.from_regex(r"[A-Za-z0-9](?:[A-Za-z0-9._-]{0,14}[A-Za-z0-9_-])?", fullmatch=True)
 portable_keys = st.lists(portable_names, min_size=1, max_size=20).map("/".join).filter(in_l_shared)
 
+PROFILE_TABLE = Path(__file__).parents[1] / "sdd" / "specs" / "profiles" / "052-store-key.md"
+# The "Holds L_shared" row's columns, in the table's order, as stand-ins; SFTP takes the Linux column.
+HOLDS_L_SHARED = {
+    "memory": "yes",
+    "local-linux": "yes",
+    "local-apfs": "yes",
+    "local-windows": "only with long paths opted in",
+    "s3": "yes",
+    "s3-directory": "unverified",
+    "sftp-openssh-linux": "the server's file system",
+}
 
-@pytest.mark.spec("KEY-007", "KEY-A-01")
-@pytest.mark.parametrize("profile", sorted(PROFILES))
+
+def _within_room(cfg: Config) -> Config:
+    """cfg at a location leaving 255 units of each whole-key limit; a smaller limit stays as it is."""
+
+    def cap(limit: tuple[Callable[[str], int], int] | None) -> tuple[Callable[[str], int], int] | None:
+        return (limit[0], min(limit[1], 255)) if limit else None
+
+    return replace(cfg, key_max=cap(cfg.key_max), folder_max=cap(cfg.folder_max))
+
+
+def test_holds_l_shared_row_matches_the_table() -> None:
+    rows = [
+        line for line in PROFILE_TABLE.read_text(encoding="utf-8").splitlines() if line.startswith("| Holds L_shared")
+    ]
+    row = rows[-1]  # the first is the axis's own row in the Axes table
+    cells = [c.strip() for c in row.strip("|").split("|")][1:]
+    assert len(cells) == len(HOLDS_L_SHARED)
+    for cell, want in zip(cells, HOLDS_L_SHARED.values(), strict=True):
+        assert cell.startswith(want), (cell, want)
+
+
+@pytest.mark.parametrize(
+    "profile", ["memory", "local-linux", "local-apfs", "local-windows-long-paths", "s3", "sftp-openssh-linux"]
+)
 @given(k=portable_keys)
-def test_portable_keys_held_by_every_profile(profile: str, k: str) -> None:
-    """Within KEY-A-01's 255 bytes, each table column holds every L_shared key."""
-    cfg = PROFILES[profile]
-    room = Config(
-        native_backslash=cfg.native_backslash,
-        name_ok=cfg.name_ok,
-        stored_as_last=cfg.stored_as_last,
-        name_max=cfg.name_max,
-        key_max=(cfg.key_max[0], min(cfg.key_max[1], 255)) if cfg.key_max else None,
-    )
+def test_profiles_marked_yes_hold_every_portable_key(profile: str, k: str) -> None:
     assert in_l_floor(k)
-    assert nu(k, room) == k
+    assert nu(k, _within_room(PROFILES[profile])) == k
 
 
-@pytest.mark.spec("KEY-007")
+def test_windows_without_long_paths_misses_a_portable_key() -> None:
+    k = "a" * 250 + "/b"
+    assert in_l_shared(k)
+    assert nu(k, _within_room(PROFILES["local-windows"])) == Refused("accept")
+    assert nu(k, _within_room(PROFILES["local-windows-long-paths"])) == k
+
+
+@pytest.mark.spec("KEY-008")
 @pytest.mark.parametrize("name", ["CON", "con.txt", "LPT1", "COM0", "a.", "a ", ".a", "a b", "é"])
 def test_portable_name_excludes(name: str) -> None:
     assert not in_l_shared(name)
