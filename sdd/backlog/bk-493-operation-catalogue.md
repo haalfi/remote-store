@@ -83,6 +83,10 @@ Every public method of `Store` (`src/remote_store/_store.py`) and `AsyncStore`
 (`src/remote_store/aio/_async_store.py`) at `e285319` appears in this column,
 checked against each file's `def` lines (Grep
 `^    (async )?def [a-z]`). So no 0.33 Store method is left without an entry.
+Of `ext/`'s fifteen modules (Glob `src/remote_store/ext/*.py`, less
+`__init__.py`), only `transfer` and `arrow` are mapped, for the use cases
+N-13, N-14 and N-16. The other thirteen are not checked here: an extension
+builds on the entries (spec 053, Notes).
 
 ## Research brief
 
