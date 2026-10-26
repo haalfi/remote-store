@@ -36,7 +36,7 @@ RTXT-003 and [spec 030](030-write-text.md) WTXT-003.
 | --- | --- |
 | Store, AsyncStore | The v1 API's synchronous and asynchronous handles through which a caller acts on one store, under whatever names the API's spec gives them. |
 | Core API | The library's API apart from its extensions. |
-| Public operation | An operation the core API offers a caller on one or more stores, reached through a Store or an AsyncStore: one that reads, changes or inspects a store, or derives a store from one. Its form is sync when every store it acts on is reached through a Store, async when every one is reached through an AsyncStore; one acting on both has neither form. |
+| Public operation | An operation the core API offers a caller through one or more Store or AsyncStore handles, whatever it does with them. Its form is sync when every store it acts on is reached through a Store, async when every one is reached through an AsyncStore; one acting on both has neither form. |
 | Entry | A row of the catalogue, named by its ID (`OP-NN`). |
 | Serves | A public operation serves an entry when the entry's spec names it as one of the entry's operations. What each one does is that spec's. |
 

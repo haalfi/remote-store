@@ -31,13 +31,13 @@ From the dialogs in `sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl`:
 
 ## Status (2026-10-26)
 
-Done on branch `bk-493-operation-catalogue` (from master at `e285319`), all
-drafts: this item's index entry and dossier, the trace
-`sdd/traces/bk-493-operation-catalogue.yml`,
+Done in PR #1184 (from master at `e285319`): this item's index entry and
+dossier, the trace `sdd/traces/bk-493-operation-catalogue.yml`,
 [RFC-0026](../rfcs/rfc-0026-operation-catalogue.md),
 [`sdd/observe/catalogue.md`](../observe/catalogue.md) and
-[spec 053](../specs/053-store-operations.md), with the ground register's two
-rows and D7 headers on specs 001 and 029. Three decisions of the second
+[spec 053](../specs/053-store-operations.md), with the ground register's
+edits and D7 headers on specs 001, 027, 028, 029 and 030 (RFC-0026 § Impact).
+Three decisions of the second
 session (`sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`) changed the plan
 above: the catalogue carries no 0.33 column, since it is ground (the table
 below is the omission check's record); spec 053 supersedes STORE-008 and
@@ -71,9 +71,10 @@ operation by operation against both tables. Post-write
 metadata update, checksum verification, `touch`, a key-value mapping view and
 rsync-style mirroring are forms of OP-20, OP-03, OP-03, OP-17 and OP-15. OP-14
 covers folders as well as files. Spec 053 defines a public operation as the
-store library's interface, with no implementation-language construct: five
-review rounds found a hole in each language-level definition, and how the
-operations are spelled in Python is the API's spec. An outside formal-definition table (Gemini) was not
+store library's interface, with no implementation-language construct: each
+language-level definition the review threads on PR #1184 tested had a hole,
+and how the operations are spelled in Python is the API's spec. `/observe`
+moving from operations to entries is BK-494. An outside formal-definition table (Gemini) was not
 adopted: it fixed signatures each entry's session decides, and its framing is
 already how an entry's spec is written (SPEC-DESIGN Rules 2 and 4).
 

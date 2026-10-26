@@ -516,6 +516,13 @@ no clause of the contract ships unexercised.
   decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's).
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
+- [ ] **BK-494 — `/observe` still designs one operation, so a session never meets the catalogue entry that sets its scope**
+  spec: OPS-001 -- OPS-002 · effort: S · audience: contributor.process, library.maintainer
+  RFC-0026 makes an entry of `sdd/observe/catalogue.md` the unit of each `/observe` session, but
+  `.claude/skills/observe/SKILL.md` takes an `<operation>`, its hook `scripts/observe_ground.py`
+  accepts only `[a-z][a-z0-9_]*` and so refuses `OP-01`, and its Load step never reads the catalogue
+  row. § 9 step 5 (`read()`, OP-01) waits on it. Open decision: none.
+
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   RFC-0025 froze the contract kernel, the drivers, Memory on the kernel and specs 052 and 053 on

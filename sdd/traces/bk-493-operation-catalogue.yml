@@ -11,6 +11,8 @@ audience:
   - library.maintainer
   - user.api
   - contributor.process
+discovery_followups:
+  - BK-494
 decisions:
   - sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
   - sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl
