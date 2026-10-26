@@ -86,9 +86,9 @@ Not normative.
   on top of the entries, such as content hashing or an emulated append, and
   needs no entry; the catalogue's Not in v1 list names what the core leaves
   out.
-- **Why the catalogue is a table beside the spec.** One row per entry changes
-  with every session's status and is read as ground by each session; the
-  clauses that bind it change only when the surface's rules do
+- **Why the catalogue is a table beside the spec.** One row per entry needs a
+  table, which no section's form gives; the clauses that bind it change only
+  when the surface's rules do
   ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C3).
 - **Checks.** Each section's witness is a public surface of the v1 API
   (OPS-001, OPS-002) or one store of it (OPS-003, OPS-004); the sections bind

@@ -517,7 +517,7 @@ no clause of the contract ships unexercised.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [~] **BK-493 — The v1 Store API has no agreed set of operations, so each design session would find its own scope**
-  spec: OPS-001 -- OPS-004 · effort: M · audience: library.maintainer, user.api
+  spec: OPS-001 -- OPS-004 · effort: M · audience: library.maintainer, user.api, contributor.process
   RFC-0024 § 9 goes from the key (step 4) to `read()` (step 5) with no list of what v1 offers, and
   the first `/observe` run found that decisions binding every operation have no home. RFC-0026 adds
   step 4b: spec 053 binds a catalogue table beside it, one entry per intent, from use cases with 0.33

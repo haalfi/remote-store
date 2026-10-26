@@ -53,36 +53,34 @@ local path. *Result* is the kind of thing a caller gets: `content`, `reader`
 (an object read from at offsets), `outcome` (whether and how the call took
 effect), `listing`, `info`, `store`, `answer`, `address`, `adapter` (an object
 another library reads the store through), `client` (the backend's own). *Offer* is
-`v1` (every store) or `optional` (spec 053's gate). *Session* is the entry's
-`/observe` status: `not started`, `designed` (its record is accepted) or
-`specified` (its spec is ground).
+`v1` (every store) or `optional` (spec 053's gate).
 
-| ID | Intent | Target | Result | Offer | Serves | Session |
-|---|---|---|---|---|---|---|
-| OP-01 | Read an item, whole or streamed | item | content | v1 | N-01, N-02 | not started |
-| OP-02 | Read an item at offsets | item | reader | v1 | N-04 | not started |
-| OP-03 | Write an item, whole or streamed | item | outcome | v1 | N-01, N-02 | not started |
-| OP-04 | Replace an item atomically | item | outcome | v1 | N-03 | not started |
-| OP-05 | Write an item conditionally: if absent, or if unchanged | item | outcome | v1 | N-17 | not started |
-| OP-06 | List a folder's children | folder | listing | v1 | N-05 | not started |
-| OP-07 | Walk a subtree, optionally to a depth | folder | listing | v1 | N-06 | not started |
-| OP-08 | Match keys by pattern | pattern | listing | v1 | N-07 | not started |
-| OP-09 | Inspect a key: whether it exists, its kind, size and time | any | info | v1 | N-08 | not started |
-| OP-10 | Delete an item | item | outcome | v1 | N-09 | not started |
-| OP-11 | Delete a folder tree | folder | outcome | v1 | N-10 | not started |
-| OP-12 | Move or rename | any, to a key | outcome | v1 | N-11 | not started |
-| OP-13 | Copy within a store | any, to a key | outcome | v1 | N-12 | not started |
-| OP-14 | Transfer to or from a local file | any and local path | outcome | v1 | N-13 | not started |
-| OP-15 | Transfer between stores | store pair | outcome | v1 | N-14 | not started |
-| OP-16 | Scope a store to a folder | folder | store | v1 | N-15 | not started |
-| OP-17 | Hand items to other libraries | store | adapter | v1 | N-16 | not started |
-| OP-18 | Ask what a store supports | store | answer | v1 | N-18 | not started |
-| OP-19 | Create an empty folder | folder | outcome | optional | N-19 | not started |
-| OP-20 | Attach and read item metadata: user metadata and system properties | item | info | optional | N-20 | not started |
-| OP-21 | Close a store | store | outcome | v1 | N-21 | not started |
-| OP-22 | Map a key to its native address, and back | any | address | v1 | N-22 | not started |
-| OP-23 | Reach the native client | store | client | v1 | N-23 | not started |
-| OP-24 | Check health | store | answer | v1 | N-24 | not started |
+| ID | Intent | Target | Result | Offer | Serves |
+|---|---|---|---|---|---|
+| OP-01 | Read an item, whole or streamed | item | content | v1 | N-01, N-02 |
+| OP-02 | Read an item at offsets | item | reader | v1 | N-04 |
+| OP-03 | Write an item, whole or streamed | item | outcome | v1 | N-01, N-02 |
+| OP-04 | Replace an item atomically | item | outcome | v1 | N-03 |
+| OP-05 | Write an item conditionally: if absent, or if unchanged | item | outcome | v1 | N-17 |
+| OP-06 | List a folder's children | folder | listing | v1 | N-05 |
+| OP-07 | Walk a subtree, optionally to a depth | folder | listing | v1 | N-06 |
+| OP-08 | Match keys by pattern | pattern | listing | v1 | N-07 |
+| OP-09 | Inspect a key: whether it exists, its kind, size and time | any | info | v1 | N-08 |
+| OP-10 | Delete an item | item | outcome | v1 | N-09 |
+| OP-11 | Delete a folder tree | folder | outcome | v1 | N-10 |
+| OP-12 | Move or rename | any, to a key | outcome | v1 | N-11 |
+| OP-13 | Copy within a store | any, to a key | outcome | v1 | N-12 |
+| OP-14 | Transfer to or from a local file | any and local path | outcome | v1 | N-13 |
+| OP-15 | Transfer between stores | store pair | outcome | v1 | N-14 |
+| OP-16 | Scope a store to a folder | folder | store | v1 | N-15 |
+| OP-17 | Hand items to other libraries | store | adapter | v1 | N-16 |
+| OP-18 | Ask what a store supports | store | answer | v1 | N-18 |
+| OP-19 | Create an empty folder | folder | outcome | optional | N-19 |
+| OP-20 | Attach and read item metadata: user metadata and system properties | item | info | optional | N-20 |
+| OP-21 | Close a store | store | outcome | v1 | N-21 |
+| OP-22 | Map a key to its native address, and back | any | address | v1 | N-22 |
+| OP-23 | Reach the native client | store | client | v1 | N-23 |
+| OP-24 | Check health | store | answer | v1 | N-24 |
 
 **Variation inside an entry.** Where part of a `v1` entry depends on the
 backend, such as OP-09's token, the entry stays `v1` and its session declares

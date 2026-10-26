@@ -74,10 +74,15 @@ counterpart checked against `src/remote_store/_store.py` and `ext/` at
 | OP-18 | Ask what a store supports | `supports` |
 | OP-19 | Create an empty folder (optional, gated) | — |
 | OP-20 | User metadata (optional, gated) | `write(metadata=)`, USER_METADATA |
-| OP-21 | Store lifecycle (close, context manager) | `close` |
-| OP-22 | Native address mapping | `native_path`, `to_key` |
+| OP-21 | Store lifecycle (close, context manager) | `close`, `aclose` |
+| OP-22 | Native address mapping | `native_path`, `to_key`, `resolve` |
 | OP-23 | Native handle escape hatch | `unwrap` |
 | OP-24 | Health check | `ping` |
+
+Every public method of `Store` (`src/remote_store/_store.py`) and `AsyncStore`
+(`src/remote_store/aio/_async_store.py`) at `e285319` appears in this column,
+checked against each file's `def` lines (Grep
+`^    (async )?def [a-z]`). So no 0.33 Store method is left without an entry.
 
 ## Research brief
 

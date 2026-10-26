@@ -29,7 +29,7 @@ unverified report stay in that repository.
 | System properties (7/10) and identity tokens (6/10) have no entry (Q1) | OP-20 holds user metadata and system properties; OP-09's info holds an identity token where the backend offers one |
 | Presign, append, versioned access, conditional read and the rest of Q1 | Not in v1; an extension may add a feature, such as a simulated append |
 | Batch delete, abort, multi-range read, delete guardrails (Q1) | Forms of OP-10, OP-03, OP-02 and OP-11, for their sessions |
-| Shared decisions most often retrofitted (advisory note 7) | Not in spec 053; input to `read()`'s session and each later one (RFC-0026 Open Question 2) |
+| Shared decisions most often retrofitted (advisory note 7) | Not in spec 053; input to `read()`'s session and each later one (RFC-0026 Open Question 1) |
 
 ---
 
