@@ -167,6 +167,10 @@ under the floor stays reachable; a store may opt into portability, and then
 L_api = L_floor ∩ L_shared. The choice is a declared, observable part of the
 store's configuration.
 
+*Superseded by spec 052:* under the opt-in L_api is the backend's declared
+portable set P_b ⊆ L_shared, and a store opts in only where P_b is declared
+(KEY-008, § 9.8).
+
 **A backend that rewrites names** on storage has a function norm_b on N
 (HFS+ stores NFD). Its language holds only the names it stores unchanged:
 
@@ -645,8 +649,10 @@ source named, and each is narrower than the model.
 
 ### 9.8 Spec 054 as proposed (PR #1171, not merged)
 
-*Superseded:* this compares the draft of 2026-10-22. Spec 052, the spec
-that draft became, takes the model's side on the three points below: `..` climbs and only an
+*Superseded:* this compares the draft of 2026-10-22, and the KEY IDs in the
+body below are that draft's, which name other clauses than spec 052's (the
+draft's KEY-009, one-to-one admission, is not 052's Separator Set). Spec 052,
+the spec that draft became, takes the model's side on the three points below: `..` climbs and only an
 escape is refused, the `\` opt-out is KEY-009, and resolution is KEY-013.
 It departs from the model in two places. Its KEY-002 also refuses a
 surrogate anywhere in the raw input: § 3.5 step 0 refuses only NUL and an

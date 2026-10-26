@@ -366,3 +366,13 @@ phases:
           floor. Spec 052 gains P_b: under the opt-in L_api is P_b, KEY-A-03 has the backend
           hold it, the profile row records each P_b, and BK-480 owns the announcement
         outcome: ok
+      - file: sdd/specs/052-store-key.md
+        section: "Terms (L_b, P_b), KEY-A-02, KEY-A-03"
+        read_type: verify
+        extract: >-
+          A scoped review round found KEY-A-03 implied by the P_b term (P_b inside
+          L_shared and L_b, which the backend "holds" by definition). L_b and P_b are now
+          declared languages and the two assumptions say the backend honours them; the
+          opt-in on an undeclared P_b is refused in the reference model, and the research's
+          section 3.2 L_api line and section 9.8 draft IDs are marked superseded
+        outcome: ok

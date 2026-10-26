@@ -11,10 +11,12 @@ sections, with spec 051 stores as finite tuples. Evidence of three kinds:
   collisions and navigation frequent; each derived section (KEY-010 to
   KEY-013) is checked against a computation that does not call the clause it
   tests where one exists, such as the walk's end position for KEY-011.
-- **The profile table.** Its "Portable set P_b" row is checked by drawing
-  L_shared keys through a configuration per column of
-  ``sdd/specs/profiles/052-store-key.md``, so a regex, a cell and the row
-  that disagree fail here.
+- **The profile table.** Its "Portable set P_b" row
+  (``sdd/specs/profiles/052-store-key.md``) is pinned by its cells' leading
+  words. Drawn L_shared keys run through the stand-in of each "= L_shared"
+  column and of Windows with long paths; Windows without long paths has one
+  hand-written witness, and the undeclared S3 directory bucket a refused
+  opt-in.
 
 Bounds: the model is finite and its backends are stand-ins for the table's
 cells, not the backends; the unbounded proofs are
@@ -72,10 +74,13 @@ class Config:
     name_max: tuple[Callable[[str], int], int] | None = None
     key_max: tuple[Callable[[str], int], int] | None = None
     folder_max: tuple[Callable[[str], int], int] | None = None  # a proper prefix's limit
+    p_b_declared: bool = True  # whether the backend declares a P_b at all
 
     def __post_init__(self) -> None:
         if self.native_backslash and not self.backslash_separator:
             raise ValueError("KEY-009: a backend reading `\\` natively cannot opt out")
+        if self.portable and not self.p_b_declared:
+            raise ValueError("KEY-008: a store opts into portability only where P_b is declared")
 
 
 PORTABLE_NAME = r"(?!(?i:CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(?:[./]|$))[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?"
@@ -116,7 +121,7 @@ def in_l_b(k: str, cfg: Config) -> bool:
 
 
 def in_p_b(k: str, cfg: Config) -> bool:
-    """P_b: a stand-in declares the whole of L_shared ∩ L_b, the largest P_b it may."""
+    """P_b: a stand-in declares L_shared ∩ L_b, the largest P_b it honours (KEY-A-03)."""
     return in_l_shared(k) and in_l_b(k, cfg)
 
 
@@ -233,7 +238,7 @@ PROFILES = {
         key_max=(_utf16, 32766),
     ),
     "s3": Config(key_max=(_bytes, 1024)),
-    "s3-directory": Config(name_ok=_s3_directory_name_ok, key_max=(_bytes, 1024)),
+    "s3-directory": Config(name_ok=_s3_directory_name_ok, key_max=(_bytes, 1024), p_b_declared=False),
     "sftp-openssh-linux": Config(name_max=(_bytes, 255), key_max=(_bytes, 4095)),
 }
 
@@ -454,6 +459,14 @@ def test_portable_store_refuses_outside_a_declared_smaller_p_b() -> None:
     assert nu(k, without) == Refused("accept")
     assert nu("a" * 200 + "/b", without) == "a" * 200 + "/b"
     assert nu(k, with_long) == k
+
+
+@pytest.mark.spec("KEY-008")
+def test_no_portable_store_where_p_b_is_undeclared() -> None:
+    """The S3 directory bucket's P_b is undeclared, so its opt-in is refused."""
+    with pytest.raises(ValueError, match="KEY-008"):
+        replace(PROFILES["s3-directory"], portable=True)
+    assert nu("a/b", PROFILES["s3-directory"]) == "a/b"
 
 
 @pytest.mark.spec("KEY-008")

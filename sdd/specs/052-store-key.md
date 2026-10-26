@@ -28,7 +28,8 @@ from a backend is in its assumptions. Out of scope, each with its owner:
 - Each backend's L_b and P_b: the
   [profile table](profiles/052-store-key.md) beside this spec, by measurement
   or a cited authority.
-- How a key is displayed, the root included; `glob` patterns.
+- How a key is displayed, the root included: the API's spec. `glob`
+  patterns: the `glob` operation's spec.
 
 **Supersedes** [spec 004](004-path-model.md) PATH-002 to PATH-008.
 
@@ -50,9 +51,9 @@ items. Names compare exactly (spec 051 § Name equality).
 | Position | A finite sequence of names; the empty sequence is the root. |
 | Base c | The key string a reduction starts from: ε for the store itself, or the key string c of a store rooted at c. |
 | L_floor | The key strings none of whose segments holds U+0000 or `\`, or equals `.` or `..`. |
-| L_b | The store's backend language: a prefix-closed subset of L_core, the key strings the store's backend b holds at the store's location. A whole-key limit of b counts the location's own share, so L_b gets what the location leaves of it. KEY-A-02 is what the spec relies on b for. |
+| L_b | The store's backend language: a prefix-closed subset of L_core declared for the store's backend b at the store's location. A whole-key limit of b counts the location's own share, so L_b gets what the location leaves of it. That b honours it is KEY-A-02. |
 | L_shared | The portable language: ε, and the key strings `PORTABLE_KEY` below fully matches. It is a library policy and names no backend. |
-| P_b | The store's portable set: a prefix-closed subset of L_shared ∩ L_b, declared explicitly for the store's backend at the store's location, never inferred. P_b = L_shared is the normal value; a smaller P_b is a declared deviation. |
+| P_b | The store's portable set: a prefix-closed subset of L_shared declared explicitly for the store's backend at the store's location, never inferred. P_b = L_shared is the normal value; a smaller P_b is a declared deviation. That b honours it is KEY-A-03. |
 | L_api | The store's acceptance language (KEY-008). |
 | c · k | The key string whose segments are c's followed by k's; ε · k = k · ε = k. |
 | K(S) | The Keys of S: { Key(x) │ x ∈ U }. |
@@ -165,7 +166,7 @@ exactly one of:
 | ID | Assumption |
 | --- | --- |
 | KEY-A-02 | The store's backend holds every key string of L_b, and stores each of its names unchanged, judged for each name as the last segment of the prefix that ends in it. |
-| KEY-A-03 | The store's backend holds every key string of its declared P_b. |
+| KEY-A-03 | The store's backend holds every key string of its declared P_b, and stores each of its names unchanged. |
 
 ## Notes
 
