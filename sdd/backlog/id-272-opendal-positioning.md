@@ -14,6 +14,16 @@ spike report, its RFC and any user-facing positioning page. The goal is breadth
 in backends: every OpenDAL service a candidate driver, without giving up the
 contract.
 
+**Layers ride along.** Beyond the services, OpenDAL's layers
+([README § Choose your layers](https://github.com/apache/opendal#choose-your-layers))
+stay usable by remote-store users when OpenDAL is the transport: the driver
+accepts a configured operator, or a layer list, and the contract applies above
+it. The RFC decides, per layer, whether it passes through, conflicts with a
+contract clause (a retry layer against `RetryPolicy` and the typed-error
+mapping, a cache layer against strong read-after-write) or duplicates an
+`ext.*` module (`observe`, `otel`, `cache`), and which of those it then forbids,
+wraps or documents.
+
 ## Gate
 
 Class P under [RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) § R3: paused
@@ -59,7 +69,8 @@ Pipeline, each step after the gate above opens:
 1. **Spike.** An OpenDAL-backed driver over the Python binding, S3 and fs
    services first, run against the v1 conformance suite. Output: a
    per-service table of which contract clauses OpenDAL keeps, and what the
-   driver must add on top to keep the rest.
+   driver must add on top to keep the rest; plus the same conformance run with
+   each candidate layer applied, which is the evidence for the layer verdicts.
 2. **RFC.** Decides from that table between: an OpenDAL driver behind an extra
    (breadth for every service, capability-gated by what conformance measured);
    delegating some own drivers (S3, Azure, SFTP) to it; positioning only (an
