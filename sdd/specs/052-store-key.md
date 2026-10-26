@@ -221,14 +221,21 @@ alone.
   state rather than on a key string.
 - **L_shared.** A policy that `PORTABLE_KEY` defines, not a derivation from
   any set of backends, and no backend is promised to hold it. Each rule has
-  its own reason. A portable name is ASCII letters, digits, `.`, `_` and `-`;
-  it starts with a letter or digit, so no tool reads it as hidden or as an
+  its own reason. A portable name is ASCII letters, digits, `.`, `_` and `-`:
+  beyond ASCII, stores differ in whether a composed and a decomposed spelling
+  are one name or two, in how case-insensitive comparison folds a letter, and
+  in whether a length counts bytes or UTF-16 units, while an ASCII character
+  has one spelling, one fold, and is one byte and one unit. Σ stays the
+  Unicode scalar values: by default a store accepts every name of L_floor its
+  backend's L_b holds, `café` included (KEY-008), and only the opt-in
+  narrows to ASCII. A name
+  starts with a letter or digit, so no tool reads it as hidden or as an
   option; it ends in neither `.` nor a space, the endings a store that strips
   them would alias; it is no reserved device name (`CON`, `PRN`, `AUX`,
   `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9` after Microsoft's "Naming Files, Paths,
   and Namespaces", widened by the digit 0 to `COM0` and `LPT0`, alone or
-  before a `.`); and a key is at most 255 characters. Every portable name is a name of L_floor, and every key in
-  L_shared is its own reduction.
+  before a `.`); and a key is at most 255 characters. Every portable name is
+  a name of L_floor, and every key in L_shared is its own reduction.
   `sdd/research/bk-468-key-probe/check_portable_regex.py` checks the patterns
   against that gloss.
 - **P_b.** Under the opt-in a store accepts its backend's portable set: the

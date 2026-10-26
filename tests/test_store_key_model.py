@@ -488,6 +488,8 @@ def test_portable_opt_in_accepts_exactly_p_b(k: str) -> None:
 def test_default_acceptance_is_floor_and_backend() -> None:
     assert nu("a b/x.y", Config()) == "a b/x.y"
     assert nu("a b/x.y", Config(portable=True)) == Refused("accept")
+    assert nu("café/日本", Config()) == "café/日本"
+    assert nu("café", Config(portable=True)) == Refused("accept")
 
 
 @pytest.mark.spec("KEY-009")
