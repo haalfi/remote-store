@@ -17,37 +17,38 @@ one or more needs, and every need is served.
 
 | ID | Group | Need |
 |---|---|---|
-| N-01 | Data in and out | Read or write a whole small item in one call, as bytes or text |
-| N-02 | Data in and out | Read or write a large item chunk by chunk, without holding it in memory |
-| N-03 | Data in and out | Replace an item so readers see the old or the new content, never a partial one |
-| N-04 | Data in and out | Read parts of a large item at offsets |
-| N-05 | Discovery | See what is directly inside one folder |
-| N-06 | Discovery | See every item below a folder, at any depth or up to a depth |
-| N-07 | Discovery | Find the items whose keys match a pattern |
-| N-08 | Discovery | Tell whether a key exists, whether it is an item or a folder, its size and modification time, and, where the backend offers one, a token that changes when the item does |
-| N-09 | Organising | Remove one item |
-| N-10 | Organising | Remove a folder and everything below it |
-| N-11 | Organising | Give an item or a folder a new key |
-| N-12 | Organising | Duplicate an item or a folder under a new key in the same store |
-| N-13 | Integration | Move content between the store and a local file |
-| N-14 | Integration | Copy items from one store to another |
-| N-15 | Integration | Work in a store rooted at one of its folders |
-| N-16 | Integration | Hand items to other libraries as files or a file system |
-| N-17 | Further | Write only if an item is absent, or unchanged since it was read |
-| N-18 | Further | Learn what a store supports and where it deviates |
-| N-19 | Further, optional | Make a folder that holds nothing yet |
-| N-20 | Further, optional | Attach key-value metadata and system properties (such as content type) to an item, and read them back, as far as the backend supports them |
-| N-21 | Omission check | Release a store's resources when done with it |
-| N-22 | Omission check | Map a key to the backend's own address of it, and back |
-| N-23 | Omission check | Reach the backend's own client, outside the library's guarantees |
-| N-24 | Omission check | Tell cheaply, without changing anything, whether the store is reachable |
+| N‑01 | Data in and out | Read or write a whole small item in one call, as bytes or text |
+| N‑02 | Data in and out | Read or write a large item chunk by chunk, without holding it in memory |
+| N‑03 | Data in and out | Replace an item so readers see the old or the new content, never a partial one |
+| N‑04 | Data in and out | Read parts of a large item at offsets |
+| N‑05 | Discovery | See what is directly inside one folder |
+| N‑06 | Discovery | See every item below a folder, at any depth or up to a depth |
+| N‑07 | Discovery | Find the items whose keys match a pattern |
+| N‑08 | Discovery | Tell whether a key exists, whether it is an item or a folder, its size and modification time, and, where the backend offers one, a token that changes when the item does |
+| N‑09 | Organising | Remove one item |
+| N‑10 | Organising | Remove a folder and everything below it |
+| N‑11 | Organising | Give an item or a folder a new key |
+| N‑12 | Organising | Duplicate an item or a folder under a new key in the same store |
+| N‑13 | Integration | Move content between the store and a local file |
+| N‑14 | Integration | Copy items from one store to another |
+| N‑15 | Integration | Work in a store rooted at one of its folders |
+| N‑16 | Integration | Hand items to other libraries as files or a file system |
+| N‑17 | Further | Write only if an item is absent, or unchanged since it was read |
+| N‑18 | Further | Learn what a store supports and where it deviates |
+| N‑19 | Further, optional | Make a folder that holds nothing yet |
+| N‑20 | Further, optional | Attach key-value metadata and system properties (such as content type) to an item, and read them back, as far as the backend supports them |
+| N‑21 | Omission check | Release a store's resources when done with it |
+| N‑22 | Omission check | Map a key to the backend's own address of it, and back |
+| N‑23 | Omission check | Reach the backend's own client, outside the library's guarantees |
+| N‑24 | Omission check | Tell cheaply, without changing anything, whether the store is reachable |
 
 N-21 to N-24 are no use case the maintainer chose; they were kept when the
 draft entries were checked against 0.33's surface for omissions.
 
 ## Entries
 
-**Columns.** *Target* is what the entry addresses: `item`, `folder`, `any`
+**Columns.** IDs in both tables are written with a non-breaking hyphen
+(U+2011) so they never wrap; search them as `OP.NN` or `N.NN`. *Target* is what the entry addresses: `item`, `folder`, `any`
 (item or folder), `pattern`, `store`, `store pair`, or a pair of those with a
 local path. *Result* is the kind of thing a caller gets: `content`, `reader`
 (an object read from at offsets), `outcome` (whether and how the call took
@@ -57,30 +58,30 @@ another library reads the store through), `client` (the backend's own). *Offer* 
 
 | ID | Intent | Target | Result | Offer | Serves |
 |---|---|---|---|---|---|
-| OP-01 | Read an item, whole or streamed | item | content | v1 | N-01, N-02 |
-| OP-02 | Read an item at offsets | item | reader | v1 | N-04 |
-| OP-03 | Write an item, whole or streamed | item | outcome | v1 | N-01, N-02 |
-| OP-04 | Replace an item atomically | item | outcome | v1 | N-03 |
-| OP-05 | Write an item conditionally: if absent, or if unchanged | item | outcome | v1 | N-17 |
-| OP-06 | List a folder's children | folder | listing | v1 | N-05 |
-| OP-07 | Walk a subtree, optionally to a depth | folder | listing | v1 | N-06 |
-| OP-08 | Match keys by pattern | pattern | listing | v1 | N-07 |
-| OP-09 | Inspect a key: whether it exists, its kind, size and time | any | info | v1 | N-08 |
-| OP-10 | Delete an item | item | outcome | v1 | N-09 |
-| OP-11 | Delete a folder tree | folder | outcome | v1 | N-10 |
-| OP-12 | Move or rename | any, to a key | outcome | v1 | N-11 |
-| OP-13 | Copy within a store | any, to a key | outcome | v1 | N-12 |
-| OP-14 | Transfer to or from a local file | any and local path | outcome | v1 | N-13 |
-| OP-15 | Transfer between stores | store pair | outcome | v1 | N-14 |
-| OP-16 | Scope a store to a folder | folder | store | v1 | N-15 |
-| OP-17 | Hand items to other libraries | store | adapter | v1 | N-16 |
-| OP-18 | Ask what a store supports | store | answer | v1 | N-18 |
-| OP-19 | Create an empty folder | folder | outcome | optional | N-19 |
-| OP-20 | Attach and read item metadata: user metadata and system properties | item | info | optional | N-20 |
-| OP-21 | Close a store | store | outcome | v1 | N-21 |
-| OP-22 | Map a key to its native address, and back | any | address | v1 | N-22 |
-| OP-23 | Reach the native client | store | client | v1 | N-23 |
-| OP-24 | Check health | store | answer | v1 | N-24 |
+| OP‑01 | Read an item, whole or streamed | item | content | v1 | N‑01, N‑02 |
+| OP‑02 | Read an item at offsets | item | reader | v1 | N‑04 |
+| OP‑03 | Write an item, whole or streamed | item | outcome | v1 | N‑01, N‑02 |
+| OP‑04 | Replace an item atomically | item | outcome | v1 | N‑03 |
+| OP‑05 | Write an item conditionally: if absent, or if unchanged | item | outcome | v1 | N‑17 |
+| OP‑06 | List a folder's children | folder | listing | v1 | N‑05 |
+| OP‑07 | Walk a subtree, optionally to a depth | folder | listing | v1 | N‑06 |
+| OP‑08 | Match keys by pattern | pattern | listing | v1 | N‑07 |
+| OP‑09 | Inspect a key: whether it exists, its kind, size and time | any | info | v1 | N‑08 |
+| OP‑10 | Delete an item | item | outcome | v1 | N‑09 |
+| OP‑11 | Delete a folder tree | folder | outcome | v1 | N‑10 |
+| OP‑12 | Move or rename | any, to a key | outcome | v1 | N‑11 |
+| OP‑13 | Copy within a store | any, to a key | outcome | v1 | N‑12 |
+| OP‑14 | Transfer to or from a local file | any and local path | outcome | v1 | N‑13 |
+| OP‑15 | Transfer between stores | store pair | outcome | v1 | N‑14 |
+| OP‑16 | Scope a store to a folder | folder | store | v1 | N‑15 |
+| OP‑17 | Hand items to other libraries | store | adapter | v1 | N‑16 |
+| OP‑18 | Ask what a store supports | store | answer | v1 | N‑18 |
+| OP‑19 | Create an empty folder | folder | outcome | optional | N‑19 |
+| OP‑20 | Attach and read item metadata: user metadata and system properties | item | info | optional | N‑20 |
+| OP‑21 | Close a store | store | outcome | v1 | N‑21 |
+| OP‑22 | Map a key to its native address, and back | any | address | v1 | N‑22 |
+| OP‑23 | Reach the native client | store | client | v1 | N‑23 |
+| OP‑24 | Check health | store | answer | v1 | N‑24 |
 
 **Variation inside an entry.** Where part of a `v1` entry depends on the
 backend, such as OP-09's token, the entry stays `v1` and its session declares
