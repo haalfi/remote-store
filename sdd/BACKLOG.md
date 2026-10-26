@@ -516,6 +516,14 @@ no clause of the contract ships unexercised.
   decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's).
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
+- [~] **BK-493 — The v1 Store API has no agreed set of operations, so each design session would find its own scope**
+  spec: — · effort: M · audience: library.maintainer, user.api
+  RFC-0024 § 9 goes from the key (step 4) to `read()` (step 5) with no list of what v1 offers, and
+  the first `/observe` run found that decisions binding every operation have no home. RFC-0026 adds
+  step 4b: spec 053 binds a catalogue table beside it, one entry per intent, from use cases with 0.33
+  as a check. Open decision: the deep-research findings on the drafted 24 entries.
+  Detail: [dossier](backlog/bk-493-operation-catalogue.md)
+
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   RFC-0025 froze the contract kernel, the drivers, Memory on the kernel and specs 052 and 053 on
