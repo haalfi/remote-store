@@ -140,3 +140,12 @@ phases:
         read_type: reference
         extract: "The Date line is load-bearing for check-sdd-index"
         outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "header, § 5, Sources"
+        read_type: reference
+        extract: >-
+          Precedent for distilling a haalfi/research report: results and
+          decisions here, the full cited report one link away. The first filing
+          copied the report verbatim; the maintainer had it rewritten to results
+          and consequences for the Store API
+        outcome: ok

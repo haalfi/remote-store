@@ -45,7 +45,7 @@ ASYNC-046; its Tested against is `None.`, with the reason in its Notes.
 
 The deep research landed the same day and is filed as
 [`research-operation-catalogue.md`](../research/research-operation-catalogue.md);
-its filing note records what the catalogue took from it (RFC-0026 C5). The
+its § 3 records what the catalogue took from it (RFC-0026 C5). The
 maintainer accepted RFC-0026 in PR #1184's review, which closes this item.
 
 From an outside review on PR #1184 (the maintainer's dialog in
@@ -62,9 +62,13 @@ through OP-18's spec, the one place that answers what a store supports; the
 retired OPS-003 and OPS-004 are input to OP-18's session. RFC-0026 amends
 RFC-0024 § R4 for spec 053's missing test.
 
-From the verification round (same log): every row of the research's Q1 table
-now has a disposition in the catalogue's Not in v1 list, post-write metadata
-update as a form of OP-20. An outside formal-definition table (Gemini) was not
+From the verification rounds (same log): each of the 25 rows of the research's
+Q1 table has an entry (OP-20 for system properties, OP-09 for identity tokens)
+or a row in the catalogue's Not in v1 list, checked row by row. Post-write
+metadata update, checksum verification, `touch`, a key-value mapping view and
+rsync-style mirroring are forms of OP-20, OP-03, OP-03, OP-17 and OP-15. OP-14
+covers folders as well as files. Spec 053's public operation counts in by
+default and names its exclusions. An outside formal-definition table (Gemini) was not
 adopted: it fixed signatures each entry's session decides, and its framing is
 already how an entry's spec is written (SPEC-DESIGN Rules 2 and 4).
 

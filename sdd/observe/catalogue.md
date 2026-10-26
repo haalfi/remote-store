@@ -29,7 +29,7 @@ one or more needs, and every need is served.
 | N‑10 | Organising | Remove a folder and everything below it |
 | N‑11 | Organising | Give an item or a folder a new key |
 | N‑12 | Organising | Duplicate an item or a folder under a new key in the same store |
-| N‑13 | Integration | Move content between the store and a local file |
+| N‑13 | Integration | Move content between the store and a local file or folder |
 | N‑14 | Integration | Copy items from one store to another |
 | N‑15 | Integration | Work in a store rooted at one of its folders |
 | N‑16 | Integration | Hand items to other libraries as files or a file system |
@@ -72,7 +72,7 @@ another library reads the store through), `client` (the backend's own). *Offer* 
 | OP‑11 | Delete a folder tree | folder | outcome | v1 | N‑10 |
 | OP‑12 | Move or rename | any, to a key | outcome | v1 | N‑11 |
 | OP‑13 | Copy within a store | any, to a key | outcome | v1 | N‑12 |
-| OP‑14 | Transfer to or from a local file | any and local path | outcome | v1 | N‑13 |
+| OP‑14 | Transfer to or from a local file or folder | any and local path | outcome | v1 | N‑13 |
 | OP‑15 | Transfer between stores | any, to a store | outcome | v1 | N‑14 |
 | OP‑16 | Scope a store to a folder | folder | store | v1 | N‑15 |
 | OP‑17 | Hand items to other libraries | store | adapter | v1 | N‑16 |
@@ -115,7 +115,9 @@ extension may add it on top of the entries, as it may add content hashing.
 | Server-side compose, storage class, retention, tags apart from metadata, query in place | Not in v1 |
 | Bucket or container create and delete | Not in v1 |
 | Local cache layer, transparent compression, transactions | Not in v1 |
-| Key-value mapping view, FUSE mount, rsync-style mirroring | Not in v1 |
+| Key-value mapping view | Form of OP-17 |
+| Rsync-style mirroring | Form of OP-15 |
+| FUSE mount | Not in v1 |
 | Leases, snapshots, aborting a server-side copy | Not in v1 |
 | Annotations (large attached payloads) | Not in v1 |
 

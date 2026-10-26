@@ -124,7 +124,7 @@ start (research § 4, S3).
 The maintainer ran the brief in BK-493's dossier against ten comparable
 libraries; the report is filed as
 [`research-operation-catalogue.md`](../research/research-operation-catalogue.md),
-whose filing note maps each finding to what the catalogue took from it. In
+whose § 3 maps each result to what the catalogue took from it. In
 short: the cut stands (conditions on writes only, three listing entries with
 OP-07's depth limit); OP-20 widens to system properties and OP-09's info to
 an identity token where the backend offers one; the catalogue gains a Not in
