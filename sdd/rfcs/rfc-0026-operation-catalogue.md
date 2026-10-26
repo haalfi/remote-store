@@ -102,7 +102,10 @@ run on the draft entries against `src/remote_store/_store.py` and `ext/` at
 comparison of each flow reads.
 
 **Spec 053 supersedes** spec 001's STORE-008 and spec 029's ASYNC-046, the two
-lists of 0.33's surface, and both specs get RFC-0024 D7's header.
+lists of 0.33's surface, and the three sections that only add a method to
+STORE-008: spec 027's ITER-003, spec 028's RTXT-003 and spec 030's WTXT-003
+(Grep `^###? [A-Z-]+\d+[a-z]?: .*(Surface|STORE-008|ASYNC-046)` over
+`sdd/specs`). All five specs get RFC-0024 D7's header.
 
 ### C4. Ground
 
@@ -169,7 +172,7 @@ All decided in the log above:
   operations with 0.33 (D8); an entry with no 0.33 counterpart, or a 0.33
   method no entry serves, becomes a break record there.
 - **Process:** research § 9's step table, as RFC-0024 carries it; the ground
-  register; D7 headers on specs 001 and 029; the research doc under
+  register; D7 headers on specs 001, 027, 028, 029 and 030; the research doc under
   `sdd/research/`. RFC-0024 carries an "Amended by
   RFC-0026" line.
 - **Testing:** none. Spec 053 is tested against nothing until a v1 surface

@@ -41,7 +41,8 @@ rows and D7 headers on specs 001 and 029. Three decisions of the second
 session (`sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`) changed the plan
 above: the catalogue carries no 0.33 column, since it is ground (the table
 below is the omission check's record); spec 053 supersedes STORE-008 and
-ASYNC-046; its Tested against is `None.`, with the reason in its Notes.
+ASYNC-046 (and, from review, ITER-003, RTXT-003 and WTXT-003); its Tested
+against is `None.`, with the reason in RFC-0026 C3.
 
 The deep research landed the same day and is filed as
 [`research-operation-catalogue.md`](../research/research-operation-catalogue.md);
@@ -52,9 +53,10 @@ From an outside review on PR #1184 (the maintainer's dialog in
 `sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`): OP-22 and OP-23
 are optional, since a backend may have no native client or address; OP-05
 stays `v1`, and where a backend has no change token its profile refuses "if
-unchanged" rather than check it apart from the write. That last decision is
-semantics, so it is not in the ground: it is input the maintainer names at the
-start of OP-05's session (research § 4, S3).
+unchanged" rather than check it apart from the write, because "if unchanged"
+rests on OP-09's identity token and OP-05's profile follows OP-09's. Both are
+semantics, so they are not in the ground: they are input the maintainer names
+at the start of OP-05's session (research § 4, S3).
 
 From review round 3 (same log): spec 053 keeps only OPS-001 and OPS-002, the
 closed surface, which can be checked without a call. The Offer column binds
@@ -62,9 +64,10 @@ through OP-18's spec, the one place that answers what a store supports; the
 retired OPS-003 and OPS-004 are input to OP-18's session. RFC-0026 amends
 RFC-0024 § R4 for spec 053's missing test.
 
-From the verification rounds (same log): each of the 25 rows of the research's
-Q1 table has an entry (OP-20 for system properties, OP-09 for identity tokens)
-or a row in the catalogue's Not in v1 list, checked row by row. Post-write
+From the verification rounds (same log): each operation in the 16 rows of the
+research doc's Q1 table (§ 2) has an entry (OP-20 for system properties, OP-09
+for identity tokens) or a row in the catalogue's Not in v1 list, checked
+operation by operation against both tables. Post-write
 metadata update, checksum verification, `touch`, a key-value mapping view and
 rsync-style mirroring are forms of OP-20, OP-03, OP-03, OP-17 and OP-15. OP-14
 covers folders as well as files. Spec 053's public operation counts in by

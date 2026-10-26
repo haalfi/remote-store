@@ -30,10 +30,11 @@ S3 (boto3), Azure Blob and Google Cloud Storage SDKs. Hadoop FileSystem,
 paramiko/SFTP and obstore are cited where needed but not counted. Versions are
 in § Sources; all were read on 2026-10-26.
 
-**Evidence.** Claims rest on documentation or released source. A claim marked
-*observed* was seen by running pyarrow, smart_open and cloudpathlib against
-local disk and the moto S3 emulator; nothing was run against real AWS, Azure
-or GCS. Counts are lower bounds: an operation counts only where found in a
+**Evidence.** Claims rest on documentation or released source unless marked.
+*Inference* marks the researcher's own reading. *Observed* marks a claim seen
+by running pyarrow, smart_open and cloudpathlib against local disk and the
+moto S3 emulator; *observed on MinIO* marks the user's run against a MinIO
+server of unstated version. Nothing was run against real AWS, Azure or GCS. Counts are lower bounds: an operation counts only where found in a
 full text.
 
 ---
@@ -59,7 +60,7 @@ full text.
 | Storage class, retention or legal hold | Cost, compliance | 3/10 each |
 | Post-write metadata update | Fix a content type after upload | 2/10 native (Azure, GCS); S3 rewrites the object |
 | Local cache layer, transparent compression, `touch`, tags, query in place | Various | 2/10 each |
-| Transaction, key-value view, FUSE mount, rsync, leases, snapshots, annotations | Various | 1/10 each |
+| Transaction, key-value view, FUSE mount, rsync, leases, snapshots, aborting an async copy, annotations | Various | 1/10 each |
 
 Absent almost everywhere: OP-07's depth limit (fsspec only), OP-18's
 capability query (OpenDAL only) and OP-24's health check (OpenDAL and gocloud
@@ -76,14 +77,15 @@ only).
   if it is evaluated atomically with the visible commit (stat-then-mutate
   emulation is forbidden), staged writes evaluate it at the final commit, and
   where the error surfaces is unspecified. fsspec's `mode="create"` is exactly
-  that forbidden emulation. Atomic replace is a separate operation only on
+  that forbidden emulation (inference). Atomic replace is a separate operation only on
   filesystems (`os.replace`, SFTP `posix_rename`); on object stores every PUT
   is atomic.
-- **List, walk, match (OP-06 to OP-08).** The least agreed cut. gocloud and
-  object_store have one prefix-and-delimiter listing; pyarrow merges inspect,
-  list and walk into one call; fsspec and cloudpathlib keep separate calls.
-  Depth and pattern are emulated client-side at O(subtree) cost; only GCS
-  matches a glob server-side.
+- **List, walk, match (OP-06 to OP-08).** The least agreed cut. gocloud has
+  one prefix-and-delimiter listing; object_store separates a recursive listing
+  from a delimited one; pyarrow merges inspect, list and walk into one call;
+  fsspec and cloudpathlib keep separate calls. Depth and pattern are emulated
+  client-side at O(subtree) cost (inference); only GCS matches a glob
+  server-side.
 - **Inspect (OP-09).** The comparables lean to one rich inspect call with
   derived probes; Hadoop deprecated single-attribute probes. The identity
   fields it returns are opaque tokens, not content hashes (Q4).
@@ -119,11 +121,11 @@ and fixed piecemeal.
 |---|---|
 | Key validation | object_store rejects or encodes `.`/`..` and empty segments; OpenDAL passes `..` through; gocloud escapes per driver; pyarrow, smart_open and cloudpathlib normalise none of `..`, `.` or `//` (observed). Vendor limits: S3 and GCS 1024 bytes, Azure 1024 characters and 254 segments |
 | Error taxonomy | object_store `Error` enum and OpenDAL `ErrorKind`, each with NotFound, AlreadyExists, a precondition kind and an unsupported kind; gocloud `ErrorCode`; fsspec and pyarrow builtins |
-| Retries | object_store built in, retrying a timeout only if the request is idempotent; OpenDAL opt-in, temporary errors only; s3fs an allow-list; gocloud not portable; GCS retries deletes by default |
+| Retries | object_store built in, retrying a timeout only if the request is idempotent; OpenDAL opt-in, temporary errors only; s3fs an allow-list; gocloud not portable (inference); GCS retries deletes by default |
 | Timeouts | per instance or per call: object_store 30 s, OpenDAL 60 s (opt-in), botocore 60 s, Azure 20 s to connect and 60 s to read, GCS 60 s; gocloud per call |
 | Consistency stated | atomic put (object_store); strong read-after-write including list (S3, Azure, GCS); gocloud's list may miss recent writes |
 | Identity token | ETag and version are opaque. An S3 ETag is an MD5 only for a single-part plaintext or SSE-S3 upload; multipart, SSE-C/KMS and directory buckets give no MD5, and a metadata-only change leaves the ETag alone |
-| Closing | gocloud `Bucket.Close`; vendor `close()`; object_store, OpenDAL `Operator`, fsspec and pyarrow have none |
+| Closing | gocloud `Bucket.Close`; vendor `close()`; OpenDAL `Operator`, fsspec and pyarrow have none; object_store relies on Drop (inference) |
 | Async parity | OpenDAL Python is not at parity (presign is async-only); fsspec and Azure offer both; boto3 and GCS are sync only |
 | Prefix scope (OP-16) | object_store `PrefixStore`, OpenDAL `root`, gocloud `PrefixedBucket`, fsspec `DirFileSystem`, pyarrow `SubTreeFileSystem` |
 
@@ -185,7 +187,7 @@ names this document at the start of its session (research § 4, S3 of
 `research-spec-first-reset.md`). None proposes semantics.
 
 - **OP-01 Read.** The view during a streamed read is undefined unless pinned; s3fs added ETag expiry checks. object_store returns NotFound on a folder path. pyarrow's `allow_delayed_open` defers open errors to close. cloudpathlib downloads the whole object first.
-- **OP-02 Read at offsets.** Ranges past the end were fixed separately in five libraries. Azure has no suffix range; S3 serves one range per request. Hadoop's vectored read may mix old and new data if the item changes. On MinIO (observed, not AWS): a range starting at or past the size gives 416, an end past the size is clamped, a suffix longer than the object returns all of it.
+- **OP-02 Read at offsets.** Ranges past the end were fixed separately in five libraries. Azure has no suffix range; S3 serves one range per request. Hadoop's vectored read may mix old and new data if the item changes. Observed on MinIO, not AWS: a range starting at or past the size gives 416, an end past the size is clamped, a suffix longer than the object returns all of it.
 - **OP-03 Write.** Visible only on close, and close can fail. On an exception, pyarrow commits the partial object, cloudpathlib uploads it and smart_open aborts (observed). Multipart has a 5 MiB part floor and at most 10,000 parts. Empty items take a separate path in several libraries. S3 adds a CRC64NVME checksum when none is supplied, and "AWS SDKs do not automatically calculate MD5 checksums".
 - **OP-04 Replace atomically.** Object-store PUT is atomic, but object_store's local temp files leak into the key space. Windows needs `os.replace`, SFTP `posix_rename`. A durable replace needs a directory fsync. On S3 the latest timestamp wins.
 - **OP-05 Conditional write.** Conflicts surface as 412, 409 or 404 (a concurrent delete). A delete marker counts as absent. A local filesystem cannot do "if unchanged" (object_store #423); "if absent" maps to `O_EXCL`. object_store separates AlreadyExists from a precondition failure. OpenDAL forbids stat-then-mutate emulation and evaluates staged writes at the final commit, leaving the old item on failure.
@@ -193,10 +195,10 @@ names this document at the start of its session (research § 4, S3 of
 - **OP-07 Walk subtree.** Flat versus per-level listing is a real split; only per-level listing can prune. Cost is O(entries). gocloud's listing may miss recent writes.
 - **OP-08 Match by pattern.** fsspec's glob rules: `**` must be a whole component, depth applies to the first `**`, a trailing `/` matches folders, no braces; they drifted across releases, as pathlib's did in 3.13. Metacharacters in keys need an escape. Only GCS matches server-side.
 - **OP-09 Inspect.** "Is it a folder" is ambiguous on object stores and costly to probe. An S3 HEAD on a missing key returns 403 without list permission. mtime is the multipart start time, at about 1 s granularity. The ETag is not a content hash (Q4); fsspec offers `ukey` and `checksum` as identity probes.
-- **OP-10 Delete item.** A missing key succeeds on S3 and in OpenDAL (even under a condition), and errors in object_store's local, GCP and Azure stores, gocloud, Azure and GCS; Hadoop returns False. Bulk limits are 1000, 256 and 100 keys per request, with partial failures. Versioned buckets insert delete markers. On MinIO (observed, not AWS): deleting a missing key gives 204, and a batch delete lists it as deleted.
+- **OP-10 Delete item.** A missing key succeeds on S3 and in OpenDAL (even under a condition), and errors in object_store's local, GCP and Azure stores, gocloud, Azure and GCS; Hadoop returns False. Bulk limits are 1000, 256 and 100 keys per request, with partial failures. Versioned buckets insert delete markers. Observed on MinIO, not AWS: deleting a missing key gives 204, and a batch delete lists it as deleted.
 - **OP-11 Delete folder tree.** Not atomic and O(n), except on Azure HNS. pyarrow's S3 `delete_dir("bucket")` empties the bucket and then raises (observed). Markers must be deleted too; S3 directory buckets delete empty parents themselves.
 - **OP-12 Move or rename.** Copy plus delete is neither atomic nor cheap. Atomic only on some bucket types: Azure HNS, GCS `move_blob` within a bucket, S3 `RenameObject` on Express One Zone. SFTP v3 rename fails if the target exists. Same-path moves differ; GCS charges early deletion on a copy-based move.
-- **OP-13 Copy within a store.** S3 `CopyObject` is atomic up to 5 GB, and pyarrow uses only that call, so its S3 copy fails above it. Azure copies can stay pending. Copying a multipart S3 object changes its checksum and so its ETag form.
+- **OP-13 Copy within a store.** S3 `CopyObject` is atomic up to 5 GB, and pyarrow uses only that call, so its S3 copy fails above it (the failure mode is inference). Azure copies can stay pending. Copying a multipart S3 object changes its checksum and so its ETag form.
 - **OP-14 Transfer to or from a local file.** Temp-file strategies differ (temp plus rename, direct write, cross-device rename). Comparing an ETag with a local MD5 fails for multipart, SSE-C/KMS and directory-bucket objects; gocloud verifies `ContentMD5` on close. cloudpathlib fixed a `..` escape (GHSA-r4f8-3xc4-c8vw).
 - **OP-15 Transfer between stores.** Data passes through the client and often local disk. fsspec's copy ignores errors by default. Two buckets of one provider are a third case. ETags are not comparable across stores or upload methods.
 - **OP-16 Scope to a folder.** `..` escapes were fixed in 2026 in three libraries; pyarrow's `SubTreeFileSystem` "makes no security guarantee", and object_store's local store follows symlinks out of the root. Every method must be forwarded. gocloud's `PrefixedBucket` closes its parent.
@@ -220,7 +222,7 @@ names this document at the start of its session (research § 4, S3 of
 | 01 read | `open`, `cat_file` | `open_input_stream` | `read`, `reader` | `get`, `get_opts` | `NewReader`, `ReadAll` | `open('rb')` | `read_bytes`, `open` (via cache) | `get_object` | `download_blob` | `download_as_bytes`, `Blob.open` |
 | 02 read at offsets | `seek`, `cat_file(start,end)`, `cat_ranges` | `open_input_file`, `read_at` | `read_with(range)`, `Reader::fetch`; Py `read(offset,size)` | `get_range`, `get_ranges` | `NewRangeReader` | `seek` (per transport) | `seek` on cache copy | `Range=` | `offset`/`length` | `start`/`end` |
 | 03 write | `open('wb')`, `pipe_file`, `put_file` | `open_output_stream` | `write`, `writer` | `put`, `put_multipart` | `NewWriter`, `WriteAll`, `Upload` | `open('wb')` | `write_bytes`, `open('w')` | `put_object`, `upload_fileobj` | `upload_blob` | `upload_from_*`, `Blob.open('wb')` |
-| 04 atomic replace | — (`transaction`, semi-atomic) | — (exception commits partial) | n/c (staged writes: conditions at final commit) | `put` (atomic) | `Writer.Close` | — | — | PUT atomic | Put Blob / commit | write |
+| 04 atomic replace | — (`transaction`, semi-atomic) | — (exception commits partial) | n/c (staged writes: conditions at final commit) | `put` (atomic) | `Writer.Close` | — | — | PUT atomic | Put Blob / commit (inference) | write (inference) |
 | 05 conditional write | `mode="create"`/`xb` (g) | — | `write_with(if_*)` (g) | `PutMode::Create/Update` (g) | `IfNotExist` (absent only) | — | `open('x')` (e) | `IfNoneMatch`/`IfMatch` | `overwrite=False`, `etag`+`match_condition` | `if_generation_match` |
 | 06 list children | `ls` | `get_file_info(FileSelector)` | `list` | `list_with_delimiter` | `List(Delimiter="/")` | — (`iter_bucket`) | `iterdir` | `list_objects_v2(Delimiter)` | `walk_blobs` | `list_blobs(delimiter)` |
 | 07 walk (+depth) | `find`/`walk(maxdepth)` | `FileSelector(recursive)`, no depth | `list_with(recursive)` (g); Py `scan` | `list`, no depth | `List` flat | — | `walk(lazy)`, `rglob` | flat prefix | `list_blobs`; HNS `get_paths` | flat prefix |
@@ -267,7 +269,7 @@ Read on 2026-10-26. Per-claim citations are in the full report linked in § 1.
 
 | Library | Version | Where |
 |---|---|---|
-| fsspec, s3fs, gcsfs, adlfs, sshfs | fsspec 2026.9.0, s3fs 2026.9.0, gcsfs 2026.10.1, adlfs 2026.8.0, sshfs 2026.8.0 | https://filesystem-spec.readthedocs.io/en/latest/ ; source at the tags |
+| fsspec, s3fs, gcsfs, adlfs, sshfs | fsspec 2026.9.0, s3fs 2026.9.0, gcsfs 2026.10.1, adlfs 2026.8.0, sshfs 2026.8.0 | https://filesystem-spec.readthedocs.io/en/latest/ ; fsspec and s3fs source at their tags, gcsfs, adlfs and sshfs on `main` |
 | pyarrow.fs | Apache Arrow 26.0.0 | https://arrow.apache.org/docs/python/api/filesystems.html |
 | Apache OpenDAL | opendal_core 0.59.5, Python binding 0.47.12 | https://opendal.apache.org/docs/rust/opendal_core/struct.Capability.html ; https://opendal.apache.org/docs/specifications/conditional-operations/ |
 | object_store, obstore | object_store 0.14.2, obstore 0.12.0 | https://docs.rs/object_store/0.14.2 ; https://developmentseed.org/obstore/v0.12.0/ |

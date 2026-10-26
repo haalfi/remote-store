@@ -88,8 +88,7 @@ another library reads the store through), `client` (the backend's own). *Offer* 
 its spec states. Where part of it depends on the backend, such as OP-09's
 token, the entry stays `v1` and its session declares the variation as a
 profile of that contract (spec 053, Notes;
-[RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D6). OP-05's "if unchanged"
-rests on that token, so OP-05's profile follows OP-09's.
+[RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D6).
 
 ## Not in v1
 
@@ -112,7 +111,7 @@ extension may add it on top of the entries, as it may add content hashing.
 | Presigned URL | Not in v1 |
 | Append | Not in v1 |
 | Versioned access, restore | Not in v1 |
-| Server-side compose, storage class, retention, tags apart from metadata, query in place | Not in v1 |
+| Server-side compose, storage class, retention, legal hold, tags apart from metadata, query in place | Not in v1 |
 | Bucket or container create and delete | Not in v1 |
 | Local cache layer, transparent compression, transactions | Not in v1 |
 | Key-value mapping view | Form of OP-17 |
