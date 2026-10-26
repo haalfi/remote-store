@@ -7,8 +7,9 @@ L_b for that backend, and KEY-A-02 is the spec's reliance on it; the spec's
 clauses do not change with it.
 Sources are the sections of
 [`research-backend-path-authorities.md`](../../research/research-backend-path-authorities.md)
-(§ 3 authorities, § 5 measurements of 2026-10-22); "not documented" is its § 4,
-unknown rather than permitted.
+(§ 3 authorities, § 5 measurements of 2026-10-22); "not documented" means the
+cell's own § 3 subsection documents no rule, so the axis is unknown rather than
+permitted.
 
 ## Axes
 
@@ -34,10 +35,12 @@ unknown rather than permitted.
 | Name length | — | 255 bytes, `NAME_MAX` per file system (§ 3.2) | 255 UTF-8 bytes; a file system may allow more (§ 3.3) | 255 UTF-16 units, per volume (§ 3.4) | — | not documented (§ 3.6) | the server's file system (§ 3.8) |
 | Key length | — | 4096 bytes with the terminating NUL, `PATH_MAX` (§ 3.2) | 1024 bytes, `PATH_MAX` (§ 3.3) | 260 UTF-16 units with drive and NUL, a folder's 248 (`MAX_PATH − 12`); about 32 767 with long paths opted in (§ 3.4) | 1024 UTF-8 bytes (§ 3.6) | 1024 UTF-8 bytes (§ 3.6) | the server's file system (§ 3.8) |
 | Segment count | — | — | — | — | — | not documented (§ 3.6) | — |
-| Rewrites | — | — (§ 3.2) | — (normalisation-preserving, § 3.3); HFS+ stores names decomposed (§ 3.3) | a segment ending in a single `.` loses it; the last segment loses all trailing `.` and spaces (§ 3.4) | — (§ 3.6) | not documented (§ 3.6) | the server's file system (§ 3.8) |
+| Rewrites | — | — (§ 3.2) | — (normalisation-preserving, § 3.3) | a segment ending in a single `.` loses it; the last segment loses all trailing `.` and spaces (§ 3.4) | — (§ 3.6) | not documented (§ 3.6) | the server's file system (§ 3.8) |
 | Name equality | exact | exact (§ 3.2) | case-insensitive by default, normalisation-insensitive (§ 3.3) | case-insensitive, case-preserving (§ 3.4) | exact (§ 3.6) | not documented (§ 3.6) | the server's file system (§ 3.8) |
 | Holds L_shared | yes | yes | yes | only with long paths opted in: without, a folder's 248 units, drive and NUL included, are fewer than a portable key's 255 | yes | unverified: three rows not documented | the server's file system |
 
+The macOS column is APFS only; an HFS+ volume (255 UTF-16 units, names
+stored decomposed, authorities § 2 and § 3.3) has no column.
 Memory has no external authority (authorities doc § 1): its language is
 L_core, and its cells record no limit rather than a measured one. A cell
 reading "the server's file system" takes the matching Local column for the

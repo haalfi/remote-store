@@ -152,6 +152,9 @@ L_shared ⊆ L_b ⊆ L_core      for every backend b,
 L_shared ⊆ ⋂_b L_b           (equal, or stricter as a deliberate policy)
 ```
 
+*Superseded by spec 052:* there L_shared is a policy that names no backend,
+so neither inclusion is promised (§ 9.8).
+
 What each backend's own authority permits, with sources, is collected in
 [research-backend-path-authorities.md](research-backend-path-authorities.md),
 the input for each L_b. Its § 3.7 also records that the Azure Python SDK's
@@ -645,6 +648,14 @@ source named, and each is narrower than the model.
 *Superseded:* this compares the draft of 2026-10-22. Spec 052, the spec
 that draft became, takes the model's side on the three points below: `..` climbs and only an
 escape is refused, the `\` opt-out is KEY-009, and resolution is KEY-013.
+It departs from the model in two places. Its KEY-002 also refuses a
+surrogate anywhere in the raw input: § 3.5 step 0 refuses only NUL and an
+opted-out `\`, and the model's inputs range over Σ, which holds no
+surrogate (§ 2), so it says nothing of `\ud800/..`, which spec 052 refuses
+rather than walking to ε. And its
+L_shared is a policy `PORTABLE_KEY` defines, which no backend is promised to
+hold, where § 3.2 has L_shared ⊆ L_b for every backend; a profile table
+beside the spec records which backend holds it.
 
 PR #1171 proposes spec 054, "Store Key Specification" (*Read*: its branch,
 2026-10-22). It moves PATH-002 to PATH-007 out of spec 004 and adds KEY-001 to

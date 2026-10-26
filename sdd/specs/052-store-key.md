@@ -71,12 +71,6 @@ PORTABLE_KEY  = (?=[ -~]{1,255}\Z)PORTABLE_NAME(?:/PORTABLE_NAME)*
 
 ## Reduction
 
-### KEY-001: Totality
-
-**Invariant:** For every input p and base c ∈ L_api, ν_c(p) is exactly one key
-string or refused, and is a function of p, c, Sep and L_api alone, never of the
-store's state.
-
 ### KEY-002: Input Refusal
 
 **Invariant:** ν_c(p) is refused when p holds U+0000, a surrogate, or, when
@@ -112,18 +106,22 @@ name the walk drops is never judged.
 ### KEY-008: Acceptance Language
 
 **Invariant:** L_api is L_floor ∩ L_b, unless the store opts into portability,
-when it is L_shared; the choice is part of the store's configuration and is
-observable.
+when it is L_shared; the choice is part of the store's configuration.
 
 ### KEY-009: Separator Set
 
 **Invariant:** Sep is {`/`, `\`} by default and on every backend whose profile
-treats `\` as a separator; on any other backend a store may opt out to {`/`},
-and the set in force is observable.
+treats `\` as a separator; on any other backend a store may opt out to {`/`}.
 
 ---
 
 ## Derived
+
+### KEY-001: Totality
+
+**Invariant:** For every input p and base c ∈ L_api, ν_c(p) is exactly one key
+string or refused, and is a function of p, c, Sep and L_api alone, never of the
+store's state.
 
 ### KEY-010: Canonical Fixed Point
 
@@ -174,9 +172,10 @@ which imports spec 051's own definitions from `StoreAxioms.lean`. Its inputs
 range over Σ, so KEY-002's surrogate arm is checked by the reference model
 alone.
 
-- **Axioms and lemmas.** KEY-002 to KEY-005, KEY-008 and KEY-009 define ν;
-  KEY-001 and KEY-010 to KEY-013 follow. KEY-006, KEY-007 and KEY-A-01 are
-  unassigned. KEY-010 is K2 (`nu_fixed_point`), KEY-011 is K3
+- **Axioms and lemmas.** KEY-002 to KEY-005, KEY-008 and KEY-009 define ν,
+  and KEY-013 defines Ω; KEY-001 and KEY-010 to KEY-012 follow. KEY-006,
+  KEY-007 and KEY-A-01 are unassigned. KEY-001 holds by construction, ν being
+  a total function of those parameters (`nu`). KEY-010 is K2 (`nu_fixed_point`), KEY-011 is K3
   (`nu_decides_equiv`), KEY-012 is K6 (`child_compose`) with K4
   (`join_continuation`), and KEY-013's cases are exhaustive by K10
   (`resolution`, `occupied_take`); their disjointness follows from arithmetic
@@ -215,15 +214,15 @@ alone.
   equality (case-insensitive, normalising) still holds both `A` and `a`; that
   they conflict as siblings is spec 051 § Name equality's, a constraint on the
   state rather than on a key string.
-- **L_shared.** A policy, not a derivation from any set of backends: the
-  names that file systems and object stores in common use keep apart and
-  store unchanged. A portable name is ASCII letters, digits, `.`, `_` and
-  `-`; it starts with a letter or digit, so no tool reads it as hidden or as
-  an option; it ends in neither `.` nor a space, the endings a store that
-  strips them would alias; it is no reserved device name (`CON`, `PRN`,
-  `AUX`, `NUL`, `COM0`–`COM9`, `LPT0`–`LPT9`, alone or before a `.`, after
-  Microsoft's "Naming Files, Paths, and Namespaces"); and a key is at most 255
-  characters. Every portable name is a name of L_floor, and every key in
+- **L_shared.** A policy that `PORTABLE_KEY` defines, not a derivation from
+  any set of backends, and no backend is promised to hold it. Each rule has
+  its own reason. A portable name is ASCII letters, digits, `.`, `_` and `-`;
+  it starts with a letter or digit, so no tool reads it as hidden or as an
+  option; it ends in neither `.` nor a space, the endings a store that strips
+  them would alias; it is no reserved device name (`CON`, `PRN`, `AUX`,
+  `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9` after Microsoft's "Naming Files, Paths,
+  and Namespaces", widened by the digit 0 to `COM0` and `LPT0`, alone or
+  before a `.`); and a key is at most 255 characters. Every portable name is a name of L_floor, and every key in
   L_shared is its own reduction.
   `sdd/research/bk-468-key-probe/check_portable_regex.py` checks the patterns
   against that gloss. Under the opt-in, a key of L_shared outside a store's

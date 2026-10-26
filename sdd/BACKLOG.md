@@ -582,9 +582,9 @@ copies an example, without opening an issue.
 
 - [ ] **BK-480 — No API lets a caller set or read a store's separator set and acceptance language**
   spec: KEY-008, KEY-009 · effort: S · audience: user.api, user.api_docs
-  Spec 052 makes the `\` opt-out and the portability opt-in store settings a caller can observe
-  (KEY-008, KEY-009), and defines the portable language by `PORTABLE_KEY`; no type or method
-  carries either, so a caller has only the spec text. Class F (RFC-0024 § R3): decided in the API's
+  Spec 052 makes the `\` opt-out and the portability opt-in store settings (KEY-008, KEY-009)
+  and leaves setting and reading them to the API's spec; no type or method carries either, so
+  a caller cannot tell which is in force. Class F (RFC-0024 § R3): decided in the API's
   flow, with a helper such as `is_portable_key(key) -> bool` as candidate input. Open decision: the shape.
 
 - [ ] **BUG-321 — A list that directly follows paragraph text renders as literal dashes on the docs site**
