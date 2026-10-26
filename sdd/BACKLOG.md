@@ -517,11 +517,11 @@ no clause of the contract ships unexercised.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [~] **BK-493 — The v1 Store API has no agreed set of operations, so each design session would find its own scope**
-  spec: — · effort: M · audience: library.maintainer, user.api
+  spec: OPS-001 -- OPS-004 · effort: M · audience: library.maintainer, user.api
   RFC-0024 § 9 goes from the key (step 4) to `read()` (step 5) with no list of what v1 offers, and
   the first `/observe` run found that decisions binding every operation have no home. RFC-0026 adds
   step 4b: spec 053 binds a catalogue table beside it, one entry per intent, from use cases with 0.33
-  as a check. Open decision: the deep-research findings on the drafted 24 entries.
+  as a check, revised against a deep research. Open decision: none; review and acceptance remain.
   Detail: [dossier](backlog/bk-493-operation-catalogue.md)
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**

@@ -7,9 +7,9 @@ Draft, 2026-10-26. Tracked as **BK-493**. Amends
 of [research § 9](../research/research-spec-first-reset.md#9-results-and-recommendation),
 which RFC-0024 makes binding, and adds two rows to the
 [ground register](../observe/ground-register.md). Decisions taken in this RFC's
-session: decision log `sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl`.
-Revised against the maintainer's deep research on the drafted catalogue before
-review.
+sessions: decision logs `sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl`
+and, for the revision against the maintainer's deep research (C5),
+`sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`.
 
 ## Summary
 
@@ -58,7 +58,8 @@ semantics, so D5 stands:
 
 - **What the catalogue decides:** which entries exist, each entry's intent,
   what it targets, the kind of result it gives, and whether it is in v1 or
-  optional. Spec 053 adds the decisions about the surface as a whole: the set
+  optional; and what v1's core leaves out, which an extension may still add
+  on top of the entries. Spec 053 adds the decisions about the surface as a whole: the set
   is exact, every entry has a sync and an async form, and an optional entry is
   served only where its backend declares it.
 - **What it leaves to each entry's session:** signatures, forms (bytes, text,
@@ -94,9 +95,22 @@ The ground register gains two `active` rows with flow `catalogue`:
 `sdd/specs/053-store-operations.md` and `sdd/observe/catalogue.md`. Neither
 holds semantics, so admitting them primes a session with scope only. Not
 ground: BK-493's dossier, which holds the 0.33 mapping, and the deep-research
-doc, whose per-entry pitfalls are notes for each entry's session and would
-prime every other one; a session's maintainer may name its entry's part at the
+doc ([`research-operation-catalogue.md`](../research/research-operation-catalogue.md)),
+whose per-entry pitfalls are notes for each entry's session and would prime
+every other one; a session's maintainer may name its entry's part at the
 start (research § 4, S3).
+
+### C5. The deep research
+
+The maintainer ran the brief in BK-493's dossier against ten comparable
+libraries; the report is filed as
+[`research-operation-catalogue.md`](../research/research-operation-catalogue.md),
+whose filing note maps each finding to what the catalogue took from it. In
+short: the cut stands (conditions on writes only, three listing entries with
+OP-07's depth limit); OP-20 widens to system properties and OP-09's info to
+an identity token where the backend offers one; the catalogue gains a Not in
+v1 list; and spec 053 bounds the core only, so an extension may add a feature
+no entry has.
 
 ## Alternatives Considered
 
@@ -120,6 +134,13 @@ All decided in the log above:
   catalogue first and the RFC after.
 - **Fold into BK-485** with no RFC, which leaves RFC-0024's step list out of
   date.
+- **Against the research (C5):** one entry for conditions on every operation,
+  as OpenDAL's conditional-operations spec does, which is a modifier rather
+  than an intent; or a conditional read beside OP-05. One listing entry with
+  depth and pattern as options, or no depth limit. Presigned URLs and append
+  as optional entries. Shared decisions such as "no silent no-op" in spec
+  053, which would give it a second kind of truth, or a shared-decisions
+  layer before `read()`, which changes D5.
 
 ## Impact
 
@@ -129,22 +150,21 @@ All decided in the log above:
   operations with 0.33 (D8); an entry with no 0.33 counterpart, or a 0.33
   method no entry serves, becomes a break record there.
 - **Process:** research § 9's step table, as RFC-0024 carries it; the ground
-  register; D7 headers on specs 001 and 029. RFC-0024 gets an "Amended by
+  register; D7 headers on specs 001 and 029; the research doc under
+  `sdd/research/`. RFC-0024 gets an "Amended by
   RFC-0026" line on acceptance.
 - **Testing:** none. Spec 053 is tested against nothing until a v1 surface
   exists (its Notes).
 
 ## Open Questions
 
-1. **The deep research** on the drafted entries, run by the maintainer from the
-   brief in BK-493's dossier: completeness, the cut, optional entries, shared
-   decisions and per-entry pitfalls. Its doc is filed under `sdd/research/` and
-   the catalogue and spec 053 are revised against it before review.
-2. **Further shared decisions.** Whether spec 053 also states decisions about
-   every operation beyond the surface (key refusal, error taxonomy, timeouts,
-   closing, consistency), or whether each grows from `read()` under D5. The
-   research's question 4 informs it.
-3. **Order of the flows after `read()`.** The catalogue lists entries, not the
+1. **Shared decisions beyond the surface** grow from `read()` under D5, and
+   spec 053 states none. Which shared layer each lands in is open; the
+   research's advisory note 7 lists the ones comparables most often had to
+   retrofit (missing-key delete, no silent ignore of an unsupported option,
+   exception typing, retries tied to idempotency, a failure mid-write), as
+   input to `read()`'s session and each later one.
+2. **Order of the flows after `read()`.** The catalogue lists entries, not the
    order their sessions run in.
 
 ## References

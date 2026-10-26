@@ -43,8 +43,10 @@ above: the catalogue carries no 0.33 column, since it is ground (the table
 below is the omission check's record); spec 053 supersedes STORE-008 and
 ASYNC-046; its Tested against is `None.`, with the reason in its Notes.
 
-Next: wait for the deep-research doc, file it under `sdd/research/`, revise
-the catalogue and spec 053 against it, then run the gates and review rounds.
+The deep research landed the same day and is filed as
+[`research-operation-catalogue.md`](../research/research-operation-catalogue.md);
+its filing note records what the catalogue took from it (RFC-0026 C5). Next:
+the gates and review rounds.
 
 **Draft entries and the 0.33 omission check** (one per intent; 0.33
 counterpart checked against `src/remote_store/_store.py` and `ext/` at

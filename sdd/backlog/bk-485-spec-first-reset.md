@@ -68,8 +68,8 @@ Two more, from the first `/observe` run's own report (above):
   items on a timeout bound and a profile surface are shared; the next
   operation's session would rediscover them. Moved to
   [BK-493](bk-493-operation-catalogue.md): spec 053 holds the decisions about
-  the surface as a whole, and whether it holds more is RFC-0026's Open
-  Question 2.
+  the surface as a whole; the rest grows from `read()` (RFC-0026 Open
+  Question 1).
 - **F3 lacks "admitted, not required".** A failure category that may surface
   but need not (`exists`'s store-integrity failure on a non-store state) fits
   none of F3's terms; the session coined the phrase.

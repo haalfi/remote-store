@@ -121,3 +121,21 @@ phases:
         read_type: verify
         extract: "0.33's async surface list, superseded by spec 053"
         outcome: ok
+  - id: research
+    name: Revise the drafts against the maintainer's deep research
+    steps:
+      - file: "haalfi/research reports/remote-store v1 operation catalogue verified.md (b0e426f)"
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Ten comparables. Q1: presign 8/10, system properties 7/10, identity
+          tokens 6/10 have no entry; Q2: conditions span read, delete, copy and
+          rename, and list/walk/match is the least agreed cut; Q4: shared
+          decisions most often retrofitted. Four dialogs settled what the
+          catalogue takes; filed as research-operation-catalogue.md
+        outcome: ok
+      - file: sdd/templates/research-template.md
+        section: "header"
+        read_type: reference
+        extract: "The Date line is load-bearing for check-sdd-index"
+        outcome: ok

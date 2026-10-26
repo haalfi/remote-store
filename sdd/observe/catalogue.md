@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-**Every operation v1's Store offers, one entry per intent, with what it
+**Every operation v1's core API offers, one entry per intent, with what it
 targets and the kind of result it gives; no signatures and no semantics.**
 [Spec 053](../specs/053-store-operations.md) binds this table: v1 offers exactly
 these entries, each in a sync and an async form, and an optional entry only
@@ -24,7 +24,7 @@ one or more needs, and every need is served.
 | N-05 | Discovery | See what is directly inside one folder |
 | N-06 | Discovery | See every item below a folder, at any depth or up to a depth |
 | N-07 | Discovery | Find the items whose keys match a pattern |
-| N-08 | Discovery | Tell whether a key exists, whether it is an item or a folder, and its size and modification time |
+| N-08 | Discovery | Tell whether a key exists, whether it is an item or a folder, its size and modification time, and, where the backend offers one, a token that changes when the item does |
 | N-09 | Organising | Remove one item |
 | N-10 | Organising | Remove a folder and everything below it |
 | N-11 | Organising | Give an item or a folder a new key |
@@ -36,7 +36,7 @@ one or more needs, and every need is served.
 | N-17 | Further | Write only if an item is absent, or unchanged since it was read |
 | N-18 | Further | Learn what a store supports and where it deviates |
 | N-19 | Further, optional | Make a folder that holds nothing yet |
-| N-20 | Further, optional | Attach key-value metadata to an item and read it back |
+| N-20 | Further, optional | Attach key-value metadata and system properties (such as content type) to an item, and read them back, as far as the backend supports them |
 | N-21 | Omission check | Release a store's resources when done with it |
 | N-22 | Omission check | Map a key to the backend's own address of it, and back |
 | N-23 | Omission check | Reach the backend's own client, outside the library's guarantees |
@@ -78,13 +78,41 @@ another library reads the store through), `client` (the backend's own). *Offer* 
 | OP-17 | Hand items to other libraries | store | adapter | v1 | N-16 | not started |
 | OP-18 | Ask what a store supports | store | answer | v1 | N-18 | not started |
 | OP-19 | Create an empty folder | folder | outcome | optional | N-19 | not started |
-| OP-20 | Attach and read user metadata | item | info | optional | N-20 | not started |
+| OP-20 | Attach and read item metadata: user metadata and system properties | item | info | optional | N-20 | not started |
 | OP-21 | Close a store | store | outcome | v1 | N-21 | not started |
 | OP-22 | Map a key to its native address, and back | any | address | v1 | N-22 | not started |
 | OP-23 | Reach the native client | store | client | v1 | N-23 | not started |
 | OP-24 | Check health | store | answer | v1 | N-24 | not started |
 
+**Variation inside an entry.** Where part of a `v1` entry depends on the
+backend, such as OP-09's token, the entry stays `v1` and its session declares
+the variation in the entry's profile (spec 053, Notes).
+
+## Not in v1
+
+Operations comparable libraries offer that no entry serves, from the deep
+research ([`research-operation-catalogue.md`](../research/research-operation-catalogue.md),
+Q1). Each is out of v1's core; an extension may add one on top of the entries,
+as it may add content hashing. A form of an entry is designed in that entry's
+session.
+
+| Operation | Disposition |
+|---|---|
+| Batch delete | Form of OP-10 |
+| Abort an in-flight write | Form of OP-03 |
+| Multi-range read | Form of OP-02 |
+| Delete only a folder's contents, or only an empty folder | Form of OP-11 |
+| Conditions on read, delete, copy or move | Not in v1; OP-05 conditions writes only |
+| Presigned URL | Not in v1 |
+| Append | Not in v1 |
+| Versioned access, restore | Not in v1 |
+| Server-side compose, storage class, retention, tags apart from metadata, query in place | Not in v1 |
+| Bucket or container create and delete | Not in v1 |
+| Local cache layer, transparent compression, transactions | Not in v1 |
+
 ## Sources
 
 The needs and entries are the maintainer's, from the dialogs in
-`sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl` (2026-10-26).
+`sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl` (2026-10-26), revised
+against the deep research in
+`sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl`.
