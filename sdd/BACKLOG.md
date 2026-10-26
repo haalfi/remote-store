@@ -341,6 +341,14 @@ no clause of the contract ships unexercised.
   fixed this on the kernel's Memory driver, now frozen; BUG-330 fixed the adapter's twin. Open
   decision: none; raise `TypeError` as BUG-330 does (patch-rated, RFC-0025 R3 class K).
 
+- [ ] **BUG-343 — `copy`, `deepcopy` and `pickle` of a `CapabilitySet` raise `AttributeError`**
+  spec: CAP-002, CAP-006 · effort: S · audience: user.api
+  `CapabilitySet` has `__slots__` and a `__setattr__` that always raises, so the default slot-state
+  rebuild fails with "CapabilitySet is immutable" (v0.33.0, and master after RFC-0025's revert,
+  reproduced 2026-10-26). Anything holding one fails to copy too, e.g. a `SQLBlobBackend`. BK-394
+  fixed it with `__reduce__` on the kernel line, now frozen. Open decision: none; restore
+  `__reduce__` and its CAP-002 test (patch-rated, RFC-0025 R3 class K).
+
 - [ ] **BK-454 — A refusal surfaces at the call in one layer and at the first iteration in another**
   spec: ASYNC-006 · effort: M · audience: user.api
   `Store` raises a read's I/O refusal at the call, `AsyncStore` at the first `__anext__`; a

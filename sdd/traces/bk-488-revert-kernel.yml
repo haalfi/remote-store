@@ -15,6 +15,7 @@ decisions:
 discovery_followups:
   - BK-489
   - BUG-342
+  - BUG-343
 orient:
   - items: [BK-488]
     verdict: subsumes
@@ -162,7 +163,8 @@ phases:
           BUG-245, BUG-257, BUG-324, BUG-318, BUG-279, BK-366. Dossier placement notes: BK-242,
           BK-339, BK-382, BUG-266, BUG-287, BUG-288, BUG-289, ID-217. New: BUG-342, BUG-328's Memory
           `None`-read half, which v0.33.0's `MemoryBackend.write` ships (reproduced; found by PR
-          review, not D2)
+          review, not D2); BUG-343, `CapabilitySet` copy and pickle, whose fix (`__reduce__`) rode
+          in kernel PR #1144 and left with it (reproduced; found by the maintainer's review)
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "Unreleased"
