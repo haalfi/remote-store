@@ -66,7 +66,7 @@ items. Names compare exactly (spec 051 § Name equality).
 it is a portable name.
 
 ```text
-PORTABLE_NAME = (?!(?i:CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(?:[./]|$))[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?
+PORTABLE_NAME = (?!(?i:CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(?:[./]|\Z))[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?
 PORTABLE_KEY  = (?=[ -~]{1,255}\Z)PORTABLE_NAME(?:/PORTABLE_NAME)*
 ```
 

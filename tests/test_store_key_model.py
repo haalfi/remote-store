@@ -83,7 +83,7 @@ class Config:
             raise ValueError("KEY-008: a store opts into portability only where P_b is declared")
 
 
-PORTABLE_NAME = r"(?!(?i:CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(?:[./]|$))[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?"
+PORTABLE_NAME = r"(?!(?i:CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(?:[./]|\Z))[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?"
 PORTABLE_KEY = rf"(?=[ -~]{{1,255}}\Z){PORTABLE_NAME}(?:/{PORTABLE_NAME})*"
 
 
