@@ -182,7 +182,7 @@ All decided in the log above:
   `sdd/research/`. RFC-0024 carries an "Amended by
   RFC-0026" line.
 - **Testing:** none. Spec 053 is tested against nothing until a v1 surface
-  exists (C3, its Notes); the flow that builds the surface adds a test that
+  exists (C3); the flow that builds the surface adds a test that
   compares its public operations with the catalogue.
 
 ## Open Questions

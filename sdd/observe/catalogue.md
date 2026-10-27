@@ -68,7 +68,7 @@ another library reads the store through), `client` (the backend's own). *Offer* 
 | `OP-06` | List a folder's children | folder | listing | v1 | `N-05` |
 | `OP-07` | Walk a subtree, optionally to a depth | folder | listing | v1 | `N-06` |
 | `OP-08` | Match keys by pattern | pattern | listing | v1 | `N-07` |
-| `OP-09` | Inspect a key: whether it exists, its kind, size and time | any | info | v1 | `N-08` |
+| `OP-09` | Inspect a key: whether it exists, its kind, size and time, and, where the backend offers one, an identity token | any | info | v1 | `N-08` |
 | `OP-10` | Delete an item | item | outcome | v1 | `N-09` |
 | `OP-11` | Delete a folder tree | folder | outcome | v1 | `N-10` |
 | `OP-12` | Move or rename | any, to a key | outcome | v1 | `N-11` |

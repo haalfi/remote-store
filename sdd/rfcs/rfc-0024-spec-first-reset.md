@@ -17,7 +17,8 @@ Process bullet hold as RFC-0025 amends them while master's code is 0.33.
 Amended by [RFC-0026](rfc-0026-operation-catalogue.md), accepted 2026-10-26:
 § 9's step table gains step 4b, the operation catalogue; step 4b's output
 joins the ground without a formal model; and § R4 gains a second exception,
-spec 053 having no test until a v1 surface exists.
+[spec 053, store operations](../specs/053-store-operations.md), having no test
+until a v1 surface exists.
 
 It changes no spec format. [`SPEC-DESIGN.md`](../SPEC-DESIGN.md) and
 [ADR-0048](../adrs/0048-how-specs-are-designed.md) stay the authority for what
