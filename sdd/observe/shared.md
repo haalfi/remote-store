@@ -9,8 +9,9 @@ the clause joins the ground under RFC-0024 § R1, with that flow's spec and
 model. An `/observe` session never writes here: it records such a decision in
 its own record and lists it there under Open items as `shared: <home>`, naming
 a section below, a home Lands elsewhere names, or `unhomed`. Where it lands is
-decided after the session, by the flow that follows it (research § 3: record,
-then spec) with the maintainer, never in it; a change to ground is a reopen
+decided after the session, by the flow that follows it
+(`research-spec-first-reset.md` § 3: record, then spec) with the maintainer,
+never in it; a change to ground is a reopen
 ([RFC-0027](../rfcs/rfc-0027-observe-playground.md)).
 
 ## Session

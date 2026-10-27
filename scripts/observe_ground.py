@@ -17,7 +17,7 @@ allowlist is the ground register plus files the maintainer names at the start).
   armed is armed again, from the last ``/observe`` prompt before its first tool
   use, so it never resumes unarmed, whatever became of its marker. When those
   arguments no longer arm (the catalogue reopened, an entry or named path gone),
-  or the hook fails on a transcript naming ``/observe``, the session is locked
+  or the hook fails on a transcript naming ``/observe`` or one it cannot read, the session is locked
   instead: every call but the neutral ones is refused until ``/clear``.
 * ``check`` (``PreToolUse``): in an armed session, a call passes only if it
   stays inside the allowlist; every other session passes untouched, the
@@ -179,7 +179,7 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
         return None if args is None else _write_marker(payload, root, args)
     except Exception as exc:
         # SessionStart cannot block: a resume that cannot re-arm, refused or crashed, is locked.
-        # A crash locks only a transcript naming /observe, so an ordinary session stays free.
+        # A crash locks a transcript naming /observe, or one it cannot read: an ordinary readable one stays free.
         if not isinstance(exc, Refused):
             with contextlib.suppress(OSError):
                 if "/observe" not in Path(transcript).read_text(encoding="utf-8", errors="replace"):
