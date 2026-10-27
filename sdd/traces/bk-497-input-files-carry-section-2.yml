@@ -129,12 +129,12 @@ phases:
           OP-09": the row now also reaches OP-01, OP-03 and OP-20
         outcome: ok
 review:
-  # Derived by `hatch run ship-report 1187 --trace-block-only` at head 36e2b38.
+  # Derived by `hatch run ship-report 1187 --trace-block-only` at head 8f052d8.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1187 --trace-block-only"
   pr: 1187
-  review_rounds: 8
+  review_rounds: 9
   submissions: 7
   findings: 16
   by_round:
@@ -231,4 +231,6 @@ review:
       subject: "BK-497: Name OP-18's whole Q3 table and round 4's Identity token reversal"
     - sha: "36e2b38"
       subject: "BK-497: Name the trace phase for every review round it records"
-  ci: {verdict: PENDING, failed: 0, pending: 3}
+    - sha: "8f052d8"
+      subject: "BK-497: Paste the review block into the trace"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
