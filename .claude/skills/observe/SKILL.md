@@ -26,12 +26,13 @@ any web result about it.
    or in a resumed session: read `tmp/observe/canary-not-ground`. Unless the
    hook refuses it with "outside the ground", the session is not armed: stop
    and tell the maintainer to start a fresh one with `/observe`.
-2. **Load.** Read the entry's catalogue row, the session's scope; its
-   operations, forms and signatures are what you design (RFC-0026 C2). Then
-   the register, the axes, every active row but the formal models, the input
-   file and each named path; a formal model row only when a decision cites a
-   clause it checks. If
-   the record exists, continue it from its first axis not yet closed.
+2. **Load.** Read the session's scope in the catalogue: the entry's row,
+   whose operations, forms and signatures you design (RFC-0026 C2), and each
+   Not in v1 row it leaves to this entry, such as a *Form of* it, decided like
+   a question no axis raises (Rules). Then the register, the axes, every
+   active row but the formal models, the input file and each named path; a
+   formal model row only when a decision cites a clause it checks. If the
+   record exists, continue it from its first axis not yet closed.
    Otherwise create it: title `# <entry>: observable semantics`, the marker
    `<!-- doc: repo-only -->`, lines `**Date:**`, `**Backlog items:**` and
    `**Status:** In progress`, then five sections: Session (date, entry, ground

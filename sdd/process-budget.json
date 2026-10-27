@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 306232,
+  "total": 306331,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,7 +16,7 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 4398,
+    ".claude/skills/observe/SKILL.md": 4497,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -161,6 +161,12 @@
       "from": 306178,
       "to": 306232,
       "reason": "PR #1186 review: shared decisions take one of three tags, shared.md says what the flow after the session does with each"
+    },
+    {
+      "item": "BK-494",
+      "from": 306232,
+      "to": 306331,
+      "reason": "PR #1186 review: Load's scope includes the Not in v1 rows the catalogue leaves to the entry"
     }
   ]
 }
