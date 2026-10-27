@@ -128,3 +128,107 @@ phases:
           spec 052's. This supersedes round 1's "Identity token stays with
           OP-09": the row now also reaches OP-01, OP-03 and OP-20
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1187 --trace-block-only` at head 36e2b38.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1187 --trace-block-only"
+  pr: 1187
+  review_rounds: 8
+  submissions: 7
+  findings: 16
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.67
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.17
+    - round: 3
+      findings: 5
+      origin: {loop-introduced: 1, original: 4}
+      triage: {must-fix: 5}
+      duration_hours: 0.2
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.16
+    - round: 5
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.28
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.15
+    - round: 7
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.12
+  by_file:
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 6
+    - path: "sdd/traces/bk-497-input-files-carry-section-2.yml"
+      findings: 5
+    - path: "sdd/observe/inputs/OP-02.md"
+      findings: 1
+    - path: "sdd/observe/inputs/OP-07.md"
+      findings: 1
+    - path: "sdd/observe/inputs/OP-12.md"
+      findings: 1
+    - path: "sdd/observe/inputs/OP-18.md"
+      findings: 1
+    - path: "sdd/observe/inputs/OP-24.md"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-497-input-files-section-2.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/22fc130b-3097-5256-958c-78b435403004.jsonl"
+    - "sdd/decisions/441df0b2-ba2a-4355-a676-6faaec0a37e5.jsonl"
+    - "sdd/observe/inputs/OP-01.md"
+    - "sdd/observe/inputs/OP-03.md"
+    - "sdd/observe/inputs/OP-04.md"
+    - "sdd/observe/inputs/OP-05.md"
+    - "sdd/observe/inputs/OP-06.md"
+    - "sdd/observe/inputs/OP-08.md"
+    - "sdd/observe/inputs/OP-09.md"
+    - "sdd/observe/inputs/OP-10.md"
+    - "sdd/observe/inputs/OP-11.md"
+    - "sdd/observe/inputs/OP-13.md"
+    - "sdd/observe/inputs/OP-14.md"
+    - "sdd/observe/inputs/OP-15.md"
+    - "sdd/observe/inputs/OP-16.md"
+    - "sdd/observe/inputs/OP-17.md"
+    - "sdd/observe/inputs/OP-19.md"
+    - "sdd/observe/inputs/OP-20.md"
+    - "sdd/observe/inputs/OP-21.md"
+    - "sdd/observe/inputs/OP-22.md"
+    - "sdd/observe/inputs/OP-23.md"
+  review_driven_commits:
+    - sha: "467f893"
+      subject: "BK-497: Copy \u00a7 1's denominator verbatim; add Q3's gates to OP-05, OP-07, OP-12, OP-13"
+    - sha: "89858de"
+      subject: "BK-497: Split \u00a7 1's denominator into its two verbatim passages; name each Q4 row's home"
+    - sha: "8fc1251"
+      subject: "BK-497: Name each exclusion's source in the trace"
+    - sha: "0d0de6d"
+      subject: "BK-497: Copy Q1's closing sentence whole; route note 7 and Q4 Retries by shared.md"
+    - sha: "cd470cd"
+      subject: "BK-497: Route every \u00a7 2 passage by one literal rule, enumerated in a dossier"
+    - sha: "602741b"
+      subject: "BK-497: Name note 1 among the \u00a7 2 passages that name an entry"
+    - sha: "6f86a34"
+      subject: "BK-497: Name OP-18's whole Q3 table and round 4's Identity token reversal"
+    - sha: "36e2b38"
+      subject: "BK-497: Name the trace phase for every review round it records"
+  ci: {verdict: PENDING, failed: 0, pending: 3}
