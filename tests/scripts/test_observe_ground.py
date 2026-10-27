@@ -405,6 +405,31 @@ def test_rearm_takes_the_last_observe_prompt_before_any_tool(
     assert state["entry"] == entry
 
 
+def test_a_rearm_whose_transcript_cannot_be_read_is_locked(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sys.path.insert(0, str(repo / "scripts"))
+    import observe_ground
+
+    transcript = tmp_path / "unreadable.jsonl"
+    transcript.write_text(_TYPED, encoding="utf-8")
+    real_read = Path.read_text
+
+    def unreadable(self: Path, *args: object, **kwargs: object) -> str:
+        if self == transcript:
+            raise PermissionError(13, "Permission denied")
+        return real_read(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(Path, "read_text", unreadable)
+    payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
+    with pytest.raises(observe_ground.Refused, match="session locked"):
+        observe_ground.rearm(payload, repo)
+    monkeypatch.undo()
+    result = _call(repo, "Bash", session=OTHER, command="ls")
+    assert result.returncode == 2
+    assert "cannot be re-armed" in result.stderr
+
+
 def test_an_ordinary_resume_with_an_odd_transcript_stays_unarmed(repo: Path, tmp_path: Path) -> None:
     transcript = tmp_path / "plain.jsonl"
     transcript.write_text('{"type":"user","message":"oops"}\n{"type":"user","message":{"content":"hi"}}\n')

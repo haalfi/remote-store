@@ -519,10 +519,10 @@ no clause of the contract ships unexercised.
 - [ ] **BK-497 — The input files carry only research § 4, so per-entry findings in § 2 reach no session**
   spec: — · effort: S · audience: contributor.process, library.maintainer
   Each `sdd/observe/inputs/OP-NN.md` copies its entry's § 4 notes of `research-operation-catalogue.md`
-  (RFC-0027 P1), a doc that is not ground and is admitted only when named, whole. Its § 2 passages that
-  name an entry, in Q1 to Q4 and advisory notes 2 to 6, are in no input file; for one, Q4's Prefix scope
-  and Closing rows (OP-16, OP-21) and note 4 (OP-09, OP-14). Each entry's passages are copied, with
-  their source, before that entry's session. Open decision: none.
+  (RFC-0027 P1), a doc that is not ground and is admitted only when named, whole. Its § 2 also holds
+  findings for single entries, such as note 4 (OP-09, OP-14) and Q4's Prefix scope row (OP-16), and no
+  input file carries them. Finding each entry's in § 2 and copying it, with its source, is this item,
+  done before that entry's session. Open decision: none.
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process

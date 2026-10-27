@@ -70,9 +70,11 @@ section included, is a reopen under research § 3.
 
 The shared file's Lands elsewhere table gives each decision Open Question 1
 lists, and the three of BK-485's dossier, its home, as the table's rows name
-it. RFC-0024 D5 stands:
-the error, lifecycle and consistency layers still grow from `read()`; the
-table names where.
+it. RFC-0024 D5 stands: the error, lifecycle and consistency layers still
+grow from `read()`. The file names where the first two land, the error layer
+in a table row and lifecycle in its Lifetime and State sections; the
+consistency layer, which no listed item raises, has no home yet, so its first
+decision is tagged `unhomed`.
 
 ## Alternatives Considered
 
