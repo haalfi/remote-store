@@ -480,9 +480,10 @@ ships them.
   spec: — · effort: S · audience: contributor.process, library.maintainer
   Each input file with a § 2 finding (all but OP-22 and OP-23) gains a section copying it verbatim
   from `research-operation-catalogue.md` § 2, with its source, and § 1's denominator where a count
-  appears. OP-01's also carries note 7 and Q4's rows that bind every operation, except key validation
-  and async parity, which research § 3 gives to specs 052 and 053. Note 1, a recommendation on the
-  catalogue, is not copied; the research doc is unchanged.
+  appears. OP-01's also carries note 7 and Q4's error taxonomy, retries, timeouts, consistency and
+  closing rows; identity token and prefix scope go to OP-09 and OP-16, and key validation and async
+  parity to no file, being spec 052's and 053's (research § 3, BK-485's dossier). Note 1, a
+  recommendation on the catalogue, is not copied; the research doc is unchanged.
   Trace: [bk-497](traces/bk-497-input-files-carry-section-2.yml).
 - [x] **BK-494 — `/observe` still designs one operation, so a session never meets the catalogue entry that sets its scope**
   spec: OPS-001 -- OPS-002 · effort: S · audience: contributor.process, library.maintainer

@@ -95,8 +95,10 @@ phases:
         section: "§ 1, § 2 Q3 and Q4, § 3"
         read_type: gate
         extract: >-
-          The denominator paragraph was a paraphrase of § 1, now § 1's text,
-          asserted verbatim by a second one-off script. Q3's OpenDAL-gates
+          The denominator paragraph was a paraphrase of § 1, now two § 1
+          passages, one from its comparables paragraph and one from its
+          evidence paragraph, each asserted
+          verbatim by one-off scripts. Q3's OpenDAL-gates
           sentence also names rename, copy, recursive listing and conditions,
           so OP-05, OP-07, OP-12 and OP-13 gain it, OP-05 also the Declared
           row. Key validation and async parity stay out of OP-01: § 3 gives
