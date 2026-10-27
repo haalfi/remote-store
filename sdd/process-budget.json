@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 306108,
+  "total": 306178,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,7 +16,7 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 4274,
+    ".claude/skills/observe/SKILL.md": 4344,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -149,6 +149,12 @@
       "from": 305629,
       "to": 306108,
       "reason": "/observe runs on a catalogue entry: Load reads the entry row as scope, the entry input file is admitted, a shared decision is listed for the post-session flow, an entry that should split is a catalogue reopen"
+    },
+    {
+      "item": "BK-494",
+      "from": 306108,
+      "to": 306178,
+      "reason": "PR #1186 review: a shared decision outside a shared.md section is tagged with the home Lands elsewhere names"
     }
   ]
 }

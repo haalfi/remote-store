@@ -2,11 +2,11 @@
 
 ## Status
 
-Under Review, drafted 2026-10-27. Tracked as **BK-494** and **BK-495**. Amends
+Accepted, 2026-10-27, by the maintainer. Drafted 2026-10-27. Tracked as **BK-494** and **BK-495**. Amends
 [RFC-0024](rfc-0024-spec-first-reset.md) in two places: research § 4's S3
-allowlist gains the entry's input file (P1), and a shared-decisions file joins
-the ground without a formal model, filled only by the flow after a session
-(P2). Closes [RFC-0026](rfc-0026-operation-catalogue.md) Open Question 1 (P3).
+allowlist gains the entry's input file (P1), and a shared-decisions file's
+definitions join the ground without a formal model, its clauses only under
+§ R1, filled only by the flow after a session (P2). Closes [RFC-0026](rfc-0026-operation-catalogue.md) Open Question 1 (P3).
 It edits the [ground register](../observe/ground-register.md). The
 maintainer's cut into a bare skeleton before `read()` and a later API spec,
 with core against extension decided after the sessions, is in decision log
@@ -52,13 +52,16 @@ per-entry notes move there from its § 4, so each has one home.
 ### P2. The shared-decisions file
 
 `sdd/observe/shared.md` joins the ground register as `active` with flow
-`shared`, without a formal model, as the catalogue did (RFC-0026 C4): it holds
-definitions and no clause. Its sections are Session (design session against
-caller session), Handle, Lifetime and State, each naming the flow that fills
-it. A design session never writes it: the session records the decision and
-lists it under Open items as `shared: <section>`, and the flow after the
-session, research § 3's spec step, writes it in. Changing a filled section is a
-reopen under research § 3.
+`shared`, without a formal model, as the catalogue did (RFC-0026 C4). The
+exemption covers its definitions only: a clause written into a section joins
+the ground under RFC-0024 § R1, once the flow that writes it has its spec and
+model accepted, and until then the section holds no clause. Its sections are
+Session (design session against caller session), Handle, Lifetime and State,
+each naming the flow that fills it. A design session never writes it: the
+session records the decision and lists it under Open items as
+`shared: <section>`, or with the home the file's Lands elsewhere table names,
+and the flow after the session, research § 3's spec step, writes it there.
+Changing a filled section is a reopen under research § 3.
 
 ### P3. Open Question 1 of RFC-0026
 

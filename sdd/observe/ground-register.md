@@ -10,7 +10,8 @@ session read. What may join, and when, is RFC-0024 § R1 with research § 3: onl
 the new layer, once its spec and formal model are accepted; 0.33's code, tests
 and specs 001 to 050 never. Step 4b's catalogue joins without a model
 ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4), and so does the
-shared-decisions file, which holds definitions only
+shared-decisions file's definitions; a clause written into it joins under
+§ R1, with its flow's spec and model
 ([RFC-0027](../rfcs/rfc-0027-observe-playground.md) P2).
 
 ## Artifacts

@@ -67,6 +67,7 @@ any web result about it.
 - One entry, one fresh session (S2). "Undefined" is never an answer (F3).
 - A question no axis raises is asked under the nearest one and named in its
   consistency check, so the axes can be revised with F2 after `read()`.
-- A decision binding every operation, or filling a `shared.md` section, is
-  also listed in Open items as `shared: <section>`; the flow after the session
+- A decision binding every operation is also listed in Open items as
+  `shared: <section>` when it fills a `shared.md` section, otherwise with the
+  home `shared.md`'s Lands elsewhere table names; the flow after the session
   writes it there, never this session.
