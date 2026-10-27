@@ -108,7 +108,7 @@ extension may add it on top of the entries, as it may add content hashing.
 | Update metadata or system properties after the write | Form of OP-20 |
 | Backend-verified checksum on upload (Content-MD5, a checksum algorithm) | Form of OP-03 |
 | Touch (write an empty item) | Form of OP-03 |
-| Conditions on read, delete, copy or move | Not in v1; OP-05 conditions writes only |
+| Conditions on the source's identity (if it matches, if unchanged) on read, delete, copy or move | Not in v1; OP-05 conditions writes only. Whether a move or copy may replace an existing destination is OP-12's and OP-13's |
 | Presigned URL | Not in v1 |
 | Append | Not in v1 |
 | Versioned access, restore | Not in v1 |

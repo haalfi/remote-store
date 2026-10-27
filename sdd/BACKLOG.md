@@ -520,8 +520,9 @@ no clause of the contract ships unexercised.
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
-  Its test runs are in the dossier; step 4 is spec 052. Not done: § 9 steps 5 and 6. Open
-  decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's).
+  Its test runs are in the dossier; step 4 is spec 052, step 4b spec 053 and the catalogue (BK-493).
+  Not done: § 9 steps 5 (waits on BK-494) and 6. Open decision: § 8's open points 2 to 4 and 11
+  (D10 is BK-489's).
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**

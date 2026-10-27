@@ -20,7 +20,7 @@ completeness (Q1), the cut (Q2), which entries are gated and how a caller
 learns it (Q3), what is decided once for every operation (Q4), and pitfalls
 per entry (Q5). The full report, with a citation per claim, is
 [`reports/remote-store v1 operation catalogue verified.md`](https://github.com/haalfi/research/blob/b0e426f875c6de42730cd5fa15b3daf6ca4185b6/reports/remote-store%20v1%20operation%20catalogue%20verified.md)
-in the private `haalfi/research` repository at `b0e426f`. This document keeps
+in the `haalfi/research` repository at `b0e426f`. This document keeps
 its results and their consequences for the Store API.
 
 **Comparables (10, the denominator for every "n/10"):** fsspec, pyarrow.fs,
