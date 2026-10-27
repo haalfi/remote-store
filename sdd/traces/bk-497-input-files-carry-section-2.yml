@@ -15,6 +15,7 @@ surprising_ripples: []
 co_shipped_items: []
 decisions:
   - sdd/decisions/22fc130b-3097-5256-958c-78b435403004.jsonl
+  - sdd/decisions/441df0b2-ba2a-4355-a676-6faaec0a37e5.jsonl
 orient:
   - items: [BK-485]
     verdict: constrains
@@ -83,10 +84,12 @@ phases:
         section: "§ 2"
         read_type: gate
         extract: >-
-          Passages copied by a one-off script that asserts each is a verbatim
+          Passages copied by a one-off script that asserts each prose passage,
+          each table row's cells and each excerpted Q1-closing clause is a
           substring of § 2 (whitespace collapsed) before inserting it; dropped
           cross-references: "(Q4)" in Q2's Inspect bullet, "in § 5's row 24" in
-          Q1's health-check clause
+          Q1's health-check clause. The clause excerpts were spliced, which
+          round 3 replaced with the whole sentence
         outcome: ok
   - id: review_fix
     name: Round-1 fixes
@@ -104,5 +107,10 @@ phases:
           row. Key validation and async parity stay out of OP-01: research
           § 3 gives `..` containment to spec 052 and async parity to 053,
           BK-485's dossier the key refusal to 052. Identity token stays with
-          OP-09, which names the token
+          OP-09, which names the token. Round 3: Q1's closing sentence goes
+          whole, relabelled "the draft's own entries", to OP-07, OP-18 and
+          OP-24; by shared.md's Lands elsewhere rows (missing-key delete to
+          OP-10, a streamed-write exception to OP-03), note 7 also goes to
+          OP-03 and OP-10 and Q4's Retries row, which names deletes, to OP-10.
+          Routing decided in the round-3 dialog
         outcome: ok
