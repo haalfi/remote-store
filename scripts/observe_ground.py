@@ -15,7 +15,9 @@ allowlist is the ground register plus files the maintainer names at the start).
   another entry's input file, or is a ``reopened`` register row.
 * ``rearm`` (``SessionStart``): a resumed or compacted session whose
   transcript opens with ``/observe`` is armed again, so it never resumes
-  unarmed, whatever became of its marker.
+  unarmed, whatever became of its marker. When its arguments no longer arm
+  (the catalogue reopened, an entry or named path gone), the session is locked
+  instead: every call but the neutral ones is refused until ``/clear``.
 * ``check`` (``PreToolUse``): in an armed session, a call passes only if it
   stays inside the allowlist; every other session passes untouched, the
   wrapper's fail-closed branch included.
@@ -166,7 +168,16 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
         return None
     first = _first_prompt(Path(transcript))
     args = _observe_args(first) if first else None
-    return None if args is None else _write_marker(payload, root, args)
+    if args is None:
+        return None
+    try:
+        return _write_marker(payload, root, args)
+    except Refused as exc:
+        # SessionStart cannot block: a resume whose ground moved is locked, never left unarmed.
+        marker = _marker(root, payload.get("session_id") or "")
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(json.dumps({"locked": str(exc)}), encoding="utf-8", newline="\n")
+        raise
 
 
 def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:
@@ -216,6 +227,9 @@ def check(payload: dict[str, Any], root: Path) -> None:
     cwd = payload.get("cwd")
     if tool in _NEUTRAL:
         return
+    if "entry" not in state:  # locked by rearm, or written by the hook's operation-slug version
+        reason = state.get("locked") or "its marker predates catalogue entries"
+        raise Refused(f"{tool}: this /observe session cannot be re-armed ({reason}). /clear, then start afresh.")
     if tool == "Skill" and args.get("skill") == "observe":
         return
     if tool in ("WebSearch", "WebFetch"):

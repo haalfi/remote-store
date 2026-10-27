@@ -183,13 +183,35 @@ The Q1 table's dispositions are in the catalogue's
 
 ## 4. Notes for each entry's session
 
-The pitfalls the comparables met, per entry, as input for that entry's
-session, none proposing semantics. Each entry's notes are in its input file,
-`sdd/observe/inputs/OP-NN.md` (for example
-[`OP-01.md`](../observe/inputs/OP-01.md)), which the hook admits to that
-entry's session alone
-([RFC-0027](../rfcs/rfc-0027-observe-playground.md)); this doc, admitted
-whole, would hand every session all of them.
+Pitfalls the comparables met, per entry, as input for that entry's session.
+A named file is admitted whole (§ 4, S3 of `research-spec-first-reset.md`),
+so handing a session only its own entry's notes waits on BK-494. None
+proposes semantics.
+
+- **OP-01 Read.** The view during a streamed read is undefined unless pinned; s3fs added ETag expiry checks. object_store returns NotFound on a folder path. pyarrow's `allow_delayed_open` defers open errors to close. cloudpathlib downloads the whole object first.
+- **OP-02 Read at offsets.** Ranges past the end were fixed separately in five libraries. Azure has no suffix range; S3 serves one range per request. Hadoop's vectored read may mix old and new data if the item changes. Observed on MinIO, not AWS: a range starting at or past the size gives 416, an end past the size is clamped, a suffix longer than the object returns all of it.
+- **OP-03 Write.** Visible only on close, and close can fail. On an exception, pyarrow commits the partial object, cloudpathlib uploads it and smart_open aborts (observed). Multipart has a 5 MiB part floor and at most 10,000 parts. Empty items take a separate path in several libraries. S3 adds a CRC64NVME checksum when none is supplied, and "AWS SDKs do not automatically calculate MD5 checksums".
+- **OP-04 Replace atomically.** Object-store PUT is atomic, but object_store's local temp files leak into the key space. Windows needs `os.replace`, SFTP `posix_rename`. A durable replace needs a directory fsync. On S3 the latest timestamp wins.
+- **OP-05 Conditional write.** Conflicts surface as 412, 409 or 404 (a concurrent delete). A delete marker counts as absent. A local filesystem cannot do "if unchanged" (object_store #423); "if absent" maps to `O_EXCL`. object_store separates AlreadyExists from a precondition failure. OpenDAL forbids stat-then-mutate emulation and evaluates staged writes at the final commit, leaving the old item on failure.
+- **OP-06 List children.** Directory markers changed policy across Hadoop releases. A missing folder is an error in Hadoop, optional in pyarrow and tolerated in OpenDAL. Ordering is not guaranteed in object_store, differs on S3 directory buckets and Azure HNS, and is lexicographic in gocloud. Pages can be short or empty; listing caches go stale.
+- **OP-07 Walk subtree.** Flat versus per-level listing is a real split; only per-level listing can prune. Cost is O(entries). gocloud's listing may miss recent writes.
+- **OP-08 Match by pattern.** fsspec's glob rules: `**` must be a whole component, depth applies to the first `**`, a trailing `/` matches folders, no braces; they drifted across releases, as pathlib's did in 3.13. Metacharacters in keys need an escape. Only GCS matches server-side.
+- **OP-09 Inspect.** "Is it a folder" is ambiguous on object stores and costly to probe. An S3 HEAD on a missing key returns 403 without list permission. mtime is the multipart start time, at about 1 s granularity. The ETag is not a content hash (Q4); fsspec offers `ukey` and `checksum` as identity probes.
+- **OP-10 Delete item.** A missing key succeeds on S3 and in OpenDAL (even under a condition), and errors in object_store's local, GCP and Azure stores, gocloud, Azure and GCS; Hadoop returns False. Bulk limits are 1000, 256 and 100 keys per request, with partial failures. Versioned buckets insert delete markers. Observed on MinIO, not AWS: deleting a missing key gives 204, and a batch delete lists it as deleted.
+- **OP-11 Delete folder tree.** Not atomic and O(n), except on Azure HNS. pyarrow's S3 `delete_dir("bucket")` empties the bucket and then raises (observed). Markers must be deleted too; S3 directory buckets delete empty parents themselves.
+- **OP-12 Move or rename.** Copy plus delete is neither atomic nor cheap. Atomic only on some bucket types: Azure HNS, GCS `move_blob` within a bucket, S3 `RenameObject` on Express One Zone. SFTP v3 rename fails if the target exists. Same-path moves differ; GCS charges early deletion on a copy-based move.
+- **OP-13 Copy within a store.** S3 `CopyObject` is atomic up to 5 GB, and pyarrow uses only that call, so its S3 copy fails above it (the failure mode is inference). Azure copies can stay pending. Copying a multipart S3 object changes its checksum and so its ETag form.
+- **OP-14 Transfer to or from a local file.** Temp-file strategies differ (temp plus rename, direct write, cross-device rename). Comparing an ETag with a local MD5 fails for multipart, SSE-C/KMS and directory-bucket objects; gocloud verifies `ContentMD5` on close. cloudpathlib fixed a `..` escape (GHSA-r4f8-3xc4-c8vw).
+- **OP-15 Transfer between stores.** Data passes through the client and often local disk. fsspec's copy ignores errors by default. Two buckets of one provider are a third case. ETags are not comparable across stores or upload methods.
+- **OP-16 Scope to a folder.** `..` escapes were fixed in 2026 in three libraries; pyarrow's `SubTreeFileSystem` "makes no security guarantee", and object_store's local store follows symlinks out of the root. Every method must be forwarded. gocloud's `PrefixedBucket` closes its parent.
+- **OP-17 Hand items to other libraries.** Bridges drop data (metadata, attributes, modes) and break when the wrapped library changes. gocloud's `Bucket` implements Go's `io/fs.FS`; cloudpathlib's `fspath` is a read-only cache copy.
+- **OP-18 Ask what a store supports.** Only OpenDAL and Hadoop have a query. Separate flags do not imply support for their combination; capabilities depend on path or bucket type; flags were missed and fixed piecemeal.
+- **OP-19 Create an empty folder.** One intent, different results: a zero-byte `key/` marker (pyarrow), a silent no-op (cloudpathlib), a new bucket (s3fs, gcsfs), a real folder (GCS HNS). None in object_store or gocloud.
+- **OP-20 Item metadata.** Limits differ: S3 2 KB, lowercase US-ASCII keys, changed only by copy; Azure 8 KB, identifier keys, a set replaced whole; GCS 8 KiB, patchable. pyarrow's S3 drops user keys silently (observed). object_store mixes system and user metadata and ignores tags where unsupported.
+- **OP-21 Close a store.** Most comparables have no close. fsspec caches instances by their arguments; async close at garbage collection is fragile; a derived handle takes over the lifecycle.
+- **OP-22 Map a key to its native address.** Many URL forms map to one store, and the logical key is not always the native key (percent-encoding, escaping). pyarrow embeds credentials in URIs; smart_open accepts them.
+- **OP-23 Reach the native client.** gocloud's `As` "implies that the resulting code is no longer portable". The handle may be uninitialised or bound to an event loop (s3fs).
+- **OP-24 Check health.** OpenDAL's `check()` treats a missing root as healthy, gocloud's `IsAccessible` as not. "Healthy" usually means list permission; S3 `HeadBucket` answers 400, 403 or 404 with no body.
 
 ---
 

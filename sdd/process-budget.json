@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 306178,
+  "total": 306232,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,7 +16,7 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 4344,
+    ".claude/skills/observe/SKILL.md": 4398,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -155,6 +155,12 @@
       "from": 306108,
       "to": 306178,
       "reason": "PR #1186 review: a shared decision outside a shared.md section is tagged with the home Lands elsewhere names"
+    },
+    {
+      "item": "BK-495",
+      "from": 306178,
+      "to": 306232,
+      "reason": "PR #1186 review: shared decisions take one of three tags, shared.md says what the flow after the session does with each"
     }
   ]
 }

@@ -47,7 +47,8 @@ admits no other entry's. An input file is never ground and never a register
 row: it holds what the entry's session should weigh, such as the comparables'
 pitfalls or a maintainer decision taken before the session, and binds nothing
 until the session decides. Each section names its source. The deep research's
-per-entry notes move there from its § 4, so each has one home.
+per-entry notes are copied there from its § 4, which stays as written, a dated
+record (`000-process.md` § Document types).
 
 ### P2. The shared-decisions file
 
@@ -58,10 +59,15 @@ the ground under RFC-0024 § R1, once the flow that writes it has its spec and
 model accepted, and until then the section holds no clause. Its sections are
 Session (design session against caller session), Handle, Lifetime and State,
 each naming the flow that fills it. A design session never writes it: the
-session records the decision and lists it under Open items as
-`shared: <section>`, or with the home the file's Lands elsewhere table names,
-and the flow after the session, research § 3's spec step, writes it there.
-Changing a filled section is a reopen under research § 3.
+session records a decision that binds every operation and lists it under Open
+items with one tag. `shared: <section>` fills a section, which the flow after
+the session, research § 3's spec step, writes in. `shared: <home>` takes the
+home the file's Lands elsewhere table names: the session's own entry's flow
+writes it, a ground home receives it as a reopen, and another entry's flow as
+an addition to that entry's input file, never as a direct write.
+`shared: unhomed` fits neither, and the flow after the session first gives it
+a home, a section or a table row. Changing a filled section is a reopen under
+research § 3.
 
 ### P3. Open Question 1 of RFC-0026
 
@@ -93,7 +99,7 @@ Decided in the log above:
 - **Backwards compatibility:** none. `/observe` takes a catalogue ID; no
   record under the old operation slugs exists on master.
 - **Process:** `/observe`, its hook and tests; the ground register; the axes'
-  ID form; the deep research's § 4. RFC-0024 carries an "Amended by RFC-0027"
+  ID form. RFC-0024 carries an "Amended by RFC-0027"
   line and RFC-0026's Open Question 1 a "Closed by RFC-0027" line.
 - **Testing:** `tests/scripts/test_observe_ground.py` pins the entry argument,
   the input file's admission to its own entry only, and one input file per

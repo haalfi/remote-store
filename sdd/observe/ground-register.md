@@ -44,7 +44,7 @@ encodings), which reached the first `/observe` session's decisions; the second
 in § 3.7's error table and § 9's comparison with specs 004, 005, 015 and the
 frozen contract-kernel spec 053 (BE-032).
 Nor is BK-493's dossier, which maps each catalogue entry to 0.33's surface, or
-the catalogue's deep-research doc, whose per-entry results would prime every
+the catalogue's deep-research doc, whose per-entry notes would prime every
 other entry's session ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4).
 Nor is an entry's input file under `sdd/observe/inputs/`: the hook admits it
 to its own entry's session only, as session input rather than ground

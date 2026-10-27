@@ -68,6 +68,7 @@ any web result about it.
 - A question no axis raises is asked under the nearest one and named in its
   consistency check, so the axes can be revised with F2 after `read()`.
 - A decision binding every operation is also listed in Open items as
-  `shared: <section>` when it fills a `shared.md` section, otherwise with the
-  home `shared.md`'s Lands elsewhere table names; the flow after the session
-  writes it there, never this session.
+  `shared: <section>` when it fills a `shared.md` section, `shared: <home>`
+  with the home its Lands elsewhere table names, else `shared: unhomed`.
+  `shared.md` says what the flow after the session does with each; this
+  session never writes it.

@@ -339,6 +339,39 @@ def test_a_resumed_observe_session_is_armed_again(repo: Path, tmp_path: Path, fi
     assert _call(repo, "Bash", session=OTHER, command="ls").returncode == 2
 
 
+_SLUG = '{"type":"user","message":{"role":"user","content":"/observe read"}}\n'
+
+
+@pytest.mark.parametrize(("first", "reopen"), [(_TYPED, True), (_SLUG, False)])
+def test_a_resume_that_cannot_rearm_is_locked_not_unarmed(repo: Path, tmp_path: Path, first: str, reopen: bool) -> None:
+    if reopen:
+        register = repo / "sdd/observe/ground-register.md"
+        text = register.read_text(encoding="utf-8")
+        register.write_text(text.replace("| catalogue | active |", "| catalogue | reopened |"), encoding="utf-8")
+    transcript = tmp_path / "resumed.jsonl"
+    transcript.write_text(first, encoding="utf-8")
+    payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
+    assert _run(repo, "rearm", payload).returncode == 2
+    for tool, tool_input in (
+        ("Bash", {"command": "cat src/remote_store/store.py"}),
+        ("Read", {"file_path": "sdd/observe/axes.md"}),
+        ("Write", {"file_path": "sdd/observe/records/OP-01.md"}),
+    ):
+        result = _call(repo, tool, session=OTHER, **tool_input)
+        assert result.returncode == 2
+        assert "cannot be re-armed" in result.stderr
+
+
+def test_a_marker_from_the_slug_hook_is_locked(repo: Path) -> None:
+    marker = repo / "tmp/observe" / f"{SESSION}.json"
+    marker.parent.mkdir(parents=True)
+    marker.write_text(json.dumps({"operation": "read", "record": "sdd/observe/records/read.md", "named": []}))
+    for tool in ("Read", "Write"):
+        result = _call(repo, tool, file_path="sdd/observe/records/read.md")
+        assert result.returncode == 2
+        assert "cannot be re-armed" in result.stderr
+
+
 def test_a_resumed_ordinary_session_stays_unarmed(repo: Path, tmp_path: Path) -> None:
     transcript = tmp_path / "plain.jsonl"
     transcript.write_text('{"type":"user","message":{"content":"fix the bug"}}\n' + _TYPED, encoding="utf-8")

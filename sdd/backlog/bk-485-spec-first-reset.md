@@ -71,7 +71,9 @@ Two more, from the first `/observe` run's own report (above):
   The home for the rest is [`sdd/observe/shared.md`](../observe/shared.md)
   (BK-495, [RFC-0027](../rfcs/rfc-0027-observe-playground.md)): its sections
   for handle, lifetime and state, and its Lands elsewhere table for these
-  three, which still grow from `read()` under D5.
+  three: the key refusal to spec 052 and the error layer, the profile surface
+  to OP-18's flow, a timeout bound to each entry's AX-5 and a shared one to
+  OP-01's flow.
 - **F3 lacks "admitted, not required".** A failure category that may surface
   but need not (`exists`'s store-integrity failure on a non-store state) fits
   none of F3's terms; the session coined the phrase.

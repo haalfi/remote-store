@@ -23,8 +23,9 @@ orient:
     evidence: >-
       Oriented once with BK-494; verdicts per cluster in
       sdd/traces/bk-494-observe-entries.yml. The one that shapes this item:
-      BK-485's dossier gap names three shared decisions and RFC-0026 OQ1 six
-      more, so the skeleton's Lands elsewhere table homes each of them.
+      BK-485's dossier gap names three shared decisions and RFC-0026 OQ1 eight
+      more (six from research note 7, two from notes 2 and 5), so the
+      skeleton's Lands elsewhere table homes each of them: 11 rows.
 phases:
   - id: orient
     name: Read what the skeleton must home
@@ -54,7 +55,7 @@ phases:
       - file: sdd/rfcs/rfc-0024-spec-first-reset.md
         section: "R1 (D5)"
         read_type: gate
-        extract: "Key, error, lifecycle and consistency layers grow from read(); the table names where, it decides none"
+        extract: "Key, error, lifecycle and consistency layers grow from read(); so the skeleton's table may name where, never decide"
         outcome: ok
       - file: sdd/specs/053-store-operations.md
         section: "Terms"

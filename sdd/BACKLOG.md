@@ -512,9 +512,9 @@ no clause of the contract ships unexercised.
   spec: OPS-001 -- OPS-002 · effort: M · audience: user.api, library.maintainer
   Specs 052 and 053 leave to "the API's spec" how a store is obtained and configured, how operations
   and keys are spelled and displayed, handles' language-level behaviour and what sets an extension
-  apart; nothing owns it. Reading settings back is OP-18's, handle lifetime OP-21's. Runs after
-  several entries' flows, which also decide core against extension beyond the 24 entries, never a
-  session. Open decision: when, and after which entries.
+  apart; nothing owns it. Reading key settings back is meant for OP-18 (BK-480), handle lifetime is
+  OP-21's. Runs after several entries' flows, which also decide core against extension beyond the
+  24 entries, never a session. Open decision: when, and after which entries.
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
@@ -591,11 +591,11 @@ copies an example, without opening an issue.
 
 - [ ] **BK-480 — No API lets a caller set or read a store's separator set and acceptance language**
   spec: KEY-008, KEY-009 · effort: S · audience: user.api, user.api_docs
-  Spec 052 makes the `\` opt-out, the portability opt-in and the backend's declared portable set
-  P_b store settings (KEY-008, KEY-009) and leaves reading them, and announcing a P_b smaller than
-  L_shared, to the API's spec; no type or method carries any, so a caller cannot tell which holds.
-  F4 fixes the form (queryable, documented, `DeviationWarning`). Class F (RFC-0024 § R3): setting is
-  BK-496's flow, reading back and announcing OP-18's session. Open decision: the shape.
+  Spec 052 makes the `\` opt-out, the portability opt-in and P_b store settings (KEY-008, KEY-009)
+  and leaves setting, reading back and announcing a P_b below L_shared to the API's spec; no type
+  carries any. F4 (`research-spec-first-reset.md`) fixes the form. Class F (RFC-0024 § R3): setting
+  is BK-496's; reading back is meant for OP-18, a spec 052 reopen its session records. Candidate:
+  a helper such as `is_portable_key(key) -> bool`. Open decision: the shape.
 
 - [ ] **BUG-321 — A list that directly follows paragraph text renders as literal dashes on the docs site**
   spec: DOCFRAME-004 · effort: S · audience: user.site

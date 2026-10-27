@@ -7,10 +7,17 @@ each defining its subject and naming the flow that fills it.** No section
 holds a clause yet; a section gets one when the flow it names writes it, and
 the clause joins the ground under RFC-0024 § R1, with that flow's spec and
 model. An `/observe` session never writes here: it records such a decision in
-its own record and lists it there under Open items as `shared: <section>`, or
-with the home Lands elsewhere names, and the flow after the session
-(research § 3: record, then spec) writes it there. Changing a filled section
-is a reopen ([RFC-0027](../rfcs/rfc-0027-observe-playground.md)).
+its own record and lists it there under Open items with one tag, which the
+flow after the session (research § 3: record, then spec) acts on:
+
+- `shared: <section>`: that flow writes it into the section.
+- `shared: <home>`, a home Lands elsewhere names: the session's own entry's
+  flow writes it; a ground home receives it as a reopen, another entry's flow
+  as an addition to that entry's input file, never as a direct write.
+- `shared: unhomed`: that flow first gives it a home, a section or a row below.
+
+Changing a filled section is a reopen
+([RFC-0027](../rfcs/rfc-0027-observe-playground.md)).
 
 ## Session
 

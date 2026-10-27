@@ -13,8 +13,8 @@ audience:
 discovery_followups:
   - BK-496
 surprising_ripples:
-  - sdd/research/research-operation-catalogue.md
   - sdd/backlog/bk-493-operation-catalogue.md
+  - .github/workflows/ci.yml
 co_shipped_items:
   - BK-495
 decisions:
@@ -27,7 +27,8 @@ orient:
       BK-485's index entry: "§ 9 steps 5 (waits on BK-494)". Its dossier § Format
       RFC input names three decisions binding every operation with no home
       (`exists`'s D2 key refusal, a timeout bound, a profile surface), "still the
-      RFC's to place". RFC-0026 Open Question 1 lists six more (research note 7).
+      RFC's to place". RFC-0026 Open Question 1 lists eight more (six from research note 7, two
+      from notes 2 and 5).
       A skeleton that closes the gap must say where each of these lands, or the
       gap stays open under a new name.
   - items: [BK-480]
