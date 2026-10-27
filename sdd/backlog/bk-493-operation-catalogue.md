@@ -57,13 +57,15 @@ stays `v1`, and where a backend has no change token its profile refuses "if
 unchanged" rather than check it apart from the write, because "if unchanged"
 rests on OP-09's identity token and OP-05's profile follows OP-09's. Both are
 semantics, so they are not in the ground: they are input for OP-05's
-session, handed over through the per-entry input BK-494 adds, since naming
-this dossier would admit it whole, its 0.33 table included.
+session, in [`sdd/observe/inputs/OP-05.md`](../observe/inputs/OP-05.md)
+(BK-494), since naming this dossier would admit it whole, its 0.33 table
+included.
 
 From review round 3 (same log): spec 053 keeps only OPS-001 and OPS-002, the
 closed surface, which can be checked without a call. The Offer column binds
 through OP-18's spec, the one place that answers what a store supports; the
-retired OPS-003 and OPS-004 are input to OP-18's session. RFC-0026 amends
+retired OPS-003 and OPS-004 are input to OP-18's session, in
+[`sdd/observe/inputs/OP-18.md`](../observe/inputs/OP-18.md). RFC-0026 amends
 RFC-0024 § R4 for spec 053's missing test.
 
 From the verification rounds (same log): each operation in the 16 rows of the

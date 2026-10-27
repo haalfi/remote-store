@@ -1,0 +1,131 @@
+id: BK-494
+title: "`/observe` still designs one operation, so a session never meets the catalogue entry that sets its scope"
+trigger: >-
+  After BK-493 merged (RFC-0026, spec 053, the catalogue), the maintainer asked
+  for the /observe playground to be complete before `/observe OP-01`: the tool
+  on catalogue entries, a home for decisions that bind every operation, and the
+  user-facing API spec filed.
+source_items:
+  - BK-494
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups:
+  - BK-496
+surprising_ripples:
+  - sdd/research/research-operation-catalogue.md
+  - sdd/backlog/bk-493-operation-catalogue.md
+co_shipped_items:
+  - BK-495
+decisions:
+  - sdd/decisions/49c0aa22-502b-5f6c-af5e-2807aaa0ea6d.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's index entry: "§ 9 steps 5 (waits on BK-494)". Its dossier § Format
+      RFC input names three decisions binding every operation with no home
+      (`exists`'s D2 key refusal, a timeout bound, a profile surface), "still the
+      RFC's to place". RFC-0026 Open Question 1 lists six more (research note 7).
+      A skeleton that closes the gap must say where each of these lands, or the
+      gap stays open under a new name.
+  - items: [BK-480]
+    verdict: constrains
+    evidence: >-
+      BK-480's entry: "decided in the API's flow"; spec 052's Out of scope gives
+      setting and reading the separator set, acceptance choice and P_b to "the
+      API's spec". The maintainer moves reading settings back to OP-18, so the
+      repoint splits BK-480 between the new API spec item (setting) and OP-18
+      (reading, announcing a smaller P_b), without editing spec 052 (ground).
+  - items: [BK-469, BK-489, ID-272]
+    verdict: unrelated
+    evidence: >-
+      Their entries: BK-469 is the key layer's 0.33 comparison, BK-489 is D10,
+      ID-272 cites the ground register only as a future input to its RFC. None
+      changes how a session is armed or what it may read.
+phases:
+  - id: orient
+    name: Read the item, the catalogue step and the /observe tool
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-494, BK-485, BK-480"
+        read_type: gate
+        extract: "BK-494's four gaps; BK-485 step 5 waits on it; BK-480 points at the API's flow"
+        outcome: ok
+      - file: sdd/backlog/bk-493-operation-catalogue.md
+        section: "Status"
+        read_type: gate
+        extract: >-
+          OP-05's and OP-18's inputs (profile follows OP-09; retired OPS-003 and
+          OPS-004) are to be handed over through BK-494's per-entry input
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "Status, R1 (D4, D5, D11)"
+        read_type: gate
+        extract: "D5 grows key, error, lifecycle and consistency from read(); D11 one register"
+        outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 3, § 4, § 9"
+        read_type: gate
+        extract: "Flow design, record, spec, compare; S3 allowlist is register plus named files"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0026-operation-catalogue.md
+        section: "(full)"
+        read_type: gate
+        extract: "C2 scope not semantics; C4 joins without a model, per-entry input is BK-494's; OQ1"
+        outcome: ok
+      - file: sdd/specs/053-store-operations.md
+        section: "(full)"
+        read_type: gate
+        extract: "The API's spec owns spelling, construction, handle language behaviour, extensions"
+        outcome: ok
+      - file: sdd/specs/052-store-key.md
+        section: "Scope, Notes"
+        read_type: gate
+        extract: "The API's spec owns setting and reading separator set, acceptance, P_b, display"
+        outcome: ok
+      - file: sdd/observe/ground-register.md
+        section: "(full)"
+        read_type: gate
+        extract: "Rows feed the hook; what may join is R1 with research § 3"
+        outcome: ok
+      - file: sdd/observe/catalogue.md
+        section: "(full)"
+        read_type: gate
+        extract: "24 entries; ID in a code span; record per entry"
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "Argument is an operation slug; Load reads register, axes, named paths"
+        outcome: ok
+      - file: scripts/observe_ground.py
+        section: "(full)"
+        read_type: gate
+        extract: "_OP is [a-z][a-z0-9_]*; named paths admitted whole; record path from the op"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "(full)"
+        read_type: gate
+        extract: "The gap 'Decisions that bind every operation have no home' and its three items"
+        outcome: ok
+      - file: sdd/research/research-operation-catalogue.md
+        section: "§ 2 Q4, advisory notes, § 4"
+        read_type: reference
+        extract: "§ 4 holds one bullet per entry, waiting on BK-494 to be handed out alone"
+        outcome: ok
+  - id: build
+    name: Hook, skill, inputs, shared file, RFC-0027
+    steps:
+      - file: tests/scripts/test_observe_ground.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Fixture copies the hook into a tmp repo; the entry cases were written
+          first and failed on the slug regex before the hook changed
+        outcome: ok
+      - file: "git show 36f5eab -- sdd/specs/053-store-operations.md"
+        section: "OPS-003, OPS-004"
+        read_type: reference
+        extract: "The retired wording, squashed out of master by #1184, for OP-18's input"
+        outcome: ok

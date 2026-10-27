@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-495: Decisions that bind every operation have no home, so each design session would rediscover them
+- BK-494: `/observe` still designs one operation, so a session never meets the catalogue entry that sets its scope
 - BK-493: The v1 Store API has no agreed set of operations, so each design session would find its own scope
 - BK-468: No spec defines which strings a store accepts as a key, so one key works on one backend and fails on another
 - BK-488: The unreleased `remote_store.drivers` API and the driver-based custom-backend guide are withdrawn; master's code is 0.33.0's plus three fixes

@@ -20,6 +20,11 @@ joins the ground without a formal model; and § R4 gains a second exception,
 [spec 053, store operations](../specs/053-store-operations.md), having no test
 until a v1 surface exists.
 
+Amended by [RFC-0027](rfc-0027-observe-playground.md): research § 4's S3
+allowlist gains the session's own entry input file, and
+[`sdd/observe/shared.md`](../observe/shared.md) joins the ground without a
+formal model, filled only by the flow after a session.
+
 It changes no spec format. [`SPEC-DESIGN.md`](../SPEC-DESIGN.md) and
 [ADR-0048](../adrs/0048-how-specs-are-designed.md) stay the authority for what
 a spec states and the form it takes, with one bounded exception in § R4. The

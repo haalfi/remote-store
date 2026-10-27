@@ -5,11 +5,13 @@ payload on stdin. The method is research-spec-first-reset.md § 4: S2 (a fresh
 session and a hook that denies reads outside an allowlist) and S3 (the
 allowlist is the ground register plus files the maintainer names at the start).
 
-* ``arm`` (``UserPromptSubmit``): a prompt ``/observe <op> [path ...]`` arms
-  the session by writing ``tmp/observe/<session_id>.json``. Refused, with the
-  prompt blocked, when the session already used a tool (it is not fresh), when
-  ``<op>`` is not a slug, or when a named path is missing or is 0.33 code, tests
-  or a spec 001 to 050 (never ground, RFC-0024 § R1).
+* ``arm`` (``UserPromptSubmit``): a prompt ``/observe <entry> [path ...]`` arms
+  the session by writing ``tmp/observe/<session_id>.json``. ``<entry>`` is an
+  ID of the operation catalogue (``OP-01``), the unit of a session (RFC-0026).
+  Refused, with the prompt blocked, when the session already used a tool (it is
+  not fresh), when ``<entry>`` is no row of the catalogue, or when a named path
+  is missing or is 0.33 code, tests or a spec 001 to 050 (never ground,
+  RFC-0024 § R1).
 * ``rearm`` (``SessionStart``): a resumed or compacted session whose
   transcript opens with ``/observe`` is armed again, so it never resumes
   unarmed, whatever became of its marker.
@@ -23,8 +25,9 @@ The skill re-runs its canary before every axis as well, so an unarmed session
 stops even where these events do not reach.
 
 The allowlist is the method files, the ``active`` rows of the ground register,
-the named paths and the operation's record, the only file the session may
-write. Reads go through Read, or Grep on one allowed file. Glob, Bash, Agent and
+the entry's input file (``sdd/observe/inputs/<entry>.md``, never another
+entry's; RFC-0027), the named paths and the entry's record, the only file the
+session may write. Reads go through Read, or Grep on one allowed file. Glob, Bash, Agent and
 every tool not listed below are denied: a path inside a shell command cannot be
 checked. WebSearch and WebFetch pass unless they name remote-store, whose code
 and docs are 0.33 (the maintainer's choice for prior art on the web).
@@ -54,12 +57,16 @@ METHOD_FILES = (
     "sdd/observe/axes.md",
     REGISTER,
 )
-RECORD = "sdd/observe/records/{op}.md"
+CATALOGUE = "sdd/observe/catalogue.md"
+RECORD = "sdd/observe/records/{entry}.md"
+INPUT = "sdd/observe/inputs/{entry}.md"
 
 _PROMPT = re.compile(r"\s*/observe(?:\s+(?P<args>.*))?\s*$", re.DOTALL)
 # How a transcript, and possibly UserPromptSubmit, records a typed slash command.
 _TAGGED = re.compile(r"<command-name>/?observe</command-name>.*?<command-args>(?P<args>.*?)</command-args>", re.DOTALL)
-_OP = re.compile(r"[a-z][a-z0-9_]*")
+_ENTRY = re.compile(r"OP-\d{2}")
+# A catalogue entry row: | `OP-NN` | intent | ...
+_ENTRY_ROW = re.compile(r"^\|\s*`(OP-\d{2})`\s*\|")
 _SAFE_ID = re.compile(r"[A-Za-z0-9_-]+")
 # A register row: `path` | flow | status |
 _ROW = re.compile(r"^\|\s*`(?P<path>[^`]+)`\s*\|[^|]*\|\s*(?P<status>active|reopened)\s*\|\s*$")
@@ -94,6 +101,15 @@ def ground(root: Path) -> list[str]:
     except OSError as exc:
         raise Refused(f"ground register unreadable: {exc}") from exc
     return [m["path"] for m in map(_ROW.match, text.splitlines()) if m and m["status"] == "active"]
+
+
+def entries(root: Path) -> list[str]:
+    """The catalogue's entry IDs, in row order."""
+    try:
+        text = (root / CATALOGUE).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise Refused(f"catalogue unreadable: {exc}") from exc
+    return [m[1] for m in map(_ENTRY_ROW.match, text.splitlines()) if m]
 
 
 def _observe_args(text: str) -> list[str] | None:
@@ -152,8 +168,11 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
 
 
 def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:
-    if not args or not _OP.fullmatch(args[0]):
-        raise Refused("usage: /observe <operation> [path ...], operation as a lower-case slug")
+    if not args or not _ENTRY.fullmatch(args[0]):
+        raise Refused("usage: /observe <entry> [path ...], entry as a catalogue ID such as OP-01")
+    entry = args[0]
+    if entry not in entries(root):
+        raise Refused(f"{entry}: no entry of that ID in {CATALOGUE}")
     named = []
     for path in args[1:]:
         rel = Path(_real(root, path)).relative_to(os.path.realpath(root)).as_posix() if _inside(root, path) else None
@@ -162,10 +181,11 @@ def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:
         if _NEVER_GROUND.match(rel):
             raise Refused(f"{rel}: 0.33 code, tests and specs 001 to 050 are never ground (RFC-0024 § R1)")
         named.append(rel)
-    doc = RECORD.format(op=args[0])
+    doc = RECORD.format(entry=entry)
+    state = {"entry": entry, "record": doc, "input": INPUT.format(entry=entry), "named": named}
     marker = _marker(root, payload.get("session_id") or "")
     marker.parent.mkdir(parents=True, exist_ok=True)
-    marker.write_text(json.dumps({"operation": args[0], "record": doc, "named": named}), encoding="utf-8", newline="\n")
+    marker.write_text(json.dumps(state), encoding="utf-8", newline="\n")
     return doc
 
 
@@ -200,15 +220,16 @@ def check(payload: dict[str, Any], root: Path) -> None:
         return
     if tool in ("Read", "Grep"):
         target = args.get("file_path") if tool == "Read" else args.get("path")
-        allowed = {_real(root, p) for p in (*METHOD_FILES, *ground(root), *state["named"])} | {doc}
+        own = (*METHOD_FILES, *ground(root), state["input"], *state["named"])
+        allowed = {_real(root, p) for p in own} | {doc}
         real = _real(root, target or "", cwd)
-        # A symlinked entry is judged by what it points at.
+        # A symlinked allowlist file is judged by what it points at.
         rel = os.path.relpath(real, os.path.realpath(root)).replace(os.sep, "/")
         if not target or real not in allowed or _NEVER_GROUND.match(rel) or rel.startswith("../"):
             raise Refused(
                 f"{tool}: {target or '(no path)'} is outside the ground. Allowed: the files {REGISTER} "
-                f"lists as active, the method files {', '.join(METHOD_FILES)}, the record "
-                f"{state['record']} and the paths named at /observe (S3)."
+                f"lists as active, the method files {', '.join(METHOD_FILES)}, the entry's input "
+                f"{state['input']}, the record {state['record']} and the paths named at /observe (S3)."
             )
         return
     raise Refused(f"{tool}: not available in an /observe session (S2). Read allowed files with Read.")
