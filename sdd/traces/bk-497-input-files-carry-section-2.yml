@@ -101,6 +101,8 @@ phases:
           verbatim by one-off scripts. Q3's OpenDAL-gates
           sentence also names rename, copy, recursive listing and conditions,
           so OP-05, OP-07, OP-12 and OP-13 gain it, OP-05 also the Declared
-          row. Key validation and async parity stay out of OP-01: § 3 gives
-          them to specs 052 and 053
+          row. Key validation and async parity stay out of OP-01: research
+          § 3 gives `..` containment to spec 052 and async parity to 053,
+          BK-485's dossier the key refusal to 052. Identity token stays with
+          OP-09, which names the token
         outcome: ok
