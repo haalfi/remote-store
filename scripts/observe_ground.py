@@ -9,9 +9,10 @@ allowlist is the ground register plus files the maintainer names at the start).
   the session by writing ``tmp/observe/<session_id>.json``. ``<entry>`` is an
   ID of the operation catalogue (``OP-01``), the unit of a session (RFC-0026).
   Refused, with the prompt blocked, when the session already used a tool (it is
-  not fresh), when ``<entry>`` is no row of the catalogue, or when a named path
-  is missing or is 0.33 code, tests or a spec 001 to 050 (never ground,
-  RFC-0024 § R1).
+  not fresh), when the catalogue is not an ``active`` register row, when
+  ``<entry>`` is no row of the catalogue, or when a named path is missing, is
+  0.33 code, tests or a spec 001 to 050 (never ground, RFC-0024 § R1), is
+  another entry's input file, or is a ``reopened`` register row.
 * ``rearm`` (``SessionStart``): a resumed or compacted session whose
   transcript opens with ``/observe`` is armed again, so it never resumes
   unarmed, whatever became of its marker.
@@ -59,7 +60,8 @@ METHOD_FILES = (
 )
 CATALOGUE = "sdd/observe/catalogue.md"
 RECORD = "sdd/observe/records/{entry}.md"
-INPUT = "sdd/observe/inputs/{entry}.md"
+INPUTS = "sdd/observe/inputs/"
+INPUT = INPUTS + "{entry}.md"
 
 _PROMPT = re.compile(r"\s*/observe(?:\s+(?P<args>.*))?\s*$", re.DOTALL)
 # How a transcript, and possibly UserPromptSubmit, records a typed slash command.
@@ -94,13 +96,13 @@ def _real(root: Path, path: str, cwd: str | None = None) -> str:
     return os.path.realpath(p)
 
 
-def ground(root: Path) -> list[str]:
-    """Repo-relative paths of the register's ``active`` rows."""
+def ground(root: Path, status: str = "active") -> list[str]:
+    """Repo-relative paths of the register's rows of ``status`` (``active`` or ``reopened``)."""
     try:
         text = (root / REGISTER).read_text(encoding="utf-8")
     except OSError as exc:
         raise Refused(f"ground register unreadable: {exc}") from exc
-    return [m["path"] for m in map(_ROW.match, text.splitlines()) if m and m["status"] == "active"]
+    return [m["path"] for m in map(_ROW.match, text.splitlines()) if m and m["status"] == status]
 
 
 def entries(root: Path) -> list[str]:
@@ -171,8 +173,12 @@ def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:
     if not args or not _ENTRY.fullmatch(args[0]):
         raise Refused("usage: /observe <entry> [path ...], entry as a catalogue ID such as OP-01")
     entry = args[0]
+    if CATALOGUE not in ground(root):
+        raise Refused(f"{CATALOGUE} is not active ground in {REGISTER}: no entry can be designed until it is")
     if entry not in entries(root):
         raise Refused(f"{entry}: no entry of that ID in {CATALOGUE}")
+    own_input = INPUT.format(entry=entry)
+    reopened = set(ground(root, "reopened"))
     named = []
     for path in args[1:]:
         rel = Path(_real(root, path)).relative_to(os.path.realpath(root)).as_posix() if _inside(root, path) else None
@@ -180,6 +186,10 @@ def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:
             raise Refused(f"{path}: not a file in this repository")
         if _NEVER_GROUND.match(rel):
             raise Refused(f"{rel}: 0.33 code, tests and specs 001 to 050 are never ground (RFC-0024 § R1)")
+        if rel.startswith(INPUTS) and rel != own_input:
+            raise Refused(f"{rel}: another entry's input is never admitted to {entry}'s session (RFC-0027 P1)")
+        if rel in reopened:
+            raise Refused(f"{rel}: reopened in {REGISTER}; it is off the allowlist until its flow re-admits it")
         named.append(rel)
     doc = RECORD.format(entry=entry)
     state = {"entry": entry, "record": doc, "input": INPUT.format(entry=entry), "named": named}

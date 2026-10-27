@@ -151,6 +151,8 @@ def test_other_prompts_leave_the_session_unarmed(repo: Path) -> None:
         ("/observe OP-01 sdd/specs/003-backend-adapter-contract.md", "never ground"),
         ("/observe OP-01 sdd/missing.md", "not a file"),
         ("/observe OP-01 ../outside.md", "not a file"),
+        ("/observe OP-01 sdd/observe/inputs/OP-02.md", "another entry's input"),
+        ("/observe OP-01 sdd/formal/old.als", "reopened"),
     ],
 )
 def test_arm_refuses_bad_operations_and_never_ground_paths(repo: Path, prompt: str, reason: str) -> None:
@@ -280,6 +282,16 @@ def test_arm_refuses_when_the_catalogue_is_unreadable(repo: Path) -> None:
     result = _arm(repo, "/observe OP-01")
     assert result.returncode == 2
     assert "catalogue unreadable" in result.stderr
+
+
+def test_arm_refuses_while_the_catalogue_is_reopened(repo: Path) -> None:
+    register = repo / "sdd/observe/ground-register.md"
+    text = register.read_text(encoding="utf-8")
+    register.write_text(text.replace("| catalogue | active |", "| catalogue | reopened |"), encoding="utf-8")
+    result = _arm(repo, "/observe OP-01")
+    assert result.returncode == 2
+    assert "not active ground" in result.stderr
+    assert not (repo / "tmp/observe" / f"{SESSION}.json").exists()
 
 
 def test_a_symlink_into_code_is_denied(repo: Path) -> None:
