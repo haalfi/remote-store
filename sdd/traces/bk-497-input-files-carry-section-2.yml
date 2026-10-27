@@ -92,7 +92,7 @@ phases:
           round 3 replaced with the whole sentence
         outcome: ok
   - id: review_fix
-    name: Round-1 fixes
+    name: Review-round fixes
     steps:
       - file: sdd/research/research-operation-catalogue.md
         section: "§ 1, § 2 Q3 and Q4, § 3"
