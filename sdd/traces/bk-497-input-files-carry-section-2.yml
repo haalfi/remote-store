@@ -125,5 +125,6 @@ phases:
           7 also to OP-01. A one-off script regenerates every § 2 section from
           the rule, asserts each passage against the research doc, and writes
           the routing table to the dossier; the `..` sentence leaves OP-16 as
-          spec 052's
+          spec 052's. This supersedes round 1's "Identity token stays with
+          OP-09": the row now also reaches OP-01, OP-03 and OP-20
         outcome: ok

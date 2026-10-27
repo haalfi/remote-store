@@ -483,7 +483,7 @@ ships them.
   appears; OP-01's Q4 rows and note 7 sit in a second section. Which file carries which passage is
   one literal rule, and the dossier holds the rule, its operation words and the routing table it
   produces. Prose is verbatim except two dropped cross-references; table rows are rendered cell by
-  cell. The research doc is unchanged.
+  cell, except that OP-18 carries Q3's table whole. The research doc is unchanged.
   Detail: [dossier](backlog/bk-497-input-files-section-2.md). Trace:
   [bk-497](traces/bk-497-input-files-carry-section-2.yml).
 - [x] **BK-494 — `/observe` still designs one operation, so a session never meets the catalogue entry that sets its scope**
