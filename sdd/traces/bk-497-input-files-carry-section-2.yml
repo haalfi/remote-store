@@ -1,0 +1,90 @@
+id: BK-497
+title: "The input files carry only research § 4, so per-entry findings in § 2 reach no session"
+trigger: >-
+  Filed during BK-494's review: each sdd/observe/inputs/OP-NN.md copies only its
+  entry's § 4 note of research-operation-catalogue.md, while § 2 also holds
+  findings for single entries. `/observe OP-01` runs next, so OP-01's input must
+  be complete first.
+source_items:
+  - BK-497
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+surprising_ripples: []
+co_shipped_items: []
+decisions:
+  - sdd/decisions/22fc130b-3097-5256-958c-78b435403004.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's entry: "Not done: § 9 steps 5 (`/observe OP-01`) and 6", so OP-01's
+      session is the next consumer. shared.md (ground) names OP-01's flow for
+      Handle, Lifetime and State, the error layer ("The error layer RFC-0024 D5
+      grows from OP-01's flow") and "a bound shared by every operation, OP-01's
+      flow"; research § 3's last row says the shared decisions of note 7 other
+      than `..` and async parity are "input to `read()`'s session and each later
+      one". So Q4's shared rows, which are not per-entry, bear on what OP-01's
+      input must hold to be complete.
+phases:
+  - id: orient
+    name: Read the item, RFC-0027 P1, the research doc and the input files
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-497, BK-485"
+        read_type: gate
+        extract: "Copy each entry's § 2 findings with source, before that entry's session"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0027-observe-playground.md
+        section: "(full)"
+        read_type: gate
+        extract: "P1: input file never ground, each section names its source; § 4 copied, research stays"
+        outcome: ok
+      - file: sdd/research/research-operation-catalogue.md
+        section: "(full)"
+        read_type: gate
+        extract: "§ 2 names entries in Q1's closing line, Q2's bullets, Q3, Q4's Prefix scope row, notes 2 to 6"
+        outcome: ok
+      - file: sdd/observe/inputs/OP-01.md
+        section: "(full); OP-05, OP-09, OP-16 alike"
+        read_type: gate
+        extract: "One § 4 section per file with a Source line; OP-05 adds maintainer decisions"
+        outcome: ok
+      - file: sdd/backlog/bk-493-operation-catalogue.md
+        section: "(full)"
+        read_type: reference
+        extract: "Input files hold semantics the ground must not; OP-05 and OP-18 seeded from the dialog"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "(full)"
+        read_type: reference
+        extract: "Shared decisions' homes: key refusal to 052, profile to OP-18, timeouts to AX-5 and OP-01"
+        outcome: ok
+      - file: sdd/observe/shared.md
+        section: "(full)"
+        read_type: reference
+        extract: "OP-01's flow fills Handle, Lifetime, State, the error layer and a shared timeout bound"
+        outcome: ok
+      - file: sdd/observe/catalogue.md
+        section: "Not in v1"
+        read_type: reference
+        extract: "Q1 rows already disposed as Form of OP-NN; the session decides the form"
+        outcome: ok
+      - file: tests/scripts/test_observe_ground.py
+        section: "inputs"
+        read_type: reference
+        extract: "Pins one input file per entry and admission; nothing pins a file's sections"
+        outcome: ok
+  - id: build
+    name: Copy § 2's passages into the input files
+    steps:
+      - file: sdd/research/research-operation-catalogue.md
+        section: "§ 2"
+        read_type: gate
+        extract: >-
+          Passages copied by a one-off script that asserts each is a verbatim
+          substring of § 2 (whitespace collapsed) before inserting it; dropped
+          cross-references: "(Q4)" in Q2's Inspect bullet, "in § 5's row 24" in
+          Q1's health-check clause
+        outcome: ok

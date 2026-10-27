@@ -476,6 +476,12 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-497 — The input files carry only research § 4, so per-entry findings in § 2 reach no session**
+  spec: — · effort: S · audience: contributor.process, library.maintainer
+  Each input file with a § 2 finding (all but OP-22 and OP-23) gains a section copying it verbatim
+  from `research-operation-catalogue.md` § 2, with its source; OP-01's also carries Q4's shared rows
+  and note 7. Note 1, a recommendation on the catalogue, is not copied; the research doc is unchanged.
+  Trace: [bk-497](traces/bk-497-input-files-carry-section-2.yml).
 - [x] **BK-494 — `/observe` still designs one operation, so a session never meets the catalogue entry that sets its scope**
   spec: OPS-001 -- OPS-002 · effort: S · audience: contributor.process, library.maintainer
   `/observe OP-NN` arms only for a catalogue row; Load reads the row as the session's scope; the hook
