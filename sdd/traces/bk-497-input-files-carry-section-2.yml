@@ -88,3 +88,17 @@ phases:
           cross-references: "(Q4)" in Q2's Inspect bullet, "in § 5's row 24" in
           Q1's health-check clause
         outcome: ok
+  - id: review_fix
+    name: Round-1 fixes
+    steps:
+      - file: sdd/research/research-operation-catalogue.md
+        section: "§ 1, § 2 Q3 and Q4, § 3"
+        read_type: gate
+        extract: >-
+          The denominator paragraph was a paraphrase of § 1, now § 1's text,
+          asserted verbatim by a second one-off script. Q3's OpenDAL-gates
+          sentence also names rename, copy, recursive listing and conditions,
+          so OP-05, OP-07, OP-12 and OP-13 gain it, OP-05 also the Declared
+          row. Key validation and async parity stay out of OP-01: § 3 gives
+          them to specs 052 and 053
+        outcome: ok
