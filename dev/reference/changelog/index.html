@@ -10422,6 +10422,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/rfcs/rfc-0027-observe-playground/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0027: RFC-0027: Each design session gets its entry's input, and shared decisions a home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -15984,6 +16012,8 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-495: Decisions that bind every operation have no home, so each design session would rediscover them</li>
+<li>BK-494: <code>/observe</code> still designs one operation, so a session never meets the catalogue entry that sets its scope</li>
 <li>BK-493: The v1 Store API has no agreed set of operations, so each design session would find its own scope</li>
 <li>BK-468: No spec defines which strings a store accepts as a key, so one key works on one backend and fails on another</li>
 <li>BK-488: The unreleased <code>remote_store.drivers</code> API and the driver-based custom-backend guide are withdrawn; master's code is 0.33.0's plus three fixes</li>
