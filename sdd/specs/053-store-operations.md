@@ -93,9 +93,7 @@ Not normative.
   when the surface's rules do
   ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C3).
 - **Checks.** Each section's witness is a public surface of the v1 API: its
-  public operations, and which entry's spec names each. The sections bind code
-  once a flow implements that surface (RFC-0024 § R4); why no test witnesses
-  them before it is [RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C3.
+  public operations, and which entry's spec names each.
 
 ## Tested against
 
