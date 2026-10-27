@@ -513,8 +513,8 @@ no clause of the contract ships unexercised.
   Specs 052 and 053 leave to "the API's spec" how a store is obtained and configured, how operations
   and keys are spelled and displayed, handles' language-level behaviour and what sets an extension
   apart; nothing owns it. Reading key settings back is meant for OP-18 (BK-480), handle lifetime is
-  OP-21's. Runs after several entries' flows, which also decide core against extension beyond the
-  24 entries, never a session. Open decision: when, and after which entries.
+  `shared.md`'s. Runs after several entries' flows, which also decide core against extension beyond
+  the 24 entries, never a session. Open decision: when, and after which entries.
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process

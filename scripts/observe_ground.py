@@ -13,11 +13,12 @@ allowlist is the ground register plus files the maintainer names at the start).
   ``<entry>`` is no row of the catalogue, or when a named path is missing, is
   0.33 code, tests or a spec 001 to 050 (never ground, RFC-0024 § R1), is
   another entry's input file, or is a ``reopened`` register row.
-* ``rearm`` (``SessionStart``): a resumed or compacted session whose
-  transcript opens with ``/observe`` is armed again, so it never resumes
-  unarmed, whatever became of its marker. When its arguments no longer arm
-  (the catalogue reopened, an entry or named path gone), the session is locked
-  instead: every call but the neutral ones is refused until ``/clear``.
+* ``rearm`` (``SessionStart``): a resumed or compacted session that ``arm``
+  armed is armed again, from the last ``/observe`` prompt before its first tool
+  use, so it never resumes unarmed, whatever became of its marker. When those
+  arguments no longer arm (the catalogue reopened, an entry or named path gone)
+  or the hook fails, the session is locked instead: every call but the neutral
+  ones is refused until ``/clear``.
 * ``check`` (``PreToolUse``): in an armed session, a call passes only if it
   stays inside the allowlist; every other session passes untouched, the
   wrapper's fail-closed branch included.
@@ -125,9 +126,16 @@ def _observe_args(text: str) -> list[str] | None:
     return (m["args"] or "").split() if m else None
 
 
-def _first_prompt(transcript: Path) -> str | None:
-    """The text of the transcript's first user message that is not harness metadata."""
+def _armed_args(transcript: Path) -> list[str] | None:
+    """The arguments of the last ``/observe`` prompt before the transcript's first tool use.
+
+    These are the prompts ``arm`` accepts, a later one replacing an earlier one, so
+    this is what the session was armed with; None if it never was.
+    """
+    args = None
     for line in transcript.read_text(encoding="utf-8", errors="replace").splitlines():
+        if _TOOL_USE.search(line):
+            break
         try:
             entry = json.loads(line)
         except ValueError:
@@ -137,9 +145,9 @@ def _first_prompt(transcript: Path) -> str | None:
         content = (entry.get("message") or {}).get("content")
         if isinstance(content, list):
             content = " ".join(c.get("text", "") for c in content if isinstance(c, dict) and c.get("type") == "text")
-        if isinstance(content, str) and content.strip():
-            return content
-    return None
+        if isinstance(content, str):
+            args = _observe_args(content) or args
+    return args
 
 
 def arm(payload: dict[str, Any], root: Path) -> str | None:
@@ -158,7 +166,7 @@ def arm(payload: dict[str, Any], root: Path) -> str | None:
 
 
 def rearm(payload: dict[str, Any], root: Path) -> str | None:
-    """Re-arm a resumed or compacted session whose first prompt was ``/observe``; return its record, or None.
+    """Re-arm a resumed or compacted session that ``arm`` armed; return its record, or None.
 
     Its marker may be gone (cleared, or a resume under a new session_id) while its
     transcript still holds the design dialogue, so a resume never runs unarmed.
@@ -166,18 +174,18 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
     transcript = payload.get("transcript_path")
     if not transcript or not Path(transcript).is_file():
         return None
-    first = _first_prompt(Path(transcript))
-    args = _observe_args(first) if first else None
+    args = _armed_args(Path(transcript))
     if args is None:
         return None
     try:
         return _write_marker(payload, root, args)
-    except Refused as exc:
-        # SessionStart cannot block: a resume whose ground moved is locked, never left unarmed.
+    except Exception as exc:
+        # SessionStart cannot block: a resume that cannot re-arm, refused or crashed, is locked.
+        reason = str(exc) if isinstance(exc, Refused) else f"hook failed: {type(exc).__name__}"
         marker = _marker(root, payload.get("session_id") or "")
         marker.parent.mkdir(parents=True, exist_ok=True)
-        marker.write_text(json.dumps({"locked": str(exc)}), encoding="utf-8", newline="\n")
-        raise
+        marker.write_text(json.dumps({"locked": reason}), encoding="utf-8", newline="\n")
+        raise Refused(f"session locked: {reason}") from exc
 
 
 def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:

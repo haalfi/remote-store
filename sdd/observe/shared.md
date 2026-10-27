@@ -7,17 +7,20 @@ each defining its subject and naming the flow that fills it.** No section
 holds a clause yet; a section gets one when the flow it names writes it, and
 the clause joins the ground under RFC-0024 § R1, with that flow's spec and
 model. An `/observe` session never writes here: it records such a decision in
-its own record and lists it there under Open items with one tag, which the
-flow after the session (research § 3: record, then spec) acts on:
+its own record and lists it there under Open items as `shared: <home>`, one
+tag per home: a section below, a home Lands elsewhere names, or `unhomed`. The
+flow after the session (research § 3: record, then spec) routes each tag by
+the state of its home when it runs
+([RFC-0027](../rfcs/rfc-0027-observe-playground.md)):
 
-- `shared: <section>`: that flow writes it into the section.
-- `shared: <home>`, a home Lands elsewhere names: the session's own entry's
-  flow writes it; a ground home receives it as a reopen, another entry's flow
-  as an addition to that entry's input file, never as a direct write.
-- `shared: unhomed`: that flow first gives it a home, a section or a row below.
+| Home | The flow after the session |
+|---|---|
+| Its own entry's flow, or a section not yet filled that its own flow fills | writes it |
+| Another entry's flow, or a section not yet filled that it fills, whose session has not run | adds it to that entry's input file |
+| Ground: a spec, a filled section, or an entry whose flow has run | records a reopen of it |
+| `unhomed` | first gives it a home, a section or a row below, then routes it by this table |
 
-Changing a filled section is a reopen
-([RFC-0027](../rfcs/rfc-0027-observe-playground.md)).
+A row below that names two homes takes two tags.
 
 ## Session
 
@@ -43,7 +46,8 @@ obtained, configured and spelled is the API spec's (BK-496).
 The span of a handle from the moment a caller holds it to the moment it can no
 longer be used.
 
-Filled by: OP-21's flow, which ends it.
+Filled by: OP-01's flow, the first to need a live handle; OP-21's flow adds
+how a lifetime ends.
 
 ## State
 

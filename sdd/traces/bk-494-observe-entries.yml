@@ -38,7 +38,7 @@ orient:
       setting and reading the separator set, acceptance choice and P_b to "the
       API's spec". The maintainer moves reading settings back to OP-18, so the
       repoint splits BK-480 between the new API spec item (setting) and OP-18
-      (reading, announcing a smaller P_b), without editing spec 052 (ground).
+      (reading back), without editing spec 052 (ground).
   - items: [BK-469, BK-489, ID-272]
     verdict: unrelated
     evidence: >-

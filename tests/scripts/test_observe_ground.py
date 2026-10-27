@@ -372,12 +372,49 @@ def test_a_marker_from_the_slug_hook_is_locked(repo: Path) -> None:
         assert "cannot be re-armed" in result.stderr
 
 
+_TOOL_USE = '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read"}]}}\n'
+
+
 def test_a_resumed_ordinary_session_stays_unarmed(repo: Path, tmp_path: Path) -> None:
+    # A tool ran before the /observe prompt, so arm refused it: nothing to re-arm.
     transcript = tmp_path / "plain.jsonl"
-    transcript.write_text('{"type":"user","message":{"content":"fix the bug"}}\n' + _TYPED, encoding="utf-8")
+    plain = '{"type":"user","message":{"content":"fix the bug"}}\n'
+    transcript.write_text(plain + _TOOL_USE + _TYPED, encoding="utf-8")
     payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
     assert _run(repo, "rearm", payload).returncode == 0
     assert not (repo / "tmp/observe").exists()
+
+
+@pytest.mark.parametrize(
+    ("lines", "entry"),
+    [
+        # Chat before /observe, no tool yet: arm accepted it, so rearm must too.
+        (['{"type":"user","message":{"content":"hello"}}\n', _TYPED], "OP-01"),
+        # A second /observe before any tool replaced the first: rearm takes the last.
+        ([_TYPED, '{"type":"user","message":{"content":"/observe OP-02"}}\n'], "OP-02"),
+    ],
+)
+def test_rearm_takes_the_last_observe_prompt_before_any_tool(
+    repo: Path, tmp_path: Path, lines: list[str], entry: str
+) -> None:
+    transcript = tmp_path / "resumed.jsonl"
+    transcript.write_text("".join(lines) + _TOOL_USE + '{"type":"user","message":{"content":"/observe OP-01"}}\n')
+    payload = {"session_id": OTHER, "source": "compact", "transcript_path": str(transcript)}
+    assert _run(repo, "rearm", payload).returncode == 0
+    state = json.loads((repo / "tmp/observe" / f"{OTHER}.json").read_text(encoding="utf-8"))
+    assert state["entry"] == entry
+
+
+def test_a_rearm_that_crashes_is_locked_not_unarmed(repo: Path, tmp_path: Path) -> None:
+    register = repo / "sdd/observe/ground-register.md"
+    register.write_bytes(register.read_bytes() + b"\xff\xfe")
+    transcript = tmp_path / "resumed.jsonl"
+    transcript.write_text(_TYPED, encoding="utf-8")
+    payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
+    assert _run(repo, "rearm", payload).returncode == 2
+    result = _call(repo, "Bash", session=OTHER, command="ls")
+    assert result.returncode == 2
+    assert "cannot be re-armed" in result.stderr
 
 
 def test_arm_reads_the_slash_command_tag_form(repo: Path) -> None:
@@ -454,6 +491,18 @@ def test_repository_has_one_input_per_entry_and_none_is_ground() -> None:
     assert inputs == sorted(entries)
     ground = set(observe_ground.ground(ROOT))
     assert not any(rel.startswith("sdd/observe/inputs/") for rel in ground)
+
+
+def test_ci_runs_this_module_when_any_file_it_reads_changes() -> None:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import observe_ground
+
+    ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    hooks_pat = re.compile(re.search(r"HOOKS_PAT='([^']+)'", ci)[1])  # type: ignore[index]
+    read = [*observe_ground.ground(ROOT), *observe_ground.METHOD_FILES, observe_ground.CATALOGUE]
+    read += [p.relative_to(ROOT).as_posix() for p in (ROOT / "sdd/observe/inputs").glob("*.md")]
+    assert [rel for rel in read if not hooks_pat.search(rel)] == []
+    assert not hooks_pat.search("sdd/observe/records/OP-01.md")
 
 
 def test_settings_wire_all_four_modes() -> None:

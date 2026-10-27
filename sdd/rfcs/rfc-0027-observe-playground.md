@@ -60,13 +60,12 @@ model accepted, and until then the section holds no clause. Its sections are
 Session (design session against caller session), Handle, Lifetime and State,
 each naming the flow that fills it. A design session never writes it: the
 session records a decision that binds every operation and lists it under Open
-items with one tag. `shared: <section>` fills a section, which the flow after
-the session, research § 3's spec step, writes in. `shared: <home>` takes the
-home the file's Lands elsewhere table names: the session's own entry's flow
-writes it, a ground home receives it as a reopen, and another entry's flow as
-an addition to that entry's input file, never as a direct write.
-`shared: unhomed` fits neither, and the flow after the session first gives it
-a home, a section or a table row. Changing a filled section is a reopen under
+items as `shared: <home>`, one tag per home: a section, a home the file's
+Lands elsewhere table names, or `unhomed`. The flow after the session,
+research § 3's spec step, routes each by the state of its home, as the file's
+lead enumerates: it writes only into its own entry's flow, hands a decision to
+an entry whose session has not run through that entry's input file, and
+reopens what is already ground. Changing a filled section is a reopen under
 research § 3.
 
 ### P3. Open Question 1 of RFC-0026
