@@ -45,7 +45,7 @@ phases:
       - file: sdd/research/research-operation-catalogue.md
         section: "(full)"
         read_type: gate
-        extract: "§ 2 names entries in Q1's closing line, Q2's bullets, Q3, Q4's Prefix scope row, notes 2 to 6"
+        extract: "§ 2 names entries in Q1's closing line, Q2's bullets, Q3, Q4's Prefix scope row, notes 1 to 6"
         outcome: ok
       - file: sdd/observe/inputs/OP-01.md
         section: "(full); OP-05, OP-09, OP-16 alike"
