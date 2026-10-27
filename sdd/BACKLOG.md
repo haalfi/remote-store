@@ -512,8 +512,9 @@ no clause of the contract ships unexercised.
   spec: OPS-001 -- OPS-002 · effort: S · audience: contributor.process, library.maintainer
   RFC-0026 makes an entry of `sdd/observe/catalogue.md` the unit of each `/observe` session, but
   `.claude/skills/observe/SKILL.md` takes an `<operation>`, its hook `scripts/observe_ground.py`
-  accepts only `[a-z][a-z0-9_]*` and so refuses `OP-01`, and its Load step never reads the catalogue
-  row. § 9 step 5 (`read()`, OP-01) waits on it. Open decision: none.
+  accepts only `[a-z][a-z0-9_]*` and so refuses `OP-01`, its Load step never reads the catalogue
+  row, and named files are admitted whole, so a session cannot get only its entry's research notes
+  and decisions. § 9 step 5 (`read()`, OP-01) waits on it. Open decision: none.
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process

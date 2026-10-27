@@ -183,9 +183,10 @@ The Q1 table's dispositions are in the catalogue's
 
 ## 4. Notes for each entry's session
 
-Pitfalls the comparables met, per entry, as input when an entry's maintainer
-names this document at the start of its session (research § 4, S3 of
-`research-spec-first-reset.md`). None proposes semantics.
+Pitfalls the comparables met, per entry, as input for that entry's session.
+A named file is admitted whole (§ 4, S3 of `research-spec-first-reset.md`),
+so handing a session only its own entry's notes waits on BK-494. None
+proposes semantics.
 
 - **OP-01 Read.** The view during a streamed read is undefined unless pinned; s3fs added ETag expiry checks. object_store returns NotFound on a folder path. pyarrow's `allow_delayed_open` defers open errors to close. cloudpathlib downloads the whole object first.
 - **OP-02 Read at offsets.** Ranges past the end were fixed separately in five libraries. Azure has no suffix range; S3 serves one range per request. Hadoop's vectored read may mix old and new data if the item changes. Observed on MinIO, not AWS: a range starting at or past the size gives 416, an end past the size is clamped, a suffix longer than the object returns all of it.

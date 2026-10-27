@@ -122,8 +122,10 @@ kernel's spec 053, so the register's Spec numbering section gains the same
 dated rule RFC-0025 D6 gave 052. Not ground: BK-493's dossier, which holds the 0.33 mapping, and the deep-research
 doc ([`research-operation-catalogue.md`](../research/research-operation-catalogue.md)),
 whose per-entry pitfalls are notes for each entry's session and would prime
-every other one; a session's maintainer may name its entry's part at the
-start (research § 4, S3).
+every other one. The hook admits a named file whole (research § 4, S3), so
+handing a session only its entry's notes needs a per-entry input, which
+BK-494 adds with `/observe`'s move to entries; until then, naming the doc
+admits all of it.
 
 ### C5. The deep research
 
