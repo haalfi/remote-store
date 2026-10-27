@@ -66,3 +66,133 @@ phases:
         read_type: reference
         extract: "Store and AsyncStore are handles; the Handle section cites them"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1186 --trace-block-only` at head 0453700.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1186 --trace-block-only"
+  pr: 1186
+  review_rounds: 8
+  submissions: 8
+  findings: 36
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.21
+    - round: 2
+      findings: 2
+      origin: {original: 1, pre-existing: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.26
+    - round: 3
+      findings: 10
+      origin: {loop-introduced: 2, original: 8}
+      triage: {must-fix: 10}
+      duration_hours: 0.28
+    - round: 4
+      findings: 7
+      origin: {loop-introduced: 5, original: 1, pre-existing: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.49
+    - round: 5
+      findings: 6
+      origin: {loop-introduced: 2, original: 4}
+      triage: {must-fix: 6}
+      duration_hours: 0.23
+    - round: 6
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.22
+    - round: 7
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.25
+    - round: 8
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.38
+  by_file:
+    - path: "scripts/observe_ground.py"
+      findings: 8
+    - path: "sdd/observe/shared.md"
+      findings: 7
+    - path: ".claude/skills/observe/SKILL.md"
+      findings: 4
+    - path: "sdd/BACKLOG.md"
+      findings: 4
+    - path: "sdd/rfcs/rfc-0027-observe-playground.md"
+      findings: 3
+    - path: "sdd/observe/inputs/OP-18.md"
+      findings: 2
+    - path: "sdd/traces/bk-495-shared-decisions.yml"
+      findings: 2
+    - path: ".github/workflows/ci.yml"
+      findings: 1
+    - path: "sdd/backlog/bk-485-spec-first-reset.md"
+      findings: 1
+    - path: "sdd/observe/ground-register.md"
+      findings: 1
+    - path: "sdd/observe/inputs/OP-09.md"
+      findings: 1
+    - path: "sdd/research/research-operation-catalogue.md"
+      findings: 1
+    - path: "tests/scripts/test_observe_ground.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlog/bk-493-operation-catalogue.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/49c0aa22-502b-5f6c-af5e-2807aaa0ea6d.jsonl"
+    - "sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl"
+    - "sdd/decisions/dca4fa32-6f77-4bba-92cd-c3002ea8d227.jsonl"
+    - "sdd/observe/axes.md"
+    - "sdd/observe/inputs/OP-01.md"
+    - "sdd/observe/inputs/OP-02.md"
+    - "sdd/observe/inputs/OP-03.md"
+    - "sdd/observe/inputs/OP-04.md"
+    - "sdd/observe/inputs/OP-05.md"
+    - "sdd/observe/inputs/OP-06.md"
+    - "sdd/observe/inputs/OP-07.md"
+    - "sdd/observe/inputs/OP-08.md"
+    - "sdd/observe/inputs/OP-10.md"
+    - "sdd/observe/inputs/OP-11.md"
+    - "sdd/observe/inputs/OP-12.md"
+    - "sdd/observe/inputs/OP-13.md"
+    - "sdd/observe/inputs/OP-14.md"
+    - "sdd/observe/inputs/OP-15.md"
+    - "sdd/observe/inputs/OP-16.md"
+    - "sdd/observe/inputs/OP-17.md"
+    - "sdd/observe/inputs/OP-19.md"
+    - "sdd/observe/inputs/OP-20.md"
+    - "sdd/observe/inputs/OP-21.md"
+    - "sdd/observe/inputs/OP-22.md"
+    - "sdd/observe/inputs/OP-23.md"
+    - "sdd/observe/inputs/OP-24.md"
+    - "sdd/process-budget.json"
+    - "sdd/rfcs/rfc-0024-spec-first-reset.md"
+    - "sdd/rfcs/rfc-0026-operation-catalogue.md"
+    - "sdd/traces/bk-494-observe-entries.yml"
+  review_driven_commits:
+    - sha: "969c3bb"
+      subject: "BK-494, BK-495: Accept RFC-0027; shared.md's clauses join under R1; tag shared decisions by their home"
+    - sha: "6d31997"
+      subject: "BK-494: /observe refuses a reopened catalogue, another entry's named input and a reopened named row"
+    - sha: "ac06c86"
+      subject: "BK-494, BK-495: Lock an /observe resume that cannot re-arm; restore research \u00a7 4; route shared decisions by three tags"
+    - sha: "1dc4089"
+      subject: "BK-494, BK-495: Rearm locks on any failure and takes the last armed prompt; route shared tags by home state; CI runs on ground edits"
+    - sha: "1494917"
+      subject: "BK-494, BK-495: Sessions only tag shared decisions; rearm locks on a transcript crash; file BK-497"
+    - sha: "8acf01c"
+      subject: "BK-494, BK-495, BK-497: Name the lock's unreadable case; BK-497 derives its list; name research \u00a7 3's doc; split BK-495's orient"
+    - sha: "e4849e3"
+      subject: "BK-494, BK-497: Pin the unreadable-transcript lock; BK-497 claims no list; P3 names the consistency layer's gap"
+    - sha: "0453700"
+      subject: "BK-494: Load's scope includes the Not in v1 rows the catalogue leaves to the entry"
+  ci: {verdict: PENDING, failed: 0, pending: 23}
