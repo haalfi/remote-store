@@ -1,0 +1,50 @@
+id: BK-495
+title: "Decisions that bind every operation have no home, so each design session would rediscover them"
+trigger: >-
+  Filed and shipped with BK-494 at the maintainer's request: before
+  `/observe OP-01`, a bare skeleton for decisions that bind every operation
+  (handle, lifetime, state; "session" disambiguated), definitions only, closing
+  RFC-0026 Open Question 1 and BK-485's dossier gap.
+source_items:
+  - BK-495
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+surprising_ripples: []
+co_shipped_items:
+  - BK-494
+decisions:
+  - sdd/decisions/49c0aa22-502b-5f6c-af5e-2807aaa0ea6d.jsonl
+orient:
+  - items: [BK-494, BK-485, BK-480, BK-469, BK-489, ID-272]
+    verdict: constrains
+    evidence: >-
+      Oriented once with BK-494; verdicts per cluster in
+      sdd/traces/bk-494-observe-entries.yml. The one that shapes this item:
+      BK-485's dossier gap names three shared decisions and RFC-0026 OQ1 six
+      more, so the skeleton's Lands elsewhere table homes each of them.
+phases:
+  - id: orient
+    name: Read what the skeleton must home
+    steps:
+      - file: sdd/rfcs/rfc-0026-operation-catalogue.md
+        section: "Motivation, Open Questions"
+        read_type: gate
+        extract: "OQ1: which shared layer each item lands in is open; research note 7's list"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "Format RFC input"
+        read_type: gate
+        extract: "exists's D2, a timeout bound, a profile surface: three shared items with no home"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "R1 (D5)"
+        read_type: gate
+        extract: "Key, error, lifecycle and consistency layers grow from read(); the table names where, it decides none"
+        outcome: ok
+      - file: sdd/specs/053-store-operations.md
+        section: "Terms"
+        read_type: reference
+        extract: "Store and AsyncStore are handles; the Handle section cites them"
+        outcome: ok
