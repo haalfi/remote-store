@@ -1,0 +1,236 @@
+id: BK-497
+title: "The input files carry only research § 4, so per-entry findings in § 2 reach no session"
+trigger: >-
+  Filed during BK-494's review: each sdd/observe/inputs/OP-NN.md copies only its
+  entry's § 4 note of research-operation-catalogue.md, while § 2 also holds
+  findings for single entries. `/observe OP-01` runs next, so OP-01's input must
+  be complete first.
+source_items:
+  - BK-497
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+surprising_ripples: []
+co_shipped_items: []
+decisions:
+  - sdd/decisions/22fc130b-3097-5256-958c-78b435403004.jsonl
+  - sdd/decisions/441df0b2-ba2a-4355-a676-6faaec0a37e5.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's entry: "Not done: § 9 steps 5 (`/observe OP-01`) and 6", so OP-01's
+      session is the next consumer. shared.md (ground) names OP-01's flow for
+      Handle, Lifetime and State, the error layer ("The error layer RFC-0024 D5
+      grows from OP-01's flow") and "a bound shared by every operation, OP-01's
+      flow"; research § 3's last row says the shared decisions of note 7 other
+      than `..` and async parity are "input to `read()`'s session and each later
+      one". So Q4's shared rows, which are not per-entry, bear on what OP-01's
+      input must hold to be complete.
+phases:
+  - id: orient
+    name: Read the item, RFC-0027 P1, the research doc and the input files
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-497, BK-485"
+        read_type: gate
+        extract: "Copy each entry's § 2 findings with source, before that entry's session"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0027-observe-playground.md
+        section: "(full)"
+        read_type: gate
+        extract: "P1: input file never ground, each section names its source; § 4 copied, research stays"
+        outcome: ok
+      - file: sdd/research/research-operation-catalogue.md
+        section: "(full)"
+        read_type: gate
+        extract: "§ 2 names entries in Q1's closing line, Q2's bullets, Q3, Q4's Prefix scope row, notes 1 to 6"
+        outcome: ok
+      - file: sdd/observe/inputs/OP-01.md
+        section: "(full); OP-05, OP-09, OP-16 alike"
+        read_type: gate
+        extract: "One § 4 section per file with a Source line; OP-05 adds maintainer decisions"
+        outcome: ok
+      - file: sdd/backlog/bk-493-operation-catalogue.md
+        section: "(full)"
+        read_type: reference
+        extract: "Input files hold semantics the ground must not; OP-05 and OP-18 seeded from the dialog"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "(full)"
+        read_type: reference
+        extract: "Shared decisions' homes: key refusal to 052, profile to OP-18, timeouts to AX-5 and OP-01"
+        outcome: ok
+      - file: sdd/observe/shared.md
+        section: "(full)"
+        read_type: reference
+        extract: "OP-01's flow fills Handle, Lifetime, State, the error layer and a shared timeout bound"
+        outcome: ok
+      - file: sdd/observe/catalogue.md
+        section: "Not in v1"
+        read_type: reference
+        extract: "Q1 rows already disposed as Form of OP-NN; the session decides the form"
+        outcome: ok
+      - file: tests/scripts/test_observe_ground.py
+        section: "inputs"
+        read_type: reference
+        extract: "Pins one input file per entry and admission; nothing pins a file's sections"
+        outcome: ok
+  - id: build
+    name: Copy § 2's passages into the input files
+    steps:
+      - file: sdd/research/research-operation-catalogue.md
+        section: "§ 2"
+        read_type: gate
+        extract: >-
+          Passages copied by a one-off script that asserts each prose passage,
+          each table row's cells and each excerpted Q1-closing clause is a
+          substring of § 2 (whitespace collapsed) before inserting it; dropped
+          cross-references: "(Q4)" in Q2's Inspect bullet, "in § 5's row 24" in
+          Q1's health-check clause. The clause excerpts were spliced, which
+          round 3 replaced with the whole sentence
+        outcome: ok
+  - id: review_fix
+    name: Review-round fixes
+    steps:
+      - file: sdd/research/research-operation-catalogue.md
+        section: "§ 1, § 2 Q3 and Q4, § 3"
+        read_type: gate
+        extract: >-
+          The denominator paragraph was a paraphrase of § 1, now two § 1
+          passages, one from its comparables paragraph and one from its
+          evidence paragraph, each asserted
+          verbatim by one-off scripts. Q3's OpenDAL-gates
+          sentence also names rename, copy, recursive listing and conditions,
+          so OP-05, OP-07, OP-12 and OP-13 gain it, OP-05 also the Declared
+          row. Key validation and async parity stay out of OP-01: research
+          § 3 gives `..` containment to spec 052 and async parity to 053,
+          BK-485's dossier the key refusal to 052. Identity token stays with
+          OP-09, which names the token. Round 3: Q1's closing sentence goes
+          whole, relabelled "the draft's own entries", to OP-07, OP-18 and
+          OP-24; by shared.md's Lands elsewhere rows (missing-key delete to
+          OP-10, a streamed-write exception to OP-03), note 7 also goes to
+          OP-03 and OP-10 and Q4's Retries row, which names deletes, to OP-10.
+          Routing decided in the round-3 dialog
+        outcome: ok
+      - file: sdd/backlog/bk-497-input-files-section-2.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Round 4: the routing condition was refuted for the fourth round
+          running (repeat-site check), so the round-4 dialog replaced it with
+          one literal rule: Q1 rows by the catalogue's disposition, every other
+          passage by the IDs and operation words it contains, Q4 rows and note
+          7 also to OP-01. A one-off script regenerates every § 2 section from
+          the rule, asserts each passage against the research doc, and writes
+          the routing table to the dossier; the `..` sentence leaves OP-16 as
+          spec 052's. This supersedes round 1's "Identity token stays with
+          OP-09": the row now also reaches OP-01, OP-03 and OP-20
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1187 --trace-block-only` at head 8f052d8.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1187 --trace-block-only"
+  pr: 1187
+  review_rounds: 9
+  submissions: 7
+  findings: 16
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.67
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.17
+    - round: 3
+      findings: 5
+      origin: {loop-introduced: 1, original: 4}
+      triage: {must-fix: 5}
+      duration_hours: 0.2
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.16
+    - round: 5
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.28
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.15
+    - round: 7
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.12
+  by_file:
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 6
+    - path: "sdd/traces/bk-497-input-files-carry-section-2.yml"
+      findings: 5
+    - path: "sdd/observe/inputs/OP-02.md"
+      findings: 1
+    - path: "sdd/observe/inputs/OP-07.md"
+      findings: 1
+    - path: "sdd/observe/inputs/OP-12.md"
+      findings: 1
+    - path: "sdd/observe/inputs/OP-18.md"
+      findings: 1
+    - path: "sdd/observe/inputs/OP-24.md"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-497-input-files-section-2.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/22fc130b-3097-5256-958c-78b435403004.jsonl"
+    - "sdd/decisions/441df0b2-ba2a-4355-a676-6faaec0a37e5.jsonl"
+    - "sdd/observe/inputs/OP-01.md"
+    - "sdd/observe/inputs/OP-03.md"
+    - "sdd/observe/inputs/OP-04.md"
+    - "sdd/observe/inputs/OP-05.md"
+    - "sdd/observe/inputs/OP-06.md"
+    - "sdd/observe/inputs/OP-08.md"
+    - "sdd/observe/inputs/OP-09.md"
+    - "sdd/observe/inputs/OP-10.md"
+    - "sdd/observe/inputs/OP-11.md"
+    - "sdd/observe/inputs/OP-13.md"
+    - "sdd/observe/inputs/OP-14.md"
+    - "sdd/observe/inputs/OP-15.md"
+    - "sdd/observe/inputs/OP-16.md"
+    - "sdd/observe/inputs/OP-17.md"
+    - "sdd/observe/inputs/OP-19.md"
+    - "sdd/observe/inputs/OP-20.md"
+    - "sdd/observe/inputs/OP-21.md"
+    - "sdd/observe/inputs/OP-22.md"
+    - "sdd/observe/inputs/OP-23.md"
+  review_driven_commits:
+    - sha: "467f893"
+      subject: "BK-497: Copy \u00a7 1's denominator verbatim; add Q3's gates to OP-05, OP-07, OP-12, OP-13"
+    - sha: "89858de"
+      subject: "BK-497: Split \u00a7 1's denominator into its two verbatim passages; name each Q4 row's home"
+    - sha: "8fc1251"
+      subject: "BK-497: Name each exclusion's source in the trace"
+    - sha: "0d0de6d"
+      subject: "BK-497: Copy Q1's closing sentence whole; route note 7 and Q4 Retries by shared.md"
+    - sha: "cd470cd"
+      subject: "BK-497: Route every \u00a7 2 passage by one literal rule, enumerated in a dossier"
+    - sha: "602741b"
+      subject: "BK-497: Name note 1 among the \u00a7 2 passages that name an entry"
+    - sha: "6f86a34"
+      subject: "BK-497: Name OP-18's whole Q3 table and round 4's Identity token reversal"
+    - sha: "36e2b38"
+      subject: "BK-497: Name the trace phase for every review round it records"
+    - sha: "8f052d8"
+      subject: "BK-497: Paste the review block into the trace"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

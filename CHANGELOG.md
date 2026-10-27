@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-497: The input files carry only research § 4, so per-entry findings in § 2 reach no session
 - BK-495: Decisions that bind every operation have no home, so each design session would rediscover them
 - BK-494: `/observe` still designs one operation, so a session never meets the catalogue entry that sets its scope
 - BK-493: The v1 Store API has no agreed set of operations, so each design session would find its own scope
