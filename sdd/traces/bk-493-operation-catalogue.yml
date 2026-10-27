@@ -1,0 +1,327 @@
+id: BK-493
+title: "The v1 Store API has no agreed set of operations, so each design session would find its own scope"
+trigger: >-
+  After spec 052 merged, the maintainer asked for one step before the first
+  operation flow: besides what a store holds (spec 051) and how a key
+  addresses it (spec 052), v1's operations needed an agreed surface,
+  discussed and scoped before the `read()` design session.
+source_items:
+  - BK-493
+audience:
+  - library.maintainer
+  - user.api
+  - contributor.process
+discovery_followups:
+  - BK-494
+surprising_ripples:
+  - sdd/specs/027-iter-children.md
+  - sdd/specs/028-read-text.md
+  - sdd/specs/030-write-text.md
+decisions:
+  - sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
+  - sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's dossier § Format RFC input, "Decisions that bind every operation
+      have no home", and RFC-0024's binding of research § 9's steps: step 4b
+      enters that table, and the bullet now points here (RFC-0026 C1, C2).
+  - items: [BK-480, BK-490, BK-454, BK-451]
+    verdict: constrains
+    evidence: >-
+      Their index entries (Grep of `sdd/BACKLOG.md`): each waits on an
+      operation's or the API's flow (BK-480 the API's shape, BK-490 the root,
+      parents and child stores, BK-454 `read()`'s R-2, BK-451 `glob`). The
+      catalogue names the entry each waits on (OP-18, OP-16, OP-01, OP-08) and
+      decides none of their questions.
+  - items: [BK-469, BK-489, BK-436, BK-438]
+    verdict: unrelated
+    evidence: >-
+      Their index entries: BK-469 compares spec 052 with 0.33, BK-489 is D10,
+      BK-436 observes backends against spec 051, BK-438 is a profile-table
+      question inside the listing entries' sessions, which no entry boundary
+      changes. BK-489 still gains a line for PR #1172, the maintainer's
+      decision in the first log.
+phases:
+  - id: orient
+    name: Read the dossier, the decision log and the documents step 4b amends
+    steps:
+      - file: sdd/backlog/bk-493-operation-catalogue.md
+        section: "(full)"
+        read_type: gate
+        extract: "Decisions taken, Status's five steps, the 24 draft entries, the research brief"
+        outcome: ok
+      - file: sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl
+        section: "answered events from 2026-10-26"
+        read_type: gate
+        extract: >-
+          The catalogue dialogs; also confirms the #1172 parking choice, whose
+          BK-489 line the previous session handed over by message
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "Status, R1, R4"
+        read_type: gate
+        extract: >-
+          "§ 9" is the research doc's step table, made binding by RFC-0024;
+          R4 binds a ground spec to code only once its flow begins
+        outcome: unclear
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 2 to § 4, § 8, § 9"
+        read_type: gate
+        extract: "Step table, D5, the ground and reopen rule, S1 to S5, open point 2"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0025-freeze-kernel-line.md
+        section: "(full)"
+        read_type: reference
+        extract: "D3's pointer rule, D6 numbering; the ground register's sections"
+        outcome: ok
+      - file: sdd/observe/ground-register.md
+        section: "(full)"
+        read_type: gate
+        extract: "Rows feed the hook's allowlist; Not ground paragraph"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The first /observe run's priming came from 0.33 design in a register
+          row, which is why the catalogue carries no 0.33 column
+        outcome: ok
+      - file: sdd/observe/axes.md
+        section: "(full)"
+        read_type: reference
+        extract: "What each entry's session decides, so the catalogue leaves it out"
+        outcome: ok
+  - id: draft
+    name: Draft RFC-0026, the catalogue and spec 053
+    steps:
+      - file: sdd/templates/rfc-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "Status, Summary, Motivation, Proposal, Alternatives, Impact, Open Questions, References"
+        outcome: ok
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rules 1 to 7, Ready"
+        read_type: gate
+        extract: >-
+          No kind for an inventory; read as structure over the API surface.
+          Ready item 2 wants a test per section, which no v1 surface can give
+        outcome: ok
+      - file: sdd/templates/spec-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "Skeleton order; empty headings say None."
+        outcome: ok
+      - file: sdd/specs/052-store-key.md
+        section: "(full)"
+        read_type: reference
+        extract: "Spec beside a table it cites (its profile table); Supersedes line; D7 header on spec 004"
+        outcome: ok
+      - file: sdd/specs/001-store-api.md
+        section: "STORE-008"
+        read_type: verify
+        extract: "0.33's sync surface list, superseded by spec 053"
+        outcome: ok
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-046"
+        read_type: verify
+        extract: "0.33's async surface list, superseded by spec 053"
+        outcome: ok
+  - id: research
+    name: Revise the drafts against the maintainer's deep research
+    steps:
+      - file: "haalfi/research reports/remote-store v1 operation catalogue verified.md (b0e426f)"
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Ten comparables. Q1: presign 8/10, system properties 7/10, identity
+          tokens 6/10 have no entry; Q2: conditions span read, delete, copy and
+          rename, and list/walk/match is the least agreed cut; Q4: shared
+          decisions most often retrofitted. Four dialogs settled what the
+          catalogue takes; filed as research-operation-catalogue.md
+        outcome: ok
+      - file: sdd/templates/research-template.md
+        section: "header"
+        read_type: reference
+        extract: "The Date line is load-bearing for check-sdd-index"
+        outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "header, § 5, Sources"
+        read_type: reference
+        extract: >-
+          Precedent for distilling a haalfi/research report: results and
+          decisions here, the full cited report one link away. The first filing
+          copied the report verbatim; the maintainer had it rewritten to results
+          and consequences for the Store API
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1184 --trace-block-only` at head 016e3b0.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1184 --trace-block-only"
+  pr: 1184
+  review_rounds: 27
+  submissions: 14
+  findings: 58
+  by_round:
+    - round: 1
+      findings: 6
+      origin: {original: 6}
+      triage: {must-fix: 5, refuted: 1}
+      duration_hours: 0.22
+    - round: 2
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {refuted: 1}
+      duration_hours: 1.0
+    - round: 3
+      findings: 4
+      origin: {loop-introduced: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.85
+    - round: 4
+      findings: 7
+      origin: {loop-introduced: 4, original: 3}
+      triage: {must-fix: 7}
+      duration_hours: 0.81
+    - round: 5
+      findings: 5
+      origin: {loop-introduced: 2, original: 2, pre-existing: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.4
+    - round: 6
+      findings: 6
+      origin: {loop-introduced: 5, original: 1}
+      triage: {must-fix: 6}
+      duration_hours: 0.22
+    - round: 7
+      findings: 8
+      origin: {loop-introduced: 7, original: 1}
+      triage: {must-fix: 8}
+      duration_hours: 0.26
+    - round: 8
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.21
+    - round: 9
+      findings: 4
+      origin: {loop-introduced: 2, original: 2}
+      triage: {must-fix: 3, unknown: 1}
+      duration_hours: 0.25
+    - round: 10
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.26
+    - round: 11
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 9.14
+    - round: 12
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.41
+    - round: 13
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 3.82
+    - round: 14
+      findings: 3
+      origin: {loop-introduced: 1, original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 3}
+      duration_hours: 1.16
+  by_file:
+    - path: "sdd/specs/053-store-operations.md"
+      findings: 19
+    - path: "sdd/observe/catalogue.md"
+      findings: 11
+    - path: "sdd/rfcs/rfc-0026-operation-catalogue.md"
+      findings: 8
+    - path: "sdd/research/research-operation-catalogue.md"
+      findings: 7
+    - path: "sdd/backlog/bk-493-operation-catalogue.md"
+      findings: 5
+    - path: "sdd/observe/ground-register.md"
+      findings: 4
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+    - path: "sdd/rfcs/rfc-0024-spec-first-reset.md"
+      findings: 1
+    - path: "sdd/traces/bk-493-operation-catalogue.yml"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "scripts/check_spec_marks.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlog/bk-485-spec-first-reset.md"
+    - "sdd/backlog/bk-489-frozen-kernel-line.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl"
+    - "sdd/decisions/a1ce7424-59d8-4df8-a175-cf6b9698083d.jsonl"
+    - "sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl"
+    - "sdd/specs/001-store-api.md"
+    - "sdd/specs/027-iter-children.md"
+    - "sdd/specs/028-read-text.md"
+    - "sdd/specs/029-async-store-backend-api.md"
+    - "sdd/specs/030-write-text.md"
+  review_driven_commits:
+    - sha: "86669fe"
+      subject: "BK-493: Round 1 fixes: drop the catalogue's Session column, complete the 0.33 check"
+    - sha: "8e43418"
+      subject: "BK-493: State the ext/ scope of the 0.33 omission check"
+    - sha: "f9ab954"
+      subject: "BK-493: Spec 053 is structure over what a store reports; step 4b joins without a model"
+    - sha: "7a8e957"
+      subject: "Merge remote-tracking branch 'origin/master' into bk-493-operation-catalogue"
+    - sha: "410827f"
+      subject: "BK-493: Catalogue IDs use a non-breaking hyphen so they never wrap"
+    - sha: "9561942"
+      subject: "BK-493: Act on the outside review: OP-22 and OP-23 optional, what v1 promises, forms undecided"
+    - sha: "36f5eab"
+      subject: "BK-493: Spec 053 bounds the closed surface only; OP-18 binds the Offer column"
+    - sha: "696c7de"
+      subject: "BK-493: Closing-round fixes: construction and mixed forms in spec 053, no semantics in the ground"
+    - sha: "a890ba2"
+      subject: "BK-493: Accept RFC-0026 and close BK-493"
+    - sha: "ed68021"
+      subject: "BK-493: Verification-round fixes: public operations enumerated, Q1 fully disposed"
+    - sha: "71ffbba"
+      subject: "BK-493: Rewrite the research doc to results and consequences; public operation counts in by default"
+    - sha: "aaccab4"
+      subject: "BK-493: Record the review-loop dialogs"
+    - sha: "ebc84de"
+      subject: "BK-493: Round 7 fixes: one rule per access path, three more superseded surface sections, research provenance"
+    - sha: "3b2f44c"
+      subject: "BK-493: Record the round 7 dialogs"
+    - sha: "46cff5c"
+      subject: "BK-493: Round 8 fixes: public operation as the library's interface, OP-24 count, checksum row"
+    - sha: "adb3859"
+      subject: "BK-493: Record the round 8 dialogs"
+    - sha: "6f34bcf"
+      subject: "BK-493: Round 9 fixes: public operation counts every handle operation; file BK-494 for /observe"
+    - sha: "2390530"
+      subject: "BK-493: Record the round 9 dialogs"
+    - sha: "7332379"
+      subject: "BK-493: Round 10 fixes: form by handle, formal invariants, ASYNC-061/062 superseded"
+    - sha: "db94b24"
+      subject: "BK-493: Record the round 10 dialogs"
+    - sha: "5f8d10b"
+      subject: "BK-493: Round 11 fix: per-entry session input is BK-494's, not a partial file name"
+    - sha: "8ef7809"
+      subject: "BK-493: Record the round 11 dialogs"
+    - sha: "0196480"
+      subject: "BK-493: Round 12 fixes: ASCII catalogue IDs in code spans; no project state in spec 053"
+    - sha: "db8bfc1"
+      subject: "BK-493: Record the round 12 dialogs"
+    - sha: "7c2ca8d"
+      subject: "BK-493: Round 13 fixes: per-handle operation identity, OP-09 token, two pointers"
+    - sha: "0ec52ed"
+      subject: "BK-493: Record the round 13 dialogs"
+    - sha: "016e3b0"
+      subject: "BK-493: Final-round fixes: one operation may span both handle kinds, identity conditions only, BK-485 steps"
+  ci: {verdict: PENDING, failed: 0, pending: 13}

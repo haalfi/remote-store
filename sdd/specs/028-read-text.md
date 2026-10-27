@@ -1,5 +1,9 @@
 # read_text Specification
 
+> **0.33 behaviour, being superseded** ([RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D7).
+> [Spec 053](053-store-operations.md) supersedes RTXT-003; the other sections
+> stay live.
+
 ## Overview
 
 `read_text()` is a Store-level convenience method that reads a file and decodes

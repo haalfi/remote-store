@@ -215,6 +215,10 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "ASYNC-062",  # 029 — open_atomic() deferral
         "RET-015",  # 025 — graph retry mapping (rides the Graph backend)
         "GR-011",  # 044 — item-id addressing deferred to a future RFC (reserved slot, no behavior)
+        # Spec 053 bounds the v1 surface; a witness is a v1 surface, which no code has
+        # until a flow implements it (RFC-0026 C3; 053's Notes, Checks).
+        "OPS-001",  # 053 — no operation outside the catalogue
+        "OPS-002",  # 053 — every entry in both forms
         # Optional-dependency / packaging declarations (pyproject extras).
         "PA-023",  # 014 — pyarrow optional extra declaration
         "CFG-014",  # 021 — yaml/pydantic optional extras declaration

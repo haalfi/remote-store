@@ -8,7 +8,8 @@ design hook (`scripts/observe_ground.py`) reads its allowlist from the
 `active` rows of the first table, so a row here is a file the hook lets the
 session read. What may join, and when, is RFC-0024 § R1 with research § 3: only
 the new layer, once its spec and formal model are accepted; 0.33's code, tests
-and specs 001 to 050 never.
+and specs 001 to 050 never. Step 4b's catalogue joins without a model
+([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4).
 
 ## Artifacts
 
@@ -29,12 +30,18 @@ reopened file is not on the allowlist until its flow re-admits it.
 | `sdd/specs/052-store-key.md` | key | active |
 | `sdd/specs/profiles/052-store-key.md` | key | active |
 | `sdd/formal/lean/KeyModel.lean` | key | active |
+| `sdd/specs/053-store-operations.md` | catalogue | active |
+| `sdd/observe/catalogue.md` | catalogue | active |
 
 Not ground: `research-store-model-axioms.md`, spec 051's rationale, and
 `research-key-model.md`, spec 052's. The hook admits whole files, and both
 record 0.33 and kernel design: the first in its § 10 (error names, flat-store
 encodings), which reached the first `/observe` session's decisions; the second
-in § 3.7's error table and § 9's comparison with specs 004, 005, 015 and 053.
+in § 3.7's error table and § 9's comparison with specs 004, 005, 015 and the
+frozen contract-kernel spec 053 (BE-032).
+Nor is BK-493's dossier, which maps each catalogue entry to 0.33's surface, or
+the catalogue's deep-research doc, whose per-entry notes would prime every
+other entry's session ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4).
 
 ## Pointer edits
 
@@ -54,6 +61,10 @@ before that merge which cites "spec 052" or "spec 053" means the spec frozen on
 `frozen/kernel-driver` (backend lifetime, contract kernel), and one that cites
 "spec 054" means the store key; such records are not edited
 ([RFC-0025](../rfcs/rfc-0025-freeze-kernel-line.md) D6).
+Spec 053 is the store operations spec from PR #1184's merge onward; a record
+committed before that merge which cites "spec 053" means the frozen contract
+kernel spec, and is not edited either
+([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4).
 
 ## Retired IDs
 

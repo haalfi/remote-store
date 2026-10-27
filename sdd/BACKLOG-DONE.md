@@ -476,6 +476,12 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-493 — The v1 Store API has no agreed set of operations, so each design session would find its own scope**
+  spec: OPS-001 -- OPS-002 · effort: M · audience: library.maintainer, user.api, contributor.process
+  RFC-0026 (accepted) adds step 4b: `sdd/observe/catalogue.md` lists v1's entries, OP-01 to OP-24, one
+  per intent, and spec 053 closes the surface to them in a sync and an async form; both are ground.
+  Detail: [dossier](backlog/bk-493-operation-catalogue.md). Trace:
+  [bk-493](traces/bk-493-operation-catalogue.yml).
 - [x] **BK-468 — No spec defines which strings a store accepts as a key, so one key works on one backend and fails on another**
   spec: KEY-001 -- KEY-013 · effort: L · audience: library.maintainer, user.api
   Spec 052 states the v1 key layer of `research-key-model.md`: reduction (`..` climbs, an escape is

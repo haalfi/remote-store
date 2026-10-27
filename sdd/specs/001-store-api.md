@@ -1,5 +1,9 @@
 # Store API Specification
 
+> **0.33 behaviour, being superseded** ([RFC-0024](../rfcs/rfc-0024-spec-first-reset.md) D7).
+> [Spec 053](053-store-operations.md) supersedes STORE-008; the other sections
+> stay live.
+
 ## Overview
 
 `Store` is the primary user-facing abstraction — a thin, immutable wrapper around a backend, scoped to a root path. This spec also defines the metadata models (`FileInfo`, `FolderInfo`) that form the Store's data contract.
