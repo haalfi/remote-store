@@ -28,8 +28,9 @@ any web result about it.
    and tell the maintainer to start a fresh one with `/observe`.
 2. **Load.** Read the entry's catalogue row, the session's scope; its
    operations, forms and signatures are what you design (RFC-0026 C2). Then
-   the register, the axes, every active row, the input file and each named
-   path; a formal model row only when a decision cites a clause it checks. If
+   the register, the axes, every active row but the formal models, the input
+   file and each named path; a formal model row only when a decision cites a
+   clause it checks. If
    the record exists, continue it from its first axis not yet closed.
    Otherwise create it: title `# <entry>: observable semantics`, the marker
    `<!-- doc: repo-only -->`, lines `**Date:**`, `**Backlog items:**` and
@@ -68,6 +69,6 @@ any web result about it.
 - A question no axis raises is asked under the nearest one and named in its
   consistency check, so the axes can be revised with F2 after `read()`.
 - A decision binding every operation is also listed in Open items as
-  `shared: <home>`, one per home: a `shared.md` section, a home its Lands
-  elsewhere table names, or `unhomed`. `shared.md` says how the flow after the
-  session routes each; this session never writes it.
+  `shared: <home>`: a `shared.md` section, a home its Lands elsewhere table
+  names, or `unhomed`. Where it lands is decided after this session, never in
+  it; this session never writes `shared.md`.

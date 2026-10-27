@@ -12,6 +12,7 @@ audience:
   - library.maintainer
 discovery_followups:
   - BK-496
+  - BK-497
 surprising_ripples:
   - sdd/backlog/bk-493-operation-catalogue.md
   - .github/workflows/ci.yml

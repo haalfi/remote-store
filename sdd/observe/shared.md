@@ -7,20 +7,11 @@ each defining its subject and naming the flow that fills it.** No section
 holds a clause yet; a section gets one when the flow it names writes it, and
 the clause joins the ground under RFC-0024 § R1, with that flow's spec and
 model. An `/observe` session never writes here: it records such a decision in
-its own record and lists it there under Open items as `shared: <home>`, one
-tag per home: a section below, a home Lands elsewhere names, or `unhomed`. The
-flow after the session (research § 3: record, then spec) routes each tag by
-the state of its home when it runs
-([RFC-0027](../rfcs/rfc-0027-observe-playground.md)):
-
-| Home | The flow after the session |
-|---|---|
-| Its own entry's flow, or a section not yet filled that its own flow fills | writes it |
-| Another entry's flow, or a section not yet filled that it fills, whose session has not run | adds it to that entry's input file |
-| Ground: a spec, a filled section, or an entry whose flow has run | records a reopen of it |
-| `unhomed` | first gives it a home, a section or a row below, then routes it by this table |
-
-A row below that names two homes takes two tags.
+its own record and lists it there under Open items as `shared: <home>`, naming
+a section below, a home Lands elsewhere names, or `unhomed`. Where it lands is
+decided after the session, by the flow that follows it (research § 3: record,
+then spec) with the maintainer, never in it; a change to ground is a reopen
+([RFC-0027](../rfcs/rfc-0027-observe-playground.md)).
 
 ## Session
 
@@ -59,9 +50,9 @@ Filled by: OP-01's flow; OP-21's flow adds what ending a lifetime does to it.
 ## Lands elsewhere
 
 Decisions that bind every operation, or recur in every entry, whose home is not
-a section above. Each was raised by RFC-0026 Open Question 1 (research note 7
-of `research-operation-catalogue.md`) or by the first `/observe` run (BK-485's
-dossier).
+a section above. Each was raised by RFC-0026 Open Question 1 (research notes
+7, 2 and 5 of `research-operation-catalogue.md`) or by the first `/observe` run
+(BK-485's dossier).
 
 | Decision | Raised by | Home |
 |---|---|---|

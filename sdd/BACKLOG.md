@@ -516,6 +516,13 @@ no clause of the contract ships unexercised.
   `shared.md`'s. Runs after several entries' flows, which also decide core against extension beyond
   the 24 entries, never a session. Open decision: when, and after which entries.
 
+- [ ] **BK-497 — The input files carry only research § 4, so per-entry findings in § 2 reach no session**
+  spec: — · effort: S · audience: contributor.process, library.maintainer
+  Each `sdd/observe/inputs/OP-NN.md` copies its entry's § 4 notes of `research-operation-catalogue.md`
+  (RFC-0027 P1), a doc the hook denies every session. Its § 2 material is in none: Q4's identity-token
+  row and note 4 (OP-09), Q2 and note 2 (OP-05), Q3 and note 5 (OP-18), note 3 (OP-07), note 6 (OP-24).
+  Each is copied, with its source, before that entry's session. Open decision: none.
+
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset

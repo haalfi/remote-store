@@ -60,19 +60,17 @@ model accepted, and until then the section holds no clause. Its sections are
 Session (design session against caller session), Handle, Lifetime and State,
 each naming the flow that fills it. A design session never writes it: the
 session records a decision that binds every operation and lists it under Open
-items as `shared: <home>`, one tag per home: a section, a home the file's
-Lands elsewhere table names, or `unhomed`. The flow after the session,
-research § 3's spec step, routes each by the state of its home, as the file's
-lead enumerates: it writes only into its own entry's flow, hands a decision to
-an entry whose session has not run through that entry's input file, and
-reopens what is already ground. Changing a filled section is a reopen under
-research § 3.
+items as `shared: <home>`, naming a section, a home the file's Lands elsewhere
+table names, or `unhomed`. Where it lands is decided after the session, by the
+flow that follows it with the maintainer, as the maintainer's cut puts it
+(decision log above): never in a session. A change to ground, a filled
+section included, is a reopen under research § 3.
 
 ### P3. Open Question 1 of RFC-0026
 
 The shared file's Lands elsewhere table gives each decision Open Question 1
-lists, and the three of BK-485's dossier, its home: a section of the file, a
-ground spec, or the flow of the entry that first needs it. RFC-0024 D5 stands:
+lists, and the three of BK-485's dossier, its home, as the table's rows name
+it. RFC-0024 D5 stands:
 the error, lifecycle and consistency layers still grow from `read()`; the
 table names where.
 

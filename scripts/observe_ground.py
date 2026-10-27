@@ -16,9 +16,9 @@ allowlist is the ground register plus files the maintainer names at the start).
 * ``rearm`` (``SessionStart``): a resumed or compacted session that ``arm``
   armed is armed again, from the last ``/observe`` prompt before its first tool
   use, so it never resumes unarmed, whatever became of its marker. When those
-  arguments no longer arm (the catalogue reopened, an entry or named path gone)
-  or the hook fails, the session is locked instead: every call but the neutral
-  ones is refused until ``/clear``.
+  arguments no longer arm (the catalogue reopened, an entry or named path gone),
+  or the hook fails on a transcript naming ``/observe``, the session is locked
+  instead: every call but the neutral ones is refused until ``/clear``.
 * ``check`` (``PreToolUse``): in an armed session, a call passes only if it
   stays inside the allowlist; every other session passes untouched, the
   wrapper's fail-closed branch included.
@@ -174,13 +174,16 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
     transcript = payload.get("transcript_path")
     if not transcript or not Path(transcript).is_file():
         return None
-    args = _armed_args(Path(transcript))
-    if args is None:
-        return None
     try:
-        return _write_marker(payload, root, args)
+        args = _armed_args(Path(transcript))
+        return None if args is None else _write_marker(payload, root, args)
     except Exception as exc:
         # SessionStart cannot block: a resume that cannot re-arm, refused or crashed, is locked.
+        # A crash locks only a transcript naming /observe, so an ordinary session stays free.
+        if not isinstance(exc, Refused):
+            with contextlib.suppress(OSError):
+                if "/observe" not in Path(transcript).read_text(encoding="utf-8", errors="replace"):
+                    return None
         reason = str(exc) if isinstance(exc, Refused) else f"hook failed: {type(exc).__name__}"
         marker = _marker(root, payload.get("session_id") or "")
         marker.parent.mkdir(parents=True, exist_ok=True)

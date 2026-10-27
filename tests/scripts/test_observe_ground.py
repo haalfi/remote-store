@@ -405,11 +405,23 @@ def test_rearm_takes_the_last_observe_prompt_before_any_tool(
     assert state["entry"] == entry
 
 
-def test_a_rearm_that_crashes_is_locked_not_unarmed(repo: Path, tmp_path: Path) -> None:
-    register = repo / "sdd/observe/ground-register.md"
-    register.write_bytes(register.read_bytes() + b"\xff\xfe")
+def test_an_ordinary_resume_with_an_odd_transcript_stays_unarmed(repo: Path, tmp_path: Path) -> None:
+    transcript = tmp_path / "plain.jsonl"
+    transcript.write_text('{"type":"user","message":"oops"}\n{"type":"user","message":{"content":"hi"}}\n')
+    payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
+    assert _run(repo, "rearm", payload).returncode == 0
+    assert not (repo / "tmp/observe").exists()
+
+
+@pytest.mark.parametrize("where", ["register", "transcript"])
+def test_a_rearm_that_crashes_is_locked_not_unarmed(repo: Path, tmp_path: Path, where: str) -> None:
     transcript = tmp_path / "resumed.jsonl"
-    transcript.write_text(_TYPED, encoding="utf-8")
+    if where == "register":
+        register = repo / "sdd/observe/ground-register.md"
+        register.write_bytes(register.read_bytes() + b"\xff\xfe")
+        transcript.write_text(_TYPED, encoding="utf-8")
+    else:  # a line _armed_args cannot parse, ahead of the /observe prompt
+        transcript.write_text('{"type":"user","message":"oops"}\n' + _TYPED, encoding="utf-8")
     payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
     assert _run(repo, "rearm", payload).returncode == 2
     result = _call(repo, "Bash", session=OTHER, command="ls")
