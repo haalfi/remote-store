@@ -187,7 +187,9 @@ All decided in the log above:
 
 ## Open Questions
 
-1. **Shared decisions beyond the surface** grow from `read()` under D5, and
+1. **Closed by [RFC-0027](rfc-0027-observe-playground.md)** P3, whose
+   shared-decisions file names a home for each item below.
+   **Shared decisions beyond the surface** grow from `read()` under D5, and
    spec 053 states none. Which shared layer each lands in is open; the
    research's advisory note 7 lists the ones comparables most often had to
    retrofit (`..` containment, missing-key delete, exception typing, sync and

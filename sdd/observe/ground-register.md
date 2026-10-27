@@ -9,7 +9,10 @@ design hook (`scripts/observe_ground.py`) reads its allowlist from the
 session read. What may join, and when, is RFC-0024 § R1 with research § 3: only
 the new layer, once its spec and formal model are accepted; 0.33's code, tests
 and specs 001 to 050 never. Step 4b's catalogue joins without a model
-([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4).
+([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4), and so does the
+shared-decisions file's definitions; a clause written into it joins under
+§ R1, with its flow's spec and model
+([RFC-0027](../rfcs/rfc-0027-observe-playground.md) P2).
 
 ## Artifacts
 
@@ -32,6 +35,7 @@ reopened file is not on the allowlist until its flow re-admits it.
 | `sdd/formal/lean/KeyModel.lean` | key | active |
 | `sdd/specs/053-store-operations.md` | catalogue | active |
 | `sdd/observe/catalogue.md` | catalogue | active |
+| `sdd/observe/shared.md` | shared | active |
 
 Not ground: `research-store-model-axioms.md`, spec 051's rationale, and
 `research-key-model.md`, spec 052's. The hook admits whole files, and both
@@ -42,6 +46,9 @@ frozen contract-kernel spec 053 (BE-032).
 Nor is BK-493's dossier, which maps each catalogue entry to 0.33's surface, or
 the catalogue's deep-research doc, whose per-entry notes would prime every
 other entry's session ([RFC-0026](../rfcs/rfc-0026-operation-catalogue.md) C4).
+Nor is an entry's input file under `sdd/observe/inputs/`: the hook admits it
+to its own entry's session only, as session input rather than ground
+([RFC-0027](../rfcs/rfc-0027-observe-playground.md) P1).
 
 ## Pointer edits
 

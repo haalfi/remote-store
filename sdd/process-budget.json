@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 305629,
+  "total": 306331,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,7 +16,7 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 3795,
+    ".claude/skills/observe/SKILL.md": 4497,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -143,6 +143,30 @@
       "from": 305617,
       "to": 305629,
       "reason": "PR #1181 review: the two Rule 3 copies say 'a break record or a 0.33 defect', as Rule 3 does"
+    },
+    {
+      "item": "BK-494",
+      "from": 305629,
+      "to": 306108,
+      "reason": "/observe runs on a catalogue entry: Load reads the entry row as scope, the entry input file is admitted, a shared decision is listed for the post-session flow, an entry that should split is a catalogue reopen"
+    },
+    {
+      "item": "BK-494",
+      "from": 306108,
+      "to": 306178,
+      "reason": "PR #1186 review: a shared decision outside a shared.md section is tagged with the home Lands elsewhere names"
+    },
+    {
+      "item": "BK-495",
+      "from": 306178,
+      "to": 306232,
+      "reason": "PR #1186 review: shared decisions take one of three tags, shared.md says what the flow after the session does with each"
+    },
+    {
+      "item": "BK-494",
+      "from": 306232,
+      "to": 306331,
+      "reason": "PR #1186 review: Load's scope includes the Not in v1 rows the catalogue leaves to the entry"
     }
   ]
 }

@@ -508,20 +508,28 @@ no clause of the contract ships unexercised.
   BK-407's `-async-extended-graph`, whose tests never run its target, is the known exception.
 
 
-- [ ] **BK-494 — `/observe` still designs one operation, so a session never meets the catalogue entry that sets its scope**
-  spec: OPS-001 -- OPS-002 · effort: S · audience: contributor.process, library.maintainer
-  RFC-0026 makes an entry of `sdd/observe/catalogue.md` the unit of each `/observe` session, but
-  `.claude/skills/observe/SKILL.md` takes an `<operation>`, its hook `scripts/observe_ground.py`
-  accepts only `[a-z][a-z0-9_]*` and so refuses `OP-01`, its Load step never reads the catalogue
-  row, and named files are admitted whole, so a session cannot get only its entry's research notes
-  and decisions. § 9 step 5 (`read()`, OP-01) waits on it. Open decision: none.
+- [ ] **BK-496 — The v1 API has no spec for getting a store, configuring it and the shape of a call**
+  spec: OPS-001 -- OPS-002 · effort: M · audience: user.api, library.maintainer
+  Specs 052 and 053 leave to "the API's spec" how a store is obtained and configured, how operations
+  and keys are spelled and displayed, handles' language-level behaviour and what sets an extension
+  apart; nothing owns it. Reading key settings back is meant for OP-18 (BK-480), handle lifetime is
+  `shared.md`'s. Runs after several entries' flows, which also decide core against extension beyond
+  the 24 entries, never a session. Open decision: when, and after which entries.
+
+- [ ] **BK-497 — The input files carry only research § 4, so per-entry findings in § 2 reach no session**
+  spec: — · effort: S · audience: contributor.process, library.maintainer
+  Each `sdd/observe/inputs/OP-NN.md` copies its entry's § 4 notes of `research-operation-catalogue.md`
+  (RFC-0027 P1), a doc that is not ground and is admitted only when named, whole. Its § 2 also holds
+  findings for single entries, such as note 4 (OP-09, OP-14) and Q4's Prefix scope row (OP-16), and no
+  input file carries them. Finding each entry's in § 2 and copying it, with its source, is this item,
+  done before that entry's session. Open decision: none.
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
   Its test runs are in the dossier; step 4 is spec 052, step 4b spec 053 and the catalogue (BK-493).
-  Not done: § 9 steps 5 (waits on BK-494) and 6. Open decision: § 8's open points 2 to 4 and 11
+  BK-494 moved `/observe` to catalogue entries. Not done: § 9 steps 5 (`/observe OP-01`) and 6. Open decision: § 8's open points 2 to 4 and 11
   (D10 is BK-489's).
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
@@ -591,11 +599,11 @@ copies an example, without opening an issue.
 
 - [ ] **BK-480 — No API lets a caller set or read a store's separator set and acceptance language**
   spec: KEY-008, KEY-009 · effort: S · audience: user.api, user.api_docs
-  Spec 052 makes the `\` opt-out, the portability opt-in and the backend's declared portable set
-  P_b store settings (KEY-008, KEY-009) and leaves reading them, and announcing a P_b smaller than
-  L_shared, to the API's spec; no type or method carries any, so a caller cannot tell which holds.
-  F4 (`research-spec-first-reset.md`) fixes the form: queryable, documented, `DeviationWarning`. Class F (RFC-0024 § R3): decided in the API's
-  flow, with a helper such as `is_portable_key(key) -> bool` as candidate input. Open decision: the shape.
+  Spec 052 makes the `\` opt-out, the portability opt-in and P_b store settings (KEY-008, KEY-009)
+  and leaves setting, reading back and announcing a P_b below L_shared to the API's spec; no type
+  carries any. F4 (`research-spec-first-reset.md`) fixes the form. Class F (RFC-0024 § R3): setting
+  is BK-496's; reading back is meant for OP-18, a spec 052 reopen its session records. Candidate:
+  a helper such as `is_portable_key(key) -> bool`. Open decision: the shape.
 
 - [ ] **BUG-321 — A list that directly follows paragraph text renders as literal dashes on the docs site**
   spec: DOCFRAME-004 · effort: S · audience: user.site

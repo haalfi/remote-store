@@ -66,10 +66,14 @@ Two more, from the first `/observe` run's own report (above):
 - **Decisions that bind every operation have no home.** `exists`'s D2 (an
   unacceptable key is rejected identically by every operation) and its open
   items on a timeout bound and a profile surface are shared; the next
-  operation's session would rediscover them. Still the RFC's to place: these
-  three bind behaviour and grow from `read()` (RFC-0026 Open Question 1).
-  Only the decisions about the surface as a whole moved to
-  [BK-493](bk-493-operation-catalogue.md), as spec 053.
+  operation's session would rediscover them. The decisions about the surface
+  as a whole moved to [BK-493](bk-493-operation-catalogue.md), as spec 053.
+  The home for the rest is [`sdd/observe/shared.md`](../observe/shared.md)
+  (BK-495, [RFC-0027](../rfcs/rfc-0027-observe-playground.md)): its sections
+  for handle, lifetime and state, and its Lands elsewhere table for these
+  three: the key refusal to spec 052 and the error layer, the profile surface
+  to OP-18's flow, a timeout bound to each entry's AX-5 and a shared one to
+  OP-01's flow.
 - **F3 lacks "admitted, not required".** A failure category that may surface
   but need not (`exists`'s store-integrity failure on a non-store state) fits
   none of F3's terms; the session coined the phrase.

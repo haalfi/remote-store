@@ -476,6 +476,17 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-494 — `/observe` still designs one operation, so a session never meets the catalogue entry that sets its scope**
+  spec: OPS-001 -- OPS-002 · effort: S · audience: contributor.process, library.maintainer
+  `/observe OP-NN` arms only for a catalogue row; Load reads the row as the session's scope; the hook
+  admits `sdd/observe/inputs/OP-NN.md` to that entry's session alone (RFC-0027 P1), seeded with the
+  deep research's per-entry notes and BK-493's notes for OP-05 and OP-18.
+  Trace: [bk-494](traces/bk-494-observe-entries.yml).
+- [x] **BK-495 — Decisions that bind every operation have no home, so each design session would rediscover them**
+  spec: — · effort: S · audience: contributor.process, library.maintainer
+  `sdd/observe/shared.md` joins the ground (RFC-0027 P2): Session, Handle, Lifetime and State,
+  definitions only, each naming the flow that fills it, and a table homing RFC-0026 Open Question 1's
+  items, which it closes (P3). Shipped with BK-494. Trace: [bk-495](traces/bk-495-shared-decisions.yml).
 - [x] **BK-493 — The v1 Store API has no agreed set of operations, so each design session would find its own scope**
   spec: OPS-001 -- OPS-002 · effort: M · audience: library.maintainer, user.api, contributor.process
   RFC-0026 (accepted) adds step 4b: `sdd/observe/catalogue.md` lists v1's entries, OP-01 to OP-24, one

@@ -1,0 +1,264 @@
+id: BK-494
+title: "`/observe` still designs one operation, so a session never meets the catalogue entry that sets its scope"
+trigger: >-
+  After BK-493 merged (RFC-0026, spec 053, the catalogue), the maintainer asked
+  for the /observe playground to be complete before `/observe OP-01`: the tool
+  on catalogue entries, a home for decisions that bind every operation, and the
+  user-facing API spec filed.
+source_items:
+  - BK-494
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups:
+  - BK-496
+  - BK-497
+surprising_ripples:
+  - sdd/backlog/bk-493-operation-catalogue.md
+  - .github/workflows/ci.yml
+co_shipped_items:
+  - BK-495
+decisions:
+  - sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl
+  - sdd/decisions/49c0aa22-502b-5f6c-af5e-2807aaa0ea6d.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's index entry: "§ 9 steps 5 (waits on BK-494)". Its dossier § Format
+      RFC input names three decisions binding every operation with no home
+      (`exists`'s D2 key refusal, a timeout bound, a profile surface), "still the
+      RFC's to place". RFC-0026 Open Question 1 lists eight more (six from research note 7, two
+      from notes 2 and 5).
+      A skeleton that closes the gap must say where each of these lands, or the
+      gap stays open under a new name.
+  - items: [BK-480]
+    verdict: constrains
+    evidence: >-
+      BK-480's entry: "decided in the API's flow"; spec 052's Out of scope gives
+      setting and reading the separator set, acceptance choice and P_b to "the
+      API's spec". The maintainer moves reading settings back to OP-18, so the
+      repoint splits BK-480 between the new API spec item (setting) and OP-18
+      (reading back), without editing spec 052 (ground).
+  - items: [BK-469, BK-489, ID-272]
+    verdict: unrelated
+    evidence: >-
+      Their entries: BK-469 is the key layer's 0.33 comparison, BK-489 is D10,
+      ID-272 cites the ground register only as a future input to its RFC. None
+      changes how a session is armed or what it may read.
+phases:
+  - id: orient
+    name: Read the item, the catalogue step and the /observe tool
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-494, BK-485, BK-480"
+        read_type: gate
+        extract: "BK-494's four gaps; BK-485 step 5 waits on it; BK-480 points at the API's flow"
+        outcome: ok
+      - file: sdd/backlog/bk-493-operation-catalogue.md
+        section: "Status"
+        read_type: gate
+        extract: >-
+          OP-05's and OP-18's inputs (profile follows OP-09; retired OPS-003 and
+          OPS-004) are to be handed over through BK-494's per-entry input
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "Status, R1 (D4, D5, D11)"
+        read_type: gate
+        extract: "D5 grows key, error, lifecycle and consistency from read(); D11 one register"
+        outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 3, § 4, § 9"
+        read_type: gate
+        extract: "Flow design, record, spec, compare; S3 allowlist is register plus named files"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0026-operation-catalogue.md
+        section: "(full)"
+        read_type: gate
+        extract: "C2 scope not semantics; C4 joins without a model, per-entry input is BK-494's; OQ1"
+        outcome: ok
+      - file: sdd/specs/053-store-operations.md
+        section: "(full)"
+        read_type: gate
+        extract: "The API's spec owns spelling, construction, handle language behaviour, extensions"
+        outcome: ok
+      - file: sdd/specs/052-store-key.md
+        section: "Scope, Notes"
+        read_type: gate
+        extract: "The API's spec owns setting and reading separator set, acceptance, P_b, display"
+        outcome: ok
+      - file: sdd/observe/ground-register.md
+        section: "(full)"
+        read_type: gate
+        extract: "Rows feed the hook; what may join is R1 with research § 3"
+        outcome: ok
+      - file: sdd/observe/catalogue.md
+        section: "(full)"
+        read_type: gate
+        extract: "24 entries; ID in a code span; record per entry"
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "Argument is an operation slug; Load reads register, axes, named paths"
+        outcome: ok
+      - file: scripts/observe_ground.py
+        section: "(full)"
+        read_type: gate
+        extract: "_OP is [a-z][a-z0-9_]*; named paths admitted whole; record path from the op"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "(full)"
+        read_type: gate
+        extract: "The gap 'Decisions that bind every operation have no home' and its three items"
+        outcome: ok
+      - file: sdd/research/research-operation-catalogue.md
+        section: "§ 2 Q4, advisory notes, § 4"
+        read_type: reference
+        extract: "§ 4 holds one bullet per entry, waiting on BK-494 to be handed out alone"
+        outcome: ok
+  - id: build
+    name: Hook, skill, inputs, shared file, RFC-0027
+    steps:
+      - file: tests/scripts/test_observe_ground.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Fixture copies the hook into a tmp repo; the entry cases were written
+          first and failed on the slug regex before the hook changed
+        outcome: ok
+      - file: "git show 36f5eab -- sdd/specs/053-store-operations.md"
+        section: "OPS-003, OPS-004"
+        read_type: reference
+        extract: "The retired wording, squashed out of master by #1184, for OP-18's input"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1186 --trace-block-only` at head 0453700.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1186 --trace-block-only"
+  pr: 1186
+  review_rounds: 8
+  submissions: 8
+  findings: 36
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.21
+    - round: 2
+      findings: 2
+      origin: {original: 1, pre-existing: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.26
+    - round: 3
+      findings: 10
+      origin: {loop-introduced: 2, original: 8}
+      triage: {must-fix: 10}
+      duration_hours: 0.28
+    - round: 4
+      findings: 7
+      origin: {loop-introduced: 5, original: 1, pre-existing: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.49
+    - round: 5
+      findings: 6
+      origin: {loop-introduced: 2, original: 4}
+      triage: {must-fix: 6}
+      duration_hours: 0.23
+    - round: 6
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.22
+    - round: 7
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.25
+    - round: 8
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.38
+  by_file:
+    - path: "scripts/observe_ground.py"
+      findings: 8
+    - path: "sdd/observe/shared.md"
+      findings: 7
+    - path: ".claude/skills/observe/SKILL.md"
+      findings: 4
+    - path: "sdd/BACKLOG.md"
+      findings: 4
+    - path: "sdd/rfcs/rfc-0027-observe-playground.md"
+      findings: 3
+    - path: "sdd/observe/inputs/OP-18.md"
+      findings: 2
+    - path: "sdd/traces/bk-495-shared-decisions.yml"
+      findings: 2
+    - path: ".github/workflows/ci.yml"
+      findings: 1
+    - path: "sdd/backlog/bk-485-spec-first-reset.md"
+      findings: 1
+    - path: "sdd/observe/ground-register.md"
+      findings: 1
+    - path: "sdd/observe/inputs/OP-09.md"
+      findings: 1
+    - path: "sdd/research/research-operation-catalogue.md"
+      findings: 1
+    - path: "tests/scripts/test_observe_ground.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlog/bk-493-operation-catalogue.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/49c0aa22-502b-5f6c-af5e-2807aaa0ea6d.jsonl"
+    - "sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl"
+    - "sdd/decisions/dca4fa32-6f77-4bba-92cd-c3002ea8d227.jsonl"
+    - "sdd/observe/axes.md"
+    - "sdd/observe/inputs/OP-01.md"
+    - "sdd/observe/inputs/OP-02.md"
+    - "sdd/observe/inputs/OP-03.md"
+    - "sdd/observe/inputs/OP-04.md"
+    - "sdd/observe/inputs/OP-05.md"
+    - "sdd/observe/inputs/OP-06.md"
+    - "sdd/observe/inputs/OP-07.md"
+    - "sdd/observe/inputs/OP-08.md"
+    - "sdd/observe/inputs/OP-10.md"
+    - "sdd/observe/inputs/OP-11.md"
+    - "sdd/observe/inputs/OP-12.md"
+    - "sdd/observe/inputs/OP-13.md"
+    - "sdd/observe/inputs/OP-14.md"
+    - "sdd/observe/inputs/OP-15.md"
+    - "sdd/observe/inputs/OP-16.md"
+    - "sdd/observe/inputs/OP-17.md"
+    - "sdd/observe/inputs/OP-19.md"
+    - "sdd/observe/inputs/OP-20.md"
+    - "sdd/observe/inputs/OP-21.md"
+    - "sdd/observe/inputs/OP-22.md"
+    - "sdd/observe/inputs/OP-23.md"
+    - "sdd/observe/inputs/OP-24.md"
+    - "sdd/process-budget.json"
+    - "sdd/rfcs/rfc-0024-spec-first-reset.md"
+    - "sdd/rfcs/rfc-0026-operation-catalogue.md"
+    - "sdd/traces/bk-494-observe-entries.yml"
+  review_driven_commits:
+    - sha: "969c3bb"
+      subject: "BK-494, BK-495: Accept RFC-0027; shared.md's clauses join under R1; tag shared decisions by their home"
+    - sha: "6d31997"
+      subject: "BK-494: /observe refuses a reopened catalogue, another entry's named input and a reopened named row"
+    - sha: "ac06c86"
+      subject: "BK-494, BK-495: Lock an /observe resume that cannot re-arm; restore research \u00a7 4; route shared decisions by three tags"
+    - sha: "1dc4089"
+      subject: "BK-494, BK-495: Rearm locks on any failure and takes the last armed prompt; route shared tags by home state; CI runs on ground edits"
+    - sha: "1494917"
+      subject: "BK-494, BK-495: Sessions only tag shared decisions; rearm locks on a transcript crash; file BK-497"
+    - sha: "8acf01c"
+      subject: "BK-494, BK-495, BK-497: Name the lock's unreadable case; BK-497 derives its list; name research \u00a7 3's doc; split BK-495's orient"
+    - sha: "e4849e3"
+      subject: "BK-494, BK-497: Pin the unreadable-transcript lock; BK-497 claims no list; P3 names the consistency layer's gap"
+    - sha: "0453700"
+      subject: "BK-494: Load's scope includes the Not in v1 rows the catalogue leaves to the entry"
+  ci: {verdict: PENDING, failed: 0, pending: 23}
