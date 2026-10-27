@@ -114,3 +114,16 @@ phases:
           OP-03 and OP-10 and Q4's Retries row, which names deletes, to OP-10.
           Routing decided in the round-3 dialog
         outcome: ok
+      - file: sdd/backlog/bk-497-input-files-section-2.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Round 4: the routing condition was refuted for the fourth round
+          running (repeat-site check), so the round-4 dialog replaced it with
+          one literal rule: Q1 rows by the catalogue's disposition, every other
+          passage by the IDs and operation words it contains, Q4 rows and note
+          7 also to OP-01. A one-off script regenerates every § 2 section from
+          the rule, asserts each passage against the research doc, and writes
+          the routing table to the dossier; the `..` sentence leaves OP-16 as
+          spec 052's
+        outcome: ok
