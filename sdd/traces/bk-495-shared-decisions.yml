@@ -15,6 +15,7 @@ surprising_ripples: []
 co_shipped_items:
   - BK-494
 decisions:
+  - sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl
   - sdd/decisions/49c0aa22-502b-5f6c-af5e-2807aaa0ea6d.jsonl
 orient:
   - items: [BK-494, BK-485, BK-480, BK-469, BK-489, ID-272]
@@ -28,6 +29,18 @@ phases:
   - id: orient
     name: Read what the skeleton must home
     steps:
+      - file: sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl
+        section: "answered events of 2026-10-27, 13:38 and 13:51"
+        read_type: gate
+        extract: >-
+          The maintainer's cut: two items. Before read(), only a bare skeleton
+          (definitions of lifecycle, state, session), filled with or after each
+          /observe session, so the ground is not biased and no architecture is
+          decided; whether something belongs to the store, an extension or the
+          glob way is decided after the sessions, not in them. Brought from
+          branch bk-493-operation-catalogue, where the lines landed after
+          BK-493 merged
+        outcome: ok
       - file: sdd/rfcs/rfc-0026-operation-catalogue.md
         section: "Motivation, Open Questions"
         read_type: gate

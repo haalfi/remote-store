@@ -18,6 +18,7 @@ surprising_ripples:
 co_shipped_items:
   - BK-495
 decisions:
+  - sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl
   - sdd/decisions/49c0aa22-502b-5f6c-af5e-2807aaa0ea6d.jsonl
 orient:
   - items: [BK-485]

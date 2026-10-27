@@ -7,8 +7,11 @@ Under Review, drafted 2026-10-27. Tracked as **BK-494** and **BK-495**. Amends
 allowlist gains the entry's input file (P1), and a shared-decisions file joins
 the ground without a formal model, filled only by the flow after a session
 (P2). Closes [RFC-0026](rfc-0026-operation-catalogue.md) Open Question 1 (P3).
-It edits the [ground register](../observe/ground-register.md). Decisions
-taken in this RFC's session: decision log
+It edits the [ground register](../observe/ground-register.md). The
+maintainer's cut into a bare skeleton before `read()` and a later API spec,
+with core against extension decided after the sessions, is in decision log
+`sdd/decisions/c886d81c-7d81-58f9-bc3d-f11dc7304e4a.jsonl` (2026-10-27);
+decisions taken in this RFC's session are in
 `sdd/decisions/49c0aa22-502b-5f6c-af5e-2807aaa0ea6d.jsonl`.
 
 ## Summary
