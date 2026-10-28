@@ -143,8 +143,12 @@ def dialogs(logs: list[Path]) -> list[Dialog]:
     """Every answered question in *logs*, duplicates (one event logged twice) dropped."""
     seen: dict[tuple[str, str], Dialog] = {}
     for log in logs:
-        for line in log.read_text(encoding="utf-8").splitlines():
-            event = json.loads(line)
+        # Split on b"\n" alone: the recorder's ensure_ascii=False leaves U+2028, U+2029 and U+0085
+        # raw inside strings, where str.splitlines() would cut a record (as check_traces.py does).
+        for raw in log.read_bytes().split(b"\n"):
+            if not raw.strip():
+                continue
+            event = json.loads(raw.decode("utf-8"))
             if event.get("event") != "answered":
                 continue
             given = event.get("tool_input") or {}

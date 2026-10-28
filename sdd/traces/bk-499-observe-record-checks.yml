@@ -224,5 +224,17 @@ phases:
           Each candidate names the runs that raised it with their finding labels, the only
           derivation, since the run reports are uncommitted; RFC-0028's Evidence points there
         outcome: ok
+  - id: review_fixes_5
+    name: Fix pass from the PR #1192 fifth review
+    steps:
+      - file: scripts/check_traces.py
+        section: "log splitting"
+        read_type: reference
+        extract: >-
+          The recorder's ensure_ascii=False leaves U+2028, U+2029 and U+0085 raw, which
+          str.splitlines() cuts; observe_dialogs.py now splits bytes on b"\n" alone, as this
+          file does. The fixture writes ensure_ascii=False, and the three-character case failed
+          first with exit 2. OP-01's 44 decisions still all pair
+        outcome: ok
 # OP-01 candidates, unverified: listed in BK-485's dossier, § OP-01 review candidates,
 # which /observe-review OP-01 verifies.

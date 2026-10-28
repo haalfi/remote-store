@@ -35,7 +35,8 @@ def _answered(question: str, answer: str, options: dict[str, str] | None = None,
                 "answers": {question: harness or answer},
             },
             "tool_response": {"answers": {question: answer}},
-        }
+        },
+        ensure_ascii=False,  # as record_decision.py writes, so U+2028 and its kin stay raw
     )
 
 
@@ -181,6 +182,15 @@ def test_the_answer_is_read_from_tool_response(tmp_path: Path) -> None:
     result = _run(tmp_path, record, [_answered(FORMS, "Bytes", harness="Text")])
     assert result.returncode == 0, result.stdout
     assert "Answer: Bytes\n" in result.stdout
+
+
+@pytest.mark.parametrize("separator", ["\u2028", "\u2029", "\u0085"])
+def test_a_raw_unicode_line_separator_stays_inside_its_record(tmp_path: Path, separator: str) -> None:
+    # check_traces.py's hazard: str.splitlines() would cut the recorder's ensure_ascii=False line here.
+    record = _record(_decision(1, ("AX-1, forms.", "Bytes")))
+    result = _run(tmp_path, record, [_answered(FORMS, f"Bytes{separator}pasted")])
+    assert result.returncode == 0, result.stderr
+    assert "## OP-01/D1: ok\n" in result.stdout
 
 
 def test_unpaired_dialogs_carry_their_answer_and_option(tmp_path: Path) -> None:
