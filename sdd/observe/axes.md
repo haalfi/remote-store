@@ -19,12 +19,12 @@ The observation axes are the fixed checklist an `/observe` session walks for one
 
 | ID | Axis | Category | Questions it forces | Normative form | Counterexample prompt |
 |---|---|---|---|---|---|
-| `AX-1` | Addressed structure | structure | What does the operation address, and which structural constraint must hold for it to be meaningful? | formula over one instant | an argument the structure rules out is accepted, or a valid one is rejected |
+| `AX-1` | Addressed structure | structure | What does the operation address, and which structural constraint must hold for it to be meaningful? Which parameters does it take, and, if it hands out an object, which methods does prior art give that object, per form (sync, async)? Each is decided or open, an invalid value included. | formula over one instant | an argument the structure rules out is accepted, or a valid one is rejected |
 | `AX-2` | Pure values | value function | Which output values are a pure function of inputs alone? Is the map total, and what is its case split? | formula, or table row per case | the same inputs give different values, or a case falls in two rows or none |
 | `AX-3` | Outcome partition | single call | For each pre-state class, what is the outcome: return value, post-state, or signalled failure? Is the partition complete and disjoint? | case table row: pre-state, outcome | an observed outcome outside its row's allowed set, or a pre-state with no row |
 | `AX-4` | Frame | single call | What else may observably change when the call succeeds or fails? | formula: the unchanged set | a successful or failed call changes something outside the frame |
-| `AX-5` | Termination | single call | Must the call return or fail, and under which environment assumption? Is the claim checked only by a timeout assumption? | formula naming its timeout assumption | the call neither returns nor fails within the stated bound while the environment is quiet |
-| `AX-6` | Handed-out resource | resource life | Does the operation hand out an object that outlives the call? Which states does it have, and what does each operation do in each, including after close and after a failure? | transition: state × operation cell | a cell's operation yields an outcome its cell does not allow, or a cell is empty |
+| `AX-5` | Termination | single call | Must the call return or fail, and under which environment assumption? Is the claim checked only by a timeout assumption? How does a caller impose their own deadline, and what does it cost a handed-out object? | formula naming its timeout assumption | the call neither returns nor fails within the stated bound while the environment is quiet |
+| `AX-6` | Handed-out resource | resource life | Does the operation hand out an object that outlives the call? Which states does it have, and what does each operation do in each, including after close and after a failure? Is a failure raised again the same exception or a new one? | transition: state × operation cell | a cell's operation yields an outcome its cell does not allow, or a cell is empty |
 | `AX-7` | Environment exposure | environment | Which declared environment actions can affect this operation, and between which of its steps? Does it need a fault action not yet declared? | reference to an environment table row | an environment action fired at an allowed point produces an outcome no clause admits |
 | `AX-8` | Concurrent caller view | multi-observer guarantee | What may O1 observe given overlapping O2 calls? If the operation has an extent, is it one interval with one output or several partial outputs? | history predicate over interval operations | a recorded history with O2 that violates the predicate |
 | `AX-9` | Out-of-band view | multi-observer guarantee | What may O1 observe given O3 changes before or during the call? Does O3 get the same rights as O2 or different ones? | history predicate over interval operations | a recorded history with O3 that violates the predicate |
@@ -45,9 +45,10 @@ Each question an axis raises becomes one decision in the entry's record (S5):
 2. **Scenario**: one concrete sequence of calls and environment actions that makes the question bite.
 3. **Options**, each with its consequences for callers and backends.
 4. **Recommendation**, with its reason and its source: a ground clause ID or a named prior-art reference, else marked `unsourced`.
-5. **Decision**: an option, or an F3 term.
-6. **Consistency check** against earlier decisions and the ground (S1); conflicts named.
-7. **Open items** it raises, as IDs of entries in the record's one Open items section.
+5. **Asked**: one line per dialog that answered it, exactly `- **Asked:** "<the question's opening words>" → "<the answer's opening words>"`, straight double quotes and an arrow `→`; each opening stops before any `"` its text holds, and the question's is long enough to start no other question; `/observe-review` pairs the two by this form, and a line off it fails.
+6. **Decision**: an option, or an F3 term.
+7. **Consistency check** against earlier decisions and the ground (S1); conflicts named.
+8. **Open items** it raises, as IDs of entries in the record's one Open items section.
 
 ## Sources
 
@@ -61,3 +62,8 @@ Refined after the draft from an unverified ChatGPT critique of F1 to F6, taking
 only what holds within them (F2 facets; F3's admitted observations; AX-12 to
 AX-14). The rest, F4 above all, is input to the format RFC and kept in the
 [BK-485 dossier](../backlog/bk-485-spec-first-reset.md).
+
+AX-1's parameters and handed-out methods, AX-5's caller deadline and AX-6's
+re-raised failure were added by RFC-0028 P4 (BK-499), generalised from the
+questions no axis raised in OP-01's session
+([audit-025](../audits/audit-025-op-01-record-review.md) C7, G1 to G4).

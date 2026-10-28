@@ -516,14 +516,6 @@ no clause of the contract ships unexercised.
   `shared.md`'s. Runs after several entries' flows, which also decide core against extension beyond
   the 24 entries, never a session. Open decision: when, and after which entries.
 
-- [ ] **BK-499 — An `/observe` record's checks go unverified and its session never sees an implementation, so contradictions reach the record**
-  spec: — · effort: M · audience: contributor.process, library.maintainer
-  OP-01's record took thirteen open items after its session closed (O14 to O16 in PR #1188's review, O17 to O26
-  by [audit-025](audits/audit-025-op-01-record-review.md)), its § 5's four classes: checks written once by the
-  decision's author and never re-run (C1, C2, G5), text no dialog asked (O14 to O16), backend and runtime
-  behaviour outside the unprimed ground (C3 to C6), questions no axis raises (C7, G1 to G4). Open decision:
-  which class an End-step pass, a primed review step in RFC-0024 § 9 (D4 amended) or the axes' F2 revision takes.
-
 - [ ] **BK-500 — Two `/observe` hook messages mislead: a refused record write names the wrong file, and `/observe release.` reads as an arming**
   spec: — · effort: S · audience: contributor.tooling
   Seen in PR #1189's live probe: a released session's refused Write to `records/OP-02.md` names
@@ -537,8 +529,8 @@ no clause of the contract ships unexercised.
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
   Its test runs are in the dossier; step 4 is spec 052, step 4b spec 053 and the catalogue (BK-493).
-  Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md). Not done: step 5's spec, model,
-  profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O26 ([audit-025](audits/audit-025-op-01-record-review.md)).
+  Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md). Not done: step 5's review (`/observe-review OP-01`,
+  RFC-0028; unverified candidates in the dossier), spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O26 ([audit-025](audits/audit-025-op-01-record-review.md)).
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**

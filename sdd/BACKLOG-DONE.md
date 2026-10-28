@@ -476,6 +476,16 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-499 — An `/observe` record's checks go unverified and its session never sees an implementation, so contradictions reach the record**
+  spec: — · effort: M · audience: contributor.process, library.maintainer
+  RFC-0028 (accepted) answers audit-025 § 5's four classes. `/observe` re-checks the whole record at End
+  and writes an Asked line per decision; `/observe-review`, a new step between record and spec, pairs each
+  decision with its dialog (`scripts/observe_dialogs.py`), has two unprimed readers check the record and
+  reviews it against backends, SDKs and the runtime, writing only open items. The axes gain three
+  questions. Run untold on OP-01 at `c58ee74`, the readers found `O14` to `O16` twice; C1 and G5 each
+  surfaced in one run of three, and C2 in none, the step's stated bound (RFC-0028 § Evidence). OP-01's
+  record is unchanged. Trace: [bk-499](traces/bk-499-observe-record-checks.yml).
+
 - [x] **BK-498 — After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one**
   spec: — · effort: M · audience: contributor.tooling, contributor.process
   `disarm` on `/clear` now turns the marker into a release instead of deleting it, and `rearm` never

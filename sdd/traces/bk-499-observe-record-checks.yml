@@ -1,0 +1,369 @@
+id: BK-499
+title: "An `/observe` record's checks go unverified and its session never sees an implementation, so contradictions reach the record"
+trigger: >-
+  OP-01's record took thirteen open items after its session closed: O14 to O16
+  in PR #1188's review and O17 to O26 from audit-025. Audit-025 § 5 sorts them
+  into four classes, none of which `/observe` or the step after it catches.
+source_items:
+  - BK-499
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+surprising_ripples:
+  # observe_dialogs.py compares two artifacts, so DRIFT-RULES Rule 7's Drift-gate block applies
+  # and GATE-INVENTORY.md is regenerated; the ripple table's tooling rows do not name an advisory script.
+  - sdd/GATE-INVENTORY.md
+co_shipped_items: []
+decisions:
+  - sdd/decisions/d32f7ee6-4e03-5d2b-8bc7-a4fd31fafb81.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's entry: step 5's record is done, while its spec, model, profile tables and 0.33
+      comparison are open, and O14 to O26 are its open decision. So OP-01's D1 to D44 stay
+      untouched, and any new step sits between record and spec, the step that comes next.
+      axes.md § Sources: the axes "are revisited with F2 after the `read()` flow". So class 4
+      either lands now or waits for that revision, and research § 9 runs the whole `read()`
+      flow before scaling, i.e. before OP-02.
+  - items: [BK-397]
+    verdict: constrains
+    evidence: >-
+      BK-397's entry: pending is "a remedy for one session's log across two branches". OP-01's
+      dialogs are in two logs (bcb85b21 and f2ddab07, bk-485-observe-op-01.yml `decisions:`),
+      so a decision-to-dialog check must read every log a trace lists, not one session id's.
+      It changes nothing in record_decision.py.
+  - items: [BK-496]
+    verdict: unrelated
+    evidence: >-
+      BK-496's entry: the API spec "Runs after several entries' flows". It touches neither the
+      skill, the hook nor the record format.
+phases:
+  - id: orient
+    name: Read the item, the audit, the record, the method and related items
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-499 (backlog-show)"
+        read_type: gate
+        extract: "Four classes; open decision: which class an End-step pass, a primed review step or F2 takes"
+        outcome: ok
+      - file: sdd/audits/audit-025-op-01-record-review.md
+        section: "(full)"
+        read_type: gate
+        extract: "§ 5 diagnosis; C1, C2, G5 are text-only; C3 to C6 need src or SDK source; C7, G1 to G4 no axis asks"
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "Environment; D16 to D20; D33 to D39; Open items"
+        read_type: gate
+        extract: "Consistency checks name a chosen subset; O14 to O26 carried as reopens, a ground conflict, gaps, notes"
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "Step 3 writes a consistency check per decision; step 5 ends on every axis closed, with no whole-record pass"
+        outcome: ok
+      - file: sdd/observe/axes.md
+        section: "(full)"
+        read_type: gate
+        extract: "Fifteen axes; revisited with F2 after read(); per-question loop shape"
+        outcome: ok
+      - file: scripts/observe_ground.py
+        section: "(full)"
+        read_type: reference
+        extract: "Agent, Bash, Glob denied in an armed session; sdd/decisions/ is off the ground"
+        outcome: ok
+      - file: sdd/traces/bk-498-observe-resume-rearm.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Release marker; a finished record is committed after /clear by a session with no marker"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "Status; R1"
+        read_type: gate
+        extract: "D4 binds the unprimed session to research § 4; amendments land as a new RFC with an Amended by line"
+        outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "3; 4; 9"
+        read_type: gate
+        extract: "Flow: design, record, spec, compare; S1 to S5; step 5 of the § 9 table"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0027-observe-playground.md
+        section: "(full)"
+        read_type: reference
+        extract: "Shape of an RFC amending RFC-0024"
+        outcome: ok
+      - file: sdd/adrs/0045-close-on-a-check-that-can-fail.md
+        section: "Decision"
+        read_type: gate
+        extract: "A close counts only if its check could have returned the claim false"
+        outcome: ok
+      - file: sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
+        section: "answered events naming E15, an archive tier or opening a stream"
+        read_type: verify
+        extract: >-
+          The dialogs behind D19, D25's E15 and D35 asked only the option, so O14 to O16's extra
+          text is visible only beside the dialog. Answers are keyed by question text; nothing in
+          the record names its dialog
+        outcome: ok
+  - id: build
+    name: Script, skills, RFC, axes
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 7: bound and Drift-gate block in the docstring; Rule 5: why advisory"
+        outcome: ok
+      - file: scripts/observe_dialogs.py
+        section: "(new)"
+        read_type: verify
+        extract: >-
+          Tests seen passing (9), and each of four mutations (ambiguous quote accepted, answer
+          not compared, missing Asked line passing, duplicate events counted twice) fails one.
+          A decision answered by two dialogs (OP-01/D2 and its follow-up) needed several
+          Asked lines; adopted option text is printed after reader run 1 missed C2
+        outcome: ok
+      - file: tests/scripts/test_observe_ground.py
+        section: "observe-review prompt"
+        read_type: verify
+        extract: "/observe-review, typed or tagged, neither arms, rearms nor releases (passes on the current hook)"
+        outcome: ok
+  - id: evidence
+    name: The checks run untold on OP-01 at c58ee74 (ADR-0045)
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "at c58ee74, whole; scratch copies"
+        read_type: verify
+        extract: >-
+          End pass: one agent given step 5's text and the c58ee74 record, ground only. Reader:
+          the c58ee74 record with O14 to O16 removed and 45 Asked lines added (one decision
+          has two), the pairs report over both logs minus the two PR #1188 review dialogs, and
+          the brief verbatim. Found: End pass G5 (its 5) and C4, G2, G3; missed C1, C2. Reader
+          run 1: C1 (its 3, D33 vs D34), O14 (1h), O15 (1d), O16 (1g); missed C2, G5. Reader
+          run 2, with adopted option text: O14 (2a), O15 (1e), O16 (1f); missed C1 and G5, and
+          dropped "D16 against D39" as consistent. C2 found by no run, which led to two
+          unioned readers and C2's class stated as the bound
+        outcome: ok
+  - id: review_fixes
+    name: Fix pass from the PR #1192 review
+    steps:
+      - file: scripts/observe_dialogs.py
+        section: "_LABEL, adopted, decisions"
+        read_type: gate
+        extract: >-
+          A label after ": " (OP-01/D2's follow-up options) is now an option mark, an adopted
+          label not in Options is reported "not found in Options" instead of dropped, and an
+          Asked line off the form fails by name instead of as "no Asked line". Each pinned by
+          a test seen failing first
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "Step 3"
+        read_type: gate
+        extract: "The Asked line's literal form lives in axes.md item 5, the file the armed session reads; the script only parses it"
+        outcome: misleading
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1"
+        read_type: gate
+        extract: "Logs from git status and the branch's diff against master, since /observe release commits them"
+        outcome: ok
+  - id: review_fixes_2
+    name: Fix pass from the PR #1192 second review
+    steps:
+      - file: scripts/observe_dialogs.py
+        section: "decisions, dialogs, pair; docstring"
+        read_type: gate
+        extract: >-
+          A dismissed answer is skipped and a re-asked question pairs by its quoted answer; a
+          ### heading off the decision form fails as its own entry instead of merging into the
+          one before; no decision found fails. Each seen failing first. The advisory reason now
+          says why: a record names no logs, and one older than the Asked line fails wholesale
+        outcome: ok
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1"
+        read_type: gate
+        extract: "Logs from the session's trace once it exists; a record older than RFC-0028 pairs by hand"
+        outcome: misleading
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "OP-01 review candidates"
+        read_type: reference
+        extract: "The deferred /observe-review OP-01 and its candidates, moved from a trace comment"
+        outcome: ok
+  - id: review_fixes_3
+    name: Fix pass from the PR #1192 third review
+    steps:
+      - file: scripts/observe_dialogs.py
+        section: "pair"
+        read_type: gate
+        extract: >-
+          The answer narrows hits only when they are one question asked twice; a quote too short
+          to be unique fails again whatever its answer. Unpaired dialogs print their answer and
+          option, so a record older than the Asked line can be paired by hand: on OP-01's real
+          record the report lists all 49 answered dialogs that way. Each pinned by a test seen
+          failing first
+        outcome: ok
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Reader brief, item 4"
+        read_type: gate
+        extract: "The brief assigns the hand pairing of a decision with no dialog; none found is a finding"
+        outcome: misleading
+  - id: review_fixes_4
+    name: Fix pass from the PR #1192 fourth review
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Parsing rules, fixed by step 0"
+        read_type: gate
+        extract: >-
+          The answer is tool_response.answers. observe_dialogs.py now reads it there; OP-01's
+          two logs carry it on all 18 answered events, equal to tool_input's. The test fixture
+          now writes the recorder's shape, and a case where the maps differ failed first
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "OP-01 review candidates"
+        read_type: gate
+        extract: >-
+          Each candidate names the runs that raised it with their finding labels, the only
+          derivation, since the run reports are uncommitted; RFC-0028's Evidence points there
+        outcome: ok
+  - id: review_fixes_5
+    name: Fix pass from the PR #1192 fifth review
+    steps:
+      - file: scripts/check_traces.py
+        section: "log splitting"
+        read_type: reference
+        extract: >-
+          The recorder's ensure_ascii=False leaves U+2028, U+2029 and U+0085 raw, which
+          str.splitlines() cuts; observe_dialogs.py now splits bytes on b"\n" alone, as this
+          file does. The fixture writes ensure_ascii=False, and the three-character case failed
+          first with exit 2. OP-01's 44 decisions still all pair
+        outcome: ok
+  - id: review_fixes_6
+    name: Fix pass from the PR #1192 sixth review
+    steps:
+      - file: sdd/observe/axes.md
+        section: "Per-question loop, item 5"
+        read_type: gate
+        extract: >-
+          The answer, like the question, is quoted as its opening up to any '"', the prefix the
+          parser already matched; a test pins an answer holding read(""). A log line that is
+          valid JSON but no object now exits 2, not a traceback (failed first)
+        outcome: misleading
+  - id: review_fixes_7
+    name: Fix pass from the PR #1192 seventh review
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1"
+        read_type: gate
+        extract: >-
+          Three traces name OP-01's record; only the /observe session's own trace holds its logs.
+          Step 1 now names that trace, and BK-485's dossier names bk-485-observe-op-01.yml for OP-01
+        outcome: misleading
+  - id: review_fixes_8
+    name: Fix pass from the PR #1192 eighth review
+    steps:
+      - file: scripts/observe_dialogs.py
+        section: "_join_asked, decisions"
+        read_type: gate
+        extract: >-
+          A record hard-wraps every bullet; an Asked line's two-space continuation lines are now
+          joined before parsing, so a wrapped line pairs instead of failing as off the form
+          (failed first). OP-01's 44 decisions still all pair
+        outcome: ok
+# OP-01 candidates, unverified: listed in BK-485's dossier, § OP-01 review candidates,
+# which /observe-review OP-01 verifies.
+review:
+  # Derived by `hatch run ship-report 1192 --trace-block-only` at head fd68dc9.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1192 --trace-block-only"
+  pr: 1192
+  review_rounds: 9
+  submissions: 8
+  findings: 17
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.07
+    - round: 2
+      findings: 5
+      origin: {original: 4, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.26
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.4
+    - round: 4
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.1
+    - round: 5
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.11
+    - round: 6
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.11
+    - round: 7
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.12
+    - round: 8
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.1
+  by_file:
+    - path: "scripts/observe_dialogs.py"
+      findings: 8
+    - path: ".claude/skills/observe-review/SKILL.md"
+      findings: 4
+    - path: ".claude/skills/observe/SKILL.md"
+      findings: 1
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/backlog/bk-485-spec-first-reset.md"
+      findings: 1
+    - path: "sdd/observe/axes.md"
+      findings: 1
+    - path: "sdd/rfcs/rfc-0028-observe-record-review.md"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "pyproject.toml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/d32f7ee6-4e03-5d2b-8bc7-a4fd31fafb81.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/rfcs/rfc-0024-spec-first-reset.md"
+    - "sdd/traces/bk-499-observe-record-checks.yml"
+    - "tests/scripts/test_observe_dialogs.py"
+    - "tests/scripts/test_observe_ground.py"
+  review_driven_commits:
+    - sha: "31b3922"
+      subject: "fix: address PR #1192 review"
+    - sha: "61dacfc"
+      subject: "fix: address PR #1192 review"
+    - sha: "bf3d33a"
+      subject: "fix: address PR #1192 review"
+    - sha: "189cd34"
+      subject: "fix: address PR #1192 review"
+    - sha: "3817822"
+      subject: "fix: address PR #1192 review"
+    - sha: "f0ffc55"
+      subject: "fix: address PR #1192 review"
+    - sha: "7c75b5d"
+      subject: "fix: address PR #1192 review"
+    - sha: "ac22096"
+      subject: "BK-499: decision log"
+    - sha: "fd68dc9"
+      subject: "fix: address PR #1192 review"
+  ci: {verdict: PENDING, failed: 0, pending: 16}

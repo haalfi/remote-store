@@ -26,6 +26,11 @@ allowlist gains the session's own entry input file, and
 definitions and no formal model, its clauses only under § R1, filled only by
 the flow after a session.
 
+Amended by [RFC-0028](rfc-0028-observe-record-review.md), accepted
+2026-10-28: D4's method gains a whole-record pass at the session's end and an
+Asked line per decision, and the flow gains a review step between record and
+spec, `/observe-review`, which writes open items and never edits a decision.
+
 It changes no spec format. [`SPEC-DESIGN.md`](../SPEC-DESIGN.md) and
 [ADR-0048](../adrs/0048-how-specs-are-designed.md) stay the authority for what
 a spec states and the form it takes, with one bounded exception in § R4. The
