@@ -33,14 +33,14 @@ allowlist is the ground register plus files the maintainer names at the start).
 A release (``{"released": "clear" | "release", "record": ...}``) marks a session
 that is no longer a design session, so a resume never re-arms it (BK-498: a
 worker restart after ``/clear`` resumed the cleared session, not the new one).
-It frees the session, so it can commit its decision logs, and keeps its record
-closed to Write, Edit, MultiEdit, NotebookEdit and a Bash command naming the record: a
-session that may have read off the ground never writes the record (S1, S4).
-A locked or unreadable marker names no record, so its release closes every file
-under ``sdd/observe/records/``. That Bash check matches the path as text, so it
-also refuses reading or staging the record by name, and a command that writes
-the record without spelling it passes. A finished record is committed after
-``/clear``, by a session with no marker. Only the maintainer can release, by a prompt.
+It frees the session, so it can commit its decision logs, and keeps every file
+under ``sdd/observe/records/`` closed to Write, Edit, MultiEdit, NotebookEdit and
+a Bash command naming that directory: a session that may have read off the
+ground never writes a record (S1, S4), its own or another entry's. That Bash
+check matches the path as text, so it also refuses reading or staging a record
+by name, and a command that writes a record without spelling the path passes.
+A finished record is committed after ``/clear``, by a session with no marker.
+Only the maintainer can release, by a prompt.
 
 What the hook cannot do: tell why the harness resumed a cleared session; join
 a dialog split across two session ids, whose halves the recorder files under
@@ -229,8 +229,9 @@ def arm(payload: dict[str, Any], root: Path) -> str | None:
 def rearm(payload: dict[str, Any], root: Path) -> str | None:
     """Re-arm a resumed or compacted session that ``arm`` armed; return its record, or None.
 
-    Its marker may be gone (cleared, or a resume under a new session_id) while its
-    transcript still holds the design dialogue, so a resume never runs unarmed.
+    Its marker may be gone (a resume under a new session_id, or in a new container)
+    while its transcript still holds the design dialogue, so a resume never runs
+    unarmed unless its marker is a release.
     """
     transcript = payload.get("transcript_path")
     if not transcript or not Path(transcript).is_file():
@@ -252,7 +253,7 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
         marker = _marker(root, payload.get("session_id") or "")
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text(json.dumps({"locked": reason}), encoding="utf-8", newline="\n")
-        raise Refused(f"session locked: {reason}") from exc
+        raise Refused(f"session locked: {reason}. {_WAY_OUT}") from exc
 
 
 def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:
@@ -343,15 +344,13 @@ def check(payload: dict[str, Any], root: Path) -> None:
 
 
 def _check_released(state: dict[str, Any], tool: str, args: dict[str, Any], root: Path, cwd: str | None) -> None:
-    """Raise Refused when a released session's call writes its record, or any record when it names none."""
-    # A locked or unreadable marker names no record, so every record is closed to it.
+    """Raise Refused when a released session's call writes a record, its own or another entry's."""
     record = state.get("record") or RECORDS
     if tool in _WRITERS:
         target = _real(root, args.get(_WRITERS[tool]) or "", cwd)
-        guarded = _real(root, record)
-        writes = target == guarded or (record == RECORDS and target.startswith(guarded + os.sep))
+        writes = target.startswith(_real(root, RECORDS) + os.sep)
     else:
-        writes = tool == "Bash" and record.rstrip("/") in str(args.get("command") or "")
+        writes = tool == "Bash" and RECORDS.rstrip("/") in str(args.get("command") or "")
     if writes:
         raise Refused(
             f"{tool}: this session is released; {record} is written only by a fresh /observe session and "

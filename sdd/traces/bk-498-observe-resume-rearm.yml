@@ -146,11 +146,11 @@ phases:
         section: "_check_released, _armed_args, refusals"
         read_type: gate
         extract: >-
-          A release with no record (locked or unreadable marker) closes every
-          file under sdd/observe/records/; MultiEdit joins Write, Edit and
-          NotebookEdit; every armed or locked refusal names /observe release; a
-          release before the first tool use ends the arming rearm reads. Each
-          pinned by a test seen failing first
+          A release closes every file under sdd/observe/records/, its own
+          record or another entry's; MultiEdit joins Write, Edit and
+          NotebookEdit; check's refusals and rearm's lock notice name /observe
+          release; a release before the first tool use ends the arming rearm
+          reads. Each pinned by a test seen failing first
         outcome: ok
       - file: .claude/skills/observe/SKILL.md
         section: "frontmatter, Ground, Step 0"

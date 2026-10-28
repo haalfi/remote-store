@@ -480,9 +480,9 @@ ships them.
   spec: — · effort: M · audience: contributor.tooling, contributor.process
   `disarm` on `/clear` now turns the marker into a release instead of deleting it, and `rearm` never
   re-arms a released session; a probe showed `disarm` runs on `/clear` in a cloud session. The maintainer's
-  `/observe release` releases an armed or locked session, whose refusals now name it. A released session
-  may do anything but write its record, or any record when its marker named none (locked or unreadable),
-  so it can commit its decision logs. Out of the hook's reach: why
+  `/observe release` releases an armed or locked session; its tool-call refusals and `rearm`'s lock notice
+  now name it. A released session may do anything but write a record under `sdd/observe/records/`, so it
+  can commit its decision logs. Out of the hook's reach: why
   the harness resumed the cleared id, a dialog split across two session ids, and a resume into a new
   container, which re-arms and is released the same way.
   Detail: [dossier](backlog/bk-498-observe-resume-rearm.md). Trace:

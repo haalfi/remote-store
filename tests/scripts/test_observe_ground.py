@@ -371,9 +371,9 @@ def test_release_frees_a_session_but_locks_its_record(repo: Path, tmp_path: Path
         result = _call(repo, tool, **tool_input)
         assert result.returncode == 2, tool
         assert "fresh /observe session" in result.stderr
-    # A locked marker names no record, so every record stays closed to the session.
-    other = _call(repo, "Write", file_path="sdd/observe/records/OP-02.md", content="x")
-    assert other.returncode == (0 if state == "armed" else 2)
+    # The session left the ground, so no record is open to it, its own or another entry's.
+    assert _call(repo, "Write", file_path="sdd/observe/records/OP-02.md", content="x").returncode == 2
+    assert _call(repo, "Write", file_path="sdd/observe/notes.md", content="x").returncode == 0
     # A later restart keeps it released, and a second release changes nothing.
     transcript = tmp_path / "resumed.jsonl"
     transcript.write_text(_TYPED, encoding="utf-8")
@@ -401,7 +401,11 @@ def test_refusals_name_the_way_out(repo: Path, tmp_path: Path) -> None:
         result = _call(repo, tool, **tool_input)
         assert result.returncode == 2, tool
         assert "/observe release" in result.stderr, tool
-    _lock(repo, tmp_path)
+    transcript = tmp_path / "locked.jsonl"
+    transcript.write_text(_SLUG, encoding="utf-8")
+    notice = _run(repo, "rearm", {"session_id": SESSION, "source": "resume", "transcript_path": str(transcript)})
+    assert notice.returncode == 2
+    assert "/observe release" in notice.stderr
     assert "/observe release" in _call(repo, "Bash", command="ls").stderr
     (repo / "tmp/observe" / f"{SESSION}.json").write_text("{not json", encoding="utf-8")
     assert "/observe release" in _call(repo, "Bash", command="ls").stderr
