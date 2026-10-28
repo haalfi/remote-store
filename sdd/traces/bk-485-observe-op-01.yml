@@ -16,6 +16,7 @@ surprising_ripples: []
 co_shipped_items: []
 decisions:
   - sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
+  - sdd/decisions/f2ddab07-cc31-5c01-a396-d08c5dcec24a.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:
@@ -118,3 +119,21 @@ phases:
           from transcript_path alone, ignoring SessionStart's source. That
           explains the re-arm and the misfiled dialog the maintainer relayed;
           why the restart reused the id is outside the repo's code
+  - id: review_fix
+    name: Bring the record to its log and form (PR #1188 round 1)
+    steps:
+      - file: sdd/observe/axes.md
+        section: "Per-question loop, items 3 and 4"
+        read_type: gate
+        extract: "Each option with its consequences for callers and backends; each recommendation with its reason"
+      - file: sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
+        section: "every answered event's options and answers"
+        read_type: gate
+        extract: >-
+          The review listed ten options and fifteen recommendations short of
+          the shape; a sweep of all 44 decisions found more, and 38 anchored
+          replacements carried each consequence and reason from the dialog's
+          wording. A script comparing every Decision line before and after
+          found only D36 changed, its "(logged)" restored. The three additions
+          no dialog answered (D35, D25, D19) became open items O14 to O16 for
+          a reopen, as the maintainer chose in log f2ddab07
