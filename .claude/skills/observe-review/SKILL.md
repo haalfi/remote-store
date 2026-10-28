@@ -25,8 +25,9 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
 ## Steps
 
 1. **Pairs.** List the logs the session's dialogs went to, both halves of a
-   split session included: the `decisions:` of the trace that names the
-   record, once one exists; before that, each `sdd/decisions/` log in
+   split session included: the `decisions:` of the trace of the `/observe`
+   session that wrote the record (not an audit's or review's that also
+   names it), once one exists; before that, each `sdd/decisions/` log in
    `git status` or `git diff --name-only origin/master...HEAD` whose
    questions are `<entry>`'s. Run
    `hatch run observe-dialogs <record> <log> ...` and save its report as

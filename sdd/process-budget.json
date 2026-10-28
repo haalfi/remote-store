@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 311773,
+  "total": 311850,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -17,7 +17,7 @@
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
     ".claude/skills/observe/SKILL.md": 5658,
-    ".claude/skills/observe-review/SKILL.md": 4281,
+    ".claude/skills/observe-review/SKILL.md": 4358,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -204,6 +204,12 @@
       "from": 311495,
       "to": 311773,
       "reason": "PR #1192 third review: the reader brief assigns the hand pairing of a record older than the Asked line and reads the report's unpaired dialogs (+278)"
+    },
+    {
+      "item": "BK-499",
+      "from": 311773,
+      "to": 311850,
+      "reason": "PR #1192 seventh review: observe-review step 1 names the /observe session's own trace, not another that names the record (+77)"
     }
   ]
 }

@@ -63,7 +63,10 @@ what holds as open items:
 - Axis rows "one reopen explicitly open" with no open item behind them (R1 § 2, R2 2f).
 
 OP-01's record predates the Asked line, so the review's readers pair its
-decisions by hand (`/observe-review` step 1).
+decisions by hand (`/observe-review` step 1). Its session's logs are the
+`decisions:` of `sdd/traces/bk-485-observe-op-01.yml`; the other traces naming
+the record (`bk-485-op-01-audit.yml`, `bk-499-observe-record-checks.yml`) hold
+other sessions' logs.
 
 ## Format RFC input (§ 9 step 6)
 

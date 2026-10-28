@@ -247,5 +247,15 @@ phases:
           parser already matched; a test pins an answer holding read(""). A log line that is
           valid JSON but no object now exits 2, not a traceback (failed first)
         outcome: misleading
+  - id: review_fixes_7
+    name: Fix pass from the PR #1192 seventh review
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1"
+        read_type: gate
+        extract: >-
+          Three traces name OP-01's record; only the /observe session's own trace holds its logs.
+          Step 1 now names that trace, and BK-485's dossier names bk-485-observe-op-01.yml for OP-01
+        outcome: misleading
 # OP-01 candidates, unverified: listed in BK-485's dossier, § OP-01 review candidates,
 # which /observe-review OP-01 verifies.
