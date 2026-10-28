@@ -1,0 +1,192 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (audit-025 of the OP-01 record)"
+trigger: >-
+  The maintainer asked for a review of OP-01's record before step 5's spec:
+  whether its answers give one consistent view of a read, which requirements
+  contradict, and where implementation gets hard. The findings were then
+  compiled into audit-025, carried into the record as reopens, and the
+  session's two blind spots filed as BK-499.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups:
+  - BK-499
+surprising_ripples: []
+co_shipped_items: []
+decisions:
+  - sdd/decisions/2b6d86ca-96de-5354-9e64-6aab4248ddfd.jsonl
+expected_ripples:
+  - sdd/BACKLOG.md
+  # Open items owe the record's Axis status table too: an axis row lists every
+  # open item that reopens one of its decisions, finds a gap in one, or names
+  # one as dependent (the rule the record's Open items now state), which the
+  # skill's "keep each axis's row current" states only for the session.
+  - sdd/observe/records/OP-01.md
+orient:
+  - items: [BK-498]
+    verdict: unrelated
+    evidence: >-
+      BK-498's entry: a worker restart resuming an armed /observe session. It
+      is the hook's re-arm, not what a session checks; BK-499's fix surface is
+      the skill's steps and RFC-0024 § 9, so they overlap only in the skill
+      file and stay separate.
+  - items: [BK-496]
+    verdict: unrelated
+    evidence: >-
+      BK-496 runs after several entries' flows; O24's async stream shape is a
+      session decision, not the API spec's handle behaviour.
+  - items: [BK-489]
+    verdict: unrelated
+    evidence: >-
+      Audit-025 § 4 ranks implementation cost for step 5 onward; the kernel
+      line's revive-or-drop decision (RFC-0024 D10) waits on the read() flow
+      and is not decided by an estimate.
+phases:
+  - id: review
+    name: Review the OP-01 record
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          D1 to D44 and O1 to O16 read whole; the core view holds, seven
+          tensions and five gaps outside O14 to O16 found
+      - file: sdd/specs/052-store-key.md
+        section: "KEY-013; Notes (Resolution's outcomes)"
+        read_type: reference
+        extract: "BlockedByItem for a key below an item, the base of C5"
+      - file: sdd/specs/051-store-tree.md
+        section: "TREE-001"
+        read_type: reference
+        extract: "No entity is both a folder and an item, which S3 can violate under O3 (C5)"
+      - file: src/remote_store/backends/
+        section: "rg prefetch|os.replace|retries|max_attempts|retry_total"
+        read_type: verify
+        extract: >-
+          S3 and Azure map max_attempts alone to their SDKs (_s3_base.py:505,
+          _s3_boto3.py:1066, _s3_pyarrow.py:604, _azure_common.py:392); Local
+          writes by os.replace. Read from output capped at 25 lines, which hid
+          _http.py's own retry loop and _sftp.py's prefetch and tenacity hits;
+          my miss, corrected in the review_fix phase
+      - file: paramiko/sftp_file.py
+        section: "SFTPFile._start_prefetch, _prefetch_thread, _async_response (5.1.0)"
+        read_type: verify
+        extract: >-
+          max_concurrent_requests caps extents in flight; each answer moves to
+          _prefetch_data and frees its slot, so held data is unbounded (§ 4
+          row 5)
+  - id: compile
+    name: Audit, reopens and the harness item
+    steps:
+      - file: .claude/skills/observe/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Step 3's consistency check runs per decision against earlier ones;
+          step 4 records a reopen as an open item; read first as two blind
+          spots, re-derived to four classes in the review_fix phase
+      - file: sdd/audits/audit-024-spec-003-052-053-design.md
+        section: "header block, § 3"
+        read_type: reference
+        extract: "Motivation, Scope, Method, Verdict; a contradiction table with severity"
+      - file: sdd/AUTHORING.md
+        section: "File classification table"
+        read_type: gate
+        extract: "sdd/audits/audit-*.md is dual, so no repo-only marker"
+      - file: sdd/observe/axes.md
+        section: "Axis states"
+        read_type: gate
+        extract: "decided, explicitly open (an open item with what blocks it), not applicable"
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "Diagnosis at most five lines; BK-499 from gen-backlogid-check's next safe ID"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Backlog item touched: live trace, orient; no code or spec trigger"
+  - id: review_fix
+    name: Correct the audit and the record (PR #1191 round 1)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "read_bytes (l.936); _connect (l.1814 to 1848); docstring l.2243"
+        read_type: verify
+        extract: >-
+          The whole read calls f.prefetch(), no stream path does; tenacity
+          retries the connect only. § 4 row 5 and its ✓ corrected
+      - file: src/remote_store/backends/_http.py
+        section: "_request_with_retry loop (l.552 to 585)"
+        read_type: verify
+        extract: >-
+          A library-owned loop with equal_jitter_delay and a Retry-After floor
+          (HTTP-RETRY-001); § 4 row 1 scoped to S3 and Azure, re-estimated high
+      - file: sdd/observe/records/OP-01.md
+        section: "Consistency checks of D34, D35, D39; O14 to O26; Axis status"
+        read_type: gate
+        extract: >-
+          D34's check names D9 (round 2 corrected "D9 and D27"), D35's D22
+          and D34, D39's D16: the checks ran, so § 5's class 1 is an
+          unverified check, not a backward-only one. C4 and O20 got a witness that fails the GET's
+          instant; O23 became a note; axis rows rebuilt by one stated rule
+  - id: review_fix_2
+    name: Correct the audit's quotes and the record's item kinds (PR #1191 round 2)
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D34 Consistency check (l.736); D35 Decision (l.752); D39 Options and Decision (l.836, 845)"
+        read_type: verify
+        extract: >-
+          D34's check names D9 only; D35's list holds the access and
+          readability failures too; "the next read resumes" is D39's option
+          (a), and its Decision bullet agrees with D16, so O18 became a note.
+          My miss: round 1's quotes were written from memory of the record,
+          not re-read
+      - file: pyproject.toml
+        section: "classifiers (l.65); os_sensitive marker (l.780); .github/workflows/ci.yml l.587"
+        read_type: verify
+        extract: "Windows is supported and runs Local's atomic writes, so C3 blocks unconditionally"
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 3 and 4"
+        read_type: gate
+        extract: >-
+          A gap goes to Open items under step 3, a ground conflict is step 4's
+          reopen; the Open items paragraph now names each item's kind, and
+          AX-12's row takes O19 and O25 by the cited-decision rule
+review:
+  # Derived by `hatch run ship-report 1191 --trace-block-only` at head 20ce252.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1191 --trace-block-only"
+  pr: 1191
+  review_rounds: 3
+  submissions: 2
+  findings: 12
+  by_round:
+    - round: 1
+      findings: 6
+      origin: {original: 6}
+      triage: {must-fix: 6}
+      duration_hours: 0.25
+    - round: 2
+      findings: 6
+      origin: {loop-introduced: 2, original: 3, pre-existing: 1}
+      triage: {must-fix: 6}
+      duration_hours: 0.58
+  by_file:
+    - path: "sdd/audits/audit-025-op-01-record-review.md"
+      findings: 8
+    - path: "sdd/observe/records/OP-01.md"
+      findings: 4
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/2b6d86ca-96de-5354-9e64-6aab4248ddfd.jsonl"
+    - "sdd/traces/bk-485-op-01-audit.yml"
+  review_driven_commits:
+    - sha: "c28ecee"
+      subject: "BK-485: Correct audit-025's prefetch and retry claims, C4's witness and § 5's classes; O23 a note; axis rows by one rule"
+    - sha: "7c4e762"
+      subject: "Merge remote-tracking branch 'origin/master' into claude/vigilant-keller-fhcvfp"
+    - sha: "20ce252"
+      subject: "BK-485: Correct audit-025's D34, D39 and D35 readings; C3 blocks; O18 a note; item kinds and AX-12 in the record"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
