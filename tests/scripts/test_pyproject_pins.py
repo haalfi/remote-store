@@ -150,6 +150,19 @@ _PINS: tuple[Pin, ...] = (
         must_keep=("1.11.0", "1.11.1"),
         why="1.11.0 confirms timeout kills; 1.12 is unvalidated (BUG-307, BUG-303)",
     ),
+    Pin(
+        package="pytest-asyncio",
+        # Dev extra `dev`. pyproject sets asyncio_default_fixture_loop_scope,
+        # which filterwarnings = error makes load-bearing at configure.
+        # Derivation: BUG-345 installed each release into the dev env and ran
+        # tests/aio: 0.23.8 aborts with "Unknown config option:
+        # asyncio_default_fixture_loop_scope", 0.24.0 errors at teardown of
+        # test_read_iterator_closes_cleanly_on_early_break, 1.0.0 passes, and
+        # 1.4.1 passed hatch run fast.
+        must_reject=("0.23.8", "0.24.0"),
+        must_keep=("1.0.0", "1.4.1"),
+        why="below 1.0 the suite fails at configure or in tests/aio (BUG-345)",
+    ),
 )
 
 

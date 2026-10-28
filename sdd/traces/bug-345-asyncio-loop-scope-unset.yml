@@ -71,6 +71,11 @@ phases:
         read_type: verify
         extract: "0.23.8: Unknown config option, INTERNALERROR. 0.24.0: key accepted, tests/aio errors at teardown of test_read_iterator_closes_cleanly_on_early_break. 1.0.0: tests/aio 474 passed, 20 skipped. Floor set to >=1.0"
         outcome: ok
+      - file: tests/scripts/test_pyproject_pins.py
+        section: "_PINS, pytest-asyncio row (PR #1190 review)"
+        read_type: gate
+        extract: "must_reject 0.23.8, 0.24.0; must_keep 1.0.0, 1.4.1. Mutation: the floor back at >=0.23 fails test_every_declaring_extra_rejects_the_unsupported_versions[pytest-asyncio] on 0.23.8"
+        outcome: ok
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Dependency rows"
         read_type: gate
