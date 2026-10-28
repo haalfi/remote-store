@@ -10,7 +10,10 @@ source_items:
 audience:
   - contributor.tooling
   - contributor.process
-discovery_followups: []
+discovery_followups:
+  # pytest-asyncio 1.4.1's unset-loop-scope warning aborted every pytest run;
+  # fixed in PR #1190 and ported here.
+  - BUG-345
 surprising_ripples: []
 co_shipped_items: []
 decisions:

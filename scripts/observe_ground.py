@@ -36,8 +36,9 @@ worker restart after ``/clear`` resumed the cleared session, not the new one).
 It frees the session, so it can commit its decision logs, and keeps its record
 closed to Write, Edit, NotebookEdit and a Bash command naming the record: a
 session that may have read off the ground never writes the record (S1, S4).
-That Bash check matches the path as text, so a command that writes the record
-without spelling it passes. Only the maintainer can release, by a prompt.
+A locked or unreadable marker names no record, so its release closes every file
+under ``sdd/observe/records/``. That Bash check matches the path as text, so a
+command that writes the record without spelling it passes. Only the maintainer can release, by a prompt.
 
 What the hook cannot do: tell why the harness resumed a cleared session; join
 a dialog split across two session ids, whose halves the recorder files under
@@ -82,7 +83,8 @@ METHOD_FILES = (
     REGISTER,
 )
 CATALOGUE = "sdd/observe/catalogue.md"
-RECORD = "sdd/observe/records/{entry}.md"
+RECORDS = "sdd/observe/records/"
+RECORD = RECORDS + "{entry}.md"
 INPUTS = "sdd/observe/inputs/"
 INPUT = INPUTS + "{entry}.md"
 
@@ -334,14 +336,15 @@ def check(payload: dict[str, Any], root: Path) -> None:
 
 
 def _check_released(state: dict[str, Any], tool: str, args: dict[str, Any], root: Path, cwd: str | None) -> None:
-    """Raise Refused when a released session's call writes its record."""
-    record = state.get("record")
-    if not record:
-        return
+    """Raise Refused when a released session's call writes its record, or any record when it names none."""
+    # A locked or unreadable marker names no record, so every record is closed to it.
+    record = state.get("record") or RECORDS
     if tool in _WRITERS:
-        writes = _real(root, args.get(_WRITERS[tool]) or "", cwd) == _real(root, record)
+        target = _real(root, args.get(_WRITERS[tool]) or "", cwd)
+        guarded = _real(root, record)
+        writes = target == guarded or (record == RECORDS and target.startswith(guarded + os.sep))
     else:
-        writes = tool == "Bash" and record in str(args.get("command") or "")
+        writes = tool == "Bash" and record.rstrip("/") in str(args.get("command") or "")
     if writes:
         raise Refused(f"{tool}: this session is released; {record} is written only by a fresh /observe session (S4)")
 

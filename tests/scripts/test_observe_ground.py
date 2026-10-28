@@ -323,6 +323,7 @@ def test_clear_releases_an_unreadable_marker(repo: Path) -> None:
     assert _call(repo, "Bash", command="ls").returncode == 2
     assert _run(repo, "disarm", {"session_id": SESSION, "reason": "clear"}).returncode == 0
     assert _call(repo, "Bash", command="ls").returncode == 0
+    assert _call(repo, "Write", file_path="sdd/observe/records/OP-01.md", content="x").returncode == 2
 
 
 # BK-498: a worker restart after /clear resumed the cleared session, and rearm armed it again.
@@ -360,17 +361,18 @@ def test_release_frees_a_session_but_locks_its_record(repo: Path, tmp_path: Path
     assert _call(repo, "Read", file_path="src/remote_store/store.py").returncode == 0
     assert _call(repo, "ReadNotifications").returncode == 0
     record = "sdd/observe/records/OP-01.md"
-    if state == "armed":
-        for tool, tool_input in (
-            ("Write", {"file_path": record, "content": "x"}),
-            ("Edit", {"file_path": str(repo / record)}),
-            ("NotebookEdit", {"notebook_path": record}),
-            ("Bash", {"command": f"echo x >> {record}"}),
-        ):
-            result = _call(repo, tool, **tool_input)
-            assert result.returncode == 2, tool
-            assert "fresh /observe session" in result.stderr
-    assert _call(repo, "Write", file_path="sdd/observe/records/OP-02.md", content="x").returncode == 0
+    for tool, tool_input in (
+        ("Write", {"file_path": record, "content": "x"}),
+        ("Edit", {"file_path": str(repo / record)}),
+        ("NotebookEdit", {"notebook_path": record}),
+        ("Bash", {"command": f"echo x >> {record}"}),
+    ):
+        result = _call(repo, tool, **tool_input)
+        assert result.returncode == 2, tool
+        assert "fresh /observe session" in result.stderr
+    # A locked marker names no record, so every record stays closed to the session.
+    other = _call(repo, "Write", file_path="sdd/observe/records/OP-02.md", content="x")
+    assert other.returncode == (0 if state == "armed" else 2)
     # A later restart keeps it released, and a second release changes nothing.
     transcript = tmp_path / "resumed.jsonl"
     transcript.write_text(_TYPED, encoding="utf-8")
