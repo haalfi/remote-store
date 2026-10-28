@@ -14,6 +14,14 @@ discovery_followups:
   - BK-498
 surprising_ripples: []
 co_shipped_items: []
+# One decision of this work has no log in the repo. The session after /clear
+# (c1c866a2) asked "OP-01 PR" and the maintainer answered "Bookkeeping, /pr,
+# one review (Recommended)", the scope this PR follows. A worker restart
+# re-armed that session under bcb85b21 (BK-498), so the recorder appended the
+# dialog to that container's bcb85b21 log, and the armed session could not
+# commit it. Both logs stayed in that container and go when it is archived;
+# no .jsonl is reconstructed by hand. The dialog is in the transcript of
+# session session_01QqsRzJAiM44XJo3cR8oUEJ.
 decisions:
   - sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
   - sdd/decisions/f2ddab07-cc31-5c01-a396-d08c5dcec24a.jsonl
@@ -89,9 +97,9 @@ phases:
           41 lines (wc -l): 24 asked and 17 answered events, so 17 dialogs
           (distinct tool_use_id), covering the Environment and every axis but
           AX-12, which earlier decisions settled. All were already in 23ae05a,
-          so none to drop here. The second log, c1c866a2, and the "OP-01 PR"
-          dialog a restart misfiled into bcb85b21 (BK-498) are in another
-          checkout; their move and commit happen there
+          so none to drop here. This checkout's copy matches 23ae05a; the
+          "OP-01 PR" dialog a restart misfiled into the armed container's copy
+          is recorded above `decisions:` (BK-498)
       - file: sdd/BACKLOG.md
         section: "How this file works; BK-485"
         read_type: gate

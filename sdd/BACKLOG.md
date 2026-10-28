@@ -519,7 +519,7 @@ no clause of the contract ships unexercised.
 - [ ] **BK-498 — A session resumed under an `/observe` session's id is re-armed and logs into that session's decisions**
   spec: — · effort: M · audience: contributor.tooling, contributor.process
   After `/clear` ended OP-01's session, a worker restart resumed the next one under OP-01's id: `rearm`
-  re-armed it, refusing Bash and reads off the ground, and its dialog went into OP-01's decision log. Both
+  re-armed it, refusing Bash and reads off the ground; its dialog went into OP-01's log, stranded uncommitted. Both
   hooks key on the payload's `session_id` and `rearm` arms from the transcript alone, so neither can tell
   this resume from the design session's; why the restart reused the id is not in the repo's code. Open
   decision: what tells the two apart, and how a wrongly armed session gets out by itself.

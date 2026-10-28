@@ -23,6 +23,13 @@ and this checkout show beside each point.
    `23ae05a`.
 3. **The session cannot get out by itself.** An armed session cannot commit,
    read its own hook or file this item. Only a new session can.
+4. **Its decision logs are stranded.** Every log the session writes after the
+   re-arm stays in the armed session's container, because it cannot commit
+   them, and goes when that container is archived. Here those were
+   `c1c866a2-….jsonl` and the "OP-01 PR" lines in that container's copy of
+   `bcb85b21-….jsonl`. The decision survives only in session
+   `session_01QqsRzJAiM44XJo3cR8oUEJ`'s transcript and in the note in
+   `sdd/traces/bk-485-observe-op-01.yml`.
 
 ## What the code shows
 
@@ -42,7 +49,9 @@ and this checkout show beside each point.
   before its first tool use, so the code implies that it did. The payload itself was not captured.
 - `check` passes only the neutral tools and Read or Grep of the allowlist, and
   denies Bash outright. Its lock message offers `/clear` as the only way out.
-  That explains point 3.
+  That explains point 3. It also explains point 4: `record` writes the log
+  into the project directory of whichever container runs the session, and
+  only a commit from that session moves it into the repository.
 - **Not shown by the code:** why the restart resumed the post-`/clear`
   session under the earlier id. That is the harness's doing, outside this
   repository, so no root cause is named here.
@@ -53,4 +62,5 @@ The open decision is what distinguishes the two cases. Candidate signals, none
 of them verified: the SessionStart `source`, a transcript that names a
 `/clear` after the `/observe` prompt, or a marker recording the transcript it
 was armed from. Whichever is chosen, a session that is armed wrongly needs a way
-out that does not depend on the next restart going right.
+out that does not depend on the next restart going right, and a way for its
+decision logs to reach the repository.
