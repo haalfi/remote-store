@@ -2,7 +2,8 @@
 
 ## Status
 
-Draft, 2026-10-28. Tracked as **BK-499**. Amends
+Accepted, 2026-10-28, by the maintainer. Drafted 2026-10-28. Tracked as
+**BK-499**. Amends
 [RFC-0024](rfc-0024-spec-first-reset.md) D4, whose method is research
 [§ 4](../research/research-spec-first-reset.md#4-the-design-method-working-name-observe),
 and the flow of research
@@ -144,6 +145,8 @@ Decided in the log above:
 - **Testing:** `tests/scripts/test_observe_dialogs.py` pins the pairing and
   each way it fails; `tests/scripts/test_observe_ground.py` pins that
   `/observe-review` neither arms nor releases a session.
+- **Dependency:** `scripts/observe_dialogs.py` is stdlib only and advisory;
+  `/observe-review` runs it through `hatch run observe-dialogs`.
 - **OP-01:** unchanged. Its D1 to D44 and its open items `O14` to `O26` stay
   as they are; deciding them is a separate session.
 

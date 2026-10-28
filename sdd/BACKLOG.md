@@ -516,22 +516,6 @@ no clause of the contract ships unexercised.
   `shared.md`'s. Runs after several entries' flows, which also decide core against extension beyond
   the 24 entries, never a session. Open decision: when, and after which entries.
 
-- [ ] **BK-499 — An `/observe` record's checks go unverified and its session never sees an implementation, so contradictions reach the record**
-  spec: — · effort: M · audience: contributor.process, library.maintainer
-  OP-01's record took thirteen open items after its session closed (O14 to O16 in PR #1188's review, O17 to O26
-  by [audit-025](audits/audit-025-op-01-record-review.md)), its § 5's four classes: checks written once by the
-  decision's author and never re-run (C1, C2, G5), text no dialog asked (O14 to O16), backend and runtime
-  behaviour outside the unprimed ground (C3 to C6), questions no axis raises (C7, G1 to G4). Open decision:
-  which class an End-step pass, a primed review step in RFC-0024 § 9 (D4 amended) or the axes' F2 revision takes.
-
-- [ ] **BK-500 — Two `/observe` hook messages mislead: a refused record write names the wrong file, and `/observe release.` reads as an arming**
-  spec: — · effort: S · audience: contributor.tooling
-  Seen in PR #1189's live probe: a released session's refused Write to `records/OP-02.md` names
-  `records/OP-01.md` (`_check_released` reports the marker's record, not the target); a typed
-  `/observe release.` (trailing full stop) parses as the arming argument `release.` and gets "needs a
-  fresh session". Both block correctly; only the wording misleads. Open decision: none; name the
-  target, and treat trailing punctuation on `release` as a release.
-
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset

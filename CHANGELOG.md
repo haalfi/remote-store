@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-499: An `/observe` record's checks go unverified and its session never sees an implementation, so contradictions reach the record
 - BK-498: After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one
 - BK-497: The input files carry only research § 4, so per-entry findings in § 2 reach no session
 - BK-495: Decisions that bind every operation have no home, so each design session would rediscover them

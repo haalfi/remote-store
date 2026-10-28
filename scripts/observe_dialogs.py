@@ -70,8 +70,8 @@ class Decision:
     def adopted(self) -> list[str]:
         """The record's own text of each option the Decision adopts by label, in order."""
         marks = list(_LABEL.finditer(self.options))
-        texts = {m["label"]: self.options[m.end() : nxt.start() if nxt else None].strip(" ;,.\n")
-                 for m, nxt in zip(marks, [*marks[1:], None], strict=True)}
+        ends = [m.start() for m in marks[1:]] + [len(self.options)] * bool(marks)
+        texts = {m["label"]: self.options[m.end() : end].strip(" ;,.\n") for m, end in zip(marks, ends, strict=True)}
         lead = re.match(r"(?:\([a-z]{1,4}\)[\s,]*(?:and\s+)?)+", self.text)
         labels = [m["label"] for m in _ADOPTED.finditer(lead[0])] if lead else []
         return [f"({label}) {_norm(texts[label])}" for label in labels if label in texts]

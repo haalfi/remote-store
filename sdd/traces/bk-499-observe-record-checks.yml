@@ -10,9 +10,13 @@ audience:
   - contributor.process
   - library.maintainer
 discovery_followups: []
-surprising_ripples: []
+surprising_ripples:
+  # observe_dialogs.py compares two artifacts, so DRIFT-RULES Rule 7's Drift-gate block applies
+  # and GATE-INVENTORY.md is regenerated; the ripple table's tooling rows do not name an advisory script.
+  - sdd/GATE-INVENTORY.md
 co_shipped_items: []
-decisions: []
+decisions:
+  - sdd/decisions/d32f7ee6-4e03-5d2b-8bc7-a4fd31fafb81.jsonl
 orient:
   - items: [BK-485]
     verdict: constrains
@@ -102,3 +106,50 @@ phases:
           text is visible only beside the dialog. Answers are keyed by question text; nothing in
           the record names its dialog
         outcome: ok
+  - id: build
+    name: Script, skills, RFC, axes
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 7: bound and Drift-gate block in the docstring; Rule 5: why advisory"
+        outcome: ok
+      - file: scripts/observe_dialogs.py
+        section: "(new)"
+        read_type: verify
+        extract: >-
+          Tests seen passing (9), and each of four mutations (ambiguous quote accepted, answer
+          not compared, missing Asked line passing, duplicate events counted twice) fails one.
+          A decision answered by two dialogs (OP-01/D2 and its follow-up) needed several
+          Asked lines; adopted option text is printed after reader run 1 missed C2
+        outcome: ok
+      - file: tests/scripts/test_observe_ground.py
+        section: "observe-review prompt"
+        read_type: verify
+        extract: "/observe-review, typed or tagged, neither arms, rearms nor releases (passes on the current hook)"
+        outcome: ok
+  - id: evidence
+    name: The checks run untold on OP-01 at c58ee74 (ADR-0045)
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "at c58ee74, whole; scratch copies"
+        read_type: verify
+        extract: >-
+          End pass: one agent given step 5's text and the c58ee74 record, ground only. Reader:
+          the c58ee74 record with O14 to O16 removed and 45 Asked lines added (one decision
+          has two), the pairs report over both logs minus the two PR #1188 review dialogs, and
+          the brief verbatim. Found: End pass G5 (its 5) and C4, G2, G3; missed C1, C2. Reader
+          run 1: C1 (its 3, D33 vs D34), O14 (1h), O15 (1d), O16 (1g); missed C2, G5. Reader
+          run 2, with adopted option text: O14 (2a), O15 (1e), O16 (1f); missed C1 and G5, and
+          dropped "D16 against D39" as consistent. C2 found by no run, which led to two
+          unioned readers and C2's class stated as the bound
+        outcome: ok
+# OP-01 candidates, unverified:
+# Raised by two or more of the three runs, outside audit-025, not re-read against the record and
+# not filed (the maintainer's call: trace and PR only, a later /observe-review OP-01 verifies):
+# D12 vs D28 and D34 (E7 "connect never completes" is timeout and unavailable); D22 vs D39, D42
+# and D43 (a lost pin fails changed or unavailable); D9's adopted "failure path only" vs D41's
+# NP2; the Session's "no decision cites a clause they check" vs KEY-001 and KEY-013 in D4 and
+# D9; D25's "when an O3 change becomes visible is the backend's" in neither D41 nor D43; D38
+# and D12's bound on waiting vs D39's limit restarting; D34's changed row naming E4 vs D26;
+# D2's readline vs D40's memory bound; axis rows "one reopen explicitly open" with no item.

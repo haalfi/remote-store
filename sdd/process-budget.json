@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 306847,
+  "total": 311183,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,7 +16,8 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 5013,
+    ".claude/skills/observe/SKILL.md": 5628,
+    ".claude/skills/observe-review/SKILL.md": 3721,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -179,6 +180,12 @@
       "from": 306524,
       "to": 306847,
       "reason": "PR #1189 review: observe step 0 commits every log then stops; Ground scoped to an armed session; release in argument-hint"
+    },
+    {
+      "item": "BK-499",
+      "from": 306847,
+      "to": 311183,
+      "reason": "RFC-0028: new /observe-review skill (+3721), read only in the review after an /observe session; /observe step 3 Asked line and step 5 whole-record pass (+615)"
     }
   ]
 }
