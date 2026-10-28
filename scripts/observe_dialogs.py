@@ -13,7 +13,8 @@ A decision passes when each quoted opening is the start of exactly one answered
 question in the logs and each quoted answer is the start of that question's
 logged answer. Anything else fails: no ``Asked:`` line, no question or several,
 or another answer. The report prints each decision's Decision text beside its
-question, answer and the chosen option's description, for the reader of
+question, answer and the chosen option's description, and beside the
+record's own text of each option the Decision adopts by label, for the reader of
 ``/observe-review`` to judge what a script cannot: text in the Decision beyond
 what the dialog answered (audit-025 § 5, class 2). Answered questions no
 decision pairs with, such as the Environment's first dialog, are listed, not
@@ -47,6 +48,9 @@ from pathlib import Path
 _DECISION = re.compile(r"^### (?P<id>OP-\d{2}/D\d+):")
 _ASKED = re.compile(r'^- \*\*Asked:\*\*\s*"(?P<q>[^"]+)"\s*→\s*"(?P<a>[^"]+)"\s*$')
 _FIELD = re.compile(r"^- \*\*(?P<name>[A-Za-z ]+):\*\*\s?(?P<rest>.*)$")
+# An option label opening the Options field or following a ";", and the labels a Decision opens with.
+_LABEL = re.compile(r"(?:^|;\s+)\((?P<label>[a-z]{1,4})\)\s")
+_ADOPTED = re.compile(r"\((?P<label>[a-z]{1,4})\)")
 
 
 @dataclass
@@ -61,6 +65,16 @@ class Decision:
     id: str
     text: str
     asked: list[tuple[str, str]]
+    options: str = ""
+
+    def adopted(self) -> list[str]:
+        """The record's own text of each option the Decision adopts by label, in order."""
+        marks = list(_LABEL.finditer(self.options))
+        texts = {m["label"]: self.options[m.end() : nxt.start() if nxt else None].strip(" ;,.\n")
+                 for m, nxt in zip(marks, [*marks[1:], None], strict=True)}
+        lead = re.match(r"(?:\([a-z]{1,4}\)[\s,]*(?:and\s+)?)+", self.text)
+        labels = [m["label"] for m in _ADOPTED.finditer(lead[0])] if lead else []
+        return [f"({label}) {_norm(texts[label])}" for label in labels if label in texts]
 
 
 def _norm(text: str) -> str:
@@ -91,9 +105,13 @@ def decisions(record: str) -> list[Decision]:
             field = bullet["name"]
             if field == "Decision":
                 current.text = bullet["rest"]
+            elif field == "Options":
+                current.options = bullet["rest"]
             continue
         if field == "Decision":
             current.text += "\n" + line
+        elif field == "Options":
+            current.options += "\n" + line
     for d in found:
         d.text = d.text.strip()
     return found
@@ -135,6 +153,7 @@ def pair(record: str, logs: list[Path]) -> tuple[list[str], list[str], bool]:
                 verdicts.append(f"FAIL answered {pool[hits[0]].answer!r}, not {answer!r}")
         ok = ok and not verdicts
         lines += [f"## {d.id}: {'; '.join(verdicts) or 'ok'}", f"Decision: {d.text}"]
+        lines += [f"Adopted option: {text}" for text in d.adopted()]
         for g in paired:
             lines += [f"Question: {g.question}", f"Answer: {g.answer}", f"Option: {g.description}"]
         lines.append("")

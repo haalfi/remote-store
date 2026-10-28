@@ -79,6 +79,18 @@ def test_every_decision_paired_passes_and_shows_its_dialog(tmp_path: Path) -> No
     assert result.stdout.endswith("# Answered questions no decision pairs with\n- Which backlog item?\n")
 
 
+def test_the_report_quotes_each_adopted_option(tmp_path: Path) -> None:
+    # Audit-025 C2: an option's own wording, adopted by its label, conflicted where the Decision did not.
+    decision = _decision(1, ("AX-1, forms.", "Bytes"), text="(b) and (c). Both.")
+    decision = decision.replace(
+        "- **Scenario:** s.",
+        "- **Scenario:** s.\n- **Options:** (a) none; (b) the next read\n  resumes, unlike (a); (c) a third.",
+    )
+    result = _run(tmp_path, _record(decision), [_answered(FORMS, "Bytes")])
+    assert "Adopted option: (b) the next read resumes, unlike (a)\nAdopted option: (c) a third\n" in result.stdout
+    assert "Adopted option: (a)" not in result.stdout
+
+
 def test_a_decision_answered_in_two_split_logs_pairs(tmp_path: Path) -> None:
     record = _record(_decision(2, ("AX-1, the stream's shape.", "File object"), ("AX-1, forms.", "Bytes")))
     result = _run(tmp_path, record, [_answered(SHAPE, "File object plus chunks")], [_answered(FORMS, "Bytes")])

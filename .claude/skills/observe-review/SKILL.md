@@ -47,8 +47,8 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
 
 ## Reader brief
 
-> Read `<record>` whole, then `<pairs>` (each decision beside the dialog that
-> answered it), then `sdd/observe/axes.md` and any file the record's Session
+> Read `<record>` whole, then `<pairs>` (each decision beside the text of the
+> option it adopts and the dialog that answered it), then `sdd/observe/axes.md` and any file the record's Session
 > section lists as ground read. Read nothing else. Report, quoting the words:
 >
 > 1. Two decisions that cannot both hold, counting the wording of an option a
