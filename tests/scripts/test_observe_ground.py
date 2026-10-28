@@ -421,7 +421,15 @@ def test_a_released_record_refusal_names_the_target(repo: Path) -> None:
 
 
 # BK-500: "/observe release." parsed as the arming argument "release." and got "needs a fresh session".
-@pytest.mark.parametrize("prompt", ["/observe release.", "/observe release!", "/observe  release. "])
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "/observe release.",
+        "/observe release!",
+        "/observe  release. ",
+        "<command-name>/observe</command-name>\n<command-args>release.</command-args>",
+    ],
+)
 def test_release_with_trailing_punctuation_releases(repo: Path, tmp_path: Path, prompt: str) -> None:
     _arm(repo, "/observe OP-01")
     transcript = tmp_path / "used.jsonl"
@@ -572,11 +580,19 @@ _QUOTED = (
         ([_TYPED, _TOOL_USE, _RELEASE_PROMPT], "released"),
         ([_TYPED, _RELEASE_PROMPT, _TOOL_USE], "released"),
         ([_TYPED, _TOOL_USE, _RELEASE_PROMPT.replace("release", "release.")], "released"),  # BK-500
+        ([_TYPED, _TOOL_USE, _TAGGED.replace("OP-01 sdd/research/prior.md", "release.")], "released"),
         # An arming prompt after the release, still before any tool, arms again as arm would.
         ([_TYPED, _RELEASE_PROMPT, '{"type":"user","message":{"content":"/observe OP-02"}}\n', _TOOL_USE], "entry"),
         ([_TYPED, _TOOL_USE, _QUOTED], "entry"),
     ],
-    ids=["release-after-tool", "release-before-tool", "punctuated-release", "rearmed-after-release", "quoted-release"],
+    ids=[
+        "release-after-tool",
+        "release-before-tool",
+        "punctuated-release",
+        "tagged-punctuated-release",
+        "rearmed-after-release",
+        "quoted-release",
+    ],
 )
 def test_a_released_transcript_resumes_released(repo: Path, tmp_path: Path, lines: list[str], state: str) -> None:
     # A resume in a new container or under a new id has no marker; the transcript's release still holds.

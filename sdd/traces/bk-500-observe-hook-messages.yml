@@ -83,6 +83,15 @@ phases:
           names the directory again. test_a_released_record_refusal_names_the_target
           now pins that wording and the Bash record refusal's, seen failing first
         outcome: ok
+      - file: tests/scripts/test_observe_ground.py
+        section: "test_release_with_trailing_punctuation_releases; test_a_released_transcript_resumes_released"
+        read_type: gate
+        extract: >-
+          Second review: the tagged slash-command form a real transcript
+          records was untested. One tagged "release." case in each test; both
+          fail against master's hook (origin/master's observe_ground.py checked
+          out), and all 100 IDs pass with the fix
+        outcome: ok
 review:
   # Derived by `hatch run ship-report 1193 --trace-block-only` at head 3f1db14.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
