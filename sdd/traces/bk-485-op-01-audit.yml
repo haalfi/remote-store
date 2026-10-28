@@ -126,7 +126,30 @@ phases:
         section: "Consistency checks of D34, D35, D39; O14 to O26; Axis status"
         read_type: gate
         extract: >-
-          D34's check names D9 and D27, D35's D22 and D34, D39's D16: the
-          checks ran, so § 5's class 1 is an unverified check, not a
-          backward-only one. C4 and O20 got a witness that fails the GET's
+          D34's check names D9 (round 2 corrected "D9 and D27"), D35's D22
+          and D34, D39's D16: the checks ran, so § 5's class 1 is an
+          unverified check, not a backward-only one. C4 and O20 got a witness that fails the GET's
           instant; O23 became a note; axis rows rebuilt by one stated rule
+  - id: review_fix_2
+    name: Correct the audit's quotes and the record's item kinds (PR #1191 round 2)
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D34 Consistency check (l.736); D35 Decision (l.752); D39 Options and Decision (l.836, 845)"
+        read_type: verify
+        extract: >-
+          D34's check names D9 only; D35's list holds the access and
+          readability failures too; "the next read resumes" is D39's option
+          (a), and its Decision bullet agrees with D16, so O18 became a note.
+          My miss: round 1's quotes were written from memory of the record,
+          not re-read
+      - file: pyproject.toml
+        section: "classifiers (l.65); os_sensitive marker (l.780); .github/workflows/ci.yml l.587"
+        read_type: verify
+        extract: "Windows is supported and runs Local's atomic writes, so C3 blocks unconditionally"
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 3 and 4"
+        read_type: gate
+        extract: >-
+          A gap goes to Open items under step 3, a ground conflict is step 4's
+          reopen; the Open items paragraph now names each item's kind, and
+          AX-12's row takes O19 and O25 by the cited-decision rule

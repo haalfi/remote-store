@@ -29,13 +29,14 @@ of the tensions (C3, C5) are missing design decisions, not wording.
 ## 1. Contradictions
 
 Seven tensions that `O14` to `O16` do not cover. Each became an open item in
-the record, C7 as a note and the rest as reopens (§ 5 maps them).
+the record, C2 and C7 as notes, C5 as a ground conflict and the rest as
+reopens (§ 5 maps them).
 
 | # | Where | Tension | Sev. |
 | --- | --- | --- | --- |
 | C1 | D33 vs D34 | D33 justifies its typing by "`except` on the store's base never hides a bug in the caller's code". D34 puts key refused under that base, raised before any backend contact, though `read('../x')` is most often a caller's bug. Key refused, `UnicodeDecodeError` (D32), closed-stream reads (D15) and caller errors are all `ValueError`, so `except ValueError` cannot tell them apart. | should fix |
-| C2 | D16 vs D39 | D16: recovery has one place, inside a read. D39's Decision: "the **next** read resumes". D6's `read(n)` returns min(n, r) bytes, so the resume happens inside the read that met the reset. The wording conflicts, not the intent, but the spec copies the wording. | should fix |
-| C3 | D10, D21, D22, D25 vs Local on Windows | An open Local stream holds a handle. On Windows `os.replace` and `os.remove` fail with a sharing violation on a file open without `FILE_SHARE_DELETE`, which Python's `open()` does not set (not run here); Local's atomic write is `os.replace` (`_local.py:389`, `:453` ✓). An open stream then makes an O2 write or delete fail, an outcome another API call observes. D25's "an open file descriptor keeps the old file" holds on POSIX only. No variation point (D43) names it. | blocks, if Windows is a supported platform |
+| C2 | D16 vs D39 | D16: recovery has one place, inside a read. D39's option (a), which its Decision adopts by reference, says "the **next** read resumes", while D6's `read(n)` returns min(n, r) bytes, so the resume happens inside the read that met the reset. D39's Decision bullet itself ("a resume is a retry under D38's limit ... without a gap or a repeated byte") agrees with D16, and a spec copies that bullet, so only the adopted option's wording conflicts; the record carries it as a note. | optional |
+| C3 | D10, D21, D22, D25 vs Local on Windows | An open Local stream holds a handle. On Windows `os.replace` and `os.remove` fail with a sharing violation on a file open without `FILE_SHARE_DELETE`, which Python's `open()` does not set (not run here); Local's atomic write is `os.replace` (`_local.py:389`, `:453` ✓). An open stream then makes an O2 write or delete fail, an outcome another API call observes. D25's "an open file descriptor keeps the old file" holds on POSIX only. No variation point (D43) names it. Windows is supported: `pyproject.toml:65` declares `Operating System :: OS Independent`, and the `os_sensitive` marker (`pyproject.toml:780`, "atomic writes, local filesystem") runs on the `windows-latest` lane (`.github/workflows/ci.yml:587` ✓). | blocks |
 | C4 | D9 vs D21 on object stores | D9's folder check is a second request on the failure path (GET 404, then a listing). D21 takes classification and content from one instant. Most interleavings leave a valid instant between the two requests; one does not. `d` and `d/f` are absent at the GET, which answers 404; O3 then creates `d`, and only then `d/f`, before the listing, which finds `d/f`. The read reports not an item, yet `d` was absent, then an item, then both (C5's state), so no instant in the interval has it a folder and not an item. D21 needs the argument for the composed classification, or a stated exception. | should fix |
 | C5 | TREE-001 vs S3 | TREE-001: no entity is both a folder and an item. On S3, O3 can create the objects `a.txt` and `a.txt/b` together. KEY-013 then gives `a.txt/b` BlockedByItem, so D9 says not found, while a GET returns content. No Environment row (E1 to E15) names the state, and enforcing D9 on it costs an ancestor check on every successful read. | blocks |
 | C6 | D33 vs D28, D38 | Descriptor exhaustion (E13) propagates as raised on Local (D33). On S3 the same condition surfaces through the SDK as a connection failure, which D28 reads as E7, D38 retries and D34 types unavailable. One cause, two categories by backend. | optional |
@@ -61,7 +62,9 @@ Five places where a spec clause would have no decision to cite.
   appends to its traceback on every raise; the record does not say whether a
   Failed stream raises that object or a fresh, chained one.
 - **G5, the open call's list** (D35). It names the classification failures
-  only. That unavailable and timeout also surface from the open is implied by
+  (key refused, not found, not an item) and the access and readability ones
+  (permission denied, authentication failed, not readable), but not
+  unavailable and timeout. That those also surface from the open is implied by
   D28, not stated, and the list reads as complete.
 
 ## 3. Evidence for O14 to O16
@@ -101,10 +104,11 @@ diagnosis.
 1. **A consistency check its author writes once and nobody re-runs: C1, C2,
    G5.** Each conflict pairs a later decision with an earlier one, which
    `/observe` step 3's check against earlier decisions covers, and the check
-   was written. It names a subset its author picked: D34's names D9 and D27
-   but not D33 (C1), and D35's names D22 and D34 but not D28 (G5). Or it names
-   the conflicting decision and calls it consistent: D39's names D16 (C2).
-   Nothing re-reads a check. ADR-0034 answers the same failure in review with
+   was written. It names a subset its author picked: D34's names D9 but not
+   D33 (C1), and D35's names D22 and D34 but not D28 (G5). Or it checks only
+   part of the decision: D39's names D16 and holds for D39's Decision bullet,
+   but not for the option (a) text the Decision adopts (C2). Nothing re-reads
+   a check. ADR-0034 answers the same failure in review with
    an unprimed reader.
 2. **Decision text beyond its dialog: `O14` to `O16`.** Each is text that no
    dialog asked, as the record's entries state: D35's read-phase list, E15 in
@@ -122,7 +126,7 @@ diagnosis.
    axes' questions, so the loop never asked them. The skill's Rules already
    route such a question to the axes' F2 revision after `read()`.
 
-The record carries the findings as open items: C1 is `OP-01/O17`, C2 `O18`, C3
+The record carries the findings as open items: C1 is `OP-01/O17`, C2 the note `O18`, C3
 `O19`, C4 `O20`, C5 `O21`, C6 `O22`, C7 the note `O23`, G1 `O24`, G2 `O25`, and
 G3 to G5 together `O26`; § 3's evidence is appended to `O14` and `O15`.
 
@@ -134,6 +138,7 @@ G3 to G5 together `O26`; § 3's evidence is appended to `O14` and `O15`.
   `_sftp.py`'s hits.
 - § 5's class 1: each decision's Consistency check line in the record, read
   for the decisions it names.
+- C3's platform: `rg -n "OS Independent|os_sensitive|windows-latest" pyproject.toml .github/workflows/ci.yml`.
 - paramiko: `inspect.getsource` of `SFTPFile._start_prefetch`,
   `_prefetch_thread` and `_async_response` in the default hatch environment,
   `paramiko.__version__` 5.1.0.
