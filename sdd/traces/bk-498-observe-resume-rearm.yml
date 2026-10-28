@@ -15,6 +15,9 @@ discovery_followups:
   # pytest-asyncio 1.4.1's unset-loop-scope warning aborted every pytest run;
   # fixed in PR #1190, ported here until it merged, then taken in by merging master.
   - BUG-345
+  # Two misleading hook messages seen in the live probe (wrong record named,
+  # "/observe release." read as an arming); filed, not fixed here.
+  - BK-500
 surprising_ripples: []
 co_shipped_items: []
 decisions:
