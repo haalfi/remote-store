@@ -106,6 +106,22 @@ phases:
           by auto mode as self-modification, so no payload was recorded: a
           limit of the probe, not of the dossier
         outcome: ok
+      - file: "Probe session session_01QqsRzKrxKk9F4n6NERU7YM, PR #1189 at d85cc02"
+        section: "events: hook_response per hook_name and session_id"
+        read_type: verify
+        extract: >-
+          Live run of the release on the cloud harness. Armed via the hook
+          (Bash and Read refused, naming /observe release); /observe release
+          printed the release notice and wrote {"released": "release"}; record
+          writes and rm or Write of the marker refused, git status allowed.
+          Re-armed, then /clear: SessionStart:clear under a new id 40002f14,
+          and the marker became {"released": "clear", ...}. A later
+          cross-session message woke the pre-clear session (SessionStart:resume
+          under af943d1e), the incident's shape, and it stayed released: Read
+          and Bash passed, Bash naming tmp/observe/ was refused. A typed
+          "/observe release." (trailing full stop) was refused as a non-fresh
+          arm
+        outcome: ok
   - id: tests
     name: Failing tests first
     steps:
