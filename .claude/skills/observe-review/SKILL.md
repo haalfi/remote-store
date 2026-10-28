@@ -30,9 +30,10 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
    as a FAIL. Run
    `hatch run observe-dialogs <record> <log> ...` and save its report as
    `tmp/observe-review/<entry>-pairs.md`. Each FAIL is a finding.
-2. **Unprimed reader.** Spawn one fresh `general-purpose` agent with the
-   brief below, its placeholders filled, and nothing else from this
-   session: no finding, no suspicion, no audit.
+2. **Unprimed readers.** Spawn two fresh `general-purpose` agents at once,
+   each with the brief below, its placeholders filled, and nothing else from
+   this session: no finding, no suspicion, no audit. Take the union: one run
+   misses what another finds (RFC-0028, Evidence).
 3. **Primed review**, yourself, while the reader runs: per decision, does a
    backend (Memory, Local, S3, SFTP, Azure), its SDK or the Python runtime on
    a supported platform make it false, two-valued, or costly to keep? Read

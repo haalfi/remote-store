@@ -60,9 +60,11 @@ a fresh session after `/clear`, outside the hook's ground, in three parts:
   its answered dialog in the session's decision logs. It fails a decision with
   no Asked line, a quote that starts no answered question or several, or an
   answer the log does not hold. Whether Decision text goes beyond its dialog
-  is a judgement, so the script prints each pair for the reader.
-- **Unprimed reader** (classes 1 and 2). A fresh agent reads only the record,
-  the pairs, the axes and the record's ground, with a fixed brief: decisions
+  is a judgement, so the script prints each pair, with the record's own text
+  of each option the Decision adopts by label, for the readers.
+- **Unprimed readers** (classes 1 and 2). Two fresh agents, whose findings
+  are unioned, each read only the record, the pairs, the axes and the
+  record's ground, with one fixed brief: decisions
   that cannot both hold, adopted option text included; claims of extent
   against every decision that adds a member; reasons another outcome makes
   false; Decision text its dialog does not cover. It is told nothing found
@@ -93,10 +95,27 @@ flow still revisits the whole set.
 ## Evidence that the checks can fail
 
 [ADR-0045](../adrs/0045-close-on-a-check-that-can-fail.md) asks of a check
-offered as a close whether it could have come out the other way. Each part
-was run on OP-01's record at `c58ee74`, the commit audit-025 read, without
-being told the findings. The runs, their inputs and what each found are in
-the [BK-499 trace](../traces/bk-499-observe-record-checks.yml).
+offered as a close whether it could have come out the other way. The End
+pass and the reader were run on OP-01's record at `c58ee74`, the commit
+audit-025 read, without being told its findings; the reader's copy had
+`O14` to `O16` removed and an Asked line per decision added. The primed
+review was not run: it is audit-025's method, whose run is the audit.
+
+| Target | End pass | Reader, run 1 | Reader, run 2 |
+|---|---|---|---|
+| C1 | missed | found | missed |
+| C2 | judged consistent | missed | judged consistent |
+| G5 | found | missed | missed |
+| `O14`, `O15`, `O16` | — | found | found |
+
+So the checks can fail, and did: no single run found C1 and G5, and none
+found C2, which audit-025 itself carries as a note (`OP-01/O18`). Hence two
+readers, unioned, beside the End pass; C2's class, an adopted option's
+wording against an earlier decision, stays this step's known bound. Run 2
+had the adopted option's text beside each Decision; run 1 did not. Every run
+also raised candidates outside audit-025, listed unverified in the
+[BK-499 trace](../traces/bk-499-observe-record-checks.yml) with the runs'
+inputs.
 
 ## Alternatives Considered
 
