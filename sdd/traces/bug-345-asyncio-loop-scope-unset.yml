@@ -1,0 +1,78 @@
+id: BUG-345
+title: "pytest-asyncio 1.4.1 warns that `asyncio_default_fixture_loop_scope` is unset, and `filterwarnings = error` aborts every pytest run"
+trigger: >-
+  Every test lane of PR #1189 (CI run 40689727840) ended in INTERNALERROR at
+  pytest_configure. Master's CI run at c58ee74 was green only because a
+  docs-only change skipped its test lanes; CI Full Matrix on the same commit
+  (run 40684607044) failed the same way.
+source_items:
+  - BUG-345
+audience:
+  - infra.test
+  - contributor.tooling
+orient:
+  - items: [BUG-289]
+    verdict: constrains
+    evidence: >-
+      BUG-289's dossier: "The strictness is deliberate and is not the defect"
+      and "Not a request to change filterwarnings". So the fix sets the option
+      pytest-asyncio asks for and adds no filterwarnings ignore.
+decisions:
+  - sdd/decisions/ffc739ac-9133-4598-b0f1-0940c49d28a7.jsonl
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+discovery_followups: []
+surprising_ripples:
+  # The new key is unknown to pytest-asyncio 0.23.8, and pytest's
+  # "Unknown config option" warning is fatal under the same filterwarnings,
+  # so the dev floor had to rise with the key.
+  - pyproject.toml
+co_shipped_items: []
+phases:
+  - id: diagnose
+    name: Diagnose
+    steps:
+      - file: "GitHub Actions: job log 122821231759 (tooling-tests, run 40689727840)"
+        section: "pytest start"
+        read_type: verify
+        extract: "INTERNALERROR in pytest_asyncio/plugin.py:300 pytest_configure, PytestDeprecationWarning: asyncio_default_fixture_loop_scope is unset"
+        outcome: ok
+      - file: "GitHub Actions: list_workflow_jobs 40684607225, job log 122803707881 (run 40684607044)"
+        section: "master c58ee74"
+        read_type: verify
+        extract: "CI run green with every test lane skipped; CI Full Matrix test-full (3.14) has the same INTERNALERROR"
+        outcome: ok
+      - file: "PyPI JSON: pytest-asyncio, pytest"
+        section: "releases since 2026-09"
+        read_type: reference
+        extract: "pytest-asyncio 1.4.1 uploaded 2026-10-25, pytest 9.2.0 on 2026-10-27; both installed locally and in CI"
+        outcome: ok
+      - file: sdd/backlog/bug-289-floor-warnings-fail-suite.md
+        section: "(full)"
+        read_type: reference
+        extract: "filterwarnings = error is kept; fix the cause, not the strictness"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_pyproject_pins.py
+        section: "run before and after the option"
+        read_type: gate
+        extract: "Before: INTERNALERROR at configure, no test ran (the suite is the failing test). After: tests/scripts/test_pyproject_pins.py plus tests/aio, 500 passed, 20 skipped"
+        outcome: ok
+      - file: "Grep: fixture( ... scope=\"module|session|class|package\" in *.py"
+        section: "tests/, benchmarks/"
+        read_type: verify
+        extract: "Every wider-scoped fixture is a sync def, so 'function' is today's effective async scope"
+        outcome: ok
+      - file: pyproject.toml
+        section: "dev pin, measured per release"
+        read_type: verify
+        extract: "0.23.8: Unknown config option, INTERNALERROR. 0.24.0: key accepted, tests/aio errors at teardown of test_read_iterator_closes_cleanly_on_early_break. 1.0.0: tests/aio 474 passed, 20 skipped. Floor set to >=1.0"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Dependency rows"
+        read_type: gate
+        extract: "Conda recipes and drift locks carry no pytest-asyncio; check-support-windows --base c58ee74 reports no user floor raised"
+        outcome: ok
