@@ -42,6 +42,27 @@ maintainer typed `/observe exists` in a fresh session on `bk-485-observe`.
   creation, an axis settled by an earlier decision, one home for open items,
   the four-option dialog limit). The two about method go below.
 
+## OP-01 review candidates (BK-499, 2026-10-28)
+
+Step 5's review (RFC-0028 P2) has not run on OP-01. BK-499's untold runs on
+the record at `c58ee74` raised these outside audit-025, each in two or more of
+three runs ([trace](../traces/bk-499-observe-record-checks.yml), phase
+`evidence`). None was re-read against the record; `/observe-review OP-01`
+verifies them and files what holds as open items:
+
+- D12 vs D28 and D34: E7's "connect never completes" is timeout and unavailable.
+- D22 vs D39, D42 and D43: a lost pin fails changed or unavailable.
+- D9's adopted "failure path only" vs D41's NP2.
+- The Session's "no decision cites a clause they check" vs KEY-001 and KEY-013 in D4 and D9.
+- D25's "when an O3 change becomes visible is the backend's", in neither D41 nor D43.
+- D38's and D12's bound on waiting vs D39's limit restarting.
+- D34's changed row naming E4 vs D26.
+- D2's `readline` vs D40's memory bound.
+- Axis rows "one reopen explicitly open" with no open item behind them.
+
+OP-01's record predates the Asked line, so the review's readers pair its
+decisions by hand (`/observe-review` step 1).
+
 ## Format RFC input (§ 9 step 6)
 
 **A critique of F1 to F6, for the format RFC to weigh; nothing here is

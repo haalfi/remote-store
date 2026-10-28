@@ -150,6 +150,40 @@ def test_the_same_answer_logged_twice_counts_once(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout
 
 
+def test_a_question_dismissed_then_answered_pairs_with_its_answer(tmp_path: Path) -> None:
+    # RFC-0018 case a': a dismissal is logged as an answer; the re-asked question must still pair.
+    dismissed = _answered(FORMS, "[User dismissed — do not proceed, wait for next instruction]")
+    record = _record(_decision(1, ("AX-1, forms.", "Bytes")))
+    result = _run(tmp_path, record, [dismissed, _answered(FORMS, "Bytes")])
+    assert result.returncode == 0, result.stdout
+    assert "## OP-01/D1: ok\n" in result.stdout
+    assert "User dismissed" not in result.stdout
+
+
+def test_the_same_question_answered_twice_pairs_by_the_quoted_answer(tmp_path: Path) -> None:
+    record = _record(_decision(1, ("AX-1, forms.", "Text")))
+    result = _run(tmp_path, record, [_answered(FORMS, "Bytes"), _answered(FORMS, "Text only")])
+    assert result.returncode == 0, result.stdout
+    assert "Answer: Text only\n" in result.stdout
+
+
+def test_a_heading_off_the_decision_form_fails_and_takes_its_own_fields(tmp_path: Path) -> None:
+    slipped = _decision(2, ("AX-1, the root.", "Root"), text="(b). The slipped one.").replace(
+        "### OP-01/D2: A title (AX-1)", "### OP-01/D2 — A title (AX-1)"
+    )
+    record = _record(_decision(1, ("AX-1, forms.", "Bytes"), text="(a). The first."), slipped)
+    result = _run(tmp_path, record, [_answered(FORMS, "Bytes"), _answered(ROOT_Q, "Root is a folder")])
+    assert result.returncode == 1
+    assert "## OP-01/D1: ok\nDecision: (a). The first.\n" in result.stdout
+    assert "## ### OP-01/D2 — A title (AX-1): FAIL heading not in the form '### <entry>/D<n>:'\n" in result.stdout
+
+
+def test_a_record_with_no_decision_fails(tmp_path: Path) -> None:
+    result = _run(tmp_path, "# OP-01: observable semantics\n\nNo decisions here.\n", [_answered(FORMS, "Bytes")])
+    assert result.returncode == 1
+    assert "FAIL no decision found" in result.stdout
+
+
 def test_unusable_input_exits_2(tmp_path: Path) -> None:
     result = _run(tmp_path, _record(), ["not json"])
     assert result.returncode == 2

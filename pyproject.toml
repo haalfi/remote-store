@@ -541,8 +541,9 @@ backlog-outline = "python scripts/sdd_lookup.py outline {args}"
 ref-show = "python scripts/sdd_lookup.py ref-show {args}"
 ref-rows = "python scripts/sdd_lookup.py ref-rows {args}"
 # BK-499 / RFC-0028 P2: pairs an /observe record's decisions with their
-# dialogs for /observe-review. Absent from every bundle: it reads a session's
-# uncommitted decision logs, which only that review has. Its tests run in the suite.
+# dialogs for /observe-review. Absent from every bundle: a record names no
+# logs for a gate to read, and a record older than the Asked line (OP-01's)
+# fails it on every decision; the reason is in its docstring. Its tests run in the suite.
 observe-dialogs = "python scripts/observe_dialogs.py {args}"
 # BK-378 / RFC-0015 D1 and D4. Three entries, wired three different ways, and
 # the differences are the point.

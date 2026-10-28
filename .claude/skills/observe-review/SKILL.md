@@ -24,13 +24,16 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
 
 ## Steps
 
-1. **Pairs.** List the logs the session's dialogs went to, committed or
-   not, since `/observe release` commits them: each `sdd/decisions/` log in
-   `git status` or in `git diff --name-only origin/master...HEAD`, whose
-   questions are `<entry>`'s, both halves of a split session included; a log
-   missed shows as a FAIL. Run
+1. **Pairs.** List the logs the session's dialogs went to, both halves of a
+   split session included: the `decisions:` of the trace that names the
+   record, once one exists; before that, each `sdd/decisions/` log in
+   `git status` or `git diff --name-only origin/master...HEAD` whose
+   questions are `<entry>`'s. Run
    `hatch run observe-dialogs <record> <log> ...` and save its report as
-   `tmp/observe-review/<entry>-pairs.md`. Each FAIL is a finding.
+   `tmp/observe-review/<entry>-pairs.md`. Each FAIL is a finding, but in a
+   record written before RFC-0028, which has no Asked line (OP-01's), "no
+   Asked line" is not: the readers pair those decisions with the report's
+   unpaired questions themselves.
 2. **Unprimed readers.** Spawn two fresh `general-purpose` agents at once,
    each with the brief below, its placeholders filled, and nothing else from
    this session: no finding, no suspicion, no audit. Take the union: one run

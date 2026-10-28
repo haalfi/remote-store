@@ -166,12 +166,27 @@ phases:
         read_type: gate
         extract: "Logs from git status and the branch's diff against master, since /observe release commits them"
         outcome: ok
-# OP-01 candidates, unverified:
-# Raised by two or more of the three runs, outside audit-025, not re-read against the record and
-# not filed (the maintainer's call: trace and PR only, a later /observe-review OP-01 verifies):
-# D12 vs D28 and D34 (E7 "connect never completes" is timeout and unavailable); D22 vs D39, D42
-# and D43 (a lost pin fails changed or unavailable); D9's adopted "failure path only" vs D41's
-# NP2; the Session's "no decision cites a clause they check" vs KEY-001 and KEY-013 in D4 and
-# D9; D25's "when an O3 change becomes visible is the backend's" in neither D41 nor D43; D38
-# and D12's bound on waiting vs D39's limit restarting; D34's changed row naming E4 vs D26;
-# D2's readline vs D40's memory bound; axis rows "one reopen explicitly open" with no item.
+  - id: review_fixes_2
+    name: Fix pass from the PR #1192 second review
+    steps:
+      - file: scripts/observe_dialogs.py
+        section: "decisions, dialogs, pair; docstring"
+        read_type: gate
+        extract: >-
+          A dismissed answer is skipped and a re-asked question pairs by its quoted answer; a
+          ### heading off the decision form fails as its own entry instead of merging into the
+          one before; no decision found fails. Each seen failing first. The advisory reason now
+          says why: a record names no logs, and one older than the Asked line fails wholesale
+        outcome: ok
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1"
+        read_type: gate
+        extract: "Logs from the session's trace once it exists; a record older than RFC-0028 pairs by hand"
+        outcome: misleading
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "OP-01 review candidates"
+        read_type: reference
+        extract: "The deferred /observe-review OP-01 and its candidates, moved from a trace comment"
+        outcome: ok
+# OP-01 candidates, unverified: listed in BK-485's dossier, § OP-01 review candidates,
+# which /observe-review OP-01 verifies.

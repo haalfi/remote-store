@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 311312,
+  "total": 311495,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -17,7 +17,7 @@
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
     ".claude/skills/observe/SKILL.md": 5658,
-    ".claude/skills/observe-review/SKILL.md": 3820,
+    ".claude/skills/observe-review/SKILL.md": 4003,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -192,6 +192,12 @@
       "from": 311183,
       "to": 311312,
       "reason": "PR #1192 review: observe-review step 1 reads committed logs too (+99); observe step 3 points at axes.md's exact Asked form (+30)"
+    },
+    {
+      "item": "BK-499",
+      "from": 311312,
+      "to": 311495,
+      "reason": "PR #1192 second review: observe-review step 1 takes logs from the session's trace and states the path for a record older than the Asked line (+183)"
     }
   ]
 }

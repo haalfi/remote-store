@@ -13,12 +13,16 @@ session can read it::
 
 A decision passes when each quoted opening is the start of exactly one answered
 question in the logs and each quoted answer is the start of that question's
-logged answer. Anything else fails: no ``Asked:`` line, one off that form (named
-as such), no question or several, or another answer. The report prints each decision's Decision text beside its
-question, answer and the chosen option's description, and beside the
-record's own text of each option the Decision adopts by label, for the reader of
-``/observe-review`` to judge what a script cannot: text in the Decision beyond
-what the dialog answered (audit-025 § 5, class 2). Answered questions no
+logged answer; a question asked more than once pairs by the quoted answer, and
+a dismissed dialog counts as unanswered. Anything else fails: a ``###`` heading
+off the decision form, a record with no decision, no ``Asked:`` line, one off
+that form (named as such), no question or several, or another answer.
+
+The report prints each decision's Decision text beside its question, answer
+and the chosen option's description, and beside the record's own text of each
+option the Decision adopts by label, for the readers of ``/observe-review`` to
+judge what a script cannot: text in the Decision beyond what the dialog
+answered (audit-025 § 5, class 2). Answered questions no
 decision pairs with, such as the Environment's first dialog, are listed, not
 failed.
 
@@ -26,8 +30,9 @@ Bound: it checks that a dialog answered each decision, not what the Decision
 says beyond the answer, and a quote that is too short to be unique fails
 rather than guessing. The decisions are enumerated from the record's own
 ``### <entry>/D<n>`` headings; the log governs what was asked (RFC-0028 P2).
-Advisory, run by ``/observe-review`` only: the session's logs are uncommitted
-until that review commits them, so no gate has them.
+Advisory, run by ``/observe-review`` only: a record names neither its session
+nor its logs, so a gate could not choose which logs to read, and a record
+written before the Asked line (OP-01's) fails it on every decision.
 
 Exit 0 when every decision pairs, 1 otherwise, 2 on unusable input.
 
@@ -54,6 +59,8 @@ _FIELD = re.compile(r"^- \*\*(?P<name>[A-Za-z ]+):\*\*\s?(?P<rest>.*)$")
 # options, OP-01/D2), and the labels a Decision opens with.
 _LABEL = re.compile(r"(?:^|[;:]\s+)\((?P<label>[a-z]{1,4})\)\s")
 _ADOPTED = re.compile(r"\((?P<label>[a-z]{1,4})\)")
+# The harness's answer to a dismissed dialog (RFC-0018 case a'), as check_traces.py matches it.
+_DISMISSED = "[User dismissed"
 
 
 @dataclass
@@ -70,6 +77,7 @@ class Decision:
     asked: list[tuple[str, str]]
     options: str = ""
     malformed: list[str] = field(default_factory=list)
+    heading_ok: bool = True
 
     def adopted(self) -> list[str]:
         """The record's own text of each option the Decision adopts by label, in order."""
@@ -93,6 +101,10 @@ def decisions(record: str) -> list[Decision]:
         head = _DECISION.match(line)
         if head:
             found.append(Decision(head["id"], "", []))
+            name = None
+            continue
+        if line.startswith("### "):  # a decision heading off the form fails as its own entry
+            found.append(Decision(line.strip(), "", [], heading_ok=False))
             name = None
             continue
         if not found or line.startswith("#"):
@@ -136,6 +148,8 @@ def dialogs(logs: list[Path]) -> list[Dialog]:
             given = event.get("tool_input") or {}
             options = {q.get("question"): q.get("options") or [] for q in given.get("questions") or []}
             for question, answer in (given.get("answers") or {}).items():
+                if str(answer).startswith(_DISMISSED):
+                    continue
                 labels = {o.get("label"): o.get("description", "") for o in options.get(question, [])}
                 key = (_norm(question), _norm(str(answer)))
                 seen.setdefault(key, Dialog(key[0], key[1], labels.get(answer, "(free text or several options)")))
@@ -148,12 +162,20 @@ def pair(record: str, logs: list[Path]) -> tuple[list[str], list[str], bool]:
     used: set[int] = set()
     lines: list[str] = []
     ok = True
-    for d in decisions(record):
-        verdicts = [f"FAIL Asked line not in axes.md's form: {bad!r}" for bad in d.malformed]
+    found = decisions(record)
+    if not found:
+        lines.append("## FAIL no decision found: no heading '### <entry>/D<n>:'")
+        ok = False
+    for d in found:
+        verdicts = [] if d.heading_ok else ["FAIL heading not in the form '### <entry>/D<n>:'"]
+        verdicts += [f"FAIL Asked line not in axes.md's form: {bad!r}" for bad in d.malformed]
         verdicts += [] if d.asked or d.malformed else ["FAIL no Asked line"]
         paired = []
         for quote, answer in d.asked:
             hits = [i for i, g in enumerate(pool) if g.question.startswith(quote)]
+            # One question asked twice (re-asked after another answer) pairs by its quoted answer.
+            narrowed = [i for i in hits if pool[i].answer.startswith(answer)]
+            hits = narrowed if len(hits) > 1 and len(narrowed) == 1 else hits
             if len(hits) != 1:
                 verdicts.append(f"FAIL {len(hits)} answered questions start with {quote!r}")
                 continue
