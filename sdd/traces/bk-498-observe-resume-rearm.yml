@@ -133,15 +133,16 @@ phases:
           deleted the marker, a cleared session resumed was refused Bash (the
           incident), `/observe release` hit the usage refusal, refusals named no
           way out. At the PR's close, this file run against master's hook (a
-          1bcab30 worktree with the test file copied in) fails 9 of 88 IDs:
+          1bcab30 worktree with the test file copied in) fails 11 of 91 IDs:
           test_clear_ends_the_restriction,
           test_clear_releases_an_unreadable_marker,
           test_a_cleared_session_is_not_rearmed_on_resume, both
-          test_release_frees_a_session_but_locks_its_record variants,
+          test_release_frees_a_session_but_locks_its_record variants, both
+          test_a_released_session_cannot_drop_its_own_release variants,
           test_release_without_an_observe_session_is_refused,
           test_refusals_name_the_way_out, and the release-after-tool and
           release-before-tool variants of
-          test_a_released_transcript_leaves_a_resume_unarmed.
+          test_a_released_transcript_resumes_released.
           pytest-asyncio 1.4.1 in the fresh hatch env raises its unset-loop-scope
           warning as an error at configure, so runs passed
           `-o asyncio_default_fixture_loop_scope=function`

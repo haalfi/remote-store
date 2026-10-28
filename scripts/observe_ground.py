@@ -25,8 +25,9 @@ allowlist is the ground register plus files the maintainer names at the start).
   or the hook fails on a transcript naming ``/observe`` or one it cannot read, the session is locked
   instead: every call but the neutral ones is refused until ``/clear`` or a release.
 * ``check`` (``PreToolUse``): in an armed session, a call passes only if it
-  stays inside the allowlist; a released session may do anything but write a
-  record or name one in Bash (below); every other session passes untouched, the wrapper's fail-closed
+  stays inside the allowlist; a released session may do anything but write under
+  ``sdd/observe/records/`` or ``tmp/observe/`` or name either in Bash (below);
+  every other session passes untouched, the wrapper's fail-closed
   branch included.
 * ``disarm`` (``SessionEnd``): when the session is cleared (``reason: clear``),
   turns its marker into a release; a session that ends any other way may resume
@@ -36,11 +37,12 @@ A release (``{"released": "clear" | "release", "record": ...}``) marks a session
 that is no longer a design session, so a resume never re-arms it (BK-498: a
 worker restart after ``/clear`` resumed the cleared session, not the new one).
 It frees the session, so it can commit its decision logs, and keeps every file
-under ``sdd/observe/records/`` closed to Write, Edit, MultiEdit, NotebookEdit and
-a Bash command naming that directory: a session that may have read off the
-ground never writes a record (S1, S4), its own or another entry's. That Bash
-check matches the path as text, so it also refuses reading or staging a record
-by name, and a command that writes a record without spelling the path passes.
+under ``sdd/observe/records/`` and ``tmp/observe/`` closed to Write, Edit,
+MultiEdit, NotebookEdit and a Bash command naming either directory: a session
+that may have read off the ground never writes a record (S1, S4), its own or
+another entry's, nor drops its own release. That Bash check matches the path as
+text, so it also refuses reading or staging those files by name, and a command
+that writes them without spelling the path passes.
 A finished record is committed after ``/clear``, by a session with no marker.
 Only the maintainer can release, by a prompt.
 
@@ -360,7 +362,7 @@ def check(payload: dict[str, Any], root: Path) -> None:
 
 
 def _check_released(state: dict[str, Any], tool: str, args: dict[str, Any], root: Path, cwd: str | None) -> None:
-    """Raise Refused when a released session's call writes a record or an /observe marker.
+    """Raise Refused when a released session's call writes a record or an /observe marker, or names either in Bash.
 
     A marker is guarded as a record is: removing its own release would free the
     records again and let a later resume re-arm it.
