@@ -23,7 +23,11 @@ and this checkout show beside each point.
    checkout this item was filed from never held the lines: there,
    `bcb85b21`'s log matches `23ae05a`.
 3. **The session cannot get out by itself.** An armed session cannot commit,
-   read its own hook or file this item. Only a new session can.
+   read its own hook or file this item. Only a new session can. Nor can
+   another session help it: a message sent to it arrives as a notification,
+   and `check` refuses `ReadNotifications`, which is not among its neutral
+   tools (seen 2026-10-28 in session `session_01QqsRzJAiM44XJo3cR8oUEJ`'s
+   transcript).
 4. **Its decision logs are stranded.** Every log the session writes after the
    re-arm stays in the armed session's container, because it cannot commit
    them, and goes when that container is archived. Here those were
