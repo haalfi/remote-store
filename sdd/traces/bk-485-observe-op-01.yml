@@ -15,13 +15,19 @@ discovery_followups:
 surprising_ripples: []
 co_shipped_items: []
 # One decision of this work has no log in the repo. The session after /clear
-# (c1c866a2) asked "OP-01 PR" and the maintainer answered "Bookkeeping, /pr,
-# one review (Recommended)", the scope this PR follows. A worker restart
-# re-armed that session under bcb85b21 (BK-498), so the recorder appended the
-# dialog to that container's bcb85b21 log (inferred: no diff could check it),
-# and the armed session could not commit it. Both logs stayed in that container and go when it is archived;
-# no .jsonl is reconstructed by hand. The dialog is in the transcript of
-# session session_01QqsRzJAiM44XJo3cR8oUEJ.
+# asked "OP-01 PR" and the maintainer answered "Bookkeeping, /pr, one review
+# (Recommended)", the scope this PR follows. Both halves are in the transcript
+# of session session_01QqsRzJAiM44XJo3cR8oUEJ (list_events, kinds assistant
+# and user), tool_use_id toolu_01BAwgn1Zfcr2qjx7fSndmJR:
+#   call    event d2678aa3-aa4c-485d-94b2-c364cc7fe0a7, 09:44:49Z, session_id
+#           c1c866a2-414d-4eae-9d81-31103cbe4b4f
+#   result  event d305e347-5674-4ec9-81aa-fb43b95e61b2, 09:51:31Z, session_id
+#           bcb85b21-720e-5412-bc7e-32bfff75f566
+# A worker restart while the dialog was open resumed the session under
+# bcb85b21 and re-armed it (BK-498), so the recorder, which names its log by
+# session_id, wrote the asked line to c1c866a2-....jsonl and the answered line
+# to that container's bcb85b21 copy (from each event's session_id; not diffed). The armed session could not commit either,
+# and both go when its container is archived. No .jsonl is written by hand.
 decisions:
   - sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
   - sdd/decisions/f2ddab07-cc31-5c01-a396-d08c5dcec24a.jsonl

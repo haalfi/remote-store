@@ -12,29 +12,33 @@ and this checkout show beside each point.
 1. **The hook re-arms.** `/observe OP-01` ran as session `bcb85b21`. After
    `/clear`, a session (`c1c866a2`) ran Bash and committed `23ae05a`. A worker
    restart then resumed it under `bcb85b21` (its scratchpad path changed to
-   that id). From then on the ground hook refused Bash, Reads of
+   that id), while one of its dialogs was still open (point 2). From then on the ground hook refused Bash, Reads of
    `sdd/BACKLOG.md` and `sdd/traces/`, and the hook script itself.
-2. **The log went to the wrong file. Inferred, not diffed.** A dialog asked
-   after the restart, headed "OP-01 PR" and answered "Bookkeeping, /pr, one
-   review (Recommended)", seems to have been appended to
-   `sdd/decisions/bcb85b21-….jsonl`: the session-start banner showed that
-   file as modified only after the dialog. The dialog is `c1c866a2`'s. No
-   diff could confirm it. The armed session cannot run Bash, and the
-   checkout this item was filed from never held the lines: there,
-   `bcb85b21`'s log matches `23ae05a`.
+2. **The log went to the wrong file.** The "OP-01 PR" dialog was asked
+   before the restart and answered after it. In session
+   `session_01QqsRzJAiM44XJo3cR8oUEJ`'s transcript, the `AskUserQuestion`
+   call (event `d2678aa3-aa4c-485d-94b2-c364cc7fe0a7`, 09:44:49Z) carries
+   session_id `c1c866a2-414d-4eae-9d81-31103cbe4b4f`, and its result (event
+   `d305e347-5674-4ec9-81aa-fb43b95e61b2`, 09:51:31Z) carries `bcb85b21`.
+   The recorder names the log by session_id, so the `asked` line went to
+   `c1c866a2-….jsonl` and the `answered` line to `bcb85b21-….jsonl`, which
+   matches the session-start banner showing the first file new and the
+   second modified. No diff could confirm the files' contents: the armed
+   session cannot run Bash, and the checkout this item was filed from never
+   held them (there, `bcb85b21`'s log matches `23ae05a`).
 3. **The session cannot get out by itself.** An armed session cannot commit,
    read its own hook or file this item. Only a new session can. Nor can
    another session help it: a message sent to it arrives as a notification,
    and `check` refuses `ReadNotifications`, which is not among its neutral
    tools (seen 2026-10-28 in session `session_01QqsRzJAiM44XJo3cR8oUEJ`'s
    transcript).
-4. **Its decision logs are stranded.** Every log the session writes after the
-   re-arm stays in the armed session's container, because it cannot commit
-   them, and goes when that container is archived. Here those were
-   `c1c866a2-….jsonl` and the "OP-01 PR" lines in that container's copy of
-   `bcb85b21-….jsonl`. The decision survives only in session
-   `session_01QqsRzJAiM44XJo3cR8oUEJ`'s transcript and in the note in
-   `sdd/traces/bk-485-observe-op-01.yml`.
+4. **Its decision logs are lost.** Every log line the session writes after
+   the re-arm stays in the armed session's container, because it cannot
+   commit, and goes when that container is archived. Here that is both halves
+   of the "OP-01 PR" dialog: `c1c866a2-….jsonl` with its `asked` line, and
+   the `answered` line in that container's copy of `bcb85b21-….jsonl`. The
+   decision survives only in the transcript events of point 2 and in the
+   note above `decisions:` in `sdd/traces/bk-485-observe-op-01.yml`.
 
 ## What the code shows
 
