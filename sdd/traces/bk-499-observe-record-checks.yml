@@ -1,0 +1,104 @@
+id: BK-499
+title: "An `/observe` record's checks go unverified and its session never sees an implementation, so contradictions reach the record"
+trigger: >-
+  OP-01's record took thirteen open items after its session closed: O14 to O16
+  in PR #1188's review and O17 to O26 from audit-025. Audit-025 § 5 sorts them
+  into four classes, none of which `/observe` or the step after it catches.
+source_items:
+  - BK-499
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+surprising_ripples: []
+co_shipped_items: []
+decisions: []
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's entry: step 5's record is done, while its spec, model, profile tables and 0.33
+      comparison are open, and O14 to O26 are its open decision. So OP-01's D1 to D44 stay
+      untouched, and any new step sits between record and spec, the step that comes next.
+      axes.md § Sources: the axes "are revisited with F2 after the `read()` flow". So class 4
+      either lands now or waits for that revision, and research § 9 runs the whole `read()`
+      flow before scaling, i.e. before OP-02.
+  - items: [BK-397]
+    verdict: constrains
+    evidence: >-
+      BK-397's entry: pending is "a remedy for one session's log across two branches". OP-01's
+      dialogs are in two logs (bcb85b21 and f2ddab07, bk-485-observe-op-01.yml `decisions:`),
+      so a decision-to-dialog check must read every log a trace lists, not one session id's.
+      It changes nothing in record_decision.py.
+  - items: [BK-496]
+    verdict: unrelated
+    evidence: >-
+      BK-496's entry: the API spec "Runs after several entries' flows". It touches neither the
+      skill, the hook nor the record format.
+phases:
+  - id: orient
+    name: Read the item, the audit, the record, the method and related items
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-499 (backlog-show)"
+        read_type: gate
+        extract: "Four classes; open decision: which class an End-step pass, a primed review step or F2 takes"
+        outcome: ok
+      - file: sdd/audits/audit-025-op-01-record-review.md
+        section: "(full)"
+        read_type: gate
+        extract: "§ 5 diagnosis; C1, C2, G5 are text-only; C3 to C6 need src or SDK source; C7, G1 to G4 no axis asks"
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "Environment; D16 to D20; D33 to D39; Open items"
+        read_type: gate
+        extract: "Consistency checks name a chosen subset; O14 to O26 carried as reopens, a ground conflict, gaps, notes"
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "Step 3 writes a consistency check per decision; step 5 ends on every axis closed, with no whole-record pass"
+        outcome: ok
+      - file: sdd/observe/axes.md
+        section: "(full)"
+        read_type: gate
+        extract: "Fifteen axes; revisited with F2 after read(); per-question loop shape"
+        outcome: ok
+      - file: scripts/observe_ground.py
+        section: "(full)"
+        read_type: reference
+        extract: "Agent, Bash, Glob denied in an armed session; sdd/decisions/ is off the ground"
+        outcome: ok
+      - file: sdd/traces/bk-498-observe-resume-rearm.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Release marker; a finished record is committed after /clear by a session with no marker"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "Status; R1"
+        read_type: gate
+        extract: "D4 binds the unprimed session to research § 4; amendments land as a new RFC with an Amended by line"
+        outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "3; 4; 9"
+        read_type: gate
+        extract: "Flow: design, record, spec, compare; S1 to S5; step 5 of the § 9 table"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0027-observe-playground.md
+        section: "(full)"
+        read_type: reference
+        extract: "Shape of an RFC amending RFC-0024"
+        outcome: ok
+      - file: sdd/adrs/0045-close-on-a-check-that-can-fail.md
+        section: "Decision"
+        read_type: gate
+        extract: "A close counts only if its check could have returned the claim false"
+        outcome: ok
+      - file: sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
+        section: "answered events naming E15, an archive tier or opening a stream"
+        read_type: verify
+        extract: >-
+          The dialogs behind D19, D25's E15 and D35 asked only the option, so O14 to O16's extra
+          text is visible only beside the dialog. Answers are keyed by question text; nothing in
+          the record names its dialog
+        outcome: ok

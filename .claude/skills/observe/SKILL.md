@@ -56,8 +56,11 @@ any web result about it.
      recommendation first and marked `(Recommended)`; it takes at most four
      options per question, so more alternatives become two questions;
    - write the entry to Decisions at once, in the axes file's per-question
-     shape, with the next ID `<entry>/D<n>`, and its **consistency check**
-     against earlier decisions and the ground, naming any conflict.
+     shape, with the next ID `<entry>/D<n>`, an **Asked** line per dialog
+     that answered it, and its **consistency check** against earlier
+     decisions and the ground, naming any conflict. A claim in the Decision
+     that no dialog answered, such as a list, a table or a case, is asked
+     first.
    An answer may be an F3 term; "not decided yet" goes to Open items with what
    blocks it. Keep each axis's row current.
 4. **Ground conflict.** If a decision would contradict a ground artifact,
@@ -65,9 +68,15 @@ any web result about it.
    the clause, the conflict, the dependent decisions. Never edit ground, the
    register or any file but the record; the reopen runs its own flow. An
    entry that should split is a reopen of the catalogue.
-5. **End (S4)** when every axis row is closed. Set `**Status:**` to
-   `Complete`, and tell the maintainer the record is uncommitted: `/clear`,
-   then commit. A stop hook asking this session to
+5. **End (S4)** when every axis row is closed. First re-read the record
+   whole and re-run each consistency check against every decision, later
+   ones included, not only those it names: each list, table or "only" claim
+   against every decision that adds to it, each reason against every
+   outcome, and an option a Decision adopts by its own wording. Ask each
+   conflict as in step 3; its answer is a new decision naming the one it
+   amends. Then set `**Status:**` to `Complete`, and tell the maintainer the
+   record is uncommitted: `/clear`, then `/observe-review <entry>`, which
+   checks and commits it. A stop hook asking this session to
    commit cannot be obeyed here; answer it the same way. Resumed armed after
    `/clear`? The maintainer types `/observe release`.
 

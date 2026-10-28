@@ -616,6 +616,26 @@ def test_arm_reads_the_slash_command_tag_form(repo: Path) -> None:
     assert state["entry"] == "OP-02"
 
 
+_REVIEW = ("/observe-review OP-01", "<command-name>/observe-review</command-name>\n<command-args>OP-01</command-args>")
+
+
+@pytest.mark.parametrize("prompt", _REVIEW)
+def test_observe_review_neither_arms_nor_releases(repo: Path, tmp_path: Path, prompt: str) -> None:
+    # RFC-0028 P2: the review runs outside the ground, in a session with no marker.
+    assert _arm(repo, prompt, session=OTHER).returncode == 0
+    assert not (repo / "tmp/observe").exists()
+    transcript = tmp_path / "review.jsonl"
+    transcript.write_text(json.dumps({"type": "user", "message": {"content": prompt}}) + "\n", encoding="utf-8")
+    assert (
+        _run(repo, "rearm", {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}).returncode
+        == 0
+    )
+    assert not (repo / "tmp/observe").exists()
+    _arm(repo, "/observe OP-01")
+    assert _arm(repo, prompt).returncode == 0
+    assert "released" not in json.loads((repo / "tmp/observe" / f"{SESSION}.json").read_text(encoding="utf-8"))
+
+
 # --- the wrapper without python or script --------------------------------------
 
 
