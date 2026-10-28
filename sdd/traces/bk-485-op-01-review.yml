@@ -110,8 +110,10 @@ phases:
         section: "write_atomic docstring (l.1052 to 1080); _promote, _displace (l.2273 to 2329)"
         read_type: verify
         extract: >-
-          Evidence only: without posix-rename the target is displaced first,
-          a window with no item at the key (O42)
+          Evidence only: the target is displaced first, a window with no item
+          at the key (O42). My miss: O42 first tied the fallback to a missing
+          extension, though l.1077 to 1080 say any posix_rename failure the
+          probe does not recognise enters it; corrected in PR #1194 round 1
       - file: pyproject.toml
         section: "hatch env: socket, urllib3 2.8.0, paramiko 5.1.0, asyncio, botocore 1.43.117, aiohttp 3.14.5 via inspect.getsource"
         read_type: verify
@@ -134,8 +136,9 @@ phases:
       #      O41.
       #   P2 Azure HNS tells a folder on the success path: holds, merged
       #      into O29 with dossier candidate 3.
-      #   P3 SFTP without posix-rename has no atomic replace: holds, a note
-      #      for O6's sessions, O42 (O6 routes the constraint, so no reopen).
+      #   P3 SFTP's displacing fallback opens a window with no item at the
+      #      key: holds, a note for O6's sessions, O42 (O6 routes the
+      #      constraint, so no reopen).
       #   P4 Local on NFS against D23 and D25: filed, O43, every backend
       #      claim not run.
       #   P5 O3 metadata-only change moves Azure's ETag: filed, O44, not
