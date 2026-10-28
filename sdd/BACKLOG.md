@@ -516,6 +516,14 @@ no clause of the contract ships unexercised.
   `shared.md`'s. Runs after several entries' flows, which also decide core against extension beyond
   the 24 entries, never a session. Open decision: when, and after which entries.
 
+- [ ] **BK-500 — Two `/observe` hook messages mislead: a refused record write names the wrong file, and `/observe release.` reads as an arming**
+  spec: — · effort: S · audience: contributor.tooling
+  Seen in PR #1189's live probe: a released session's refused Write to `records/OP-02.md` names
+  `records/OP-01.md` (`_check_released` reports the marker's record, not the target); a typed
+  `/observe release.` (trailing full stop) parses as the arming argument `release.` and gets "needs a
+  fresh session". Both block correctly; only the wording misleads. Open decision: none; name the
+  target, and treat trailing punctuation on `release` as a release.
+
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset
