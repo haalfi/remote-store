@@ -1,0 +1,61 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (/observe-review OP-01, § 9 step 5's review)"
+trigger: >-
+  BK-485's entry read "Not done: step 5's review (`/observe-review OP-01`,
+  RFC-0028; unverified candidates in the dossier)". BK-499 (PR #1192) added
+  the skill and BK-500 (PR #1193) merged, so the maintainer typed
+  `/observe-review OP-01`: the first run of RFC-0028's review step.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+surprising_ripples: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/observe/records/OP-01.md
+  - sdd/BACKLOG.md
+  - sdd/backlog/bk-485-spec-first-reset.md
+orient:
+  # `hatch run backlog-find OP-01` returns BK-485 open and BK-493, BK-497,
+  # BK-499 done; no other open item touches the record or the skill. The
+  # scope came with the invocation (OP-01's record, the nine dossier
+  # candidates, O14 to O26 not filed again), so no scope dialog was asked.
+  - items: [BK-496]
+    verdict: unrelated
+    evidence: >-
+      BK-496's entry: the API spec "Runs after several entries' flows". The
+      review files open items for a reopen session and decides nothing the
+      API spec would consume.
+  - items: [BK-489]
+    verdict: unrelated
+    evidence: >-
+      BK-485's entry: "D10 is BK-489's". The kernel line waits on the read()
+      flow's evidence; § 4-style cost notes here are advisory and decide
+      nothing about it.
+phases:
+  - id: pairs
+    name: Step 1, pair decisions with dialogs
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "Pairs, two unprimed readers with the brief verbatim, primed review, verify and file as O<n>"
+      - file: sdd/rfcs/rfc-0028-observe-record-review.md
+        section: "P2, P3, Evidence"
+        read_type: gate
+        extract: "Readers unioned; review never edits a decision; C2's class is the step's known bound"
+      - file: sdd/traces/bk-485-observe-op-01.yml
+        section: "decisions"
+        read_type: gate
+        extract: "The session's logs: bcb85b21 and f2ddab07"
+      - file: scripts/observe_dialogs.py
+        section: "hatch run observe-dialogs sdd/observe/records/OP-01.md <both logs>"
+        read_type: verify
+        extract: >-
+          Exit 1; tmp/observe-review/OP-01-pairs.md, 494 lines. 44 sections
+          each "FAIL no Asked line" (expected: OP-01 predates the Asked line),
+          no other FAIL kind (Grep "^## " and "FAIL no Asked line$" both 44);
+          49 answered dialogs no decision pairs with (Grep "^- " from l.348),
+          paired by hand by the readers (brief item 4)
