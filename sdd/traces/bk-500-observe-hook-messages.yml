@@ -1,0 +1,73 @@
+id: BK-500
+title: "Two `/observe` hook messages mislead: a refused record write names the wrong file, and `/observe release.` reads as an arming"
+trigger: >-
+  PR #1189's live probe of the release: a released session's refused Write
+  to records/OP-02.md named records/OP-01.md, and a typed
+  "/observe release." was refused as a non-fresh arming. Filed there as
+  BK-500 by the maintainer's choice, fixed here.
+source_items:
+  - BK-500
+audience:
+  - contributor.tooling
+discovery_followups: []
+surprising_ripples:
+  # The edit to sdd/BACKLOG.md bumped BK to 500 in backlogid.json: #1189
+  # filed BK-500 without moving the counter.
+  - sdd/backlogid.json
+co_shipped_items: []
+decisions: []
+orient:
+  - items: [BK-485]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-find observe` lists BK-485 as the only open item on
+      /observe; its work is the design flow, not the hook's messages. BK-500's
+      entry states "Open decision: none", and the maintainer set the scope
+      (tests first, one /rvw-pr pass), so no scope dialog was asked.
+phases:
+  - id: orient
+    name: Read the item, the hook and its tests
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-500"
+        read_type: gate
+        extract: "Name the target; a trailing punctuation on release is a release"
+        outcome: ok
+      - file: scripts/observe_ground.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          _check_released formats the marker's record into the refusal;
+          _observe_args splits "release." into one argument that is not
+          _RELEASE, so arm runs the fresh-session check
+        outcome: ok
+      - file: sdd/traces/bk-498-observe-resume-rearm.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Trace shape for this hook; the probe step that saw both messages"
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/scripts/test_observe_ground.py
+        section: "release refusals; test_a_released_transcript_resumes_released"
+        read_type: gate
+        extract: >-
+          Against master's hook (fix stashed), 5 of 98 IDs fail:
+          test_a_released_record_refusal_names_the_target, the three
+          test_release_with_trailing_punctuation_releases variants, and the
+          punctuated-release variant of
+          test_a_released_transcript_resumes_released. All 98 pass with the fix
+        outcome: ok
+  - id: implement
+    name: Normalize the release word; name the refused target
+    steps:
+      - file: scripts/observe_ground.py
+        section: "_observe_args, _check_released"
+        read_type: gate
+        extract: >-
+          _observe_args returns _RELEASE for one argument matching
+          release[.!?,;:]*, so arm and rearm's transcript scan both see it;
+          _check_released names the writer's repo-relative target, or the
+          guarded directory for Bash, and no longer reads the marker's record
+        outcome: ok

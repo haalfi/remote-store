@@ -14,7 +14,7 @@ allowlist is the ground register plus files the maintainer names at the start).
   0.33 code, tests or a spec 001 to 050 (never ground, RFC-0024 § R1), is
   another entry's input file, or is a ``reopened`` register row.
   The prompt ``/observe release`` instead releases an armed or locked session
-  (below); in a session with no marker it is refused.
+  (below), trailing punctuation included; in a session with no marker it is refused.
 * ``rearm`` (``SessionStart``): a resumed or compacted session that ``arm``
   armed is armed again, from the last ``/observe`` prompt before its first tool
   use, so it never resumes unarmed, whatever became of its marker; it resumes
@@ -112,6 +112,7 @@ _NEUTRAL = frozenset({"AskUserQuestion", "ToolSearch", "TaskCreate", "TaskUpdate
 
 
 _RELEASE = ["release"]
+_RELEASE_WORD = re.compile(r"release[.!?,;:]*")
 _WAY_OUT = "Not a design session? The maintainer types /observe release."
 # Write tools refused on a released session's record, with the key naming the file.
 _WRITERS = {"Write": "file_path", "Edit": "file_path", "MultiEdit": "file_path", "NotebookEdit": "notebook_path"}
@@ -156,9 +157,14 @@ def _observe_args(text: str) -> list[str] | None:
     """The arguments of an ``/observe`` prompt, typed or in slash-command tag form; None otherwise."""
     tagged = _TAGGED.search(text)
     if tagged:
-        return tagged["args"].split()
-    m = _PROMPT.match(text)
-    return (m["args"] or "").split() if m else None
+        args = tagged["args"].split()
+    else:
+        m = _PROMPT.match(text)
+        if not m:
+            return None
+        args = (m["args"] or "").split()
+    # A typed "release." is a release, never an arming argument (BK-500).
+    return _RELEASE if len(args) == 1 and _RELEASE_WORD.fullmatch(args[0]) else args
 
 
 def _armed_args(transcript: Path) -> list[str] | None:
@@ -320,7 +326,7 @@ def check(payload: dict[str, Any], root: Path) -> None:
     args = payload.get("tool_input") or {}
     cwd = payload.get("cwd")
     if "released" in state:
-        _check_released(state, tool, args, root, cwd)
+        _check_released(tool, args, root, cwd)
         return
     if tool in _NEUTRAL:
         return
@@ -361,27 +367,27 @@ def check(payload: dict[str, Any], root: Path) -> None:
     raise Refused(f"{tool}: not available in an /observe session (S2). Read allowed files with Read. {_WAY_OUT}")
 
 
-def _check_released(state: dict[str, Any], tool: str, args: dict[str, Any], root: Path, cwd: str | None) -> None:
+def _check_released(tool: str, args: dict[str, Any], root: Path, cwd: str | None) -> None:
     """Raise Refused when a released session's call writes a record or an /observe marker, or names either in Bash.
 
     A marker is guarded as a record is: removing its own release would free the
     records again and let a later resume re-arm it.
     """
-    record = state.get("record") or RECORDS
     for guarded, why in (
-        (
-            RECORDS,
-            f"{record} is written only by a fresh /observe session and committed after /clear, never named here (S4)",
-        ),
-        (MARKER_DIR, f"{MARKER_DIR}/ holds this session's release, which only the hook writes"),
+        (RECORDS, "{} is written only by a fresh /observe session and committed after /clear, never named here (S4)"),
+        (MARKER_DIR, "{} holds this session's release, which only the hook writes"),
     ):
+        # The message names the file the call targets, or for Bash the directory it names (BK-500).
+        named = guarded.rstrip("/") + "/"
         if tool in _WRITERS:
             target = _real(root, args.get(_WRITERS[tool]) or "", cwd)
             writes = target.startswith(_real(root, guarded) + os.sep)
+            if writes:
+                named = os.path.relpath(target, os.path.realpath(root)).replace(os.sep, "/")
         else:
             writes = tool == "Bash" and guarded.rstrip("/") in str(args.get("command") or "")
         if writes:
-            raise Refused(f"{tool}: this session is released; {why}")
+            raise Refused(f"{tool}: this session is released; {why.format(named)}")
 
 
 def disarm(payload: dict[str, Any], root: Path) -> None:

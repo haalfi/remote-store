@@ -476,6 +476,13 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-500 — Two `/observe` hook messages mislead: a refused record write names the wrong file, and `/observe release.` reads as an arming**
+  spec: — · effort: S · audience: contributor.tooling
+  A released session's refused write names the file it targeted (a Bash refusal names the directory),
+  not the marker's record; `/observe release` followed by trailing punctuation (`.`, `!`, `?`, `,`, `;`,
+  `:`) is a release, in `arm` and in the transcript `rearm` reads. Seen in PR #1189's live probe. Trace:
+  [bk-500](traces/bk-500-observe-hook-messages.yml).
+
 - [x] **BK-499 — An `/observe` record's checks go unverified and its session never sees an implementation, so contradictions reach the record**
   spec: — · effort: M · audience: contributor.process, library.maintainer
   RFC-0028 (accepted) answers audit-025 § 5's four classes. `/observe` re-checks the whole record at End

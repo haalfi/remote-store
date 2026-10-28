@@ -402,6 +402,29 @@ def test_a_released_session_cannot_drop_its_own_release(repo: Path, how: str) ->
     assert json.loads(marker.read_text(encoding="utf-8"))["released"] == how
 
 
+# BK-500: the refusal named the marker's record, OP-01.md, for a write to OP-02.md.
+def test_a_released_record_refusal_names_the_target(repo: Path) -> None:
+    _arm(repo, "/observe OP-01")
+    _arm(repo, "/observe release")
+    result = _call(repo, "Write", file_path="sdd/observe/records/OP-02.md", content="x")
+    assert result.returncode == 2
+    assert "sdd/observe/records/OP-02.md" in result.stderr
+    assert "OP-01" not in result.stderr
+
+
+# BK-500: "/observe release." parsed as the arming argument "release." and got "needs a fresh session".
+@pytest.mark.parametrize("prompt", ["/observe release.", "/observe release!", "/observe  release. "])
+def test_release_with_trailing_punctuation_releases(repo: Path, tmp_path: Path, prompt: str) -> None:
+    _arm(repo, "/observe OP-01")
+    transcript = tmp_path / "used.jsonl"
+    transcript.write_text(_TYPED + _TOOL_USE, encoding="utf-8")
+    released = _arm(repo, prompt, transcript=transcript)
+    assert released.returncode == 0, released.stderr
+    assert "released" in released.stdout
+    marker = repo / "tmp/observe" / f"{SESSION}.json"
+    assert json.loads(marker.read_text(encoding="utf-8"))["released"] == "release"
+
+
 def test_release_without_an_observe_session_is_refused(repo: Path) -> None:
     result = _arm(repo, "/observe release")
     assert result.returncode == 2
@@ -540,11 +563,12 @@ _QUOTED = (
         # The order of a real session: its canary Read runs before the maintainer can release.
         ([_TYPED, _TOOL_USE, _RELEASE_PROMPT], "released"),
         ([_TYPED, _RELEASE_PROMPT, _TOOL_USE], "released"),
+        ([_TYPED, _TOOL_USE, _RELEASE_PROMPT.replace("release", "release.")], "released"),  # BK-500
         # An arming prompt after the release, still before any tool, arms again as arm would.
         ([_TYPED, _RELEASE_PROMPT, '{"type":"user","message":{"content":"/observe OP-02"}}\n', _TOOL_USE], "entry"),
         ([_TYPED, _TOOL_USE, _QUOTED], "entry"),
     ],
-    ids=["release-after-tool", "release-before-tool", "rearmed-after-release", "quoted-release"],
+    ids=["release-after-tool", "release-before-tool", "punctuated-release", "rearmed-after-release", "quoted-release"],
 )
 def test_a_released_transcript_resumes_released(repo: Path, tmp_path: Path, lines: list[str], state: str) -> None:
     # A resume in a new container or under a new id has no marker; the transcript's release still holds.
