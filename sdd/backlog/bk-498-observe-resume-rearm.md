@@ -14,13 +14,14 @@ and this checkout show beside each point.
    restart then resumed it under `bcb85b21` (its scratchpad path changed to
    that id). From then on the ground hook refused Bash, Reads of
    `sdd/BACKLOG.md` and `sdd/traces/`, and the hook script itself.
-2. **The log went to the wrong file. Confirmed** by `git diff` in the
-   checkout holding the lines: every line added to
-   `sdd/decisions/bcb85b21-….jsonl` since `23ae05a` is one dialog asked after
-   the restart, headed "OP-01 PR" and answered "Bookkeeping, /pr, one review
-   (Recommended)". That dialog is `c1c866a2`'s. It is not visible in the
-   checkout this item was filed from, where `bcb85b21`'s log matches
-   `23ae05a`.
+2. **The log went to the wrong file. Inferred, not diffed.** A dialog asked
+   after the restart, headed "OP-01 PR" and answered "Bookkeeping, /pr, one
+   review (Recommended)", seems to have been appended to
+   `sdd/decisions/bcb85b21-….jsonl`: the session-start banner showed that
+   file as modified only after the dialog. The dialog is `c1c866a2`'s. No
+   diff could confirm it. The armed session cannot run Bash, and the
+   checkout this item was filed from never held the lines: there,
+   `bcb85b21`'s log matches `23ae05a`.
 3. **The session cannot get out by itself.** An armed session cannot commit,
    read its own hook or file this item. Only a new session can.
 4. **Its decision logs are stranded.** Every log the session writes after the

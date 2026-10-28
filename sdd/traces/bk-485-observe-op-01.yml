@@ -18,8 +18,8 @@ co_shipped_items: []
 # (c1c866a2) asked "OP-01 PR" and the maintainer answered "Bookkeeping, /pr,
 # one review (Recommended)", the scope this PR follows. A worker restart
 # re-armed that session under bcb85b21 (BK-498), so the recorder appended the
-# dialog to that container's bcb85b21 log, and the armed session could not
-# commit it. Both logs stayed in that container and go when it is archived;
+# dialog to that container's bcb85b21 log (inferred: no diff could check it),
+# and the armed session could not commit it. Both logs stayed in that container and go when it is archived;
 # no .jsonl is reconstructed by hand. The dialog is in the transcript of
 # session session_01QqsRzJAiM44XJo3cR8oUEJ.
 decisions:
