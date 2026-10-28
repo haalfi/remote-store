@@ -516,13 +516,22 @@ no clause of the contract ships unexercised.
   `shared.md`'s. Runs after several entries' flows, which also decide core against extension beyond
   the 24 entries, never a session. Open decision: when, and after which entries.
 
+- [ ] **BK-498 — After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one**
+  spec: — · effort: M · audience: contributor.tooling, contributor.process
+  After `/clear` started a new session, a worker restart resumed OP-01's pre-clear `/observe` session, armed
+  (by `rearm` or a marker `disarm` never removed; unknown which): Bash and reads off the ground were refused,
+  and the new session's open dialog was answered into it, logged under OP-01's id and lost uncommitted. The
+  hook arms a resumed design session as designed; why the harness resumed it is not in the repo's code. Open
+  decision: what a hook could tell such a resume by, and how a wrongly armed session gets out by itself.
+  Detail: [dossier](backlog/bk-498-observe-resume-rearm.md)
+
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
   Its test runs are in the dossier; step 4 is spec 052, step 4b spec 053 and the catalogue (BK-493).
-  BK-494 moved `/observe` to catalogue entries. Not done: § 9 steps 5 (`/observe OP-01`) and 6. Open decision: § 8's open points 2 to 4 and 11
-  (D10 is BK-489's).
+  Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md). Not done: step 5's spec, model,
+  profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
