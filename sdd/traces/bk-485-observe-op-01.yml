@@ -10,9 +10,9 @@ source_items:
 audience:
   - contributor.process
   - library.maintainer
-discovery_followups: []
-surprising_ripples:
-  - sdd/observe/records/OP-01.md
+discovery_followups:
+  - BK-498
+surprising_ripples: []
 co_shipped_items: []
 decisions:
   - sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
@@ -67,9 +67,13 @@ phases:
         read_type: reference
         extract: "TREE-001's partition and TREE-002 for the root (D4, D9); the store tuple for D10"
       - file: sdd/specs/052-store-key.md
-        section: "(full); profiles/052-store-key.md"
+        section: "(full)"
         read_type: reference
         extract: "ν as step s1 of a call; KEY-001, KEY-013 and the Notes cited by D4, D8, D9, D34"
+      - file: sdd/specs/profiles/052-store-key.md
+        section: "(full)"
+        read_type: reference
+        extract: "Read as ground; the record cites spec 052's profile tables as the model for OP-01's (D43)"
       - file: sdd/specs/053-store-operations.md
         section: "(full)"
         read_type: reference
@@ -81,10 +85,12 @@ phases:
         section: "(full)"
         read_type: verify
         extract: >-
-          41 lines, every one a dialog of the session (the Environment, then
-          AX-1 to AX-15), all already in 23ae05a, so none to drop. The second log the request
-          named, c1c866a2, exists in no checkout, commit or branch reachable
-          here; the maintainer chose to proceed without it
+          41 lines (wc -l): 24 asked and 17 answered events, so 17 dialogs
+          (distinct tool_use_id), covering the Environment and every axis but
+          AX-12, which earlier decisions settled. All were already in 23ae05a,
+          so none to drop here. The second log, c1c866a2, and the "OP-01 PR"
+          dialog a restart misfiled into bcb85b21 (BK-498) are in another
+          checkout; their move and commit happen there
       - file: sdd/BACKLOG.md
         section: "How this file works; BK-485"
         read_type: gate
@@ -104,3 +110,11 @@ phases:
           hatch run fast failed on two literal U+FEFF in OP-01/D5's options,
           committed in 23ae05a. Each became the escape `\ufeff`, which keeps the
           Python literal's value; nothing else in the record changed
+      - file: .claude/hooks/observe-ground.sh
+        section: "(full); scripts/observe_ground.py rearm, check, disarm; scripts/record_decision.py record"
+        read_type: reference
+        extract: >-
+          For BK-498: both hooks key on the payload's session_id and rearm arms
+          from transcript_path alone, ignoring SessionStart's source. That
+          explains the re-arm and the misfiled dialog the maintainer relayed;
+          why the restart reused the id is outside the repo's code
