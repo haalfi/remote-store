@@ -23,8 +23,8 @@ allowlist is the ground register plus files the maintainer names at the start).
   or the hook fails on a transcript naming ``/observe`` or one it cannot read, the session is locked
   instead: every call but the neutral ones is refused until ``/clear`` or a release.
 * ``check`` (``PreToolUse``): in an armed session, a call passes only if it
-  stays inside the allowlist; a released session may do anything but write its
-  record; every other session passes untouched, the wrapper's fail-closed
+  stays inside the allowlist; a released session may do anything but write or
+  name a record (below); every other session passes untouched, the wrapper's fail-closed
   branch included.
 * ``disarm`` (``SessionEnd``): when the session is cleared (``reason: clear``),
   turns its marker into a release; a session that ends any other way may resume
@@ -44,9 +44,9 @@ Only the maintainer can release, by a prompt.
 
 What the hook cannot do: tell why the harness resumed a cleared session; join
 a dialog split across two session ids, whose halves the recorder files under
-each; or release a session resumed in a new container, where no marker
-survives, so ``rearm`` arms it again and ``/observe release`` is still the way
-out.
+each; or release a session resumed in a new container or under a new
+session_id, where no marker is found under its id, so ``rearm`` arms it again
+and ``/observe release`` is still the way out.
 
 The skill re-runs its canary before every axis as well, so an unarmed session
 stops even where these events do not reach.
@@ -231,7 +231,7 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
 
     Its marker may be gone (a resume under a new session_id, or in a new container)
     while its transcript still holds the design dialogue, so a resume never runs
-    unarmed unless its marker is a release.
+    unarmed unless its marker is a release or that last prompt was ``/observe release``.
     """
     transcript = payload.get("transcript_path")
     if not transcript or not Path(transcript).is_file():
