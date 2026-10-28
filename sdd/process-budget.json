@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 306331,
+  "total": 306524,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,7 +16,7 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 4497,
+    ".claude/skills/observe/SKILL.md": 4690,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -167,6 +167,12 @@
       "from": 306232,
       "to": 306331,
       "reason": "PR #1186 review: Load's scope includes the Not in v1 rows the catalogue leaves to the entry"
+    },
+    {
+      "item": "BK-498",
+      "from": 306331,
+      "to": 306524,
+      "reason": "observe skill names the release step and the way out after a wrong resume"
     }
   ]
 }

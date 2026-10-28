@@ -516,15 +516,6 @@ no clause of the contract ships unexercised.
   `shared.md`'s. Runs after several entries' flows, which also decide core against extension beyond
   the 24 entries, never a session. Open decision: when, and after which entries.
 
-- [ ] **BK-498 — After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one**
-  spec: — · effort: M · audience: contributor.tooling, contributor.process
-  After `/clear` started a new session, a worker restart resumed OP-01's pre-clear `/observe` session, armed
-  (by `rearm` or a marker `disarm` never removed; unknown which): Bash and reads off the ground were refused,
-  and the new session's open dialog was answered into it, logged under OP-01's id and lost uncommitted. The
-  hook arms a resumed design session as designed; why the harness resumed it is not in the repo's code. Open
-  decision: what a hook could tell such a resume by, and how a wrongly armed session gets out by itself.
-  Detail: [dossier](backlog/bk-498-observe-resume-rearm.md)
-
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset

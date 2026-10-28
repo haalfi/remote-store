@@ -1,0 +1,127 @@
+id: BK-498
+title: "After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one"
+trigger: >-
+  On 2026-10-28, after `/clear` ended OP-01's `/observe` session, a worker
+  restart resumed that pre-clear session; `rearm` armed it again from its
+  transcript, so it refused Bash and off-ground reads, could not get out by
+  itself, and its decision logs stayed uncommitted in its container.
+source_items:
+  - BK-498
+audience:
+  - contributor.tooling
+  - contributor.process
+discovery_followups: []
+surprising_ripples: []
+co_shipped_items: []
+decisions:
+  - sdd/decisions/f13251b9-0e40-5453-864a-3e334c0cc137.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's dossier § First `/observe` run: "Bash was blocked, so the doc was
+      committed only after `/clear`", and research-spec-first-reset.md § 4 S2
+      ("a fresh agent, and a PreToolUse hook that denies reads outside an
+      allowlist") and S4 (the record is the session's only output). A way out
+      must be the maintainer's, not the model's, and must not let a session
+      that left the ground write the record.
+  - items: [BK-397]
+    verdict: unrelated
+    evidence: >-
+      BK-397's entry: pending is the `/pr` Decisions section and "one session's
+      log across two branches". BK-498's lost lines are a commit that never
+      ran, not a log naming or branch-binding question, and the chosen remedy
+      leaves record_decision.py unchanged.
+phases:
+  - id: orient
+    name: Read the item, the hook, the incident transcript and related items
+    steps:
+      - file: sdd/backlog/bk-498-observe-resume-rearm.md
+        section: "(full)"
+        read_type: gate
+        extract: "Evidence 1 to 4; disarm on clear unknown; prescription candidates"
+        outcome: ok
+      - file: scripts/observe_ground.py
+        section: "(full)"
+        read_type: gate
+        extract: "rearm re-arms from the transcript whatever became of the marker; disarm deletes it on clear"
+        outcome: ok
+      - file: .claude/hooks/observe-ground.sh
+        section: "(full)"
+        read_type: reference
+        extract: "check runs python only when the session's marker exists"
+        outcome: ok
+      - file: .claude/settings.json
+        section: "hooks"
+        read_type: reference
+        extract: "SessionStart matcher \"\" runs rearm for every source"
+        outcome: ok
+      - file: scripts/record_decision.py
+        section: "(full)"
+        read_type: reference
+        extract: "Log named by session_id, written to the container's tree; only a commit saves it"
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 1, 5"
+        read_type: reference
+        extract: "Canary and End: '/clear, then commit' is the only way out it names"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "First `/observe` run; Probed separately"
+        read_type: reference
+        extract: "Probe method: a fresh armed session tries calls once each with the maintainer's go-ahead"
+        outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "4 (S1 to S5)"
+        read_type: gate
+        extract: "The guarantees the fix must keep"
+        outcome: ok
+      - file: tests/scripts/test_observe_ground.py
+        section: "(full)"
+        read_type: reference
+        extract: "Harness copies the hook into a temp repo; disarm and rearm cases to extend"
+        outcome: ok
+  - id: reproduce
+    name: Establish whether disarm runs on /clear in a cloud session
+    steps:
+      - file: sdd/backlog/bk-498-observe-resume-rearm.md
+        section: "What the code shows"
+        read_type: verify
+        extract: >-
+          The incident's 1,421 transcript events hold no SessionEnd hook event;
+          the clear is a conversation_reset event (10ba6e13) and a
+          SessionStart:clear burst under c1c866a2. A probe session armed by a
+          written marker, then cleared by the maintainer, had its marker gone
+          afterwards (result events 2688f07c, f991e3b1): disarm runs on /clear
+          in a cloud session, and the event stream does not show it. So in the
+          incident disarm most likely removed the marker and rearm re-armed
+          from the transcript. A user-level hook capturing payloads was refused
+          by auto mode as self-modification, so no payload was recorded
+        outcome: unclear
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/scripts/test_observe_ground.py
+        section: "clear, release, refusals"
+        read_type: gate
+        extract: >-
+          Six tests failed before the fix, each for its reason: clear deleted
+          the marker, a cleared session resumed was refused Bash (the incident),
+          `/observe release` hit the usage refusal, refusals named no way out.
+          pytest-asyncio 1.4.1 in the fresh hatch env raises its unset-loop-scope
+          warning as an error at configure, so runs passed
+          `-o asyncio_default_fixture_loop_scope=function`
+        outcome: ok
+  - id: implement
+    name: Release marker in the hook, the skill's release step
+    steps:
+      - file: scripts/observe_ground.py
+        section: "arm, rearm, check, disarm"
+        read_type: gate
+        extract: "One marker shape for both exits; record closed to Write, Edit, NotebookEdit and Bash naming it"
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 0, 5; Rules"
+        read_type: gate
+        extract: "Release step commits the logs and designs nothing"
+        outcome: ok

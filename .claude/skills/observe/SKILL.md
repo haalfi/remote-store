@@ -22,6 +22,8 @@ any web result about it.
 
 ## Steps
 
+0. **`release`** as `$ARGUMENTS`: the hook released this session. Design
+   nothing; commit its `sdd/decisions/` logs.
 1. **Canary**, now and before every axis, also one closed without a question
    or in a resumed session: read `tmp/observe/canary-not-ground`. Unless the
    hook refuses it with "outside the ground", the session is not armed: stop
@@ -62,7 +64,8 @@ any web result about it.
 5. **End (S4)** when every axis row is closed. Set `**Status:**` to
    `Complete`, and tell the maintainer the record is uncommitted: `/clear`,
    then commit. A stop hook asking this session to
-   commit cannot be obeyed here; answer it the same way.
+   commit cannot be obeyed here; answer it the same way. Resumed armed after
+   `/clear`? The maintainer types `/observe release`.
 
 ## Rules
 

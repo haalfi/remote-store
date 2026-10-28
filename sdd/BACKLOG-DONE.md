@@ -476,6 +476,17 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-498 — After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one**
+  spec: — · effort: M · audience: contributor.tooling, contributor.process
+  `disarm` on `/clear` now turns the marker into a release instead of deleting it, and `rearm` never
+  re-arms a released session; a probe showed `disarm` runs on `/clear` in a cloud session. The maintainer's
+  `/observe release` releases an armed or locked session, whose refusals now name it. A released session
+  may do anything but write its record, so it can commit its decision logs. Out of the hook's reach: why
+  the harness resumed the cleared id, a dialog split across two session ids, and a resume into a new
+  container, which re-arms and is released the same way.
+  Detail: [dossier](backlog/bk-498-observe-resume-rearm.md). Trace:
+  [bk-498](traces/bk-498-observe-resume-rearm.yml).
+
 - [x] **BK-497 — The input files carry only research § 4, so per-entry findings in § 2 reach no session**
   spec: — · effort: S · audience: contributor.process, library.maintainer
   Each input file with a § 2 finding (all but OP-22 and OP-23) gains a section copying its passages

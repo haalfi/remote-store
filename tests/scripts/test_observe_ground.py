@@ -305,9 +305,93 @@ def test_a_symlink_into_code_is_denied(repo: Path) -> None:
 def test_clear_ends_the_restriction(repo: Path) -> None:
     _arm(repo, "/observe OP-01")
     assert _run(repo, "disarm", {"session_id": SESSION, "reason": "clear"}).returncode == 0
-    assert not (repo / "tmp/observe" / f"{SESSION}.json").exists()
+    state = json.loads((repo / "tmp/observe" / f"{SESSION}.json").read_text(encoding="utf-8"))
+    assert state == {"released": "clear", "record": "sdd/observe/records/OP-01.md"}
     assert _call(repo, "Bash", command="ls").returncode == 0
     assert _run(repo, "disarm", {"session_id": SESSION, "reason": "clear"}).returncode == 0
+
+
+def test_clear_without_a_marker_leaves_none(repo: Path) -> None:
+    assert _run(repo, "disarm", {"session_id": SESSION, "reason": "clear"}).returncode == 0
+    assert not (repo / "tmp/observe").exists()
+
+
+def test_clear_releases_an_unreadable_marker(repo: Path) -> None:
+    marker = repo / "tmp/observe" / f"{SESSION}.json"
+    marker.parent.mkdir(parents=True)
+    marker.write_text("{not json", encoding="utf-8")
+    assert _call(repo, "Bash", command="ls").returncode == 2
+    assert _run(repo, "disarm", {"session_id": SESSION, "reason": "clear"}).returncode == 0
+    assert _call(repo, "Bash", command="ls").returncode == 0
+
+
+# BK-498: a worker restart after /clear resumed the cleared session, and rearm armed it again.
+def test_a_cleared_session_is_not_rearmed_on_resume(repo: Path, tmp_path: Path) -> None:
+    _arm(repo, "/observe OP-01 sdd/research/prior.md")
+    _run(repo, "disarm", {"session_id": SESSION, "reason": "clear"})
+    transcript = tmp_path / "resumed.jsonl"
+    transcript.write_text(_TYPED + _TOOL_USE, encoding="utf-8")
+    payload = {"session_id": SESSION, "source": "resume", "transcript_path": str(transcript)}
+    assert _run(repo, "rearm", payload).returncode == 0
+    assert _call(repo, "Bash", command="git commit -m x").returncode == 0
+    assert _call(repo, "Read", file_path="src/remote_store/store.py").returncode == 0
+    refused = _call(repo, "Write", file_path="sdd/observe/records/OP-01.md", content="x")
+    assert refused.returncode == 2
+    assert "released" in refused.stderr
+
+
+def _lock(repo: Path, tmp_path: Path) -> None:
+    transcript = tmp_path / "locked.jsonl"
+    transcript.write_text(_SLUG, encoding="utf-8")
+    _run(repo, "rearm", {"session_id": SESSION, "source": "resume", "transcript_path": str(transcript)})
+
+
+@pytest.mark.parametrize("state", ["armed", "locked"])
+def test_release_frees_a_session_but_locks_its_record(repo: Path, tmp_path: Path, state: str) -> None:
+    if state == "armed":
+        _arm(repo, "/observe OP-01")
+    else:
+        _lock(repo, tmp_path)
+    assert _call(repo, "Bash", command="ls").returncode == 2
+    released = _arm(repo, "/observe release")
+    assert released.returncode == 0, released.stderr
+    assert "released" in released.stdout
+    assert _call(repo, "Bash", command="git add sdd/decisions && git commit -m x").returncode == 0
+    assert _call(repo, "Read", file_path="src/remote_store/store.py").returncode == 0
+    assert _call(repo, "ReadNotifications").returncode == 0
+    record = "sdd/observe/records/OP-01.md"
+    if state == "armed":
+        for tool, tool_input in (
+            ("Write", {"file_path": record, "content": "x"}),
+            ("Edit", {"file_path": str(repo / record)}),
+            ("NotebookEdit", {"notebook_path": record}),
+            ("Bash", {"command": f"echo x >> {record}"}),
+        ):
+            result = _call(repo, tool, **tool_input)
+            assert result.returncode == 2, tool
+            assert "fresh /observe session" in result.stderr
+    assert _call(repo, "Write", file_path="sdd/observe/records/OP-02.md", content="x").returncode == 0
+    # A later restart keeps it released, and a second release changes nothing.
+    transcript = tmp_path / "resumed.jsonl"
+    transcript.write_text(_TYPED, encoding="utf-8")
+    assert _run(repo, "rearm", {"session_id": SESSION, "transcript_path": str(transcript)}).returncode == 0
+    assert _arm(repo, "/observe release").returncode == 0
+    assert _call(repo, "Bash", command="ls").returncode == 0
+
+
+def test_release_without_an_observe_session_is_refused(repo: Path) -> None:
+    result = _arm(repo, "/observe release")
+    assert result.returncode == 2
+    assert "no /observe session to release" in result.stderr
+    assert not (repo / "tmp/observe").exists()
+
+
+def test_refusals_name_the_way_out(repo: Path, tmp_path: Path) -> None:
+    _arm(repo, "/observe OP-01")
+    for tool, tool_input in (("Bash", {"command": "ls"}), ("Read", {"file_path": "src/remote_store/store.py"})):
+        assert "/observe release" in _call(repo, tool, **tool_input).stderr
+    _lock(repo, tmp_path)
+    assert "/observe release" in _call(repo, "Bash", command="ls").stderr
 
 
 @pytest.mark.parametrize("reason", ["prompt_input_exit", "logout", "other", None])
@@ -497,6 +581,7 @@ def test_wrapper_fails_closed_only_for_the_armed_session(repo: Path, tmp_path: P
     other = {"session_id": OTHER, "tool_name": "Bash", "tool_input": {}}
     assert _run_bare(repo, path_env, "check", other).returncode == 0
     assert _run_bare(repo, path_env, "arm", {"session_id": OTHER, "prompt": "/observe OP-01"}).returncode == 2
+    assert _run_bare(repo, path_env, "arm", {"session_id": SESSION, "prompt": "/observe release"}).returncode == 2
     assert _run_bare(repo, path_env, "arm", {"session_id": OTHER, "prompt": "hello"}).returncode == 0
     assert _run_bare(repo, path_env, "rearm", {"session_id": OTHER}).returncode == 0
     assert _run_bare(repo, path_env, "disarm", {"session_id": SESSION, "reason": "clear"}).returncode == 0

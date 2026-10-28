@@ -6,7 +6,8 @@
 # in scripts/observe_ground.py; its docstring holds the rules.
 #
 # `check` runs on every tool call of every session, so it returns at once unless
-# this session's own marker (tmp/observe/<session_id>.json) exists. Only then
+# this session's own marker (tmp/observe/<session_id>.json, armed, locked or
+# released) exists. Only then
 # does it need python, and it fails closed: a missing interpreter or script
 # blocks the armed session's call instead of letting it read past its ground.
 # Other sessions are never blocked; nor is `disarm`, nor `arm` or `rearm` for a
