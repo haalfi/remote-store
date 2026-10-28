@@ -1,0 +1,106 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (audit-025 of the OP-01 record)"
+trigger: >-
+  The maintainer asked for a review of OP-01's record before step 5's spec:
+  whether its answers give one consistent view of a read, which requirements
+  contradict, and where implementation gets hard. The findings were then
+  compiled into audit-025, carried into the record as reopens, and the
+  session's two blind spots filed as BK-499.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups:
+  - BK-499
+surprising_ripples: []
+co_shipped_items: []
+decisions:
+  - sdd/decisions/2b6d86ca-96de-5354-9e64-6aab4248ddfd.jsonl
+expected_ripples:
+  - sdd/BACKLOG.md
+  # Reopens owe the record's Axis status table too: each axis whose decision
+  # a reopen names moves to "explicitly open" (axes.md's states), which the
+  # skill's "keep each axis's row current" states only for the session.
+  - sdd/observe/records/OP-01.md
+orient:
+  - items: [BK-498]
+    verdict: unrelated
+    evidence: >-
+      BK-498's entry: a worker restart resuming an armed /observe session. It
+      is the hook's re-arm, not what a session checks; BK-499's fix surface is
+      the skill's steps and RFC-0024 § 9, so they overlap only in the skill
+      file and stay separate.
+  - items: [BK-496]
+    verdict: unrelated
+    evidence: >-
+      BK-496 runs after several entries' flows; O24's async stream shape is a
+      session decision, not the API spec's handle behaviour.
+  - items: [BK-489]
+    verdict: unrelated
+    evidence: >-
+      Audit-025 § 4 ranks implementation cost for step 5 onward; the kernel
+      line's revive-or-drop decision (RFC-0024 D10) waits on the read() flow
+      and is not decided by an estimate.
+phases:
+  - id: review
+    name: Review the OP-01 record
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          D1 to D44 and O1 to O16 read whole; the core view holds, seven
+          tensions and five gaps outside O14 to O16 found
+      - file: sdd/specs/052-store-key.md
+        section: "KEY-013; Notes (Resolution's outcomes)"
+        read_type: reference
+        extract: "BlockedByItem for a key below an item, the base of C5"
+      - file: sdd/specs/051-store-tree.md
+        section: "TREE-001"
+        read_type: reference
+        extract: "No entity is both a folder and an item, which S3 can violate under O3 (C5)"
+      - file: src/remote_store/backends/
+        section: "rg prefetch|os.replace|retries|max_attempts|retry_total"
+        read_type: verify
+        extract: >-
+          Retries map max_attempts alone to each SDK (_s3_base.py:505,
+          _s3_boto3.py:1066, _s3_pyarrow.py:604, _azure_common.py:392); Local
+          writes by os.replace; no prefetch call
+      - file: paramiko/sftp_file.py
+        section: "SFTPFile._start_prefetch, _prefetch_thread, _async_response (5.1.0)"
+        read_type: verify
+        extract: >-
+          max_concurrent_requests caps extents in flight; each answer moves to
+          _prefetch_data and frees its slot, so held data is unbounded (§ 4
+          row 5)
+  - id: compile
+    name: Audit, reopens and the harness item
+    steps:
+      - file: .claude/skills/observe/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Step 3's consistency check runs per decision against earlier ones;
+          step 4 records a reopen as an open item; the two blind spots of
+          audit-025 § 5
+      - file: sdd/audits/audit-024-spec-003-052-053-design.md
+        section: "header block, § 3"
+        read_type: reference
+        extract: "Motivation, Scope, Method, Verdict; a contradiction table with severity"
+      - file: sdd/AUTHORING.md
+        section: "File classification table"
+        read_type: gate
+        extract: "sdd/audits/audit-*.md is dual, so no repo-only marker"
+      - file: sdd/observe/axes.md
+        section: "Axis states"
+        read_type: gate
+        extract: "decided, explicitly open (an open item with what blocks it), not applicable"
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "Diagnosis at most five lines; BK-499 from gen-backlogid-check's next safe ID"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Backlog item touched: live trace, orient; no code or spec trigger"
