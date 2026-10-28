@@ -59,3 +59,181 @@ phases:
           no other FAIL kind (Grep "^## " and "FAIL no Asked line$" both 44);
           49 answered dialogs no decision pairs with (Grep "^- " from l.348),
           paired by hand by the readers (brief item 4)
+  - id: readers
+    name: Step 2, two unprimed readers
+    steps:
+      # Two fresh general-purpose agents, spawned together with the skill's
+      # brief verbatim (placeholders: the record, the pairs file) and nothing
+      # else: no dossier candidate, no audit-025. Reader 1 is the first
+      # spawned, reader 2 the second; labels below are each report's own.
+      # Both paired all 44 decisions by hand: every decision has a dialog,
+      # D2 two (shape, seek follow-up); the other 4 of the 49 are the
+      # Environment, the backlog item and PR #1188's two dialogs. No
+      # decision lacks a dialog.
+      - file: sdd/observe/records/OP-01.md
+        section: "(full), with the pairs file, axes.md and the Session's ground"
+        read_type: gate
+        extract: >-
+          Counted from each report's own labels and bullets. Reader 1: 9
+          under brief item 1 (1a to 1i), 6 under 2 (2a to 2f, 2f marked
+          recorded), 4 under 3, 8 decisions under 4, one outside the four, 14
+          dropped. Reader 2: 8 under item 1 (1a to 1h), 9 under 2 (2a to 2i),
+          4 under 3, 10 decisions under 4, 17 dropped. Each raw finding and
+          its verdict is listed under the verify phase
+  - id: primed
+    name: Step 3, primed review against backends, SDKs and the runtime
+    steps:
+      - file: sdd/observe/ground-register.md
+        section: "Artifacts"
+        read_type: reference
+        extract: "Formal models in the ground: StoreAxioms.als/.lean, KeyModel.lean"
+      - file: sdd/formal/lean/KeyModel.lean
+        section: "rg KEY-0|TREE-00 over sdd/formal, uncapped"
+        read_type: verify
+        extract: >-
+          @spec KEY-001 l.273, KEY-013 l.631; TREE-001 and TREE-002 tagged in
+          both StoreAxioms files: dossier candidate 4 holds (O30)
+      - file: sdd/specs/052-store-key.md
+        section: "KEY-002 to KEY-005, KEY-013; Tested against"
+        read_type: reference
+        extract: >-
+          D9's refusal list KEY-002, KEY-004, KEY-005 matches the refusing
+          clauses; KeyModel "informs review; no bridge makes it govern"
+      - file: src/remote_store/backends/_azure.py
+        section: "read (l.669 to 707); rg hdi_isfolder over backends, uncapped"
+        read_type: verify
+        extract: >-
+          Evidence only (RFC-0024 § R1): an HNS directory is a blob carrying
+          hdi_isfolder, told apart by a HEAD before streaming, so a folder is
+          found on the success path (O29)
+      - file: src/remote_store/backends/_sftp.py
+        section: "write_atomic docstring (l.1052 to 1080); _promote, _displace (l.2273 to 2329)"
+        read_type: verify
+        extract: >-
+          Evidence only: without posix-rename the target is displaced first,
+          a window with no item at the key (O42)
+      - file: pyproject.toml
+        section: "hatch env: socket, urllib3 2.8.0, paramiko 5.1.0, asyncio, botocore 1.43.117, aiohttp 3.14.5 via inspect.getsource"
+        read_type: verify
+        extract: >-
+          getaddrinfo runs with no timeout before settimeout in
+          socket.create_connection, urllib3 create_connection and
+          SSHClient.connect; loop.getaddrinfo runs in an executor (O41).
+          Connect timeouts are their own SDK types (O27). SFTPClient.rename's
+          newpath "must not exist already" (O42)
+      - file: pyproject.toml
+        section: "hatch env: io.BufferedReader runs (CPython 3.13.17)"
+        read_type: verify
+        extract: >-
+          readline() and next(iter(f)) over a 10,000,000-byte raw stream with
+          no newline return 10,000,000 bytes (O34); readinto at end returns
+          0 (O36, O25's); open('a.txt/b') on Local raises NotADirectoryError
+          errno 20 (O40)
+      # Primed candidates and verdicts:
+      #   P1 DNS resolution unbounded by T_connect in the sync form: holds,
+      #      O41.
+      #   P2 Azure HNS tells a folder on the success path: holds, merged
+      #      into O29 with dossier candidate 3.
+      #   P3 SFTP without posix-rename has no atomic replace: holds, a note
+      #      for O6's sessions, O42 (O6 routes the constraint, so no reopen).
+      #   P4 Local on NFS against D23 and D25: filed, O43, every backend
+      #      claim not run.
+      #   P5 O3 metadata-only change moves Azure's ETag: filed, O44, not
+      #      run.
+      #   Dropped: Memory keeping a replaced item's bytes alive for a pinned
+      #   stream against D40 (the same as Local's descriptor keeping the old
+      #   inode, which D25 relies on); Timeout an OSError while unavailable is
+      #   not (no decision claims OSError compatibility); open() on a folder
+      #   raising PermissionError on Windows (a mapping detail, not run, no
+      #   decision affected); ResourceWarning not emitted by a custom io
+      #   subclass (the library emits it itself, D17).
+  - id: verify
+    name: Step 4, verify every candidate and file what holds
+    steps:
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "OP-01 review candidates"
+        read_type: gate
+        extract: >-
+          Nine candidates; K1 to K8 hold and are O27 to O34 in order, K9 is
+          dropped; the section now records each verdict
+      - file: sdd/observe/records/OP-01.md
+        section: "D1 to D44, O1 to O26 re-read before quoting; Axis status; Open items"
+        read_type: verify
+        extract: >-
+          O27 to O44 written, opened by a line naming this review; axis rows
+          list each item that reopens, gaps or names as dependent one of
+          their decisions; no decision, Environment row or axis decision
+          edited; Status stays Complete
+      # Raw findings and verdicts. R1 = reader 1, R2 = reader 2, K = the
+      # dossier's candidates in their listed order.
+      #   R1 1a, R2 1c, K1 (E7's stalled connect timeout vs unavailable):
+      #     holds, O27.
+      #   R1 1b, R2 1b, K2 (D22's changed vs D39/D42/D43's unavailable),
+      #   with R1 3a, R2 3b (D31's reason): holds, O28. The End pass's
+      #     reason for dropping K2 (a declared variation) answers D22's
+      #     wording but not D31's reason, which the deviation makes false.
+      #   R1 1c, R2 1a, K3 (D9's "failure path only" vs D41): holds as a
+      #     note, O29 (D9's Decision and check agree with D41).
+      #   R1 2a, R2 2a, K4 (Session's formal-models line): holds, O30.
+      #   R1 1e and 2b, R2 2g and § 4 D25, K5 (D25's visibility sentence):
+      #     holds, O31.
+      #   R1 3b, R2 3a, K6 (D12/D38's bound vs D39's restart): holds as a
+      #     note, O32.
+      #   R1 1f, R2 1d, K7 (D34's changed row names E4): holds, O33.
+      #   R1 1d, K8 (readline vs D40): holds, O34 (run).
+      #   K9 (axis rows with no open item behind them): dropped. At c58ee74
+      #     every "explicitly open" row named O5, O14, O15 or O16, which the
+      #     BK-499 runs' copy had removed (RFC-0028 § Evidence); at 888c56a
+      #     both readers checked every row against the record's rule and
+      #     found none missing.
+      #   R1 1g, R2 1e (O20's history at D22's open): holds, O35. O20 names
+      #     D21's clause only.
+      #   R1 § 4 D18, R2 2c (a caller error moves Open to Failed): holds,
+      #     O36. R1's readinto-returns-0 point is covered by O25.
+      #   R2 2d, R1 and R2 § 4 D38 (caller-level table): holds, O37.
+      #   R1 2d, R2 2i (O11's summary): holds as a note, O38.
+      #   R2 2e (D35's open list beyond O26): holds, O39; its unavailable
+      #     and timeout are O26's.
+      #   R1 outside the four (D8's and D42's dialog reasons): holds, O40.
+      #   R1 1h, R2 1h (D6 and D7 vs D26): dropped. D6's check ties "the
+      #     content" to AX-8, which D26 narrows, and the AX-12 row states the
+      #     E4 exception.
+      #   R1 1i, R2 1f (D36's E8 at s4 vs D19): dropped. D36 swallows the
+      #     failure, so s4 reports nothing, as D19 says; O16 covers E14,
+      #     whose close does raise.
+      #   R2 1g, R1 and R2 § 4 D11 (credential refresh changes an
+      #     outcome): dropped. A held token changes an outcome only through
+      #     E11 or E7 to E10 on the credential service, both Environment
+      #     rows; credentials are configuration (D13's check).
+      #   R1 2c (D21's list omits OP-10, OP-11): dropped, for R2's reason:
+      #     a delete takes content to Absent, not between two contents.
+      #   R1 2e, R2 2h (D9's "(access, transport, decode)"): dropped. The
+      #     parenthetical gives examples of what AX-10 types; D34 enumerates.
+      #   R1 3c, R2 3c (D25's "holds natively"): dropped. On SFTP and an
+      #     undeclared endpoint O2 and O3 both fail unavailable, so O3's
+      #     rights still equal O2's; the category is O28's.
+      #   R1 3d, R2 3d (D2's reason vs (i)): dropped. D2's Decision itself
+      #     says "Random access, Parquet's included, is OP-02's"; O1 carries
+      #     it to OP-02.
+      #   R2 § 4 D27 (authentication failed's builtin): dropped; D29
+      #     decides the same.
+      #   R1 and R2 § 4 D43 (table, "never requested"): dropped. The table's
+      #     rows name their deciding decisions; "never requested" is D44's
+      #     outcome; Termination's and O3's deviations name Local and SFTP
+      #     only, so an unnamed S3 endpoint takes the two its dialog named.
+      #   R1 and R2 § 4 D9, D4, D6 and R2's minor additions (D12, D23, D24,
+      #     D41): dropped. Each restates a ground clause or an earlier
+      #     decision it cites, or elaborates its dialog's option, adding no
+      #     outcome.
+      #   R2 2b (D28's short body vs D26): dropped, for R1's reason: E12 is
+      #     a World row, E4's read "ends at the end it meets".
+      #   R2 outside the four (AX-12 row's claims): dropped; axes.md lets an
+      #     axis be decided by earlier decisions.
+      #   R2 2f (D34's table lacks unpinnable unavailable and E7's timeout):
+      #     covered by O28 and O27; its LookupError by O26.
+      #   Already recorded, named by the readers themselves: D35's lists
+      #     (O14, O26), E15 in D25 (O15), D19's s4 (O16), D33 vs D34 (O17),
+      #     D39's "next read" (O18), Windows (O19), D21 vs D9 (O20), TREE-001
+      #     on S3 (O21), E13 across backends (O22), D12's reason (O23), the
+      #     async shape (O24), the file object's methods (O25), LookupError,
+      #     the re-raised object and the open list's unavailable (O26).
