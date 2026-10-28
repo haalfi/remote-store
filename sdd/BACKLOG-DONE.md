@@ -481,8 +481,9 @@ ships them.
   `disarm` on `/clear` now turns the marker into a release instead of deleting it, and `rearm` never
   re-arms a released session; a probe showed `disarm` runs on `/clear` in a cloud session. The maintainer's
   `/observe release` releases an armed or locked session; its tool-call refusals and `rearm`'s lock notice
-  now name it. A released session may do anything but write a record under `sdd/observe/records/` or
-  name one in a Bash command, so it can commit its decision logs. Out of the hook's reach: why
+  now name it. A released session may do anything but write under `sdd/observe/records/` or
+  `tmp/observe/` or name either in a Bash command, so it can commit its decision logs but neither write a
+  record nor drop its own release. Out of the hook's reach: why
   the harness resumed the cleared id, a dialog split across two session ids, and a cleared session resumed
   in a new container or under a new session_id, which re-arms until `/observe release` is typed; a typed
   release holds for every later resume, since `rearm` reads it from the transcript.

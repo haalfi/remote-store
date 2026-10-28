@@ -15,6 +15,9 @@ discovery_followups:
   # pytest-asyncio 1.4.1's unset-loop-scope warning aborted every pytest run;
   # fixed in PR #1190, ported here until it merged, then taken in by merging master.
   - BUG-345
+  # Two misleading hook messages seen in the live probe (wrong record named,
+  # "/observe release." read as an arming); filed, not fixed here.
+  - BK-500
 surprising_ripples: []
 co_shipped_items: []
 decisions:
@@ -106,6 +109,22 @@ phases:
           by auto mode as self-modification, so no payload was recorded: a
           limit of the probe, not of the dossier
         outcome: ok
+      - file: "Probe session session_01QqsRzKrxKk9F4n6NERU7YM, PR #1189 at d85cc02"
+        section: "events: hook_response per hook_name and session_id"
+        read_type: verify
+        extract: >-
+          Live run of the release on the cloud harness. Armed via the hook
+          (Bash and Read refused, naming /observe release); /observe release
+          printed the release notice and wrote {"released": "release"}; record
+          writes and rm or Write of the marker refused, git status allowed.
+          Re-armed, then /clear: SessionStart:clear under a new id 40002f14,
+          and the marker became {"released": "clear", ...}. A later
+          cross-session message woke the pre-clear session (SessionStart:resume
+          under af943d1e), the incident's shape, and it stayed released: Read
+          and Bash passed, Bash naming tmp/observe/ was refused. A typed
+          "/observe release." (trailing full stop) was refused as a non-fresh
+          arm
+        outcome: ok
   - id: tests
     name: Failing tests first
     steps:
@@ -117,15 +136,16 @@ phases:
           deleted the marker, a cleared session resumed was refused Bash (the
           incident), `/observe release` hit the usage refusal, refusals named no
           way out. At the PR's close, this file run against master's hook (a
-          1bcab30 worktree with the test file copied in) fails 9 of 88 IDs:
+          1bcab30 worktree with the test file copied in) fails 11 of 91 IDs:
           test_clear_ends_the_restriction,
           test_clear_releases_an_unreadable_marker,
           test_a_cleared_session_is_not_rearmed_on_resume, both
-          test_release_frees_a_session_but_locks_its_record variants,
+          test_release_frees_a_session_but_locks_its_record variants, both
+          test_a_released_session_cannot_drop_its_own_release variants,
           test_release_without_an_observe_session_is_refused,
           test_refusals_name_the_way_out, and the release-after-tool and
           release-before-tool variants of
-          test_a_released_transcript_leaves_a_resume_unarmed.
+          test_a_released_transcript_resumes_released.
           pytest-asyncio 1.4.1 in the fresh hatch env raises its unset-loop-scope
           warning as an error at configure, so runs passed
           `-o asyncio_default_fixture_loop_scope=function`
@@ -165,3 +185,113 @@ phases:
         read_type: gate
         extract: "Step 0 commits every uncommitted decision log, then stops; Ground binds an armed session only"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1189 --trace-block-only` at head 26cb89b.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1189 --trace-block-only"
+  pr: 1189
+  review_rounds: 15
+  submissions: 9
+  findings: 31
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.72
+    - round: 2
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.18
+    - round: 3
+      findings: 8
+      origin: {loop-introduced: 1, original: 5, pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 8}
+      duration_hours: 0.23
+    - round: 4
+      findings: 4
+      origin: {loop-introduced: 1, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 3, unknown: 1}
+      duration_hours: 0.24
+    - round: 5
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.64
+    - round: 6
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 7
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.34
+    - round: 8
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.37
+    - round: 9
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.58
+  by_file:
+    - path: "scripts/observe_ground.py"
+      findings: 16
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 4
+    - path: "sdd/traces/bk-498-observe-resume-rearm.yml"
+      findings: 4
+    - path: "pyproject.toml"
+      findings: 3
+    - path: ".claude/skills/observe/SKILL.md"
+      findings: 2
+    - path: ".claude/hooks/observe-ground.sh"
+      findings: 1
+    - path: "tests/scripts/test_observe_ground.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-498-observe-resume-rearm.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/f13251b9-0e40-5453-864a-3e334c0cc137.jsonl"
+    - "sdd/decisions/ffc739ac-9133-4598-b0f1-0940c49d28a7.jsonl"
+    - "sdd/process-budget.json"
+  review_driven_commits:
+    - sha: "59ba721"
+      subject: "fix: address PR #1189 review"
+    - sha: "5f9f674"
+      subject: "fix: address PR #1189 review"
+    - sha: "f8cd3a1"
+      subject: "fix: address PR #1189 review"
+    - sha: "53ab566"
+      subject: "fix: address PR #1189 review"
+    - sha: "5e67145"
+      subject: "BK-498: decision log"
+    - sha: "a9cc687"
+      subject: "Merge master (BUG-345, PR #1190) into BK-498"
+    - sha: "21daa57"
+      subject: "BK-498: Trace lists the split review dialog's log; BUG-345 note matches the merge"
+    - sha: "d8eb978"
+      subject: "fix: address PR #1189 review"
+    - sha: "c1452b0"
+      subject: "BK-498: decision log"
+    - sha: "1af335e"
+      subject: "Merge master (#1191) into BK-498"
+    - sha: "2cb4a3c"
+      subject: "fix: address PR #1189 review"
+    - sha: "d85cc02"
+      subject: "fix: address PR #1189 review"
+    - sha: "635de63"
+      subject: "BK-498: Trace records the live probe of the release"
+    - sha: "028631d"
+      subject: "fix: address PR #1189 review"
+    - sha: "26cb89b"
+      subject: "BK-498: File BK-500 for two misleading hook messages from the live probe"
+  ci: {verdict: PENDING, failed: 0, pending: 11}
