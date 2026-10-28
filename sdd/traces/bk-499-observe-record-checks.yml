@@ -206,5 +206,23 @@ phases:
         read_type: gate
         extract: "The brief assigns the hand pairing of a decision with no dialog; none found is a finding"
         outcome: misleading
+  - id: review_fixes_4
+    name: Fix pass from the PR #1192 fourth review
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Parsing rules, fixed by step 0"
+        read_type: gate
+        extract: >-
+          The answer is tool_response.answers. observe_dialogs.py now reads it there; OP-01's
+          two logs carry it on all 18 answered events, equal to tool_input's. The test fixture
+          now writes the recorder's shape, and a case where the maps differ failed first
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "OP-01 review candidates"
+        read_type: gate
+        extract: >-
+          Each candidate names the runs that raised it with their finding labels, the only
+          derivation, since the run reports are uncommitted; RFC-0028's Evidence points there
+        outcome: ok
 # OP-01 candidates, unverified: listed in BK-485's dossier, § OP-01 review candidates,
 # which /observe-review OP-01 verifies.

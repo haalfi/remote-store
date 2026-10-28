@@ -13,8 +13,9 @@ session can read it::
 
 A decision passes when each quoted opening is the start of exactly one answered
 question in the logs and each quoted answer is the start of that question's
-logged answer; a question asked more than once pairs by the quoted answer, and
-a dismissed dialog counts as unanswered. Anything else fails: a ``###`` heading
+logged answer, read from the event's ``tool_response`` (RFC-0018). A question
+asked more than once pairs by the quoted answer, and a dismissed dialog counts
+as unanswered. Anything else fails: a ``###`` heading
 off the decision form, a record with no decision, no ``Asked:`` line, one off
 that form (named as such), no question or several, or another answer.
 
@@ -148,7 +149,10 @@ def dialogs(logs: list[Path]) -> list[Dialog]:
                 continue
             given = event.get("tool_input") or {}
             options = {q.get("question"): q.get("options") or [] for q in given.get("questions") or []}
-            for question, answer in (given.get("answers") or {}).items():
+            # RFC-0018's parsing rules: the answer is tool_response's; the harness also writes into tool_input.
+            response = event.get("tool_response")
+            answers = response.get("answers") if isinstance(response, dict) else None
+            for question, answer in (answers if isinstance(answers, dict) else {}).items():
                 if str(answer).startswith(_DISMISSED):
                     continue
                 labels = {o.get("label"): o.get("description", "") for o in options.get(question, [])}

@@ -114,9 +114,10 @@ found C2, which audit-025 itself carries as a note (`OP-01/O18`). Hence two
 readers, unioned, beside the End pass; C2's class, an adopted option's
 wording against an earlier decision, stays this step's known bound. Run 2
 had the adopted option's text beside each Decision; run 1 did not. Every run
-also raised candidates outside audit-025, listed unverified in the
-[BK-499 trace](../traces/bk-499-observe-record-checks.yml) with the runs'
-inputs.
+also raised candidates outside audit-025, listed unverified, each with the
+runs that raised it, in
+[BK-485's dossier](../backlog/bk-485-spec-first-reset.md#op-01-review-candidates-bk-499-2026-10-28);
+the runs' inputs are in the [BK-499 trace](../traces/bk-499-observe-record-checks.yml).
 
 ## Alternatives Considered
 

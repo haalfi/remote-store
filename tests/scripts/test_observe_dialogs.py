@@ -24,12 +24,17 @@ ROOT_Q = "AX-1, the root. Scenario: read(''). What is it?"
 SHAPE = "AX-1, the stream's shape. Scenario: copyfileobj. What object?"
 
 
-def _answered(question: str, answer: str, options: dict[str, str] | None = None) -> str:
+def _answered(question: str, answer: str, options: dict[str, str] | None = None, harness: str | None = None) -> str:
+    # The recorder's shape: the harness also writes into tool_input, but tool_response is authoritative (RFC-0018).
     opts = [{"label": k, "description": v} for k, v in (options or {answer: "the chosen option"}).items()]
     return json.dumps(
         {
             "event": "answered",
-            "tool_input": {"questions": [{"question": question, "options": opts}], "answers": {question: answer}},
+            "tool_input": {
+                "questions": [{"question": question, "options": opts}],
+                "answers": {question: harness or answer},
+            },
+            "tool_response": {"answers": {question: answer}},
         }
     )
 
@@ -168,6 +173,14 @@ def test_the_same_question_answered_twice_pairs_by_the_quoted_answer(tmp_path: P
     result = _run(tmp_path, record, [_answered(FORMS, "Bytes"), _answered(FORMS, "Text only")])
     assert result.returncode == 0, result.stdout
     assert "Answer: Text only\n" in result.stdout
+
+
+def test_the_answer_is_read_from_tool_response(tmp_path: Path) -> None:
+    # RFC-0018's parsing rules: tool_response.answers governs where it and tool_input differ.
+    record = _record(_decision(1, ("AX-1, forms.", "Bytes")))
+    result = _run(tmp_path, record, [_answered(FORMS, "Bytes", harness="Text")])
+    assert result.returncode == 0, result.stdout
+    assert "Answer: Bytes\n" in result.stdout
 
 
 def test_unpaired_dialogs_carry_their_answer_and_option(tmp_path: Path) -> None:

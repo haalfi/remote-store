@@ -45,20 +45,22 @@ maintainer typed `/observe exists` in a fresh session on `bk-485-observe`.
 ## OP-01 review candidates (BK-499, 2026-10-28)
 
 Step 5's review (RFC-0028 P2) has not run on OP-01. BK-499's untold runs on
-the record at `c58ee74` raised these outside audit-025, each in two or more of
-three runs ([trace](../traces/bk-499-observe-record-checks.yml), phase
-`evidence`). None was re-read against the record; `/observe-review OP-01`
-verifies them and files what holds as open items:
+the record at `c58ee74` raised these outside audit-025. Each names the runs
+that raised it, with that run's finding label: E the End pass, R1 and R2 the
+two reader runs (RFC-0028 § Evidence; the reports came back to BK-499's
+session and are not committed, so the labels are their only trace). None was
+re-read against the record; `/observe-review OP-01` verifies them and files
+what holds as open items:
 
-- D12 vs D28 and D34: E7's "connect never completes" is timeout and unavailable.
-- D22 vs D39, D42 and D43: a lost pin fails changed or unavailable.
-- D9's adopted "failure path only" vs D41's NP2.
-- The Session's "no decision cites a clause they check" vs KEY-001 and KEY-013 in D4 and D9.
-- D25's "when an O3 change becomes visible is the backend's", in neither D41 nor D43.
-- D38's and D12's bound on waiting vs D39's limit restarting.
-- D34's changed row naming E4 vs D26.
-- D2's `readline` vs D40's memory bound.
-- Axis rows "one reopen explicitly open" with no open item behind them.
+- D12 vs D28 and D34: E7's "connect never completes" is timeout and unavailable (E 3, R1 1a, R2 1d).
+- D22 vs D39, D42 and D43: a lost pin fails changed or unavailable (R1 1b, R2 1c; E dropped it as a declared variation).
+- D9's adopted "failure path only" vs D41's NP2 (E 1, R1 1f, R2 1a).
+- The Session's "no decision cites a clause they check" vs KEY-001 and KEY-013 in D4 and D9 (E 12, R1 § 2, R2 2b).
+- D25's "when an O3 change becomes visible is the backend's", in neither D41 nor D43 (E 7, R1 § 2, R2 2d).
+- D38's and D12's bound on waiting vs D39's limit restarting (E 8, R1 § 3, R2 3a).
+- D34's changed row naming E4 vs D26 (E 4, R1 1e; R2 dropped it).
+- D2's `readline` vs D40's memory bound (E 9, R2 1g).
+- Axis rows "one reopen explicitly open" with no open item behind them (R1 § 2, R2 2f).
 
 OP-01's record predates the Asked line, so the review's readers pair its
 decisions by hand (`/observe-review` step 1).
