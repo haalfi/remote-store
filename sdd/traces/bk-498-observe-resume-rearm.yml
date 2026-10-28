@@ -117,14 +117,15 @@ phases:
           deleted the marker, a cleared session resumed was refused Bash (the
           incident), `/observe release` hit the usage refusal, refusals named no
           way out. At the PR's close, this file run against master's hook (a
-          c58ee74 worktree with the test file copied in) fails 8 of 86 IDs:
+          1bcab30 worktree with the test file copied in) fails 9 of 88 IDs:
           test_clear_ends_the_restriction,
           test_clear_releases_an_unreadable_marker,
           test_a_cleared_session_is_not_rearmed_on_resume, both
           test_release_frees_a_session_but_locks_its_record variants,
           test_release_without_an_observe_session_is_refused,
-          test_refusals_name_the_way_out,
-          test_a_release_before_any_tool_leaves_a_resume_unarmed.
+          test_refusals_name_the_way_out, and the release-after-tool and
+          release-before-tool variants of
+          test_a_released_transcript_leaves_a_resume_unarmed.
           pytest-asyncio 1.4.1 in the fresh hatch env raises its unset-loop-scope
           warning as an error at configure, so runs passed
           `-o asyncio_default_fixture_loop_scope=function`
@@ -152,8 +153,10 @@ phases:
           A release closes every file under sdd/observe/records/, its own
           record or another entry's; MultiEdit joins Write, Edit and
           NotebookEdit; check's refusals and rearm's lock notice name /observe
-          release; a release before the first tool use ends the arming rearm
-          reads. Each pinned by a test seen failing first
+          release; a typed /observe release anywhere in the transcript ends the
+          arming rearm reads (the verification pass showed a scan stopping at
+          the first tool use never saw a real one, since the canary Read comes
+          first). Each pinned by a test seen failing first
         outcome: ok
       - file: .claude/skills/observe/SKILL.md
         section: "frontmatter, Ground, Step 0"

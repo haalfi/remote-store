@@ -506,15 +506,34 @@ def test_rearm_takes_the_last_observe_prompt_before_any_tool(
     assert state["entry"] == entry
 
 
-def test_a_release_before_any_tool_leaves_a_resume_unarmed(repo: Path, tmp_path: Path) -> None:
-    # A resume in a new container has no marker; the transcript's release still ends the arming.
+_RELEASE_PROMPT = '{"type":"user","message":{"content":"/observe release"}}\n'
+# A tool result or the model's own text quoting the prompt is no release by the maintainer.
+_QUOTED = (
+    '{"type":"user","message":{"content":[{"type":"tool_result","content":"/observe release"}]}}\n'
+    '{"type":"assistant","message":{"content":[{"type":"text","text":"/observe release"}]}}\n'
+)
+
+
+@pytest.mark.parametrize(
+    ("lines", "armed"),
+    [
+        # The order of a real session: its canary Read runs before the maintainer can release.
+        ([_TYPED, _TOOL_USE, _RELEASE_PROMPT], False),
+        ([_TYPED, _RELEASE_PROMPT, _TOOL_USE], False),
+        ([_TYPED, _TOOL_USE, _QUOTED], True),
+    ],
+    ids=["release-after-tool", "release-before-tool", "quoted-release"],
+)
+def test_a_released_transcript_leaves_a_resume_unarmed(
+    repo: Path, tmp_path: Path, lines: list[str], armed: bool
+) -> None:
+    # A resume in a new container or under a new id has no marker; the transcript's release still ends the arming.
     transcript = tmp_path / "resumed.jsonl"
-    release = '{"type":"user","message":{"content":"/observe release"}}\n'
-    transcript.write_text(_TYPED + release + _TOOL_USE, encoding="utf-8")
+    transcript.write_text("".join(lines), encoding="utf-8")
     payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
     result = _run(repo, "rearm", payload)
     assert result.returncode == 0, result.stderr
-    assert not (repo / "tmp/observe").exists()
+    assert (repo / "tmp/observe" / f"{OTHER}.json").exists() is armed
 
 
 def test_a_rearm_whose_transcript_cannot_be_read_is_locked(

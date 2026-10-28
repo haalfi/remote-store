@@ -18,13 +18,13 @@ allowlist is the ground register plus files the maintainer names at the start).
 * ``rearm`` (``SessionStart``): a resumed or compacted session that ``arm``
   armed is armed again, from the last ``/observe`` prompt before its first tool
   use, so it never resumes unarmed, whatever became of its marker, unless the
-  marker is a release or that last prompt was ``/observe release``. When those
+  marker is a release or the transcript holds a typed ``/observe release``. When those
   arguments no longer arm (the catalogue reopened, an entry or named path gone),
   or the hook fails on a transcript naming ``/observe`` or one it cannot read, the session is locked
   instead: every call but the neutral ones is refused until ``/clear`` or a release.
 * ``check`` (``PreToolUse``): in an armed session, a call passes only if it
-  stays inside the allowlist; a released session may do anything but write or
-  name a record (below); every other session passes untouched, the wrapper's fail-closed
+  stays inside the allowlist; a released session may do anything but write a
+  record or name one in Bash (below); every other session passes untouched, the wrapper's fail-closed
   branch included.
 * ``disarm`` (``SessionEnd``): when the session is cleared (``reason: clear``),
   turns its marker into a release; a session that ends any other way may resume
@@ -44,9 +44,10 @@ Only the maintainer can release, by a prompt.
 
 What the hook cannot do: tell why the harness resumed a cleared session; join
 a dialog split across two session ids, whose halves the recorder files under
-each; or release a session resumed in a new container or under a new
-session_id, where no marker is found under its id, so ``rearm`` arms it again
-and ``/observe release`` is still the way out.
+each; or release a cleared session resumed in a new container or under a new
+session_id, where no marker is found under its id and the transcript holds no
+release (``/clear`` writes none there), so ``rearm`` arms it again. ``/observe
+release`` is the way out, and once typed it holds for every later resume.
 
 The skill re-runs its canary before every axis as well, so an unarmed session
 stops even where these events do not reach.
@@ -160,12 +161,14 @@ def _armed_args(transcript: Path) -> list[str] | None:
     """The arguments of the last ``/observe`` prompt before the transcript's first tool use.
 
     These are the prompts ``arm`` accepts, a later one replacing an earlier one, so
-    this is what the session was armed with; None if it never was.
+    this is what the session was armed with; None if it never was, or if a typed
+    ``/observe release`` follows, before or after the first tool use.
     """
-    args = None
+    args, used = None, False
     for line in transcript.read_text(encoding="utf-8", errors="replace").splitlines():
         if _TOOL_USE.search(line):
-            break
+            used = True
+            continue
         try:
             entry = json.loads(line)
         except ValueError:
@@ -177,8 +180,11 @@ def _armed_args(transcript: Path) -> list[str] | None:
             content = " ".join(c.get("text", "") for c in content if isinstance(c, dict) and c.get("type") == "text")
         if isinstance(content, str):
             prompt = _observe_args(content)
-            # arm never arms on a release, so it ends any arming before it.
-            args = None if prompt == _RELEASE else prompt or args
+            # A release ends any arming before it; after a tool use arm accepts nothing else.
+            if prompt == _RELEASE:
+                args = None
+            elif not used:
+                args = prompt or args
     return args
 
 
@@ -231,7 +237,8 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
 
     Its marker may be gone (a resume under a new session_id, or in a new container)
     while its transcript still holds the design dialogue, so a resume never runs
-    unarmed unless its marker is a release or that last prompt was ``/observe release``.
+    unarmed unless its marker is a release or the transcript holds a typed
+    ``/observe release``.
     """
     transcript = payload.get("transcript_path")
     if not transcript or not Path(transcript).is_file():
