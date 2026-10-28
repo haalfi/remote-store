@@ -364,6 +364,7 @@ def test_release_frees_a_session_but_locks_its_record(repo: Path, tmp_path: Path
     for tool, tool_input in (
         ("Write", {"file_path": record, "content": "x"}),
         ("Edit", {"file_path": str(repo / record)}),
+        ("MultiEdit", {"file_path": record}),
         ("NotebookEdit", {"notebook_path": record}),
         ("Bash", {"command": f"echo x >> {record}"}),
     ):
@@ -390,9 +391,19 @@ def test_release_without_an_observe_session_is_refused(repo: Path) -> None:
 
 def test_refusals_name_the_way_out(repo: Path, tmp_path: Path) -> None:
     _arm(repo, "/observe OP-01")
-    for tool, tool_input in (("Bash", {"command": "ls"}), ("Read", {"file_path": "src/remote_store/store.py"})):
-        assert "/observe release" in _call(repo, tool, **tool_input).stderr
+    for tool, tool_input in (
+        ("Bash", {"command": "ls"}),
+        ("Read", {"file_path": "src/remote_store/store.py"}),
+        ("Write", {"file_path": "notes.md", "content": "x"}),
+        ("Edit", {"file_path": "notes.md"}),
+        ("WebSearch", {"query": "remote-store docs"}),
+    ):
+        result = _call(repo, tool, **tool_input)
+        assert result.returncode == 2, tool
+        assert "/observe release" in result.stderr, tool
     _lock(repo, tmp_path)
+    assert "/observe release" in _call(repo, "Bash", command="ls").stderr
+    (repo / "tmp/observe" / f"{SESSION}.json").write_text("{not json", encoding="utf-8")
     assert "/observe release" in _call(repo, "Bash", command="ls").stderr
 
 
@@ -489,6 +500,17 @@ def test_rearm_takes_the_last_observe_prompt_before_any_tool(
     assert _run(repo, "rearm", payload).returncode == 0
     state = json.loads((repo / "tmp/observe" / f"{OTHER}.json").read_text(encoding="utf-8"))
     assert state["entry"] == entry
+
+
+def test_a_release_before_any_tool_leaves_a_resume_unarmed(repo: Path, tmp_path: Path) -> None:
+    # A resume in a new container has no marker; the transcript's release still ends the arming.
+    transcript = tmp_path / "resumed.jsonl"
+    release = '{"type":"user","message":{"content":"/observe release"}}\n'
+    transcript.write_text(_TYPED + release + _TOOL_USE, encoding="utf-8")
+    payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
+    result = _run(repo, "rearm", payload)
+    assert result.returncode == 0, result.stderr
+    assert not (repo / "tmp/observe").exists()
 
 
 def test_a_rearm_whose_transcript_cannot_be_read_is_locked(

@@ -18,7 +18,7 @@ allowlist is the ground register plus files the maintainer names at the start).
 * ``rearm`` (``SessionStart``): a resumed or compacted session that ``arm``
   armed is armed again, from the last ``/observe`` prompt before its first tool
   use, so it never resumes unarmed, whatever became of its marker, unless the
-  marker is a release. When those
+  marker is a release or that last prompt was ``/observe release``. When those
   arguments no longer arm (the catalogue reopened, an entry or named path gone),
   or the hook fails on a transcript naming ``/observe`` or one it cannot read, the session is locked
   instead: every call but the neutral ones is refused until ``/clear`` or a release.
@@ -34,7 +34,7 @@ A release (``{"released": "clear" | "release", "record": ...}``) marks a session
 that is no longer a design session, so a resume never re-arms it (BK-498: a
 worker restart after ``/clear`` resumed the cleared session, not the new one).
 It frees the session, so it can commit its decision logs, and keeps its record
-closed to Write, Edit, NotebookEdit and a Bash command naming the record: a
+closed to Write, Edit, MultiEdit, NotebookEdit and a Bash command naming the record: a
 session that may have read off the ground never writes the record (S1, S4).
 A locked or unreadable marker names no record, so its release closes every file
 under ``sdd/observe/records/``. That Bash check matches the path as text, so a
@@ -107,7 +107,7 @@ _NEUTRAL = frozenset({"AskUserQuestion", "ToolSearch", "TaskCreate", "TaskUpdate
 _RELEASE = ["release"]
 _WAY_OUT = "Not a design session? The maintainer types /observe release."
 # Write tools refused on a released session's record, with the key naming the file.
-_WRITERS = {"Write": "file_path", "Edit": "file_path", "NotebookEdit": "notebook_path"}
+_WRITERS = {"Write": "file_path", "Edit": "file_path", "MultiEdit": "file_path", "NotebookEdit": "notebook_path"}
 
 
 class Refused(Exception):
@@ -174,7 +174,9 @@ def _armed_args(transcript: Path) -> list[str] | None:
         if isinstance(content, list):
             content = " ".join(c.get("text", "") for c in content if isinstance(c, dict) and c.get("type") == "text")
         if isinstance(content, str):
-            args = _observe_args(content) or args
+            prompt = _observe_args(content)
+            # arm never arms on a release, so it ends any arming before it.
+            args = None if prompt == _RELEASE else prompt or args
     return args
 
 
@@ -310,12 +312,14 @@ def check(payload: dict[str, Any], root: Path) -> None:
     if tool in ("WebSearch", "WebFetch"):
         target = args.get("query") or args.get("url") or ""
         if _OWN_SURFACE.search(target):
-            raise Refused(f"{tool}: remote-store's own code and docs describe version 0.33, never ground (S1)")
+            raise Refused(
+                f"{tool}: remote-store's own code and docs describe version 0.33, never ground (S1). {_WAY_OUT}"
+            )
         return
     doc = _real(root, state["record"])
     if tool in ("Write", "Edit"):
         if _real(root, args.get("file_path") or "", cwd) != doc:
-            raise Refused(f"{tool}: this session writes only {state['record']} (S4)")
+            raise Refused(f"{tool}: this session writes only {state['record']} (S4). {_WAY_OUT}")
         return
     if tool in ("Read", "Grep"):
         target = args.get("file_path") if tool == "Read" else args.get("path")
@@ -388,7 +392,8 @@ def main(argv: list[str], root: Path = ROOT) -> int:
     except Exception as exc:  # noqa: BLE001 -- fail closed for an armed session only
         if not _concerns_observe(mode, raw, root):
             return 0
-        print(f"Blocked (/observe ground hook failed): {type(exc).__name__}: {exc}", file=sys.stderr)
+        hint = f" {_WAY_OUT}" if mode == "check" else ""
+        print(f"Blocked (/observe ground hook failed): {type(exc).__name__}: {exc}.{hint}", file=sys.stderr)
         return 2
     return 0
 
