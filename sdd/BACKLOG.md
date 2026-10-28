@@ -516,13 +516,13 @@ no clause of the contract ships unexercised.
   `shared.md`'s. Runs after several entries' flows, which also decide core against extension beyond
   the 24 entries, never a session. Open decision: when, and after which entries.
 
-- [ ] **BK-498 — A session resumed under an `/observe` session's id is re-armed and logs into that session's decisions**
+- [ ] **BK-498 — After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one**
   spec: — · effort: M · audience: contributor.tooling, contributor.process
-  After `/clear` ended OP-01's session, a worker restart resumed the next one under OP-01's id: `rearm`
-  re-armed it, refusing Bash and reads off the ground; its open dialog's answer was logged under OP-01's id and lost. Both
-  hooks key on the payload's `session_id` and `rearm` arms from the transcript alone, so neither can tell
-  this resume from the design session's; why the restart reused the id is not in the repo's code. Open
-  decision: what tells the two apart, and how a wrongly armed session gets out by itself.
+  After `/clear` started a new session, a worker restart resumed OP-01's pre-clear `/observe` session, armed
+  (by `rearm` or a marker `disarm` never removed; unknown which): Bash and reads off the ground were refused,
+  and the new session's open dialog was answered into it, logged under OP-01's id and lost uncommitted. The
+  hook arms a resumed design session as designed; why the harness resumed it is not in the repo's code. Open
+  decision: what a hook could tell such a resume by, and how a wrongly armed session gets out by itself.
   Detail: [dossier](backlog/bk-498-observe-resume-rearm.md)
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**

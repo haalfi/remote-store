@@ -1,4 +1,4 @@
-# BK-498 — A session resumed under an `/observe` session's id is re-armed and logs into that session's decisions
+# BK-498 — After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one
 <!-- doc: repo-only -->
 
 The index entry holds the current diagnosis; this file is evidence and
@@ -6,17 +6,22 @@ advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 
 ## Evidence (2026-10-28, OP-01)
 
-From the session that hit it, as the maintainer relayed it, with what the code
-and this checkout show beside each point.
+From the session that hit it, as the maintainer relayed it, and from its
+transcript events: remote session `session_01QqsRzJAiM44XJo3cR8oUEJ`, read with
+`list_events` on 2026-10-28. The remote session is one throughout; the Claude
+session ids inside it change.
 
-1. **The hook re-arms.** `/observe OP-01` ran as session `bcb85b21`. After
-   `/clear`, a session (`c1c866a2`) ran Bash and committed `23ae05a`. A worker
-   restart then resumed it under `bcb85b21` (its scratchpad path changed to
-   that id), while one of its dialogs was still open (point 2). From then on the ground hook refused Bash, Reads of
+1. **The restart resumed the pre-clear session, armed.** `/observe OP-01`
+   ran as session `bcb85b21` (prompt at 07:19:00Z). At 09:40:23Z `/clear`
+   started session `c1c866a2` (`SessionStart:clear`), which ran Bash and
+   committed `23ae05a`; the ground hook never refused it. At 09:51:28Z a
+   worker restart resumed `bcb85b21`, not `c1c866a2` (`SessionStart:resume`
+   with session_id `bcb85b21`, the scratchpad path back to that id), while
+   `c1c866a2`'s dialog was still open (point 2). Every later restart resumed
+   `bcb85b21` too. From then on the ground hook refused Bash, Reads of
    `sdd/BACKLOG.md` and `sdd/traces/`, and the hook script itself.
-2. **The log went to the wrong file.** The "OP-01 PR" dialog was asked
-   before the restart and answered after it. In session
-   `session_01QqsRzJAiM44XJo3cR8oUEJ`'s transcript, the `AskUserQuestion`
+2. **The open dialog was split across two logs.** The "OP-01 PR" dialog was
+   asked before the restart and answered after it. Its `AskUserQuestion`
    call (event `d2678aa3-aa4c-485d-94b2-c364cc7fe0a7`, 09:44:49Z) carries
    session_id `c1c866a2-414d-4eae-9d81-31103cbe4b4f`, and its result (event
    `d305e347-5674-4ec9-81aa-fb43b95e61b2`, 09:51:31Z) carries `bcb85b21`.
@@ -30,8 +35,7 @@ and this checkout show beside each point.
    read its own hook or file this item. Only a new session can. Nor can
    another session help it: a message sent to it arrives as a notification,
    and `check` refuses `ReadNotifications`, which is not among its neutral
-   tools (seen 2026-10-28 in session `session_01QqsRzJAiM44XJo3cR8oUEJ`'s
-   transcript).
+   tools (seen 2026-10-28 in the transcript).
 4. **Its decision logs are lost.** Every log line the session writes after
    the re-arm stays in the armed session's container, because it cannot
    commit, and goes when that container is archived. Here that is both halves
@@ -47,35 +51,36 @@ and this checkout show beside each point.
   decision log is `sdd/decisions/<session_id>.jsonl` (`record_decision.py`
   `record`). So any event carrying `bcb85b21` lands in that session's marker
   and log. That explains point 2.
-- `rearm` (SessionStart, matcher `""`, so every source) arms from
-  `transcript_path` alone: `_armed_args` takes the last `/observe` prompt
-  before the transcript's first tool use. It does not read the payload's
-  `source`, so it cannot tell a resumed design session from any other session
-  that arrives with that transcript. The transcript shows which one arrived:
-  `SessionStart:clear` for `c1c866a2` at 09:40:23Z, then, after the worker
-  restart at 09:51:28Z, `SessionStart:resume` for `bcb85b21`, the pre-clear
-  design session, and every later restart resumes `bcb85b21` too. So the
-  restart resumed the old session, not the cleared one. Either path then arms
-  it: `bcb85b21`'s transcript opens with `/observe OP-01`, so `rearm` writes
-  its marker, and if `disarm` never ran its marker was still there. Which of
-  the two happened is not known: the transcript holds no SessionEnd hook
-  event at all, so nothing shows `disarm` running at the `/clear`. That
-  explains point 1. The `/clear` itself worked: `c1c866a2` was never refused
-  by the ground hook.
-- `check` passes only the neutral tools and Read or Grep of the allowlist, and
-  denies Bash outright. Its lock message offers `/clear` as the only way out.
-  That explains point 3. It also explains point 4: `record` writes the log
-  into the project directory of whichever container runs the session, and
-  only a commit from that session moves it into the repository.
-- **Not shown by the code:** why the restart resumed the post-`/clear`
-  session under the earlier id. That is the harness's doing, outside this
-  repository, so no root cause is named here.
+- The resumed session is the design session itself, and the hook arms it as
+  designed. `rearm` (SessionStart, matcher `""`, so every source) re-arms "a
+  resumed or compacted session that `arm` armed" from `transcript_path`:
+  `_armed_args` takes the last `/observe` prompt before the transcript's first
+  tool use, and `bcb85b21`'s opens with `/observe OP-01`. `disarm` removes the
+  marker only on `reason: clear`. Either path arms the resumed session:
+  `rearm` writes the marker, and a marker `disarm` never removed is still
+  there. Which happened is not known: the transcript holds no SessionEnd hook
+  event, so nothing shows `disarm` running at the `/clear`. That explains
+  point 1.
+- `check` passes the neutral tools, the `observe` Skill, WebSearch and
+  WebFetch unless they name remote-store, Write and Edit of the record, and
+  Read or Grep of the allowlist; it refuses Bash and every other tool. An
+  armed session's refusals read "is outside the ground" or "not available in
+  an /observe session (S2)", and neither names a way out (the `/clear` hint is
+  only in a locked marker's message). That explains point 3. It also explains
+  point 4: `record` writes the log into the project directory of whichever
+  container runs the session, and only a commit from that session moves it
+  into the repository.
+- **Not shown by the code:** why the restart resumed `bcb85b21` rather than
+  `c1c866a2`. That is the harness's doing, outside this repository, so no
+  root cause is named here.
 
 ## Prescription (advisory)
 
-The open decision is what distinguishes the two cases. Candidate signals, none
-of them verified: the SessionStart `source`, a transcript that names a
-`/clear` after the `/observe` prompt, or a marker recording the transcript it
-was armed from. Whichever is chosen, a session that is armed wrongly needs a way
-out that does not depend on the next restart going right, and a way for its
-decision logs to reach the repository.
+The open decision is what a hook could tell such a resume by. The SessionStart
+`source` cannot: it is `resume` for a wrongful resume and a rightful one alike.
+Candidates, none verified: a tombstone `disarm` writes at `/clear` that
+`rearm` honours, which needs SessionEnd to fire in a cloud session (the
+transcript shows none); or the transcript naming a `/clear` after the
+`/observe` prompt, if the CLI records it there. Whichever is chosen, a session
+that is armed wrongly needs a way out that does not depend on the next
+restart going right, and a way for its decision logs to reach the repository.

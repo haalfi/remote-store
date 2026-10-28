@@ -23,11 +23,14 @@ co_shipped_items: []
 #           c1c866a2-414d-4eae-9d81-31103cbe4b4f
 #   result  event d305e347-5674-4ec9-81aa-fb43b95e61b2, 09:51:31Z, session_id
 #           bcb85b21-720e-5412-bc7e-32bfff75f566
-# A worker restart while the dialog was open resumed the session under
-# bcb85b21 and re-armed it (BK-498), so the recorder, which names its log by
-# session_id, wrote the asked line to c1c866a2-....jsonl and the answered line
-# to that container's bcb85b21 copy (from each event's session_id; not diffed). The armed session could not commit either,
-# and both go when its container is archived. No .jsonl is written by hand.
+# A worker restart while the dialog was open resumed bcb85b21, the pre-clear
+# design session, instead of c1c866a2 (BK-498's dossier gives the account), and
+# the answer was delivered into it. The recorder names its log by the event's
+# session_id (record_decision.py record), so the asked line went to
+# c1c866a2-....jsonl and the answered line to that container's bcb85b21 copy
+# (from each event's session_id; not diffed). The armed session could not
+# commit either, and both go when its container is archived. No .jsonl is
+# written by hand.
 decisions:
   - sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
   - sdd/decisions/f2ddab07-cc31-5c01-a396-d08c5dcec24a.jsonl
@@ -132,7 +135,9 @@ phases:
           For BK-498: both hooks key on the payload's session_id and rearm arms
           from transcript_path alone, ignoring SessionStart's source. That
           explains the re-arm and the misfiled dialog the maintainer relayed;
-          why the restart reused the id is outside the repo's code
+          why the restart reused the id is outside the repo's code. Read then
+          as a new session taking an old id; the transcript later showed the
+          pre-clear session itself resumed (round 2 step below)
   - id: review_fix
     name: Bring the record to its log and form (PR #1188 round 1)
     steps:
@@ -145,9 +150,22 @@ phases:
         read_type: gate
         extract: >-
           The review listed ten options and fifteen recommendations short of
-          the shape; a sweep of all 44 decisions found more, and 38 anchored
-          replacements carried each consequence and reason from the dialog's
-          wording. A script comparing every Decision line before and after
+          the shape; a sweep found more, and 38 anchored replacements carried
+          consequences and reasons from the dialogs' wording. Round 2 found
+          nine options in seven decisions still short (D3 and D5 two each, D6,
+          D8, D20, D30 and, on a re-sweep printing every Options paragraph,
+          D42); with those added, each option carries its dialog's
+          consequence. A script comparing every Decision line before and after
           found only D36 changed, its "(logged)" restored. The three additions
           no dialog answered (D35, D25, D19) became open items O14 to O16 for
           a reopen, as the maintainer chose in log f2ddab07
+      - file: sdd/backlog/bk-498-observe-resume-rearm.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Round 2 found the index, point 1 and the trace note still saying the
+          post-clear session was resumed under the old id. The OP-01 session's
+          transcript, paged by a subagent, shows SessionStart:clear for
+          c1c866a2 at 09:40:23Z and SessionStart:resume for bcb85b21 after the
+          09:51:28Z restart, so all three now say the pre-clear session was
+          resumed. check's allow list is enumerated from observe_ground.py
