@@ -5,14 +5,16 @@ logs being every ``sdd/decisions/`` file the session's dialogs went to (a
 worker restart can split one session across two, BK-397).
 
 Each decision ``### <entry>/D<n>: ...`` carries one line per dialog that
-answered it, written by the session (``/observe`` step 3)::
+answered it, written by the session (``/observe`` step 3) in the form
+``sdd/observe/axes.md`` § Per-question loop states, the one place the armed
+session can read it::
 
     - **Asked:** "<the question's opening words>" → "<the answer chosen>"
 
 A decision passes when each quoted opening is the start of exactly one answered
 question in the logs and each quoted answer is the start of that question's
-logged answer. Anything else fails: no ``Asked:`` line, no question or several,
-or another answer. The report prints each decision's Decision text beside its
+logged answer. Anything else fails: no ``Asked:`` line, one off that form (named
+as such), no question or several, or another answer. The report prints each decision's Decision text beside its
 question, answer and the chosen option's description, and beside the
 record's own text of each option the Decision adopts by label, for the reader of
 ``/observe-review`` to judge what a script cannot: text in the Decision beyond
@@ -42,14 +44,15 @@ from __future__ import annotations
 import json
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 _DECISION = re.compile(r"^### (?P<id>OP-\d{2}/D\d+):")
 _ASKED = re.compile(r'^- \*\*Asked:\*\*\s*"(?P<q>[^"]+)"\s*→\s*"(?P<a>[^"]+)"\s*$')
 _FIELD = re.compile(r"^- \*\*(?P<name>[A-Za-z ]+):\*\*\s?(?P<rest>.*)$")
-# An option label opening the Options field or following a ";", and the labels a Decision opens with.
-_LABEL = re.compile(r"(?:^|;\s+)\((?P<label>[a-z]{1,4})\)\s")
+# An option label opening the Options field or following ";" or ":" (a follow-up question's
+# options, OP-01/D2), and the labels a Decision opens with.
+_LABEL = re.compile(r"(?:^|[;:]\s+)\((?P<label>[a-z]{1,4})\)\s")
 _ADOPTED = re.compile(r"\((?P<label>[a-z]{1,4})\)")
 
 
@@ -66,6 +69,7 @@ class Decision:
     text: str
     asked: list[tuple[str, str]]
     options: str = ""
+    malformed: list[str] = field(default_factory=list)
 
     def adopted(self) -> list[str]:
         """The record's own text of each option the Decision adopts by label, in order."""
@@ -74,7 +78,7 @@ class Decision:
         texts = {m["label"]: self.options[m.end() : end].strip(" ;,.\n") for m, end in zip(marks, ends, strict=True)}
         lead = re.match(r"(?:\([a-z]{1,4}\)[\s,]*(?:and\s+)?)+", self.text)
         labels = [m["label"] for m in _ADOPTED.finditer(lead[0])] if lead else []
-        return [f"({label}) {_norm(texts[label])}" for label in labels if label in texts]
+        return [f"({label}) {_norm(texts[label]) if label in texts else 'not found in Options'}" for label in labels]
 
 
 def _norm(text: str) -> str:
@@ -84,33 +88,37 @@ def _norm(text: str) -> str:
 def decisions(record: str) -> list[Decision]:
     """The record's decisions in order, each with its Decision text and its ``Asked:`` quote."""
     found: list[Decision] = []
-    field = None
+    name = None
     for line in record.splitlines():
         head = _DECISION.match(line)
         if head:
             found.append(Decision(head["id"], "", []))
-            field = None
+            name = None
             continue
         if not found or line.startswith("#"):
-            field = None if line.startswith("#") else field
+            name = None if line.startswith("#") else name
             continue
         current = found[-1]
         asked = _ASKED.match(line)
         if asked:
             current.asked.append((_norm(asked["q"]), _norm(asked["a"])))
-            field = None
+            name = None
+            continue
+        if line.startswith("- **Asked:**"):
+            current.malformed.append(line[len("- **Asked:** ") :])
+            name = None
             continue
         bullet = _FIELD.match(line)
         if bullet:
-            field = bullet["name"]
-            if field == "Decision":
+            name = bullet["name"]
+            if name == "Decision":
                 current.text = bullet["rest"]
-            elif field == "Options":
+            elif name == "Options":
                 current.options = bullet["rest"]
             continue
-        if field == "Decision":
+        if name == "Decision":
             current.text += "\n" + line
-        elif field == "Options":
+        elif name == "Options":
             current.options += "\n" + line
     for d in found:
         d.text = d.text.strip()
@@ -141,7 +149,9 @@ def pair(record: str, logs: list[Path]) -> tuple[list[str], list[str], bool]:
     lines: list[str] = []
     ok = True
     for d in decisions(record):
-        verdicts, paired = [] if d.asked else ["FAIL no Asked line"], []
+        verdicts = [f"FAIL Asked line not in axes.md's form: {bad!r}" for bad in d.malformed]
+        verdicts += [] if d.asked or d.malformed else ["FAIL no Asked line"]
+        paired = []
         for quote, answer in d.asked:
             hits = [i for i, g in enumerate(pool) if g.question.startswith(quote)]
             if len(hits) != 1:

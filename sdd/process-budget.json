@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 311183,
+  "total": 311312,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,8 +16,8 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 5628,
-    ".claude/skills/observe-review/SKILL.md": 3721,
+    ".claude/skills/observe/SKILL.md": 5658,
+    ".claude/skills/observe-review/SKILL.md": 3820,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -186,6 +186,12 @@
       "from": 306847,
       "to": 311183,
       "reason": "RFC-0028: new /observe-review skill (+3721), read only in the review after an /observe session; /observe step 3 Asked line and step 5 whole-record pass (+615)"
+    },
+    {
+      "item": "BK-499",
+      "from": 311183,
+      "to": 311312,
+      "reason": "PR #1192 review: observe-review step 1 reads committed logs too (+99); observe step 3 points at axes.md's exact Asked form (+30)"
     }
   ]
 }

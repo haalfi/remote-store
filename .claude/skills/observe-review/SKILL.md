@@ -24,10 +24,11 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
 
 ## Steps
 
-1. **Pairs.** List the logs the session's dialogs went to: each
-   uncommitted `sdd/decisions/` log in `git status` whose questions are
-   `<entry>`'s, both halves of a split session included; a log missed shows
-   as a FAIL. Run
+1. **Pairs.** List the logs the session's dialogs went to, committed or
+   not, since `/observe release` commits them: each `sdd/decisions/` log in
+   `git status` or in `git diff --name-only origin/master...HEAD`, whose
+   questions are `<entry>`'s, both halves of a split session included; a log
+   missed shows as a FAIL. Run
    `hatch run observe-dialogs <record> <log> ...` and save its report as
    `tmp/observe-review/<entry>-pairs.md`. Each FAIL is a finding.
 2. **Unprimed readers.** Spawn two fresh `general-purpose` agents at once,

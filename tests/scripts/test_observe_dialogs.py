@@ -72,9 +72,8 @@ def test_every_decision_paired_passes_and_shows_its_dialog(tmp_path: Path) -> No
     ]
     result = _run(tmp_path, record, log)
     assert result.returncode == 0, result.stdout
-    assert (
-        "## OP-01/D1: ok\nDecision: (a). Three operations,\n  each sync and async.\nQuestion: " + FORMS in result.stdout
-    )
+    head = "## OP-01/D1: ok\nDecision: (a). Three operations,\n  each sync and async.\n"
+    assert head + "Adopted option: (a) not found in Options\nQuestion: " + FORMS in result.stdout
     assert "Answer: Bytes, text, binary stream (Recommended)\nOption: N-01" in result.stdout
     assert result.stdout.endswith("# Answered questions no decision pairs with\n- Which backlog item?\n")
 
@@ -89,6 +88,32 @@ def test_the_report_quotes_each_adopted_option(tmp_path: Path) -> None:
     result = _run(tmp_path, _record(decision), [_answered(FORMS, "Bytes")])
     assert "Adopted option: (b) the next read resumes, unlike (a)\nAdopted option: (c) a third\n" in result.stdout
     assert "Adopted option: (a)" not in result.stdout
+
+
+def test_a_follow_up_label_after_a_colon_is_adopted_and_a_missing_one_is_reported(tmp_path: Path) -> None:
+    # OP-01/D2's shape: a follow-up question's options open after ": " inside the same Options field.
+    decision = _decision(2, ("AX-1, forms.", "Bytes"), text="(c) and (i) and (z): the maintainer's.")
+    decision = decision.replace(
+        "- **Scenario:** s.",
+        "- **Scenario:** s.\n- **Options:** (a) one; (c) the file object of (a). Follow-up,\n"
+        "  whether it seeks: (i) not seekable; (ii) seekable.",
+    )
+    result = _run(tmp_path, _record(decision), [_answered(FORMS, "Bytes")])
+    assert "Adopted option: (c) the file object of (a). Follow-up, whether it seeks\n" in result.stdout
+    assert "Adopted option: (i) not seekable\n" in result.stdout
+    assert "Adopted option: (z) not found in Options\n" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "line",
+    ['- **Asked:** "AX-1, forms." -> "Bytes"', "- **Asked:** “AX-1, forms.” → “Bytes”"],
+)
+def test_an_asked_line_off_the_form_fails_by_name(tmp_path: Path, line: str) -> None:
+    # The session writes the form axes.md states; a slip must not read as a missing line.
+    record = _record(_decision(1, text="(a).").replace("- **Decision:**", line + "\n- **Decision:**"))
+    result = _run(tmp_path, record, [_answered(FORMS, "Bytes")])
+    assert result.returncode == 1
+    assert f"## OP-01/D1: FAIL Asked line not in axes.md's form: {line[13:]!r}\n" in result.stdout
 
 
 def test_a_decision_answered_in_two_split_logs_pairs(tmp_path: Path) -> None:

@@ -144,6 +144,28 @@ phases:
           dropped "D16 against D39" as consistent. C2 found by no run, which led to two
           unioned readers and C2's class stated as the bound
         outcome: ok
+  - id: review_fixes
+    name: Fix pass from the PR #1192 review
+    steps:
+      - file: scripts/observe_dialogs.py
+        section: "_LABEL, adopted, decisions"
+        read_type: gate
+        extract: >-
+          A label after ": " (OP-01/D2's follow-up options) is now an option mark, an adopted
+          label not in Options is reported "not found in Options" instead of dropped, and an
+          Asked line off the form fails by name instead of as "no Asked line". Each pinned by
+          a test seen failing first
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "Step 3"
+        read_type: gate
+        extract: "The Asked line's literal form lives in axes.md item 5, the file the armed session reads; the script only parses it"
+        outcome: misleading
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1"
+        read_type: gate
+        extract: "Logs from git status and the branch's diff against master, since /observe release commits them"
+        outcome: ok
 # OP-01 candidates, unverified:
 # Raised by two or more of the three runs, outside audit-025, not re-read against the record and
 # not filed (the maintainer's call: trace and PR only, a later /observe-review OP-01 verifies):

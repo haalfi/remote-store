@@ -57,7 +57,7 @@ any web result about it.
      options per question, so more alternatives become two questions;
    - write the entry to Decisions at once, in the axes file's per-question
      shape, with the next ID `<entry>/D<n>`, an **Asked** line per dialog
-     that answered it, and its **consistency check** against earlier
+     that answered it in the axes file's exact form, and its **consistency check** against earlier
      decisions and the ground, naming any conflict. A claim in the Decision
      that no dialog answered, such as a list, a table or a case, is asked
      first.
