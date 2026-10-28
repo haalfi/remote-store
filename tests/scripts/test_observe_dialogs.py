@@ -218,6 +218,20 @@ def test_a_record_with_no_decision_fails(tmp_path: Path) -> None:
     assert "FAIL no decision found" in result.stdout
 
 
+def test_an_answer_holding_a_quote_pairs_by_its_opening(tmp_path: Path) -> None:
+    # axes.md item 5: the answer, like the question, is quoted up to its first '"'.
+    record = _record(_decision(1, ("AX-1, forms.", "Raise on read(")))
+    result = _run(tmp_path, record, [_answered(FORMS, 'Raise on read("") as a caller error')])
+    assert result.returncode == 0, result.stdout
+
+
+@pytest.mark.parametrize("line", ["[1, 2]", '"text"', "3"])
+def test_a_log_line_that_is_no_object_is_unusable_input(tmp_path: Path, line: str) -> None:
+    result = _run(tmp_path, _record(_decision(1, ("AX-1, forms.", "Bytes"))), [line])
+    assert result.returncode == 2
+    assert "observe_dialogs:" in result.stderr
+
+
 def test_unusable_input_exits_2(tmp_path: Path) -> None:
     result = _run(tmp_path, _record(), ["not json"])
     assert result.returncode == 2

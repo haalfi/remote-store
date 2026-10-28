@@ -45,7 +45,7 @@ Each question an axis raises becomes one decision in the entry's record (S5):
 2. **Scenario**: one concrete sequence of calls and environment actions that makes the question bite.
 3. **Options**, each with its consequences for callers and backends.
 4. **Recommendation**, with its reason and its source: a ground clause ID or a named prior-art reference, else marked `unsourced`.
-5. **Asked**: one line per dialog that answered it, exactly `- **Asked:** "<the question's opening words>" → "<the answer chosen>"`, straight double quotes and an arrow `→`, the opening long enough to start no other question and holding no `"`; `/observe-review` pairs the two by this form, and a line off it fails.
+5. **Asked**: one line per dialog that answered it, exactly `- **Asked:** "<the question's opening words>" → "<the answer's opening words>"`, straight double quotes and an arrow `→`; each opening stops before any `"` its text holds, and the question's is long enough to start no other question; `/observe-review` pairs the two by this form, and a line off it fails.
 6. **Decision**: an option, or an F3 term.
 7. **Consistency check** against earlier decisions and the ground (S1); conflicts named.
 8. **Open items** it raises, as IDs of entries in the record's one Open items section.

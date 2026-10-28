@@ -9,7 +9,7 @@ answered it, written by the session (``/observe`` step 3) in the form
 ``sdd/observe/axes.md`` § Per-question loop states, the one place the armed
 session can read it::
 
-    - **Asked:** "<the question's opening words>" → "<the answer chosen>"
+    - **Asked:** "<the question's opening words>" → "<the answer's opening words>"
 
 A decision passes when each quoted opening is the start of exactly one answered
 question in the logs and each quoted answer is the start of that question's
@@ -149,6 +149,8 @@ def dialogs(logs: list[Path]) -> list[Dialog]:
             if not raw.strip():
                 continue
             event = json.loads(raw.decode("utf-8"))
+            if not isinstance(event, dict):
+                raise ValueError(f"{log}: a log line is no JSON object")
             if event.get("event") != "answered":
                 continue
             given = event.get("tool_input") or {}
