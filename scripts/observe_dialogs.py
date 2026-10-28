@@ -95,11 +95,22 @@ def _norm(text: str) -> str:
     return " ".join(text.split())
 
 
+def _join_asked(lines: list[str]) -> list[str]:
+    """Join an Asked line's two-space continuation lines onto it, as records hard-wrap every bullet."""
+    joined: list[str] = []
+    for line in lines:
+        if joined and joined[-1].startswith("- **Asked:**") and line.startswith("  ") and line.strip():
+            joined[-1] += " " + line.strip()
+        else:
+            joined.append(line)
+    return joined
+
+
 def decisions(record: str) -> list[Decision]:
     """The record's decisions in order, each with its Decision text and its ``Asked:`` quote."""
     found: list[Decision] = []
     name = None
-    for line in record.splitlines():
+    for line in _join_asked(record.splitlines()):
         head = _DECISION.match(line)
         if head:
             found.append(Decision(head["id"], "", []))

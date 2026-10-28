@@ -257,5 +257,16 @@ phases:
           Three traces name OP-01's record; only the /observe session's own trace holds its logs.
           Step 1 now names that trace, and BK-485's dossier names bk-485-observe-op-01.yml for OP-01
         outcome: misleading
+  - id: review_fixes_8
+    name: Fix pass from the PR #1192 eighth review
+    steps:
+      - file: scripts/observe_dialogs.py
+        section: "_join_asked, decisions"
+        read_type: gate
+        extract: >-
+          A record hard-wraps every bullet; an Asked line's two-space continuation lines are now
+          joined before parsing, so a wrapped line pairs instead of failing as off the form
+          (failed first). OP-01's 44 decisions still all pair
+        outcome: ok
 # OP-01 candidates, unverified: listed in BK-485's dossier, § OP-01 review candidates,
 # which /observe-review OP-01 verifies.

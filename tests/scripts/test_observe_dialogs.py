@@ -218,6 +218,16 @@ def test_a_record_with_no_decision_fails(tmp_path: Path) -> None:
     assert "FAIL no decision found" in result.stdout
 
 
+def test_a_wrapped_asked_line_is_joined_like_any_bullet(tmp_path: Path) -> None:
+    # Records hard-wrap bullets onto two-space continuation lines (OP-01.md), Asked included.
+    first = '- **Asked:** "AX-1, forms. Scenario: a caller reads a config. Which forms'
+    wrapped = "\n".join([first, '  does OP-01 offer?" → "Bytes"'])
+    record = _record(_decision(1, text="(a).").replace("- **Decision:**", wrapped + "\n- **Decision:**"))
+    result = _run(tmp_path, record, [_answered(FORMS, "Bytes")])
+    assert result.returncode == 0, result.stdout
+    assert "## OP-01/D1: ok\n" in result.stdout
+
+
 def test_an_answer_holding_a_quote_pairs_by_its_opening(tmp_path: Path) -> None:
     # axes.md item 5: the answer, like the question, is quoted up to its first '"'.
     record = _record(_decision(1, ("AX-1, forms.", "Raise on read(")))
