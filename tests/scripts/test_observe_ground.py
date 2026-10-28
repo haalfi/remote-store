@@ -410,6 +410,14 @@ def test_a_released_record_refusal_names_the_target(repo: Path) -> None:
     assert result.returncode == 2
     assert "sdd/observe/records/OP-02.md" in result.stderr
     assert "OP-01" not in result.stderr
+    bash = _call(repo, "Bash", command="echo x >> sdd/observe/records/OP-02.md")
+    assert bash.returncode == 2
+    assert "released; sdd/observe/records/ is written only" in bash.stderr
+    # Another file under tmp/observe/ is not this session's release: the message names the directory.
+    other = _call(repo, "Write", file_path=f"tmp/observe/{OTHER}.json", content="{}")
+    assert other.returncode == 2
+    assert "released; tmp/observe/ holds this session's release" in other.stderr
+    assert OTHER not in other.stderr
 
 
 # BK-500: "/observe release." parsed as the arming argument "release." and got "needs a fresh session".

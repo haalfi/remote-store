@@ -478,8 +478,8 @@ ships them.
 
 - [x] **BK-500 — Two `/observe` hook messages mislead: a refused record write names the wrong file, and `/observe release.` reads as an arming**
   spec: — · effort: S · audience: contributor.tooling
-  A released session's refused write names the file it targeted (a Bash refusal names the directory),
-  not the marker's record; `/observe release` followed by trailing punctuation (`.`, `!`, `?`, `,`, `;`,
+  A released session's refused record write names the file it targeted (a Bash refusal names the
+  directory), not the marker's record; a refusal under `tmp/observe/` names that directory; `/observe release` followed by trailing punctuation (`.`, `!`, `?`, `,`, `;`,
   `:`) is a release, in `arm` and in the transcript `rearm` reads. Seen in PR #1189's live probe. Trace:
   [bk-500](traces/bk-500-observe-hook-messages.yml).
 

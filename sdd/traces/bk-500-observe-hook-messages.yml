@@ -71,3 +71,15 @@ phases:
           _check_released names the writer's repo-relative target, or the
           guarded directory for Bash, and no longer reads the marker's record
         outcome: ok
+  - id: review_fixes
+    name: Fix pass from the PR #1193 review
+    steps:
+      - file: scripts/observe_ground.py
+        section: "_check_released"
+        read_type: gate
+        extract: >-
+          Naming the target made a write to another file under tmp/observe/
+          claim that file "holds this session's release"; the marker refusal
+          names the directory again. test_a_released_record_refusal_names_the_target
+          now pins that wording and the Bash record refusal's, seen failing first
+        outcome: ok

@@ -375,9 +375,10 @@ def _check_released(tool: str, args: dict[str, Any], root: Path, cwd: str | None
     """
     for guarded, why in (
         (RECORDS, "{} is written only by a fresh /observe session and committed after /clear, never named here (S4)"),
-        (MARKER_DIR, "{} holds this session's release, which only the hook writes"),
+        # Any file under tmp/observe/ is closed, not only this session's marker: name the directory.
+        (MARKER_DIR, f"{MARKER_DIR}/ holds this session's release, which only the hook writes"),
     ):
-        # The message names the file the call targets, or for Bash the directory it names (BK-500).
+        # A record refusal names the file the call targets, or for Bash the directory it names (BK-500).
         named = guarded.rstrip("/") + "/"
         if tool in _WRITERS:
             target = _real(root, args.get(_WRITERS[tool]) or "", cwd)
