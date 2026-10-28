@@ -382,6 +382,26 @@ def test_release_frees_a_session_but_locks_its_record(repo: Path, tmp_path: Path
     assert _call(repo, "Bash", command="ls").returncode == 0
 
 
+@pytest.mark.parametrize("how", ["release", "clear"])
+def test_a_released_session_cannot_drop_its_own_release(repo: Path, how: str) -> None:
+    _arm(repo, "/observe OP-01")
+    if how == "release":
+        _arm(repo, "/observe release")
+    else:
+        _run(repo, "disarm", {"session_id": SESSION, "reason": "clear"})
+    marker = repo / "tmp/observe" / f"{SESSION}.json"
+    for tool, tool_input in (
+        ("Bash", {"command": f"rm tmp/observe/{SESSION}.json"}),
+        ("Bash", {"command": f"rm {marker}"}),
+        ("Write", {"file_path": str(marker), "content": "{}"}),
+        ("Edit", {"file_path": f"tmp/observe/{SESSION}.json"}),
+    ):
+        result = _call(repo, tool, **tool_input)
+        assert result.returncode == 2, (tool, tool_input)
+        assert "release" in result.stderr
+    assert json.loads(marker.read_text(encoding="utf-8"))["released"] == how
+
+
 def test_release_without_an_observe_session_is_refused(repo: Path) -> None:
     result = _arm(repo, "/observe release")
     assert result.returncode == 2
@@ -515,25 +535,29 @@ _QUOTED = (
 
 
 @pytest.mark.parametrize(
-    ("lines", "armed"),
+    ("lines", "state"),
     [
         # The order of a real session: its canary Read runs before the maintainer can release.
-        ([_TYPED, _TOOL_USE, _RELEASE_PROMPT], False),
-        ([_TYPED, _RELEASE_PROMPT, _TOOL_USE], False),
-        ([_TYPED, _TOOL_USE, _QUOTED], True),
+        ([_TYPED, _TOOL_USE, _RELEASE_PROMPT], "released"),
+        ([_TYPED, _RELEASE_PROMPT, _TOOL_USE], "released"),
+        # An arming prompt after the release, still before any tool, arms again as arm would.
+        ([_TYPED, _RELEASE_PROMPT, '{"type":"user","message":{"content":"/observe OP-02"}}\n', _TOOL_USE], "entry"),
+        ([_TYPED, _TOOL_USE, _QUOTED], "entry"),
     ],
-    ids=["release-after-tool", "release-before-tool", "quoted-release"],
+    ids=["release-after-tool", "release-before-tool", "rearmed-after-release", "quoted-release"],
 )
-def test_a_released_transcript_leaves_a_resume_unarmed(
-    repo: Path, tmp_path: Path, lines: list[str], armed: bool
-) -> None:
-    # A resume in a new container or under a new id has no marker; the transcript's release still ends the arming.
+def test_a_released_transcript_resumes_released(repo: Path, tmp_path: Path, lines: list[str], state: str) -> None:
+    # A resume in a new container or under a new id has no marker; the transcript's release still holds.
     transcript = tmp_path / "resumed.jsonl"
     transcript.write_text("".join(lines), encoding="utf-8")
     payload = {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)}
     result = _run(repo, "rearm", payload)
     assert result.returncode == 0, result.stderr
-    assert (repo / "tmp/observe" / f"{OTHER}.json").exists() is armed
+    marker = json.loads((repo / "tmp/observe" / f"{OTHER}.json").read_text(encoding="utf-8"))
+    assert state in marker
+    if state == "released":  # it may have read off the ground: no record is open to it
+        assert _call(repo, "Write", session=OTHER, file_path="sdd/observe/records/OP-01.md").returncode == 2
+        assert _call(repo, "Bash", session=OTHER, command="git commit -m x").returncode == 0
 
 
 def test_a_rearm_whose_transcript_cannot_be_read_is_locked(

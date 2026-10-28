@@ -156,7 +156,9 @@ phases:
           release; a typed /observe release anywhere in the transcript ends the
           arming rearm reads (the verification pass showed a scan stopping at
           the first tool use never saw a real one, since the canary Read comes
-          first). Each pinned by a test seen failing first
+          first), and rearm writes it as a release marker so the records stay
+          closed; a released session cannot write or name tmp/observe/, so it
+          cannot drop its own release. Each pinned by a test seen failing first
         outcome: ok
       - file: .claude/skills/observe/SKILL.md
         section: "frontmatter, Ground, Step 0"
