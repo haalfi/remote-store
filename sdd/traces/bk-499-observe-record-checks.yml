@@ -188,5 +188,23 @@ phases:
         read_type: reference
         extract: "The deferred /observe-review OP-01 and its candidates, moved from a trace comment"
         outcome: ok
+  - id: review_fixes_3
+    name: Fix pass from the PR #1192 third review
+    steps:
+      - file: scripts/observe_dialogs.py
+        section: "pair"
+        read_type: gate
+        extract: >-
+          The answer narrows hits only when they are one question asked twice; a quote too short
+          to be unique fails again whatever its answer. Unpaired dialogs print their answer and
+          option, so a record older than the Asked line can be paired by hand: on OP-01's real
+          record the report lists all 49 answered dialogs that way. Each pinned by a test seen
+          failing first
+        outcome: ok
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Reader brief, item 4"
+        read_type: gate
+        extract: "The brief assigns the hand pairing of a decision with no dialog; none found is a finding"
+        outcome: misleading
 # OP-01 candidates, unverified: listed in BK-485's dossier, § OP-01 review candidates,
 # which /observe-review OP-01 verifies.

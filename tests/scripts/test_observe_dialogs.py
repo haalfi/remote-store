@@ -75,7 +75,8 @@ def test_every_decision_paired_passes_and_shows_its_dialog(tmp_path: Path) -> No
     head = "## OP-01/D1: ok\nDecision: (a). Three operations,\n  each sync and async.\n"
     assert head + "Adopted option: (a) not found in Options\nQuestion: " + FORMS in result.stdout
     assert "Answer: Bytes, text, binary stream (Recommended)\nOption: N-01" in result.stdout
-    assert result.stdout.endswith("# Answered questions no decision pairs with\n- Which backlog item?\n")
+    unpaired = "- Which backlog item?\n  Answer: BK-485\n  Option: the chosen option\n"
+    assert result.stdout.endswith("# Answered questions no decision pairs with\n" + unpaired)
 
 
 def test_the_report_quotes_each_adopted_option(tmp_path: Path) -> None:
@@ -130,6 +131,8 @@ def test_a_decision_answered_in_two_split_logs_pairs(tmp_path: Path) -> None:
         ((), "FAIL no Asked line"),
         ((("AX-9, nothing", "x"),), "FAIL 0 answered questions start with 'AX-9, nothing'"),
         ((("AX-1,", "x"),), "FAIL 2 answered questions start with 'AX-1,'"),
+        # The answer narrows only one question asked twice, never a quote too short to be unique.
+        ((("AX-1,", "Root"),), "FAIL 2 answered questions start with 'AX-1,'"),
         ((("AX-1, the root.", "Not a folder"),), "FAIL answered 'Root is a folder', not 'Not a folder'"),
     ],
 )
@@ -165,6 +168,14 @@ def test_the_same_question_answered_twice_pairs_by_the_quoted_answer(tmp_path: P
     result = _run(tmp_path, record, [_answered(FORMS, "Bytes"), _answered(FORMS, "Text only")])
     assert result.returncode == 0, result.stdout
     assert "Answer: Text only\n" in result.stdout
+
+
+def test_unpaired_dialogs_carry_their_answer_and_option(tmp_path: Path) -> None:
+    # A record older than the Asked line is paired by hand from this section (/observe-review step 1).
+    log = [_answered(ROOT_Q, "Root is a folder", {"Root is a folder": "spec 052's root"})]
+    result = _run(tmp_path, _record(_decision(1, text="(a).")), log)
+    section = result.stdout.split("# Answered questions no decision pairs with\n", 1)[1]
+    assert section == f"- {ROOT_Q}\n  Answer: Root is a folder\n  Option: spec 052's root\n"
 
 
 def test_a_heading_off_the_decision_form_fails_and_takes_its_own_fields(tmp_path: Path) -> None:

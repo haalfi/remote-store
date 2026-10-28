@@ -23,8 +23,9 @@ and the chosen option's description, and beside the record's own text of each
 option the Decision adopts by label, for the readers of ``/observe-review`` to
 judge what a script cannot: text in the Decision beyond what the dialog
 answered (audit-025 § 5, class 2). Answered questions no
-decision pairs with, such as the Environment's first dialog, are listed, not
-failed.
+decision pairs with, such as the Environment's first dialog, are listed with
+their answer and option, not failed: a record older than the Asked line is
+paired by hand from them.
 
 Bound: it checks that a dialog answered each decision, not what the Decision
 says beyond the answer, and a quote that is too short to be unique fails
@@ -157,7 +158,7 @@ def dialogs(logs: list[Path]) -> list[Dialog]:
 
 
 def pair(record: str, logs: list[Path]) -> tuple[list[str], list[str], bool]:
-    """The report's lines, the unpaired dialogs' questions, and whether every decision paired."""
+    """The report's lines, the unpaired dialogs (question, answer, option), and whether every decision paired."""
     pool = dialogs(logs)
     used: set[int] = set()
     lines: list[str] = []
@@ -175,7 +176,8 @@ def pair(record: str, logs: list[Path]) -> tuple[list[str], list[str], bool]:
             hits = [i for i, g in enumerate(pool) if g.question.startswith(quote)]
             # One question asked twice (re-asked after another answer) pairs by its quoted answer.
             narrowed = [i for i in hits if pool[i].answer.startswith(answer)]
-            hits = narrowed if len(hits) > 1 and len(narrowed) == 1 else hits
+            one_question = len({pool[i].question for i in hits}) == 1
+            hits = narrowed if len(hits) > 1 and one_question and len(narrowed) == 1 else hits
             if len(hits) != 1:
                 verdicts.append(f"FAIL {len(hits)} answered questions start with {quote!r}")
                 continue
@@ -189,7 +191,9 @@ def pair(record: str, logs: list[Path]) -> tuple[list[str], list[str], bool]:
         for g in paired:
             lines += [f"Question: {g.question}", f"Answer: {g.answer}", f"Option: {g.description}"]
         lines.append("")
-    unpaired = [g.question for i, g in enumerate(pool) if i not in used]
+    unpaired = [
+        f"{g.question}\n  Answer: {g.answer}\n  Option: {g.description}" for i, g in enumerate(pool) if i not in used
+    ]
     return lines, unpaired, ok
 
 

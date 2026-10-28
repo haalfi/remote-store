@@ -1,6 +1,6 @@
 ---
 name: observe-review
-description: Check a finished /observe record before its spec is written. Pairs each decision with its dialog, has an unprimed reader re-check the whole record, then reviews it against backends, SDKs and the runtime, adding what holds to the record's Open items. Use only when the maintainer types /observe-review after an /observe session was cleared. Not for deciding: a reopen session decides.
+description: Check a finished /observe record before its spec is written. Pairs each decision with its dialog, has two unprimed readers re-check the whole record, then reviews it against backends, SDKs and the runtime, adding what holds to the record's Open items. Use only when the maintainer types /observe-review after an /observe session was cleared. Not for deciding: a reopen session decides.
 argument-hint: "<entry>"
 disable-model-invocation: true
 ---
@@ -33,18 +33,18 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
    `tmp/observe-review/<entry>-pairs.md`. Each FAIL is a finding, but in a
    record written before RFC-0028, which has no Asked line (OP-01's), "no
    Asked line" is not: the readers pair those decisions with the report's
-   unpaired questions themselves.
+   unpaired dialogs, listed with their answers (the brief's item 4).
 2. **Unprimed readers.** Spawn two fresh `general-purpose` agents at once,
    each with the brief below, its placeholders filled, and nothing else from
    this session: no finding, no suspicion, no audit. Take the union: one run
    misses what another finds (RFC-0028, Evidence).
-3. **Primed review**, yourself, while the reader runs: per decision, does a
+3. **Primed review**, yourself, while the readers run: per decision, does a
    backend (Memory, Local, S3, SFTP, Azure), its SDK or the Python runtime on
    a supported platform make it false, two-valued, or costly to keep? Read
    dependency source in the hatch env, Python and platform docs, vendor docs,
    and `src/remote_store/backends/` as evidence of what an SDK or the OS
    does, never as the expected answer (RFC-0024 § R1).
-4. **Verify, write, commit.** Re-read every candidate, the reader's and
+4. **Verify, write, commit.** Re-read every candidate, the readers' and
    yours, against what it cites, and drop what does not hold. Write the rest
    as open items, opened by one line naming this review and its date. Commit
    the record and the logs, then tell the maintainer which items need a
@@ -53,8 +53,10 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
 ## Reader brief
 
 > Read `<record>` whole, then `<pairs>` (each decision beside the text of the
-> option it adopts and the dialog that answered it), then `sdd/observe/axes.md` and any file the record's Session
-> section lists as ground read. Read nothing else. Report, quoting the words:
+> option it adopts and the dialog that answered it; dialogs no decision
+> pairs with, with their answers, at its end), then `sdd/observe/axes.md`
+> and any file the record's Session section lists as ground read. Read
+> nothing else. Report, quoting the words:
 >
 > 1. Two decisions that cannot both hold, counting the wording of an option a
 >    Decision adopts, not only the Decision's own text.
@@ -62,7 +64,10 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
 >    checked against every decision that adds a member, later ones included.
 > 3. A decision's reason that another decision's outcome makes false.
 > 4. Text in a Decision that its dialog's question and answer do not cover:
->    a list, a table, a row, a case, a sentence about another step.
+>    a list, a table, a row, a case, a sentence about another step. A
+>    decision the report shows with no dialog: first find its dialog among
+>    the unpaired ones at the end, by question and answer; none found is
+>    itself a finding.
 >
 > For each: the decisions, the quoted words, why they conflict. Propose no
 > fix. Then list the candidates you checked and dropped, and why.
