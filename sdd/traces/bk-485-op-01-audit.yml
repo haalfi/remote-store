@@ -153,3 +153,40 @@ phases:
           A gap goes to Open items under step 3, a ground conflict is step 4's
           reopen; the Open items paragraph now names each item's kind, and
           AX-12's row takes O19 and O25 by the cited-decision rule
+review:
+  # Derived by `hatch run ship-report 1191 --trace-block-only` at head 20ce252.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1191 --trace-block-only"
+  pr: 1191
+  review_rounds: 3
+  submissions: 2
+  findings: 12
+  by_round:
+    - round: 1
+      findings: 6
+      origin: {original: 6}
+      triage: {must-fix: 6}
+      duration_hours: 0.25
+    - round: 2
+      findings: 6
+      origin: {loop-introduced: 2, original: 3, pre-existing: 1}
+      triage: {must-fix: 6}
+      duration_hours: 0.58
+  by_file:
+    - path: "sdd/audits/audit-025-op-01-record-review.md"
+      findings: 8
+    - path: "sdd/observe/records/OP-01.md"
+      findings: 4
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/2b6d86ca-96de-5354-9e64-6aab4248ddfd.jsonl"
+    - "sdd/traces/bk-485-op-01-audit.yml"
+  review_driven_commits:
+    - sha: "c28ecee"
+      subject: "BK-485: Correct audit-025's prefetch and retry claims, C4's witness and § 5's classes; O23 a note; axis rows by one rule"
+    - sha: "7c4e762"
+      subject: "Merge remote-tracking branch 'origin/master' into claude/vigilant-keller-fhcvfp"
+    - sha: "20ce252"
+      subject: "BK-485: Correct audit-025's D34, D39 and D35 readings; C3 blocks; O18 a note; item kinds and AX-12 in the record"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
