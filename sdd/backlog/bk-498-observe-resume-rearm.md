@@ -51,11 +51,17 @@ and this checkout show beside each point.
   `transcript_path` alone: `_armed_args` takes the last `/observe` prompt
   before the transcript's first tool use. It does not read the payload's
   `source`, so it cannot tell a resumed design session from any other session
-  that arrives with that transcript. `disarm` removed the marker at `/clear`
-  (`reason: clear`), and `rearm` wrote it again on the restart. That explains
-  point 1, if the restart's payload pointed at `bcb85b21`'s transcript. A
-  post-`/clear` session that did not open with `/observe` has no such prompt
-  before its first tool use, so the code implies that it did. The payload itself was not captured.
+  that arrives with that transcript. The transcript shows which one arrived:
+  `SessionStart:clear` for `c1c866a2` at 09:40:23Z, then, after the worker
+  restart at 09:51:28Z, `SessionStart:resume` for `bcb85b21`, the pre-clear
+  design session, and every later restart resumes `bcb85b21` too. So the
+  restart resumed the old session, not the cleared one. Either path then arms
+  it: `bcb85b21`'s transcript opens with `/observe OP-01`, so `rearm` writes
+  its marker, and if `disarm` never ran its marker was still there. Which of
+  the two happened is not known: the transcript holds no SessionEnd hook
+  event at all, so nothing shows `disarm` running at the `/clear`. That
+  explains point 1. The `/clear` itself worked: `c1c866a2` was never refused
+  by the ground hook.
 - `check` passes only the neutral tools and Read or Grep of the allowlist, and
   denies Bash outright. Its lock message offers `/clear` as the only way out.
   That explains point 3. It also explains point 4: `record` writes the log
