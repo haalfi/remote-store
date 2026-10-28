@@ -1,0 +1,297 @@
+id: BK-498
+title: "After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one"
+trigger: >-
+  On 2026-10-28, after `/clear` ended OP-01's `/observe` session, a worker
+  restart resumed that pre-clear session, armed again (most likely by
+  `rearm` from its transcript; the dossier's Probed section), so it refused
+  Bash and off-ground reads, could not get out by itself, and its decision
+  logs stayed uncommitted in its container.
+source_items:
+  - BK-498
+audience:
+  - contributor.tooling
+  - contributor.process
+discovery_followups:
+  # pytest-asyncio 1.4.1's unset-loop-scope warning aborted every pytest run;
+  # fixed in PR #1190, ported here until it merged, then taken in by merging master.
+  - BUG-345
+  # Two misleading hook messages seen in the live probe (wrong record named,
+  # "/observe release." read as an arming); filed, not fixed here.
+  - BK-500
+surprising_ripples: []
+co_shipped_items: []
+decisions:
+  - sdd/decisions/f13251b9-0e40-5453-864a-3e334c0cc137.jsonl
+  # The review's merge-order and row-waiver dialog: asked here, answered in
+  # f13251b9 after a worker restart split it across the two session ids.
+  - sdd/decisions/ffc739ac-9133-4598-b0f1-0940c49d28a7.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's dossier § First `/observe` run: "Bash was blocked, so the doc was
+      committed only after `/clear`", and research-spec-first-reset.md § 4 S2
+      ("a fresh agent, and a PreToolUse hook that denies reads outside an
+      allowlist") and S4 (the record is the session's only output). A way out
+      must be the maintainer's, not the model's, and must not let a session
+      that left the ground write the record.
+  - items: [BK-397]
+    verdict: unrelated
+    evidence: >-
+      BK-397's entry: pending is the `/pr` Decisions section and "one session's
+      log across two branches". BK-498's lost lines are a commit that never
+      ran, not a log naming or branch-binding question, and the chosen remedy
+      leaves record_decision.py unchanged.
+phases:
+  - id: orient
+    name: Read the item, the hook, the incident transcript and related items
+    steps:
+      - file: sdd/backlog/bk-498-observe-resume-rearm.md
+        section: "(full)"
+        read_type: gate
+        extract: "Evidence 1 to 4; disarm on clear unknown; prescription candidates"
+        outcome: ok
+      - file: scripts/observe_ground.py
+        section: "(full)"
+        read_type: gate
+        extract: "rearm re-arms from the transcript whatever became of the marker; disarm deletes it on clear"
+        outcome: ok
+      - file: .claude/hooks/observe-ground.sh
+        section: "(full)"
+        read_type: reference
+        extract: "check runs python only when the session's marker exists"
+        outcome: ok
+      - file: .claude/settings.json
+        section: "hooks"
+        read_type: reference
+        extract: "SessionStart matcher \"\" runs rearm for every source"
+        outcome: ok
+      - file: scripts/record_decision.py
+        section: "(full)"
+        read_type: reference
+        extract: "Log named by session_id, written to the container's tree; only a commit saves it"
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 1, 5"
+        read_type: reference
+        extract: "Canary and End: '/clear, then commit' is the only way out it names"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "First `/observe` run; Probed separately"
+        read_type: reference
+        extract: "Probe method: a fresh armed session tries calls once each with the maintainer's go-ahead"
+        outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "4 (S1 to S5)"
+        read_type: gate
+        extract: "The guarantees the fix must keep"
+        outcome: ok
+      - file: tests/scripts/test_observe_ground.py
+        section: "(full)"
+        read_type: reference
+        extract: "Harness copies the hook into a temp repo; disarm and rearm cases to extend"
+        outcome: ok
+  - id: reproduce
+    name: Establish whether disarm runs on /clear in a cloud session
+    steps:
+      - file: sdd/backlog/bk-498-observe-resume-rearm.md
+        section: "Probed (2026-10-28)"
+        read_type: verify
+        extract: >-
+          The incident's 1,421 transcript events hold no SessionEnd hook event;
+          the clear is a conversation_reset event (10ba6e13) and a
+          SessionStart:clear burst under c1c866a2. A probe session armed by a
+          written marker, then cleared by the maintainer, had its marker gone
+          afterwards (result events 2688f07c, f991e3b1): disarm runs on /clear
+          in a cloud session, and the event stream does not show it. So in the
+          incident disarm most likely removed the marker and rearm re-armed
+          from the transcript. A user-level hook capturing payloads was refused
+          by auto mode as self-modification, so no payload was recorded: a
+          limit of the probe, not of the dossier
+        outcome: ok
+      - file: "Probe session session_01QqsRzKrxKk9F4n6NERU7YM, PR #1189 at d85cc02"
+        section: "events: hook_response per hook_name and session_id"
+        read_type: verify
+        extract: >-
+          Live run of the release on the cloud harness. Armed via the hook
+          (Bash and Read refused, naming /observe release); /observe release
+          printed the release notice and wrote {"released": "release"}; record
+          writes and rm or Write of the marker refused, git status allowed.
+          Re-armed, then /clear: SessionStart:clear under a new id 40002f14,
+          and the marker became {"released": "clear", ...}. A later
+          cross-session message woke the pre-clear session (SessionStart:resume
+          under af943d1e), the incident's shape, and it stayed released: Read
+          and Bash passed, Bash naming tmp/observe/ was refused. A typed
+          "/observe release." (trailing full stop) was refused as a non-fresh
+          arm
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/scripts/test_observe_ground.py
+        section: "clear, release, refusals"
+        read_type: gate
+        extract: >-
+          Each new or changed test was seen failing before its fix: clear
+          deleted the marker, a cleared session resumed was refused Bash (the
+          incident), `/observe release` hit the usage refusal, refusals named no
+          way out. At the PR's close, this file run against master's hook (a
+          1bcab30 worktree with the test file copied in) fails 11 of 91 IDs:
+          test_clear_ends_the_restriction,
+          test_clear_releases_an_unreadable_marker,
+          test_a_cleared_session_is_not_rearmed_on_resume, both
+          test_release_frees_a_session_but_locks_its_record variants, both
+          test_a_released_session_cannot_drop_its_own_release variants,
+          test_release_without_an_observe_session_is_refused,
+          test_refusals_name_the_way_out, and the release-after-tool and
+          release-before-tool variants of
+          test_a_released_transcript_resumes_released.
+          pytest-asyncio 1.4.1 in the fresh hatch env raises its unset-loop-scope
+          warning as an error at configure, so runs passed
+          `-o asyncio_default_fixture_loop_scope=function`
+        outcome: ok
+  - id: implement
+    name: Release marker in the hook, the skill's release step
+    steps:
+      - file: scripts/observe_ground.py
+        section: "arm, rearm, check, disarm"
+        read_type: gate
+        extract: "One marker shape for both exits; record closed to Write, Edit, NotebookEdit and Bash naming it"
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 0, 5; Rules"
+        read_type: gate
+        extract: "Release step commits the logs and designs nothing"
+        outcome: ok
+  - id: review_fixes
+    name: Fix passes from the PR #1189 review
+    steps:
+      - file: scripts/observe_ground.py
+        section: "_check_released, _armed_args, refusals"
+        read_type: gate
+        extract: >-
+          A release closes every file under sdd/observe/records/, its own
+          record or another entry's; MultiEdit joins Write, Edit and
+          NotebookEdit; check's refusals and rearm's lock notice name /observe
+          release; a typed /observe release anywhere in the transcript ends the
+          arming rearm reads (the verification pass showed a scan stopping at
+          the first tool use never saw a real one, since the canary Read comes
+          first), and rearm writes it as a release marker so the records stay
+          closed; a released session cannot write or name tmp/observe/, so it
+          cannot drop its own release. Each pinned by a test seen failing first
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "frontmatter, Ground, Step 0"
+        read_type: gate
+        extract: "Step 0 commits every uncommitted decision log, then stops; Ground binds an armed session only"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1189 --trace-block-only` at head 26cb89b.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1189 --trace-block-only"
+  pr: 1189
+  review_rounds: 15
+  submissions: 9
+  findings: 31
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.72
+    - round: 2
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.18
+    - round: 3
+      findings: 8
+      origin: {loop-introduced: 1, original: 5, pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 8}
+      duration_hours: 0.23
+    - round: 4
+      findings: 4
+      origin: {loop-introduced: 1, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 3, unknown: 1}
+      duration_hours: 0.24
+    - round: 5
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.64
+    - round: 6
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 7
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.34
+    - round: 8
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.37
+    - round: 9
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.58
+  by_file:
+    - path: "scripts/observe_ground.py"
+      findings: 16
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 4
+    - path: "sdd/traces/bk-498-observe-resume-rearm.yml"
+      findings: 4
+    - path: "pyproject.toml"
+      findings: 3
+    - path: ".claude/skills/observe/SKILL.md"
+      findings: 2
+    - path: ".claude/hooks/observe-ground.sh"
+      findings: 1
+    - path: "tests/scripts/test_observe_ground.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-498-observe-resume-rearm.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/f13251b9-0e40-5453-864a-3e334c0cc137.jsonl"
+    - "sdd/decisions/ffc739ac-9133-4598-b0f1-0940c49d28a7.jsonl"
+    - "sdd/process-budget.json"
+  review_driven_commits:
+    - sha: "59ba721"
+      subject: "fix: address PR #1189 review"
+    - sha: "5f9f674"
+      subject: "fix: address PR #1189 review"
+    - sha: "f8cd3a1"
+      subject: "fix: address PR #1189 review"
+    - sha: "53ab566"
+      subject: "fix: address PR #1189 review"
+    - sha: "5e67145"
+      subject: "BK-498: decision log"
+    - sha: "a9cc687"
+      subject: "Merge master (BUG-345, PR #1190) into BK-498"
+    - sha: "21daa57"
+      subject: "BK-498: Trace lists the split review dialog's log; BUG-345 note matches the merge"
+    - sha: "d8eb978"
+      subject: "fix: address PR #1189 review"
+    - sha: "c1452b0"
+      subject: "BK-498: decision log"
+    - sha: "1af335e"
+      subject: "Merge master (#1191) into BK-498"
+    - sha: "2cb4a3c"
+      subject: "fix: address PR #1189 review"
+    - sha: "d85cc02"
+      subject: "fix: address PR #1189 review"
+    - sha: "635de63"
+      subject: "BK-498: Trace records the live probe of the release"
+    - sha: "028631d"
+      subject: "fix: address PR #1189 review"
+    - sha: "26cb89b"
+      subject: "BK-498: File BK-500 for two misleading hook messages from the live probe"
+  ci: {verdict: PENDING, failed: 0, pending: 11}

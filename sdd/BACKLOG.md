@@ -516,15 +516,6 @@ no clause of the contract ships unexercised.
   `shared.md`'s. Runs after several entries' flows, which also decide core against extension beyond
   the 24 entries, never a session. Open decision: when, and after which entries.
 
-- [ ] **BK-498 — After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one**
-  spec: — · effort: M · audience: contributor.tooling, contributor.process
-  After `/clear` started a new session, a worker restart resumed OP-01's pre-clear `/observe` session, armed
-  (by `rearm` or a marker `disarm` never removed; unknown which): Bash and reads off the ground were refused,
-  and the new session's open dialog was answered into it, logged under OP-01's id and lost uncommitted. The
-  hook arms a resumed design session as designed; why the harness resumed it is not in the repo's code. Open
-  decision: what a hook could tell such a resume by, and how a wrongly armed session gets out by itself.
-  Detail: [dossier](backlog/bk-498-observe-resume-rearm.md)
-
 - [ ] **BK-499 — An `/observe` record's checks go unverified and its session never sees an implementation, so contradictions reach the record**
   spec: — · effort: M · audience: contributor.process, library.maintainer
   OP-01's record took thirteen open items after its session closed (O14 to O16 in PR #1188's review, O17 to O26
@@ -532,6 +523,14 @@ no clause of the contract ships unexercised.
   decision's author and never re-run (C1, C2, G5), text no dialog asked (O14 to O16), backend and runtime
   behaviour outside the unprimed ground (C3 to C6), questions no axis raises (C7, G1 to G4). Open decision:
   which class an End-step pass, a primed review step in RFC-0024 § 9 (D4 amended) or the axes' F2 revision takes.
+
+- [ ] **BK-500 — Two `/observe` hook messages mislead: a refused record write names the wrong file, and `/observe release.` reads as an arming**
+  spec: — · effort: S · audience: contributor.tooling
+  Seen in PR #1189's live probe: a released session's refused Write to `records/OP-02.md` names
+  `records/OP-01.md` (`_check_released` reports the marker's record, not the target); a typed
+  `/observe release.` (trailing full stop) parses as the arming argument `release.` and gets "needs a
+  fresh session". Both block correctly; only the wording misleads. Open decision: none; name the
+  target, and treat trailing punctuation on `release` as a release.
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process

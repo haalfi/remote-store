@@ -476,6 +476,20 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-498 — After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one**
+  spec: — · effort: M · audience: contributor.tooling, contributor.process
+  `disarm` on `/clear` now turns the marker into a release instead of deleting it, and `rearm` never
+  re-arms a released session; a probe showed `disarm` runs on `/clear` in a cloud session. The maintainer's
+  `/observe release` releases an armed or locked session; its tool-call refusals and `rearm`'s lock notice
+  now name it. A released session may do anything but write under `sdd/observe/records/` or
+  `tmp/observe/` or name either in a Bash command, so it can commit its decision logs but neither write a
+  record nor drop its own release. Out of the hook's reach: why
+  the harness resumed the cleared id, a dialog split across two session ids, and a cleared session resumed
+  in a new container or under a new session_id, which re-arms until `/observe release` is typed; a typed
+  release holds for every later resume, since `rearm` reads it from the transcript.
+  Detail: [dossier](backlog/bk-498-observe-resume-rearm.md). Trace:
+  [bk-498](traces/bk-498-observe-resume-rearm.yml).
+
 - [x] **BUG-345 — pytest-asyncio 1.4.1 warns that `asyncio_default_fixture_loop_scope` is unset, and `filterwarnings = error` aborts every pytest run**
   spec: — · effort: S · audience: infra.test, contributor.tooling
   The warning fires in `pytest_configure`, so every run ends in INTERNALERROR before collection:

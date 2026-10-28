@@ -74,6 +74,33 @@ session ids inside it change.
   `c1c866a2`. That is the harness's doing, outside this repository, so no
   root cause is named here.
 
+## Probed (2026-10-28)
+
+- **The incident's events show no SessionEnd hook.** All of
+  `session_01QqsRzJAiM44XJo3cR8oUEJ`'s events were read, 1,421 across 15 pages: none
+  is a SessionEnd hook event. The clear is a `conversation_reset` event
+  (`10ba6e13-ef44-47b6-9bc5-13ff1349260c`, trigger `clear`, still under
+  `bcb85b21`) followed by the only `SessionStart:clear` burst, under `c1c866a2`.
+- **`disarm` runs on `/clear` in a cloud session anyway.** A throwaway session
+  (`session_01QqsRzNLhUdtNmR6K7yRRd6`) wrote its own marker; the maintainer typed
+  `/clear` there (result event `2688f07c-297e-4670-97d4-ef55e72db4e6`,
+  `local_command: clear`), and the new session's `ls -la tmp/observe` found the
+  directory empty (result event `f991e3b1-77f4-408b-b23d-46ffdf766afc`). So the
+  event stream does not show SessionEnd hooks, and in the incident `disarm` most
+  likely removed the marker and the resume's `rearm` re-armed from the transcript.
+  A user-level hook to capture the payloads was refused by auto mode as
+  self-modification, so no payload was recorded.
+
+## Resolution (2026-10-28)
+
+The maintainer chose, in the dialog logged in
+`sdd/decisions/f13251b9-0e40-5453-864a-3e334c0cc137.jsonl`: a release marker
+that `disarm` writes on `/clear` and `rearm` honours; `/observe release` typed
+by the maintainer as the way out, the record staying closed to a released
+session; and logs committed by the released session itself, `record_decision.py`
+unchanged. What the hook cannot reach is in `scripts/observe_ground.py`'s
+docstring.
+
 ## Prescription (advisory)
 
 The open decision is what a hook could tell such a resume by. The SessionStart

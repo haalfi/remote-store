@@ -13,17 +13,45 @@ allowlist is the ground register plus files the maintainer names at the start).
   ``<entry>`` is no row of the catalogue, or when a named path is missing, is
   0.33 code, tests or a spec 001 to 050 (never ground, RFC-0024 § R1), is
   another entry's input file, or is a ``reopened`` register row.
+  The prompt ``/observe release`` instead releases an armed or locked session
+  (below); in a session with no marker it is refused.
 * ``rearm`` (``SessionStart``): a resumed or compacted session that ``arm``
   armed is armed again, from the last ``/observe`` prompt before its first tool
-  use, so it never resumes unarmed, whatever became of its marker. When those
+  use, so it never resumes unarmed, whatever became of its marker; it resumes
+  released instead when the marker is a release or a typed ``/observe release``
+  ends the arming in the transcript (a later arming prompt before any tool use
+  arms again, as ``arm`` would). When those
   arguments no longer arm (the catalogue reopened, an entry or named path gone),
   or the hook fails on a transcript naming ``/observe`` or one it cannot read, the session is locked
-  instead: every call but the neutral ones is refused until ``/clear``.
+  instead: every call but the neutral ones is refused until ``/clear`` or a release.
 * ``check`` (``PreToolUse``): in an armed session, a call passes only if it
-  stays inside the allowlist; every other session passes untouched, the
-  wrapper's fail-closed branch included.
-* ``disarm`` (``SessionEnd``): removes the marker only when the session is
-  cleared (``reason: clear``); a session that ends any other way may resume.
+  stays inside the allowlist; a released session may do anything but write under
+  ``sdd/observe/records/`` or ``tmp/observe/`` or name either in Bash (below);
+  every other session passes untouched, the wrapper's fail-closed
+  branch included.
+* ``disarm`` (``SessionEnd``): when the session is cleared (``reason: clear``),
+  turns its marker into a release; a session that ends any other way may resume
+  armed.
+
+A release (``{"released": "clear" | "release", "record": ...}``) marks a session
+that is no longer a design session, so a resume never re-arms it (BK-498: a
+worker restart after ``/clear`` resumed the cleared session, not the new one).
+It frees the session, so it can commit its decision logs, and keeps every file
+under ``sdd/observe/records/`` and ``tmp/observe/`` closed to Write, Edit,
+MultiEdit, NotebookEdit and a Bash command naming either directory: a session
+that may have read off the ground never writes a record (S1, S4), its own or
+another entry's, nor drops its own release. That Bash check matches the path as
+text, so it also refuses reading or staging those files by name, and a command
+that writes them without spelling the path passes.
+A finished record is committed after ``/clear``, by a session with no marker.
+Only the maintainer can release, by a prompt.
+
+What the hook cannot do: tell why the harness resumed a cleared session; join
+a dialog split across two session ids, whose halves the recorder files under
+each; or release a cleared session resumed in a new container or under a new
+session_id, where no marker is found under its id and the transcript holds no
+release (``/clear`` writes none there), so ``rearm`` arms it again. ``/observe
+release`` is the way out, and once typed it holds for every later resume.
 
 The skill re-runs its canary before every axis as well, so an unarmed session
 stops even where these events do not reach.
@@ -62,7 +90,8 @@ METHOD_FILES = (
     REGISTER,
 )
 CATALOGUE = "sdd/observe/catalogue.md"
-RECORD = "sdd/observe/records/{entry}.md"
+RECORDS = "sdd/observe/records/"
+RECORD = RECORDS + "{entry}.md"
 INPUTS = "sdd/observe/inputs/"
 INPUT = INPUTS + "{entry}.md"
 
@@ -80,6 +109,12 @@ _OWN_SURFACE = re.compile(r"remote[-_ ]?store", re.IGNORECASE)
 _TOOL_USE = re.compile(r'"type"\s*:\s*"tool_use"')
 # Tools that read no file and write none.
 _NEUTRAL = frozenset({"AskUserQuestion", "ToolSearch", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet"})
+
+
+_RELEASE = ["release"]
+_WAY_OUT = "Not a design session? The maintainer types /observe release."
+# Write tools refused on a released session's record, with the key naming the file.
+_WRITERS = {"Write": "file_path", "Edit": "file_path", "MultiEdit": "file_path", "NotebookEdit": "notebook_path"}
 
 
 class Refused(Exception):
@@ -130,12 +165,15 @@ def _armed_args(transcript: Path) -> list[str] | None:
     """The arguments of the last ``/observe`` prompt before the transcript's first tool use.
 
     These are the prompts ``arm`` accepts, a later one replacing an earlier one, so
-    this is what the session was armed with; None if it never was.
+    this is what the session was armed with; None if it never was. A typed
+    ``/observe release`` after the arming, before or after the first tool use, ends
+    it: the result is then ``["release"]``.
     """
-    args = None
+    args, used = None, False
     for line in transcript.read_text(encoding="utf-8", errors="replace").splitlines():
         if _TOOL_USE.search(line):
-            break
+            used = True
+            continue
         try:
             entry = json.loads(line)
         except ValueError:
@@ -146,14 +184,48 @@ def _armed_args(transcript: Path) -> list[str] | None:
         if isinstance(content, list):
             content = " ".join(c.get("text", "") for c in content if isinstance(c, dict) and c.get("type") == "text")
         if isinstance(content, str):
-            args = _observe_args(content) or args
+            prompt = _observe_args(content)
+            # A release ends any arming before it; after a tool use arm accepts nothing else.
+            if prompt == _RELEASE:
+                args = _RELEASE if args else None
+            elif not used:
+                args = prompt or args
     return args
 
 
+def _state(root: Path, session_id: str) -> dict[str, Any] | None:
+    """The session's marker, or None when it has none."""
+    marker = _marker(root, session_id)
+    return json.loads(marker.read_text(encoding="utf-8")) if marker.is_file() else None
+
+
+def _release(root: Path, session_id: str, how: str) -> bool:
+    """Turn the session's marker into a release; False when it has none."""
+    try:
+        state = _state(root, session_id)
+    except ValueError:  # an unreadable marker is released without its record
+        state = {}
+    if state is None:
+        return False
+    if "released" not in state:
+        state = {"released": how, "record": state.get("record")}
+        _marker(root, session_id).write_text(json.dumps(state), encoding="utf-8", newline="\n")
+    return True
+
+
 def arm(payload: dict[str, Any], root: Path) -> str | None:
-    """Write the marker for an ``/observe`` prompt; return its record, or None."""
+    """Write the marker for an ``/observe`` prompt, or release one; return its record, or None."""
     args = _observe_args(payload.get("prompt") or "")
     if args is None:
+        return None
+    if args == _RELEASE:
+        if not _release(root, payload.get("session_id") or "", "release"):
+            raise Refused("no /observe session to release in this session")
+        print(
+            "/observe ground hook: this session is released. It is no design session: commit every uncommitted "
+            "sdd/decisions/ log on the work branch, then stop. No record is written or staged here: a record is "
+            "written by a fresh /observe session and committed after /clear."
+        )
         return None
     transcript = payload.get("transcript_path")
     if (
@@ -168,14 +240,25 @@ def arm(payload: dict[str, Any], root: Path) -> str | None:
 def rearm(payload: dict[str, Any], root: Path) -> str | None:
     """Re-arm a resumed or compacted session that ``arm`` armed; return its record, or None.
 
-    Its marker may be gone (cleared, or a resume under a new session_id) while its
-    transcript still holds the design dialogue, so a resume never runs unarmed.
+    Its marker may be gone (a resume under a new session_id, or in a new container)
+    while its transcript still holds the design dialogue, so a resume never runs
+    unarmed. A release, as marker or as a typed ``/observe release`` that ends the
+    arming in the transcript, resumes released: the transcript's is written as a
+    release marker, so its records stay closed.
     """
     transcript = payload.get("transcript_path")
     if not transcript or not Path(transcript).is_file():
         return None
+    with contextlib.suppress(Refused, OSError, ValueError):
+        if "released" in (_state(root, payload.get("session_id") or "") or {}):
+            return None
     try:
         args = _armed_args(Path(transcript))
+        if args == _RELEASE:
+            marker = _marker(root, payload.get("session_id") or "")
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(json.dumps({"released": "release", "record": None}), encoding="utf-8", newline="\n")
+            return None
         return None if args is None else _write_marker(payload, root, args)
     except Exception as exc:
         # SessionStart cannot block: a resume that cannot re-arm, refused or crashed, is locked.
@@ -188,7 +271,7 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
         marker = _marker(root, payload.get("session_id") or "")
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text(json.dumps({"locked": reason}), encoding="utf-8", newline="\n")
-        raise Refused(f"session locked: {reason}") from exc
+        raise Refused(f"session locked: {reason}. {_WAY_OUT}") from exc
 
 
 def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:
@@ -236,22 +319,29 @@ def check(payload: dict[str, Any], root: Path) -> None:
     tool = payload.get("tool_name") or ""
     args = payload.get("tool_input") or {}
     cwd = payload.get("cwd")
+    if "released" in state:
+        _check_released(state, tool, args, root, cwd)
+        return
     if tool in _NEUTRAL:
         return
     if "entry" not in state:  # locked by rearm, or written by the hook's operation-slug version
         reason = state.get("locked") or "its marker predates catalogue entries"
-        raise Refused(f"{tool}: this /observe session cannot be re-armed ({reason}). /clear, then start afresh.")
+        raise Refused(
+            f"{tool}: this /observe session cannot be re-armed ({reason}). /clear, then start afresh. {_WAY_OUT}"
+        )
     if tool == "Skill" and args.get("skill") == "observe":
         return
     if tool in ("WebSearch", "WebFetch"):
         target = args.get("query") or args.get("url") or ""
         if _OWN_SURFACE.search(target):
-            raise Refused(f"{tool}: remote-store's own code and docs describe version 0.33, never ground (S1)")
+            raise Refused(
+                f"{tool}: remote-store's own code and docs describe version 0.33, never ground (S1). {_WAY_OUT}"
+            )
         return
     doc = _real(root, state["record"])
     if tool in ("Write", "Edit"):
         if _real(root, args.get("file_path") or "", cwd) != doc:
-            raise Refused(f"{tool}: this session writes only {state['record']} (S4)")
+            raise Refused(f"{tool}: this session writes only {state['record']} (S4). {_WAY_OUT}")
         return
     if tool in ("Read", "Grep"):
         target = args.get("file_path") if tool == "Read" else args.get("path")
@@ -264,18 +354,42 @@ def check(payload: dict[str, Any], root: Path) -> None:
             raise Refused(
                 f"{tool}: {target or '(no path)'} is outside the ground. Allowed: the files {REGISTER} "
                 f"lists as active, the method files {', '.join(METHOD_FILES)}, the entry's input "
-                f"{state['input']}, the record {state['record']} and the paths named at /observe (S3)."
+                f"{state['input']}, the record {state['record']} and the paths named at /observe (S3). "
+                f"{_WAY_OUT}"
             )
         return
-    raise Refused(f"{tool}: not available in an /observe session (S2). Read allowed files with Read.")
+    raise Refused(f"{tool}: not available in an /observe session (S2). Read allowed files with Read. {_WAY_OUT}")
+
+
+def _check_released(state: dict[str, Any], tool: str, args: dict[str, Any], root: Path, cwd: str | None) -> None:
+    """Raise Refused when a released session's call writes a record or an /observe marker, or names either in Bash.
+
+    A marker is guarded as a record is: removing its own release would free the
+    records again and let a later resume re-arm it.
+    """
+    record = state.get("record") or RECORDS
+    for guarded, why in (
+        (
+            RECORDS,
+            f"{record} is written only by a fresh /observe session and committed after /clear, never named here (S4)",
+        ),
+        (MARKER_DIR, f"{MARKER_DIR}/ holds this session's release, which only the hook writes"),
+    ):
+        if tool in _WRITERS:
+            target = _real(root, args.get(_WRITERS[tool]) or "", cwd)
+            writes = target.startswith(_real(root, guarded) + os.sep)
+        else:
+            writes = tool == "Bash" and guarded.rstrip("/") in str(args.get("command") or "")
+        if writes:
+            raise Refused(f"{tool}: this session is released; {why}")
 
 
 def disarm(payload: dict[str, Any], root: Path) -> None:
-    """Drop the marker only when the session is cleared: any other end may be resumed."""
+    """Release the session's marker when it is cleared: any other end may be resumed armed."""
     if payload.get("reason") != "clear":
         return
-    with contextlib.suppress(Refused):
-        _marker(root, payload.get("session_id") or "").unlink(missing_ok=True)
+    with contextlib.suppress(Refused, OSError, ValueError):
+        _release(root, payload.get("session_id") or "", "clear")
 
 
 def _concerns_observe(mode: str, raw: str, root: Path) -> bool:
@@ -309,7 +423,8 @@ def main(argv: list[str], root: Path = ROOT) -> int:
     except Exception as exc:  # noqa: BLE001 -- fail closed for an armed session only
         if not _concerns_observe(mode, raw, root):
             return 0
-        print(f"Blocked (/observe ground hook failed): {type(exc).__name__}: {exc}", file=sys.stderr)
+        hint = f" {_WAY_OUT}" if mode == "check" else ""
+        print(f"Blocked (/observe ground hook failed): {type(exc).__name__}: {exc}.{hint}", file=sys.stderr)
         return 2
     return 0
 
