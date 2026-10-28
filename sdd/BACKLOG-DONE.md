@@ -488,6 +488,15 @@ ships them.
   Detail: [dossier](backlog/bk-498-observe-resume-rearm.md). Trace:
   [bk-498](traces/bk-498-observe-resume-rearm.yml).
 
+- [x] **BUG-345 — pytest-asyncio 1.4.1 warns that `asyncio_default_fixture_loop_scope` is unset, and `filterwarnings = error` aborts every pytest run**
+  spec: — · effort: S · audience: infra.test, contributor.tooling
+  The warning fires in `pytest_configure`, so every run ends in INTERNALERROR before collection:
+  CI Full Matrix on master (run 40684607044) and every test lane of PR #1189 (run 40689727840).
+  The option is set to `function`, which changes no fixture: every fixture wider than function
+  scope in `tests/` and `benchmarks/` is a sync `def`. The dev floor rises from 0.23 to 1.0, since
+  0.23.8 rejects the key as unknown and 0.24.0 fails `tests/aio`; 1.0.0 passes it.
+  Trace: [bug-345](traces/bug-345-asyncio-loop-scope-unset.yml).
+
 - [x] **BK-497 — The input files carry only research § 4, so per-entry findings in § 2 reach no session**
   spec: — · effort: S · audience: contributor.process, library.maintainer
   Each input file with a § 2 finding (all but OP-22 and OP-23) gains a section copying its passages
