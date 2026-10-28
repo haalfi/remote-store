@@ -525,13 +525,13 @@ no clause of the contract ships unexercised.
   decision: what a hook could tell such a resume by, and how a wrongly armed session gets out by itself.
   Detail: [dossier](backlog/bk-498-observe-resume-rearm.md)
 
-- [ ] **BK-499 — `/observe` checks a decision only against earlier ones and never sees a backend, so contradictions reach the record**
+- [ ] **BK-499 — An `/observe` record's checks go unverified and its session never sees an implementation, so contradictions reach the record**
   spec: — · effort: M · audience: contributor.process, library.maintainer
-  OP-01's record took thirteen reopens after its session closed (O14 to O16 in PR #1188's review, O17 to O26
-  by [audit-025](audits/audit-025-op-01-record-review.md), whose § 5 sorts them): step 3 checks each decision
-  against earlier ones only, so a later decision against an earlier reason passes, and the unprimed ground (S1)
-  keeps backend behaviour out with no step between record and spec that reads it. Open decision: the End
-  step's whole-record pass, and where a primed backend review sits in RFC-0024 § 9 (D4's method amended).
+  OP-01's record took thirteen open items after its session closed (O14 to O16 in PR #1188's review, O17 to O26
+  by [audit-025](audits/audit-025-op-01-record-review.md)), its § 5's four classes: checks written once by the
+  decision's author and never re-run (C1, C2, G5), text no dialog asked (O14 to O16), backend and runtime
+  behaviour outside the unprimed ground (C3 to C6), questions no axis raises (C7, G1 to G4). Open decision:
+  which class an End-step pass, a primed review step in RFC-0024 § 9 (D4 amended) or the axes' F2 revision takes.
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
@@ -539,7 +539,7 @@ no clause of the contract ships unexercised.
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
   Its test runs are in the dossier; step 4 is spec 052, step 4b spec 053 and the catalogue (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md). Not done: step 5's spec, model,
-  profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its reopens O14 to O26 ([audit-025](audits/audit-025-op-01-record-review.md)).
+  profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O26 ([audit-025](audits/audit-025-op-01-record-review.md)).
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
