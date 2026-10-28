@@ -1,0 +1,106 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (/observe OP-01, § 9 step 5)"
+trigger: >-
+  BK-485's entry read "Not done: § 9 steps 5 (`/observe OP-01`) and 6", and
+  BK-497 had completed OP-01's input file, so `/observe OP-01` was next: the
+  first catalogue entry decided axis by axis in an unprimed session, the first
+  part of research § 9 step 5's `read()` flow.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+surprising_ripples:
+  - sdd/observe/records/OP-01.md
+co_shipped_items: []
+decisions:
+  - sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
+expected_ripples:
+  - sdd/BACKLOG.md
+orient:
+  - items: [BK-496]
+    verdict: unrelated
+    evidence: >-
+      BK-496's entry: the API spec "Runs after several entries' flows, which also
+      decide core against extension beyond the 24 entries, never a session." It
+      waits on records like OP-01's and constrains nothing a session decides.
+  - items: [BK-489]
+    verdict: unrelated
+    evidence: >-
+      BK-485's entry: "D10 is BK-489's". The frozen kernel line is decided with
+      the read() flow's evidence in hand (research § 9 "Not yet"), after this
+      step, not in it.
+phases:
+  - id: design
+    name: The /observe OP-01 session
+    steps:
+      # The session ran armed (S1 to S4), so its reads are the ground the
+      # record's Session section lists; this trace was written after it, in a
+      # separate session that did not witness them.
+      - file: .claude/skills/observe/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "Canary before each axis, Load the entry's row, per-question shape, shared: tags left for after the session"
+      - file: sdd/observe/catalogue.md
+        section: "OP-01 row; Not in v1"
+        read_type: gate
+        extract: "Scope: read an item, whole or streamed, serves N-01 and N-02; no Not in v1 row is a Form of OP-01"
+      - file: sdd/observe/ground-register.md
+        section: "(full)"
+        read_type: gate
+        extract: "Active rows read; formal models skipped, as no decision cites a clause they check"
+      - file: sdd/observe/axes.md
+        section: "AX-1 to AX-15"
+        read_type: gate
+        extract: "Fifteen axes walked in order; the Environment drafted as E1 to E14, E15 added by D19"
+      - file: sdd/observe/shared.md
+        section: "(full)"
+        read_type: reference
+        extract: "OP-01's flow fills Handle, Lifetime and State and grows the error layer; open items tagged shared:"
+      - file: sdd/observe/inputs/OP-01.md
+        section: "(full)"
+        read_type: reference
+        extract: "Research § 4 and § 2 passages for OP-01, Q4's shared rows and note 7"
+      - file: sdd/specs/051-store-tree.md
+        section: "(full)"
+        read_type: reference
+        extract: "TREE-001's partition and TREE-002 for the root (D4, D9); the store tuple for D10"
+      - file: sdd/specs/052-store-key.md
+        section: "(full); profiles/052-store-key.md"
+        read_type: reference
+        extract: "ν as step s1 of a call; KEY-001, KEY-013 and the Notes cited by D4, D8, D9, D34"
+      - file: sdd/specs/053-store-operations.md
+        section: "(full)"
+        read_type: reference
+        extract: "OPS-001, OPS-002 for D1's two forms; Notes (Extensions) for D11"
+  - id: bookkeeping
+    name: Land the record's step
+    steps:
+      - file: sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          41 lines, every one a dialog of the session (the Environment, then
+          AX-1 to AX-15), all already in 23ae05a, so none to drop. The second log the request
+          named, c1c866a2, exists in no checkout, commit or branch reachable
+          here; the maintainer chose to proceed without it
+      - file: sdd/BACKLOG.md
+        section: "How this file works; BK-485"
+        read_type: gate
+        extract: "Diagnosis at most five lines; step 5's record done, its spec, model, profiles and comparison open"
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 9 step 5"
+        read_type: gate
+        extract: "Step 5 is the whole read() flow: session, spec, reference model, profile tables, 0.33 comparison"
+      - file: sdd/traces/_schema.yml
+        section: "decisions, orient, review"
+        read_type: reference
+        extract: "List the logs the work's dialogs went to; review block pasted from ship-report at the close"
+      - file: scripts/check_repo_traps.py
+        section: "invisible characters"
+        read_type: verify
+        extract: >-
+          hatch run fast failed on two literal U+FEFF in OP-01/D5's options,
+          committed in 23ae05a. Each became the escape `\ufeff`, which keeps the
+          Python literal's value; nothing else in the record changed
