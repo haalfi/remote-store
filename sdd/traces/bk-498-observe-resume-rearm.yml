@@ -13,12 +13,15 @@ audience:
   - contributor.process
 discovery_followups:
   # pytest-asyncio 1.4.1's unset-loop-scope warning aborted every pytest run;
-  # fixed in PR #1190 and ported here.
+  # fixed in PR #1190, ported here until it merged, then taken in by merging master.
   - BUG-345
 surprising_ripples: []
 co_shipped_items: []
 decisions:
   - sdd/decisions/f13251b9-0e40-5453-864a-3e334c0cc137.jsonl
+  # The review's merge-order and row-waiver dialog: asked here, answered in
+  # f13251b9 after a worker restart split it across the two session ids.
+  - sdd/decisions/ffc739ac-9133-4598-b0f1-0940c49d28a7.jsonl
 orient:
   - items: [BK-485]
     verdict: constrains
