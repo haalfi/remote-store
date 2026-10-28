@@ -2,9 +2,10 @@ id: BK-498
 title: "After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one"
 trigger: >-
   On 2026-10-28, after `/clear` ended OP-01's `/observe` session, a worker
-  restart resumed that pre-clear session; `rearm` armed it again from its
-  transcript, so it refused Bash and off-ground reads, could not get out by
-  itself, and its decision logs stayed uncommitted in its container.
+  restart resumed that pre-clear session, armed again (most likely by
+  `rearm` from its transcript; the dossier's Probed section), so it refused
+  Bash and off-ground reads, could not get out by itself, and its decision
+  logs stayed uncommitted in its container.
 source_items:
   - BK-498
 audience:
@@ -88,7 +89,7 @@ phases:
     name: Establish whether disarm runs on /clear in a cloud session
     steps:
       - file: sdd/backlog/bk-498-observe-resume-rearm.md
-        section: "What the code shows"
+        section: "Probed (2026-10-28)"
         read_type: verify
         extract: >-
           The incident's 1,421 transcript events hold no SessionEnd hook event;
@@ -99,8 +100,9 @@ phases:
           in a cloud session, and the event stream does not show it. So in the
           incident disarm most likely removed the marker and rearm re-armed
           from the transcript. A user-level hook capturing payloads was refused
-          by auto mode as self-modification, so no payload was recorded
-        outcome: unclear
+          by auto mode as self-modification, so no payload was recorded: a
+          limit of the probe, not of the dossier
+        outcome: ok
   - id: tests
     name: Failing tests first
     steps:
@@ -108,9 +110,18 @@ phases:
         section: "clear, release, refusals"
         read_type: gate
         extract: >-
-          Six tests failed before the fix, each for its reason: clear deleted
-          the marker, a cleared session resumed was refused Bash (the incident),
-          `/observe release` hit the usage refusal, refusals named no way out.
+          Each new or changed test was seen failing before its fix: clear
+          deleted the marker, a cleared session resumed was refused Bash (the
+          incident), `/observe release` hit the usage refusal, refusals named no
+          way out. At the PR's close, this file run against master's hook (a
+          c58ee74 worktree with the test file copied in) fails 8 of 86 IDs:
+          test_clear_ends_the_restriction,
+          test_clear_releases_an_unreadable_marker,
+          test_a_cleared_session_is_not_rearmed_on_resume, both
+          test_release_frees_a_session_but_locks_its_record variants,
+          test_release_without_an_observe_session_is_refused,
+          test_refusals_name_the_way_out,
+          test_a_release_before_any_tool_leaves_a_resume_unarmed.
           pytest-asyncio 1.4.1 in the fresh hatch env raises its unset-loop-scope
           warning as an error at configure, so runs passed
           `-o asyncio_default_fixture_loop_scope=function`
@@ -127,4 +138,22 @@ phases:
         section: "Steps 0, 5; Rules"
         read_type: gate
         extract: "Release step commits the logs and designs nothing"
+        outcome: ok
+  - id: review_fixes
+    name: Fix passes from the PR #1189 review
+    steps:
+      - file: scripts/observe_ground.py
+        section: "_check_released, _armed_args, refusals"
+        read_type: gate
+        extract: >-
+          A release with no record (locked or unreadable marker) closes every
+          file under sdd/observe/records/; MultiEdit joins Write, Edit and
+          NotebookEdit; every armed or locked refusal names /observe release; a
+          release before the first tool use ends the arming rearm reads. Each
+          pinned by a test seen failing first
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "frontmatter, Ground, Step 0"
+        read_type: gate
+        extract: "Step 0 commits every uncommitted decision log, then stops; Ground binds an armed session only"
         outcome: ok

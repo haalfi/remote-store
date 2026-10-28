@@ -37,8 +37,10 @@ It frees the session, so it can commit its decision logs, and keeps its record
 closed to Write, Edit, MultiEdit, NotebookEdit and a Bash command naming the record: a
 session that may have read off the ground never writes the record (S1, S4).
 A locked or unreadable marker names no record, so its release closes every file
-under ``sdd/observe/records/``. That Bash check matches the path as text, so a
-command that writes the record without spelling it passes. Only the maintainer can release, by a prompt.
+under ``sdd/observe/records/``. That Bash check matches the path as text, so it
+also refuses reading or staging the record by name, and a command that writes
+the record without spelling it passes. A finished record is committed after
+``/clear``, by a session with no marker. Only the maintainer can release, by a prompt.
 
 What the hook cannot do: tell why the harness resumed a cleared session; join
 a dialog split across two session ids, whose halves the recorder files under
@@ -209,8 +211,9 @@ def arm(payload: dict[str, Any], root: Path) -> str | None:
         if not _release(root, payload.get("session_id") or "", "release"):
             raise Refused("no /observe session to release in this session")
         print(
-            "/observe ground hook: this session is released. It is no design session: commit its "
-            "sdd/decisions/ logs on the work branch; its record is written only by a fresh /observe session."
+            "/observe ground hook: this session is released. It is no design session: commit every uncommitted "
+            "sdd/decisions/ log on the work branch, then stop. No record is written or staged here: a record is "
+            "written by a fresh /observe session and committed after /clear."
         )
         return None
     transcript = payload.get("transcript_path")
@@ -350,7 +353,10 @@ def _check_released(state: dict[str, Any], tool: str, args: dict[str, Any], root
     else:
         writes = tool == "Bash" and record.rstrip("/") in str(args.get("command") or "")
     if writes:
-        raise Refused(f"{tool}: this session is released; {record} is written only by a fresh /observe session (S4)")
+        raise Refused(
+            f"{tool}: this session is released; {record} is written only by a fresh /observe session and "
+            "committed after /clear, never named here (S4)"
+        )
 
 
 def disarm(payload: dict[str, Any], root: Path) -> None:

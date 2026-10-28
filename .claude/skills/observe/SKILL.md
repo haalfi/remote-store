@@ -1,7 +1,7 @@
 ---
 name: observe
-description: Unprimed design session for one entry of the operation catalogue, deciding its observable semantics axis by axis with the maintainer into its record. Use only when the maintainer types /observe in a fresh session. Not for the spec or the 0.33 comparison, later steps of the flow.
-argument-hint: "<entry> [path ...]"
+description: Unprimed design session for one entry of the operation catalogue, deciding its observable semantics axis by axis with the maintainer into its record. Use only when the maintainer types /observe in a fresh session, or /observe release to end one. Not for the spec or the 0.33 comparison, later steps of the flow.
+argument-hint: "<entry> [path ...] | release"
 disable-model-invocation: true
 ---
 
@@ -12,18 +12,22 @@ comparison follow.
 
 ## Ground
 
-**You read only** `sdd/observe/ground-register.md` and its `active` rows
-(`shared.md` among them), `sdd/observe/axes.md`, this skill,
-`sdd/observe/inputs/<entry>.md`, the paths typed after the entry, and
-`sdd/observe/records/<entry>.md`, the record, the one file you write. A hook
-refuses anything else, and Bash, Glob and Agent outright. Never use what you
+In an armed session (every step but 0), **you read only**
+`sdd/observe/ground-register.md` and its `active` rows (`shared.md` among
+them), `sdd/observe/axes.md`, this skill, `sdd/observe/inputs/<entry>.md`, the
+paths typed after the entry, and `sdd/observe/records/<entry>.md`, the record,
+the one file you write. A hook refuses anything else, and Bash, Glob and Agent
+outright. Never use what you
 may know of this library's code, tests, docs or specs 001 to 050 (S1); discard
 any web result about it.
 
 ## Steps
 
-0. **`release`** as `$ARGUMENTS`: the hook released this session. Design
-   nothing; commit its `sdd/decisions/` logs.
+0. **`release`** as `$ARGUMENTS`: the hook released this session. Ground no
+   longer binds it, but no record is written or staged here. Commit every
+   uncommitted `sdd/decisions/` log in this tree, a dialog split across two
+   session ids included, then stop: skip steps 1 to 5. A finished record is
+   committed after `/clear`, by a session with no marker.
 1. **Canary**, now and before every axis, also one closed without a question
    or in a resumed session: read `tmp/observe/canary-not-ground`. Unless the
    hook refuses it with "outside the ground", the session is not armed: stop

@@ -326,7 +326,7 @@ def test_clear_releases_an_unreadable_marker(repo: Path) -> None:
     assert _call(repo, "Write", file_path="sdd/observe/records/OP-01.md", content="x").returncode == 2
 
 
-# BK-498: a worker restart after /clear resumed the cleared session, and rearm armed it again.
+# BK-498: a worker restart after /clear resumed the cleared session, most likely re-armed by rearm.
 def test_a_cleared_session_is_not_rearmed_on_resume(repo: Path, tmp_path: Path) -> None:
     _arm(repo, "/observe OP-01 sdd/research/prior.md")
     _run(repo, "disarm", {"session_id": SESSION, "reason": "clear"})

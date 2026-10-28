@@ -9,7 +9,8 @@
 # this session's own marker (tmp/observe/<session_id>.json, armed, locked or
 # released) exists. Only then
 # does it need python, and it fails closed: a missing interpreter or script
-# blocks the armed session's call instead of letting it read past its ground.
+# blocks every call of a session with a marker, a released one and its
+# `/observe release` prompt included, instead of letting it read past its ground.
 # Other sessions are never blocked; nor is `disarm`, nor `arm` or `rearm` for a
 # session that is not an /observe one.
 #

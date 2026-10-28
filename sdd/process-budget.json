@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 306524,
+  "total": 306847,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,7 +16,7 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 4690,
+    ".claude/skills/observe/SKILL.md": 5013,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -173,6 +173,12 @@
       "from": 306331,
       "to": 306524,
       "reason": "observe skill names the release step and the way out after a wrong resume"
+    },
+    {
+      "item": "BK-498",
+      "from": 306524,
+      "to": 306847,
+      "reason": "PR #1189 review: observe step 0 commits every log then stops; Ground scoped to an armed session; release in argument-hint"
     }
   ]
 }
