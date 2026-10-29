@@ -71,6 +71,13 @@ each named with what it blocks:
   `axes.md` § Per-question loop), such as `OP-01/O21`;
 - for another entry's session, or tagged `shared:`.
 
+A record is frozen only after `/observe-review`, R1 included, has re-run on
+it as its last reopen left it: no open item is not the same as done, and on
+OP-01 a primed review found four items after two readers' overlap implied
+about 0.2 left (BK-505's report, `haalfi/research@28d58e9`, § 2 T4). What
+more a freeze needs, its stopping rule (the report's § 4), is BK-505's to
+decide.
+
 A spec clause blocked by such an item is not written until the item is
 decided. **The freeze is an annotated tag**, `observe/<entry>/freeze-<n>`,
 on the master commit that carries the record in that state, created once the

@@ -545,8 +545,8 @@ no clause of the contract ships unexercised.
   OP-01's failure modes sat in the record, which the faithfulness research assumed correct
   ([`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 3). A brief for the `haalfi/research`
   repository, with RFC-0028's review and a table completeness and disjointness check (BK-504's, taken as given) as
-  its baseline and OP-01's review history as evidence. Runs beside BK-504 and the reopen; the brief is in the dossier.
-  Open decision: none until the report lands.
+  its baseline and OP-01's review history as evidence; the brief is in the dossier. The report landed
+  (`haalfi/research@28d58e9`). Open decision: which of its checks and its stopping rule bind, amending RFC-0029 R1, R2.
   Detail: [dossier](backlog/bk-505-record-quality-research.md)
 
 - [ ] **BK-506 — Whether oracles derived from a record catch spec misreadings that spec-derived checks miss is unmeasured**
