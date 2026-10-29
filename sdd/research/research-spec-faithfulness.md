@@ -137,14 +137,14 @@ are the trial design's.
   planted in the spec, after which every spec-derived layer is regenerated
   from the misread spec (§ 2.2). Six classes, ten seeds each:
 
-  | Class | Misreading |
-  |---|---|
-  | C1 | Lost case: a table row or scenario branch dropped |
-  | C2 | Added commitment: a value or order fixed that the record leaves open |
-  | C3 | Reinterpreted option: the record's rejected option adopted |
-  | C4 | Wrong non-commitment type, for example *unspecified* retagged as *deliberately not promised* |
-  | C5 | Wrong environment exposure: an environment action or fault exposed or hidden |
-  | C6 | Cross-table contradiction: one cell changed so two tables disagree |
+    | Class | Misreading |
+    |---|---|
+    | C1 | Lost case: a table row or scenario branch dropped |
+    | C2 | Added commitment: a value or order fixed that the record leaves open |
+    | C3 | Reinterpreted option: the record's rejected option adopted |
+    | C4 | Wrong non-commitment type, for example *unspecified* retagged as *deliberately not promised* |
+    | C5 | Wrong environment exposure: an environment action or fault exposed or hidden |
+    | C6 | Cross-table contradiction: one cell changed so two tables disagree |
 
 - **p10, p01, delta.** p10 is the share of seeds E catches and S⁺ misses;
   p01 the reverse; delta = p10 − p01.
@@ -159,12 +159,12 @@ are the trial design's.
   majority over five runs. Without it, a suite that fails on everything
   would "catch" every seed (§ 2.0, § 3.1).
 - **Hypotheses (§ 3.1),** tested in a fixed sequence:
-  - **H1** (primary): E catches misreadings that every spec-only check of
-    Pipeline A misses. Supported if the lower bound of p10's 95 % interval
-    is at least 0.05 (at least 8 of 60) and V holds.
-  - **H2**: E catches more than S⁺ overall (delta > 0).
-  - **H3**: at equal test counts, expectation tests catch misreadings that
-    spec-enforcing tests miss.
+    - **H1** (primary): E catches misreadings that every spec-only check of
+      Pipeline A misses. Supported if the lower bound of p10's 95 % interval
+      is at least 0.05 (at least 8 of 60) and V holds.
+    - **H2**: E catches more than S⁺ overall (delta > 0).
+    - **H3**: at equal test counts, expectation tests catch misreadings that
+      spec-enforcing tests miss.
 - **Tiers (§ 2.8).** The **core tier** runs Pipeline A only, enough for H1
   to H3; the **full tier** adds Pipelines B and C′ for a descriptive
   comparison.
