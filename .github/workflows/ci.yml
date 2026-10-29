@@ -118,14 +118,15 @@ jobs:
           # test and are not listed. The reviewer agent and /rvw-pr frontmatter are
           # here because test_reviewer_tools.py holds their tool lists equal.
           # settings.json, the /observe skill, sdd/observe/'s method files and its
-          # inputs/ (not its records/), and the ground the register lists (the new
+          # inputs/, and the ground the register lists (the new
           # layer's specs and formal models) are here because test_observe_ground.py
           # checks the hook wiring, that every register row and method file
           # exists, and one input file per catalogue entry; its
           # test_ci_runs_this_module_when_any_file_it_reads_changes pins the list.
           # sdd/observe/'s records/ and tables/ are here because test_observe_tables.py
-          # runs the table check and seeded mutants on each record and its sidecar;
-          # its test_ci_runs_this_module_when_a_file_it_reads_changes pins them.
+          # runs the table check and seeded mutants on OP-01's record and sidecar;
+          # its test_ci_runs_this_module_when_a_file_it_reads_changes pins every
+          # record and sidecar.
           HOOKS_PAT='^\.claude/hooks/|^\.githooks/|^\.claude/settings\.json$|^\.claude/skills/observe/SKILL\.md$|^sdd/observe/(inputs/)?[^/]+\.md$|^sdd/observe/(records/[^/]+\.md|tables/[^/]+\.toml)$|^sdd/specs/(profiles/)?05[1-9]-|^sdd/formal/(alloy|lean|tex)/|^\.claude/agents/reviewer\.md$|^\.claude/skills/rvw-pr/SKILL\.md$|^sdd/rfcs/rfc-0015-(findings|rounds)\.py$|^sdd/research/token-usage/[^/]+\.py$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$HOOKS_PAT"; then echo "hooks=true" >> "$GITHUB_OUTPUT"
           else echo "hooks=false" >> "$GITHUB_OUTPUT"; fi

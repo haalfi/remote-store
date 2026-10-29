@@ -16,24 +16,34 @@ and gives its ``kind``:
   member is matched by exactly one row (complete, disjoint), and each row by
   some member. ``parts = { <member> = [<part>, ...] }`` lets one member span
   rows, each part in exactly one of them. ``source``, a list of ``{ at, column,
-  index }``, names the enumeration the members come from: each member must
-  occur in one of those columns, bar those listed in ``unsourced``, which no
-  enumeration in the document holds. ``basis``, free text, says where a domain
-  with no ``source`` comes from.
+  index, complete }``, names the enumeration the members come from: each member
+  must occur in one of those columns, bar those listed in ``unsourced``, which no
+  enumeration in the document holds, and with ``complete = true`` each row of
+  that column must be matched by a member. ``basis``, free text, says where a
+  domain with no ``source`` comes from.
 - ``state``: ``states``, matched in the first column, and ``events``, matched in
-  the header. Each state has one row, each event a column, and no cell is empty.
+  the header. Each state has one row, each event one column, each column an
+  event, and no cell is empty.
 - ``ids``: ``column`` defines the element IDs its cells hold (an Environment, a
   non-promise register).
 - ``register``: a table no domain governs, with its ``reason``.
 
-Every table in the document must be declared. Each ``[[ids]]`` gives a
-``family`` (``OP-01/D``, ``KEY-``) and optionally its ``short`` form (``D``):
-every token of a family must name an element defined by a heading
-``<ID>: ...``, a bullet ``- `<ID>`: ...`` or an ``ids`` table, and ``<ID>, row
-<n>`` must name an existing row of that element's first table. A short form
-matches every bare token of its shape, so declare one only for a letter the
-document uses for nothing else (not ``O``: axes.md's observers are O1 to O3). In a cell, ``X1
-to X3`` covers X1, X2 and X3; a citation range checks its two ends only.
+Every table in the document must be declared, once. Each ``[[ids]]`` gives a
+``family`` (``OP-01/D``, ``KEY-``), optionally its ``short`` form (``D``) and
+``retired``, the IDs the document names but defines nowhere on purpose (a
+spec's unassigned IDs): every other token of a family must name an element
+defined by a heading ``<ID>: ...``, a bullet ``- `<ID>`: ...`` or an ``ids``
+table, and ``<ID>, row <n>`` must name an existing row of that element's first
+table. A short form matches every bare token of its shape, so declare one only
+for a letter the document uses for nothing else (not ``O``: axes.md's observers
+are O1 to O3). In a cell, ``X1 to X3`` covers X1, X2 and X3; a citation range
+checks its two ends only.
+
+A key the kind does not take, a value of the wrong type, an empty string or
+array, a non-positive column or index, or a member named twice exits 2: read
+as findings, a malformed declaration would pass for a defective document, and
+ignored, a misspelt key would switch its check off. A column beyond its table
+is a declaration finding.
 
 Authority: the document governs and the sidecar is a reading of it, written by
 ``/observe-review`` for a record, never by the session that decides it
@@ -44,9 +54,13 @@ declaration wrong, which is then corrected instead.
 Bound: it checks a table against the domain declared for it, never whether
 that domain is the right one, so a declaration that copies a table's own rows
 finds nothing; ``source`` narrows that only where the members come from
-another enumeration. It reads no meaning: two rows that each match one member
-but promise conflicting outcomes (``OP-01/O33``'s kind) pass. Cells are split on
-``|`` with ``\\|`` escaped; a table inside a fenced block is skipped. A
+another enumeration, and only a ``complete`` source catches an element the
+enumeration gains that no member names. It reads no meaning: two rows that each
+match one member but promise conflicting outcomes (``OP-01/O33``'s kind) pass.
+A member's whole-word bounds hold only at an end that is a letter, digit or
+underscore, so one beginning or ending in punctuation or a space (``.``, ``j =
+n``) matches inside longer text and needs a ``match``. Cells are split on ``|``
+with ``\\|`` escaped; a table inside a fenced block (``` or ~~~) is skipped. A
 declaration written after reading known defects can be shaped to find them,
 which its author states with the run (BK-504's trace).
 
@@ -74,11 +88,18 @@ from pathlib import Path
 from typing import Any
 
 _HEADING = re.compile(r"^#{1,6}\s+(?P<text>.*\S)\s*$")
-_SEPARATOR = re.compile(r"^\|?\s*:?-{3,}")
+_FENCE = re.compile(r"^\s*(?P<fence>```|~~~)")
+_SEPARATOR = re.compile(r"^\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?$")
 _RANGE = re.compile(r"(?<![\w/])(?P<p>[A-Za-z]+-?)(?P<a>\d+) to (?:(?P=p))?(?P<b>\d+)(?!\w)")
 _BULLET = re.compile(r"^\s*- `(?P<id>[^`]+)`:")
-_KINDS = ("case", "state", "ids", "register")
-_LISTS = frozenset({"members", "states", "events", "source", "unsourced"})
+# Per kind: the keys it requires and the keys it may carry, besides at, kind, index and basis.
+_KEYS: dict[str, tuple[set[str], set[str]]] = {
+    "case": ({"key", "members"}, {"parts", "source", "unsourced"}),
+    "state": ({"states", "events"}, set()),
+    "ids": ({"column"}, set()),
+    "register": ({"reason"}, set()),
+}
+_KINDS = tuple(_KEYS)
 
 
 @dataclass
@@ -115,14 +136,15 @@ def parse(text: str) -> Document:
     headings: list[tuple[int, str]] = []
     tables: list[Table] = []
     prose: list[tuple[int, str]] = []
-    heading, count, fenced, i = "", 0, False, 0
+    heading, count, fence, i = "", 0, "", 0
     while i < len(lines):
         line = lines[i]
-        if line.lstrip().startswith("```"):
-            fenced = not fenced
+        opening = _FENCE.match(line)
+        if opening and (not fence or opening["fence"] == fence):
+            fence = "" if fence else opening["fence"]
             i += 1
             continue
-        if fenced:
+        if fence:
             i += 1
             continue
         prose.append((i + 1, line))
@@ -172,8 +194,133 @@ def _expand(cell: str) -> str:
     return _RANGE.sub(one, cell)
 
 
-def _rows(rows: list[int]) -> str:
-    return f"rows {', '.join(map(str, rows[:-1]))} and {rows[-1]}"
+def _several(noun: str, numbers: list[int]) -> str:
+    return f"{noun} {', '.join(map(str, numbers[:-1]))} and {numbers[-1]}"
+
+
+# --- declarations: every shape is checked here, once, before any table is read ---
+
+
+def _keys(obj: dict[str, Any], where: str, required: set[str], allowed: set[str]) -> None:
+    missing = sorted(required - obj.keys())
+    if missing:
+        raise ValueError(f"{where} needs {', '.join(map(repr, missing))}")
+    unknown = sorted(obj.keys() - required - allowed)
+    if unknown:
+        raise ValueError(f"{where} takes no {', '.join(map(repr, unknown))}")
+
+
+def _positive(value: Any, where: str, key: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError(f"{where}: {key!r} must be a positive integer, not {value!r}")
+
+
+def _text(value: Any, where: str, key: str) -> None:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{where}: {key!r} must be a non-empty string, not {value!r}")
+
+
+def _texts(value: Any, where: str, key: str) -> None:
+    # A string where a list belongs would be read character by character into false findings.
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"{where}: {key!r} must be a non-empty array, not {value!r}")
+    for v in value:
+        _text(v, where, key)
+    if len(set(value)) < len(value):
+        raise ValueError(f"{where}: {key!r} names a value twice: {value!r}")
+
+
+def _tables_of(value: Any, key: str) -> list[dict[str, Any]]:
+    if not isinstance(value, list) or not all(isinstance(e, dict) for e in value):
+        raise ValueError(f"{key!r} must be an array of tables ([[{key}]])")
+    return value
+
+
+def _validate_case(entry: dict[str, Any], where: str) -> None:
+    _positive(entry["key"], where, "key")
+    members = entry["members"]
+    if not isinstance(members, list) or not members:
+        raise ValueError(f"{where}: 'members' must be a non-empty array, not {members!r}")
+    names = []
+    for m in members:
+        if isinstance(m, dict):
+            _keys(m, f"{where}: a member", {"name", "match"}, set())
+            _text(m["name"], where, "name")
+            _text(m["match"], where, "match")
+            re.compile(m["match"])
+            names.append(m["name"])
+        elif isinstance(m, str):
+            _text(m, where, "members")
+            names.append(m)
+        else:
+            raise ValueError(f"{where}: a member is a string or {{ name, match }}, not {m!r}")
+    if len(set(names)) < len(names):
+        raise ValueError(f"{where}: 'members' names a member twice: {names!r}")
+    parts = entry.get("parts", {})
+    if not isinstance(parts, dict):
+        raise ValueError(f"{where}: 'parts' maps member names to arrays, not {parts!r}")
+    for name, value in parts.items():
+        if name not in names:
+            raise ValueError(f"{where}: 'parts' names {name!r}, which is no member")
+        _texts(value, where, f"parts.{name}")
+    if "source" in entry:
+        sources = entry["source"]
+        if not isinstance(sources, list) or not sources or not all(isinstance(s, dict) for s in sources):
+            raise ValueError(f"{where}: 'source' must be a non-empty array of {{ at, column }}, not {sources!r}")
+        for src in sources:
+            _keys(src, f"{where}: a source", {"at", "column"}, {"index", "complete"})
+            _text(src["at"], where, "source.at")
+            _positive(src["column"], where, "source.column")
+            if "index" in src:
+                _positive(src["index"], where, "source.index")
+            if not isinstance(src.get("complete", False), bool):
+                raise ValueError(f"{where}: 'source.complete' must be true or false, not {src['complete']!r}")
+    if "unsourced" in entry:
+        if "source" not in entry:
+            raise ValueError(f"{where}: 'unsourced' needs a 'source'")
+        _texts(entry["unsourced"], where, "unsourced")
+        stray = [u for u in entry["unsourced"] if u not in names]
+        if stray:
+            raise ValueError(f"{where}: 'unsourced' names {stray!r}, which are no members")
+
+
+def validate(decl: dict[str, Any]) -> None:
+    """Raise ValueError on any declaration the check would misread, so it exits 2, never as findings."""
+    _keys(decl, "the declarations", set(), {"table", "ids"})
+    for entry in _tables_of(decl.get("table", []), "table"):
+        at, kind = entry.get("at"), entry.get("kind")
+        if not isinstance(at, str) or not at.strip() or kind not in _KINDS:
+            raise ValueError(f"a [[table]] needs a non-empty string 'at' and a kind in {_KINDS}, not {entry!r}")
+        where = f"{at!r}"
+        required, allowed = _KEYS[kind]
+        _keys(entry, f"a {kind} table {where}", required | {"at", "kind"}, allowed | {"index", "basis"})
+        if "index" in entry:
+            _positive(entry["index"], where, "index")
+        if "basis" in entry:
+            _text(entry["basis"], where, "basis")
+        if kind == "case":
+            _validate_case(entry, where)
+        elif kind == "state":
+            _texts(entry["states"], where, "states")
+            _texts(entry["events"], where, "events")
+        elif kind == "ids":
+            _positive(entry["column"], where, "column")
+        else:
+            _text(entry["reason"], where, "reason")
+    for f in _tables_of(decl.get("ids", []), "ids"):
+        where = f"[[ids]] {f.get('family')!r}"
+        _keys(f, where, {"family"}, {"short", "retired"})
+        _text(f["family"], where, "family")
+        if "short" in f:
+            _text(f["short"], where, "short")
+        if "retired" in f:
+            _texts(f["retired"], where, "retired")
+            stray = [r for r in f["retired"] if not re.fullmatch(rf"{re.escape(f['family'])}\d+", r)]
+            if stray:
+                raise ValueError(f"{where}: 'retired' names {stray!r}, which are not of this family")
+
+
+# --- the checks: declarations are valid here ---
 
 
 @dataclass
@@ -183,42 +330,20 @@ class Member:
 
 
 def _members(entry: dict[str, Any]) -> list[Member]:
-    found = []
-    for m in _required(entry, "members"):
-        if isinstance(m, str):
-            found.append(Member(m, _word(re.escape(m))))
-        elif isinstance(m, dict) and isinstance(m.get("name"), str) and isinstance(m.get("match"), str):
-            found.append(Member(m["name"], _word(m["match"])))
-        else:
-            raise ValueError(f"{entry.get('at')!r}: a member is a string or {{ name, match }}, not {m!r}")
-    return found
-
-
-def _required(entry: dict[str, Any], key: str) -> Any:
-    if key not in entry:
-        raise ValueError(f"{entry.get('at')!r}: a {entry.get('kind')} table needs {key!r}")
-    value = entry[key]
-    # A string where a list belongs would be read character by character into false findings.
-    if key in _LISTS and not isinstance(value, list):
-        raise ValueError(f"{entry.get('at')!r}: {key!r} must be an array, not {value!r}")
-    return value
-
-
-def _optional_list(entry: dict[str, Any], key: str) -> list[Any]:
-    return _required(entry, key) if key in entry else []
+    return [
+        Member(m, _word(re.escape(m))) if isinstance(m, str) else Member(m["name"], _word(m["match"]))
+        for m in entry["members"]
+    ]
 
 
 def _cell(cells: list[str], column: int) -> str:
-    return cells[column - 1] if 0 < column <= len(cells) else ""
+    return cells[column - 1] if column <= len(cells) else ""
 
 
 def check_case(doc: Document, table: Table, entry: dict[str, Any]) -> list[str]:
-    key = int(_required(entry, "key"))
+    key = entry["key"]
     members = _members(entry)
     parts: dict[str, list[str]] = entry.get("parts", {})
-    member_names = {m.name for m in members}
-    if not isinstance(parts, dict) or not all(isinstance(v, list) and k in member_names for k, v in parts.items()):
-        raise ValueError(f"{entry.get('at')!r}: 'parts' maps member names to arrays, not {parts!r}")
     keys = [(n, _expand(_cell(cells, key)), _cell(cells, key)) for n, (_, cells) in enumerate(table.rows, 1)]
     out: list[str] = []
     for m in members:
@@ -229,48 +354,63 @@ def check_case(doc: Document, table: Table, entry: dict[str, Any]) -> list[str]:
                 if not part_hits:
                     out.append(f"gap: {m.name!r} part {part!r} is matched by no row")
                 elif len(part_hits) > 1:
-                    out.append(f"overlap: {m.name!r} part {part!r} is matched by {_rows(part_hits)}")
+                    out.append(f"overlap: {m.name!r} part {part!r} is matched by {_several('rows', part_hits)}")
             for n in hits:
                 if not any(_word(re.escape(p)).search(keys[n - 1][1]) for p in parts[m.name]):
                     out.append(f"row {n} matches {m.name!r} but none of its parts")
         elif not hits:
             out.append(f"gap: {m.name!r} is matched by no row")
         elif len(hits) > 1:
-            out.append(f"overlap: {m.name!r} is matched by {_rows(hits)}")
+            out.append(f"overlap: {m.name!r} is matched by {_several('rows', hits)}")
     for n, cell, raw in keys:
         if not any(m.pattern.search(cell) for m in members):
             out.append(f"row {n} ({raw!r}) matches no member")
-    sources = _optional_list(entry, "source")
-    if sources:
-        columns: list[str] = []
-        names = []
-        for src in sources:
-            st = _find(doc, src["at"], int(src.get("index", 1)))
-            if st is None:
-                out.append(f"source: {src['at']!r} table {src.get('index', 1)} matches no table")
-                continue
-            names.append(f"{st.heading.split(':')[0]} column {src['column']}")
-            columns += [_expand(_cell(cells, int(src["column"]))) for _, cells in st.rows]
-        unsourced = set(_optional_list(entry, "unsourced"))
-        for m in members:
-            if names and m.name not in unsourced and not any(m.pattern.search(c) for c in columns):
-                out.append(f"source: {m.name!r} occurs in no cell of {' or '.join(names)}")
+    columns: list[str] = []
+    names = []
+    for src in entry.get("source", []):
+        index, column = src.get("index", 1), src["column"]
+        st = _find(doc, src["at"], index)
+        if st is None:
+            out.append(f"source: {src['at']!r} table {index} matches no table")
+            continue
+        if column > len(st.header):
+            out.append(f"source: {src['at']!r} table {index} has {len(st.header)} columns, not {column}")
+            continue
+        name = f"{st.heading.split(':')[0]} column {column}"
+        names.append(name)
+        cells = [_cell(row, column) for _, row in st.rows]
+        columns += [_expand(c) for c in cells]
+        if src.get("complete", False):
+            for n, c in enumerate(cells, 1):
+                if not any(m.pattern.search(_expand(c)) for m in members):
+                    out.append(f"source: row {n} of {name} ({c!r}) matches no member")
+    unsourced = set(entry.get("unsourced", []))
+    for m in members:
+        if names and m.name not in unsourced and not any(m.pattern.search(c) for c in columns):
+            out.append(f"source: {m.name!r} occurs in no cell of {' or '.join(names)}")
     return out
 
 
 def check_state(table: Table, entry: dict[str, Any]) -> list[str]:
-    states = [Member(s, _word(re.escape(s))) for s in _required(entry, "states")]
-    events = [Member(e, _word(re.escape(e))) for e in _required(entry, "events")]
+    states = [Member(s, _word(re.escape(s))) for s in entry["states"]]
+    events = [Member(e, _word(re.escape(e))) for e in entry["events"]]
     out: list[str] = []
     for s in states:
         hits = [n for n, (_, cells) in enumerate(table.rows, 1) if s.pattern.search(_cell(cells, 1))]
         if not hits:
             out.append(f"state {s.name!r} has no row")
         elif len(hits) > 1:
-            out.append(f"state {s.name!r} has {_rows(hits)}")
+            out.append(f"state {s.name!r} has {_several('rows', hits)}")
+    heads = list(enumerate(table.header[1:], 2))
     for e in events:
-        if not any(e.pattern.search(h) for h in table.header[1:]):
+        cols = [c for c, h in heads if e.pattern.search(h)]
+        if not cols:
             out.append(f"event {e.name!r} has no column")
+        elif len(cols) > 1:
+            out.append(f"event {e.name!r} has {_several('columns', cols)}")
+    for c, h in heads:
+        if not any(e.pattern.search(h) for e in events):
+            out.append(f"column {c} ({h!r}) matches no event")
     for n, (_, cells) in enumerate(table.rows, 1):
         if not any(s.pattern.search(_cell(cells, 1)) for s in states):
             out.append(f"row {n} ({_cell(cells, 1)!r}) matches no state")
@@ -289,20 +429,18 @@ class Family:
 
 
 def _families(spec: list[dict[str, Any]]) -> list[Family]:
-    if not isinstance(spec, list) or not all(isinstance(f, dict) for f in spec):
-        raise ValueError("'ids' must be an array of tables ([[ids]])")
     found = []
     for f in spec:
-        family, short = f.get("family"), f.get("short")
-        if not isinstance(family, str) or (short is not None and not isinstance(short, str)):
-            raise ValueError(f"[[ids]] needs a string 'family' and an optional string 'short', not {f!r}")
+        family, short = f["family"], f.get("short")
         full = re.compile(rf"(?<![\w/]){re.escape(family)}(?P<n>\d+)(?!\w)")
         abbrev = re.compile(rf"(?<![\w/-]){re.escape(short)}(?P<n>\d+)(?!\w)") if short else None
         found.append(Family(family, short, full, abbrev))
     return found
 
 
-def check_citations(doc: Document, families: list[Family], id_tables: list[tuple[Table, int]]) -> list[str]:
+def check_citations(
+    doc: Document, families: list[Family], id_tables: list[tuple[Table, int]], retired: list[str]
+) -> list[str]:
     defined: dict[str, str] = {}  # ID -> the heading whose section defines it, or "" for a bullet or a table cell
     for _, heading in doc.headings:
         for f in families:
@@ -318,7 +456,7 @@ def check_citations(doc: Document, families: list[Family], id_tables: list[tuple
             for f in families:
                 for m in f.full.finditer(_cell(cells, column)):
                     defined.setdefault(m[0], "")
-    out: list[str] = []
+    out = [f"citation: {r!r} is declared retired but is defined" for r in retired if r in defined]
     for number, line in doc.prose:
         if _HEADING.match(line) or _BULLET.match(line):
             line = re.sub(r"^\s*- `[^`]+`:|^#{1,6}\s+[^:]+:", "", line)
@@ -328,7 +466,7 @@ def check_citations(doc: Document, families: list[Family], id_tables: list[tuple
                 for m in pattern.finditer(line) if pattern else ():
                     found.append((m.start(), m[0], f.family + m["n"]))
         for _, written, canonical in sorted(found):
-            if canonical not in defined:
+            if canonical not in defined and canonical not in retired:
                 out.append(f"citation: {written!r} (line {number}) names no defined element")
         for f in families:
             names = re.escape(f.family) + (f"|{re.escape(f.short)}" if f.short else "")
@@ -346,18 +484,14 @@ def check_citations(doc: Document, families: list[Family], id_tables: list[tuple
 
 def check(doc: Document, decl: dict[str, Any]) -> tuple[list[str], list[str], list[str]]:
     """Findings as (declarations, tables, citations)."""
-    entries = decl.get("table", [])
-    if not isinstance(entries, list) or not all(isinstance(e, dict) for e in entries):
-        raise ValueError("'table' must be an array of tables ([[table]])")
-    declared: set[tuple[str, int]] = set()
+    validate(decl)
+    declared: dict[tuple[str, int], int] = {}
     declarations: list[str] = []
     tables: list[str] = []
     id_tables: list[tuple[Table, int]] = []
     resolved: list[tuple[Table, dict[str, Any]]] = []
-    for entry in entries:
-        at, kind, index = entry.get("at"), entry.get("kind"), int(entry.get("index", 1))
-        if not isinstance(at, str) or kind not in _KINDS:
-            raise ValueError(f"a [[table]] needs a string 'at' and a kind in {_KINDS}, not {entry!r}")
+    for entry in decl.get("table", []):
+        at, kind, index = entry["at"], entry["kind"], entry.get("index", 1)
         heads = _anchored(doc, at)
         if len(heads) > 1:
             declarations.append(f"declaration: {at!r} matches {len(heads)} headings")
@@ -366,15 +500,20 @@ def check(doc: Document, decl: dict[str, Any]) -> tuple[list[str], list[str], li
         if table is None:
             declarations.append(f"declaration: {at!r} table {index} matches no table")
             continue
-        declared.add((table.heading, table.index))
+        declared[(table.heading, table.index)] = declared.get((table.heading, table.index), 0) + 1
+        column = entry.get("key", entry.get("column"))
+        if column is not None and column > len(table.header):
+            declarations.append(f"declaration: {at!r} table {index} has {len(table.header)} columns, not {column}")
+            continue
         resolved.append((table, entry))
         if kind == "ids":
-            id_tables.append((table, int(_required(entry, "column"))))
-        elif kind == "register":
-            _required(entry, "reason")
+            id_tables.append((table, entry["column"]))
     for table in doc.tables:
-        if (table.heading, table.index) not in declared:
+        times = declared.get((table.heading, table.index), 0)
+        if times == 0:
             declarations.append(f"declaration: {table.label} (line {table.line}) is declared by no entry")
+        elif times > 1:
+            declarations.append(f"declaration: {table.label} (line {table.line}) is declared by {times} entries")
     for table, entry in resolved:
         if entry["kind"] == "case":
             found = check_case(doc, table, entry)
@@ -383,7 +522,9 @@ def check(doc: Document, decl: dict[str, Any]) -> tuple[list[str], list[str], li
         else:
             found = []
         tables += [f"{table.label}: {f}" for f in found]
-    citations = check_citations(doc, _families(decl.get("ids", [])), id_tables)
+    ids = decl.get("ids", [])
+    retired = [r for f in ids for r in f.get("retired", [])]
+    citations = check_citations(doc, _families(ids), id_tables, retired)
     return declarations, tables, citations
 
 
@@ -395,7 +536,7 @@ def main(argv: list[str]) -> int:
         doc = parse(Path(argv[1]).read_text(encoding="utf-8"))
         decl = tomllib.loads(Path(argv[2]).read_text(encoding="utf-8"))
         groups = check(doc, decl)
-    except (OSError, ValueError, KeyError, TypeError, re.error) as exc:  # re.error: a member's bad ``match``
+    except (OSError, ValueError, re.error) as exc:  # ValueError covers bad TOML and UTF-8; re.error a bad ``match``
         print(f"observe_tables: {exc}", file=sys.stderr)
         return 2
     print(f"# Tables of {argv[1]} against {argv[2]}")

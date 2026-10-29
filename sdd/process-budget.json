@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 313999,
+  "total": 314003,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -17,7 +17,7 @@
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
     ".claude/skills/observe/SKILL.md": 6552,
-    ".claude/skills/observe-review/SKILL.md": 5613,
+    ".claude/skills/observe-review/SKILL.md": 5621,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -33,7 +33,7 @@
     ".claude/agents/sdd-expert.md": 1799,
     ".claude/agents/store-backend-expert.md": 2104,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64672,
+    "sdd/CLAUDE-REFERENCE.md": 64668,
     "sdd/traces/_schema.yml": 31990
   },
   "raises": [
@@ -240,6 +240,12 @@
       "from": 312982,
       "to": 313999,
       "reason": "RFC-0029 R1 and R2: /observe-review gains the table check G3 in step 1 and a Freeze step 5 (+932 after a -256 tightening pass); /observe says a reopen ends a freeze and its End points to the freeze verdict (+85)"
+    },
+    {
+      "item": "BK-504",
+      "from": 313999,
+      "to": 314003,
+      "reason": "PR #1197 round 3: /observe-review step 5 states the first freeze's n (+8); round 2's CLAUDE-REFERENCE rewording, unrecorded then (-4)"
     }
   ]
 }

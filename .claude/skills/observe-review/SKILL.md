@@ -63,8 +63,8 @@ before its spec is written (RFC-0028), and after its reopen, before its freeze
    when each open item is decided, routed with no `Flow done`, another
    entry's or `shared:`, each naming what it blocks; else name the items in
    the way. After the merge the maintainer tags that master commit
-   `observe/<entry>/freeze-<n>` (`git tag -a`, `<n>` one past the last), not a
-   release; this review never creates the tag.
+   `observe/<entry>/freeze-<n>` (`git tag -a`, `<n>` 1, then one past the
+   last), not a release; this review never creates the tag.
 
 ## Reader brief
 

@@ -29,7 +29,8 @@ at = "OP-01/D19"
 kind = "case"
 key = 1
 members = ["E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E14", "E15"]
-source = [{ at = "Environment", column = 1 }]
+source = [{ at = "Environment", column = 1, complete = true }]
+basis = "D19's table: 'Exposure of OP-01's steps', one row per group of Environment rows, E1 to E15 all placed; complete, so a row the Environment gains and the table does not is reported"
 
 [[table]]
 at = "OP-01/D34"
@@ -42,7 +43,8 @@ members = [
     "decode", "caller error",
 ]
 parts = { E13 = ["disk I/O", "memory or descriptors"] }
-source = [{ at = "Environment", column = 1 }, { at = "OP-01/D9", column = 1 }]
+# The Environment source is complete (D34's check, below); D9's is not: its success row has no category.
+source = [{ at = "Environment", column = 1, complete = true }, { at = "OP-01/D9", column = 1 }]
 unsourced = ["decode", "caller error"]
 basis = "D34's check: 'Every row of the Environment and every failing row of D9 has a category'; decode is D32's, caller errors D33's"
 

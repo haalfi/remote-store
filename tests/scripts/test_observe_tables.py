@@ -3,12 +3,13 @@
 The script checks the tables of an ``/observe`` record, or a spec, against the
 domains a sidecar declares for them. Pinned: a case table is complete and
 disjoint over its members (ranges expanded, whole words, declared parts); a
-member must occur in its declared source; a state table has a row per state,
-a column per event and no empty cell; every table is declared and every anchor
-finds one; every ID cited in a declared family is defined, and ``<ID>, row <n>``
-names an existing row. Each failure mode fails the run. Seeded mutants of
-OP-01's real record each produce a finding the record itself does not
-(ADR-0045: the check can come out the other way).
+member must occur in its declared source, and a ``complete`` source's every row
+must be some member; a state table has a row per state, a column per event, an
+event per column and no empty cell; every table is declared once and every
+anchor finds one; every ID cited in a declared family is defined or retired, and
+``<ID>, row <n>`` names an existing row; every malformed declaration exits 2,
+never as findings. Seeded mutants of OP-01's real record each produce a finding
+the record itself does not (ADR-0045: the check can come out the other way).
 """
 
 from __future__ import annotations
@@ -16,7 +17,11 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/observe_tables.py"
@@ -174,6 +179,22 @@ def test_a_member_absent_from_its_source_is_reported(tmp_path: Path) -> None:
     assert _findings(_run(tmp_path, doc, exempt)) == ["- citation: 'E4' (line 28) names no defined element"]
 
 
+def test_a_complete_source_row_no_member_names_is_reported(tmp_path: Path) -> None:
+    # The reopen's likely edit: an Environment row is added and the table drawn from it is not.
+    doc = PARTITION.replace(
+        "| `OP-01/E3` | World | stalls |", "| `OP-01/E3` | World | stalls |\n| `OP-01/E4` | O2 | moves |"
+    )
+    assert _findings(_run(tmp_path, doc, PARTITION_TOML)) == []
+    complete = PARTITION_TOML.replace(
+        'source = [{ at = "Environment", column = 1 }]',
+        'source = [{ at = "Environment", column = 1, complete = true }]',
+    )
+    assert _findings(_run(tmp_path, PARTITION, complete)) == []
+    assert _findings(_run(tmp_path, doc, complete)) == [
+        "- OP-01/D18 table 1: source: row 4 of Environment column 1 ('`OP-01/E4`') matches no member"
+    ]
+
+
 def test_a_regex_member_matches_its_spellings(tmp_path: Path) -> None:
     doc = PARTITION.replace(
         "| Found(e, item) | success |", "| Found(e, item) | success |\n  | ν refuses | key refused |"
@@ -221,11 +242,59 @@ def test_state_table_gaps_are_each_localized(tmp_path: Path) -> None:
     ]
 
 
+def test_a_state_column_no_event_names_is_reported(tmp_path: Path) -> None:
+    doc = STATE.replace(
+        "| State | `read`, chunks | `close` |\n  |---|---|---|",
+        "| State | `read`, chunks | `close` | seek |\n  |---|---|---|---|",
+    )
+    doc = doc.replace("| Closed |\n", "| Closed | moves |\n").replace("| no-op |\n", "| no-op | moves |\n")
+    assert _findings(_run(tmp_path, doc, STATE_TOML)) == ["- OP-01/D18 table 1: column 4 ('seek') matches no event"]
+
+
+def test_an_event_two_columns_name_is_reported(tmp_path: Path) -> None:
+    doc = STATE.replace("| `close` |\n  |---|---|---|", "| `close` | `read` again |\n  |---|---|---|---|")
+    doc = doc.replace("| Closed |\n", "| Closed | more |\n").replace("| no-op |\n", "| no-op | more |\n")
+    assert _findings(_run(tmp_path, doc, STATE_TOML)) == ["- OP-01/D18 table 1: event 'read' has columns 2 and 4"]
+
+
 def test_an_undeclared_table_and_a_lost_anchor_are_reported(tmp_path: Path) -> None:
     toml = PARTITION_TOML.replace('at = "OP-01/D18"', 'at = "OP-01/D19"')
     assert _findings(_run(tmp_path, PARTITION, toml)) == [
         "- declaration: 'OP-01/D19' table 1 matches no table",
         "- declaration: OP-01/D18 table 1 (line 26) is declared by no entry",
+    ]
+
+
+def test_a_table_declared_twice_is_reported(tmp_path: Path) -> None:
+    toml = PARTITION_TOML + '\n[[table]]\nat = "OP-01/D1"\nkind = "register"\nreason = "again"\n'
+    assert _findings(_run(tmp_path, PARTITION, toml)) == [
+        "- declaration: OP-01/D1 table 1 (line 17) is declared by 2 entries"
+    ]
+
+
+def test_a_column_beyond_the_table_is_a_declaration_finding(tmp_path: Path) -> None:
+    # Not a gap per member: the declaration, not the record, is what is wrong.
+    key = PARTITION_TOML.replace("key = 1", "key = 3", 1)
+    assert _findings(_run(tmp_path, PARTITION, key)) == ["- declaration: 'OP-01/D1' table 1 has 2 columns, not 3"]
+    ids = PARTITION_TOML.replace("column = 1\n", "column = 4\n", 1)
+    # The IDs it would define go undefined, so citations of them follow; the declaration comes first.
+    assert _findings(_run(tmp_path, PARTITION, ids))[0] == "- declaration: 'Environment' table 1 has 3 columns, not 4"
+    source = PARTITION_TOML.replace("column = 1 }", "column = 7 }")
+    assert _findings(_run(tmp_path, PARTITION, source)) == [
+        "- OP-01/D18 table 1: source: 'Environment' table 1 has 3 columns, not 7"
+    ]
+
+
+def test_a_fenced_table_is_skipped_by_either_fence(tmp_path: Path) -> None:
+    for fence in ("```", "~~~"):
+        doc = PARTITION + f"\n{fence}\n| A | B |\n|---|---|\n| x | y |\n{fence}\n"
+        assert _findings(_run(tmp_path, doc, PARTITION_TOML)) == [], fence
+
+
+def test_a_one_dash_separator_still_makes_a_table(tmp_path: Path) -> None:
+    doc = PARTITION + "\n## Notes\n\n| A | B |\n|-|-|\n| x | y |\n"
+    assert _findings(_run(tmp_path, doc, PARTITION_TOML)) == [
+        "- declaration: Notes table 1 (line 32) is declared by no entry"
     ]
 
 
@@ -334,51 +403,165 @@ def test_spec_mode_checks_a_spec_by_the_same_rules(tmp_path: Path) -> None:
     assert clean.returncode == 0
 
 
-def test_unusable_input_exits_2(tmp_path: Path) -> None:
-    assert _run(tmp_path, PARTITION, "[[table]\n").returncode == 2
-    assert _run(tmp_path, PARTITION, '[[table]]\nat = "OP-01/D1"\nkind = "case"\n').returncode == 2
-    assert _run(tmp_path, PARTITION, '[[table]]\nat = "OP-01/D1"\nkind = "lattice"\n').returncode == 2
+def test_a_retired_id_is_no_dangling_citation(tmp_path: Path) -> None:
+    # A spec names the IDs it retired ("KEY-006, KEY-007 and KEY-A-01 are unassigned", spec 052).
+    retired = SPEC_TOML.replace('family = "KEY-"', 'family = "KEY-"\nretired = ["KEY-006"]')
+    assert _findings(_run(tmp_path, SPEC, retired)) == []
+    defined = SPEC_TOML.replace('family = "KEY-"', 'family = "KEY-"\nretired = ["KEY-013"]')
+    assert _findings(_run(tmp_path, SPEC, defined)) == [
+        "- citation: 'KEY-013' is declared retired but is defined",
+        "- citation: 'KEY-006' (line 13) names no defined element",
+    ]
 
 
-def test_a_malformed_declaration_exits_2_not_as_findings(tmp_path: Path) -> None:
-    # Exit 1 means findings, so a broken sidecar must not read as a record with gaps.
-    bad_regex = PARTITION_TOML.replace('members = ["E1", "E2", "E3"]', 'members = [{ name = "x", match = "(" }]')
-    ids_not_array = PARTITION_TOML.replace('[[ids]]\nfamily = "OP-01/E"\nshort = "E"\n', "").replace("[[ids]]", "[ids]")
-    item_not_table = 'table = ["OP-01/D1"]\n'
-    # A string where a list belongs would be read character by character into false gaps.
-    members_not_list = PARTITION_TOML.replace('members = ["E1", "E2", "E3"]', 'members = "E1"')
-    states_not_list = STATE_TOML.replace('states = ["Open", "Closed"]', 'states = "Open"')
-    with_parts = PARTITION_TOML.replace('members = ["E1", "E2", "E3"]', 'members = ["E1", "E2", "E3"]\nparts = PARTS')
-    part_not_list = with_parts.replace("PARTS", '{ E3 = "disk" }')
-    parts_not_table = with_parts.replace("PARTS", '["E3"]')
-    parts_off_members = with_parts.replace("PARTS", '{ E9 = ["disk"] }')
-    register_no_reason = PARTITION_TOML.replace(
-        'kind = "case"\nkey = 1\nmembers = ["E1", "E2", "E3"]', 'kind = "register"'
-    )
-    malformed = (bad_regex, ids_not_array, item_not_table, members_not_list, states_not_list, part_not_list)
-    for toml in (*malformed, parts_not_table, parts_off_members, register_no_reason):
-        result = _run(tmp_path, PARTITION, toml)
-        assert result.returncode == 2, (toml, result.stdout, result.stderr)
-        assert result.stderr.startswith("observe_tables: "), result.stderr
+def _variant(base: str, old: str, new: str) -> str:
+    assert old in base, old
+    return base.replace(old, new, 1)
 
 
-# Seeded mutants of OP-01's real record: each yields a finding the record itself does not.
+_D1 = 'members = ["Found(e, item)", "Absent", "AbsentAncestor"]'
+_D18 = 'members = ["E1", "E2", "E3"]'
+_SRC = '{ at = "Environment", column = 1 }'
+# Every shape a declaration can be malformed in, by key: rounds 1 to 3 of PR #1197 each found
+# one more read as findings, so the space is enumerated rather than argued (/ship's repeat-site check).
+MALFORMED = {
+    "toml syntax": "[[table]\n",
+    "table not an array": 'table = ["OP-01/D1"]\n',
+    "ids not an array": PARTITION_TOML.replace('[[ids]]\nfamily = "OP-01/E"\nshort = "E"\n', "").replace(
+        "[[ids]]", "[ids]"
+    ),
+    "top-level key unknown": "tabel = 1\n" + PARTITION_TOML,
+    "kind missing": '[[table]]\nat = "OP-01/D1"\n',
+    "kind unknown": '[[table]]\nat = "OP-01/D1"\nkind = "lattice"\n',
+    "at missing": '[[table]]\nkind = "register"\nreason = "r"\n',
+    "at empty": _variant(PARTITION_TOML, 'at = "OP-01/D1"', 'at = ""'),
+    "at not a string": _variant(PARTITION_TOML, 'at = "OP-01/D1"', "at = 1"),
+    "table key unknown": _variant(PARTITION_TOML, "source = [", "sources = ["),
+    "index zero": _variant(PARTITION_TOML, 'at = "OP-01/D1"', 'at = "OP-01/D1"\nindex = 0'),
+    "index bool": _variant(PARTITION_TOML, 'at = "OP-01/D1"', 'at = "OP-01/D1"\nindex = true'),
+    "index string": _variant(PARTITION_TOML, 'at = "OP-01/D1"', 'at = "OP-01/D1"\nindex = "1"'),
+    "index float": _variant(PARTITION_TOML, 'at = "OP-01/D1"', 'at = "OP-01/D1"\nindex = 1.5'),
+    "basis not a string": _variant(PARTITION_TOML, _D1, _D1 + "\nbasis = 1"),
+    "case key missing": _variant(PARTITION_TOML, "key = 1\n", ""),
+    "case key zero": _variant(PARTITION_TOML, "key = 1", "key = 0"),
+    "case key negative": _variant(PARTITION_TOML, "key = 1", "key = -1"),
+    "case key bool": _variant(PARTITION_TOML, "key = 1", "key = true"),
+    "case key string": _variant(PARTITION_TOML, "key = 1", 'key = "1"'),
+    "case key float": _variant(PARTITION_TOML, "key = 1", "key = 1.9"),
+    "members missing": _variant(PARTITION_TOML, _D1 + "\n", ""),
+    "members a string": _variant(PARTITION_TOML, _D18, 'members = "E1"'),
+    "members empty": _variant(PARTITION_TOML, _D1, "members = []"),
+    "member empty": _variant(PARTITION_TOML, _D18, 'members = ["E1", "", "E3"]'),
+    "member not a string": _variant(PARTITION_TOML, _D18, 'members = ["E1", 2, "E3"]'),
+    "member twice": _variant(PARTITION_TOML, _D18, 'members = ["E1", "E2", "E3", "E1"]'),
+    "member name only": _variant(PARTITION_TOML, _D18, 'members = ["E1", "E2", { name = "E3" }]'),
+    "member match empty": _variant(PARTITION_TOML, _D18, 'members = ["E1", "E2", { name = "E3", match = "" }]'),
+    "member name empty": _variant(PARTITION_TOML, _D18, 'members = ["E1", "E2", { name = "", match = "E3" }]'),
+    "member key unknown": _variant(
+        PARTITION_TOML, _D18, 'members = ["E1", "E2", { name = "E3", match = "E3", why = "x" }]'
+    ),
+    "member bad regex": _variant(PARTITION_TOML, _D18, 'members = [{ name = "x", match = "(" }]'),
+    "parts not a table": _variant(PARTITION_TOML, _D18, _D18 + '\nparts = ["E3"]'),
+    "parts off members": _variant(PARTITION_TOML, _D18, _D18 + '\nparts = { E9 = ["disk"] }'),
+    "part a string": _variant(PARTITION_TOML, _D18, _D18 + '\nparts = { E3 = "disk" }'),
+    "parts empty": _variant(PARTITION_TOML, _D18, _D18 + "\nparts = { E3 = [] }"),
+    "part empty": _variant(PARTITION_TOML, _D18, _D18 + '\nparts = { E3 = ["disk", ""] }'),
+    "part not a string": _variant(PARTITION_TOML, _D18, _D18 + "\nparts = { E3 = [1] }"),
+    "source a string": _variant(PARTITION_TOML, f"source = [{_SRC}]", 'source = "Environment"'),
+    "source empty": _variant(PARTITION_TOML, f"source = [{_SRC}]", "source = []"),
+    "source entry not a table": _variant(PARTITION_TOML, f"source = [{_SRC}]", "source = [1]"),
+    "source at missing": _variant(PARTITION_TOML, _SRC, "{ column = 1 }"),
+    "source at empty": _variant(PARTITION_TOML, _SRC, '{ at = "", column = 1 }'),
+    "source column missing": _variant(PARTITION_TOML, _SRC, '{ at = "Environment" }'),
+    "source column zero": _variant(PARTITION_TOML, _SRC, '{ at = "Environment", column = 0 }'),
+    "source column float": _variant(PARTITION_TOML, _SRC, '{ at = "Environment", column = 1.5 }'),
+    "source index zero": _variant(PARTITION_TOML, _SRC, '{ at = "Environment", column = 1, index = 0 }'),
+    "source complete not a bool": _variant(PARTITION_TOML, _SRC, '{ at = "Environment", column = 1, complete = 1 }'),
+    "source key unknown": _variant(PARTITION_TOML, _SRC, '{ at = "Environment", column = 1, colum = 2 }'),
+    "unsourced a string": _variant(PARTITION_TOML, _D18, _D18 + '\nunsourced = "E3"'),
+    "unsourced not a member": _variant(PARTITION_TOML, _D18, _D18 + '\nunsourced = ["E9"]'),
+    "unsourced not a string": _variant(PARTITION_TOML, _D18, _D18 + "\nunsourced = [1]"),
+    "unsourced without source": _variant(PARTITION_TOML, _D1, _D1 + '\nunsourced = ["Absent"]'),
+    "states missing": _variant(STATE_TOML, 'states = ["Open", "Closed"]\n', ""),
+    "states a string": _variant(STATE_TOML, 'states = ["Open", "Closed"]', 'states = "Open"'),
+    "states empty": _variant(STATE_TOML, 'states = ["Open", "Closed"]', "states = []"),
+    "state empty": _variant(STATE_TOML, 'states = ["Open", "Closed"]', 'states = ["Open", ""]'),
+    "events empty": _variant(STATE_TOML, 'events = ["read", "close"]', "events = []"),
+    "event empty": _variant(STATE_TOML, 'events = ["read", "close"]', 'events = ["read", ""]'),
+    "event twice": _variant(STATE_TOML, 'events = ["read", "close"]', 'events = ["read", "read"]'),
+    "state key unknown": _variant(STATE_TOML, 'events = ["read", "close"]', 'event = ["read", "close"]'),
+    "ids column missing": _variant(PARTITION_TOML, 'kind = "ids"\ncolumn = 1\n', 'kind = "ids"\n'),
+    "ids column zero": _variant(PARTITION_TOML, 'kind = "ids"\ncolumn = 1', 'kind = "ids"\ncolumn = 0'),
+    "ids column bool": _variant(PARTITION_TOML, 'kind = "ids"\ncolumn = 1', 'kind = "ids"\ncolumn = true'),
+    "register reason missing": _variant(PARTITION_TOML, 'kind = "case"\nkey = 1\n' + _D18, 'kind = "register"'),
+    "register reason empty": _variant(
+        PARTITION_TOML, 'kind = "case"\nkey = 1\n' + _D18, 'kind = "register"\nreason = ""'
+    ),
+    "register reason not a string": _variant(
+        PARTITION_TOML, 'kind = "case"\nkey = 1\n' + _D18, 'kind = "register"\nreason = 1'
+    ),
+    "family missing": PARTITION_TOML + '\n[[ids]]\nshort = "X"\n',
+    "family empty": _variant(PARTITION_TOML, 'family = "OP-01/D"', 'family = ""'),
+    "family not a string": _variant(PARTITION_TOML, 'family = "OP-01/D"', "family = 1"),
+    "short empty": _variant(PARTITION_TOML, 'short = "D"', 'short = ""'),
+    "short not a string": _variant(PARTITION_TOML, 'short = "D"', "short = 1"),
+    "retired a string": _variant(PARTITION_TOML, 'short = "D"', 'short = "D"\nretired = "OP-01/D7"'),
+    "retired off its family": _variant(PARTITION_TOML, 'short = "D"', 'short = "D"\nretired = ["OP-01/E7"]'),
+    "ids key unknown": _variant(PARTITION_TOML, 'short = "D"', 'short = "D"\nshrot = "X"'),
+}
+
+
+@pytest.mark.parametrize("toml", MALFORMED.values(), ids=MALFORMED.keys())
+def test_a_malformed_declaration_exits_2_not_as_findings(tmp_path: Path, toml: str) -> None:
+    # Exit 1 means findings, so a broken sidecar must not read as a record with gaps; exit 0 would
+    # mean a misspelt or coerced key switched a check off.
+    doc = STATE if "states" in toml or "events" in toml or "event =" in toml else PARTITION
+    result = _run(tmp_path, doc, toml)
+    assert result.returncode == 2, (result.stdout, result.stderr)
+    assert result.stderr.startswith("observe_tables: "), result.stderr
+    assert "Traceback" not in result.stderr
+
+
+# Seeded mutants of OP-01's real record: each yields a finding the record itself does not. Each
+# target is found in the parsed record, never written as a literal cell, so a reopen that adds a
+# row or a column to these tables leaves the mutants valid.
+
+
+def _script() -> Any:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import observe_tables
+
+    return observe_tables
+
+
+def _op01() -> tuple[str, Any, dict[str, Any]]:
+    record = OP01.read_text(encoding="utf-8")
+    return record, _script().parse(record), tomllib.loads(OP01_TABLES.read_text(encoding="utf-8"))
+
+
+def _table(doc: Any, at: str) -> Any:
+    table = _script()._find(doc, at, 1)
+    assert table is not None, at
+    return table
 
 
 def _op01_findings(tmp_path: Path, record: str) -> set[str]:
     return set(_findings(_run(tmp_path, record, OP01_TABLES.read_text(encoding="utf-8"))))
 
 
-def _mutant_adds(tmp_path: Path, old: str, new: str) -> set[str]:
-    record = OP01.read_text(encoding="utf-8")
-    assert record.count(old) == 1, old
-    return _op01_findings(tmp_path, record.replace(old, new)) - _op01_findings(tmp_path, record)
+def _mutant_adds(tmp_path: Path, record: str, lines: dict[int, str | None], tail: str = "") -> set[str]:
+    """The findings *record* gains when each numbered line is replaced (None drops it) and *tail* appended."""
+    text = record.split("\n")
+    mutant = [lines.get(n, line) for n, line in enumerate(text, 1)]
+    mutated = "\n".join(line for line in mutant if line is not None) + tail
+    return _op01_findings(tmp_path, mutated) - _op01_findings(tmp_path, record)
 
 
 def test_op01_mutant_dropping_a_partition_row_is_a_gap(tmp_path: Path) -> None:
-    added = _mutant_adds(tmp_path, "  | Ω_S(k) = Found(e, folder), the root included | failure: not an item |\n", "")
+    record, doc, _ = _op01()
+    line = next(n for n, cells in _table(doc, "OP-01/D9").rows if "Found(e, folder)" in cells[0])
     # D34 draws its pre-state members from D9's column, so its source check sees the loss too.
-    assert added == {
+    assert _mutant_adds(tmp_path, record, {line: None}) == {
         "- OP-01/D9 table 1: gap: 'Found(e, folder)' is matched by no row",
         "- OP-01/D34 table 1: source: 'Found(e, folder)' occurs in no cell of"
         " Environment column 1 or OP-01/D9 column 1",
@@ -386,46 +569,77 @@ def test_op01_mutant_dropping_a_partition_row_is_a_gap(tmp_path: Path) -> None:
 
 
 def test_op01_mutant_exposing_an_environment_row_twice_is_an_overlap(tmp_path: Path) -> None:
-    added = _mutant_adds(tmp_path, "| E6, E15 (O3) |", "| E6, E15, E3 (O3) |")
-    assert added == {"- OP-01/D19 table 1: overlap: 'E3' is matched by rows 2 and 3"}
+    record, doc, decl = _op01()
+    members = next(e["members"] for e in decl["table"] if e["at"] == "OP-01/D19")
+    (_, cells1), (second, cells2) = _table(doc, "OP-01/D19").rows[:2]
+    member = next(m for m in members if re.search(rf"(?<!\w){re.escape(m)}(?!\w)", _script()._expand(cells1[0])))
+    text = record.split("\n")[second - 1]
+    assert _mutant_adds(tmp_path, record, {second: text.replace(cells2[0], f"{cells2[0]}, {member}", 1)}) == {
+        f"- OP-01/D19 table 1: overlap: {member!r} is matched by rows 1 and 2"
+    }
 
 
 def test_op01_mutant_emptying_a_state_cell_is_reported(tmp_path: Path) -> None:
-    added = _mutant_adds(
-        tmp_path, "| Closed | `ValueError` (D15) | no-op | no effect |", "| Closed | `ValueError` (D15) | no-op |  |"
-    )
-    assert added == {"- OP-01/D18 table 1: row 4 ('Closed') has an empty cell in column 4"}
+    record, doc, _ = _op01()
+    line, cells = _table(doc, "OP-01/D18").rows[-1]
+    text = record.split("\n")[line - 1]
+    head, _, _ = text.rstrip().rstrip("|").rpartition("|")
+    rows = len(_table(doc, "OP-01/D18").rows)
+    assert _mutant_adds(tmp_path, record, {line: f"{head}|  |"}) == {
+        f"- OP-01/D18 table 1: row {rows} ({cells[0]!r}) has an empty cell in column {len(cells)}"
+    }
 
 
 def test_op01_mutant_citing_a_missing_register_row_is_reported(tmp_path: Path) -> None:
-    line = next(n for n, text in enumerate(OP01.read_text(encoding="utf-8").splitlines(), 1) if "(D41, row 3)" in text)
-    added = _mutant_adds(tmp_path, "(D41, row 3)", "(D41, row 9)")
-    assert added == {f"- citation: 'D41, row 9' (line {line}): OP-01/D41's first table has 8 rows"}
+    record, doc, _ = _op01()
+    rows = len(_table(doc, "OP-01/D41").rows)
+    last = len(record.split("\n"))
+    added = _mutant_adds(tmp_path, record, {}, f"\nSee D41, row {rows + 1}.\n")
+    assert added == {f"- citation: 'D41, row {rows + 1}' (line {last + 1}): OP-01/D41's first table has {rows} rows"}
 
 
 def test_op01_observer_mentions_are_no_open_item_citations(tmp_path: Path) -> None:
     # O1 to O3 are axes.md's observers as well as open items; dropping the item O2 must not make
     # the Environment's actor "O2" a dangling citation.
-    record = OP01.read_text(encoding="utf-8")
-    item = next(line for line in record.splitlines() if line.startswith("- `OP-01/O2`:"))
-    added = _mutant_adds(tmp_path, item, item.replace("- `OP-01/O2`:", "- dropped:"))
+    record, _, _ = _op01()
+    line = next(n for n, text in enumerate(record.split("\n"), 1) if text.startswith("- `OP-01/O2`:"))
+    text = record.split("\n")[line - 1]
+    added = _mutant_adds(tmp_path, record, {line: text.replace("- `OP-01/O2`:", "- dropped:")})
     assert [f for f in added if f.startswith("- citation: 'O2'")] == []
     # The full form is still checked: OP-01/D10 cites `OP-01/O2`.
     assert any(f.startswith("- citation: 'OP-01/O2'") for f in added)
 
 
 def test_op01_mutant_dropping_an_environment_row_is_reported(tmp_path: Path) -> None:
-    row = next(line for line in OP01.read_text(encoding="utf-8").splitlines() if line.startswith("| `OP-01/E15`"))
-    added = _mutant_adds(tmp_path, row + "\n", "")
-    assert "- OP-01/D19 table 1: source: 'E15' occurs in no cell of Environment column 1" in added
-    assert any(f.startswith("- citation: 'E15'") for f in added)
+    record, doc, decl = _op01()
+    members = next(e["members"] for e in decl["table"] if e["at"] == "OP-01/D19")
+    line, cells = next(
+        (n, c) for n, c in reversed(_table(doc, "Environment").rows) if c[0].strip("`").split("/")[-1] in members
+    )
+    element = cells[0].strip("`").split("/")[-1]
+    added = _mutant_adds(tmp_path, record, {line: None})
+    assert f"- OP-01/D19 table 1: source: {element!r} occurs in no cell of Environment column 1" in added
+    assert any(f.startswith(f"- citation: {element!r}") for f in added)
+
+
+def test_op01_mutant_adding_an_environment_row_no_table_names_is_reported(tmp_path: Path) -> None:
+    # The reopen O21 and O44 propose: a new Environment row, and D19's and D34's tables left as they were.
+    record, doc, _ = _op01()
+    env = _table(doc, "Environment")
+    line, cells = env.rows[-1]
+    number = 1 + max(int(re.search(r"\d+$", c[0].strip("`"))[0]) for _, c in env.rows)  # type: ignore[index]
+    new = f"`OP-01/E{number}`"
+    text = record.split("\n")[line - 1]
+    rows = len(env.rows) + 1
+    added = _mutant_adds(tmp_path, record, {line: text + "\n" + text.replace(cells[0], new, 1)})
+    assert added == {
+        f"- OP-01/D19 table 1: source: row {rows} of Environment column 1 ({new!r}) matches no member",
+        f"- OP-01/D34 table 1: source: row {rows} of Environment column 1 ({new!r}) matches no member",
+    }
 
 
 def test_op01_mutant_adding_an_undeclared_table_is_reported(tmp_path: Path) -> None:
-    added = _mutant_adds(
-        tmp_path,
-        "- **Decision:** (a). OP-01 takes no option",
-        "  | A | B |\n  |---|---|\n  | x | y |\n\n- **Decision:** (a). OP-01 takes no option",
-    )
-    assert len(added) == 1
-    assert next(iter(added)).startswith("- declaration: OP-01/D44 table 1 (line ")
+    record, _, _ = _op01()
+    last = len(record.split("\n"))
+    added = _mutant_adds(tmp_path, record, {}, "\n### Scratch\n\n| A | B |\n|---|---|\n| x | y |\n")
+    assert added == {f"- declaration: Scratch table 1 (line {last + 3}) is declared by no entry"}

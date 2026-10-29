@@ -14,6 +14,7 @@ audience:
   - contributor.process
 decisions:
   - sdd/decisions/c0c85cb6-2e66-47fb-8784-3295e0c9e743.jsonl
+  - sdd/decisions/ced72d7f-9656-45c4-a6dc-ddf13727ed8f.jsonl
 expected_ripples:
   - pyproject.toml
   - sdd/GATE-INVENTORY.md
@@ -159,9 +160,11 @@ phases:
           of D34's categories (as raised, UnicodeDecodeError, TypeError, ValueError,
           cancellation), dropped as OP-01/O37's. Declarations, citations: none.
           Could it have found nothing: yes, had D38's rows covered D34's categories
-          and D18 a cancellation column; six seeded mutants of the real record
-          (tests/scripts/test_observe_tables.py, test_op01_*) each add the finding
-          they seed. Reach over O14 to O44: of the items about a table, only O37 is a
+          and D18 a cancellation column; seven seeded mutants of the real record
+          (tests/scripts/test_observe_tables.py, test_op01_mutant_*) each add the
+          finding they seed, their targets found in the parsed record so a reopen's
+          added rows leave them valid. After PR #1197's third review the D19 and D34
+          Environment sources are declared complete, and the run gives the same 6. Reach over O14 to O44: of the items about a table, only O37 is a
           coverage gap; O16, O28, O33 and O36 dispute a cell's content and O31 a
           table no other enumeration bounds (D43, declared a register), which no
           declared domain reaches. Bound: the declarations were written after
