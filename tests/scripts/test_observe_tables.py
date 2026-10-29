@@ -291,6 +291,20 @@ def test_unusable_input_exits_2(tmp_path: Path) -> None:
     assert _run(tmp_path, PARTITION, '[[table]]\nat = "OP-01/D1"\nkind = "lattice"\n').returncode == 2
 
 
+def test_a_malformed_declaration_exits_2_not_as_findings(tmp_path: Path) -> None:
+    # Exit 1 means findings, so a broken sidecar must not read as a record with gaps.
+    bad_regex = PARTITION_TOML.replace('members = ["E1", "E2", "E3"]', 'members = [{ name = "x", match = "(" }]')
+    ids_not_array = PARTITION_TOML.replace('[[ids]]\nfamily = "OP-01/E"\nshort = "E"\n', "").replace("[[ids]]", "[ids]")
+    item_not_table = 'table = ["OP-01/D1"]\n'
+    # A string where a list belongs would be read character by character into false gaps.
+    members_not_list = PARTITION_TOML.replace('members = ["E1", "E2", "E3"]', 'members = "E1"')
+    states_not_list = STATE_TOML.replace('states = ["Open", "Closed"]', 'states = "Open"')
+    for toml in (bad_regex, ids_not_array, item_not_table, members_not_list, states_not_list):
+        result = _run(tmp_path, PARTITION, toml)
+        assert result.returncode == 2, (toml, result.stdout, result.stderr)
+        assert result.stderr.startswith("observe_tables: "), result.stderr
+
+
 # Seeded mutants of OP-01's real record: each yields a finding the record itself does not.
 
 
@@ -327,8 +341,20 @@ def test_op01_mutant_emptying_a_state_cell_is_reported(tmp_path: Path) -> None:
 
 
 def test_op01_mutant_citing_a_missing_register_row_is_reported(tmp_path: Path) -> None:
+    line = next(n for n, text in enumerate(OP01.read_text(encoding="utf-8").splitlines(), 1) if "(D41, row 3)" in text)
     added = _mutant_adds(tmp_path, "(D41, row 3)", "(D41, row 9)")
-    assert added == {"- citation: 'D41, row 9' (line 866): OP-01/D41's first table has 8 rows"}
+    assert added == {f"- citation: 'D41, row 9' (line {line}): OP-01/D41's first table has 8 rows"}
+
+
+def test_op01_observer_mentions_are_no_open_item_citations(tmp_path: Path) -> None:
+    # O1 to O3 are axes.md's observers as well as open items; dropping the item O2 must not make
+    # the Environment's actor "O2" a dangling citation.
+    record = OP01.read_text(encoding="utf-8")
+    item = next(line for line in record.splitlines() if line.startswith("- `OP-01/O2`:"))
+    added = _mutant_adds(tmp_path, item, item.replace("- `OP-01/O2`:", "- dropped:"))
+    assert [f for f in added if f.startswith("- citation: 'O2'")] == []
+    # The full form is still checked: OP-01/D10 cites `OP-01/O2`.
+    assert any(f.startswith("- citation: 'OP-01/O2'") for f in added)
 
 
 def test_op01_mutant_dropping_an_environment_row_is_reported(tmp_path: Path) -> None:

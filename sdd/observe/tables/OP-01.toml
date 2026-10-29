@@ -90,6 +90,7 @@ short = "E"
 family = "OP-01/NP"
 short = "NP"
 
+# No short form: O1 to O3 are also axes.md's observers, which the record names bare
+# throughout (the Environment's Actor column), so a bare O<n> is no citation.
 [[ids]]
 family = "OP-01/O"
-short = "O"

@@ -30,7 +30,9 @@ Every table in the document must be declared. Each ``[[ids]]`` gives a
 ``family`` (``OP-01/D``, ``KEY-``) and optionally its ``short`` form (``D``):
 every token of a family must name an element defined by a heading
 ``<ID>: ...``, a bullet ``- `<ID>`: ...`` or an ``ids`` table, and ``<ID>, row
-<n>`` must name an existing row of that element's first table. In a cell, ``X1
+<n>`` must name an existing row of that element's first table. A short form
+matches every bare token of its shape, so declare one only for a letter the
+document uses for nothing else (not ``O``: axes.md's observers are O1 to O3). In a cell, ``X1
 to X3`` covers X1, X2 and X3; a citation range checks its two ends only.
 
 Authority: the document governs and the sidecar is a reading of it, written by
@@ -76,6 +78,7 @@ _SEPARATOR = re.compile(r"^\|?\s*:?-{3,}")
 _RANGE = re.compile(r"(?<![\w/])(?P<p>[A-Za-z]+-?)(?P<a>\d+) to (?:(?P=p))?(?P<b>\d+)(?!\w)")
 _BULLET = re.compile(r"^\s*- `(?P<id>[^`]+)`:")
 _KINDS = ("case", "state", "ids", "register")
+_LISTS = frozenset({"members", "states", "events", "source", "unsourced"})
 
 
 @dataclass
@@ -194,7 +197,15 @@ def _members(entry: dict[str, Any]) -> list[Member]:
 def _required(entry: dict[str, Any], key: str) -> Any:
     if key not in entry:
         raise ValueError(f"{entry.get('at')!r}: a {entry.get('kind')} table needs {key!r}")
-    return entry[key]
+    value = entry[key]
+    # A string where a list belongs would be read character by character into false findings.
+    if key in _LISTS and not isinstance(value, list):
+        raise ValueError(f"{entry.get('at')!r}: {key!r} must be an array, not {value!r}")
+    return value
+
+
+def _optional_list(entry: dict[str, Any], key: str) -> list[Any]:
+    return _required(entry, key) if key in entry else []
 
 
 def _cell(cells: list[str], column: int) -> str:
@@ -226,7 +237,7 @@ def check_case(doc: Document, table: Table, entry: dict[str, Any]) -> list[str]:
     for n, cell, raw in keys:
         if not any(m.pattern.search(cell) for m in members):
             out.append(f"row {n} ({raw!r}) matches no member")
-    sources = entry.get("source", [])
+    sources = _optional_list(entry, "source")
     if sources:
         columns: list[str] = []
         names = []
@@ -237,7 +248,7 @@ def check_case(doc: Document, table: Table, entry: dict[str, Any]) -> list[str]:
                 continue
             names.append(f"{st.heading.split(':')[0]} column {src['column']}")
             columns += [_expand(_cell(cells, int(src["column"]))) for _, cells in st.rows]
-        unsourced = set(entry.get("unsourced", []))
+        unsourced = set(_optional_list(entry, "unsourced"))
         for m in members:
             if names and m.name not in unsourced and not any(m.pattern.search(c) for c in columns):
                 out.append(f"source: {m.name!r} occurs in no cell of {' or '.join(names)}")
@@ -275,6 +286,8 @@ class Family:
 
 
 def _families(spec: list[dict[str, Any]]) -> list[Family]:
+    if not isinstance(spec, list) or not all(isinstance(f, dict) for f in spec):
+        raise ValueError("'ids' must be an array of tables ([[ids]])")
     found = []
     for f in spec:
         family, short = f.get("family"), f.get("short")
@@ -331,7 +344,7 @@ def check_citations(doc: Document, families: list[Family], id_tables: list[tuple
 def check(doc: Document, decl: dict[str, Any]) -> tuple[list[str], list[str], list[str]]:
     """Findings as (declarations, tables, citations)."""
     entries = decl.get("table", [])
-    if not isinstance(entries, list):
+    if not isinstance(entries, list) or not all(isinstance(e, dict) for e in entries):
         raise ValueError("'table' must be an array of tables ([[table]])")
     declared: set[tuple[str, int]] = set()
     declarations: list[str] = []
@@ -379,7 +392,7 @@ def main(argv: list[str]) -> int:
         doc = parse(Path(argv[1]).read_text(encoding="utf-8"))
         decl = tomllib.loads(Path(argv[2]).read_text(encoding="utf-8"))
         groups = check(doc, decl)
-    except (OSError, ValueError, KeyError, TypeError) as exc:
+    except (OSError, ValueError, KeyError, TypeError, re.error) as exc:  # re.error: a member's bad ``match``
         print(f"observe_tables: {exc}", file=sys.stderr)
         return 2
     print(f"# Tables of {argv[1]} against {argv[2]}")
