@@ -76,7 +76,9 @@ decided. **The freeze is an annotated tag**, `observe/<entry>/freeze-<n>`,
 on the master commit that carries the record in that state, created once the
 change that brings it there has merged (a squash merge leaves the branch's
 commits unreachable). Freezing changes nothing in the record, so the tagged
-content is the frozen content. A later reopen ends the freeze; the next
+content is the frozen content. The tag is not a release: tooling that reads
+the previous release takes `v`-prefixed tags only
+(`scripts/check_support_windows.py`, pinned by its test). A later reopen ends the freeze; the next
 freeze takes `n + 1`, and the spec then cites the amending decisions.
 RFC-0024 R1 holds: no freeze settles ground on the side.
 
@@ -168,7 +170,10 @@ Decided in the log above:
   baseline, started without waiting for BK-504),
   BK-506 (R4's trial: Stage 0, pre-registration, run). OP-01's reopen is
   BK-501's tool under BK-485.
-- **Testing:** none now; R3 binds the first v1 reference model, OP-01's.
+- **Testing:** `scripts/check_support_windows.py` takes the previous release
+  from `v`-prefixed tags only, so a freeze tag never becomes its base; a test
+  in `tests/scripts/test_check_support_windows.py` pins it. R3 binds the
+  first v1 reference model, OP-01's.
 - **Cost:** the protocol's own estimate rests on assumptions it labels
   unsourced; Stage 0 measures the cost before the pre-registration commits to
   it.

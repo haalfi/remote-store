@@ -182,13 +182,14 @@ def read_pyproject_at(revision: str, workdir: Path) -> Path:
 
 
 def previous_tag() -> str:
-    """The most recent tag reachable from HEAD, which is the previous release.
+    """The most recent release tag (``v<digit>…``) reachable from HEAD, which is the previous release.
 
-    Tags are not in a fresh shallow clone; ``git fetch --tags`` first if this
-    cannot find one.
+    Other tags, such as an ``/observe`` freeze tag, are not releases and are
+    skipped. Tags are not in a fresh shallow clone; ``git fetch --tags`` first
+    if this cannot find one.
     """
     return subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "describe", "--tags", "--abbrev=0"],
+        ["git", "-C", str(REPO_ROOT), "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*"],
         check=True,
         capture_output=True,
         text=True,
@@ -327,7 +328,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--base",
         default=None,
-        help="Revision to compare against (default: the most recent tag reachable from HEAD).",
+        help="Revision to compare against (default: the most recent release tag reachable from HEAD).",
     )
     parser.add_argument(
         "--today",

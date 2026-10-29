@@ -1,5 +1,5 @@
 id: BK-503
-title: "A record's spec, model and reference model have no faithfulness gate, so a misreading of the record reaches every layer built from it (RFC amending RFC-0024 § 9 steps 5 and 6)"
+title: "A record's spec, model and reference model have no faithfulness gate, so a misreading of the record reaches every layer built from it (RFC amending RFC-0024's flow for every entry, step 5 first, and step 6)"
 trigger: >-
   OP-01's record (BK-485 § 9 step 5) is the first ready for spec authoring, and
   the external research run "Spec faithfulness and enforcement"
@@ -27,6 +27,7 @@ expected_ripples:
   - CHANGELOG.md
 surprising_ripples:
   - sdd/BACKLOG.md (BK-485's entry exceeded ADR-0040's eight-line cap once RFC-0029's order was added, and was rewritten)
+  - scripts/check_support_windows.py (review round 2 of PR #1196: `git describe --tags` takes any tag, so R2's freeze tag would have become the release check's base; now `--match v[0-9]*`, pinned by a test)
 orient:
   - items: [BK-491, BK-465, BK-466]
     verdict: constrains
@@ -114,9 +115,9 @@ phases:
         read_type: reference
         extract: "Baseline check map per normative form and Pipelines A to C; § 5 onward and Part 3 not read"
       - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement trial design.md"
-        section: "§ 1 to § 2.2, § 2.3 to its 'Who sees what' table (lines 1 to 140)"
+        section: "§ 1 to § 2.2, § 2.3 to line 140, partway into its 'Who sees what' table"
         read_type: reference
-        extract: "S+ comparator, p10 with validity condition V, criteria O1 to O11, six misreading classes, arms and information flow; § 2.4 onward not read"
+        extract: "S+ comparator, p10 with validity condition V, criteria O1 to O11, six misreading classes, arms, and per-pipeline information flow up to the first rows of the who-sees-what table; the rest of § 2.3 and § 2.4 onward not read"
       - file: "origin/bk-501-observe-reopen (PR #1195)"
         section: "diff of axes.md, ground-register.md, observe SKILL.md, BACKLOG.md"
         read_type: reference
