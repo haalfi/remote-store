@@ -521,8 +521,8 @@ no clause of the contract ships unexercised.
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset (§ 9 steps 1, 2);
   step 3 built `/observe` and `sdd/observe/` (test runs in the dossier); step 4 is spec 052, 4b spec 053 (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), `/observe-review` (RFC-0028) checked it, and
-  RFC-0029 orders the rest: a table check (BK-504), the reopen, a freeze (not waiting for BK-505's stopping rule), then
-  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review), for a reopen session (`/observe OP-01` on the Complete record, BK-501), bar O42, for the write entries' sessions.
+  RFC-0029 orders the rest: a table check (BK-504, run), the reopen, a freeze (not waiting for BK-505's stopping rule), then
+  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review) and O45 (BK-504's table check), for a reopen session (`/observe OP-01` on the Complete record, BK-501), bar O42, for the write entries' sessions.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-502 — A reopen's ground-conflict route and `Flow done` have never run, so their remaining gaps surface only in the first ground reopen**
@@ -532,21 +532,13 @@ no clause of the contract ships unexercised.
   path (trace `review_fix_3` to `review_fix_7`), and no ground reopen has run yet. Open decision: none until OP-01/O21's
   route is asked; check the lifecycle against that first run, spec 051's flow if O21 is routed there.
 
-- [ ] **BK-504 — No check reads an `/observe` record's tables, so a gap or overlap in them reaches the spec unnoticed**
-  spec: — · effort: M · audience: contributor.tooling, contributor.process
-  RFC-0029 R1: `/observe-review` gains a deterministic check that each case table is complete and disjoint over its
-  declared domain, each state table has a cell per state and event, and each row a decision cites exists; findings
-  become open items. The same script checks a spec's tables. Runs on OP-01 before its reopen, with evidence it can
-  fail (ADR-0045). Also writes R2's freeze into `/observe` and `/observe-review`. Open decision: how a table declares
-  its domain in a record.
-
 - [ ] **BK-505 — An `/observe` record's freeze has no stopping rule: the record-quality report's checks are neither adopted nor rejected**
   spec: — · effort: S · audience: contributor.process
   OP-01's failure modes sat in the record, which the faithfulness research assumed correct
-  ([`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 3). The research briefed in the dossier
-  has landed and is kept in [`research-observe-record-quality.md`](research/research-observe-record-quality.md):
-  mechanical checks over the record and a stopping rule calibrated by seeded defects, neither validated.
-  Open decision: which of its checks and its stopping rule bind, amending RFC-0029 R1, R2.
+  ([`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 3). The briefed research is kept in [`research-observe-record-quality.md`](research/research-observe-record-quality.md): mechanical
+  checks and a stopping rule calibrated by seeded defects, neither validated; unmeasured: two extractions of OP-01 plus
+  a blind restatement per claim, scored against its open items. Open decision: which of its checks and its stopping
+  rule bind, amending RFC-0029 R1, R2.
   Detail: [dossier](backlog/bk-505-record-quality-research.md)
 
 - [ ] **BK-506 — Whether oracles derived from a record catch spec misreadings that spec-derived checks miss is unmeasured**
@@ -556,6 +548,22 @@ no clause of the contract ships unexercised.
   [`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 2.2, § 2.4. Stage 0, a dry run on a toy
   operation, measures hours, minutes per label and tokens; then a pre-registration commit with every script; then
   the run. Open decision: which model providers fill the four lineage roles (RFC-0029 Open Question 1).
+
+- [ ] **BK-507 — `observe-tables` misreads some ID forms and never reports an ID defined twice**
+  spec: — · effort: S · audience: contributor.tooling
+  PR #1197 rounds 5 and 6, measured: a full-form or backticked range (`OP-01/E1 to OP-01/E3`) is not expanded; a
+  full-form member never matches a cell's short form; an ID two headings define is not reported, and a source at it
+  reads "matches no table", so G3 fixes the sidecar and loses the defect. Of the tables only OP-01's Axis status
+  column 3, read by no declaration, holds such a range (Grep ``OP-\d+/[A-Z]+\d+`? to `?OP-\d+/`` over records, specs).
+  Open decision: none; canonicalize IDs per family before matching, and report a second definition of an ID.
+
+- [ ] **BK-508 — `observe-tables` leaves most of R1's cited-row clause and some citations unchecked**
+  spec: — · effort: S · audience: contributor.tooling
+  PR #1197's final panel, measured: only `<ID>, row <n>` is a row citation, so a row cited by name ("D34's changed
+  row", OP-01's O28, O33), after a backticked ID, or with no ID ("the register's row 3", D40) goes unchecked, which is
+  most of RFC-0029 R1's "each row a decision cites". A short-form definition (`| E1 |`, `` - `E1`: ``) defines
+  nothing; a heading's text before its first colon is never scanned; a `source` listed twice is accepted.
+  Open decision: how a named row is resolved (a row's key cell, or a declared row name), which BK-505 may own.
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process

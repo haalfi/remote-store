@@ -1,0 +1,101 @@
+# Table declarations for sdd/observe/records/OP-01.md, read by
+# scripts/observe_tables.py (BK-504, RFC-0029 R1). A reading of the record,
+# written by /observe-review, never a decision: the record governs, and a
+# declaration a re-read shows wrong is corrected here (the script's docstring).
+# Written 2026-10-29 after reading open items O14 to O44, which bounds what the
+# first run's findings show (BK-504's trace).
+
+[[table]]
+at = "Environment"
+kind = "ids"
+column = 1
+
+[[table]]
+at = "OP-01/D9"
+kind = "case"
+key = 1
+members = ["refused", "Found(e, item)", "Found(e, folder)", "Absent", "AbsentAncestor", "BlockedByItem"]
+basis = "D9's Decision: ν refuses or accepts (KEY-001), and KEY-013 gives exactly one Ω case, Found split by TREE-001"
+
+[[table]]
+at = "OP-01/D18"
+kind = "state"
+states = ["Open", "Exhausted", "Failed", "Closed"]
+events = ["read", "close", "lifetime ends", "cancelled"]
+basis = "D18's table; D20's consistency check: 'adds a transition to D18's table: Open, any read, cancelled → Closed'"
+
+[[table]]
+at = "OP-01/D19"
+kind = "case"
+key = 1
+members = ["E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E14", "E15"]
+source = [{ at = "Environment", column = 1, complete = true }]
+basis = "D19's table: 'Exposure of OP-01's steps', one row per group of Environment rows, E1 to E15 all placed; complete, so a row the Environment gains and the table does not is reported"
+
+[[table]]
+at = "OP-01/D34"
+kind = "case"
+key = 1
+members = [
+    { name = "refused", match = "refus(ed|es)" },
+    "Absent", "AbsentAncestor", "BlockedByItem", "Found(e, folder)",
+    "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E14", "E15",
+    "decode", "caller error",
+]
+parts = { E13 = ["disk I/O", "memory or descriptors"] }
+# The Environment source is complete (D34's check, below); D9's is not: its success row has no category.
+source = [{ at = "Environment", column = 1, complete = true }, { at = "OP-01/D9", column = 1 }]
+unsourced = ["decode", "caller error"]
+basis = "D34's check: 'Every row of the Environment and every failing row of D9 has a category'; decode is D32's, caller errors D33's"
+
+[[table]]
+at = "OP-01/D38"
+kind = "case"
+key = 1
+members = [
+    "key refused", "not found", "not an item", "permission denied", "authentication failed", "not readable",
+    "unavailable", "timeout", "changed", "base category", "as raised", "UnicodeDecodeError", "TypeError",
+    "ValueError", "cancellation",
+]
+# complete: a category D34 gains needs a D38 row.
+source = [{ at = "OP-01/D34", column = 2, complete = true }]
+basis = "D38's table: 'Caller-level retry of a surfaced failure'; D34 lists the categories OP-01 surfaces"
+
+[[table]]
+at = "OP-01/D41"
+kind = "ids"
+column = 1
+
+[[table]]
+at = "OP-01/D43"
+kind = "register"
+reason = "D43 enumerates OP-01's variation points itself; no other table fixes their set (OP-01/O31 asks whether one is missing)"
+
+[[table]]
+at = "Axis status"
+kind = "case"
+key = 1
+members = [
+    "AX-1", "AX-2", "AX-3", "AX-4", "AX-5", "AX-6", "AX-7", "AX-8", "AX-9", "AX-10", "AX-11", "AX-12",
+    "AX-13", "AX-14", "AX-15",
+]
+basis = "sdd/observe/axes.md § Axes, one row per axis"
+
+# Bare D<n> also names RFC-0024's decisions (D43's consistency check, "RFC-0024 D6"; OP-01/O9, "D5"), read as
+# OP-01/D6 and D5, which exist: accepted, but an RFC decision past OP-01's last would read as dangling.
+[[ids]]
+family = "OP-01/D"
+short = "D"
+
+[[ids]]
+family = "OP-01/E"
+short = "E"
+
+[[ids]]
+family = "OP-01/NP"
+short = "NP"
+
+# No short form: O1 to O3 are also axes.md's observers, which the record names bare
+# throughout (the Environment's Actor column), so a bare O<n> is no citation.
+[[ids]]
+family = "OP-01/O"

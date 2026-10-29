@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 312982,
+  "total": 314073,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,16 +16,16 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 6467,
-    ".claude/skills/observe-review/SKILL.md": 4681,
+    ".claude/skills/observe/SKILL.md": 6552,
+    ".claude/skills/observe-review/SKILL.md": 5691,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
-    ".claude/skills/rvw-pr/SKILL.md": 23363,
     ".claude/skills/rvw-pr/measuring.md": 5482,
     ".claude/skills/rvw-pr/posting-gh.md": 2464,
     ".claude/skills/rvw-pr/posting.md": 2352,
+    ".claude/skills/rvw-pr/SKILL.md": 23363,
     ".claude/skills/ship/SKILL.md": 54247,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
@@ -33,7 +33,7 @@
     ".claude/agents/sdd-expert.md": 1799,
     ".claude/agents/store-backend-expert.md": 2104,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 64672,
+    "sdd/CLAUDE-REFERENCE.md": 64668,
     "sdd/traces/_schema.yml": 31990
   },
   "raises": [
@@ -234,6 +234,30 @@
       "from": 312862,
       "to": 312982,
       "reason": "PR #1195 rounds 3 and 4: a reopen resumes at its first item with no Decided by or Routed to and skips routed ones; a ground-conflict item names any answer that settles it in the record (observe/SKILL.md +110); /observe-review names this review's trace (+10)"
+    },
+    {
+      "item": "BK-504",
+      "from": 312982,
+      "to": 313999,
+      "reason": "RFC-0029 R1 and R2: /observe-review gains the table check G3 in step 1 and a Freeze step 5 (+932 after a -256 tightening pass); /observe says a reopen ends a freeze and its End points to the freeze verdict (+85)"
+    },
+    {
+      "item": "BK-504",
+      "from": 313999,
+      "to": 314003,
+      "reason": "PR #1197 round 3: /observe-review step 5 states the first freeze's n (+8); round 2's CLAUDE-REFERENCE rewording, unrecorded then (-4)"
+    },
+    {
+      "item": "BK-504",
+      "from": 314003,
+      "to": 314063,
+      "reason": "PR #1197 round 4: /observe-review G3 fixes a Declarations finding in the sidecar and re-runs before step 4 (+60)"
+    },
+    {
+      "item": "BK-504",
+      "from": 314063,
+      "to": 314073,
+      "reason": "PR #1197 round 5: G3 fixes in the sidecar only a declaration a re-read shows wrong, so a record defect such as a duplicated heading reaches step 4 (+10)"
     }
   ]
 }

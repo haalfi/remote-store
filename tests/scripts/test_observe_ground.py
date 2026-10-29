@@ -763,7 +763,6 @@ def test_ci_runs_this_module_when_any_file_it_reads_changes() -> None:
     read = [*observe_ground.ground(ROOT), *observe_ground.METHOD_FILES, observe_ground.CATALOGUE]
     read += [p.relative_to(ROOT).as_posix() for p in (ROOT / "sdd/observe/inputs").glob("*.md")]
     assert [rel for rel in read if not hooks_pat.search(rel)] == []
-    assert not hooks_pat.search("sdd/observe/records/OP-01.md")
 
 
 def test_settings_wire_all_four_modes() -> None:

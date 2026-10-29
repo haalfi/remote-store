@@ -537,7 +537,7 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
       `.claude/hooks/`, `.githooks/`, the `sdd/` scripts in CI's `HOOKS_PAT`, the two
       tool lists `tests/scripts/test_reviewer_tools.py` holds equal
       (`.claude/agents/reviewer.md`, `.claude/skills/rvw-pr/SKILL.md`, also in
-      `HOOKS_PAT`), the files `test_observe_ground.py` reads (its `HOOKS_PAT`
+      `HOOKS_PAT`), the files `test_observe_*.py` read (their `HOOKS_PAT`
       members), `pyproject.toml`, or `.python-version`** → run `hatch run fast`, the
       members of `all` the change can affect (`scripts/fast_gate.py`). The
       `sdd/` scripts ride with `.claude/hooks/` below: they are pinned by
