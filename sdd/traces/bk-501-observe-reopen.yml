@@ -202,3 +202,17 @@ phases:
         extract: >-
           Rounds 3 and 4: observe/SKILL.md +110, observe-review/SKILL.md +10,
           total +120: raised 312862 -> 312982
+  - id: review_fix_5
+    name: PR #1195 round 5, a scoped /rvw-pr on round 4
+    steps:
+      # One choice asked (log d91e84ea), the recommendation taken: the change
+      # that ends a routed item's flow marks it Flow done.
+      - file: sdd/observe/axes.md
+        section: "Per-question loop: A reopen"
+        read_type: gate
+        extract: >-
+          My miss: round 4 skipped a routed item "while that flow runs", but
+          the skill skipped it for good and nothing marked the flow's end.
+          Now the change that ends the flow adds Flow done, and a reopen
+          walks the item again only then; step 2 resumes at step 3's first
+          item to walk instead of restating the exclusions
