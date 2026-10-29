@@ -166,3 +166,7 @@ phases:
         section: "§ 2.0, § 2.1, § 2.2's class table, § 2.3's roles, § 2.8 lines 294 to 309, § 3.1"
         read_type: reference
         extract: "Source of research-spec-faithfulness.md § 2.4: E, S+, C1 to C6, V (at most 1 of 24 held-out wheats), H1 to H3, core and full tier, lineages X Y Z W, O1 to O11"
+      - file: "haalfi/research@193c0bc: reports/Spec faithfulness prior-art check.md"
+        section: "§ 1, § 3, § 4"
+        read_type: reference
+        extract: "No recommendation changes; nearest pipeline Lim et al. (human A ≡ R gate, stops at the formal model); C-GRiD does not measure its question step; claimcheck recall against construction labels only; assertion freeze as an unmeasured candidate"

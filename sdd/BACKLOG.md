@@ -551,11 +551,11 @@ no clause of the contract ships unexercised.
 
 - [ ] **BK-506 — Whether oracles derived from a record catch spec misreadings that spec-derived checks miss is unmeasured**
   spec: — · effort: L · audience: library.maintainer, contributor.process
-  RFC-0029 R4: a single-rater pilot trial on OP-01's frozen record, core tier (Pipeline A; terms in
-  [`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 2.4), in
-  `sdd/research/bk-506-faithfulness-trial/`. Stage 0 is a dry run on a toy operation measuring hours, minutes per
-  label and tokens; then a pre-registration commit with every script; then the run. Waits for OP-01's freeze
-  (RFC-0029 R2). Open decision: which model providers fill the four lineage roles (RFC-0029 Open Question 1).
+  RFC-0029 R4: a single-rater pilot trial on OP-01's frozen record (R2), core tier, in `sdd/research/bk-506-faithfulness-trial/`;
+  terms and an unmeasured candidate (freezing reviewed formal assertions) in
+  [`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 2.2, § 2.4. Stage 0, a dry run on a toy
+  operation, measures hours, minutes per label and tokens; then a pre-registration commit with every script; then
+  the run. Open decision: which model providers fill the four lineage roles (RFC-0029 Open Question 1).
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process

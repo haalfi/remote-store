@@ -27,14 +27,18 @@ the `haalfi/research` repository at
 [`fc762e6`](https://github.com/haalfi/research/tree/fc762e6ed93ed679f03ed40b078a00689b6693ac/reports),
 branch `research/spec-faithfulness-and-enforcement`. Their own precedence,
 stated in the summary report, is: deep dive over verified edition over the
-original, which is superseded; the trial design is a separate protocol.
+original, which is superseded; the trial design is a separate protocol. A
+follow-up on the same branch at
+[`193c0bc`](https://github.com/haalfi/research/blob/193c0bcaba4a4f65c1ced5fcddaa1111f97fdcf4/reports/Spec%20faithfulness%20prior-art%20check.md)
+verified nine leads another tool named and changed no recommendation (§ 2.2).
 
 | Report | Read for this doc |
 |---|---|
 | `Spec faithfulness and enforcement summary.md` | whole |
 | `… deep dive.md` | whole |
 | `… verified.md` | Part 1; Part 2 § 1 to § 4 (lines 1 to 489) |
-| `… trial design.md` | § 1 to § 2.2, and § 2.3 to line 140, partway into its "Who sees what" table |
+| `… trial design.md` | § 1 to § 2.2; § 2.3 to line 140, partway into its "Who sees what" table; § 2.8 lines 294 to 309 and § 3.1, for § 2.4's definitions |
+| `Spec faithfulness prior-art check.md` (at `193c0bc`) | § 1, § 3, § 4 |
 | `… .md` (original) and the research notes | not read; the reports carry their figures and recommendation IDs |
 
 A handover note from the session that wrote the brief, outside this
@@ -85,6 +89,16 @@ into one common logic over one shared signature and checks them together;
 layers from it, literally Dafny compiled to a Python reference model;
 **Pipeline C′** writes Quint as the executable source and replays its
 simulated traces against a separately written Python model.
+
+The prior-art check (`193c0bc`, § 3 and § 4) names the nearest published
+pipeline: Lim et al. (FM 2026) run prose to formal assertions to a model,
+with a **human** review of each assertion against its requirement, and stop
+at the formal model; ARSENAL runs end to end with no check against the
+prose. The one measured automated check of a formal artifact against its
+prose source (claimcheck) reports recall only against mutation-built labels,
+with no precision against human labels. It adds one unmeasured idea:
+**freeze formal assertions** once reviewed, so an agent repairing a model
+cannot weaken them.
 
 ### 2.3 What is unmeasured
 
