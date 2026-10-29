@@ -31,6 +31,11 @@ Amended by [RFC-0028](rfc-0028-observe-record-review.md), accepted
 Asked line per decision, and the flow gains a review step between record and
 spec, `/observe-review`, which writes open items and never edits a decision.
 
+Amended by [RFC-0029](rfc-0029-faithfulness-before-spec.md), accepted
+2026-10-29: step 5's flow gains a table check on the record, its reopen and a
+freeze before the spec, and its reference model two test rules; step 6 runs a
+faithfulness trial on OP-01's frozen record before the bake-off.
+
 It changes no spec format. [`SPEC-DESIGN.md`](../SPEC-DESIGN.md) and
 [ADR-0048](../adrs/0048-how-specs-are-designed.md) stay the authority for what
 a spec states and the form it takes, with one bounded exception in § R4. The

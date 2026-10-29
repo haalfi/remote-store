@@ -1,0 +1,146 @@
+id: BK-503
+title: "A record's spec, model and reference model have no faithfulness gate, so a misreading of the record reaches every layer built from it (RFC amending RFC-0024 § 9 steps 5 and 6)"
+trigger: >-
+  OP-01's record (BK-485 § 9 step 5) is the first ready for spec authoring, and
+  the external research run "Spec faithfulness and enforcement"
+  (haalfi/research, branch research/spec-faithfulness-and-enforcement, head
+  fc762e6) found that a record-derived check set must exist before the spec,
+  which RFC-0024 step 5 does not order. A handover from a session outside
+  remote-store proposed prerequisites and decisions; the maintainer chose an
+  RFC amending RFC-0024, OP-01's spec after the record's freeze in parallel
+  with the trial, a single-rater pilot, and the trial's home in this repo.
+source_items:
+  - BK-503
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups:
+  - BK-504
+  - BK-505
+  - BK-506
+decisions:
+  - sdd/decisions/7d282f9d-8eb6-48be-8d6c-9fc7641121cf.jsonl
+expected_ripples:
+  - sdd/rfcs/rfc-0024-spec-first-reset.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - CHANGELOG.md
+surprising_ripples:
+  - sdd/BACKLOG.md (BK-485's entry exceeded ADR-0040's eight-line cap once RFC-0029's order was added, and was rewritten)
+orient:
+  - items: [BK-491, BK-465, BK-466]
+    verdict: constrains
+    evidence: >-
+      Each is open with "the format RFC" as its home (BK-491: "the format RFC
+      amends Rule 5 to admit D6's table, or D6 yields"; BK-465 and BK-466 are
+      SPEC-DESIGN.md defects RFC-0024's trace placed with step 6). RFC-0024 § R4
+      gives the format RFC F1 to F6 and SPEC-DESIGN.md; BK-485's dossier § Format
+      RFC input holds the F critique. This RFC may reorder step 6 (the bake-off
+      against the faithfulness trial) but decides no form.
+  - items: [BK-436]
+    verdict: constrains
+    evidence: >-
+      OP-01/O21 is a ground conflict, TREE-001 against S3, whose options include
+      "a reopen of spec 051 through its own flow"; BK-436's open decision is
+      "which listings and probes observe a backend's tree". RFC-0024 R1: "nothing
+      changes ground on the side". The record's freeze cannot settle O21; it
+      stays with the reopen session's route question and BK-436.
+  - items: [BK-501, BK-502]
+    verdict: constrains
+    evidence: >-
+      PR #1195 (BK-501, read open at 9c4d9d7, merged as eb08d99 during this
+      work, the branch rebased onto it) adds /observe's reopen of a
+      Complete record: it walks open items, asks a ground conflict its route
+      only, and a routed item stays open until `Flow done` (axes.md, PR diff).
+      BK-502 (filed on that branch) checks that path against O21's first run.
+      The handover's freeze criterion, "no reopen left open", cannot hold for an
+      item legitimately routed, so the RFC defines the freeze in BK-501's states
+      and the reopen step is BK-501's tool, not a new one.
+  - items: [BK-460, BK-461, BK-462, BK-463]
+    verdict: constrains
+    evidence: >-
+      The repo already holds formal layers the external research assumed
+      absent: compiled Dafny oracles in Python (BK-463: "the two compiled
+      oracles", formal/README.md § Compiled oracle; scripts/dafny_translate.sh),
+      a planned ITF replayer for TLA+ traces (BK-461), Alloy and Lean outside CI
+      (BK-462). The handover's D2 ("literal C is unrunnable today") and D3
+      (runtimes) were judged without them, so the RFC's toolchain decision
+      weighs them; their own open decisions stay with them.
+  - items: [BK-499]
+    verdict: constrains
+    evidence: >-
+      Done: RFC-0028's /observe-review already checks a record before its spec
+      with blind readers and, for new records, an Asked line per decision. The
+      record-level checks the handover proposes (its D6: tables complete and
+      disjoint, response existence, the added-commitment probe on records)
+      extend that step and must take it as baseline, not re-survey it.
+  - items: [BK-489, BK-496]
+    verdict: unrelated
+    evidence: >-
+      BK-489 hosts D10, when kernel and driver work resumes; the trial's Python
+      reference model is spec-phase evidence RFC-0024 D3 admits, not kernel or
+      driver code. BK-496 is the API spec for obtaining and configuring a store;
+      OP-01's semantics do not depend on it.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "(full)"
+        read_type: gate
+        extract: "D1 to D44, E1 to E15, NP1 to NP8; Complete with O14 to O44 open, most blocking a spec clause; O21 a ground conflict"
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "(full)"
+        read_type: gate
+        extract: "OP-01 review candidates and the format RFC input (F1 to F6 critique) are BK-485's, the latter step 6's"
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "(full)"
+        read_type: gate
+        extract: "Amended by RFC-0025 to 0028; § R4 makes step 5's spec the provisional F1 to F6 form, step 6 the bake-off then the format RFC"
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 9 step table; § 8 open points"
+        read_type: gate
+        extract: "Step 5 includes a reference model written fresh from the spec with counterexample mutants; no record-derived check set before the spec"
+      - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement summary.md"
+        section: "(full)"
+        read_type: reference
+        extract: "Entry point; precedence deep dive > verified > original; central claim unmeasured; G0 to G9 with G4a to G4d"
+      - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement deep dive.md"
+        section: "(full)"
+        read_type: reference
+        extract: "Wheats and chaffs before gating; G4a per-operation response existence; split alpha; fresh records-only session plus read scope"
+      - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement verified.md"
+        section: "Part 1; § 2.1 to § 4"
+        read_type: reference
+        extract: "Baseline check map per normative form and Pipelines A to C; § 5 onward and Part 3 not read"
+      - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement trial design.md"
+        section: "§ 1 to § 2.3"
+        read_type: reference
+        extract: "S+ comparator, p10 with validity condition V, criteria O1 to O11, six misreading classes, arms and information flow; § 2.4 onward not read"
+      - file: "origin/bk-501-observe-reopen (PR #1195)"
+        section: "diff of axes.md, ground-register.md, observe SKILL.md, BACKLOG.md"
+        read_type: reference
+        extract: "Reopen mode, amendment form, routed ground conflict waits for Flow done; BK-502 filed"
+      - file: sdd/BACKLOG.md
+        section: "BK-436, BK-460 to BK-463, BK-489, BK-491, BK-496, BK-465, BK-466"
+        read_type: reference
+        extract: "Verdicts above"
+  - id: build
+    name: Build
+    steps:
+      - file: sdd/rfcs/rfc-0028-observe-record-review.md
+        section: "(full)"
+        read_type: reference
+        extract: "Shape of an amending RFC: Status names the amended steps and the decision log; evidence that its checks can fail"
+      - file: sdd/research/research-operation-catalogue.md
+        section: "header, § 1"
+        read_type: reference
+        extract: "An external haalfi/research report is cited pinned to a commit and the doc keeps its results and consequences"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Backlog item touched, CHANGELOG entry; sdd/ is out of the tracker-ID rule; no docs nav change for an RFC or research doc"
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "rfc-*.md and research-*.md are dual by default; the trial folder's files need no marker until they exist"
