@@ -11,7 +11,10 @@ source_items:
 audience:
   - contributor.process
   - contributor.tooling
-discovery_followups: []
+discovery_followups:
+  # Filed at the close: review rounds 3 to 7 each found a defect in the
+  # ground-conflict route and Flow done path, which no flow has run yet.
+  - BK-502
 surprising_ripples: []
 co_shipped_items: []
 decisions:
