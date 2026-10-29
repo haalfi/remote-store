@@ -522,16 +522,8 @@ no clause of the contract ships unexercised.
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
   Its test runs are in the dossier; step 4 is spec 052, step 4b spec 053 and the catalogue (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), and `/observe-review OP-01` (RFC-0028) checked it. Not done:
-  step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review), for a reopen session (BK-501).
+  step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review), for a reopen session (`/observe OP-01` on the Complete record, BK-501).
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
-
-- [ ] **BK-501 — An `/observe` record's open items have no session that decides them, so a reopened decision cannot reach its spec**
-  spec: — · effort: M · audience: contributor.process, contributor.tooling
-  RFC-0028 P3 has "a reopen session" decide a record's open items before its spec cites them, but `/observe` step 2
-  only continues "from its first axis not yet closed", and every OP-01 axis is decided. Its 22 reopens and gaps (O14 to
-  O17, O19, O20, O22, O24 to O28, O31, O33 to O37, O39, O41, O43, O44) wait on it; O21 runs spec 051's flow. Open
-  decision: how the mode arms, how an answer amends (a new decision naming the one it amends, as step 5's End pass has
-  it) and closes its item, and whether `/observe-review` reruns after.
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process

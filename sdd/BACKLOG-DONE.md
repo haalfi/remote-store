@@ -476,6 +476,14 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-501 — An `/observe` record's open items have no session that decides them, so a reopened decision cannot reach its spec**
+  spec: — · effort: M · audience: contributor.process, contributor.tooling
+  `/observe` on a Complete record reopens it (`In progress (reopen)`): it walks the open items, skipping `shared:` ones,
+  those for another entry's session and ground conflicts, and answers each with a new decision. `axes.md` § Per-question
+  loop gives its `Amends:`, `Amended by:` and `Decided by` lines; `/observe-review` then reruns on the whole record, and
+  `observe-dialogs` prints the pointers. No hook change: the record's state picks the mode. Trace:
+  [bk-501](traces/bk-501-observe-reopen.yml).
+
 - [x] **BK-500 — Two `/observe` hook messages mislead: a refused record write names the wrong file, and `/observe release.` reads as an arming**
   spec: — · effort: S · audience: contributor.tooling
   A released session's refused record write names the file it targeted (a Bash refusal names the

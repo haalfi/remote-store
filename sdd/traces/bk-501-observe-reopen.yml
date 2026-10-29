@@ -1,0 +1,119 @@
+id: BK-501
+title: "An /observe record's open items have no session that decides them, so a reopened decision cannot reach its spec"
+trigger: >-
+  After /observe-review OP-01 (PR #1194) left 22 reopens and gaps in OP-01's
+  record, the maintainer asked for the next step. /observe step 2 continues a
+  record "from its first axis not yet closed", and every OP-01 axis is decided,
+  so nothing decides the open items RFC-0028 P3 hands to "a reopen session".
+  The maintainer chose to file BK-501 and build the mode first, in this PR.
+source_items:
+  - BK-501
+audience:
+  - contributor.process
+  - contributor.tooling
+discovery_followups: []
+surprising_ripples: []
+co_shipped_items: []
+decisions:
+  - sdd/decisions/d91e84ea-ad76-5e89-9612-07eadea17496.jsonl
+expected_ripples:
+  - .claude/skills/observe/SKILL.md
+  - .claude/skills/observe-review/SKILL.md
+  - sdd/BACKLOG.md
+orient:
+  # `hatch run backlog-find observe` (43 more beyond its cap, the rest done
+  # or the ext/observe guide); the open ones sharing /observe's files or its
+  # records: BK-485. BUG-269, BUG-321 and ID-125 are ext/observe's guide,
+  # BK-436 spec 051's tree check: other subjects.
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's entry: OP-01's "open items O14 to O44 ... for a reopen session
+      (BK-501)", and step 5's spec is Not done. RFC-0028 P3: "a reopen session
+      decides the items before the spec cites the decisions they name". The
+      mode must decide them in the record, in /observe's per-question shape, so
+      step 5's spec can cite the amending decisions.
+phases:
+  - id: orient
+    name: Orient on the reopen mode
+    steps:
+      - file: .claude/skills/observe/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Step 2 continues an existing record from its first axis not yet
+          closed; step 5's End pass answers a conflict with "a new decision
+          naming the one it amends"; no step decides open items
+      - file: scripts/observe_ground.py
+        section: "module docstring; arm, _write_marker, check"
+        read_type: gate
+        extract: >-
+          arm accepts /observe <entry> [path ...], each extra word a file path,
+          so a keyword argument would be refused as "not a file"; the armed
+          session writes only its record
+      - file: sdd/rfcs/rfc-0028-observe-record-review.md
+        section: "P2, P3"
+        read_type: gate
+        extract: >-
+          The review never decides; a reopen session decides the items before
+          the spec cites the decisions they name. The primed review writes
+          0.33-sourced evidence into the record, so a reopen session reads it
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 4, S1 to S5"
+        read_type: reference
+        extract: >-
+          S1: ground never 0.33's code; S2 one fresh session; S4 ends when every
+          axis is decided or open; S5 the per-question loop
+      - file: sdd/observe/axes.md
+        section: "Axis states; Per-question loop"
+        read_type: reference
+        extract: "decided, explicitly open, not applicable; the Asked line's exact form"
+  - id: design
+    name: Four design decisions, one dialog
+    steps:
+      # Asked in one dialog (log d91e84ea), each recommendation taken: the
+      # record's state picks the mode (no hook change); a new decision with
+      # Amends, the old one an Amended by line, the item Decided by; reopens,
+      # gaps and notes walked, shared:, other-session and ground-conflict
+      # items skipped; In progress during the session, /observe-review on the
+      # whole record after. No RFC: RFC-0028 P3 already hands the items to a
+      # reopen session, and this fills in its steps.
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O44"
+        read_type: reference
+        extract: >-
+          Which items a reopen skips: shared: (O3 to O5, O7 to O12), another
+          entry's session (O1, O2, O6, O13, O42), a ground conflict (O21)
+  - id: implement
+    name: The reopen mode
+    steps:
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 1, 2, 3 (Reopen), 5"
+        read_type: gate
+        extract: >-
+          Canary per item; a Complete record goes to In progress (reopen) and
+          resumes at its first undecided item; step 5 ends on the walked items.
+          My miss caught on a re-read: a resumed reopen found every axis closed
+          and would have gone straight to End, so the status names the mode
+      - file: sdd/observe/axes.md
+        section: "Per-question loop"
+        read_type: gate
+        extract: "Home of the Amends, Amended by and Decided by forms, outside the process budget"
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1; Reader brief"
+        read_type: gate
+        extract: >-
+          A reopen's logs are paired too; only D1 to D44 of OP-01 lack Asked
+          lines; readers read an amended decision through its amendment
+      - file: scripts/observe_dialogs.py
+        section: "Decision, decisions(), pair()"
+        read_type: verify
+        extract: >-
+          Prints Amends and Amended by after their Decision. Test written
+          first and seen failing (the line was absent), then 28 passed
+      - file: scripts/check_process_budget.py
+        section: "--raise"
+        read_type: verify
+        extract: >-
+          +739 after the first draft, +697 after cuts, recorded as 311850 ->
+          312547 under BK-501

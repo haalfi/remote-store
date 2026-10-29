@@ -4,7 +4,8 @@ The script pairs each decision of an ``/observe`` record with the answered
 dialog in the session's decision logs. Pinned: a decision passes only when
 every ``Asked:`` quote starts exactly one answered question and its answer;
 each other case fails the run; a dialog split across two logs pairs; and the
-report sets each Decision beside its dialog for the reader.
+report sets each Decision beside its dialog for the reader, with a reopen's
+``Amends``/``Amended by`` pointers (BK-501).
 """
 
 from __future__ import annotations
@@ -210,6 +211,20 @@ def test_a_heading_off_the_decision_form_fails_and_takes_its_own_fields(tmp_path
     assert result.returncode == 1
     assert "## OP-01/D1: ok\nDecision: (a). The first.\n" in result.stdout
     assert "## ### OP-01/D2 — A title (AX-1): FAIL heading not in the form '### <entry>/D<n>:'\n" in result.stdout
+
+
+def test_a_reopen_shows_each_amendment_beside_both_decisions(tmp_path: Path) -> None:
+    # BK-501: a reopen answers an open item with a new decision; the old one gains only a pointer.
+    old = _decision(1, ("AX-1, forms.", "Bytes"), text="(a). The old text.").replace(
+        "- **Consistency check:** none.", "- **Consistency check:** none.\n- **Amended by:** OP-01/D2"
+    )
+    new = _decision(2, ("AX-1, the root.", "Root"), text="(b). The new text.").replace(
+        "- **Consistency check:**", "- **Amends:** OP-01/D1\n- **Consistency check:**"
+    )
+    result = _run(tmp_path, _record(old, new), [_answered(FORMS, "Bytes"), _answered(ROOT_Q, "Root is a folder")])
+    assert result.returncode == 0, result.stdout
+    assert "## OP-01/D1: ok\nDecision: (a). The old text.\nAmended by: OP-01/D2\n" in result.stdout
+    assert "## OP-01/D2: ok\nDecision: (b). The new text.\nAmends: OP-01/D1\n" in result.stdout
 
 
 def test_a_record_with_no_decision_fails(tmp_path: Path) -> None:
