@@ -17,6 +17,11 @@ discovery_followups:
   - BK-502
 surprising_ripples: []
 co_shipped_items: []
+# Three asked events in the log have no answer ('Close #1195' 09:22, 'Close
+# 1195' 10:09, 'Next for 1195' 10:28): each dialog was open when the worker
+# restarted, and the next turn asked it afresh under a new tool_use_id, whose
+# answer is logged. check_traces prints them as notes; no line is written by
+# hand.
 decisions:
   - sdd/decisions/d91e84ea-ad76-5e89-9612-07eadea17496.jsonl
 expected_ripples:
@@ -249,3 +254,93 @@ phases:
           one started from an unrouted ground conflict (O21 as written),
           marked nothing; now the change that ends the flow marks every item
           the flow came from
+review:
+  # Derived by `hatch run ship-report 1195 --trace-block-only` at head 868c888.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1195 --trace-block-only"
+  pr: 1195
+  review_rounds: 11
+  submissions: 7
+  findings: 18
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 1.11
+    - round: 2
+      findings: 5
+      origin: {loop-introduced: 1, original: 2, unclassifiable-file: 2}
+      triage: {must-fix: 5}
+      duration_hours: 0.23
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.76
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 1.42
+    - round: 5
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.4
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.73
+    - round: 7
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.53
+  by_file:
+    - path: ".claude/skills/observe/SKILL.md"
+      findings: 5
+    - path: ".claude/skills/observe-review/SKILL.md"
+      findings: 4
+    - path: "sdd/observe/axes.md"
+      findings: 4
+    - path: "sdd/observe/ground-register.md"
+      findings: 2
+    - path: "scripts/observe_dialogs.py"
+      findings: 1
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/traces/bk-501-observe-reopen.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/d91e84ea-ad76-5e89-9612-07eadea17496.jsonl"
+    - "sdd/process-budget.json"
+    - "tests/scripts/test_observe_dialogs.py"
+  review_driven_commits:
+    - sha: "eebb983"
+      subject: "fix: address PR #1195 review"
+    - sha: "2c6354f"
+      subject: "fix: address PR #1195 review round 2"
+    - sha: "cc5685b"
+      subject: "BK-501: decision log"
+    - sha: "ef69749"
+      subject: "fix: address PR #1195 review round 3"
+    - sha: "9b940b1"
+      subject: "fix: address PR #1195 review round 4"
+    - sha: "c600764"
+      subject: "fix: address PR #1195 review round 5"
+    - sha: "ec6ddb8"
+      subject: "BK-501: decision log"
+    - sha: "840ccbf"
+      subject: "fix: address PR #1195 review round 6"
+    - sha: "4536c3a"
+      subject: "BK-501: decision log"
+    - sha: "82e2281"
+      subject: "fix: address PR #1195 review round 7"
+    - sha: "868c888"
+      subject: "BK-501: decision log"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
