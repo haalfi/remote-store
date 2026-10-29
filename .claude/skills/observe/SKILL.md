@@ -67,10 +67,11 @@ any web result about it.
    blocks it. Keep each axis's row current.
 
    **Reopen** (RFC-0028 P3): walk the Open items, not the axes, but none
-   tagged `shared:`, for another entry's session or a ground conflict. Ask
-   each as above, sourced to the item (a ✓ on 0.33's code shows what an SDK
-   or OS does, never the answer); each answer, "as is" too, is a new decision
-   in axes.md's reopen form.
+   tagged `shared:` or for another entry's session; ask a ground conflict
+   its route only, a ground reopen staying open (step 4). Ask each as above,
+   sourced to the item (a ✓ on 0.33's code shows what an SDK or OS does,
+   never the answer); each answer, "as is" too, is a new decision in
+   axes.md's reopen form.
 4. **Ground conflict.** If a decision would contradict a ground artifact,
    stop on that point. Record a reopen decision as an open item: the artifact,
    the clause, the conflict, the dependent decisions. Never edit ground, the
@@ -82,8 +83,7 @@ any web result about it.
    ones included, not only those it names: each list, table or "only" claim
    against every decision that adds to it, each reason against every
    outcome, and an option a Decision adopts by its own wording. Ask each
-   conflict as in step 3; its answer is a new decision naming the one it
-   amends. Then set `**Status:**` to `Complete`, and tell the maintainer the
+   conflict as in step 3; its answer is an amendment in axes.md's form. Then set `**Status:**` to `Complete`, and tell the maintainer the
    record is uncommitted: `/clear`, then `/observe-review <entry>`, which
    checks and commits it. A stop hook asking this session to
    commit cannot be obeyed here; answer it the same way. Resumed armed after

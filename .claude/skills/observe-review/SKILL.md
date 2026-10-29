@@ -29,7 +29,7 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
    `/observe` sessions that wrote it (not an audit's or review's that also
    names it), plus each `sdd/decisions/` log in `git status` or `git diff
    --name-only origin/master...HEAD` whose questions are `<entry>`'s, which
-   no trace lists yet (a reopen's). Run
+   no trace lists yet (a reopen's, which step 4 adds). Run
    `hatch run observe-dialogs <record> <log> ...` and save its report as
    `tmp/observe-review/<entry>-pairs.md`. Each FAIL is a finding, but on a
    decision written before RFC-0028, which has no Asked line (OP-01's D1 to
@@ -46,10 +46,12 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
    and `src/remote_store/backends/` as evidence of what an SDK or the OS
    does, never as the expected answer (RFC-0024 § R1).
 4. **Verify, write, commit.** Re-read every candidate, the readers' and
-   yours, against what it cites, and drop what does not hold. Write the rest
-   as open items, opened by one line naming this review and its date. Commit
-   the record and the logs, then tell the maintainer which items need a
-   reopen session.
+   yours, against what it cites, and drop what does not hold, or what an
+   open item or an amending decision already covers (name which in the
+   trace). Write the rest as open items, opened by one line naming this
+   review and its date. Commit the record and the logs, a reopen's added to
+   the `decisions:` of the `/observe` trace that wrote the record, then tell
+   the maintainer which items need a reopen session.
 
 ## Reader brief
 

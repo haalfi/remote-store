@@ -522,7 +522,7 @@ no clause of the contract ships unexercised.
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
   Its test runs are in the dossier; step 4 is spec 052, step 4b spec 053 and the catalogue (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), and `/observe-review OP-01` (RFC-0028) checked it. Not done:
-  step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review), for a reopen session (`/observe OP-01` on the Complete record, BK-501).
+  step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review), for a reopen session (`/observe OP-01` on the Complete record, BK-501), bar O42, for the write entries' sessions.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**

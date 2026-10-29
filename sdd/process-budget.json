@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 312617,
+  "total": 312862,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,8 +16,8 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 6308,
-    ".claude/skills/observe-review/SKILL.md": 4475,
+    ".claude/skills/observe/SKILL.md": 6357,
+    ".claude/skills/observe-review/SKILL.md": 4671,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -222,6 +222,12 @@
       "from": 312547,
       "to": 312617,
       "reason": "PR #1195 review: a reopen adds its date, ground read and named paths to the record's Session (observe/SKILL.md +76); /observe-review pairs traced logs plus a reopen's untraced one (-6)"
+    },
+    {
+      "item": "BK-501",
+      "from": 312617,
+      "to": 312862,
+      "reason": "PR #1195 round 2: /observe-review files a reopen's log in the /observe trace and drops a candidate an item or amendment already covers (+196); /observe asks a ground conflict its route and points step 5's amendments at axes.md's form (+49)"
     }
   ]
 }

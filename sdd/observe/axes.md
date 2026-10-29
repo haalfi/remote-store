@@ -50,7 +50,9 @@ Each question an axis raises becomes one decision in the entry's record (S5):
 7. **Consistency check** against earlier decisions and the ground (S1); conflicts named.
 8. **Open items** it raises, as IDs of entries in the record's one Open items section.
 
-**A reopen** (`/observe` on a Complete record, whose status reads `In progress (reopen)` until its End) answers an open item the same way, with a new decision; one that changes the record also carries `- **Amends:** <entry>/D<n>[, <entry>/D<n> ...]` after its Decision, naming each decision whose text it replaces in part or in whole. Each decision it names gains one last line, `- **Amended by:** <entry>/D<m>`, and changes in nothing else; the item gains a closing sentence, `Decided by <entry>/D<m>.`, and stays listed. A spec cites the amending decision.
+**An amendment** is any decision that changes earlier record text: a reopen's answer to an open item, or `/observe` step 5's answer to a conflict. After its Decision it carries `- **Amends:** <id>[, <id> ...]`, each `<id>` a decision (`<entry>/D<n>`), an Environment row (`<entry>/E<n>`), an open item (`<entry>/O<n>`) or `Session`. Each element it names gains `Amended by <entry>/D<m>` and changes in nothing else: a decision as its last line, `- **Amended by:** <entry>/D<m>`; an Environment row or an item at the end of its text; Session as a line of its own. A new Environment row reads "added by `<entry>/D<m>`", as `OP-01/E15` does. A spec cites the amending text.
+
+**A reopen** (`/observe` on a Complete record, whose status reads `In progress (reopen)` until its End) answers each item it walks with a new decision, an amendment when it changes the record. The item gains a closing sentence, `Decided by <entry>/D<m>.`, and stays listed. Each axis row drops the items decided and cites the decisions that decided them, and reads "decided" once it lists no open item.
 
 ## Sources
 
