@@ -9,7 +9,9 @@ as [RFC-0028](rfc-0028-observe-record-review.md) left it, gains a table check
 on every record and a freeze before every spec (R1, R2), and every v1
 reference model two test rules (R3), with step 5 of research
 [§ 9](../research/research-spec-first-reset.md#9-results-and-recommendation)
-their first use; step 6 runs a trial before its bake-off (R4, R5). Background: [`research-spec-faithfulness.md`](../research/research-spec-faithfulness.md).
+their first use; step 6 runs a trial before its bake-off (R4, R5). It also
+amends RFC-0028: P2's review gains R1's check as a fourth part, and P3's
+reopen is followed by R2's re-run and freeze. Background: [`research-spec-faithfulness.md`](../research/research-spec-faithfulness.md).
 Decisions taken in this RFC's session: decision log
 `sdd/decisions/7d282f9d-8eb6-48be-8d6c-9fc7641121cf.jsonl`.
 
@@ -83,9 +85,11 @@ decided. **The freeze is an annotated tag**, `observe/<entry>/freeze-<n>`,
 on the master commit that carries the record in that state, created once the
 change that brings it there has merged (a squash merge leaves the branch's
 commits unreachable). Freezing changes nothing in the record, so the tagged
-content is the frozen content. The tag is not a release: tooling that reads
-the previous release takes `v`-prefixed tags only
-(`scripts/check_support_windows.py`, pinned by its test). A later reopen ends the freeze; the next
+content is the frozen content. The tag is not a release. The two readers of
+the newest tag take `v`-prefixed tags only: `check_support_windows.previous_tag`
+(pinned by its test) and `drift_feedstock.newest_tag`. The latter reads only
+the first 100 tags (its docstring's stated bound), so freeze tags bring
+forward the day it loses its informational trailing row. A later reopen ends the freeze; the next
 freeze takes `n + 1`, and the spec then cites the amending decisions.
 RFC-0024 R1 holds: no freeze settles ground on the side.
 
@@ -175,7 +179,7 @@ Decided in the log above:
 ## Impact
 
 - **Public API:** none.
-- **Process:** RFC-0024 carries an "Amended by RFC-0029" line. `/observe-review`
+- **Process:** RFC-0024 and RFC-0028 carry an "Amended by RFC-0029" line. `/observe-review`
   gains R1's check (BK-504). R2's freeze and its tag are written into the
   `/observe` and `/observe-review` skills by BK-504, which first touches them.
 - **Backlog:** BK-504 (R1's check, run on OP-01), BK-505 (whether the

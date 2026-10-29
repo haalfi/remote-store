@@ -30,6 +30,7 @@ surprising_ripples:
   - sdd/BACKLOG.md (BK-485's entry exceeded ADR-0040's eight-line cap once RFC-0029's order was added, and was rewritten)
   - scripts/check_support_windows.py (review round 2 of PR #1196: `git describe --tags` takes any tag, so R2's freeze tag would have become the release check's base; now `--match v[0-9]*`, pinned by a test)
   - tests/scripts/test_check_support_windows.py (the test pinning that fix)
+  - "sdd/rfcs/rfc-0028-observe-record-review.md (review round 4; R1 and R2 change its P2 and P3, so it carries an Amended by RFC-0029 line)"
   - "CONTRIBUTING.md (review round 3, Phase 0's Rule 9 bullet named the base 'the previous tag''s')"
   - "sdd/research/research-observe-record-quality.md (review round 3 and the maintainer's PR comment; R2 cited BK-505's external report, so its figures and stopping rule are kept in the repo)"
   - sdd/backlog/bk-505-record-quality-research.md (the brief, then BK-505's retitle once the report landed)
@@ -153,7 +154,7 @@ phases:
       - file: scripts/check_support_windows.py
         section: "previous_tag, main's --base default"
         read_type: reference
-        extract: "git describe --tags --abbrev=0 takes the nearest tag of any name; the only consumer of 'the latest tag' (Grep of tag consumers outside traces, decisions, research)"
+        extract: "git describe --tags --abbrev=0 takes the nearest tag of any name. One of two readers of the newest tag: the other is drift_feedstock.newest_tag (scripts/drift_feedstock.py:594), which filters v tags and reads the first 100 via the GitHub API (Grep of scripts/ for /tags, describe, newest_tag, previous_tag, tag_name; none in .github/ or .claude/). A first sweep missed it by not matching API paths"
       - file: tests/scripts/test_check_support_windows.py
         section: "module docstring, fixture, TestGitPlumbing"
         read_type: reference

@@ -478,7 +478,7 @@ ships them.
 
 - [x] **BK-503 — A record's spec, model and reference model have no faithfulness gate, so a misreading of the record reaches every layer built from it**
   spec: — · effort: M · audience: contributor.process, library.maintainer
-  RFC-0029 (accepted) amends RFC-0024's flow for every entry, step 5 first, and step 6: a table check on the record
+  RFC-0029 (accepted) amends RFC-0024's flow for every entry, step 5 first, step 6 and RFC-0028's review: a table check on the record
   before its reopen (BK-504), a freeze (a tag) before the spec, membership and unrelaxed comparisons in every v1
   reference model, and a single-rater pilot
   trial on OP-01's frozen record (BK-506) before step 6's bake-off. `research-spec-faithfulness.md` carries the
