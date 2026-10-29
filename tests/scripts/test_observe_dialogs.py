@@ -227,6 +227,20 @@ def test_a_reopen_shows_each_amendment_beside_both_decisions(tmp_path: Path) -> 
     assert "## OP-01/D2: ok\nDecision: (b). The new text.\nAmends: OP-01/D1\n" in result.stdout
 
 
+def test_a_decision_amended_twice_shows_both_and_a_wrapped_pointer_whole(tmp_path: Path) -> None:
+    # PR #1195 review: two reopen items can amend one decision, and a long Amends list wraps.
+    old = _decision(1, ("AX-1, forms.", "Bytes")).replace(
+        "- **Consistency check:** none.",
+        "- **Consistency check:** none.\n- **Amended by:** OP-01/D2\n- **Amended by:** OP-01/D3",
+    )
+    new = _decision(2, ("AX-1, the root.", "Root")).replace(
+        "- **Consistency check:**", "- **Amends:** OP-01/D1,\n  OP-01/D4\n- **Consistency check:**"
+    )
+    result = _run(tmp_path, _record(old, new), [_answered(FORMS, "Bytes"), _answered(ROOT_Q, "Root is a folder")])
+    assert "Decision: (a).\nAmended by: OP-01/D2\nAmended by: OP-01/D3\n" in result.stdout
+    assert "Decision: (a).\nAmends: OP-01/D1, OP-01/D4\n" in result.stdout
+
+
 def test_a_record_with_no_decision_fails(tmp_path: Path) -> None:
     result = _run(tmp_path, "# OP-01: observable semantics\n\nNo decisions here.\n", [_answered(FORMS, "Bytes")])
     assert result.returncode == 1

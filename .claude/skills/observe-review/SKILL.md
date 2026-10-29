@@ -24,12 +24,12 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
 
 ## Steps
 
-1. **Pairs.** List the logs the session's dialogs went to, both halves of a
-   split session included: the `decisions:` of the traces of the `/observe`
-   sessions that wrote the record, a reopen's included (not an audit's or
-   review's that also names it), once one exists; before that, each `sdd/decisions/` log in
-   `git status` or `git diff --name-only origin/master...HEAD` whose
-   questions are `<entry>`'s. Run
+1. **Pairs.** List the logs the record's sessions' dialogs went to, both
+   halves of a split session included: the `decisions:` of the traces of the
+   `/observe` sessions that wrote it (not an audit's or review's that also
+   names it), plus each `sdd/decisions/` log in `git status` or `git diff
+   --name-only origin/master...HEAD` whose questions are `<entry>`'s, which
+   no trace lists yet (a reopen's). Run
    `hatch run observe-dialogs <record> <log> ...` and save its report as
    `tmp/observe-review/<entry>-pairs.md`. Each FAIL is a finding, but on a
    decision written before RFC-0028, which has no Asked line (OP-01's D1 to

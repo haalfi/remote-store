@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 312547,
+  "total": 312617,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,8 +16,8 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 6232,
-    ".claude/skills/observe-review/SKILL.md": 4481,
+    ".claude/skills/observe/SKILL.md": 6308,
+    ".claude/skills/observe-review/SKILL.md": 4475,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -216,6 +216,12 @@
       "from": 311850,
       "to": 312547,
       "reason": "/observe reopens a Complete record: step 3 walks its open items into new decisions, step 2 resumes an In progress (reopen) record at its first undecided item, step 5 ends on them (SKILL.md +574 after a -165 Rule 7 pass); /observe-review pairs a reopen's logs and reads Amended by lines (+123); the line forms live in axes.md, outside the set"
+    },
+    {
+      "item": "BK-501",
+      "from": 312547,
+      "to": 312617,
+      "reason": "PR #1195 review: a reopen adds its date, ground read and named paths to the record's Session (observe/SKILL.md +76); /observe-review pairs traced logs plus a reopen's untraced one (-6)"
     }
   ]
 }

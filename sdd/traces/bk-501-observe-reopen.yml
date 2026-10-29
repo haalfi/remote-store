@@ -110,10 +110,31 @@ phases:
         read_type: verify
         extract: >-
           Prints Amends and Amended by after their Decision. Test written
-          first and seen failing (the line was absent), then 28 passed
+          first and seen failing (the line was absent), then 28 passed. My
+          miss, caught in PR #1195 round 1: one dict entry per field kept
+          only a decision's last Amended by and dropped a wrapped pointer;
+          now a list in record order, the second test seen failing first
       - file: scripts/check_process_budget.py
-        section: "--raise"
+        section: "plain run, then --raise, as printed"
         read_type: verify
         extract: >-
-          +739 after the first draft, +697 after cuts, recorded as 311850 ->
-          312547 under BK-501
+          First draft: observe/SKILL.md +739, observe-review/SKILL.md +123,
+          total +862. Cut to +574 and +123, total +697: raised 311850 ->
+          312547. PR #1195 round 1: +76 and -6, total +70: raised 312547 ->
+          312617
+  - id: review_fix
+    name: PR #1195 round 1
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1"
+        read_type: gate
+        extract: >-
+          My miss: "once one exists; before that" took the traced logs or the
+          uncommitted ones, so a reopen's log, which no trace lists (the armed
+          session writes only its record), would never be paired; now both
+      - file: .claude/skills/observe/SKILL.md
+        section: "Step 2"
+        read_type: gate
+        extract: >-
+          A reopen adds its date, ground read and named paths to Session,
+          which the reader brief reads as the ground

@@ -81,8 +81,9 @@ class Decision:
     text: str
     asked: list[tuple[str, str]]
     options: str = ""
-    # A reopen's pointers (axes.md § Per-question loop), keyed by field name.
-    pointers: dict[str, str] = field(default_factory=dict)
+    # A reopen's pointers (axes.md § Per-question loop), as (field, text) in record order:
+    # a decision amended twice carries two Amended by lines.
+    pointers: list[tuple[str, str]] = field(default_factory=list)
     malformed: list[str] = field(default_factory=list)
     heading_ok: bool = True
 
@@ -146,12 +147,15 @@ def decisions(record: str) -> list[Decision]:
             elif name == "Options":
                 current.options = bullet["rest"]
             elif name in _POINTERS:
-                current.pointers[name] = bullet["rest"].strip()
+                current.pointers.append((name, bullet["rest"].strip()))
             continue
         if name == "Decision":
             current.text += "\n" + line
         elif name == "Options":
             current.options += "\n" + line
+        elif name in _POINTERS and line.strip():  # a wrapped pointer list
+            field_name, text = current.pointers[-1]
+            current.pointers[-1] = (field_name, f"{text} {line.strip()}")
     for d in found:
         d.text = d.text.strip()
     return found
@@ -215,7 +219,7 @@ def pair(record: str, logs: list[Path]) -> tuple[list[str], list[str], bool]:
                 verdicts.append(f"FAIL answered {pool[hits[0]].answer!r}, not {answer!r}")
         ok = ok and not verdicts
         lines += [f"## {d.id}: {'; '.join(verdicts) or 'ok'}", f"Decision: {d.text}"]
-        lines += [f"{name}: {d.pointers[name]}" for name in _POINTERS if name in d.pointers]
+        lines += [f"{name}: {text}" for name, text in d.pointers]
         lines += [f"Adopted option: {text}" for text in d.adopted()]
         for g in paired:
             lines += [f"Question: {g.question}", f"Answer: {g.answer}", f"Option: {g.description}"]

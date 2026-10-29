@@ -39,7 +39,8 @@ any web result about it.
    active row but the formal models, the input file and each named path; a
    formal model row only when a decision cites a clause it checks. A record
    In progress continues at its first open axis, `In progress (reopen)` at its
-   first undecided item; a Complete one is set to the latter (step 3).
+   first undecided item; a Complete one is set to the latter, and Session
+   gains a line for the reopen: date, ground read, named paths (step 3).
    Otherwise create it: title `# <entry>: observable semantics`, the marker
    `<!-- doc: repo-only -->`, lines `**Date:**`, `**Backlog items:**` and
    `**Status:** In progress`, then five sections: Session (date, entry, ground
