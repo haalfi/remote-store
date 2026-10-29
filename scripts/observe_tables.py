@@ -37,8 +37,9 @@ defined by a heading ``<ID>: ...``, a bullet ``- `<ID>`: ...`` or an ``ids``
 table, and ``<ID>, row <n>`` must name an existing row of that element's first
 table. A short form matches every bare token of its shape, so declare one only
 for a letter the document uses for nothing else (not ``O``: axes.md's observers
-are O1 to O3). In a cell, ``X1 to X3`` covers X1, X2 and X3; a citation range
-checks its two ends only.
+are O1 to O3). In a cell, a range of bare IDs (``X1 to X3``, ``KEY-002 to
+KEY-004``) covers its ends and every ID between; a citation range checks its two
+ends only.
 
 A key the kind does not take, a value of the wrong type, an empty string or
 array, a non-positive column or index, a value named twice, or a family or short
@@ -59,7 +60,11 @@ finds nothing; ``source`` narrows that only where the members come from
 another enumeration, and only a ``complete`` source catches an element the
 enumeration gains that no member names. It reads no meaning: two rows that each
 match one member but promise conflicting outcomes (``OP-01/O33``'s kind) pass.
-A member matches wherever the characters on either side of it are no letter,
+Only ``<ID>, row <n>`` with a bare ID is a row citation: a row named (``D34's
+changed row``) or a backticked ID before ``, row`` goes unchecked. IDs are
+read as written (BK-507): a full-form range (``OP-01/E1 to OP-01/E3``) is not
+expanded, and a ``complete`` source's cells and its members must write an ID
+in the same form. A member matches wherever the characters on either side of it are no letter,
 digit or underscore: ``j = n`` matches inside ``j = n − 1``, and ``.`` never
 matches after a letter; such a member needs a ``match``. Cells are split on ``|``
 with ``\\|`` escaped; a table inside a fenced block (``` or ~~~) is skipped. A

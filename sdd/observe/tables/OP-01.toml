@@ -57,7 +57,8 @@ members = [
     "unavailable", "timeout", "changed", "base category", "as raised", "UnicodeDecodeError", "TypeError",
     "ValueError", "cancellation",
 ]
-source = [{ at = "OP-01/D34", column = 2 }]
+# complete: a category D34 gains needs a D38 row.
+source = [{ at = "OP-01/D34", column = 2, complete = true }]
 basis = "D38's table: 'Caller-level retry of a surfaced failure'; D34 lists the categories OP-01 surfaces"
 
 [[table]]
@@ -80,6 +81,8 @@ members = [
 ]
 basis = "sdd/observe/axes.md § Axes, one row per axis"
 
+# Bare D<n> also names RFC-0024's decisions (record lines 940 and 1019, "RFC-0024 D6", "D5"), read as
+# OP-01/D6 and D5, which exist: accepted, but an RFC decision past OP-01's last would read as dangling.
 [[ids]]
 family = "OP-01/D"
 short = "D"

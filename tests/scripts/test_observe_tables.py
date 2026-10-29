@@ -455,9 +455,9 @@ def _variant(base: str, old: str, new: str) -> str:
 _D1 = 'members = ["Found(e, item)", "Absent", "AbsentAncestor"]'
 _D18 = 'members = ["E1", "E2", "E3"]'
 _SRC = '{ at = "Environment", column = 1 }'
-# Per key validate() reads, each wrong shape it refuses, plus the clashes across [[ids]]: rounds 1 to 4
-# of PR #1197 each found one more read as findings, so the space is enumerated rather than argued
-# (/ship's repeat-site check).
+# Wrong shapes of the keys validate() reads, and the clashes across [[ids]]: a sample of the key-by-shape
+# space, not all of it. Rounds 1 to 4 of PR #1197 each found one more read as findings, which is why it
+# is a table (/ship's repeat-site check).
 MALFORMED = {
     "toml syntax": "[[table]\n",
     "table not an array": 'table = ["OP-01/D1"]\n',

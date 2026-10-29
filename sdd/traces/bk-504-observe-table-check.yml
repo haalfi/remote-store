@@ -15,6 +15,8 @@ audience:
 decisions:
   - sdd/decisions/c0c85cb6-2e66-47fb-8784-3295e0c9e743.jsonl
   - sdd/decisions/ced72d7f-9656-45c4-a6dc-ddf13727ed8f.jsonl
+discovery_followups:
+  - BK-507
 expected_ripples:
   - pyproject.toml
   - sdd/GATE-INVENTORY.md

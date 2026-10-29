@@ -549,6 +549,14 @@ no clause of the contract ships unexercised.
   operation, measures hours, minutes per label and tokens; then a pre-registration commit with every script; then
   the run. Open decision: which model providers fill the four lineage roles (RFC-0029 Open Question 1).
 
+- [ ] **BK-507 — `observe-tables` reads IDs as written, so a full-form range or a full-form member is misread**
+  spec: — · effort: S · audience: contributor.tooling
+  `scripts/observe_tables.py` expands only a range of bare IDs: `OP-01/E1 to OP-01/E3`, backticked or not, stays two
+  IDs, so a case key gets false gaps and a `complete` source checks only its ends. A `complete` source matches its
+  cells' IDs against the members as written, so members given in full form report the short form of a member
+  (PR #1197 round 5, measured). Both are stated in the docstring's bound; no record or spec uses either form today.
+  Open decision: none; canonicalize IDs per family before ranges and members are matched.
+
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   RFC-0025 froze the contract kernel, the drivers, Memory on the kernel and specs 052 and 053 on
