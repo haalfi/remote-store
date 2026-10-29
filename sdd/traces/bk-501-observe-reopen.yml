@@ -216,3 +216,21 @@ phases:
           Now the change that ends the flow adds Flow done, and a reopen
           walks the item again only then; step 2 resumes at step 3's first
           item to walk instead of restating the exclusions
+  - id: review_fix_6
+    name: PR #1195 round 6, a scoped /rvw-pr on round 5
+    steps:
+      - file: sdd/observe/ground-register.md
+        section: "Artifacts (preamble)"
+        read_type: gate
+        extract: >-
+          My miss: round 5 had the flow's closing change add Flow done, but
+          that change never reads axes.md. Re-admission happens in this
+          register, so its prose now carries the duty (the hook parses rows
+          only, _ROW in observe_ground.py)
+      - file: .claude/skills/observe/SKILL.md
+        section: "Step 3 (Reopen)"
+        read_type: gate
+        extract: >-
+          A ground conflict with Flow done is decided as any item, its route
+          not asked again, so a second routing cannot inherit the first
+          flow's marker

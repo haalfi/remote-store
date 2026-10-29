@@ -68,8 +68,8 @@ any web result about it.
 
    **Reopen** (RFC-0028 P3): walk the Open items, not the axes, but none
    tagged `shared:`, for another entry's session, decided, or routed with no
-   `Flow done`; ask a ground conflict its route only, as axes.md's reopen
-   form has it. Ask each as above, sourced to the item (a ✓ on 0.33's code
+   `Flow done`; ask a ground conflict without one its route only, as
+   axes.md's reopen form has it. Ask each as above, sourced to the item (a ✓ on 0.33's code
    shows what an SDK or OS does, never the answer); each answer, "as is"
    too, is a new decision in axes.md's reopen form.
 4. **Ground conflict.** If a decision would contradict a ground artifact,
