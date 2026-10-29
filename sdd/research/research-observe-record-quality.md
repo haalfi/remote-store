@@ -21,9 +21,15 @@ is an `/observe` record complete, internally consistent and faithful to its
 dialog, and when is it done. The full report, with a grade per source, is
 [`reports/Observation record completeness and consistency.md`](https://github.com/haalfi/research/blob/28d58e9e482ca514901b5909deae105a410ccdd2/reports/Observation%20record%20completeness%20and%20consistency.md)
 in the `haalfi/research` repository at `28d58e9`, branch
-`research/observation-record-quality`. Its own trials ran on OP-01's record
-at `eb08d990e`, with open items `O14` to `O44` as the known defect set, a set
-the report notes is incomplete. A verified edition on the same branch, at
+`research/observation-record-quality`. What the report calls its own trials
+are two scripts committed in its notes folder, run over OP-01's record as
+this repository held it at `eb08d990e`. They ran no reviewer and no LLM. One
+selects sentences and decision pairs by regex and compares them with the
+decision pairs that open items `O14` to `O44` name; its vocabulary lists were
+written after reading those items, a leak its notes state. The other computes
+a capture-recapture estimate from the source tags (reader 1, reader 2,
+primed) that this repository's `/observe-review OP-01` wrote into `O27` to
+`O44`. The known defect set is incomplete, as the report notes. A verified edition on the same branch, at
 [`8853e80`](https://github.com/haalfi/research/blob/8853e80ac104b24f652741be3b3992e407abe0de/reports/Observation%20record%20completeness%20and%20consistency%20verified.md),
 checked six further leads and changes nothing structural; its changes are
 folded in below, cited as "verified". This document keeps the results this
@@ -33,8 +39,8 @@ repository relies on; other section numbers are the earlier report's.
 
 | Finding | Strength | Report |
 |---|---|---|
-| The record's consistency-check lines named 61 of 946 decision pairs. They covered 4 of the 27 known defect pairs in `O14` to `O44` and caught none of the four | own trial on OP-01 | § 2 T2 |
-| On OP-01, two unprimed readers found 13 and 12 items, 11 shared, so a Chapman estimate put about 0.2 items left; the primed review then found four more (`O41` to `O44`) | own trial on OP-01 | § 2 T4 |
+| The record's consistency-check lines named 61 of 946 decision pairs. They covered 4 of the 27 known defect pairs in `O14` to `O44` and caught none of the four | computed by script over OP-01's record, no reviewer run | § 2 T2 |
+| In this repository's `/observe-review OP-01`, the two unprimed readers found 13 and 12 items, 11 shared, so a Chapman estimate puts about 0.2 items left; the primed review of the same run then found four more (`O41` to `O44`) | computed by script from the review's source tags | § 2 T4 |
 | With fewer than four inspectors, no capture-recapture estimator of remaining defects was satisfactory; the jackknife estimator's median relative error was −52 % at two and −27 % at three | A (Briand et al. 2000; Petersson et al. 2004) | § 2 T4 |
 | Checklist reading did not beat ad hoc reading; perspective-based reading did not beat checklist reading per reader; the document mattered more than the technique | A, human-only evidence | § 2 T2 |
 | Pairwise conflict detectors, LLM or NLI, ran at precision 19 % to 67 % and miss conflicts that need three or more statements; only solver hybrids reached high precision, in small studies by their own authors | A to A-workshop, 2023-24 models | § 2 T2 |

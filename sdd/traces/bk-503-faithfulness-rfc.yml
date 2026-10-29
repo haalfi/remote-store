@@ -162,7 +162,7 @@ phases:
       - file: "haalfi/research@28d58e9: reports/Observation record completeness and consistency.md"
         section: "(full)"
         read_type: reference
-        extract: "Mechanical slot, claim-register and span checks; capture-recapture unreliable below four inspectors; OP-01 own trials (4 of 27 known pairs named in consistency checks; overlap implied about 0.2 left, then four more found); seeded-defect stopping rule, unvalidated"
+        extract: "Mechanical slot, claim-register and span checks; capture-recapture unreliable below four inspectors; its 'own trials' are scripts over OP-01's record and this repo's /observe-review source tags, no reviewer or LLM run (4 of 27 known pairs named in consistency checks; the review's readers' overlap implied about 0.2 left, then its primed review found four more); seeded-defect stopping rule, unvalidated"
       - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement trial design.md"
         section: "§ 2.0, § 2.1, § 2.2's class table, § 2.3's roles, § 2.8 lines 294 to 309, § 3.1"
         read_type: reference

@@ -75,7 +75,8 @@ each named with what it blocks:
 
 A record is frozen only after `/observe-review`, R1 included, has re-run on
 it as its last reopen left it: no open item is not the same as done, and on
-OP-01 a primed review found four items after two readers' overlap implied
+OP-01, `/observe-review`'s primed review found four items after its two
+unprimed readers' overlap implied
 about 0.2 left ([`research-observe-record-quality.md`](../research/research-observe-record-quality.md)
 § 2). What more a freeze needs, its stopping rule (that document's § 3), is
 BK-505's to decide.
