@@ -85,10 +85,11 @@ only; G8 per-family mutant kill at equal test counts; G9 spec-strength
 mutation.
 
 Of the candidate pipelines (summary § 3), **Pipeline A** is the one the
-evidence calls feasible in pure Python today: a record-derived check set
-written in a fresh, records-only session under a file-system read scope,
-before the spec; the spec; G1 to G5 with G4a; the reference model, driven by a
-Hypothesis state machine; G6 to G8. Three alternatives are kept, whose
+evidence calls feasible in pure Python today (summary § 3): G0; a
+record-derived check set written in a fresh, records-only session under a
+file-system read scope, before the spec; the spec; G1 and G2; G3, G4 with G4a
+and G4b, and G5; the reference model, driven by a Hypothesis state machine;
+G6 to G8. It runs neither G4c nor G4d. Three alternatives are kept, whose
 precedents are all outside API specs: **Pipeline B** translates every clause
 into one common logic over one shared signature and checks them together;
 **Pipeline C** writes one executable formal source and generates the other
@@ -135,7 +136,8 @@ are the trial design's.
   that never consults the record: gates G0, G3 (over the spec's tables), G4
   with G4a and G4b, G5, G6
   and G9, and the spec-enforcing tests (§ 2.0). G1, G2, G7 and G8 consult
-  the record or both families, so they are not part of it.
+  the record or both families, and Pipeline A runs neither G4c nor G4d
+  (§ 2.2), so none of these is part of it.
 - **Seeded misreading.** A deliberate wrong reading of one record clause,
   planted in the spec, after which every spec-derived layer is regenerated
   from the misread spec (§ 2.2). Six classes, ten seeds each:
@@ -162,8 +164,8 @@ are the trial design's.
   majority over five runs. Without it, a suite that fails on everything
   would "catch" every seed (§ 2.0, § 3.1).
 - **Hypotheses (§ 3.1),** tested in a fixed sequence:
-    - **H1** (primary): E catches misreadings that every spec-only check of
-      Pipeline A misses. Supported if the lower bound of p10's 95 % interval
+    - **H1** (primary): E catches misreadings that every check in S⁺
+      misses. Supported if the lower bound of p10's 95 % interval
       is at least 0.05 (at least 8 of 60) and V holds.
     - **H2**: E catches more than S⁺ overall (delta > 0).
     - **H3**: at equal test counts, expectation tests catch misreadings that

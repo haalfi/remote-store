@@ -132,7 +132,7 @@ roles, criteria O1 to O11) is defined in
 | Point | Choice |
 |---|---|
 | Pipeline | A only; B and C′ later as descriptive extensions |
-| S⁺ | The trial harness builds, as its own S⁺, every check that never consults the record: G0, G3 over the spec's tables, G4 with G4a and G4b, G5, G6, G9 and the spec-enforcing tests (the trial design's § 2.0), whatever R1 and R3 have adopted for the repository's flow; a smaller S⁺ would inflate p10. G1, G2, G7 and G8 consult the record or both families, so they are not part of it |
+| S⁺ | The trial harness builds, as its own S⁺, every check that never consults the record: G0, G3 over the spec's tables, G4 with G4a and G4b, G5, G6, G9 and the spec-enforcing tests (the trial design's § 2.0), whatever R1 and R3 have adopted for the repository's flow; a smaller S⁺ would inflate p10. G1, G2, G7 and G8 consult the record or both families, and Pipeline A runs neither G4c nor G4d, so none of these is part of it |
 | Spec under test | Lineage X writes the trial's own clean spec once, inside the trial's home; per seed, X regenerates the spec side from the seeded copy of that spec. The repository's OP-01 spec is a separate artifact, written by its normal flow, neither seen by E nor reused by the trial |
 | Raters | One, the maintainer: a single-rater pilot. Every label-dependent measure (realism rating, judge precision, register auto-labels) is reported as unvalidated |
 | Toolchain | The reference model and its gates in Python (Hypothesis state machine, runtime contracts, CrossHair advisory only); history checks by Porcupine in Docker, as `scripts/dafny_verify.sh` runs Dafny. The Dafny and TLA+ layers stay under `SPEC-DESIGN.md`, outside the trial |
@@ -140,7 +140,8 @@ roles, criteria O1 to O11) is defined in
 | Order | Stage 0, a dry run on a toy operation that claims nothing and replaces the protocol's unsourced cost assumptions with measured hours, minutes per label and tokens; then the pre-registration commit; then the run on the frozen record |
 
 **Information flow.** Every session writing E runs under a read scope that
-admits the frozen record and its ground and nothing derived from it, enforced
+admits the record as the trial's freeze tag holds it, and its ground, and
+nothing derived from it, enforced
 as `/observe`'s hook enforces its ground. That makes the repository's own
 OP-01 spec, written in parallel after the freeze (R2), invisible to it.
 
