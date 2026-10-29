@@ -111,7 +111,7 @@ cannot weaken them.
 - **The central claim.** The trial design (§ 1) measures it on one operation:
   60 misreadings seeded upstream, every spec-derived layer regenerated from the
   misread artifact, and the share caught by record-derived oracles and missed by
-  every spec-only check (S⁺, G0 to G9 and the spec tests together) estimated
+  every spec-only check (S⁺, defined in § 2.4) estimated
   with an interval. At n = 60 it can confirm a large effect or refute the claim
   for that operation; it cannot rank pipelines or speak to other operations.
 - **How many wheats suffice**, for any stateful API (deep dive § 4).
@@ -132,7 +132,10 @@ are the trial design's.
 - **E and S⁺.** **E** is every oracle written from the record alone, by a
   session that sees neither the spec nor anything built from it (the
   record-derived check set and the expectation tests). **S⁺** is every check
-  that never consults the record: gates G0 to G9 and the spec-enforcing tests.
+  that never consults the record: gates G0, G3 (over the spec's tables), G4
+  with G4a and G4b, G5, G6
+  and G9, and the spec-enforcing tests (§ 2.0). G1, G2, G7 and G8 consult
+  the record or both families, so they are not part of it.
 - **Seeded misreading.** A deliberate wrong reading of one record clause,
   planted in the spec, after which every spec-derived layer is regenerated
   from the misread spec (§ 2.2). Six classes, ten seeds each:

@@ -80,8 +80,11 @@ unprimed readers' overlap implied
 about 0.2 left ([`research-observe-record-quality.md`](../research/research-observe-record-quality.md)
 § 2). What more a freeze needs, its stopping rule (that document's § 3), is
 BK-505's to decide. Until it decides, a freeze needs only R1's check and that
-re-run; its decision governs later freezes, and a stricter rule reopens a
-frozen record, whose next freeze takes `n + 1`.
+re-run; its decision governs later freezes, and a frozen record whose freeze
+the stricter rule would not have allowed is reopened, its next freeze taking
+`n + 1`. A trial already pre-registered on a freeze tag keeps that tag as its
+subject; the reopen changes the record the repository's spec cites, not the
+trial's.
 
 A spec clause blocked by such an item is not written until the item is
 decided. **The freeze is an annotated tag**, `observe/<entry>/freeze-<n>`,
@@ -129,8 +132,8 @@ roles, criteria O1 to O11) is defined in
 | Point | Choice |
 |---|---|
 | Pipeline | A only; B and C′ later as descriptive extensions |
-| S⁺ | The trial harness builds every spec-only gate, G0 to G9, and the spec-enforcing tests as its own S⁺, whatever R1 and R3 have adopted for the repository's flow; a smaller S⁺ would inflate p10 |
-| Spec under test | Lineage X writes the trial's own clean spec and regenerates it per seed, inside the trial's home. The repository's OP-01 spec is a separate artifact, written by its normal flow, neither seen by E nor reused by the trial |
+| S⁺ | The trial harness builds, as its own S⁺, every check that never consults the record: G0, G3 over the spec's tables, G4 with G4a and G4b, G5, G6, G9 and the spec-enforcing tests (the trial design's § 2.0), whatever R1 and R3 have adopted for the repository's flow; a smaller S⁺ would inflate p10. G1, G2, G7 and G8 consult the record or both families, so they are not part of it |
+| Spec under test | Lineage X writes the trial's own clean spec once, inside the trial's home; per seed, X regenerates the spec side from the seeded copy of that spec. The repository's OP-01 spec is a separate artifact, written by its normal flow, neither seen by E nor reused by the trial |
 | Raters | One, the maintainer: a single-rater pilot. Every label-dependent measure (realism rating, judge precision, register auto-labels) is reported as unvalidated |
 | Toolchain | The reference model and its gates in Python (Hypothesis state machine, runtime contracts, CrossHair advisory only); history checks by Porcupine in Docker, as `scripts/dafny_verify.sh` runs Dafny. The Dafny and TLA+ layers stay under `SPEC-DESIGN.md`, outside the trial |
 | Home | `sdd/research/bk-506-faithfulness-trial/`: harness, seeds, labels, analysis scripts and the pre-registration, every script committed, none scratchpad-only |
