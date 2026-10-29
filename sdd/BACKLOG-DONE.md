@@ -479,7 +479,7 @@ ships them.
 - [x] **BK-504 — No check reads an `/observe` record's tables, so a gap or overlap in them reaches the spec unnoticed**
   spec: — · effort: M · audience: contributor.tooling, contributor.process
   `hatch run observe-tables` (`scripts/observe_tables.py`, advisory) checks a record's or a spec's tables against the
-  domains a TOML sidecar declares (`sdd/observe/tables/<entry>.toml`, a reading the review writes, never the record):
+  domains a TOML sidecar declares (`sdd/observe/tables/<entry>.toml`, a reading the review writes beside the record):
   case tables complete and disjoint, state tables full, every table declared, cited IDs and rows defined.
   `/observe-review` runs it as G3 and, after a reopen, says whether the record can be frozen (R2's tag, created by the
   maintainer after merge); `/observe` notes that a reopen ends a freeze. Run on OP-01: a note, `OP-01/O45`, D38's

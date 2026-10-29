@@ -7,7 +7,7 @@ member must occur in its declared source, and a ``complete`` source's every row
 must be some member; a state table has a row per state, a column per event, an
 event per column and no empty cell; every table is declared once and every
 anchor finds one; every ID cited in a declared family is defined or retired, and
-``<ID>, row <n>`` names an existing row; every malformed declaration exits 2,
+``<ID>, row <n>`` names an existing row; each declaration in ``MALFORMED`` exits 2,
 never as findings. Seeded mutants of OP-01's real record each produce a finding
 the record itself does not (ADR-0045: the check can come out the other way).
 """
@@ -682,6 +682,19 @@ def test_op01_mutant_adding_an_environment_row_no_table_names_is_reported(tmp_pa
         f"- OP-01/D19 table 1: source: row {rows} of Environment column 1 ({new!r}) matches no member",
         f"- OP-01/D34 table 1: source: row {rows} of Environment column 1 ({new!r}) matches no member",
     }
+
+
+def test_op01_mutant_adding_a_d34_category_is_reported_by_d38(tmp_path: Path) -> None:
+    # D38's source is complete: a category D34 gains needs a D38 row.
+    record, doc, _ = _op01()
+    d34 = _table(doc, "OP-01/D34")
+    line, cells = d34.rows[-1]
+    text = record.split("\n")[line - 1]
+    indent = text[: len(text) - len(text.lstrip())]
+    new = indent + "| " + " | ".join([cells[0], "quota exceeded", *cells[2:]]) + " |"
+    added = _mutant_adds(tmp_path, record, {line: text + "\n" + new})
+    row = len(d34.rows) + 1
+    assert f"- OP-01/D38 table 1: source: row {row} of OP-01/D34 column 2 ('quota exceeded') matches no member" in added
 
 
 def test_op01_mutant_adding_an_undeclared_table_is_reported(tmp_path: Path) -> None:

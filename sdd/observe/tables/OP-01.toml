@@ -81,7 +81,7 @@ members = [
 ]
 basis = "sdd/observe/axes.md § Axes, one row per axis"
 
-# Bare D<n> also names RFC-0024's decisions (record lines 940 and 1019, "RFC-0024 D6", "D5"), read as
+# Bare D<n> also names RFC-0024's decisions (D43's consistency check, "RFC-0024 D6"; OP-01/O9, "D5"), read as
 # OP-01/D6 and D5, which exist: accepted, but an RFC decision past OP-01's last would read as dangling.
 [[ids]]
 family = "OP-01/D"
