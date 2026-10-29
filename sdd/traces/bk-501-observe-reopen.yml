@@ -234,3 +234,15 @@ phases:
           A ground conflict with Flow done is decided as any item, its route
           not asked again, so a second routing cannot inherit the first
           flow's marker
+  - id: review_fix_7
+    name: PR #1195 round 7, a scoped /rvw-pr on round 6
+    steps:
+      - file: sdd/observe/ground-register.md
+        section: "Artifacts (preamble)"
+        read_type: gate
+        extract: >-
+          My miss: round 6 tied the duty to the re-admitting change and to
+          routed items only, so a flow that retires or keeps its file, or
+          one started from an unrouted ground conflict (O21 as written),
+          marked nothing; now the change that ends the flow marks every item
+          the flow came from
