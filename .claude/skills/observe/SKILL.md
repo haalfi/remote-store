@@ -68,7 +68,7 @@ any web result about it.
 
    **Reopen** (RFC-0028 P3): walk the Open items, not the axes, but none
    tagged `shared:` or for another entry's session; ask a ground conflict
-   its route only, a ground reopen staying open (step 4). Ask each as above,
+   its route only, as axes.md has it (step 4). Ask each as above,
    sourced to the item (a ✓ on 0.33's code shows what an SDK or OS does,
    never the answer); each answer, "as is" too, is a new decision in
    axes.md's reopen form.

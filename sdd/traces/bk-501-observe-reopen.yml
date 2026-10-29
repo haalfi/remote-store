@@ -168,3 +168,19 @@ phases:
           "O14 to O44 ... for a reopen session" was false for O21 and O42
           under round 1's skip rule; with O21 asked its route, O42 alone
           stays out
+  - id: review_fix_3
+    name: PR #1195 round 3
+    steps:
+      - file: sdd/observe/axes.md
+        section: "Per-question loop: A reopen"
+        read_type: gate
+        extract: >-
+          My miss: round 2 named "its route" only in this trace, and the
+          reopen form marked every walked item Decided by, so a ground
+          conflict routed to its flow would leave its axis rows. Now axes.md
+          says what the route question is, and a routed item gains Routed
+          to and stays explicitly open
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 4"
+        read_type: gate
+        extract: "The drop rationale goes in this review's trace, not the /observe one"

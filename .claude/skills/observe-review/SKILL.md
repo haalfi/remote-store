@@ -47,8 +47,8 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
    does, never as the expected answer (RFC-0024 § R1).
 4. **Verify, write, commit.** Re-read every candidate, the readers' and
    yours, against what it cites, and drop what does not hold, or what an
-   open item or an amending decision already covers (name which in the
-   trace). Write the rest as open items, opened by one line naming this
+   open item or an amending decision already covers (name which in this
+   review's trace). Write the rest as open items, opened by one line naming this
    review and its date. Commit the record and the logs, a reopen's added to
    the `decisions:` of the `/observe` trace that wrote the record, then tell
    the maintainer which items need a reopen session.
