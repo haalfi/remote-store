@@ -221,7 +221,7 @@ need correcting before they bind anything here.
    interval operation (D21, D22), a non-promise register (D41), profile
    deviations (D43), and documented real misreadings (the review's open
    items). It fails O8, a complete record frozen at a revision
-   hash, until its open items are decided, and O10 (not used in earlier trials
+   hash, until it is frozen (RFC-0029 R2), and O10 (not used in earlier trials
    or public reports) needs a judgement: the record is public on GitHub.
 
 ## 4. The handover's points, and what became of them
