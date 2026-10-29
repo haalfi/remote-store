@@ -175,3 +175,93 @@ phases:
           reading O14 to O44, so D38's domain could have been shaped by O37; it is
           D38's own text, "a surfaced failure", read against D34, the record's list
           of what surfaces.
+review:
+  # Derived by `hatch run ship-report 1197 --trace-block-only` at head 9ab67dc.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1197 --trace-block-only"
+  pr: 1197
+  review_rounds: 7
+  submissions: 7
+  findings: 48
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.15
+    - round: 2
+      findings: 4
+      origin: {original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 2.5
+    - round: 3
+      findings: 11
+      origin: {loop-introduced: 7, original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 11}
+      duration_hours: 0.74
+    - round: 4
+      findings: 9
+      origin: {loop-introduced: 6, original: 3}
+      triage: {must-fix: 8, refuted: 1}
+      duration_hours: 0.28
+    - round: 5
+      findings: 7
+      origin: {loop-introduced: 7}
+      triage: {filed: 2, must-fix: 5}
+      duration_hours: 0.4
+    - round: 6
+      findings: 9
+      origin: {loop-introduced: 7, original: 2}
+      triage: {must-fix: 8, unknown: 1}
+      duration_hours: 0.64
+    - round: 7
+      findings: 5
+      origin: {loop-introduced: 3, original: 2}
+      triage: {filed: 3, must-fix: 1, unknown: 1}
+      duration_hours: 0.22
+  by_file:
+    - path: "scripts/observe_tables.py"
+      findings: 26
+    - path: "tests/scripts/test_observe_tables.py"
+      findings: 7
+    - path: "sdd/observe/tables/OP-01.toml"
+      findings: 6
+    - path: ".claude/skills/observe-review/SKILL.md"
+      findings: 3
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+    - path: "sdd/observe/records/OP-01.md"
+      findings: 2
+    - path: ".github/workflows/ci.yml"
+      findings: 1
+    - path: "sdd/traces/bk-504-observe-table-check.yml"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/observe/SKILL.md"
+    - "CHANGELOG.md"
+    - "pyproject.toml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/c0c85cb6-2e66-47fb-8784-3295e0c9e743.jsonl"
+    - "sdd/decisions/ced72d7f-9656-45c4-a6dc-ddf13727ed8f.jsonl"
+    - "sdd/process-budget.json"
+    - "tests/scripts/test_observe_ground.py"
+  review_driven_commits:
+    - sha: "aa21182"
+      subject: "fix: address PR #1197 review"
+    - sha: "de8fa9f"
+      subject: "fix: address PR #1197 review"
+    - sha: "b358f4e"
+      subject: "fix: address PR #1197 review"
+    - sha: "83c0a92"
+      subject: "fix: address PR #1197 review"
+    - sha: "e96492f"
+      subject: "fix: address PR #1197 review"
+    - sha: "de9564e"
+      subject: "fix: address PR #1197 review"
+    - sha: "9ab67dc"
+      subject: "fix: address PR #1197 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
