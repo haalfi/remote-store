@@ -557,6 +557,10 @@
          <lastmod>2026-10-29</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/research/research-observe-record-quality/</loc>
+         <lastmod>2026-10-29</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/research/research-openrouter-integration/</loc>
          <lastmod>2026-10-29</lastmod>
     </url>
@@ -594,6 +598,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/research/research-spec-design/</loc>
+         <lastmod>2026-10-29</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/research/research-spec-faithfulness/</loc>
          <lastmod>2026-10-29</lastmod>
     </url>
     <url>
@@ -750,6 +758,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/rfcs/rfc-0028-observe-record-review/</loc>
+         <lastmod>2026-10-29</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/rfcs/rfc-0029-faithfulness-before-spec/</loc>
          <lastmod>2026-10-29</lastmod>
     </url>
     <url>

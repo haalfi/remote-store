@@ -8548,6 +8548,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfc-0029-faithfulness-before-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0029: RFC-0029: A record is checked and frozen before its spec, and the first one tests whether its own oracles add anything
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -9796,6 +9824,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../research/research-observe-record-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checking an /observe record before its spec (BK-505)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../research/research-openrouter-integration/" class="md-nav__link">
         
   
@@ -10056,6 +10112,34 @@
     
   
     How a spec should be designed (BK-457)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/research-spec-faithfulness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Keeping a spec faithful to its record (BK-503)
   
 
     
@@ -12167,6 +12251,11 @@ the flow after a session.</p>
 2026-10-28: D4's method gains a whole-record pass at the session's end and an
 Asked line per decision, and the flow gains a review step between record and
 spec, <code>/observe-review</code>, which writes open items and never edits a decision.</p>
+<p>Amended by <a href="../rfc-0029-faithfulness-before-spec/">RFC-0029</a>, accepted
+2026-10-29: the flow of every entry gains a table check on the record, its
+reopen and a freeze before the spec, and every v1 reference model two test
+rules, step 5 their first use; step 6 runs a faithfulness trial on OP-01's
+frozen record before the bake-off.</p>
 <p>It changes no spec format. <a href="../../spec-design/"><code>SPEC-DESIGN.md</code></a> and
 <a href="../../adrs/0048-how-specs-are-designed/">ADR-0048</a> stay the authority for what
 a spec states and the form it takes, with one bounded exception in § R4. The
