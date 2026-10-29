@@ -54,6 +54,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/gen_graph_viz.py` | docs-src/_data/graph/graph.json, plus the Repository URL in pyproject.toml that the page's source links are built from ↔ docs-src/explanation/graph_viz.html | realization ↔ explanation | `all`, `gen-graph-viz`, `gen-graph-viz-check`, `preflight` | gating |
 | `scripts/gen_python_support.py` | the Programming Language :: Python classifiers in pyproject.toml and the release dates in scripts/python_support.py ↔ the committed Mermaid gantt body in docs-src/_data/python-support-window.mmd that the dependency-policy page includes | process ↔ explanation | `all`, `docs-gate`, `gen-python-support`, `gen-python-support-check`, `preflight` | gating |
 | `scripts/observe_dialogs.py` | an /observe record's decisions and their Asked lines ↔ the answered dialogs in the session's sdd/decisions/ logs | process | `observe-dialogs` | advisory |
+| `scripts/observe_tables.py` | an /observe record's or spec's tables ↔ the domains a sidecar declares for them, and its ID citations ↔ the elements it defines | process | `observe-tables` | advisory |
 
 ## Rule checks, no pair
 

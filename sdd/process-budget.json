@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 312982,
+  "total": 313999,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,16 +16,16 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 6467,
-    ".claude/skills/observe-review/SKILL.md": 4681,
+    ".claude/skills/observe/SKILL.md": 6552,
+    ".claude/skills/observe-review/SKILL.md": 5613,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
-    ".claude/skills/rvw-pr/SKILL.md": 23363,
     ".claude/skills/rvw-pr/measuring.md": 5482,
     ".claude/skills/rvw-pr/posting-gh.md": 2464,
     ".claude/skills/rvw-pr/posting.md": 2352,
+    ".claude/skills/rvw-pr/SKILL.md": 23363,
     ".claude/skills/ship/SKILL.md": 54247,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
@@ -234,6 +234,12 @@
       "from": 312862,
       "to": 312982,
       "reason": "PR #1195 rounds 3 and 4: a reopen resumes at its first item with no Decided by or Routed to and skips routed ones; a ground-conflict item names any answer that settles it in the record (observe/SKILL.md +110); /observe-review names this review's trace (+10)"
+    },
+    {
+      "item": "BK-504",
+      "from": 312982,
+      "to": 313999,
+      "reason": "RFC-0029 R1 and R2: /observe-review gains the table check G3 in step 1 and a Freeze step 5 (+932 after a -256 tightening pass); /observe says a reopen ends a freeze and its End points to the freeze verdict (+85)"
     }
   ]
 }

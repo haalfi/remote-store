@@ -1,0 +1,164 @@
+id: BK-504
+title: "No check reads an `/observe` record's tables, so a gap or overlap in them reaches the spec unnoticed"
+trigger: >-
+  RFC-0029 (BK-503, merged as #1196) ordered a deterministic table check (R1)
+  into `/observe-review` and a freeze (R2) before OP-01's spec, and named
+  BK-504 to build the check, write the freeze into the `/observe` and
+  `/observe-review` skills, and run the check on OP-01 before its reopen with
+  evidence it can fail (ADR-0045). How a record table declares its domain was
+  left open.
+source_items:
+  - BK-504
+audience:
+  - contributor.tooling
+  - contributor.process
+decisions:
+  - sdd/decisions/c0c85cb6-2e66-47fb-8784-3295e0c9e743.jsonl
+expected_ripples:
+  - pyproject.toml
+  - sdd/GATE-INVENTORY.md
+  - sdd/process-budget.json
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - CHANGELOG.md
+surprising_ripples:
+  - "sdd/BACKLOG.md (BK-505's entry gains the extraction measurement the orient dialog left to it; BK-485's open-item range moves to O45)"
+orient:
+  - items: [BK-505]
+    verdict: constrains
+    evidence: >-
+      BK-505's open decision is "which of its checks and its stopping rule
+      bind, amending RFC-0029 R1, R2"; research-observe-record-quality.md § 4:
+      "R1's table check (BK-504) is the first of the mechanical gates either
+      way", and its § 3 lists "each table over a declared domain" beside
+      Environment-slot and typed-claim checks R1 does not order. So BK-504
+      builds the table check only, leaves the stopping rule and the other
+      mechanical gates to BK-505, and should not pick a domain-declaration form
+      that BK-505's further gates could not extend. The verified edition's
+      first open measurement (two extractions plus a blind restatement, scored
+      against O14 to O44, § 4) is evidence for BK-505's decision, not part of
+      R1.
+  - items: [BK-506]
+    verdict: constrains
+    evidence: >-
+      RFC-0029 R4's S⁺ row lists "G3 over the spec's tables" among the checks
+      the trial harness builds, and R1: "The same script checks the spec's
+      tables when the spec exists". BK-506 runs on OP-01's freeze tag, which
+      needs R2 written into the skills. So the script's spec mode must run on a
+      spec-shaped Markdown file, not only on a record, and the freeze text must
+      land here; no freeze tag is created by BK-504.
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's entry orders "a table check (BK-504), the reopen, a freeze (not
+      waiting for BK-505's stopping rule), then the spec". The reopen is
+      BK-501's `/observe OP-01` under BK-485, in its own hook-armed session, so
+      BK-504 writes its OP-01 findings as open items for that reopen and decides
+      none (RFC-0028 P3). BK-485's entry names "open items O14 to O44", which
+      new items from this run would make stale.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Step 1: Frame; Orient; Enumerate the subjects"
+        read_type: gate
+        extract: "orient procedure and subject list before planning"
+      - file: sdd/BACKLOG.md
+        section: "BK-504, BK-505, BK-506, BK-485 (item)"
+        read_type: gate
+        extract: "BK-504's scope and its open decision; neighbours' open decisions"
+      - file: sdd/backlog/bk-505-record-quality-research.md
+        section: "(full)"
+        read_type: reference
+        extract: "BK-505's brief: the record's elements, table kinds, failure classes"
+      - file: sdd/rfcs/rfc-0029-faithfulness-before-spec.md
+        section: "R1, R2, R4"
+        read_type: gate
+        extract: "what G3 checks, freeze preconditions and tag form, S⁺ needs G3 over the spec's tables"
+      - file: sdd/rfcs/rfc-0028-observe-record-review.md
+        section: "P2, P3"
+        read_type: gate
+        extract: "review never edits a decision; findings become open items in the session's shapes"
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "steps to extend with G3 and the freeze re-run"
+      - file: .claude/skills/observe/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "reopen and End, where the freeze joins"
+      - file: sdd/observe/axes.md
+        section: "Per-question loop"
+        read_type: reference
+        extract: "per-decision form and amendment form a domain declaration would join"
+      - file: sdd/observe/records/OP-01.md
+        section: "(full)"
+        read_type: gate
+        extract: "the tables G3 runs on: D9, D18, D19, D34, D38, D41, D43, Environment, Axis status"
+      - file: sdd/research/research-observe-record-quality.md
+        section: "§ 3, § 4"
+        read_type: reference
+        extract: "declared-domain table check as the first mechanical gate; extraction measurement belongs to BK-505"
+      - file: scripts/observe_dialogs.py
+        section: "(full)"
+        read_type: reference
+        extract: "record parsing conventions to match (decision headings, field bullets)"
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "grep: BK-504, table, freeze"
+        read_type: reference
+        extract: "no further constraint on the table check"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "rows: new test file, cross-artifact check (DRIFT-RULES), backlog item touched, CHANGELOG entry"
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 3, 5, 7"
+        read_type: gate
+        extract: "localized findings, a domain drawn from another enumeration (source), the advisory reason, the bound and a Drift-gate block"
+      - file: sdd/adrs/0045-close-on-a-check-that-can-fail.md
+        section: "Decision"
+        read_type: gate
+        extract: "evidence the check can return a finding: seeded mutants of OP-01's real record, one per check"
+      - file: sdd/specs/052-store-key.md
+        section: "headings"
+        read_type: reference
+        extract: "a spec's IDs are heading-defined (### KEY-013: ...), so one anchoring rule serves record and spec"
+      - file: tests/scripts/test_observe_dialogs.py
+        section: "(head)"
+        read_type: reference
+        extract: "subprocess-driven script tests over tmp fixtures"
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/gen_gate_inventory.py
+        section: "Drift-gate kinds"
+        read_type: verify
+        extract: "kind rule needs rule:, so a two-artifact comparison is kind pair"
+        outcome: ok
+  - id: run
+    name: Run on OP-01
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D18, D20, D34, D38, Open items O37"
+        read_type: verify
+        extract: >-
+          `hatch run observe-tables sdd/observe/records/OP-01.md sdd/observe/tables/OP-01.toml`
+          at the record before O45 gave 6 findings and exit 1: D18 has no column for
+          D20's cancelled transition, written as OP-01/O45; D38 has no row for five
+          of D34's categories (as raised, UnicodeDecodeError, TypeError, ValueError,
+          cancellation), dropped as OP-01/O37's. Declarations, citations: none.
+          Could it have found nothing: yes, had D38's rows covered D34's categories
+          and D18 a cancellation column; six seeded mutants of the real record
+          (tests/scripts/test_observe_tables.py, test_op01_*) each add the finding
+          they seed. Reach over O14 to O44: of the items about a table, only O37 is a
+          coverage gap; O16, O28, O33 and O36 dispute a cell's content and O31 a
+          table no other enumeration bounds (D43, declared a register), which no
+          declared domain reaches. Bound: the declarations were written after
+          reading O14 to O44, so D38's domain could have been shaped by O37; it is
+          D38's own text, "a surfaced failure", read against D34, the record's list
+          of what surfaces.

@@ -545,6 +545,11 @@ ref-rows = "python scripts/sdd_lookup.py ref-rows {args}"
 # logs for a gate to read, and a record older than the Asked line (OP-01's)
 # fails it on every decision; the reason is in its docstring. Its tests run in the suite.
 observe-dialogs = "python scripts/observe_dialogs.py {args}"
+# BK-504 / RFC-0029 R1: checks an /observe record's tables, or a spec's, against
+# the domains its sidecar declares (G3). Absent from every bundle: its findings
+# are open items only a reopen decides, so a gate would hold master red until
+# then; the reason is in its docstring. Its tests run in the suite.
+observe-tables = "python scripts/observe_tables.py {args}"
 # BK-378 / RFC-0015 D1 and D4. Three entries, wired three different ways, and
 # the differences are the point.
 #

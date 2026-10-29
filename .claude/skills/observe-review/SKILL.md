@@ -1,12 +1,13 @@
 ---
 name: observe-review
-description: Check a finished /observe record before its spec is written. Pairs each decision with its dialog, has two unprimed readers re-check the whole record, then reviews it against backends, SDKs and the runtime, adding what holds to the record's Open items. Use only when the maintainer types /observe-review after an /observe session was cleared. Not for deciding: a reopen session decides.
+description: Check a finished /observe record before its spec is written. Pairs each decision with its dialog, checks its tables, has two unprimed readers re-check the whole record, then reviews it against backends, SDKs and the runtime, adding what holds to the record's Open items; after a reopen, says whether it can be frozen. Use only when the maintainer types /observe-review after an /observe session was cleared. Not for deciding: a reopen session decides.
 argument-hint: "<entry>"
 disable-model-invocation: true
 ---
 
 Check `sdd/observe/records/<entry>.md`, which `/observe` left Complete,
-before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
+before its spec is written (RFC-0028), and after its reopen, before its freeze
+(RFC-0029). `$ARGUMENTS`'s first word is the entry.
 
 ## Rules
 
@@ -35,6 +36,12 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
    decision written before RFC-0028, which has no Asked line (OP-01's D1 to
    D44), "no Asked line" is not: the readers pair those decisions with the report's
    unpaired dialogs, listed with their answers (the brief's item 4).
+   **Tables** (G3): declare each undeclared table in
+   `sdd/observe/tables/<entry>.toml` (form: `scripts/observe_tables.py`), its
+   domain from the enumeration the record names, a reading, never a decision;
+   save `hatch run observe-tables <record> <declarations>` as
+   `tmp/observe-review/<entry>-tables.md`. Its findings are step 4's
+   candidates; the readers never see it.
 2. **Unprimed readers.** Spawn two fresh `general-purpose` agents at once,
    each with the brief below, its placeholders filled, and nothing else from
    this session: no finding, no suspicion, no audit. Take the union: one run
@@ -49,9 +56,15 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
    yours, against what it cites, and drop what does not hold, or what an
    open item or an amending decision already covers (name which in this
    review's trace). Write the rest as open items, opened by one line naming this
-   review and its date. Commit the record and the logs, a reopen's added to
-   the `decisions:` of the `/observe` trace that wrote the record, then tell
-   the maintainer which items need a reopen session.
+   review and its date. Commit the record, the declarations and the logs, a
+   reopen's added to the `decisions:` of the `/observe` trace that wrote the
+   record, then tell the maintainer which items need a reopen session.
+5. **Freeze** (RFC-0029 R2), after a reopen only: the record can be frozen
+   when each open item is decided, routed with no `Flow done`, another
+   entry's or `shared:`, each naming what it blocks; else name the items in
+   the way. After the merge the maintainer tags that master commit
+   `observe/<entry>/freeze-<n>` (`git tag -a`, `<n>` one past the last), not a
+   release; this review never creates the tag.
 
 ## Reader brief
 

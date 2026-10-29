@@ -39,8 +39,9 @@ any web result about it.
    active row but the formal models, the input file and each named path; a
    formal model row only when a decision cites a clause it checks. A record
    In progress continues at its first open axis, `In progress (reopen)` at its
-   first item to walk (step 3); a Complete one is set to the latter, and
-   Session gains a line for the reopen: date, ground read, named paths.
+   first item to walk (step 3); a Complete one is set to the latter, which
+   ends any freeze (RFC-0029 R2), and Session gains a line for the reopen:
+   date, ground read, named paths.
    Otherwise create it: title `# <entry>: observable semantics`, the marker
    `<!-- doc: repo-only -->`, lines `**Date:**`, `**Backlog items:**` and
    `**Status:** In progress`, then five sections: Session (date, entry, ground
@@ -86,7 +87,7 @@ any web result about it.
    outcome, and an option a Decision adopts by its own wording. Ask each
    conflict as in step 3; its answer is an amendment in axes.md's form. Then set `**Status:**` to `Complete`, and tell the maintainer the
    record is uncommitted: `/clear`, then `/observe-review <entry>`, which
-   checks and commits it. A stop hook asking this session to
+   checks and commits it and, after a reopen, says whether it can be frozen. A stop hook asking this session to
    commit cannot be obeyed here; answer it the same way. Resumed armed after
    `/clear`? The maintainer types `/observe release`.
 
