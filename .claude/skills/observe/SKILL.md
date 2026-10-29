@@ -1,6 +1,6 @@
 ---
 name: observe
-description: Unprimed design session for one entry of the operation catalogue, deciding its observable semantics axis by axis with the maintainer into its record. Use only when the maintainer types /observe in a fresh session, or /observe release to end one. Not for the spec or the 0.33 comparison, later steps of the flow.
+description: Unprimed design session for one entry of the operation catalogue, deciding its observable semantics axis by axis with the maintainer into its record, or, on a Complete record, the open items its review left. Use only when the maintainer types /observe in a fresh session, or /observe release to end one. Not for the spec or the 0.33 comparison, later steps of the flow.
 argument-hint: "<entry> [path ...] | release"
 disable-model-invocation: true
 ---
@@ -28,8 +28,8 @@ any web result about it.
    uncommitted `sdd/decisions/` log in this tree, a dialog split across two
    session ids included, then stop: skip steps 1 to 5. A finished record is
    committed after `/clear`, by a session with no marker.
-1. **Canary**, now and before every axis, also one closed without a question
-   or in a resumed session: read `tmp/observe/canary-not-ground`. Unless the
+1. **Canary**, now and before every axis (in a reopen, every item), also
+   one closed without a question or in a resumed session: read `tmp/observe/canary-not-ground`. Unless the
    hook refuses it with "outside the ground", the session is not armed: stop
    and tell the maintainer to start a fresh one with `/observe`.
 2. **Load.** Read the session's scope in the catalogue: the entry's row,
@@ -37,8 +37,10 @@ any web result about it.
    Not in v1 row it leaves to this entry, such as a *Form of* it, decided like
    a question no axis raises (Rules). Then the register, the axes, every
    active row but the formal models, the input file and each named path; a
-   formal model row only when a decision cites a clause it checks. If the
-   record exists, continue it from its first axis not yet closed.
+   formal model row only when a decision cites a clause it checks. A record
+   In progress continues at its first open axis, `In progress (reopen)` at its
+   first item to walk (step 3); a Complete one is set to the latter, and
+   Session gains a line for the reopen: date, ground read, named paths.
    Otherwise create it: title `# <entry>: observable semantics`, the marker
    `<!-- doc: repo-only -->`, lines `**Date:**`, `**Backlog items:**` and
    `**Status:** In progress`, then five sections: Session (date, entry, ground
@@ -63,18 +65,26 @@ any web result about it.
      first.
    An answer may be an F3 term; "not decided yet" goes to Open items with what
    blocks it. Keep each axis's row current.
+
+   **Reopen** (RFC-0028 P3): walk the Open items, not the axes, but none
+   tagged `shared:`, for another entry's session, decided, or routed with no
+   `Flow done`; ask a ground conflict without one its route only, as
+   axes.md's reopen form has it. Ask each as above, sourced to the item (a ✓ on 0.33's code
+   shows what an SDK or OS does, never the answer); each answer, "as is"
+   too, is a new decision in axes.md's reopen form.
 4. **Ground conflict.** If a decision would contradict a ground artifact,
    stop on that point. Record a reopen decision as an open item: the artifact,
-   the clause, the conflict, the dependent decisions. Never edit ground, the
+   the clause, the conflict, the dependent decisions, and any answer that
+   would settle it in the record instead. Never edit ground, the
    register or any file but the record; the reopen runs its own flow. An
    entry that should split is a reopen of the catalogue.
-5. **End (S4)** when every axis row is closed. First re-read the record
+5. **End (S4)** when every axis row is closed, and every item a reopen walks
+   decided or open with what blocks it. First re-read the record
    whole and re-run each consistency check against every decision, later
    ones included, not only those it names: each list, table or "only" claim
    against every decision that adds to it, each reason against every
    outcome, and an option a Decision adopts by its own wording. Ask each
-   conflict as in step 3; its answer is a new decision naming the one it
-   amends. Then set `**Status:**` to `Complete`, and tell the maintainer the
+   conflict as in step 3; its answer is an amendment in axes.md's form. Then set `**Status:**` to `Complete`, and tell the maintainer the
    record is uncommitted: `/clear`, then `/observe-review <entry>`, which
    checks and commits it. A stop hook asking this session to
    commit cannot be obeyed here; answer it the same way. Resumed armed after

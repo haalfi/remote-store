@@ -1,0 +1,346 @@
+id: BK-501
+title: "An /observe record's open items have no session that decides them, so a reopened decision cannot reach its spec"
+trigger: >-
+  After /observe-review OP-01 (PR #1194) left 22 reopens and gaps in OP-01's
+  record, the maintainer asked for the next step. /observe step 2 continues a
+  record "from its first axis not yet closed", and every OP-01 axis is decided,
+  so nothing decides the open items RFC-0028 P3 hands to "a reopen session".
+  The maintainer chose to file BK-501 and build the mode first, in this PR.
+source_items:
+  - BK-501
+audience:
+  - contributor.process
+  - contributor.tooling
+discovery_followups:
+  # Filed at the close: review rounds 3 to 7 each found a defect in the
+  # ground-conflict route and Flow done path, which no flow has run yet.
+  - BK-502
+surprising_ripples: []
+co_shipped_items: []
+# Three asked events in the log have no answer ('Close #1195' 09:22, 'Close
+# 1195' 10:09, 'Next for 1195' 10:28): each dialog was open when the worker
+# restarted, and the next turn asked it afresh under a new tool_use_id, whose
+# answer is logged. check_traces prints them as notes; no line is written by
+# hand.
+decisions:
+  - sdd/decisions/d91e84ea-ad76-5e89-9612-07eadea17496.jsonl
+expected_ripples:
+  - .claude/skills/observe/SKILL.md
+  - .claude/skills/observe-review/SKILL.md
+  - sdd/BACKLOG.md
+orient:
+  # `hatch run backlog-find observe` (43 more beyond its cap, the rest done
+  # or the ext/observe guide); the open ones sharing /observe's files or its
+  # records: BK-485. BUG-269, BUG-321 and ID-125 are ext/observe's guide,
+  # BK-436 spec 051's tree check: other subjects.
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's entry: OP-01's "open items O14 to O44 ... for a reopen session
+      (BK-501)", and step 5's spec is Not done. RFC-0028 P3: "a reopen session
+      decides the items before the spec cites the decisions they name". The
+      mode must decide them in the record, in /observe's per-question shape, so
+      step 5's spec can cite the amending decisions.
+phases:
+  - id: orient
+    name: Orient on the reopen mode
+    steps:
+      - file: .claude/skills/observe/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Step 2 continues an existing record from its first axis not yet
+          closed; step 5's End pass answers a conflict with "a new decision
+          naming the one it amends"; no step decides open items
+      - file: scripts/observe_ground.py
+        section: "module docstring; arm, _write_marker, check"
+        read_type: gate
+        extract: >-
+          arm accepts /observe <entry> [path ...], each extra word a file path,
+          so a keyword argument would be refused as "not a file"; the armed
+          session writes only its record
+      - file: sdd/rfcs/rfc-0028-observe-record-review.md
+        section: "P2, P3"
+        read_type: gate
+        extract: >-
+          The review never decides; a reopen session decides the items before
+          the spec cites the decisions they name. The primed review writes
+          0.33-sourced evidence into the record, so a reopen session reads it
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 4, S1 to S5"
+        read_type: reference
+        extract: >-
+          S1: ground never 0.33's code; S2 one fresh session; S4 ends when every
+          axis is decided or open; S5 the per-question loop
+      - file: sdd/observe/axes.md
+        section: "Axis states; Per-question loop"
+        read_type: reference
+        extract: "decided, explicitly open, not applicable; the Asked line's exact form"
+  - id: design
+    name: Four design decisions, one dialog
+    steps:
+      # Asked in one dialog (log d91e84ea), each recommendation taken: the
+      # record's state picks the mode (no hook change); a new decision with
+      # Amends, the old one an Amended by line, the item Decided by; reopens,
+      # gaps and notes walked, shared:, other-session and ground-conflict
+      # items skipped; In progress during the session, /observe-review on the
+      # whole record after. No RFC: RFC-0028 P3 already hands the items to a
+      # reopen session, and this fills in its steps.
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O44"
+        read_type: reference
+        extract: >-
+          Which items a reopen skips: shared: (O3 to O5, O7 to O12), another
+          entry's session (O1, O2, O6, O13, O42), a ground conflict (O21)
+  - id: implement
+    name: The reopen mode
+    steps:
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 1, 2, 3 (Reopen), 5"
+        read_type: gate
+        extract: >-
+          Canary per item; a Complete record goes to In progress (reopen) and
+          resumes at its first undecided item; step 5 ends on the walked items.
+          My miss caught on a re-read: a resumed reopen found every axis closed
+          and would have gone straight to End, so the status names the mode
+      - file: sdd/observe/axes.md
+        section: "Per-question loop"
+        read_type: gate
+        extract: "Home of the Amends, Amended by and Decided by forms, outside the process budget"
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1; Reader brief"
+        read_type: gate
+        extract: >-
+          A reopen's logs are paired too; only D1 to D44 of OP-01 lack Asked
+          lines; readers read an amended decision through its amendment
+      - file: scripts/observe_dialogs.py
+        section: "Decision, decisions(), pair()"
+        read_type: verify
+        extract: >-
+          Prints Amends and Amended by after their Decision. Test written
+          first and seen failing (the line was absent), then 28 passed. My
+          miss, caught in PR #1195 round 1: one dict entry per field kept
+          only a decision's last Amended by and dropped a wrapped pointer;
+          now a list in record order, the second test seen failing first
+      - file: scripts/check_process_budget.py
+        section: "plain run, then --raise, as printed"
+        read_type: verify
+        extract: >-
+          First draft: observe/SKILL.md +739, observe-review/SKILL.md +123,
+          total +862. Cut to +574 and +123, total +697: raised 311850 ->
+          312547. PR #1195 round 1: +76 and -6, total +70: raised 312547 ->
+          312617. Round 2: observe/SKILL.md +49, observe-review/SKILL.md
+          +196, total +245: raised 312617 -> 312862
+  - id: review_fix
+    name: PR #1195 round 1
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1"
+        read_type: gate
+        extract: >-
+          My miss: "once one exists; before that" took the traced logs or the
+          uncommitted ones, so a reopen's log, which no trace lists (the armed
+          session writes only its record), would never be paired; now both
+      - file: .claude/skills/observe/SKILL.md
+        section: "Step 2"
+        read_type: gate
+        extract: >-
+          A reopen adds its date, ground read and named paths to Session,
+          which the reader brief reads as the ground
+  - id: review_fix_2
+    name: PR #1195 round 2, the flow after a reopen
+    steps:
+      # Three choices asked in one dialog (log d91e84ea), each recommendation
+      # taken: the review appends a reopen's log to the /observe trace's
+      # decisions:; Amends may name a decision, an Environment row, an item
+      # or Session; a ground conflict is asked its route only.
+      - file: sdd/observe/axes.md
+        section: "Per-question loop: An amendment; A reopen"
+        read_type: gate
+        extract: >-
+          My miss: the form covered only a reopen's answer to an item, so
+          step 5's End-pass amendments, Environment rows (O44), Session (O30),
+          an item's text (O38) and the axis rows had no form; now one
+          amendment form and the axis rows' update
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Steps 1, 4"
+        read_type: gate
+        extract: >-
+          Step 4 files a reopen's log in the /observe trace, so step 1 finds
+          it after merge, and drops a candidate an item or amendment covers,
+          which PR #1194's run did only because its invocation said so
+      - file: sdd/BACKLOG.md
+        section: "BK-485"
+        read_type: verify
+        extract: >-
+          "O14 to O44 ... for a reopen session" was false for O21 and O42
+          under round 1's skip rule; with O21 asked its route, O42 alone
+          stays out
+  - id: review_fix_3
+    name: PR #1195 round 3
+    steps:
+      - file: sdd/observe/axes.md
+        section: "Per-question loop: A reopen"
+        read_type: gate
+        extract: >-
+          My miss: round 2 named "its route" only in this trace, and the
+          reopen form marked every walked item Decided by, so a ground
+          conflict routed to its flow would leave its axis rows. Now axes.md
+          says what the route question is, and a routed item gains Routed
+          to and stays explicitly open
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 4"
+        read_type: gate
+        extract: "The drop rationale goes in this review's trace, not the /observe one"
+  - id: review_fix_4
+    name: PR #1195 round 4, a scoped /rvw-pr on round 3
+    steps:
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 2, 3 (Reopen), 4"
+        read_type: gate
+        extract: >-
+          My miss: round 3's Routed to was not Decided by, so a resumed or
+          later reopen would ask a routed item its route again; now step 2
+          resumes at the first item with neither and step 3 skips both. Step
+          4's ground-conflict item names any answer that settles it in the
+          record, which the route question offers
+      - file: scripts/check_process_budget.py
+        section: "plain run, then --raise, as printed"
+        read_type: verify
+        extract: >-
+          Rounds 3 and 4: observe/SKILL.md +110, observe-review/SKILL.md +10,
+          total +120: raised 312862 -> 312982
+  - id: review_fix_5
+    name: PR #1195 round 5, a scoped /rvw-pr on round 4
+    steps:
+      # One choice asked (log d91e84ea), the recommendation taken: the change
+      # that ends a routed item's flow marks it Flow done.
+      - file: sdd/observe/axes.md
+        section: "Per-question loop: A reopen"
+        read_type: gate
+        extract: >-
+          My miss: round 4 skipped a routed item "while that flow runs", but
+          the skill skipped it for good and nothing marked the flow's end.
+          Now the change that ends the flow adds Flow done, and a reopen
+          walks the item again only then; step 2 resumes at step 3's first
+          item to walk instead of restating the exclusions
+  - id: review_fix_6
+    name: PR #1195 round 6, a scoped /rvw-pr on round 5
+    steps:
+      - file: sdd/observe/ground-register.md
+        section: "Artifacts (preamble)"
+        read_type: gate
+        extract: >-
+          My miss: round 5 had the flow's closing change add Flow done, but
+          that change never reads axes.md. Re-admission happens in this
+          register, so its prose now carries the duty (the hook parses rows
+          only, _ROW in observe_ground.py)
+      - file: .claude/skills/observe/SKILL.md
+        section: "Step 3 (Reopen)"
+        read_type: gate
+        extract: >-
+          A ground conflict with Flow done is decided as any item, its route
+          not asked again, so a second routing cannot inherit the first
+          flow's marker
+  - id: review_fix_7
+    name: PR #1195 round 7, a scoped /rvw-pr on round 6
+    steps:
+      - file: sdd/observe/ground-register.md
+        section: "Artifacts (preamble)"
+        read_type: gate
+        extract: >-
+          My miss: round 6 tied the duty to the re-admitting change and to
+          routed items only, so a flow that retires or keeps its file, or
+          one started from an unrouted ground conflict (O21 as written),
+          marked nothing; now the change that ends the flow marks every item
+          the flow came from
+review:
+  # Derived by `hatch run ship-report 1195 --trace-block-only` at head 868c888.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1195 --trace-block-only"
+  pr: 1195
+  review_rounds: 11
+  submissions: 7
+  findings: 18
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 1.11
+    - round: 2
+      findings: 5
+      origin: {loop-introduced: 1, original: 2, unclassifiable-file: 2}
+      triage: {must-fix: 5}
+      duration_hours: 0.23
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.76
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 1.42
+    - round: 5
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.4
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.73
+    - round: 7
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.53
+  by_file:
+    - path: ".claude/skills/observe/SKILL.md"
+      findings: 5
+    - path: ".claude/skills/observe-review/SKILL.md"
+      findings: 4
+    - path: "sdd/observe/axes.md"
+      findings: 4
+    - path: "sdd/observe/ground-register.md"
+      findings: 2
+    - path: "scripts/observe_dialogs.py"
+      findings: 1
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/traces/bk-501-observe-reopen.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/d91e84ea-ad76-5e89-9612-07eadea17496.jsonl"
+    - "sdd/process-budget.json"
+    - "tests/scripts/test_observe_dialogs.py"
+  review_driven_commits:
+    - sha: "eebb983"
+      subject: "fix: address PR #1195 review"
+    - sha: "2c6354f"
+      subject: "fix: address PR #1195 review round 2"
+    - sha: "cc5685b"
+      subject: "BK-501: decision log"
+    - sha: "ef69749"
+      subject: "fix: address PR #1195 review round 3"
+    - sha: "9b940b1"
+      subject: "fix: address PR #1195 review round 4"
+    - sha: "c600764"
+      subject: "fix: address PR #1195 review round 5"
+    - sha: "ec6ddb8"
+      subject: "BK-501: decision log"
+    - sha: "840ccbf"
+      subject: "fix: address PR #1195 review round 6"
+    - sha: "4536c3a"
+      subject: "BK-501: decision log"
+    - sha: "82e2281"
+      subject: "fix: address PR #1195 review round 7"
+    - sha: "868c888"
+      subject: "BK-501: decision log"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

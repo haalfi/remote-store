@@ -19,7 +19,11 @@ shared-decisions file's definitions; a clause written into it joins under
 One row per file, its path relative to the repository root. Flow is the flow
 that admitted it, or `start` for the ground RFC-0024 § R1 fixes. Status is
 `active`, or `reopened` while a recorded reopen decision runs its own flow; a
-reopened file is not on the allowlist until its flow re-admits it.
+reopened file is not on the allowlist until its flow re-admits it. The change
+that ends such a flow, whether it re-admits the file, retires it or leaves it
+as it was, adds `Flow done: <ref>.` to each record's open item the flow came
+from, routed to it or recording its reopen decision (`axes.md` § Per-question
+loop), so a reopen can decide it.
 
 | Artifact | Flow | Status |
 |---|---|---|

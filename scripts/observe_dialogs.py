@@ -23,7 +23,9 @@ The report prints each decision's Decision text beside its question, answer
 and the chosen option's description, and beside the record's own text of each
 option the Decision adopts by label, for the readers of ``/observe-review`` to
 judge what a script cannot: text in the Decision beyond what the dialog
-answered (audit-025 § 5, class 2). Answered questions no
+answered (audit-025 § 5, class 2). A reopened record's ``Amends:`` and
+``Amended by:`` lines (BK-501) are printed after the Decision they belong to,
+so an amended decision is not read as current. Answered questions no
 decision pairs with, such as the Environment's first dialog, are listed with
 their answer and option, not failed: a record older than the Asked line is
 paired by hand from them.
@@ -61,6 +63,7 @@ _FIELD = re.compile(r"^- \*\*(?P<name>[A-Za-z ]+):\*\*\s?(?P<rest>.*)$")
 # options, OP-01/D2), and the labels a Decision opens with.
 _LABEL = re.compile(r"(?:^|[;:]\s+)\((?P<label>[a-z]{1,4})\)\s")
 _ADOPTED = re.compile(r"\((?P<label>[a-z]{1,4})\)")
+_POINTERS = ("Amends", "Amended by")
 # The harness's answer to a dismissed dialog (RFC-0018 case a'), as check_traces.py matches it.
 _DISMISSED = "[User dismissed"
 
@@ -78,6 +81,9 @@ class Decision:
     text: str
     asked: list[tuple[str, str]]
     options: str = ""
+    # A reopen's pointers (axes.md § Per-question loop), as (field, text) in record order:
+    # a decision amended twice carries two Amended by lines.
+    pointers: list[tuple[str, str]] = field(default_factory=list)
     malformed: list[str] = field(default_factory=list)
     heading_ok: bool = True
 
@@ -140,11 +146,16 @@ def decisions(record: str) -> list[Decision]:
                 current.text = bullet["rest"]
             elif name == "Options":
                 current.options = bullet["rest"]
+            elif name in _POINTERS:
+                current.pointers.append((name, bullet["rest"].strip()))
             continue
         if name == "Decision":
             current.text += "\n" + line
         elif name == "Options":
             current.options += "\n" + line
+        elif name in _POINTERS and line.strip():  # a wrapped pointer list
+            field_name, text = current.pointers[-1]
+            current.pointers[-1] = (field_name, f"{text} {line.strip()}")
     for d in found:
         d.text = d.text.strip()
     return found
@@ -208,6 +219,7 @@ def pair(record: str, logs: list[Path]) -> tuple[list[str], list[str], bool]:
                 verdicts.append(f"FAIL answered {pool[hits[0]].answer!r}, not {answer!r}")
         ok = ok and not verdicts
         lines += [f"## {d.id}: {'; '.join(verdicts) or 'ok'}", f"Decision: {d.text}"]
+        lines += [f"{name}: {text}" for name, text in d.pointers]
         lines += [f"Adopted option: {text}" for text in d.adopted()]
         for g in paired:
             lines += [f"Question: {g.question}", f"Answer: {g.answer}", f"Option: {g.description}"]

@@ -522,8 +522,15 @@ no clause of the contract ships unexercised.
   (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
   Its test runs are in the dossier; step 4 is spec 052, step 4b spec 053 and the catalogue (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), and `/observe-review OP-01` (RFC-0028) checked it. Not done:
-  step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review), for a reopen session.
+  step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review), for a reopen session (`/observe OP-01` on the Complete record, BK-501), bar O42, for the write entries' sessions.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
+
+- [ ] **BK-502 — A reopen's ground-conflict route and `Flow done` have never run, so their remaining gaps surface only in the first ground reopen**
+  spec: — · effort: S · audience: contributor.process
+  BK-501's reopen asks a ground conflict its route; a routed item waits for `Flow done`, which the change ending its
+  artifact's flow adds (`ground-register.md` § Artifacts). PR #1195's review rounds 3 to 7 each found a defect on this
+  path (trace `review_fix_3` to `review_fix_7`), and no ground reopen has run yet. Open decision: none until OP-01/O21's
+  route is asked; check the lifecycle against that first run, spec 051's flow if O21 is routed there.
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process

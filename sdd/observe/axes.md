@@ -50,6 +50,10 @@ Each question an axis raises becomes one decision in the entry's record (S5):
 7. **Consistency check** against earlier decisions and the ground (S1); conflicts named.
 8. **Open items** it raises, as IDs of entries in the record's one Open items section.
 
+**An amendment** is any decision that changes earlier record text: a reopen's answer to an open item, or `/observe` step 5's answer to a conflict. After its Decision it carries `- **Amends:** <id>[, <id> ...]`, each `<id>` a decision (`<entry>/D<n>`), an Environment row (`<entry>/E<n>`), an open item (`<entry>/O<n>`) or `Session`. Each element it names gains `Amended by <entry>/D<m>` and changes in nothing else: a decision as its last line, `- **Amended by:** <entry>/D<m>`; an Environment row or an item at the end of its text; Session as a line of its own. A new Environment row reads "added by `<entry>/D<m>`", as `OP-01/E15` does. A spec cites the amending text.
+
+**A reopen** (`/observe` on a Complete record, whose status reads `In progress (reopen)` until its End) answers each item it walks with a new decision, an amendment when it changes the record. The item gains a closing sentence, `Decided by <entry>/D<m>.`, and stays listed. Each axis row drops the items decided and cites the decisions that decided them, and reads "decided" once it lists no open item. A ground conflict is asked its route only: settled in the record, by an answer the item names or the session proposes (such as an Environment row or a declared non-promise), which decides it as above; or a reopen of the ground artifact through its own flow, after which the item gains `Routed to <artifact>'s flow by <entry>/D<m>.` instead, stays explicitly open on its axis rows, and blocks what it blocked. No reopen walks it again until the change that ends that flow adds `Flow done: <ref>.` to the item, `<ref>` naming that change (`ground-register.md` § Artifacts); a reopen then decides it as any item, its route no longer asked.
+
 ## Sources
 
 Drafted unprimed by an agent that read only the two sources below (research

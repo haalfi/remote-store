@@ -24,16 +24,16 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
 
 ## Steps
 
-1. **Pairs.** List the logs the session's dialogs went to, both halves of a
-   split session included: the `decisions:` of the trace of the `/observe`
-   session that wrote the record (not an audit's or review's that also
-   names it), once one exists; before that, each `sdd/decisions/` log in
-   `git status` or `git diff --name-only origin/master...HEAD` whose
-   questions are `<entry>`'s. Run
+1. **Pairs.** List the logs the record's sessions' dialogs went to, both
+   halves of a split session included: the `decisions:` of the traces of the
+   `/observe` sessions that wrote it (not an audit's or review's that also
+   names it), plus each `sdd/decisions/` log in `git status` or `git diff
+   --name-only origin/master...HEAD` whose questions are `<entry>`'s, which
+   no trace lists yet (a reopen's, which step 4 adds). Run
    `hatch run observe-dialogs <record> <log> ...` and save its report as
-   `tmp/observe-review/<entry>-pairs.md`. Each FAIL is a finding, but in a
-   record written before RFC-0028, which has no Asked line (OP-01's), "no
-   Asked line" is not: the readers pair those decisions with the report's
+   `tmp/observe-review/<entry>-pairs.md`. Each FAIL is a finding, but on a
+   decision written before RFC-0028, which has no Asked line (OP-01's D1 to
+   D44), "no Asked line" is not: the readers pair those decisions with the report's
    unpaired dialogs, listed with their answers (the brief's item 4).
 2. **Unprimed readers.** Spawn two fresh `general-purpose` agents at once,
    each with the brief below, its placeholders filled, and nothing else from
@@ -46,10 +46,12 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
    and `src/remote_store/backends/` as evidence of what an SDK or the OS
    does, never as the expected answer (RFC-0024 § R1).
 4. **Verify, write, commit.** Re-read every candidate, the readers' and
-   yours, against what it cites, and drop what does not hold. Write the rest
-   as open items, opened by one line naming this review and its date. Commit
-   the record and the logs, then tell the maintainer which items need a
-   reopen session.
+   yours, against what it cites, and drop what does not hold, or what an
+   open item or an amending decision already covers (name which in this
+   review's trace). Write the rest as open items, opened by one line naming this
+   review and its date. Commit the record and the logs, a reopen's added to
+   the `decisions:` of the `/observe` trace that wrote the record, then tell
+   the maintainer which items need a reopen session.
 
 ## Reader brief
 
@@ -57,7 +59,8 @@ before its spec is written (RFC-0028). `$ARGUMENTS`'s first word is the entry.
 > option it adopts and the dialog that answered it; dialogs no decision
 > pairs with, with their answers, at its end), then `sdd/observe/axes.md`
 > and any file the record's Session section lists as ground read. Read
-> nothing else. Report, quoting the words:
+> nothing else. A decision with an **Amended by** line holds only as the
+> decisions it names leave it. Report, quoting the words:
 >
 > 1. Two decisions that cannot both hold, counting the wording of an option a
 >    Decision adopts, not only the Decision's own text.
