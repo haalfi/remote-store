@@ -40,8 +40,9 @@ before its spec is written (RFC-0028), and after its reopen, before its freeze
    `sdd/observe/tables/<entry>.toml` (form: `scripts/observe_tables.py`), its
    domain from the enumeration the record names, a reading, never a decision;
    save `hatch run observe-tables <record> <declarations>` as
-   `tmp/observe-review/<entry>-tables.md`. Its findings are step 4's
-   candidates; the readers never see it.
+   `tmp/observe-review/<entry>-tables.md` once its Declarations are none
+   (fix the sidecar, re-run). Its findings are step 4's candidates; the
+   readers never see it.
 2. **Unprimed readers.** Spawn two fresh `general-purpose` agents at once,
    each with the brief below, its placeholders filled, and nothing else from
    this session: no finding, no suspicion, no audit. Take the union: one run

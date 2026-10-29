@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 314003,
+  "total": 314063,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -17,7 +17,7 @@
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
     ".claude/skills/observe/SKILL.md": 6552,
-    ".claude/skills/observe-review/SKILL.md": 5621,
+    ".claude/skills/observe-review/SKILL.md": 5681,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -246,6 +246,12 @@
       "from": 313999,
       "to": 314003,
       "reason": "PR #1197 round 3: /observe-review step 5 states the first freeze's n (+8); round 2's CLAUDE-REFERENCE rewording, unrecorded then (-4)"
+    },
+    {
+      "item": "BK-504",
+      "from": 314003,
+      "to": 314063,
+      "reason": "PR #1197 round 4: /observe-review G3 fixes a Declarations finding in the sidecar and re-runs before step 4 (+60)"
     }
   ]
 }

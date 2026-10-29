@@ -19,7 +19,8 @@ and gives its ``kind``:
   index, complete }``, names the enumeration the members come from: each member
   must occur in one of those columns, bar those listed in ``unsourced``, which no
   enumeration in the document holds, and with ``complete = true`` each row of
-  that column must be matched by a member. ``basis``, free text, says where a
+  that column must be matched by a member and each ID it names, of a family the
+  members are IDs of, must be a member. ``basis``, free text, says where a
   domain with no ``source`` comes from.
 - ``state``: ``states``, matched in the first column, and ``events``, matched in
   the header. Each state has one row, each event one column, each column an
@@ -40,7 +41,8 @@ are O1 to O3). In a cell, ``X1 to X3`` covers X1, X2 and X3; a citation range
 checks its two ends only.
 
 A key the kind does not take, a value of the wrong type, an empty string or
-array, a non-positive column or index, or a member named twice exits 2: read
+array, a non-positive column or index, a value named twice, or a family or short
+form two ``[[ids]]`` declare exits 2: read
 as findings, a malformed declaration would pass for a defective document, and
 ignored, a misspelt key would switch its check off. A column beyond its table
 is a declaration finding.
@@ -57,9 +59,9 @@ finds nothing; ``source`` narrows that only where the members come from
 another enumeration, and only a ``complete`` source catches an element the
 enumeration gains that no member names. It reads no meaning: two rows that each
 match one member but promise conflicting outcomes (``OP-01/O33``'s kind) pass.
-A member's whole-word bounds hold only at an end that is a letter, digit or
-underscore, so one beginning or ending in punctuation or a space (``.``, ``j =
-n``) matches inside longer text and needs a ``match``. Cells are split on ``|``
+A member matches wherever the characters on either side of it are no letter,
+digit or underscore: ``j = n`` matches inside ``j = n − 1``, and ``.`` never
+matches after a letter; such a member needs a ``match``. Cells are split on ``|``
 with ``\\|`` escaped; a table inside a fenced block (``` or ~~~) is skipped. A
 declaration written after reading known defects can be shaped to find them,
 which its author states with the run (BK-504's trace).
@@ -189,7 +191,8 @@ def _expand(cell: str) -> str:
 
     def one(m: re.Match[str]) -> str:
         a, b = int(m["a"]), int(m["b"])
-        return ", ".join(f"{m['p']}{n}" for n in range(a, b + 1)) if a <= b else m[0]
+        # The width of the first end, so KEY-002 to KEY-004 holds KEY-003, not KEY-3.
+        return ", ".join(f"{m['p']}{n:0{len(m['a'])}d}" for n in range(a, b + 1)) if a <= b else m[0]
 
     return _RANGE.sub(one, cell)
 
@@ -307,6 +310,7 @@ def validate(decl: dict[str, Any]) -> None:
             _positive(entry["column"], where, "column")
         else:
             _text(entry["reason"], where, "reason")
+    seen: dict[str, str] = {}  # a family or short form -> the family declaring it
     for f in _tables_of(decl.get("ids", []), "ids"):
         where = f"[[ids]] {f.get('family')!r}"
         _keys(f, where, {"family"}, {"short", "retired"})
@@ -318,6 +322,12 @@ def validate(decl: dict[str, Any]) -> None:
             stray = [r for r in f["retired"] if not re.fullmatch(rf"{re.escape(f['family'])}\d+", r)]
             if stray:
                 raise ValueError(f"{where}: 'retired' names {stray!r}, which are not of this family")
+        # A token two declarations claim would be read as two IDs, one of them undefined.
+        for prefix in (f["family"], f.get("short")):
+            if prefix is not None and prefix in seen:
+                raise ValueError(f"{where}: {prefix!r} is already declared by [[ids]] {seen[prefix]!r}")
+            if prefix is not None:
+                seen[prefix] = f["family"]
 
 
 # --- the checks: declarations are valid here ---
@@ -340,9 +350,11 @@ def _cell(cells: list[str], column: int) -> str:
     return cells[column - 1] if column <= len(cells) else ""
 
 
-def check_case(doc: Document, table: Table, entry: dict[str, Any]) -> list[str]:
+def check_case(doc: Document, table: Table, entry: dict[str, Any], families: list[Family]) -> list[str]:
     key = entry["key"]
     members = _members(entry)
+    # The ID families the members are elements of: a complete source's tokens of these must each be a member.
+    domain = [f for f in families if any(_tokens(m.name, [f]) == [m.name] for m in members)]
     parts: dict[str, list[str]] = entry.get("parts", {})
     keys = [(n, _expand(_cell(cells, key)), _cell(cells, key)) for n, (_, cells) in enumerate(table.rows, 1)]
     out: list[str] = []
@@ -382,8 +394,14 @@ def check_case(doc: Document, table: Table, entry: dict[str, Any]) -> list[str]:
         columns += [_expand(c) for c in cells]
         if src.get("complete", False):
             for n, c in enumerate(cells, 1):
-                if not any(m.pattern.search(_expand(c)) for m in members):
+                expanded = _expand(c)
+                if not any(m.pattern.search(expanded) for m in members):
                     out.append(f"source: row {n} of {name} ({c!r}) matches no member")
+                    continue
+                # A row one member matches can still hold an element none does: E4 in "E1 to E4".
+                for token in _tokens(expanded, domain):
+                    if not any(m.pattern.search(token) for m in members):
+                        out.append(f"source: row {n} of {name} ({c!r}) names {token!r}, which no member matches")
     unsourced = set(entry.get("unsourced", []))
     for m in members:
         if names and m.name not in unsourced and not any(m.pattern.search(c) for c in columns):
@@ -438,6 +456,11 @@ def _families(spec: list[dict[str, Any]]) -> list[Family]:
     return found
 
 
+def _tokens(text: str, families: list[Family]) -> list[str]:
+    """The IDs of *families* that *text* names, as written (full or short form)."""
+    return [m[0] for f in families for p in (f.full, f.abbrev) if p for m in p.finditer(text)]
+
+
 def check_citations(
     doc: Document, families: list[Family], id_tables: list[tuple[Table, int]], retired: list[str]
 ) -> list[str]:
@@ -454,7 +477,7 @@ def check_citations(
     for table, column in id_tables:
         for _, cells in table.rows:
             for f in families:
-                for m in f.full.finditer(_cell(cells, column)):
+                for m in f.full.finditer(_expand(_cell(cells, column))):
                     defined.setdefault(m[0], "")
     out = [f"citation: {r!r} is declared retired but is defined" for r in retired if r in defined]
     for number, line in doc.prose:
@@ -485,6 +508,8 @@ def check_citations(
 def check(doc: Document, decl: dict[str, Any]) -> tuple[list[str], list[str], list[str]]:
     """Findings as (declarations, tables, citations)."""
     validate(decl)
+    ids = decl.get("ids", [])
+    families = _families(ids)
     declared: dict[tuple[str, int], int] = {}
     declarations: list[str] = []
     tables: list[str] = []
@@ -516,15 +541,14 @@ def check(doc: Document, decl: dict[str, Any]) -> tuple[list[str], list[str], li
             declarations.append(f"declaration: {table.label} (line {table.line}) is declared by {times} entries")
     for table, entry in resolved:
         if entry["kind"] == "case":
-            found = check_case(doc, table, entry)
+            found = check_case(doc, table, entry, families)
         elif entry["kind"] == "state":
             found = check_state(table, entry)
         else:
             found = []
         tables += [f"{table.label}: {f}" for f in found]
-    ids = decl.get("ids", [])
     retired = [r for f in ids for r in f.get("retired", [])]
-    citations = check_citations(doc, _families(ids), id_tables, retired)
+    citations = check_citations(doc, families, id_tables, retired)
     return declarations, tables, citations
 
 

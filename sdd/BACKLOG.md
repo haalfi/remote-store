@@ -522,7 +522,7 @@ no clause of the contract ships unexercised.
   step 3 built `/observe` and `sdd/observe/` (test runs in the dossier); step 4 is spec 052, 4b spec 053 (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), `/observe-review` (RFC-0028) checked it, and
   RFC-0029 orders the rest: a table check (BK-504, run), the reopen, a freeze (not waiting for BK-505's stopping rule), then
-  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O45 ([audit-025](audits/audit-025-op-01-record-review.md), the review), for a reopen session (`/observe OP-01` on the Complete record, BK-501), bar O42, for the write entries' sessions.
+  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review) and O45 (BK-504's table check), for a reopen session (`/observe OP-01` on the Complete record, BK-501), bar O42, for the write entries' sessions.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-502 — A reopen's ground-conflict route and `Flow done` have never run, so their remaining gaps surface only in the first ground reopen**

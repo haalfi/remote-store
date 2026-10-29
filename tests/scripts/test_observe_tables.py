@@ -195,6 +195,25 @@ def test_a_complete_source_row_no_member_names_is_reported(tmp_path: Path) -> No
     ]
 
 
+def test_a_complete_source_element_inside_a_range_or_list_is_reported(tmp_path: Path) -> None:
+    # A row matching one member must still have each of its domain's IDs matched: "E1 to E4" holds E4.
+    toml = (
+        PARTITION_TOML.replace(
+            'source = [{ at = "Environment", column = 1 }]', 'source = [{ at = "Groups", column = 1, complete = true }]'
+        )
+        + '\n[[table]]\nat = "Groups"\nkind = "register"\nreason = "r"\n'
+    )
+    for cell in ("E1 to E4", "E1 to E3, E4"):
+        doc = PARTITION + f"\n## Groups\n\n| Rows | Note |\n|---|---|\n| {cell} | all |\n"
+        assert _findings(_run(tmp_path, doc, toml)) == [
+            f"- OP-01/D18 table 1: source: row 1 of Groups column 1 ({cell!r}) names 'E4', which no member matches",
+            "- citation: 'E4' (line 34) names no defined element",
+        ], cell
+    clean = PARTITION + "\n## Groups\n\n| Rows | Note |\n|---|---|\n| E1 to E3 (D1) | all |\n"
+    # D1 is no family the members name, so it is no element of the domain.
+    assert _findings(_run(tmp_path, clean, toml)) == []
+
+
 def test_a_regex_member_matches_its_spellings(tmp_path: Path) -> None:
     doc = PARTITION.replace(
         "| Found(e, item) | success |", "| Found(e, item) | success |\n  | ν refuses | key refused |"
@@ -403,6 +422,20 @@ def test_spec_mode_checks_a_spec_by_the_same_rules(tmp_path: Path) -> None:
     assert clean.returncode == 0
 
 
+def test_a_zero_padded_range_keeps_its_width(tmp_path: Path) -> None:
+    # Spec IDs are zero-padded: "KEY-002 to KEY-004" covers KEY-003, in a case cell and in an ids cell.
+    doc = (
+        "# Spec\n\n## IDs\n\n| ID | Note |\n|---|---|\n| KEY-010 to KEY-012 | defined |\n\n"
+        "### KEY-020: Cases\n\n| Case | Outcome |\n|---|---|\n| KEY-002 to KEY-004 | x |\n\nSee KEY-011.\n"
+    )
+    toml = (
+        '[[table]]\nat = "IDs"\nkind = "ids"\ncolumn = 1\n\n'
+        '[[table]]\nat = "KEY-020"\nkind = "case"\nkey = 1\nmembers = ["KEY-002", "KEY-003", "KEY-004"]\n\n'
+        '[[ids]]\nfamily = "KEY-"\nretired = ["KEY-002", "KEY-003", "KEY-004"]\n'
+    )
+    assert _findings(_run(tmp_path, doc, toml)) == []
+
+
 def test_a_retired_id_is_no_dangling_citation(tmp_path: Path) -> None:
     # A spec names the IDs it retired ("KEY-006, KEY-007 and KEY-A-01 are unassigned", spec 052).
     retired = SPEC_TOML.replace('family = "KEY-"', 'family = "KEY-"\nretired = ["KEY-006"]')
@@ -422,8 +455,9 @@ def _variant(base: str, old: str, new: str) -> str:
 _D1 = 'members = ["Found(e, item)", "Absent", "AbsentAncestor"]'
 _D18 = 'members = ["E1", "E2", "E3"]'
 _SRC = '{ at = "Environment", column = 1 }'
-# Every shape a declaration can be malformed in, by key: rounds 1 to 3 of PR #1197 each found
-# one more read as findings, so the space is enumerated rather than argued (/ship's repeat-site check).
+# Per key validate() reads, each wrong shape it refuses, plus the clashes across [[ids]]: rounds 1 to 4
+# of PR #1197 each found one more read as findings, so the space is enumerated rather than argued
+# (/ship's repeat-site check).
 MALFORMED = {
     "toml syntax": "[[table]\n",
     "table not an array": 'table = ["OP-01/D1"]\n',
@@ -508,6 +542,18 @@ MALFORMED = {
     "retired a string": _variant(PARTITION_TOML, 'short = "D"', 'short = "D"\nretired = "OP-01/D7"'),
     "retired off its family": _variant(PARTITION_TOML, 'short = "D"', 'short = "D"\nretired = ["OP-01/E7"]'),
     "ids key unknown": _variant(PARTITION_TOML, 'short = "D"', 'short = "D"\nshrot = "X"'),
+    "member match not a string": _variant(PARTITION_TOML, _D18, 'members = ["E1", "E2", { name = "E3", match = 1 }]'),
+    "member name not a string": _variant(PARTITION_TOML, _D18, 'members = ["E1", "E2", { name = 3, match = "E3" }]'),
+    "source at not a string": _variant(PARTITION_TOML, _SRC, "{ at = 1, column = 1 }"),
+    "source column bool": _variant(PARTITION_TOML, _SRC, '{ at = "Environment", column = true }'),
+    "source index bool": _variant(PARTITION_TOML, _SRC, '{ at = "Environment", column = 1, index = true }'),
+    "state twice": _variant(STATE_TOML, 'states = ["Open", "Closed"]', 'states = ["Open", "Open"]'),
+    "part twice": _variant(PARTITION_TOML, _D18, _D18 + '\nparts = { E3 = ["disk", "disk"] }'),
+    "unsourced twice": _variant(PARTITION_TOML, _D18, _D18 + '\nunsourced = ["E3", "E3"]'),
+    "retired twice": _variant(PARTITION_TOML, 'short = "D"', 'short = "D"\nretired = ["OP-01/D7", "OP-01/D7"]'),
+    # Across [[ids]]: a bare D18 would be read as two families' IDs, one of them undefined.
+    "short shared by two families": _variant(PARTITION_TOML, 'short = "E"', 'short = "D"'),
+    "family declared twice": PARTITION_TOML + '\n[[ids]]\nfamily = "OP-01/D"\n',
 }
 
 
