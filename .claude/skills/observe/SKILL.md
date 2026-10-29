@@ -39,7 +39,8 @@ any web result about it.
    active row but the formal models, the input file and each named path; a
    formal model row only when a decision cites a clause it checks. A record
    In progress continues at its first open axis, `In progress (reopen)` at its
-   first undecided item; a Complete one is set to the latter, and Session
+   first item to walk with no `Decided by` or `Routed to`; a Complete one is
+   set to the latter, and Session
    gains a line for the reopen: date, ground read, named paths (step 3).
    Otherwise create it: title `# <entry>: observable semantics`, the marker
    `<!-- doc: repo-only -->`, lines `**Date:**`, `**Backlog items:**` and
@@ -67,14 +68,15 @@ any web result about it.
    blocks it. Keep each axis's row current.
 
    **Reopen** (RFC-0028 P3): walk the Open items, not the axes, but none
-   tagged `shared:` or for another entry's session; ask a ground conflict
-   its route only, as axes.md has it (step 4). Ask each as above,
-   sourced to the item (a ✓ on 0.33's code shows what an SDK or OS does,
+   tagged `shared:`, for another entry's session, decided or routed; ask a
+   ground conflict its route only, as axes.md's reopen form has it. Ask
+   each as above, sourced to the item (a ✓ on 0.33's code shows what an SDK or OS does,
    never the answer); each answer, "as is" too, is a new decision in
    axes.md's reopen form.
 4. **Ground conflict.** If a decision would contradict a ground artifact,
    stop on that point. Record a reopen decision as an open item: the artifact,
-   the clause, the conflict, the dependent decisions. Never edit ground, the
+   the clause, the conflict, the dependent decisions, and any answer that
+   would settle it in the record instead. Never edit ground, the
    register or any file but the record; the reopen runs its own flow. An
    entry that should split is a reopen of the catalogue.
 5. **End (S4)** when every axis row is closed, and every item a reopen walks

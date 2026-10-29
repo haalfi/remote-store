@@ -184,3 +184,21 @@ phases:
         section: "Step 4"
         read_type: gate
         extract: "The drop rationale goes in this review's trace, not the /observe one"
+  - id: review_fix_4
+    name: PR #1195 round 4, a scoped /rvw-pr on round 3
+    steps:
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 2, 3 (Reopen), 4"
+        read_type: gate
+        extract: >-
+          My miss: round 3's Routed to was not Decided by, so a resumed or
+          later reopen would ask a routed item its route again; now step 2
+          resumes at the first item with neither and step 3 skips both. Step
+          4's ground-conflict item names any answer that settles it in the
+          record, which the route question offers
+      - file: scripts/check_process_budget.py
+        section: "plain run, then --raise, as printed"
+        read_type: verify
+        extract: >-
+          Rounds 3 and 4: observe/SKILL.md +110, observe-review/SKILL.md +10,
+          total +120: raised 312862 -> 312982
