@@ -170,3 +170,11 @@ phases:
         section: "§ 1, § 3, § 4"
         read_type: reference
         extract: "No recommendation changes; nearest pipeline Lim et al. (human A ≡ R gate, stops at the formal model); C-GRiD does not measure its question step; claimcheck recall against construction labels only; assertion freeze as an unmeasured candidate"
+      - file: "haalfi/research@c1f2cd0: reports/Spec faithfulness and enforcement summary.md (updated in place), reports/Spec faithfulness current evidence check.md"
+        section: "(full)"
+        read_type: reference
+        extract: "No recommendation changes; LLM2Alloy is no head-to-head test of the central claim; Dai et al. measure shared errors between two formalizations (21.88 to 25.23 %); grade and TLA+ figure corrections touch no source the repo docs cite"
+      - file: "haalfi/research@8853e80: reports/Observation record completeness and consistency verified.md"
+        section: "(full)"
+        read_type: reference
+        extract: "Nothing structural changes; 2026 judges at 91 to 95 % on short formal statements, verdict unchanged; a splitter or restater must not see its source; blind restatement validates extraction; top debt dual extraction plus blind restatement on OP-01"

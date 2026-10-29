@@ -23,8 +23,11 @@ dialog, and when is it done. The full report, with a grade per source, is
 in the `haalfi/research` repository at `28d58e9`, branch
 `research/observation-record-quality`. Its own trials ran on OP-01's record
 at `eb08d990e`, with open items `O14` to `O44` as the known defect set, a set
-the report notes is incomplete. This document keeps the results this
-repository relies on; section numbers are the report's.
+the report notes is incomplete. A verified edition on the same branch, at
+[`8853e80`](https://github.com/haalfi/research/blob/8853e80ac104b24f652741be3b3992e407abe0de/reports/Observation%20record%20completeness%20and%20consistency%20verified.md),
+checked six further leads and changes nothing structural; its changes are
+folded in below, cited as "verified". This document keeps the results this
+repository relies on; other section numbers are the earlier report's.
 
 ## 2. Results
 
@@ -35,8 +38,10 @@ repository relies on; section numbers are the report's.
 | With fewer than four inspectors, no capture-recapture estimator of remaining defects was satisfactory; the jackknife estimator's median relative error was −52 % at two and −27 % at three | A (Briand et al. 2000; Petersson et al. 2004) | § 2 T4 |
 | Checklist reading did not beat ad hoc reading; perspective-based reading did not beat checklist reading per reader; the document mattered more than the technique | A, human-only evidence | § 2 T2 |
 | Pairwise conflict detectors, LLM or NLI, ran at precision 19 % to 67 % and miss conflicts that need three or more statements; only solver hybrids reached high precision, in small studies by their own authors | A to A-workshop, 2023-24 models | § 2 T2 |
-| LLM judges of a summary against its dialog do worst on additions that are implied and on the main topic, which is the record's case: open-source judges at 50 % to 60 % balanced accuracy | A (TofuEval) | § 2 T3 |
-| No surviving source measures a way to find questions no checklist raises | search result | § 2 T1, § 5 |
+| LLM judges of a summary against its dialog do worst on additions that are implied and on the main topic, which is the record's case: open-source judges at 50 % to 60 % balanced accuracy with 2023-24 models. In 2026 one call reaches 91 % to 95 % on short formal statements, with no precision reported, mostly easy negation defects, and long cross-referenced documents such as a record outside what was measured; a judge's finding stays a lead, not a verdict | A (TofuEval); A-pre, its authors' own tool (claimcheck) | § 2 T3; verified change 2 |
+| An agent that restates a statement while seeing its source lost 6.0 to 8.8 points of defect recall; a judge also shown the derived artefact raised more false alarms | A-pre, its authors' own tool (claimcheck), short formal statements | verified change 1 |
+| An LLM applying a fixed 10-dimension checklist recalled 79.5 % to 98.4 % of a reference set built from production systems, at 46.4 % to 78.8 % precision | A, the authors' own method and data (Kabadi et al., ESEM 2026) | verified change 4 |
+| No surviving source measures a way to find questions no checklist raises | search result, unchanged in the verified edition | § 2 T1, § 5; verified change 4 |
 
 ## 3. The proposals
 
@@ -47,9 +52,13 @@ The report's own design, *Inference* throughout, in its § 3 and § 4:
   over a declared domain; a register of typed claims extracted from the
   record (a closed list, a rule, an option adopted by reference, a member of
   a domain), checked against each other on every amendment; each claim of a
-  Decision aligned to a span of its dialog's answer.
+  Decision aligned to a span of its dialog's answer. The agent that splits a
+  Decision into claims does not see the dialog, and the judge sees only one
+  claim and the answer (verified change 1).
 - **Judged.** The extraction itself, built twice by different agents and
-  diffed; the candidates the scripts raise; reviewers of different kinds
+  diffed, and each extracted claim restated in English blind to the record
+  and judged against the record text (verified change 6); the candidates the
+  scripts raise; reviewers of different kinds
   after the session (a primed backend reviewer, a reader of how a caller
   uses the object).
 - **Stopping rule.** A record is ready for its spec when the mechanical
@@ -65,4 +74,7 @@ The report's own design, *Inference* throughout, in its § 3 and § 4:
 RFC-0029 R2 takes one thing now: a record is frozen only after
 `/observe-review` has re-run on it as its last reopen left it. Whether the
 checks of § 3 and the stopping rule bind is BK-505's open decision; R1's
-table check (BK-504) is the first of the mechanical gates either way.
+table check (BK-504) is the first of the mechanical gates either way. The
+verified edition's first open measurement fits BK-504's run on OP-01: two
+independent extractions of the record plus a blind restatement of each
+claim, scored against `O14` to `O44` (verified § 4, item 1).

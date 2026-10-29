@@ -31,6 +31,10 @@ original, which is superseded; the trial design is a separate protocol. A
 follow-up on the same branch at
 [`193c0bc`](https://github.com/haalfi/research/blob/193c0bcaba4a4f65c1ced5fcddaa1111f97fdcf4/reports/Spec%20faithfulness%20prior-art%20check.md)
 verified nine leads another tool named and changed no recommendation (§ 2.2).
+A second, the
+[current-evidence check](https://github.com/haalfi/research/blob/c1f2cd019c9fb944c0f9b44cd529efacedb0fc61/reports/Spec%20faithfulness%20current%20evidence%20check.md)
+at `c1f2cd0`, verified six more and changed none either; the summary at that
+commit consolidates all six reports.
 
 | Report | Read for this doc |
 |---|---|
@@ -39,6 +43,7 @@ verified nine leads another tool named and changed no recommendation (§ 2.2).
 | `… verified.md` | Part 1; Part 2 § 1 to § 4 (lines 1 to 489) |
 | `… trial design.md` | § 1 to § 2.2; § 2.3 to line 140, partway into its "Who sees what" table; § 2.8 lines 294 to 309 and § 3.1, for § 2.4's definitions |
 | `Spec faithfulness prior-art check.md` (at `193c0bc`) | § 1, § 3, § 4 |
+| `Spec faithfulness current evidence check.md` and the summary as updated (both at `c1f2cd0`) | whole |
 | `… .md` (original) and the research notes | not read; the reports carry their figures and recommendation IDs |
 
 A handover note from the session that wrote the brief, outside this
@@ -57,7 +62,7 @@ evidence for library or API behaviour specs (summary § 1.2).
 
 | Finding | Strength | Source |
 |---|---|---|
-| Round-trip, dual formalization and compile or verify checks catch divergent readings and miss every misreading both legs share | high (mechanism) | verified § 2.1 |
+| Round-trip, dual formalization and compile or verify checks catch divergent readings and miss every misreading both legs share. Measured since: two formalizations in different languages, accepted only when proved equivalent, still shared 21.88 % to 25.23 % of their errors on one benchmark | high (mechanism); the measurement A-pre, its authors' own method (Dai et al.) | verified § 2.1; current-evidence check § 2 N3 |
 | Spec-blind positive and negative examples written from the prose catch wrong specs: 90 % per requirement with 3 tests each, over 36 of 43 Alloy structural requirements, one LLM | A, one study, structural not temporal | verified § 2.1 (Cunha & Macedo, FM 2026) |
 | Checks screened against one correct implementation let over-strict checks through; screening against several deliberately different ones ("wheats") cut the share of trusted suites, for example 28 % to 0 % on one assignment | A, one group evaluating its own tools, deterministic functions | deep dive § 2.1 (ICER 2018) |
 | A complete-and-disjoint table checker found 17 real coverage errors that two review teams had missed, in 245 s | A | verified § 2.2 (Heitmeyer) |
