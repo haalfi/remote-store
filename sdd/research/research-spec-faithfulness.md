@@ -34,7 +34,7 @@ original, which is superseded; the trial design is a separate protocol.
 | `Spec faithfulness and enforcement summary.md` | whole |
 | `… deep dive.md` | whole |
 | `… verified.md` | Part 1, § 1 to § 4 |
-| `… trial design.md` | § 1 to § 2.3 |
+| `… trial design.md` | § 1 to § 2.2, and § 2.3 up to its "Who sees what" table |
 | `… .md` (original) and the research notes | not read; the reports carry their figures and recommendation IDs |
 
 A handover note from the session that wrote the brief, outside this

@@ -110,11 +110,11 @@ phases:
         read_type: reference
         extract: "Wheats and chaffs before gating; G4a per-operation response existence; split alpha; fresh records-only session plus read scope"
       - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement verified.md"
-        section: "Part 1; § 2.1 to § 4"
+        section: "Part 1; Part 2 § 1 to § 4 (lines 1 to 489)"
         read_type: reference
         extract: "Baseline check map per normative form and Pipelines A to C; § 5 onward and Part 3 not read"
       - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement trial design.md"
-        section: "§ 1 to § 2.3"
+        section: "§ 1 to § 2.2, § 2.3 to its 'Who sees what' table (lines 1 to 140)"
         read_type: reference
         extract: "S+ comparator, p10 with validity condition V, criteria O1 to O11, six misreading classes, arms and information flow; § 2.4 onward not read"
       - file: "origin/bk-501-observe-reopen (PR #1195)"

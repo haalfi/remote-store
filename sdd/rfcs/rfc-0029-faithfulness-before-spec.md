@@ -3,20 +3,21 @@
 ## Status
 
 Accepted, 2026-10-29, by the maintainer. Drafted 2026-10-29. Tracked as
-**BK-503**. Amends [RFC-0024](rfc-0024-spec-first-reset.md) § 9 steps 5 and 6
-of [`research-spec-first-reset.md`](../research/research-spec-first-reset.md#9-results-and-recommendation),
-as [RFC-0028](rfc-0028-observe-record-review.md) left them: step 5 gains a
-table check on the record and a freeze before its spec (R1, R2), its reference
-model gains two test rules (R3), and step 6 runs a trial before its bake-off
-(R4, R5). Background: [`research-spec-faithfulness.md`](../research/research-spec-faithfulness.md).
+**BK-503**. Amends [RFC-0024](rfc-0024-spec-first-reset.md): the flow of
+research [§ 3](../research/research-spec-first-reset.md#3-the-flow-and-the-ground),
+as [RFC-0028](rfc-0028-observe-record-review.md) left it, gains a table check
+on every record and a freeze before every spec (R1, R2), and every v1
+reference model two test rules (R3), with step 5 of research
+[§ 9](../research/research-spec-first-reset.md#9-results-and-recommendation)
+their first use; step 6 runs a trial before its bake-off (R4, R5). Background: [`research-spec-faithfulness.md`](../research/research-spec-faithfulness.md).
 Decisions taken in this RFC's session: decision log
 `sdd/decisions/7d282f9d-8eb6-48be-8d6c-9fc7641121cf.jsonl`.
 
 ## Summary
 
 **A record reaches its spec only once a table check has run on it and its
-open items are decided or explicitly scoped out, at a commit hash that fixes
-it. OP-01's frozen record is then also the subject of a single-rater pilot
+open items are decided or explicitly scoped out, at a commit a tag fixes.
+OP-01's frozen record is then also the subject of a single-rater pilot
 trial measuring whether oracles derived from the record catch spec
 misreadings that every spec-derived check misses, before step 6's bake-off.**
 Nothing here gates on that claim until the trial reports.
@@ -60,8 +61,9 @@ have found nothing ([ADR-0045](../adrs/0045-close-on-a-check-that-can-fail.md)).
 
 ### R2. A record is frozen before its spec
 
-Step 5's flow becomes design, record, review, **reopen, freeze**, spec,
-compare. A record is **frozen** at the commit where each of its open items is
+Research § 3's flow becomes, for every entry, design, record, review,
+**reopen, freeze**, spec, compare; step 5 is its first use. A record is
+**frozen** at the commit where each of its open items is
 either decided (`Decided by`), or of a kind no reopen of this record decides,
 each named with what it blocks:
 
@@ -70,9 +72,13 @@ each named with what it blocks:
 - for another entry's session, or tagged `shared:`.
 
 A spec clause blocked by such an item is not written until the item is
-decided. The freeze is that commit's hash, named in the record's Session
-section; a later reopen ends it, and the spec then cites the amending
-decisions. RFC-0024 R1 holds: no freeze settles ground on the side.
+decided. **The freeze is an annotated tag**, `observe/<entry>/freeze-<n>`,
+on the master commit that carries the record in that state, created once the
+change that brings it there has merged (a squash merge leaves the branch's
+commits unreachable). Freezing changes nothing in the record, so the tagged
+content is the frozen content. A later reopen ends the freeze; the next
+freeze takes `n + 1`, and the spec then cites the amending decisions.
+RFC-0024 R1 holds: no freeze settles ground on the side.
 
 ### R3. Two test rules bind every v1 reference model now
 
@@ -155,7 +161,7 @@ Decided in the log above:
 
 - **Public API:** none.
 - **Process:** RFC-0024 carries an "Amended by RFC-0029" line. `/observe-review`
-  gains R1's check (BK-504). Step 5's freeze (R2) is written into the
+  gains R1's check (BK-504). R2's freeze and its tag are written into the
   `/observe` and `/observe-review` skills by BK-504, which first touches them.
 - **Backlog:** BK-504 (R1's check, run on OP-01), BK-505 (a research brief on
   record completeness and consistency, RFC-0028 and R1's check as its
