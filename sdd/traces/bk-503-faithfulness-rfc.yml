@@ -1,0 +1,277 @@
+id: BK-503
+title: "A record's spec, model and reference model have no faithfulness gate, so a misreading of the record reaches every layer built from it (RFC amending RFC-0024's flow for every entry, step 5 first, and step 6)"
+trigger: >-
+  OP-01's record (BK-485 § 9 step 5) is the first ready for spec authoring, and
+  the external research run "Spec faithfulness and enforcement"
+  (haalfi/research, branch research/spec-faithfulness-and-enforcement, head
+  fc762e6) found that a record-derived check set must exist before the spec,
+  which RFC-0024 step 5 does not order. A handover from a session outside
+  remote-store proposed prerequisites and decisions; the maintainer chose an
+  RFC amending RFC-0024, OP-01's spec after the record's freeze in parallel
+  with the trial, a single-rater pilot, and the trial's home in this repo.
+source_items:
+  - BK-503
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups:
+  - BK-504
+  - BK-505
+  - BK-506
+decisions:
+  - sdd/decisions/7d282f9d-8eb6-48be-8d6c-9fc7641121cf.jsonl
+expected_ripples:
+  - sdd/rfcs/rfc-0024-spec-first-reset.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - CHANGELOG.md
+surprising_ripples:
+  - sdd/BACKLOG.md (BK-485's entry exceeded ADR-0040's eight-line cap once RFC-0029's order was added, and was rewritten)
+  - scripts/check_support_windows.py (review round 2 of PR #1196: `git describe --tags` takes any tag, so R2's freeze tag would have become the release check's base; now `--match v[0-9]*`, pinned by a test)
+  - tests/scripts/test_check_support_windows.py (the test pinning that fix)
+  - "sdd/rfcs/rfc-0028-observe-record-review.md (review round 4; R1 and R2 change its P2 and P3, so it carries an Amended by RFC-0029 line)"
+  - "CONTRIBUTING.md (review round 3, Phase 0's Rule 9 bullet named the base 'the previous tag''s')"
+  - "sdd/research/research-observe-record-quality.md (review round 3 and the maintainer's PR comment; R2 cited BK-505's external report, so its figures and stopping rule are kept in the repo)"
+  - sdd/backlog/bk-505-record-quality-research.md (the brief, then BK-505's retitle once the report landed)
+orient:
+  - items: [BK-491, BK-465, BK-466]
+    verdict: constrains
+    evidence: >-
+      Each is open with "the format RFC" as its home (BK-491: "the format RFC
+      amends Rule 5 to admit D6's table, or D6 yields"; BK-465 and BK-466 are
+      SPEC-DESIGN.md defects RFC-0024's trace placed with step 6). RFC-0024 § R4
+      gives the format RFC F1 to F6 and SPEC-DESIGN.md; BK-485's dossier § Format
+      RFC input holds the F critique. This RFC may reorder step 6 (the bake-off
+      against the faithfulness trial) but decides no form.
+  - items: [BK-436]
+    verdict: constrains
+    evidence: >-
+      OP-01/O21 is a ground conflict, TREE-001 against S3, whose options include
+      "a reopen of spec 051 through its own flow"; BK-436's open decision is
+      "which listings and probes observe a backend's tree". RFC-0024 R1: "nothing
+      changes ground on the side". The record's freeze cannot settle O21; it
+      stays with the reopen session's route question and BK-436.
+  - items: [BK-501, BK-502]
+    verdict: constrains
+    evidence: >-
+      PR #1195 (BK-501, read open at 9c4d9d7, merged as eb08d99 during this
+      work, the branch rebased onto it) adds /observe's reopen of a
+      Complete record: it walks open items, asks a ground conflict its route
+      only, and a routed item stays open until `Flow done` (axes.md, PR diff).
+      BK-502 (filed on that branch) checks that path against O21's first run.
+      The handover's freeze criterion, "no reopen left open", cannot hold for an
+      item legitimately routed, so the RFC defines the freeze in BK-501's states
+      and the reopen step is BK-501's tool, not a new one.
+  - items: [BK-460, BK-461, BK-462, BK-463]
+    verdict: constrains
+    evidence: >-
+      The repo already holds formal layers the external research assumed
+      absent: compiled Dafny oracles in Python (BK-463: "the two compiled
+      oracles", formal/README.md § Compiled oracle; scripts/dafny_translate.sh),
+      a planned ITF replayer for TLA+ traces (BK-461), Alloy and Lean outside CI
+      (BK-462). The handover's D2 ("literal C is unrunnable today") and D3
+      (runtimes) were judged without them, so the RFC's toolchain decision
+      weighs them; their own open decisions stay with them.
+  - items: [BK-499]
+    verdict: constrains
+    evidence: >-
+      Done: RFC-0028's /observe-review already checks a record before its spec
+      with blind readers and, for new records, an Asked line per decision. The
+      record-level checks the handover proposes (its D6: tables complete and
+      disjoint, response existence, the added-commitment probe on records)
+      extend that step and must take it as baseline, not re-survey it.
+  - items: [BK-489, BK-496]
+    verdict: unrelated
+    evidence: >-
+      BK-489 hosts D10, when kernel and driver work resumes; the trial's Python
+      reference model is spec-phase evidence RFC-0024 D3 admits, not kernel or
+      driver code. BK-496 is the API spec for obtaining and configuring a store;
+      OP-01's semantics do not depend on it.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "(full)"
+        read_type: gate
+        extract: "D1 to D44, E1 to E15, NP1 to NP8; Complete with O14 to O44 open, most blocking a spec clause; O21 a ground conflict"
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "(full)"
+        read_type: gate
+        extract: "OP-01 review candidates and the format RFC input (F1 to F6 critique) are BK-485's, the latter step 6's"
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "(full)"
+        read_type: gate
+        extract: "Amended by RFC-0025 to 0028; § R4 makes step 5's spec the provisional F1 to F6 form, step 6 the bake-off then the format RFC"
+      - file: sdd/research/research-spec-first-reset.md
+        section: "§ 9 step table; § 8 open points"
+        read_type: gate
+        extract: "Step 5 includes a reference model written fresh from the spec with counterexample mutants; no record-derived check set before the spec"
+      - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement summary.md"
+        section: "(full)"
+        read_type: reference
+        extract: "Entry point; precedence deep dive > verified > original; central claim unmeasured; G0 to G9 with G4a to G4d"
+      - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement deep dive.md"
+        section: "(full)"
+        read_type: reference
+        extract: "Wheats and chaffs before gating; G4a per-operation response existence; split alpha; fresh records-only session plus read scope"
+      - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement verified.md"
+        section: "Part 1; Part 2 § 1 to § 4 (lines 1 to 489)"
+        read_type: reference
+        extract: "Baseline check map per normative form and Pipelines A to C; § 5 onward and Part 3 not read"
+      - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement trial design.md"
+        section: "§ 1 to § 2.2, § 2.3 to line 140, partway into its 'Who sees what' table"
+        read_type: reference
+        extract: "S+ comparator, p10 with validity condition V, criteria O1 to O11, six misreading classes, arms, and per-pipeline information flow up to the first rows of the who-sees-what table; the rest of § 2.3 and § 2.4 onward not read"
+      - file: "origin/bk-501-observe-reopen (PR #1195)"
+        section: "diff of axes.md, ground-register.md, observe SKILL.md, BACKLOG.md"
+        read_type: reference
+        extract: "Reopen mode, amendment form, routed ground conflict waits for Flow done; BK-502 filed"
+      - file: sdd/BACKLOG.md
+        section: "BK-436, BK-460 to BK-463, BK-489, BK-491, BK-496, BK-465, BK-466"
+        read_type: reference
+        extract: "Verdicts above"
+  - id: build
+    name: Build
+    steps:
+      - file: sdd/rfcs/rfc-0028-observe-record-review.md
+        section: "(full)"
+        read_type: reference
+        extract: "Shape of an amending RFC: Status names the amended steps and the decision log; evidence that its checks can fail"
+      - file: sdd/research/research-operation-catalogue.md
+        section: "header, § 1"
+        read_type: reference
+        extract: "An external haalfi/research report is cited pinned to a commit and the doc keeps its results and consequences"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Backlog item touched, CHANGELOG entry; sdd/ is out of the tracker-ID rule; no docs nav change for an RFC or research doc"
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "rfc-*.md and research-*.md are dual by default; the trial folder's files need no marker until they exist"
+      - file: scripts/check_support_windows.py
+        section: "previous_tag, main's --base default"
+        read_type: reference
+        extract: "git describe --tags --abbrev=0 takes the nearest tag of any name. One of two readers of the newest tag: the other is drift_feedstock.newest_tag (scripts/drift_feedstock.py:594), which filters v tags and reads the first 100 via the GitHub API (Grep of scripts/ for /tags, describe, newest_tag, previous_tag, tag_name; none in .github/ or .claude/). A first sweep missed it by not matching API paths"
+      - file: tests/scripts/test_check_support_windows.py
+        section: "module docstring, fixture, TestGitPlumbing"
+        read_type: reference
+        extract: "Fixture repos elsewhere disable signing with commit.gpgsign=false; the new test patches REPO_ROOT and was seen failing first"
+      - file: "haalfi/research@28d58e9: reports/Observation record completeness and consistency.md"
+        section: "(full)"
+        read_type: reference
+        extract: "Mechanical slot, claim-register and span checks; capture-recapture unreliable below four inspectors; its 'own trials' are scripts over OP-01's record and this repo's /observe-review source tags, no reviewer or LLM run (4 of 27 known pairs named in consistency checks; the review's readers' overlap implied about 0.2 left, then its primed review found four more); seeded-defect stopping rule, unvalidated"
+      - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement trial design.md"
+        section: "§ 2.0, § 2.1, § 2.2's class table, § 2.3's roles, § 2.8 lines 294 to 309, § 3.1"
+        read_type: reference
+        extract: "Source of research-spec-faithfulness.md § 2.4: E, S+, C1 to C6, V (at most 1 of 24 held-out wheats), H1 to H3, core and full tier, lineages X Y Z W, O1 to O11"
+      - file: "haalfi/research@193c0bc: reports/Spec faithfulness prior-art check.md"
+        section: "§ 1, § 3, § 4"
+        read_type: reference
+        extract: "No recommendation changes; nearest pipeline Lim et al. (human A ≡ R gate, stops at the formal model); C-GRiD does not measure its question step; claimcheck recall against construction labels only; assertion freeze as an unmeasured candidate"
+      - file: "haalfi/research@c1f2cd0: reports/Spec faithfulness and enforcement summary.md (updated in place), reports/Spec faithfulness current evidence check.md"
+        section: "(full)"
+        read_type: reference
+        extract: "No recommendation changes; LLM2Alloy is no head-to-head test of the central claim; Dai et al. measure shared errors between two formalizations (21.88 to 25.23 %); grade and TLA+ figure corrections touch no source the repo docs cite"
+      - file: "haalfi/research@8853e80: reports/Observation record completeness and consistency verified.md"
+        section: "(full)"
+        read_type: reference
+        extract: "Nothing structural changes; 2026 judges at 91 to 95 % on short formal statements, verdict unchanged; a splitter or restater must not see its source; blind restatement validates extraction; top debt dual extraction plus blind restatement on OP-01"
+review:
+  # Derived by `hatch run ship-report 1196 --trace-block-only` at head 9ef378b.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1196 --trace-block-only"
+  pr: 1196
+  review_rounds: 13
+  submissions: 7
+  findings: 21
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.11
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 1, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.32
+    - round: 3
+      findings: 4
+      origin: {loop-introduced: 1, original: 1, unclassifiable-file: 2}
+      triage: {must-fix: 4}
+      duration_hours: 0.46
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 1.32
+    - round: 5
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.4
+    - round: 6
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.13
+    - round: 7
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.18
+  by_file:
+    - path: "sdd/rfcs/rfc-0029-faithfulness-before-spec.md"
+      findings: 10
+    - path: "sdd/research/research-spec-faithfulness.md"
+      findings: 4
+    - path: "sdd/traces/bk-503-faithfulness-rfc.yml"
+      findings: 4
+    - path: "scripts/check_support_windows.py"
+      findings: 1
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/rfcs/rfc-0024-spec-first-reset.md"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "CONTRIBUTING.md"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlog/bk-505-record-quality-research.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/7d282f9d-8eb6-48be-8d6c-9fc7641121cf.jsonl"
+    - "sdd/research/research-observe-record-quality.md"
+    - "sdd/rfcs/rfc-0028-observe-record-review.md"
+    - "tests/scripts/test_check_support_windows.py"
+  review_driven_commits:
+    - sha: "576cacc"
+      subject: "fix: address PR #1196 review"
+    - sha: "8a9c43c"
+      subject: "fix: address PR #1196 review round 2"
+    - sha: "a1539bd"
+      subject: "BK-503: A freeze needs the review re-run after the last reopen; BK-505 report landed"
+    - sha: "d3ec44a"
+      subject: "fix: address PR #1196 review round 3"
+    - sha: "336fc3d"
+      subject: "BK-503: Record the prior-art check; it changes no recommendation"
+    - sha: "ee4be4d"
+      subject: "BK-503: The research docs take in the final reports"
+    - sha: "abcf706"
+      subject: "BK-503: Make the research doc agree with RFC-0029 R4 on check-set order"
+    - sha: "79f4a85"
+      subject: "fix: address PR #1196 review round 4"
+    - sha: "7b30177"
+      subject: "BK-503: Say what the record-quality report calls its own trials"
+    - sha: "d350aac"
+      subject: "BK-503: Indent research section 2.4 nested blocks by four (G-08)"
+    - sha: "da015d5"
+      subject: "fix: address PR #1196 review round 5"
+    - sha: "662f417"
+      subject: "fix: address PR #1196 review round 6"
+    - sha: "9ef378b"
+      subject: "fix: address PR #1196 review round 7"
+  ci: {verdict: PENDING, failed: 0, pending: 18}

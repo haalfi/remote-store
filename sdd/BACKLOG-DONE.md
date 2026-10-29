@@ -476,6 +476,16 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-503 — A record's spec, model and reference model have no faithfulness gate, so a misreading of the record reaches every layer built from it**
+  spec: — · effort: M · audience: contributor.process, library.maintainer
+  RFC-0029 (accepted) amends RFC-0024's flow for every entry, step 5 first, step 6 and RFC-0028's review: a table check on the record
+  before its reopen (BK-504), a freeze (a tag) before the spec, membership and unrelaxed comparisons in every v1
+  reference model, and a single-rater pilot
+  trial on OP-01's frozen record (BK-506) before step 6's bake-off. `research-spec-faithfulness.md` carries the
+  external research at `haalfi/research@fc762e6` and corrects four of its premises for this repository;
+  `research-observe-record-quality.md` keeps BK-505's report, which R2 cites. Trace:
+  [bk-503](traces/bk-503-faithfulness-rfc.yml).
+
 - [x] **BK-501 — An `/observe` record's open items have no session that decides them, so a reopened decision cannot reach its spec**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
   `/observe` on a Complete record reopens it (`In progress (reopen)`): it walks the open items, skipping `shared:` ones

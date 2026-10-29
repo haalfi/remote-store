@@ -13,6 +13,11 @@ table: S4's End gains a whole-record pass (P1), and a review step joins the
 flow between record and spec (P2, P3). Decisions taken in this RFC's session:
 decision log `sdd/decisions/d32f7ee6-4e03-5d2b-8bc7-a4fd31fafb81.jsonl`.
 
+Amended by [RFC-0029](rfc-0029-faithfulness-before-spec.md), accepted
+2026-10-29: P2's review gains a fourth part, a deterministic check of the
+record's tables (R1); P3's reopen is followed by a re-run of the review and a
+freeze before the spec cites the decisions (R2).
+
 ## Summary
 
 **A record leaves its session only after the session has re-checked it whole,

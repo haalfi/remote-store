@@ -518,11 +518,11 @@ no clause of the contract ships unexercised.
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process
-  Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset
-  (§ 9 steps 1, 2); step 3 built `/observe`, its hook and `sdd/observe/` (ground register, axes, records).
-  Its test runs are in the dossier; step 4 is spec 052, step 4b spec 053 and the catalogue (BK-493).
-  Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), and `/observe-review OP-01` (RFC-0028) checked it. Not done:
-  step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review), for a reopen session (`/observe OP-01` on the Complete record, BK-501), bar O42, for the write entries' sessions.
+  Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset (§ 9 steps 1, 2);
+  step 3 built `/observe` and `sdd/observe/` (test runs in the dossier); step 4 is spec 052, 4b spec 053 (BK-493).
+  Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), `/observe-review` (RFC-0028) checked it, and
+  RFC-0029 orders the rest: a table check (BK-504), the reopen, a freeze (not waiting for BK-505's stopping rule), then
+  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review), for a reopen session (`/observe OP-01` on the Complete record, BK-501), bar O42, for the write entries' sessions.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-502 — A reopen's ground-conflict route and `Flow done` have never run, so their remaining gaps surface only in the first ground reopen**
@@ -531,6 +531,31 @@ no clause of the contract ships unexercised.
   artifact's flow adds (`ground-register.md` § Artifacts). PR #1195's review rounds 3 to 7 each found a defect on this
   path (trace `review_fix_3` to `review_fix_7`), and no ground reopen has run yet. Open decision: none until OP-01/O21's
   route is asked; check the lifecycle against that first run, spec 051's flow if O21 is routed there.
+
+- [ ] **BK-504 — No check reads an `/observe` record's tables, so a gap or overlap in them reaches the spec unnoticed**
+  spec: — · effort: M · audience: contributor.tooling, contributor.process
+  RFC-0029 R1: `/observe-review` gains a deterministic check that each case table is complete and disjoint over its
+  declared domain, each state table has a cell per state and event, and each row a decision cites exists; findings
+  become open items. The same script checks a spec's tables. Runs on OP-01 before its reopen, with evidence it can
+  fail (ADR-0045). Also writes R2's freeze into `/observe` and `/observe-review`. Open decision: how a table declares
+  its domain in a record.
+
+- [ ] **BK-505 — An `/observe` record's freeze has no stopping rule: the record-quality report's checks are neither adopted nor rejected**
+  spec: — · effort: S · audience: contributor.process
+  OP-01's failure modes sat in the record, which the faithfulness research assumed correct
+  ([`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 3). The research briefed in the dossier
+  has landed and is kept in [`research-observe-record-quality.md`](research/research-observe-record-quality.md):
+  mechanical checks over the record and a stopping rule calibrated by seeded defects, neither validated.
+  Open decision: which of its checks and its stopping rule bind, amending RFC-0029 R1, R2.
+  Detail: [dossier](backlog/bk-505-record-quality-research.md)
+
+- [ ] **BK-506 — Whether oracles derived from a record catch spec misreadings that spec-derived checks miss is unmeasured**
+  spec: — · effort: L · audience: library.maintainer, contributor.process
+  RFC-0029 R4: a single-rater pilot trial on OP-01's frozen record (R2), core tier, in `sdd/research/bk-506-faithfulness-trial/`;
+  terms and an unmeasured candidate (freezing reviewed formal assertions) in
+  [`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 2.2, § 2.4. Stage 0, a dry run on a toy
+  operation, measures hours, minutes per label and tokens; then a pre-registration commit with every script; then
+  the run. Open decision: which model providers fill the four lineage roles (RFC-0029 Open Question 1).
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process

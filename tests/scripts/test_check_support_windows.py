@@ -572,6 +572,33 @@ class TestGitPlumbing:
             f"git show {tag}:pyproject.toml did not yield a parseable base revision"
         )
 
+    def test_a_non_release_tag_nearer_than_the_last_release_is_not_the_base(
+        self, check_support_windows, tmp_path, monkeypatch
+    ):
+        """An `/observe` freeze tag on master is not a release (RFC-0029 R2).
+
+        Plain `git describe --tags` returns the nearest tag of any name, so a
+        freeze tag after the last release would become the base, and a floor
+        raised between that release and the freeze would go unreported.
+        """
+        import subprocess
+
+        def git(*args: str) -> None:
+            subprocess.run(
+                ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false",
+                 "-c", "tag.gpgsign=false", *args],
+                cwd=tmp_path, check=True, capture_output=True,
+            )  # fmt: skip
+
+        git("init", "-q")
+        git("commit", "-q", "--allow-empty", "-m", "release")
+        git("tag", "v0.1.0")
+        git("commit", "-q", "--allow-empty", "-m", "record frozen")
+        git("tag", "-a", "observe/OP-01/freeze-1", "-m", "freeze")
+        monkeypatch.setattr(check_support_windows, "REPO_ROOT", tmp_path)
+
+        assert check_support_windows.previous_tag() == "v0.1.0"
+
 
 class TestMainWiring:
     """`main` end to end, over a stubbed `fetch_releases`.

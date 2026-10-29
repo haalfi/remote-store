@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-503: A record's spec, model and reference model have no faithfulness gate, so a misreading of the record reaches every layer built from it
 - BK-500: Two `/observe` hook messages mislead: a refused record write names the wrong file, and `/observe release.` reads as an arming
 - BK-499: An `/observe` record's checks go unverified and its session never sees an implementation, so contradictions reach the record
 - BK-498: After `/clear`, a worker restart can resume the armed `/observe` session instead of the new one
