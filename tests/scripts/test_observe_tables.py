@@ -317,6 +317,20 @@ def test_a_one_dash_separator_still_makes_a_table(tmp_path: Path) -> None:
     ]
 
 
+def test_index_selects_a_later_table_under_one_heading(tmp_path: Path) -> None:
+    # A spec heading often holds several tables: index picks one, for a table and for a source.
+    doc = PARTITION + "\n## Notes\n\n| X | Y |\n|---|---|\n| a | b |\n\n| Rows | Z |\n|---|---|\n| E1 to E3 | c |\n"
+    second = '\n[[table]]\nat = "Notes"\nindex = 2\nkind = "case"\nkey = 1\nmembers = ["E1", "E2", "E3"]\n'
+    assert _findings(_run(tmp_path, doc, PARTITION_TOML + second)) == [
+        "- declaration: Notes table 1 (line 32) is declared by no entry"
+    ]
+    first = '\n[[table]]\nat = "Notes"\nkind = "register"\nreason = "r"\n'
+    sourced = PARTITION_TOML.replace(
+        'source = [{ at = "Environment", column = 1 }]', 'source = [{ at = "Notes", index = 2, column = 1 }]'
+    )
+    assert _findings(_run(tmp_path, doc, sourced + second + first)) == []
+
+
 def test_an_anchor_two_headings_share_is_reported_not_guessed(tmp_path: Path) -> None:
     doc = PARTITION.replace("### OP-01/D18: Exposure (AX-7)", "### OP-01/D1: Exposure again (AX-7)")
     toml = PARTITION_TOML.replace('at = "OP-01/D18"', 'at = "OP-01/D1"\nindex = 2')

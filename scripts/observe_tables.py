@@ -41,7 +41,7 @@ are O1 to O3). In a cell, ``E1 to E3`` covers E1, E2 and E3; a citation range
 checks its two ends only.
 
 A key the kind does not take, a value of the wrong type, an empty string or
-array, a non-positive column or index, a value named twice, or a family or short
+array, a non-positive column or index, a string named twice in one list, or a family or short
 form two ``[[ids]]`` declare exits 2: read
 as findings, a malformed declaration would pass for a defective document, and
 ignored, a misspelt key would switch its check off.
@@ -59,9 +59,9 @@ finds nothing; ``source`` narrows that only where the members come from
 another enumeration, and only a ``complete`` source catches an element the
 enumeration gains that no member names. It reads no meaning: two rows that each
 match one member but promise conflicting outcomes (``OP-01/O33``'s kind) pass.
-A row cited by name (``D34's changed row``) or after a backticked ID goes
-unchecked, some ID forms are misread and an ID defined twice is not reported:
-BK-507 lists each. A member matches wherever the characters on either side of it are no letter,
+Some citations go unchecked (a row cited by name, ``D34's changed row``), some ID
+forms are misread and an ID defined twice is not reported: BK-507 and BK-508
+list the cases found. A member matches wherever the characters on either side of it are no letter,
 digit or underscore: ``j = n`` matches inside ``j = n − 1``, and ``.`` never
 matches after a letter; such a member needs a ``match``. Cells are split on ``|``
 with ``\\|`` escaped; a table inside a fenced block (``` or ~~~) is skipped. A

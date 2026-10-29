@@ -17,6 +17,7 @@ decisions:
   - sdd/decisions/ced72d7f-9656-45c4-a6dc-ddf13727ed8f.jsonl
 discovery_followups:
   - BK-507
+  - BK-508
 expected_ripples:
   - pyproject.toml
   - sdd/GATE-INVENTORY.md

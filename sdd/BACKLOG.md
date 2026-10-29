@@ -557,6 +557,14 @@ no clause of the contract ships unexercised.
   column 3, read by no declaration, holds such a range (Grep ``OP-\d+/[A-Z]+\d+`? to `?OP-\d+/`` over records, specs).
   Open decision: none; canonicalize IDs per family before matching, and report a second definition of an ID.
 
+- [ ] **BK-508 — `observe-tables` leaves most of R1's cited-row clause and some citations unchecked**
+  spec: — · effort: S · audience: contributor.tooling
+  PR #1197's final panel, measured: only `<ID>, row <n>` is a row citation, so a row cited by name ("D34's changed
+  row", OP-01's O28, O33), after a backticked ID, or with no ID ("the register's row 3", D40) goes unchecked, which is
+  most of RFC-0029 R1's "each row a decision cites". A short-form definition (`| E1 |`, `` - `E1`: ``) defines
+  nothing; a heading's text before its first colon is never scanned; a `source` listed twice is accepted.
+  Open decision: how a named row is resolved (a row's key cell, or a declared row name), which BK-505 may own.
+
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   RFC-0025 froze the contract kernel, the drivers, Memory on the kernel and specs 052 and 053 on
