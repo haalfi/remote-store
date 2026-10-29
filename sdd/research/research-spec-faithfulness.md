@@ -78,10 +78,13 @@ Of the candidate pipelines (summary § 3), **Pipeline A** is the one the
 evidence calls feasible in pure Python today: a record-derived check set
 written in a fresh, records-only session under a file-system read scope,
 before the spec; the spec; G1 to G5 with G4a; the reference model, driven by a
-Hypothesis state machine; G6 to G8. Pipelines B (one common logic for every
-clause) and C′ (Quint as the executable source, replayed against a separately
-written Python model) are kept as alternatives whose precedents are all
-outside API specs.
+Hypothesis state machine; G6 to G8. Three alternatives are kept, whose
+precedents are all outside API specs: **Pipeline B** translates every clause
+into one common logic over one shared signature and checks them together;
+**Pipeline C** writes one executable formal source and generates the other
+layers from it, literally Dafny compiled to a Python reference model;
+**Pipeline C′** writes Quint as the executable source and replays its
+simulated traces against a separately written Python model.
 
 ### 2.3 What is unmeasured
 
@@ -96,6 +99,73 @@ outside API specs.
   spec's, is itself wrong** in a test-based bridge (deep dive § 4).
 - **The trial's cost.** The protocol's estimate rests on assumptions it labels
   unsourced; a dry run on a toy operation is what replaces them.
+
+### 2.4 The trial's terms
+
+**These are the trial design's definitions (§ 1 to § 3), restated so that
+RFC-0029 can be read without the external reports.** Section numbers below
+are the trial design's.
+
+- **Reference model (R).** An executable model of the operation, here in
+  Python, against which every test runs. **`alpha`** maps its state to the
+  spec's.
+- **E and S⁺.** **E** is every oracle written from the record alone, by a
+  session that sees neither the spec nor anything built from it (the
+  record-derived check set and the expectation tests). **S⁺** is every check
+  that never consults the record: gates G0 to G9 and the spec-enforcing tests.
+- **Seeded misreading.** A deliberate wrong reading of one record clause,
+  planted in the spec, after which every spec-derived layer is regenerated
+  from the misread spec (§ 2.2). Six classes, ten seeds each:
+
+  | Class | Misreading |
+  |---|---|
+  | C1 | Lost case: a table row or scenario branch dropped |
+  | C2 | Added commitment: a value or order fixed that the record leaves open |
+  | C3 | Reinterpreted option: the record's rejected option adopted |
+  | C4 | Wrong non-commitment type, for example *unspecified* retagged as *deliberately not promised* |
+  | C5 | Wrong environment exposure: an environment action or fault exposed or hidden |
+  | C6 | Cross-table contradiction: one cell changed so two tables disagree |
+
+- **p10, p01, delta.** p10 is the share of seeds E catches and S⁺ misses;
+  p01 the reverse; delta = p10 − p01.
+- **Wheat and chaff.** A **wheat** is a correct reference model that makes
+  different choices wherever the record leaves behaviour open; checks are
+  screened against two before they gate, and **24 held-out wheats** measure
+  what over-strictness remains. A **chaff** is a deliberately wrong model
+  encoding one conceptual misreading, such as a rejected option; a useful
+  check set rejects it.
+- **Validity condition V.** E rejects at most 1 of the 24 held-out wheats
+  (the upper bound of the 95 % Clopper–Pearson interval at most 0.25),
+  majority over five runs. Without it, a suite that fails on everything
+  would "catch" every seed (§ 2.0, § 3.1).
+- **Hypotheses (§ 3.1),** tested in a fixed sequence:
+  - **H1** (primary): E catches misreadings that every spec-only check of
+    Pipeline A misses. Supported if the lower bound of p10's 95 % interval
+    is at least 0.05 (at least 8 of 60) and V holds.
+  - **H2**: E catches more than S⁺ overall (delta > 0).
+  - **H3**: at equal test counts, expectation tests catch misreadings that
+    spec-enforcing tests miss.
+- **Tiers (§ 2.8).** The **core tier** runs Pipeline A only, enough for H1
+  to H3; the **full tier** adds Pipelines B and C′ for a descriptive
+  comparison.
+- **Lineages and roles (§ 2.3).** A lineage is a model provider. Four
+  distinct ones fill four roles: **X** writes the spec and regenerates the
+  spec side per seed; **Y** writes E from the records alone; **Z**, used by
+  neither family, seeds the misreadings; **W** judges as a spec-blind
+  reviewer. Raters are people: **P1** the maintainer, **P2** an external
+  second rater, optional **P3** an adjudicator.
+- **Criteria for the operation, O1 to O11 (§ 2.1).** The trial operation
+  has: a complete and disjoint case table of at least four rows (O1); a
+  state × operation table over a handed-out object, at least three states
+  (O2); at least two environment actions, one a fault or cancellation and one
+  a concurrent or out-of-band actor (O3); an interval operation under a
+  history predicate (O4); at least three of the five non-commitment types,
+  *unspecified* and *deliberately not promised* among them (O5); at least two
+  profile values with a declared deviation (O6); at least 60 distinct seed
+  loci (O7); a complete record frozen at a revision (O8); at least one
+  documented past real misreading (O9); no use in earlier trials or public
+  reports (O10); a feasible Python reference model with a Hypothesis state
+  machine (O11).
 
 ## 3. How it meets this repository
 

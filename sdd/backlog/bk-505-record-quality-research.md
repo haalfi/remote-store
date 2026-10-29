@@ -1,4 +1,4 @@
-# BK-505 — Nothing researched how to check an `/observe` record for completeness and internal consistency
+# BK-505 — An `/observe` record's freeze has no stopping rule: the record-quality report's checks are neither adopted nor rejected
 <!-- doc: repo-only -->
 
 The index entry holds the current diagnosis; this file is evidence and
@@ -10,8 +10,9 @@ record itself ([`research-spec-faithfulness.md`](../research/research-spec-faith
 § 3). The maintainer chose to start this research at once, with RFC-0028's
 review and a table completeness check taken as given, rather than after
 BK-504 has run (decision log
-`sdd/decisions/7d282f9d-8eb6-48be-8d6c-9fc7641121cf.jsonl`). Its doc is filed
-under `sdd/research/` as background when the report lands.
+`sdd/decisions/7d282f9d-8eb6-48be-8d6c-9fc7641121cf.jsonl`). The report
+landed on 2026-10-29 and is kept as
+[`research-observe-record-quality.md`](../research/research-observe-record-quality.md).
 
 ## Research brief
 

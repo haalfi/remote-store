@@ -540,18 +540,19 @@ no clause of the contract ships unexercised.
   fail (ADR-0045). Also writes R2's freeze into `/observe` and `/observe-review`. Open decision: how a table declares
   its domain in a record.
 
-- [ ] **BK-505 — Nothing researched how to check an `/observe` record for completeness and internal consistency**
+- [ ] **BK-505 — An `/observe` record's freeze has no stopping rule: the record-quality report's checks are neither adopted nor rejected**
   spec: — · effort: S · audience: contributor.process
   OP-01's failure modes sat in the record, which the faithfulness research assumed correct
-  ([`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 3). A brief for the `haalfi/research`
-  repository, with RFC-0028's review and a table completeness and disjointness check (BK-504's, taken as given) as
-  its baseline and OP-01's review history as evidence; the brief is in the dossier. The report landed
-  (`haalfi/research@28d58e9`). Open decision: which of its checks and its stopping rule bind, amending RFC-0029 R1, R2.
+  ([`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 3). The research briefed in the dossier
+  has landed and is kept in [`research-observe-record-quality.md`](research/research-observe-record-quality.md):
+  mechanical checks over the record and a stopping rule calibrated by seeded defects, neither validated.
+  Open decision: which of its checks and its stopping rule bind, amending RFC-0029 R1, R2.
   Detail: [dossier](backlog/bk-505-record-quality-research.md)
 
 - [ ] **BK-506 — Whether oracles derived from a record catch spec misreadings that spec-derived checks miss is unmeasured**
   spec: — · effort: L · audience: library.maintainer, contributor.process
-  RFC-0029 R4: a single-rater pilot trial on OP-01's frozen record, core tier (Pipeline A), in
+  RFC-0029 R4: a single-rater pilot trial on OP-01's frozen record, core tier (Pipeline A; terms in
+  [`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 2.4), in
   `sdd/research/bk-506-faithfulness-trial/`. Stage 0 is a dry run on a toy operation measuring hours, minutes per
   label and tokens; then a pre-registration commit with every script; then the run. Waits for OP-01's freeze
   (RFC-0029 R2). Open decision: which model providers fill the four lineage roles (RFC-0029 Open Question 1).

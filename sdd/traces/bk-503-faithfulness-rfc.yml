@@ -24,10 +24,15 @@ expected_ripples:
   - sdd/rfcs/rfc-0024-spec-first-reset.md
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
   - CHANGELOG.md
 surprising_ripples:
   - sdd/BACKLOG.md (BK-485's entry exceeded ADR-0040's eight-line cap once RFC-0029's order was added, and was rewritten)
   - scripts/check_support_windows.py (review round 2 of PR #1196: `git describe --tags` takes any tag, so R2's freeze tag would have become the release check's base; now `--match v[0-9]*`, pinned by a test)
+  - tests/scripts/test_check_support_windows.py (the test pinning that fix)
+  - "CONTRIBUTING.md (review round 3, Phase 0's Rule 9 bullet named the base 'the previous tag''s')"
+  - "sdd/research/research-observe-record-quality.md (review round 3 and the maintainer's PR comment; R2 cited BK-505's external report, so its figures and stopping rule are kept in the repo)"
+  - sdd/backlog/bk-505-record-quality-research.md (the brief, then BK-505's retitle once the report landed)
 orient:
   - items: [BK-491, BK-465, BK-466]
     verdict: constrains
@@ -145,3 +150,19 @@ phases:
         section: "Directory defaults"
         read_type: gate
         extract: "rfc-*.md and research-*.md are dual by default; the trial folder's files need no marker until they exist"
+      - file: scripts/check_support_windows.py
+        section: "previous_tag, main's --base default"
+        read_type: reference
+        extract: "git describe --tags --abbrev=0 takes the nearest tag of any name; the only consumer of 'the latest tag' (Grep of tag consumers outside traces, decisions, research)"
+      - file: tests/scripts/test_check_support_windows.py
+        section: "module docstring, fixture, TestGitPlumbing"
+        read_type: reference
+        extract: "Fixture repos elsewhere disable signing with commit.gpgsign=false; the new test patches REPO_ROOT and was seen failing first"
+      - file: "haalfi/research@28d58e9: reports/Observation record completeness and consistency.md"
+        section: "(full)"
+        read_type: reference
+        extract: "Mechanical slot, claim-register and span checks; capture-recapture unreliable below four inspectors; OP-01 own trials (4 of 27 known pairs named in consistency checks; overlap implied about 0.2 left, then four more found); seeded-defect stopping rule, unvalidated"
+      - file: "haalfi/research@fc762e6: reports/Spec faithfulness and enforcement trial design.md"
+        section: "§ 2.0, § 2.1, § 2.2's class table, § 2.3's roles, § 2.8 lines 294 to 309, § 3.1"
+        read_type: reference
+        extract: "Source of research-spec-faithfulness.md § 2.4: E, S+, C1 to C6, V (at most 1 of 24 held-out wheats), H1 to H3, core and full tier, lineages X Y Z W, O1 to O11"

@@ -32,7 +32,7 @@ spec, catches what the spec got wrong. RFC-0024 step 5 builds the reference
 model "fresh from the spec", so every oracle it carries inherits the spec's
 reading.
 
-Three gaps follow, each shown on OP-01 (research § 3):
+Three gaps follow, each shown on OP-01 (`research-spec-faithfulness.md` § 3):
 
 1. **The record itself carries the failure modes.** OP-01's review found
    decision text no dialog asked, tables in one decision that another
@@ -61,7 +61,7 @@ have found nothing ([ADR-0045](../adrs/0045-close-on-a-check-that-can-fail.md)).
 
 ### R2. A record is frozen before its spec
 
-Research § 3's flow becomes, for every entry, design, record, review,
+`research-spec-first-reset.md` § 3's flow becomes, for every entry, design, record, review,
 **reopen, freeze**, spec, compare; step 5 is its first use. A record is
 **frozen** at the commit where each of its open items is
 either decided (`Decided by`), or of a kind no reopen of this record decides,
@@ -74,9 +74,9 @@ each named with what it blocks:
 A record is frozen only after `/observe-review`, R1 included, has re-run on
 it as its last reopen left it: no open item is not the same as done, and on
 OP-01 a primed review found four items after two readers' overlap implied
-about 0.2 left (BK-505's report, `haalfi/research@28d58e9`, § 2 T4). What
-more a freeze needs, its stopping rule (the report's § 4), is BK-505's to
-decide.
+about 0.2 left ([`research-observe-record-quality.md`](../research/research-observe-record-quality.md)
+§ 2). What more a freeze needs, its stopping rule (that document's § 3), is
+BK-505's to decide.
 
 A spec clause blocked by such an item is not written until the item is
 decided. **The freeze is an annotated tag**, `observe/<entry>/freeze-<n>`,
@@ -101,7 +101,9 @@ RFC-0024 R1 holds: no freeze settles ground on the side.
   hide a defect.
 
 Held until the trial reports (R4): wheat and chaff screening as a gate (G2),
-the per-family kill as a gate (G8), and any LLM judge as a gate. G0's typed
+the per-family kill as a gate (G8), and any LLM judge as a gate. The gates
+G0 to G9 are defined in [`research-spec-faithfulness.md`](../research/research-spec-faithfulness.md)
+§ 2.2, wheats and chaffs in its § 2.4. G0's typed
 non-commitment lint waits for the format RFC, which owns F3's terms
 (RFC-0024 § R4).
 
@@ -110,8 +112,12 @@ non-commitment lint waits for the format RFC, which owns F3's terms
 **The claim.** Oracles written from the record alone (E) catch seeded spec
 misreadings that every check never consulting the record (S⁺) misses.
 
-**The design** is the research's trial protocol (research § 2.3), at its core
-tier, with these choices:
+**The design** is the external research's trial protocol, at its core tier.
+Every term it uses (E, S⁺, seeded misreadings and their classes, p10,
+wheats, validity condition V, hypotheses H1 to H3, tiers, lineages and their
+roles, criteria O1 to O11) is defined in
+[`research-spec-faithfulness.md`](../research/research-spec-faithfulness.md)
+§ 2.4, and the pipelines in its § 2.2. The choices made here:
 
 | Point | Choice |
 |---|---|
@@ -134,7 +140,7 @@ lineages.
 
 ### R5. Step 6 runs the trial first
 
-Step 6 becomes: the trial (R4), then the bake-off as research § 9 states it,
+Step 6 becomes: the trial (R4), then the bake-off as `research-spec-first-reset.md` § 9 states it,
 on the same frozen record and scored with the trial's harness, mutants and
 validated E oracles, then the format RFC with both results in hand.
 
@@ -172,9 +178,9 @@ Decided in the log above:
 - **Process:** RFC-0024 carries an "Amended by RFC-0029" line. `/observe-review`
   gains R1's check (BK-504). R2's freeze and its tag are written into the
   `/observe` and `/observe-review` skills by BK-504, which first touches them.
-- **Backlog:** BK-504 (R1's check, run on OP-01), BK-505 (a research brief on
-  record completeness and consistency, RFC-0028 and R1's check as its
-  baseline, started without waiting for BK-504),
+- **Backlog:** BK-504 (R1's check, run on OP-01), BK-505 (whether the
+  record-quality report's checks and stopping rule bind; the report is kept
+  in [`research-observe-record-quality.md`](../research/research-observe-record-quality.md)),
   BK-506 (R4's trial: Stage 0, pre-registration, run). OP-01's reopen is
   BK-501's tool under BK-485.
 - **Testing:** `scripts/check_support_windows.py` takes the previous release
@@ -188,7 +194,8 @@ Decided in the log above:
 ## Open Questions
 
 1. **Lineages.** The protocol wants four model providers in distinct roles
-   (spec writer, E author, seeder, judge). Which are available is decided in
+   (spec writer, E author, seeder, judge; `research-spec-faithfulness.md`
+   § 2.4). Which are available is decided in
    the pre-registration (BK-506); with fewer, each shared role is reported as
    such.
 
@@ -196,6 +203,8 @@ Decided in the log above:
 
 - [`research-spec-faithfulness.md`](../research/research-spec-faithfulness.md)
   and its reports in `haalfi/research` at `fc762e6`.
+- [`research-observe-record-quality.md`](../research/research-observe-record-quality.md)
+  and its report in `haalfi/research` at `28d58e9`.
 - [RFC-0024](rfc-0024-spec-first-reset.md), [RFC-0028](rfc-0028-observe-record-review.md),
   [`research-spec-first-reset.md`](../research/research-spec-first-reset.md) § 9.
 - [`sdd/observe/axes.md`](../observe/axes.md) § Per-question loop, OP-01's
