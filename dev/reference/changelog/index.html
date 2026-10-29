@@ -16152,6 +16152,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-504: No check reads an <code>/observe</code> record's tables, so a gap or overlap in them reaches the spec unnoticed</li>
 <li>BK-503: A record's spec, model and reference model have no faithfulness gate, so a misreading of the record reaches every layer built from it</li>
 <li>BK-500: Two <code>/observe</code> hook messages mislead: a refused record write names the wrong file, and <code>/observe release.</code> reads as an arming</li>
 <li>BK-499: An <code>/observe</code> record's checks go unverified and its session never sees an implementation, so contradictions reach the record</li>
