@@ -66,8 +66,8 @@ The report's own design, *Inference* throughout, in its § 3 and § 4:
   class are found at a rate of at least 0.8 and the estimate of real defects
   left is below one blocking defect; and a reviewer of a kind not used before
   finds nothing blocking. Capture-recapture is a cross-check only, within one
-  kind and with at least four readers. Its assumptions, that seeded defects
-  are as hard to find as real ones among them, are unverified.
+  kind and with at least four readers. It assumes, among other things, that
+  seeded defects are as hard to find as real ones; that is unverified.
 
 ## 4. Consequences here
 

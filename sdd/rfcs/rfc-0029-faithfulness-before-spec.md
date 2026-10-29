@@ -150,7 +150,7 @@ Decided in the log above:
 
 - **Next step after OP-01's record:** reopen OP-01 first and leave the process
   open; write a records-only check set now, before any RFC; or write the spec
-  as step 5 stands, which gives up a spec-blind check set for OP-01.
+  as step 5 stands, before the record is checked or frozen.
 - **Scope:** the same RFC under BK-485 with no new item; or the ordering and
   gates only, with the trial's decisions in a second RFC after Stage 0.
 - **The spec against the trial:** the spec only after the trial reports,

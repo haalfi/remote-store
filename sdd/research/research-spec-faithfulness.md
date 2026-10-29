@@ -10,9 +10,10 @@
 executable reference model with gates that check faithfulness to the prose,
 so the best-supported design is assembled from analogues, and its central
 claim is unmeasured.** That claim is that oracles derived from the records
-catch spec misreadings that every spec-derived check misses. The design's one
-ordering rule binds now: the record-derived check set must be written before
-the spec exists, or it can no longer be written blind to it.
+catch spec misreadings that every spec-derived check misses. The design
+writes the record-derived check set before the spec so that the set stays
+blind to it; RFC-0029 R4 keeps that blindness with a read scope instead, so a
+spec may exist while the set is written.
 
 ## 1. Question and method
 
@@ -238,5 +239,5 @@ log under `sdd/decisions/`, named in the RFC).
 | D2 reading of Pipeline C, D3 runtimes | Python core; Porcupine (Go) in Docker for history checks; Dafny and TLA+ layers stay under `SPEC-DESIGN.md`, outside the trial |
 | D4 trial scope | Core tier, Pipeline A only |
 | D5 what to adopt before any trial | G3 on record and spec tables; membership predicates for open outcomes; relaxed comparisons run unrelaxed too. G0's typed non-commitment stays with the format RFC, which owns F3's terms |
-| D6 next research topic, record quality | A brief now, with RFC-0028 and a G3 record check taken as given as its baseline |
+| D6 next research topic, record quality | A brief at once, with RFC-0028 and a G3 record check taken as given as its baseline; its report is kept in [`research-observe-record-quality.md`](research-observe-record-quality.md) |
 | Order: Stage 0 dry run, then the trial | Kept; the trial precedes RFC-0024 step 6's bake-off, which reuses its harness |
