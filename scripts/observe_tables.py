@@ -216,6 +216,9 @@ def check_case(doc: Document, table: Table, entry: dict[str, Any]) -> list[str]:
     key = int(_required(entry, "key"))
     members = _members(entry)
     parts: dict[str, list[str]] = entry.get("parts", {})
+    member_names = {m.name for m in members}
+    if not isinstance(parts, dict) or not all(isinstance(v, list) and k in member_names for k, v in parts.items()):
+        raise ValueError(f"{entry.get('at')!r}: 'parts' maps member names to arrays, not {parts!r}")
     keys = [(n, _expand(_cell(cells, key)), _cell(cells, key)) for n, (_, cells) in enumerate(table.rows, 1)]
     out: list[str] = []
     for m in members:

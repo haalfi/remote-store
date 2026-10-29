@@ -24,6 +24,9 @@ expected_ripples:
   - CHANGELOG.md
 surprising_ripples:
   - "sdd/BACKLOG.md (BK-505's entry gains the extraction measurement the orient dialog left to it; BK-485's open-item range moves to O45)"
+  - ".github/workflows/ci.yml (PR #1197 review round 2: HOOKS_PAT did not reach sdd/observe/records/ or tables/, which test_observe_tables.py reads, so a record-only change never ran it)"
+  - "tests/scripts/test_observe_ground.py (its pin asserted records/ outside HOOKS_PAT; dropped once a test reads them)"
+  - "sdd/CLAUDE-REFERENCE.md (PR validation gates name the files the observe tests read)"
 orient:
   - items: [BK-505]
     verdict: constrains
@@ -149,7 +152,10 @@ phases:
         extract: >-
           `hatch run observe-tables sdd/observe/records/OP-01.md sdd/observe/tables/OP-01.toml`
           at the record before O45 gave 6 findings and exit 1: D18 has no column for
-          D20's cancelled transition, written as OP-01/O45; D38 has no row for five
+          D20's cancelled transition, written as OP-01/O45, a note after PR #1197's
+          second review: D18 leaves cancellation to AX-7 and D20's Decision decides it
+          in every state, so the finding came from declaring D20's event on D18's
+          table and blocks no spec clause; D38 has no row for five
           of D34's categories (as raised, UnicodeDecodeError, TypeError, ValueError,
           cancellation), dropped as OP-01/O37's. Declarations, citations: none.
           Could it have found nothing: yes, had D38's rows covered D34's categories

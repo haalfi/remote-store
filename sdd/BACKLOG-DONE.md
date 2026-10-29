@@ -482,8 +482,8 @@ ships them.
   domains a TOML sidecar declares (`sdd/observe/tables/<entry>.toml`, a reading the review writes, never the record):
   case tables complete and disjoint, state tables full, every table declared, cited IDs and rows defined.
   `/observe-review` runs it as G3 and, after a reopen, says whether the record can be frozen (R2's tag, created by the
-  maintainer after merge); `/observe` notes that a reopen ends a freeze. Run on OP-01: `OP-01/O45`, D38's gaps
-  being `O37`'s. Trace: [bk-504](traces/bk-504-observe-table-check.yml).
+  maintainer after merge); `/observe` notes that a reopen ends a freeze. Run on OP-01: a note, `OP-01/O45`, D38's
+  gaps being `O37`'s. Trace: [bk-504](traces/bk-504-observe-table-check.yml).
 
 - [x] **BK-503 — A record's spec, model and reference model have no faithfulness gate, so a misreading of the record reaches every layer built from it**
   spec: — · effort: M · audience: contributor.process, library.maintainer

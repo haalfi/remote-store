@@ -13,6 +13,7 @@ OP-01's real record each produce a finding the record itself does not
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -228,6 +229,54 @@ def test_an_undeclared_table_and_a_lost_anchor_are_reported(tmp_path: Path) -> N
     ]
 
 
+def test_an_anchor_two_headings_share_is_reported_not_guessed(tmp_path: Path) -> None:
+    doc = PARTITION.replace("### OP-01/D18: Exposure (AX-7)", "### OP-01/D1: Exposure again (AX-7)")
+    toml = PARTITION_TOML.replace('at = "OP-01/D18"', 'at = "OP-01/D1"\nindex = 2')
+    result = _run(tmp_path, doc, toml)
+    assert "- declaration: 'OP-01/D1' matches 2 headings" in _findings(result)
+    assert result.returncode == 1
+
+
+def test_a_lost_source_anchor_is_reported(tmp_path: Path) -> None:
+    toml = PARTITION_TOML.replace(
+        'source = [{ at = "Environment", column = 1 }]', 'source = [{ at = "Actors", column = 1 }]'
+    )
+    assert _findings(_run(tmp_path, PARTITION, toml)) == [
+        "- OP-01/D18 table 1: source: 'Actors' table 1 matches no table"
+    ]
+
+
+def test_a_row_matching_a_member_but_none_of_its_parts_is_reported(tmp_path: Path) -> None:
+    doc = PARTITION.replace(
+        "| E1 to E3 | yes |", "| E1, E2 | yes |\n  | E3, disk | yes |\n  | E3, memory | no |\n  | E3 | ? |"
+    )
+    toml = PARTITION_TOML.replace(
+        'members = ["E1", "E2", "E3"]', 'members = ["E1", "E2", "E3"]\nparts = { E3 = ["disk", "memory"] }'
+    )
+    assert _findings(_run(tmp_path, doc, toml)) == ["- OP-01/D18 table 1: row 4 matches 'E3' but none of its parts"]
+
+
+def test_a_state_two_rows_match_is_reported(tmp_path: Path) -> None:
+    doc = STATE.replace(
+        "| Closed | `ValueError` | no-op |", "| Closed | `ValueError` | no-op |\n  | Closed again | x | y |"
+    )
+    assert _findings(_run(tmp_path, doc, STATE_TOML)) == ["- OP-01/D18 table 1: state 'Closed' has rows 2 and 3"]
+
+
+def test_a_row_matching_no_state_is_reported(tmp_path: Path) -> None:
+    doc = STATE.replace("| Closed | `ValueError` | no-op |", "| Closed | `ValueError` | no-op |\n  | Paused | ? | ? |")
+    assert _findings(_run(tmp_path, doc, STATE_TOML)) == ["- OP-01/D18 table 1: row 3 ('Paused') matches no state"]
+
+
+def test_ci_runs_this_module_when_a_file_it_reads_changes() -> None:
+    # tooling-tests is the only job running tests/scripts/, gated on HOOKS_PAT (CLAUDE-REFERENCE's
+    # "Test whose subject is outside src/ or scripts/" row): an edit to a record or its sidecar runs it.
+    ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    hooks_pat = re.compile(re.search(r"HOOKS_PAT='([^']+)'", ci)[1])  # type: ignore[index]
+    read = [OP01, OP01_TABLES, *(ROOT / "sdd/observe/records").glob("*.md"), *(ROOT / "sdd/observe/tables").glob("*")]
+    assert [p.relative_to(ROOT).as_posix() for p in read if not hooks_pat.search(p.relative_to(ROOT).as_posix())] == []
+
+
 def test_an_anchor_does_not_match_a_longer_id(tmp_path: Path) -> None:
     # "OP-01/D1" must anchor D1's heading only, never D18's.
     result = _run(tmp_path, PARTITION, PARTITION_TOML)
@@ -299,7 +348,15 @@ def test_a_malformed_declaration_exits_2_not_as_findings(tmp_path: Path) -> None
     # A string where a list belongs would be read character by character into false gaps.
     members_not_list = PARTITION_TOML.replace('members = ["E1", "E2", "E3"]', 'members = "E1"')
     states_not_list = STATE_TOML.replace('states = ["Open", "Closed"]', 'states = "Open"')
-    for toml in (bad_regex, ids_not_array, item_not_table, members_not_list, states_not_list):
+    with_parts = PARTITION_TOML.replace('members = ["E1", "E2", "E3"]', 'members = ["E1", "E2", "E3"]\nparts = PARTS')
+    part_not_list = with_parts.replace("PARTS", '{ E3 = "disk" }')
+    parts_not_table = with_parts.replace("PARTS", '["E3"]')
+    parts_off_members = with_parts.replace("PARTS", '{ E9 = ["disk"] }')
+    register_no_reason = PARTITION_TOML.replace(
+        'kind = "case"\nkey = 1\nmembers = ["E1", "E2", "E3"]', 'kind = "register"'
+    )
+    malformed = (bad_regex, ids_not_array, item_not_table, members_not_list, states_not_list, part_not_list)
+    for toml in (*malformed, parts_not_table, parts_off_members, register_no_reason):
         result = _run(tmp_path, PARTITION, toml)
         assert result.returncode == 2, (toml, result.stdout, result.stderr)
         assert result.stderr.startswith("observe_tables: "), result.stderr
