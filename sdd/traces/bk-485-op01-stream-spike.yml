@@ -13,6 +13,8 @@ source_items:
 audience:
   - contributor.process
   - library.maintainer
+decisions:
+  - sdd/decisions/3f275077-1eeb-5b6f-a4a6-7377e26283e4.jsonl
 orient:
   - items: [BK-506]
     verdict: constrains
