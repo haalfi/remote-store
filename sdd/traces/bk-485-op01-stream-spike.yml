@@ -1,0 +1,112 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour"
+trigger: >-
+  The maintainer asked for OP-01's closed decisions as a table, then passed on
+  an outside critique (a ChatGPT answer proposing contracts, an extended state
+  machine, TLA+ and model-based testing) and asked whether a staircase from the
+  record's prose to checkable steps could be tried. A spike carried one slice,
+  the read stream's lifecycle, from extraction to rows, rules, a reference
+  model and a conformance run against Local with injected faults, then landed
+  it as a frozen research folder.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+orient:
+  - items: [BK-506]
+    verdict: constrains
+    evidence: >-
+      RFC-0029 R4 reserves sdd/research/bk-506-faithfulness-trial/ and gives
+      the trial's oracle sessions a read scope that admits the record and
+      nothing derived from it. The spike derives everything from the record,
+      so it lands in its own folder under BK-485 and its report says it must
+      not reach those sessions; it measures nothing about faithfulness.
+  - items: [BK-505]
+    verdict: constrains
+    evidence: >-
+      BK-505's unmeasured check is two extractions of OP-01 plus a blind
+      restatement per claim. The spike's one extraction and its stale-filter
+      count (24 closed decisions, 10 to 23 named by a later open item) are a
+      data point for that question, reported as such, not its measurement.
+  - items: [BK-489]
+    verdict: unrelated
+    evidence: >-
+      D10 is BK-489's (BK-485's index entry); the slice is D2, D6, D7, D15 to
+      D18, D20 and D36 and touches D10 only through D17's release.
+phases:
+  - id: extract
+    name: Extract the record's closed decisions
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "Session, Environment, OP-01/D1 to OP-01/D41"
+        read_type: gate
+        extract: "44 decisions in a fixed field layout; a decision is often a bare (a) whose meaning is in Options; D9, D19 and D41 carry tables"
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items: done per decision"
+        read_type: reference
+        extract: >-
+          Each decision's own Open items field is never updated by later
+          reopens, so filtering on it is stale: 23 of the 24 'none' decisions
+          are mentioned by O14 to O45, 10 as the subject (stale_filter.py)
+        outcome: misleading
+  - id: model
+    name: Rows, a reference model and rules for the stream slice
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "OP-01/D2, D6, D7, D15 to D18, D20, D36"
+        read_type: gate
+        extract: "D18's table converted to rows almost 1:1; every gap (F1 to F10) came from prose, mostly a rule split across two decisions"
+        outcome: unclear
+  - id: conform
+    name: Run the rules against Local
+    steps:
+      - file: src/remote_store/_store.py
+        section: "Store.read, Store.read_bytes (lines 1 to 115)"
+        read_type: reference
+        extract: "Store.read returns the backend's BinaryIO unchanged"
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.__init__, LocalBackend.read"
+        read_type: reference
+        extract: "read returns open(full, 'rb'): the fault wrapper replaces only that call's open"
+        outcome: ok
+      - file: src/remote_store/_errors.py
+        section: "class names"
+        read_type: reference
+        extract: "BackendUnavailable is the library category strict typing accepts as unavailable"
+        outcome: ok
+  - id: land
+    name: Place the spike under research
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "sdd/research/research-*.md is dual; anything else needs an explicit marker, so the folder's Markdown is repo-only"
+        outcome: ok
+      - file: sdd/research/bk-484-key-model/README.md
+        section: "(full)"
+        read_type: reference
+        extract: "Spike folder convention: repo-only README, a path table, run commands from the repo root, freezes once landed"
+        outcome: ok
+      - file: sdd/research/id-266-ci-wait/report.md
+        section: "header"
+        read_type: reference
+        extract: "A folder report carries Date, Backlog items and Status, and names itself a point-in-time snapshot"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0029-faithfulness-before-spec.md
+        section: "R4"
+        read_type: gate
+        extract: "The trial's home, its information flow (nothing derived from the record) and its Stage 0 order; the spike must stay outside all three"
+        outcome: ok
+      - file: sdd/audits/audit-025-op-01-record-review.md
+        section: "§ 1 to § 5"
+        read_type: reference
+        extract: "G2 and G4 are F4 and F6; § 4 ranks D20 and D27 among the implementation costs that C1 and C3 show"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "(full)"
+        read_type: reference
+        extract: "Its Format RFC input asks to test the one-unit rule on the read() slice; the report answers with what the rules show"
+        outcome: ok
