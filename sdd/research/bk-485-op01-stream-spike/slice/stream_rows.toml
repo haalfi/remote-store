@@ -1,0 +1,309 @@
+# OP-01 stream lifecycle as typed rows (spike, step 2).
+# Sources: OP-01 record D6, D7, D15-D18, D20, D36 (as read in this session).
+#
+# Row fields:
+#   state    start state: Open | Exhausted | Failed | Closed | New (before open)
+#   content  item bytes (ASCII); pos = bytes already consumed (Open only)
+#   event    open | read | readinto | readline | chunks | close | collect | handle_end
+#   inject   one-shot environment event for this call: fail | cancel | release_fail
+#   expect   returns (str) | raises (category) | concat + max (chunks) | warns
+#   next     state after the event
+#   assumed  set when the prose does not fix the cell; the text says what was assumed
+#   open     set when the cell is an open item; the row is listed, not checked
+
+[[row]]
+id = "R01"
+src = ["D18"]
+state = "New"
+content = "abcdef"
+event = "open"
+next = "Open"
+
+[[row]]
+id = "R02"
+src = ["D18"]
+state = "New"
+content = ""
+event = "open"
+next = "Exhausted"
+
+[[row]]
+id = "R03"
+src = ["D6"]
+state = "Open"
+content = "abcdef"
+event = "read"
+args = { n = 4 }
+expect = { returns = "abcd" }
+next = "Open"
+
+[[row]]
+id = "R04"
+src = ["D6"]
+state = "Open"
+content = "abcdef"
+pos = 4
+event = "read"
+args = { n = 8 }
+expect = { returns = "ef" }
+next = "Exhausted"
+
+[[row]]
+id = "R05"
+src = ["D6"]
+state = "Open"
+content = "abcdef"
+pos = 1
+event = "read"
+args = { n = -1 }
+expect = { returns = "bcdef" }
+next = "Exhausted"
+
+[[row]]
+id = "R06"
+src = ["D6"]
+state = "Open"
+content = "abcdef"
+event = "read"
+args = { n = 0 }
+expect = { returns = "" }
+next = "Open"
+assumed = "D6's rule min(n, r) gives b'' for n = 0 while bytes remain; its option text says b'' only at the end. Rule taken over option text. Also assumed: read(0) makes no transfer."
+
+[[row]]
+id = "R07"
+src = ["D7"]
+state = "Open"
+content = "abcdef"
+event = "chunks"
+args = { size = 4 }
+expect = { concat = "abcdef", max = 4 }
+next = "Exhausted"
+
+[[row]]
+id = "R08"
+src = ["D7", "D2"]
+state = "Open"
+content = "abcdef"
+pos = 2
+event = "chunks"
+args = { size = 3 }
+expect = { concat = "cdef", max = 3 }
+next = "Exhausted"
+
+[[row]]
+id = "R09"
+src = ["D7"]
+state = "Open"
+content = "abcdef"
+event = "chunks"
+args = { size = 0 }
+expect = { raises = "ValueError" }
+next = "Open"
+assumed = "D7 says a non-positive size is a caller error (AX-10's); ValueError and 'state unchanged' come from D33, outside the slice."
+
+[[row]]
+id = "R10"
+src = ["D2", "D6"]
+state = "Open"
+content = "abcdef"
+event = "readinto"
+args = { n = 4 }
+expect = { returns = "abcd" }
+next = "Open"
+assumed = "readinto's value is not stated in the slice; taken as read(len(buf)) copied into buf, per io.BufferedIOBase."
+
+[[row]]
+id = "R11"
+src = ["D2", "D18"]
+state = "Open"
+content = "ab\ncd"
+event = "readline"
+expect = { returns = "ab\n" }
+next = "Open"
+assumed = "readline's value is not stated in the slice; taken from io.BufferedIOBase."
+
+[[row]]
+id = "R12"
+src = ["D6", "D18"]
+state = "Exhausted"
+content = "abcdef"
+event = "read"
+args = { n = 5 }
+expect = { returns = "" }
+next = "Exhausted"
+
+[[row]]
+id = "R13"
+src = ["D18"]
+state = "Exhausted"
+content = "abcdef"
+event = "chunks"
+args = { size = 4 }
+expect = { concat = "", max = 4 }
+next = "Exhausted"
+
+[[row]]
+id = "R14"
+src = ["D16", "D18"]
+state = "Open"
+content = "abcdef"
+event = "read"
+args = { n = 2 }
+inject = "fail"
+expect = { raises = "Unavailable" }
+next = "Failed"
+
+[[row]]
+id = "R15"
+src = ["D16", "D18"]
+state = "Failed"
+content = "abcdef"
+event = "read"
+args = { n = 2 }
+expect = { raises = "Unavailable" }
+next = "Failed"
+
+[[row]]
+id = "R16"
+src = ["D16", "D18"]
+state = "Failed"
+content = "abcdef"
+event = "chunks"
+args = { size = 4 }
+expect = { raises = "Unavailable" }
+next = "Failed"
+
+[[row]]
+id = "R17"
+src = ["D18"]
+state = "Open"
+content = "abcdef"
+event = "close"
+expect = { returns = "None" }
+next = "Closed"
+
+[[row]]
+id = "R18"
+src = ["D18"]
+state = "Exhausted"
+content = "abcdef"
+event = "close"
+expect = { returns = "None" }
+next = "Closed"
+
+[[row]]
+id = "R19"
+src = ["D18"]
+state = "Failed"
+content = "abcdef"
+event = "close"
+expect = { returns = "None" }
+next = "Closed"
+
+[[row]]
+id = "R20"
+src = ["D15", "D18"]
+state = "Closed"
+content = "abcdef"
+event = "read"
+args = { n = 2 }
+expect = { raises = "ValueError" }
+next = "Closed"
+
+[[row]]
+id = "R21"
+src = ["D15", "D18"]
+state = "Closed"
+content = "abcdef"
+event = "chunks"
+args = { size = 4 }
+expect = { raises = "ValueError" }
+next = "Closed"
+
+[[row]]
+id = "R22"
+src = ["D15", "D18"]
+state = "Closed"
+content = "abcdef"
+event = "close"
+expect = { returns = "None" }
+next = "Closed"
+
+[[row]]
+id = "R23"
+src = ["D20"]
+state = "Open"
+content = "abcdef"
+event = "read"
+args = { n = 2 }
+inject = "cancel"
+expect = { raises = "Cancelled" }
+next = "Closed"
+
+[[row]]
+id = "R24"
+src = ["D20"]
+state = "Open"
+content = "abcdef"
+event = "chunks"
+args = { size = 4 }
+inject = "cancel"
+expect = { raises = "Cancelled" }
+next = "Closed"
+
+[[row]]
+id = "R25"
+src = ["D36"]
+state = "Open"
+content = "abcdef"
+event = "close"
+inject = "release_fail"
+expect = { returns = "None" }
+next = "Closed"
+
+[[row]]
+id = "R26"
+src = ["D36", "D20"]
+state = "Open"
+content = "abcdef"
+event = "close"
+inject = "cancel"
+expect = { raises = "Cancelled" }
+next = "Closed"
+assumed = "D36 lets close() raise a cancellation, but no row fixes the state afterwards; Closed assumed (D20's rule for a cancelled read)."
+
+[[row]]
+id = "R27"
+src = ["D17"]
+state = "Open"
+content = "abcdef"
+event = "collect"
+expect = { warns = "ResourceWarning" }
+next = "Closed"
+
+[[row]]
+id = "R28"
+src = ["D17"]
+state = "Exhausted"
+content = "abcdef"
+event = "collect"
+expect = { warns = "ResourceWarning" }
+next = "Closed"
+assumed = "D17 warns for 'an open stream'; whether Exhausted and Failed count as open (unclosed) is not stated. Assumed: every state but Closed warns."
+
+[[row]]
+id = "R29"
+src = ["D17"]
+state = "Closed"
+content = "abcdef"
+event = "collect"
+next = "Closed"
+
+[[row]]
+id = "R30"
+src = ["D18"]
+state = "Open"
+content = "abcdef"
+event = "handle_end"
+open = "OP-01/O5"

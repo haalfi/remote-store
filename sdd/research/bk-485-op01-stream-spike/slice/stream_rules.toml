@@ -1,0 +1,173 @@
+# OP-01 stream lifecycle as guarded rules (spike, step 2b).
+# Replaces example rows with rules: a guard over the oracle state, then an effect.
+# Sources: OP-01 record D2, D6, D7, D15-D18, D20, D36 (as read in this session).
+#
+# Oracle state: state (Open|Exhausted|Failed|Closed), content (bytes), pos (int).
+# Call inputs:  event, n (read/readinto size, chunk size; -1 for readline), inject.
+#   inject is the environment event that reached the backend during this call:
+#   None | 'fail' | 'cancel' | 'release_fail'. A fault armed but never reached
+#   (a read served from a buffer, NP3) is judged as None.
+#
+# A rule:
+#   on       events it covers
+#   when     guard (Python expr); for one call exactly one rule may match
+#   accept   predicate over `got` (the returned value): success is allowed iff true
+#   raises   category the call must raise instead
+#   warns    warning the call must emit (none emitted otherwise)
+#   advance  expr added to pos (default 0)
+#   to       next state, expr (default: unchanged)
+#   assumed  the prose does not fix this rule; text says what was assumed (findings F-n)
+#   open     open item: listed, never matched
+
+[derive]  # evaluated in order, before guards
+r = "len(content) - pos"
+nl = "content.find(b'\\n', pos)"
+take = "(nl + 1 - pos if nl >= 0 else r) if event == 'readline' else (r if n < 0 else min(n, r))"
+badsize = "event == 'chunk' and n <= 0"
+to_after = "'Exhausted' if pos + len(got) == len(content) else 'Open'"
+
+# -- open --------------------------------------------------------------------
+
+[[rule]]
+id = "N1"
+src = ["D18"]
+on = ["open"]
+when = "state == 'New'"
+to = "'Open' if content else 'Exhausted'"
+
+# -- read family: read(n), readinto(buf), readline(), next(chunks(n)) ---------
+
+[[rule]]
+id = "RF1"
+src = ["D7"]
+on = ["chunk"]
+when = "badsize"
+raises = "ValueError"
+assumed = "F5: caller error is ValueError (D33), state unchanged, raised in any state"
+
+[[rule]]
+id = "RF2"
+src = ["D15", "D18"]
+on = ["read", "readinto", "readline", "chunk"]
+when = "state == 'Closed' and not badsize"
+raises = "ValueError"
+
+[[rule]]
+id = "RF3"
+src = ["D16", "D18"]
+on = ["read", "readinto", "readline", "chunk"]
+when = "state == 'Failed' and not badsize and inject != 'cancel'"
+raises = "Unavailable"
+
+[[rule]]
+id = "RF4"
+src = ["D6", "D18"]
+on = ["read", "readinto", "readline", "chunk"]
+when = "state in ('Open', 'Exhausted') and not badsize and take == 0 and inject not in ('fail', 'cancel')"
+accept = "got == b''"
+assumed = "F1: read(0) mid-stream is b''"
+
+[[rule]]
+id = "RF5"
+src = ["D20"]
+on = ["read", "readinto", "readline", "chunk"]
+when = "state != 'Closed' and not badsize and inject == 'cancel'"
+raises = "Cancelled"
+to = "'Closed'"
+
+[[rule]]
+id = "RF6"
+src = ["D16", "D18"]
+on = ["read", "readinto", "readline", "chunk"]
+when = "state in ('Open', 'Exhausted') and not badsize and inject == 'fail'"
+raises = "Unavailable"
+to = "'Failed'"
+assumed = "F10: at the end, a read that reaches the backend can still fail (Exhausted not yet observed)"
+
+[[rule]]
+id = "RF7"
+src = ["D6"]
+on = ["read", "readinto", "readline"]
+when = "state == 'Open' and take > 0 and inject not in ('fail', 'cancel')"
+accept = "got == content[pos:pos + take]"
+advance = "len(got)"
+to = "to_after"
+assumed = "F4: readinto and readline follow io.BufferedIOBase over the same position"
+
+[[rule]]
+id = "RF8"
+src = ["D7", "D2"]
+on = ["chunk"]
+when = "state == 'Open' and not badsize and take > 0 and inject not in ('fail', 'cancel')"
+accept = "0 < len(got) <= n and got == content[pos:pos + len(got)]"
+advance = "len(got)"
+to = "to_after"
+
+# -- close ---------------------------------------------------------------------
+
+[[rule]]
+id = "K1"
+src = ["D15", "D18"]
+on = ["close"]
+when = "state == 'Closed'"
+accept = "got is None"
+
+[[rule]]
+id = "K2"
+src = ["D36", "D20"]
+on = ["close"]
+when = "state != 'Closed' and inject == 'cancel'"
+raises = "Cancelled"
+to = "'Closed'"
+assumed = "F2: state after a cancelled close() is Closed"
+
+[[rule]]
+id = "K3"
+src = ["D18", "D36"]
+on = ["close"]
+when = "state != 'Closed' and inject != 'cancel'"
+accept = "got is None"
+to = "'Closed'"
+
+# -- collection of the last reference --------------------------------------------
+
+[[rule]]
+id = "G1"
+src = ["D17"]
+on = ["collect"]
+when = "state == 'Closed'"
+
+[[rule]]
+id = "G2"
+src = ["D17"]
+on = ["collect"]
+when = "state != 'Closed'"
+warns = "ResourceWarning"
+to = "'Closed'"
+assumed = "F3: Exhausted and Failed count as unclosed and warn too"
+
+# -- shape -------------------------------------------------------------------------
+
+[[rule]]
+id = "Z1"
+src = ["D2"]
+on = ["seekable"]
+when = "state != 'Closed'"
+accept = "got is False"
+assumed = "O25: D2 decides a non-seekable stream, not what seekable() returns (False, a raise or no method); False assumed (io.IOBase)"
+
+[[rule]]
+id = "Z2"
+src = ["D2", "D15"]
+on = ["seekable"]
+when = "state == 'Closed'"
+raises = "ValueError"
+assumed = "io.IOBase: seekable() on a closed file raises ValueError"
+
+# -- open items ----------------------------------------------------------------------
+
+[[rule]]
+id = "H1"
+src = ["D18"]
+on = ["handle_end"]
+open = "OP-01/O5"

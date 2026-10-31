@@ -105,3 +105,13 @@ Two more, from the first `/observe` run's own report (above):
 - **F3 lacks "admitted, not required".** A failure category that may surface
   but need not (`exists`'s store-integrity failure on a non-store state) fits
   none of F3's terms; the session coined the phrase.
+
+## OP-01 stream spike (2026-10-30)
+
+A frozen spike carried OP-01's stream decisions from the record to checks
+against Local, with faults injected below the library:
+[`research/bk-485-op01-stream-spike/report.md`](../research/bk-485-op01-stream-spike/report.md).
+For step 5 it offers guarded rules as a model format, nine prose gaps
+(four not among `O14` to `O45`), and five places where 0.33's Local stream is
+behind decided behaviour. It is derived from the record, so RFC-0029
+R4 keeps it from BK-506's oracle sessions.
