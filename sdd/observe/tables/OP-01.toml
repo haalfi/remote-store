@@ -3,7 +3,11 @@
 # written by /observe-review, never a decision: the record governs, and a
 # declaration a re-read shows wrong is corrected here (the script's docstring).
 # Written 2026-10-29 after reading open items O14 to O44, which bounds what the
-# first run's findings show (BK-504's trace).
+# first run's findings show (BK-504's trace). D38 and D60 corrected on 2026-10-31,
+# after the reopen of 2026-10-30. The script reads each table as it stands, never an
+# amending decision's prose (D50 gives D18 its cancelled column, D62 and D67 add
+# E16 and E17 rows to D19, D71 defines NP9), so a run after a reopen reports those
+# until the spec merges them: the review's trace names each one.
 
 [[table]]
 at = "Environment"
@@ -54,12 +58,20 @@ kind = "case"
 key = 1
 members = [
     "key refused", "not found", "not an item", "permission denied", "authentication failed", "not readable",
-    "unavailable", "timeout", "changed", "base category", "as raised", "UnicodeDecodeError", "TypeError",
-    "ValueError", "cancellation",
+    "unavailable", "timeout", "changed", "base category",
 ]
-# complete: a category D34 gains needs a D38 row.
-source = [{ at = "OP-01/D34", column = 2, complete = true }]
+# Not complete since the reopen: OP-01/D60's table holds D34's other categories, and the script
+# checks no union of two tables, so a category D34 gains with a row in neither goes unreported.
+source = [{ at = "OP-01/D34", column = 2 }]
 basis = "D38's table: 'Caller-level retry of a surfaced failure'; D34 lists the categories OP-01 surfaces"
+
+[[table]]
+at = "OP-01/D60"
+kind = "case"
+key = 1
+members = ["decode under strict", "caller error", "memory or descriptors", "cancellation"]
+source = [{ at = "OP-01/D34", column = 1 }, { at = "OP-01/D34", column = 2 }]
+basis = "D60's Decision: 'D38's caller-level table gains' these rows, D34's categories D38's table lacks (OP-01/O37)"
 
 [[table]]
 at = "OP-01/D41"
