@@ -153,3 +153,63 @@ phases:
         read_type: reference
         extract: "Reference model in Python with a Hypothesis state machine, history checks by Porcupine: the proposal's layer 5 is already the trial's toolchain"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1198 --trace-block-only` at head 68a0b40.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1198 --trace-block-only"
+  pr: 1198
+  review_rounds: 5
+  submissions: 3
+  findings: 11
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.3
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 1, original: 3}
+      triage: {must-fix: 4}
+      duration_hours: 2.05
+    - round: 3
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.26
+  by_file:
+    - path: "sdd/research/bk-485-op01-stream-spike/report.md"
+      findings: 6
+    - path: "sdd/research/bk-485-op01-stream-spike/slice/check_stream.py"
+      findings: 2
+    - path: "sdd/research/bk-485-op01-stream-spike/README.md"
+      findings: 1
+    - path: "sdd/research/bk-485-op01-stream-spike/slice/stream_rules.toml"
+      findings: 1
+    - path: "sdd/traces/bk-485-op01-stream-spike.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/backlog/bk-485-spec-first-reset.md"
+    - "sdd/decisions/3f275077-1eeb-5b6f-a4a6-7377e26283e4.jsonl"
+    - "sdd/research/bk-485-op01-stream-spike/extract/OP-01-closed-decisions.md"
+    - "sdd/research/bk-485-op01-stream-spike/extract/extract_decisions.py"
+    - "sdd/research/bk-485-op01-stream-spike/extract/stale_filter.py"
+    - "sdd/research/bk-485-op01-stream-spike/formalization-input.md"
+    - "sdd/research/bk-485-op01-stream-spike/slice/conform.py"
+    - "sdd/research/bk-485-op01-stream-spike/slice/mutate.py"
+    - "sdd/research/bk-485-op01-stream-spike/slice/rules_engine.py"
+    - "sdd/research/bk-485-op01-stream-spike/slice/stream_model.py"
+    - "sdd/research/bk-485-op01-stream-spike/slice/stream_rows.toml"
+  review_driven_commits:
+    - sha: "b817545"
+      subject: "fix: address PR #1198 review"
+    - sha: "88b4dc9"
+      subject: "BK-485: Keep the outside formalization proposal in the spike, with verdicts"
+    - sha: "eda4095"
+      subject: "BK-485: Read the outside proposal critically against OP-01 and the spike"
+    - sha: "c21024e"
+      subject: "fix: address PR #1198 review"
+    - sha: "68a0b40"
+      subject: "fix: address PR #1198 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
