@@ -31,9 +31,12 @@ co_shipped_items: []
 # (from each event's session_id; not diffed). The armed session could not
 # commit either, and both go when its container is archived. No .jsonl is
 # written by hand.
+# The third log is the reopen's of 2026-10-30 (D45 to D80), added by the
+# /observe-review run after it (bk-485-op-01-review-2.yml).
 decisions:
   - sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
   - sdd/decisions/f2ddab07-cc31-5c01-a396-d08c5dcec24a.jsonl
+  - sdd/decisions/07bd66b7-51b6-5a03-b47e-dc2fedeeeae7.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:
