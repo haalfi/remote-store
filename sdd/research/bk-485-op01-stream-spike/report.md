@@ -35,7 +35,7 @@ cheap lower steps only:
 | 2 | The slice as typed rows, then as guarded rules | The rules: every call matches exactly one rule (§ 4) |
 | 3 | Reference model (Python) | Rows replayed, a Hypothesis machine, four mutants (§ 3) |
 | 4 | Local, plain and with injected faults | The same rules as oracle (§ 5) |
-| 5 | Formal check (TLA+) | Not tried: the slice has no interleaving |
+| 5 | The lifecycle as a TLA+ module | Not done here. `SPEC-DESIGN.md` Rule 3 makes a lifetime's TLA+ module its source, and Rule 4 puts environment events (this slice's faults and cancellation) under TLA+ too, so the stream belongs there with the rules as its oracle ([`formalization-input.md`](formalization-input.md) § 4.1) |
 
 Inputs: the record at `f1595ff`, read in this session; no other `sdd/` file
 shaped the rules. Local's API was read only as far as an adapter needs:
@@ -68,7 +68,12 @@ replays every row (29 pass, 6 of them on an assumption; R30 is the open item
 decisions (P03 to P11), and shows each of the slice's 8 decisions behind at
 least one row and one invariant. `mutate.py` breaks the model four ways (Failed
 not sticky, a byte consumed on a failed transfer, `close()` raising a release
-failure, a cancelled read leaving Failed); each makes the check fail.
+failure, a cancelled read leaving Failed); each makes the check fail. Two
+review rounds found the oracle had taken the model's behaviour for the
+decisions': it read D20 as Open-only (now every state but Closed, per `O45`)
+and demanded exact chunk sizes (now any non-empty prefix of at most `size`, as
+D7 and RF8 allow). Each fix was shown by a model variant the old oracle rejected
+and the new one accepts.
 
 Rows are examples: `read(4)` on `"abcdef"` fixes one input. The rule lived in
 the invariants, written by hand.
@@ -122,20 +127,20 @@ decision.
 caller observes: return value, raised category, warnings. Then again with
 faults injected below the library: for `LocalBackend.read`'s one call,
 `open` returns `BufferedReader(FaultyRaw(FileIO(path)))`, whose raw layer
-raises `OSError(EIO)` on a read, `KeyboardInterrupt` on a read or close, or
-`OSError` after releasing on close. The stream is CPython's own
+raises `OSError(EIO)` on a read, `KeyboardInterrupt` on a read or after the
+release on close, or `OSError` after releasing on close. The stream is CPython's own
 `BufferedReader`, as in production. Typing is judged twice: strict (library
 categories only; `BackendUnavailable` is unavailable) and protocol only (any
 `OSError` counts as unavailable), separating D27 from the state machine. 400
 examples per run.
 
-Plain Local diverges on three rules (RF7 in three of four runs: it needs a
+Plain Local diverges on three rules (RF7 in four of five runs: it needs a
 `read(n < -1)` drawn while bytes remain):
 
 | Rules | Local | Cause |
 |---|---|---|
 | RF4, RF7 (D6) | `read(-2)` raises `ValueError` | `io.BufferedReader` accepts only n ≥ 0 or -1 (run directly): F9 |
-| Z1 (D2) | `seekable()` is `True` | `open(full, "rb")` is seekable |
+| Z1 (D2) | `seekable()` is `True` | `open(full, "rb")` is seekable. D2 decides a non-seekable stream, but what `seekable()` returns is open (`O25`), so this divergence rests on Z1's assumption (`False`), unlike C1 to C4 |
 
 With faults (F9 and Z1 parked), five rules diverge in each mode. A divergence
 ends its example before the oracle applies the rule's effect, so a later rule
@@ -145,7 +150,7 @@ leaves its rules unexercised. By cause, with the mode that shows each rule
 
 | # | Decision | Local today | Strict | Protocol only |
 |---|---|---|---|---|
-| C1 | D20 | A cancelled read or close leaves the stream open | RF2, K1, G1 | RF2, K1, G1 |
+| C1 | D20 | A cancelled read leaves the stream open | RF2, K1, G1 | RF2, K1, G1 |
 | C2 | D16 | Failed is not sticky: the next read reaches the OS again | — | RF3 |
 | C3 | D27 | An OS error surfaces as `OSError`, not a library category | RF6 | — |
 | C4 | D36 | `close()` raises a release failure | K3 | K3 |
@@ -154,15 +159,24 @@ C2 has no strict rule because strict typing fails RF6 first (C3), so its
 oracle never reaches Failed and RF3 stays unexercised there. K3 rejects any
 raise, so it shows C4 in both modes.
 
+C1 is about reads only. A cancelled close leaves Local's stream closed: run
+directly after `close() !cancel`, a read raises `ValueError`, a second close
+is a no-op and collection warns nothing, so RF2, K1 and G1 hold there. An
+earlier version of the wrapper raised the interrupt before the release, which
+kept the descriptor open by construction and made the close case diverge too.
+
 Not exercised on Local: RF1 and RF8 (no `chunks()`, D7). C1 to C4 are where
 0.33's Local stream, a plain file object, is behind decided v1 behaviour, not
 defects in the prose; audit-025 § 4 ranks D20 (rank 2) and D27 (rank 7) among
 the costs ahead.
 
 **The wrapper's limits.** A fault fires only at the start of a raw call, never
-mid-read; `release_fail` releases the descriptor before raising;
+mid-read; `release_fail` releases the descriptor before raising; a cancel on
+close fires after the release, because CPython delivers `KeyboardInterrupt`
+when control returns to the eval loop, after a C `FileIO`'s `close(2)` has run
+(the wrapper's Python frame is what would otherwise let it land before);
 `_dealloc_warn` is delegated so `ResourceWarning` behaves as with a plain file.
-A real NFS `EIO` was not run.
+A real NFS `EIO` and a real SIGINT were not run.
 
 ## 6. What the prose leaves open
 
@@ -183,8 +197,9 @@ their text in this session.
 | F9 | D6 decides n < 0 reads the rest and cites `io.BufferedIOBase`, which raises `ValueError` for n < -1 | new |
 | F10 | Exhausted is the oracle's fact (pos = length), not the stream's: a stream learns the end from a read returning nothing, which reaches the backend and can fail or be cancelled | new |
 
-Seven of the 16 rules carry an `assumed` field: six rest on F1, F2, F3, F4,
-F5 or F10, and Z2 on `io.IOBase` (`seekable()` on a closed file). Findings and gaps are reported only; what to do with them is the
+Eight of the 16 rules carry an `assumed` field (counted from the rules file):
+six rest on F1, F2, F3, F4, F5 or F10, Z1 on `O25` (what `seekable()`
+returns), and Z2 on `io.IOBase` (`seekable()` on a closed file). Findings and gaps are reported only; what to do with them is the
 maintainer's (CLAUDE.md § Audits).
 
 ## 7. Limits and what this does not feed

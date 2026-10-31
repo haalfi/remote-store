@@ -146,8 +146,11 @@ class FaultyRaw(io.RawIOBase):
     """Raw file below BufferedReader: the OS layer Local's stream reads through.
 
     fail         readinto raises OSError(EIO)      (E8/E13 analogue)
-    cancel       readinto or close raises KeyboardInterrupt (E14, sync form)
+    cancel       readinto, or close after the release, raises KeyboardInterrupt (E14, sync form)
     release_fail close releases the file, then raises OSError (D36 scenario)
+
+    A cancel on close fires after the release: CPython delivers KeyboardInterrupt
+    when control returns to the eval loop, after the C FileIO's close(2) has run.
     """
 
     def __init__(self, path: str, faults: Faults) -> None:
@@ -184,12 +187,12 @@ class FaultyRaw(io.RawIOBase):
         if self.closed:
             return
         fault = self._faults.take("release_fail", "cancel")
-        if fault == "cancel":
-            raise KeyboardInterrupt  # interrupt arrives before release
         self._f.close()
         super().close()
         if fault == "release_fail":
             raise OSError(errno.EIO, "injected release failure")
+        if fault == "cancel":
+            raise KeyboardInterrupt  # delivered after the release, as for a C FileIO
 
 
 class LocalSUT(SUT):

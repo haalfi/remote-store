@@ -150,12 +150,13 @@ pinning module (D21, D22, D25, D26), the slice the spike left out.
 
 ### 4.1 The spike put the stream lifecycle in Python rules; the repo says TLA+
 
-The spike's report treats TLA+ as the top step, skipped because "the slice has
-no interleaving" (its § 1 table). `SPEC-DESIGN.md` Rule 3 says otherwise: a lifetime's
-source is a TLA+ module, the stream lifecycle is a lifetime, and the proposal
-puts it in a TLA+ action system too. On that reading `stream_rules.toml` is an
-oracle and evidence, not a candidate source, and skipping TLA+ for want of
-interleaving read the repo's rule too narrowly. What the spike does
+The spike first skipped TLA+ because "the slice has no interleaving".
+`SPEC-DESIGN.md` Rule 3 says otherwise: a lifetime's source is a TLA+ module,
+the stream lifecycle is a lifetime, and the proposal puts it in a TLA+ action
+system too. On that reading `stream_rules.toml` is an oracle and evidence, not
+a candidate source, and skipping TLA+ for want of interleaving read the repo's
+rule too narrowly; the report's § 1 table now carries the Rule 3 reading. What
+the spike does
 show is that the rules' guard-and-effect form maps onto TLA+ actions one to
 one, so the move is a translation, not a redesign.
 
@@ -189,7 +190,7 @@ actually describe.
 
 The proposal values Hypothesis for shrinking a failure to a short, reproducible
 trace. `conform.py` records divergences instead of failing, so nothing shrinks,
-and the runs are not seeded: plain Local's RF7 showed in three of four runs.
+and the runs are not seeded: plain Local's RF7 showed in four of five runs.
 **Dig:** a seeded or derandomized run for the reported figures, and a failing
 mode that shrinks for a single divergence.
 

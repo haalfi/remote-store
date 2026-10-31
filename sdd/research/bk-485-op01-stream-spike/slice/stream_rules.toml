@@ -154,6 +154,7 @@ src = ["D2"]
 on = ["seekable"]
 when = "state != 'Closed'"
 accept = "got is False"
+assumed = "O25: D2 decides a non-seekable stream, not what seekable() returns (False, a raise or no method); False assumed (io.IOBase)"
 
 [[rule]]
 id = "Z2"

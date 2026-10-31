@@ -142,7 +142,8 @@ class StreamMachine(RuleBasedStateMachine):
     def _reset_env(self) -> None:
         self.env.fail = self.env.cancel = self.env.release_fail = False
 
-    def _expect_read(self, n: int, fault: str | None, call) -> None:
+    def _expect_read(self, n: int, fault: str | None, call, *, chunk: bool = False) -> None:
+        """chunk=True: D7 allows any non-empty prefix of at most n bytes (RF8), not exactly n."""
         remaining = self.content[len(self.delivered) :]
         want = remaining if n < 0 else remaining[:n]
         if fault:
@@ -166,7 +167,11 @@ class StreamMachine(RuleBasedStateMachine):
         finally:
             self._reset_env()
         assert self.status == "live", f"P05/P06: read succeeded while {self.status}"
-        assert got == want, f"P03: got {got!r}, expected {want!r}"
+        if chunk:
+            assert remaining.startswith(got), f"P03: chunk {got!r} is not the next bytes"
+            assert bool(got) == bool(want), f"P09: chunk {got!r} with {len(want)} bytes remaining"
+        else:
+            assert got == want, f"P03: got {got!r}, expected {want!r}"
         assert not (fault and want), "a fault on a needed transfer must surface"
         self.delivered += got
 
@@ -184,7 +189,7 @@ class StreamMachine(RuleBasedStateMachine):
                 assert chunk == b"" or 0 < len(chunk) <= size, "P09"
                 return chunk
 
-            self._expect_read(size, fault, one)
+            self._expect_read(size, fault, one, chunk=True)
             fault = None  # fault applies to the first chunk only
             if self.status != "live" or len(self.delivered) == before:
                 return
