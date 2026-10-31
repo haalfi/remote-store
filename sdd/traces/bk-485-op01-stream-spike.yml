@@ -128,3 +128,20 @@ phases:
         read_type: reference
         extract: "Its Format RFC input asks to test the one-unit rule on the read() slice; the report answers with what the rules show"
         outcome: ok
+  - id: input
+    name: Keep the outside formalization proposal with verdicts
+    steps:
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rules 3 to 5"
+        read_type: gate
+        extract: >-
+          A lifetime's source is a TLA+ module with a closed-world diagram; Dafny governs single
+          calls, Alloy and Lean structure, TLA+ lifetime and environment; profiles and assumptions
+          are declared. Most of the proposal's stack is decided here, so its verdicts compare
+          against these rules
+        outcome: ok
+      - file: sdd/rfcs/rfc-0029-faithfulness-before-spec.md
+        section: "R4, Toolchain row"
+        read_type: reference
+        extract: "Reference model in Python with a Hypothesis state machine, history checks by Porcupine: the proposal's layer 5 is already the trial's toolchain"
+        outcome: ok

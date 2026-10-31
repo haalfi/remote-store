@@ -23,7 +23,9 @@ not among the record's open items.
 
 The staircase came from an outside critique the maintainer passed on (a
 ChatGPT answer proposing contracts, an extended state machine, TLA+ and
-model-based testing; not committed, sources not graded). This spike tried the
+model-based testing; sources not graded). Its proposal, where the repo already
+decides each part, and a verdict per element:
+[`formalization-input.md`](formalization-input.md). This spike tried the
 cheap lower steps only:
 
 | Step | Artifact | Checked by |

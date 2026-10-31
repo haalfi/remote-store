@@ -14,6 +14,7 @@ oracles.
 
 | Path | Step | Role |
 |---|---|---|
+| `formalization-input.md` | — | The outside proposal that suggested the staircase, set against `SPEC-DESIGN.md` and RFC-0029, with a verdict per element |
 | `extract/extract_decisions.py` | 1 | The record's decisions whose own Open items field is `none`, as a Heading / Scenario / Observed table; a bare `(a)` is expanded from Options |
 | `extract/OP-01-closed-decisions.md` | 1 | Its output on the record at `f1595ff` |
 | `extract/stale_filter.py` | 1 | Counts how many of those decisions a later open item names (report § 2) |
