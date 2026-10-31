@@ -521,8 +521,8 @@ no clause of the contract ships unexercised.
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset (§ 9 steps 1, 2);
   step 3 built `/observe` and `sdd/observe/` (test runs in the dossier); step 4 is spec 052, 4b spec 053 (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), `/observe-review` (RFC-0028) checked it, and
-  RFC-0029 orders the rest: a table check (BK-504, run), the reopen, a freeze (not waiting for BK-505's stopping rule), then
-  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O14 to O44 ([audit-025](audits/audit-025-op-01-record-review.md), the review) and O45 (BK-504's table check), for a reopen session (`/observe OP-01` on the Complete record, BK-501), bar O42, for the write entries' sessions.
+  RFC-0029 orders the rest: a table check (BK-504, run), the reopen (run: D45 to D80 decide O14 to O45 bar O42), the review's re-run (run: O47 to O64), a freeze (not waiting for BK-505's stopping rule), then
+  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: the freeze; step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O47 to O64, for a second reopen session (`/observe OP-01`, BK-501), O64 naming what O3 to O12 and O42 block; O42 and O46 are for other entries' sessions.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-502 — A reopen's ground-conflict route and `Flow done` have never run, so their remaining gaps surface only in the first ground reopen**
