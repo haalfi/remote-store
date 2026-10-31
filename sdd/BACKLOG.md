@@ -565,6 +565,13 @@ no clause of the contract ships unexercised.
   nothing; a heading's text before its first colon is never scanned; a `source` listed twice is accepted.
   Open decision: how a named row is resolved (a row's key cell, or a declared row name), which BK-505 may own.
 
+- [ ] **BK-509 — `observe-tables` reads a reopened record's tables as they stand, so amendments come back as findings**
+  spec: — · effort: S · audience: contributor.tooling
+  `/observe-review OP-01` after its reopen, measured: 10 of 11 findings are answered by an amending decision's prose
+  (D50's column for D18, D62's and D67's E16 and E17 for D19, D62's E16 for D34, D71's NP9) or by a second table (D60's
+  rows for D38, five gaps); a decision never edits another's table, so every later reopen repeats this.
+  Open decision: how an amendment is declared (a sidecar entry naming the amending decision, or a row the amendment states).
+
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   RFC-0025 froze the contract kernel, the drivers, Memory on the kernel and specs 052 and 053 on

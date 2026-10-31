@@ -11,12 +11,14 @@ source_items:
 audience:
   - contributor.process
   - library.maintainer
-discovery_followups: []
+discovery_followups:
+  - BK-509
+decisions:
+  - sdd/decisions/76bcf9f7-2e2b-458f-9bd8-ad7c5edbb4c8.jsonl
 # A reopen amends tables in prose or in a second table (D50, D60, D62, D67,
 # D71), which observe-tables cannot read: ten of its eleven findings are
-# answered by amending decisions, and the record's new baseline citation
-# finding broke a mutant test's set difference. No backlog item names the
-# limit.
+# answered by amending decisions (BK-509), and the record's new baseline
+# citation finding broke a mutant test's set difference.
 surprising_ripples:
   - sdd/observe/tables/OP-01.toml
   - tests/scripts/test_observe_tables.py
