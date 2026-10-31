@@ -81,8 +81,10 @@ an oracle.
 
 What rules add over rows:
 
-- **A completeness check.** Over 3 contents, every valid state and position, 7
-  events, 4 injected faults and 6 sizes, every call matches exactly one rule.
+- **A completeness check.** Over 3 contents (`b""`, `b"a"`, `b"ab\nc"`); Open
+  at every position before the end, Exhausted at the end, Failed and Closed at
+  every position; 7 events; no fault and 3 faults; and 6 sizes (`check_rules`
+  in `rules_engine.py`), every call matches exactly one rule.
   That is D18's table's claim, made checkable; drafting against it forced
   guards for cases no row listed (`chunks(0)` on a Failed stream, a release
   fault on a read).
@@ -96,9 +98,16 @@ file, and NP3 leaves read-ahead unpromised, so the rules must not depend on it.
 
 One rule was corrected before landing. Drafted first, a cancellation on a call
 that needed no transfer was ignored; `O45` reads D20 as closing the stream in
-every state. RF5 now covers Open, Exhausted and Failed. Before the fix, Local's
+every state. RF5 now covers Open, Exhausted and Failed, and step 3's oracle
+(P05, P07 in `check_stream.py`) was aligned with it. Before the fix, Local's
 end-of-file faults surfaced as a divergence; after it they are judged by the
 rule F10 assumes (§ 6).
+
+The model never lets a fault reach the backend outside Open: a read at
+Exhausted or on a Failed stream returns or raises before `_transfer`. So RF5
+beyond Open and RF6 at Exhausted never fire against the model. Only Local's
+fault runs reach them; the pre-fix run's `open(b'') → read(5) !fail` was such a
+call.
 
 On the dossier's F1 question (one formula, row or transition per unit): the
 16 rules each cite one or two decisions, and D18 spreads over 7 of them
@@ -118,7 +127,8 @@ categories only; `BackendUnavailable` is unavailable) and protocol only (any
 `OSError` counts as unavailable), separating D27 from the state machine. 400
 examples per run.
 
-Plain Local diverges on three rules:
+Plain Local diverges on three rules (RF7 in three of four runs: it needs a
+`read(n < -1)` drawn while bytes remain):
 
 | Rules | Local | Cause |
 |---|---|---|
@@ -126,15 +136,21 @@ Plain Local diverges on three rules:
 | Z1 (D2) | `seekable()` is `True` | `open(full, "rb")` is seekable |
 
 With faults (F9 and Z1 parked), five rules diverge in each mode. A divergence
-ends its example, so a later rule often shows an earlier step's cause; by
-cause:
+ends its example before the oracle applies the rule's effect, so a later rule
+often shows an earlier step's cause, and a state the oracle never reaches
+leaves its rules unexercised. By cause, with the mode that shows each rule
+(the runs' DIVERGED lines):
 
-| # | Decision | Local today | Rules |
-|---|---|---|---|
-| C1 | D20 | A cancelled read or close leaves the stream open | RF2, K1, G1 |
-| C2 | D16 | Failed is not sticky: the next read reaches the OS again | RF3 |
-| C3 | D27 | An OS error surfaces as `OSError`, not a library category | RF6, K3 (strict) |
-| C4 | D36 | `close()` raises a release failure | K3 |
+| # | Decision | Local today | Strict | Protocol only |
+|---|---|---|---|---|
+| C1 | D20 | A cancelled read or close leaves the stream open | RF2, K1, G1 | RF2, K1, G1 |
+| C2 | D16 | Failed is not sticky: the next read reaches the OS again | — | RF3 |
+| C3 | D27 | An OS error surfaces as `OSError`, not a library category | RF6 | — |
+| C4 | D36 | `close()` raises a release failure | K3 | K3 |
+
+C2 has no strict rule because strict typing fails RF6 first (C3), so its
+oracle never reaches Failed and RF3 stays unexercised there. K3 rejects any
+raise, so it shows C4 in both modes.
 
 Not exercised on Local: RF1 and RF8 (no `chunks()`, D7). C1 to C4 are where
 0.33's Local stream, a plain file object, is behind decided v1 behaviour, not

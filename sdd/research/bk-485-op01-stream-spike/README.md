@@ -40,12 +40,14 @@ hatch run python sdd/research/bk-485-op01-stream-spike/slice/mutate.py
 hatch run python sdd/research/bk-485-op01-stream-spike/slice/conform.py
 ```
 
-Expected (2026-10-30, each under a minute): `24 rows`; `24` closed, `23`
+Expected (2026-10-31, each under a minute): `24 rows`; `24` closed, `23`
 mentioned, `10` reopened, noted or gapped; `Result: OK (0 failure(s))`; four
 `killed`; static check `OK`, then `0`, `3`, `5`, `5` rules diverged for the
 model, Local, and Local with faults (strict, protocol only). Hypothesis draws
-fresh examples each run, so traces and hit counts differ; the diverging rules
-did not across three runs.
+fresh examples each run, so traces and hit counts differ. Over four runs the
+fault modes' diverging rules were the same each time; plain Local showed RF4,
+RF7 and Z1 in three and RF4 and Z1 in one, where no `read(n < -1)` with bytes
+left was drawn before another divergence ended its example (`2` then).
 
 `conform.py` writes its Local stores under `tmp/op01-stream-spike/`
 (gitignored) and, for the fault runs only, shadows `open` in

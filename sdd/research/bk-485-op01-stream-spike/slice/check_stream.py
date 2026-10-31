@@ -153,13 +153,14 @@ class StreamMachine(RuleBasedStateMachine):
             assert self.status == "closed", "P06: ValueError only when closed"
             return
         except Unavailable:
-            assert self.status == "failed" or (fault == "fail" and want), "P05/P10"
+            # sticky (D16), or a fail that reached the backend; at the end too (F10, RF6)
+            assert self.status == "failed" or (self.status == "live" and fault == "fail"), "P05/P10"
             self.status = "failed"  # P10: delivered unchanged
             return
         except Cancelled:
-            assert self.status == "live", "P07: cancelled while not live"
+            # D20 in every state but Closed (O45, RF5), whether or not bytes remain
+            assert self.status != "closed", "P07: cancelled while closed"
             assert fault == "cancel", "P07: Cancelled without a cancel fault"
-            assert want, "P07: Cancelled on a call that needed no transfer"
             self.status = "closed"
             return
         finally:

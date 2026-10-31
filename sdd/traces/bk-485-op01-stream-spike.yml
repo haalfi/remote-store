@@ -37,6 +37,27 @@ orient:
       D10 is BK-489's (BK-485's index entry); the slice is D2, D6, D7, D15 to
       D18, D20 and D36 and touches D10 only through D17's release.
 phases:
+  - id: orient
+    name: Orient against open and decided work
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-485 (hatch run backlog-show BK-485)"
+        read_type: gate
+        extract: "Index entry: step 5's spec, model, profile tables and 0.33 comparison not done; D10 is BK-489's; RFC-0029 orders a table check, a reopen, a freeze, then BK-506's trial"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-506, BK-505 (hatch run backlog-show BK-506 BK-504 BK-501 BK-505)"
+        read_type: gate
+        extract: >-
+          BK-506 is RFC-0029 R4's trial in sdd/research/bk-506-faithfulness-trial/;
+          BK-505's unmeasured check is two extractions of OP-01 plus a blind
+          restatement per claim; BK-504 and BK-501 are done (observe-tables, reopen)
+        outcome: ok
+      - file: sdd/rfcs/rfc-0029-faithfulness-before-spec.md
+        section: "R4"
+        read_type: gate
+        extract: "The trial's home, its information flow (nothing derived from the record) and its Stage 0 order: the BK-506 verdict"
+        outcome: ok
   - id: extract
     name: Extract the record's closed decisions
     steps:
@@ -96,11 +117,6 @@ phases:
         section: "header"
         read_type: reference
         extract: "A folder report carries Date, Backlog items and Status, and names itself a point-in-time snapshot"
-        outcome: ok
-      - file: sdd/rfcs/rfc-0029-faithfulness-before-spec.md
-        section: "R4"
-        read_type: gate
-        extract: "The trial's home, its information flow (nothing derived from the record) and its Stage 0 order; the spike must stay outside all three"
         outcome: ok
       - file: sdd/audits/audit-025-op-01-record-review.md
         section: "§ 1 to § 5"

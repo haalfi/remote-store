@@ -86,11 +86,13 @@ INJECTS = [None, "fail", "cancel", "release_fail"]
 def check_rules() -> list[str]:
     problems = []
     for content in (b"", b"a", b"ab\nc"):
-        for state, pos in [("Open", p) for p in range(len(content))] + [
-            ("Exhausted", len(content)),
-            ("Failed", 0),
-            ("Closed", 0),
-        ]:
+        # Open before the end, Exhausted at it; Failed and Closed are reachable at any position
+        every = range(len(content) + 1)
+        for state, pos in (
+            [("Open", p) for p in range(len(content))]
+            + [("Exhausted", len(content))]
+            + [(s, p) for s in ("Failed", "Closed") for p in every]
+        ):
             o = Oracle(content, state, pos)
             for event, inject in itertools.product(EVENTS, INJECTS):
                 for n in (-2, -1, 0, 1, 2, 5):
