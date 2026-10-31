@@ -200,3 +200,8 @@ maintainer's (CLAUDE.md § Audits).
   measures nothing about faithfulness.
 - **Not step 5's model.** RFC-0024 § 9 step 5's model and profile tables are
   BK-485's own deliverables; this folder freezes and is not extended into them.
+- **Challenged from outside.** [`formalization-input.md`](formalization-input.md)
+  § 4 sets the outside proposal against this spike: the lifecycle belongs in
+  TLA+ under `SPEC-DESIGN.md` Rule 3, Exhausted may not be a state (F10),
+  observables alone cannot check D10's frame, faults fire only at a call's
+  start here, and unseeded runs do not reproduce.
