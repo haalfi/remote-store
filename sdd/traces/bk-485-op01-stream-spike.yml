@@ -80,8 +80,16 @@ phases:
       - file: sdd/observe/records/OP-01.md
         section: "OP-01/D2, D6, D7, D15 to D18, D20, D36"
         read_type: gate
-        extract: "D18's table converted to rows almost 1:1; every gap (F1 to F10) came from prose, mostly a rule split across two decisions"
+        extract: "D18's table converted to rows almost 1:1; every gap (F1 to F10, F9 later withdrawn) came from prose, mostly a rule split across two decisions"
         outcome: unclear
+      - file: "Python io module (io.BufferedIOBase.read docstring, CPython 3.13.17)"
+        section: "read(size)"
+        read_type: verify
+        extract: >-
+          The abstract class reads to EOF for any negative size; only the concrete BufferedReader
+          raises for n < -1. F9 had read the concrete class as D6's source; withdrawn in review,
+          now C5 (Local behind D6). My own miss
+        outcome: ok
   - id: conform
     name: Run the rules against Local
     steps:

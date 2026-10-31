@@ -45,11 +45,11 @@ Expected (2026-10-31, each under a minute): `24 rows`; `24` closed, `23`
 mentioned, `10` reopened, noted or gapped; `Result: OK (0 failure(s))`; four
 `killed`; static check `OK`, then `0`, `3`, `5`, `5` rules diverged for the
 model, Local, and Local with faults (strict, protocol only). Hypothesis draws
-fresh examples each run, so traces and hit counts differ. Over five runs the
-fault modes' diverging rules were the same each time (the fifth with a cancel
-on close firing after the release); plain Local showed RF4, RF7 and Z1 in four
-and RF4 and Z1 in one, where no `read(n < -1)` with bytes left was drawn before
-another divergence ended its example (`2` then).
+fresh examples each run, so traces and hit counts differ. Four runs of these
+scripts gave the same diverging rules each time (report § 5 lists them). Of
+four earlier runs, made with a wrapper that raised the cancel on close before
+the release, one showed `2` for plain Local: no `read(n < -1)` with bytes left
+was drawn before another divergence ended its example.
 
 `conform.py` writes its Local stores under `tmp/op01-stream-spike/`
 (gitignored) and, for the fault runs only, shadows `open` in

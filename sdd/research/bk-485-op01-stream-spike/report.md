@@ -17,9 +17,9 @@ through steps a script can check, each step derived from the one below it?
 For one slice, the read stream's lifecycle, yes. Rules with guards and effects
 are the step that carries it. They make the slice's completeness checkable,
 generate the checks, and judge Local unchanged. Most of the yield is
-not the conformance verdict but what each step forced into the open: ten
-places where the prose does not fix an outcome (F1 to F10, § 6), five of them
-not among the record's open items.
+not the conformance verdict but what each step forced into the open: nine
+places where the prose does not fix an outcome (F1 to F10, F9 withdrawn in
+review, § 6), four of them (F1, F3, F7, F10) not among the record's open items.
 
 The staircase came from an outside critique the maintainer passed on (a
 ChatGPT answer proposing contracts, an extended state machine, TLA+ and
@@ -123,6 +123,13 @@ decision.
 
 ## 5. Step 4: the same rules against Local
 
+Local passes the Closed, close and collection rules. Where it diverges, 0.33's
+plain file object is behind decided v1 behaviour: `read(n < -1)` raises (C5),
+and with faults a cancelled read leaves the stream open, Failed is not sticky,
+OS errors are untyped and `close()` raises a release failure (C1 to C4). One
+more divergence, `seekable()` returning `True`, rests on the open item `O25`,
+and none of them is a defect in the prose.
+
 `conform.py` drives `Store(LocalBackend(dir)).read(key)`, comparing only what a
 caller observes: return value, raised category, warnings. Then again with
 faults injected below the library: for `LocalBackend.read`'s one call,
@@ -134,15 +141,21 @@ categories only; `BackendUnavailable` is unavailable) and protocol only (any
 `OSError` counts as unavailable), separating D27 from the state machine. 400
 examples per run.
 
-Plain Local diverges on three rules (RF7 in four of five runs: it needs a
-`read(n < -1)` drawn while bytes remain):
+On the committed scripts, four runs gave the same diverging rules each time
+(one in the review's fix pass, three after it): plain Local RF4, RF7 and Z1;
+strict RF2, RF6, K1, K3 and G1; protocol only RF2, RF3, K1, K3 and G1. Four
+earlier runs used a wrapper that raised the cancel on close before the release
+(below); their fault-mode sets matched, partly for that reason, and one of
+them lacked RF7, which needs a `read(n < -1)` drawn while bytes remain.
+
+Plain Local diverges on three rules:
 
 | Rules | Local | Cause |
 |---|---|---|
-| RF4, RF7 (D6) | `read(-2)` raises `ValueError` | `io.BufferedReader` accepts only n ≥ 0 or -1 (run directly): F9 |
-| Z1 (D2) | `seekable()` is `True` | `open(full, "rb")` is seekable. D2 decides a non-seekable stream, but what `seekable()` returns is open (`O25`), so this divergence rests on Z1's assumption (`False`), unlike C1 to C4 |
+| RF4, RF7 (D6) | `read(-2)` raises `ValueError` | C5: CPython's concrete `io.BufferedReader` accepts only n ≥ 0 or -1 (run directly), while D6 and its source, the abstract `io.BufferedIOBase.read`, read to the end for any negative size |
+| Z1 (D2) | `seekable()` is `True` | `open(full, "rb")` is seekable. D2 decides a non-seekable stream, but what `seekable()` returns is open (`O25`), so this divergence rests on Z1's assumption (`False`), unlike C1 to C5 |
 
-With faults (F9 and Z1 parked), five rules diverge in each mode. A divergence
+With faults (C5 and Z1 parked), five rules diverge in each mode. A divergence
 ends its example before the oracle applies the rule's effect, so a later rule
 often shows an earlier step's cause, and a state the oracle never reaches
 leaves its rules unexercised. By cause, with the mode that shows each rule
@@ -165,7 +178,7 @@ is a no-op and collection warns nothing, so RF2, K1 and G1 hold there. An
 earlier version of the wrapper raised the interrupt before the release, which
 kept the descriptor open by construction and made the close case diverge too.
 
-Not exercised on Local: RF1 and RF8 (no `chunks()`, D7). C1 to C4 are where
+Not exercised on Local: RF1 and RF8 (no `chunks()`, D7). C1 to C5 are where
 0.33's Local stream, a plain file object, is behind decided v1 behaviour, not
 defects in the prose; audit-025 § 4 ranks D20 (rank 2) and D27 (rank 7) among
 the costs ahead.
@@ -194,7 +207,7 @@ their text in this session.
 | F6 | D16 "the same category" vs D18 "the same failure again" | `O26` (G4) |
 | F7 | A failed read delivers no bytes in that call; only D6 and D16 together imply it, and D39's resume rests on it | new |
 | F8 | A cancellation on a call that needs no transfer | superseded by `O45`; the rules follow D20 (§ 4) |
-| F9 | D6 decides n < 0 reads the rest and cites `io.BufferedIOBase`, which raises `ValueError` for n < -1 | new |
+| F9 | Withdrawn in review: D6 agrees with its source, `io.BufferedIOBase.read`, which reads to the end for any negative size; only CPython's concrete `io.BufferedReader` raises for n < -1, so this is Local behind D6 (C5, § 5), not a gap | — |
 | F10 | Exhausted is the oracle's fact (pos = length), not the stream's: a stream learns the end from a read returning nothing, which reaches the backend and can fail or be cancelled | new |
 
 Eight of the 16 rules carry an `assumed` field (counted from the rules file):

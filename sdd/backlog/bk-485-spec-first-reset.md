@@ -111,6 +111,7 @@ Two more, from the first `/observe` run's own report (above):
 A frozen spike carried OP-01's stream decisions from the record to checks
 against Local, with faults injected below the library:
 [`research/bk-485-op01-stream-spike/report.md`](../research/bk-485-op01-stream-spike/report.md).
-For step 5 it offers guarded rules as a model format, and ten prose gaps
-(five not among `O14` to `O45`). It is derived from the record, so RFC-0029
+For step 5 it offers guarded rules as a model format, nine prose gaps
+(four not among `O14` to `O45`), and five places where 0.33's Local stream is
+behind decided behaviour. It is derived from the record, so RFC-0029
 R4 keeps it from BK-506's oracle sessions.

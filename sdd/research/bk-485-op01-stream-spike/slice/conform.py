@@ -225,8 +225,8 @@ class FaultyLocalSUT(LocalSUT):
 
     name = "Local + faults, strict typing (library categories only)"
     injects = [None, "fail", "cancel", "release_fail"]
-    n_min = -1  # F9 (n < -1) already recorded; parked so examples reach the faults
-    note = "parked: F9 (read(n < -1)) and Z1 (seekable); see the plain Local run"
+    n_min = -1  # C5 (n < -1) already recorded; parked so examples reach the faults
+    note = "parked: C5 (read(n < -1)) and Z1 (seekable); see the plain Local run"
     categories = LOCAL_CATEGORIES
 
     def __init__(self, content: bytes) -> None:

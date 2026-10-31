@@ -190,7 +190,7 @@ actually describe.
 
 The proposal values Hypothesis for shrinking a failure to a short, reproducible
 trace. `conform.py` records divergences instead of failing, so nothing shrinks,
-and the runs are not seeded: plain Local's RF7 showed in four of five runs.
+and the runs are not seeded: plain Local's RF7 was missing from one of eight runs.
 **Dig:** a seeded or derandomized run for the reported figures, and a failing
 mode that shrinks for a single divergence.
 
