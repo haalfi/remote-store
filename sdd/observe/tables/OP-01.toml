@@ -76,6 +76,20 @@ members = ["decode under strict", "caller error", "memory or descriptors", "canc
 source = [{ at = "OP-01/D34", column = 1 }, { at = "OP-01/D34", column = 2 }]
 basis = "D60's Decision: 'D38's caller-level table gains' these rows, D34's categories D38's table lacks (OP-01/O37)"
 
+# Declared 2026-11-01, after the reopens of 2026-10-31 and 2026-11-01. D96's rows name D34's
+# categories in D96's own words; D38's complete source already reports a category D34 gains.
+[[table]]
+at = "OP-01/D96"
+kind = "case"
+key = 1
+members = [
+    "key refused", "not found", "not an item", "permission denied", "authentication failed", "not readable",
+    "unavailable", "timeout", "changed", "base category", "memory or descriptors", "decode under strict",
+    "caller error", "closed stream", "cancellation",
+]
+source = [{ at = "OP-01/D34", column = 1 }, { at = "OP-01/D34", column = 2 }]
+basis = "D96's Decision: 'The phases each D34 category can surface in'; its check: 'Every row of D34's table has a row here'"
+
 [[table]]
 at = "OP-01/D41"
 kind = "ids"
