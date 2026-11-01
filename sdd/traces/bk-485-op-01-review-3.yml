@@ -1,0 +1,187 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (/observe-review OP-01 after its reopens of 2026-10-31 and 2026-11-01)"
+trigger: >-
+  The reopens of 2026-10-31 and 2026-11-01 (`/observe OP-01`, BK-501) decided
+  O47 to O64 as D81 to D113 and left the record uncommitted, as an armed
+  session must. The maintainer typed `/observe-review OP-01`: RFC-0029 R2
+  freezes a record only after this review re-runs on it as its last reopen
+  left it.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+decisions: []
+# The reopens' logs went to the /observe trace's decisions:, not here; this
+# review asked no dialog.
+surprising_ripples:
+  - sdd/traces/bk-485-observe-op-01.yml
+co_shipped_items: []
+expected_ripples:
+  - sdd/observe/records/OP-01.md
+  - sdd/observe/tables/OP-01.toml
+orient:
+  - items: [BK-505]
+    verdict: constrains
+    evidence: >-
+      BK-505's entry: which record-quality checks and stopping rule "bind,
+      amending RFC-0029 R1, R2". Until it decides, R2 freezes on R1's check
+      and this re-run.
+  - items: [BK-498, BK-509]
+    verdict: unrelated
+    evidence: >-
+      BK-498 (done) lists "a dialog split across two session ids" as out of
+      the hook's reach, the cause behind O65; BK-509 names the table check's
+      amendment findings this run meets again. Neither changes this review.
+phases:
+  - id: pairs
+    name: Step 1, pair decisions with dialogs; the table check
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "After a reopen: pairs, tables, two unprimed readers, primed review, verify, then the freeze verdict"
+      - file: sdd/traces/bk-485-observe-op-01.yml
+        section: "decisions"
+        read_type: gate
+        extract: >-
+          bcb85b21, f2ddab07, 07bd66b7. The reopens' logs 2995e3cc, aa4975e6,
+          fa0b580f, 58bfebbf, cbcf16f7 (committed on the branch) and 02e10996
+          (untracked) were in no trace, so step 4 adds them. 76bcf9f7 is
+          review-2's, excluded
+      - file: scripts/observe_dialogs.py
+        section: "hatch run observe-dialogs OP-01.md with the nine logs"
+        read_type: verify
+        extract: >-
+          Exit 1; tmp/observe-review/OP-01-pairs.md. D1 to D44 "FAIL no Asked
+          line" (pre-RFC-0028, expected); D45 to D113 ok but D100, D102 and
+          D107, each "FAIL 2 answered questions start with" its Asked line.
+          The second answers are questions asked again after a worker restart
+          delivered the first into 07bd66b7; for O58's async methods and O64
+          the answers differ (O65)
+      - file: scripts/observe_tables.py
+        section: "hatch run observe-tables OP-01.md OP-01.toml"
+        read_type: verify
+        extract: >-
+          First run 16 findings, one "D96 table 1 is declared by no entry".
+          D96 declared (source D34 columns 1 and 2, not complete: D38's
+          complete source already reports a category D34 gains); re-run 15,
+          saved as tmp/observe-review/OP-01-tables.md. Each is answered by an
+          amending decision (verify phase). After writing O65 to O72 the
+          re-run gave 16, my O70 citing NP9; reworded, 15 again
+  - id: readers
+    name: Step 2, two unprimed readers
+    steps:
+      # Two fresh general-purpose agents spawned together with the brief
+      # verbatim (the record, the pairs file) and nothing else. Reader 1
+      # labels 1.1, reader 2 1a.
+      - file: sdd/observe/records/OP-01.md
+        section: "(full), with the pairs file, axes.md and the Session's ground"
+        read_type: gate
+        extract: >-
+          Both paired every one of D1 to D44 with a dialog and found the
+          contradicting earlier answers to O58 and O64. Reader 1: 5 under
+          item 1, 9 under 2, 5 under 3, 15 under 4, 13 dropped. Reader 2: 5
+          under 1, 7 under 2, 6 under 3, 9 under 4, 11 dropped
+  - id: primed
+    name: Step 3, primed review against backends, SDKs and the runtime
+    steps:
+      - file: pyproject.toml
+        section: "hatch env: io.BufferedReader over a pipe, open and closed (CPython 3.13.17)"
+        read_type: verify
+        extract: >-
+          Closed: tell, readable, seekable, seek, truncate, read1 raise
+          ValueError; write raises UnsupportedOperation, a ValueError
+          subclass. D92's "a valid call on a Closed stream raises ValueError"
+          holds for every method
+      - file: pyproject.toml
+        section: "hatch env: OSError(24, msg, 'f') rebuilt as type(e)(*e.args)"
+        read_type: verify
+        extract: >-
+          errno and strerror kept, filename None: D95's "keeps its errno"
+          holds; the filename stays on __cause__. Dropped
+      - file: .venv/lib/python3.13/site-packages/botocore/data/s3/2006-03-01/service-2.json.gz
+        section: "ETag documentation of Object and CopyObjectResult (botocore 1.43.117)"
+        read_type: verify
+        extract: >-
+          A multipart-created object's ETag is not an MD5; a Copy-created
+          plaintext or SSE-S3 one is. S3 changes metadata by a self-copy, so
+          D62's "S3 keeps the ETag on a metadata-only change" fails for
+          multipart objects (O68; the service not run)
+      - file: pyproject.toml
+        section: "hatch env: hasattr(io.BufferedIOBase, ...)"
+        read_type: verify
+        extract: "readinto1, readlines, writable, flush, fileno, isatty, writelines, detach all present (O71)"
+      # Primed candidates and verdicts:
+      #   P1 earlier answers to O58 (async) and O64 against D101, D108:
+      #      holds, O65.
+      #   P2 D62's S3 ETag premise: holds, O68 (docs read, not run).
+      #   P3 D105's column missing D77, D84 (Pinned resume), D89, D90 (Dual
+      #      key): holds, O69.
+      #   P4 io closed-state order against D92: dropped, run above.
+      #   P5 D95 losing OSError.filename: dropped, D95 claims errno only.
+      #   P6 D83 "SFTP, where the server runs on Windows": dropped, a "may
+      #      fail" deviation, declared; Win32-OpenSSH share mode not run.
+  - id: verify
+    name: Step 4, verify every candidate and file what holds
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D10 to D113 cited, re-read before quoting; Axis status; Open items"
+        read_type: verify
+        extract: >-
+          O65 to O72 written, opened by a line naming this review; axis rows
+          list each reopen and gap with its decisions and dependents (notes
+          none); no decision, Environment row or axis decision edited;
+          Status stays Complete
+      # Raw findings and verdicts. R1 = reader 1, R2 = reader 2.
+      #   R1 4.14, R2 4i, primed P1: holds, O65.
+      #   R1 1.1, 1.2, R2 1c, 1d: holds, O66.
+      #   R1 1.5, R2 1a: holds, O67 (D94's adopted option reads "released or
+      #     abandoned", checked in log aa4975e6).
+      #   Primed P2: holds, O68.
+      #   R1 2.5, 3.1, R2 2f, primed P3: holds, O69.
+      #   R1 2.1, 2.6, 2.7, 2.9, R2 2a, 2c, 2d: holds, O70.
+      #   R1 2.8, 3.2, R2 2g: holds, O71 (run).
+      #   R1 1.3, 3.3, 3.5, R2 1b, 1e, 3a, 3e, 3f: holds, O72.
+      #   R1 1.4 (D22's "can no longer serve" under E15, E6): dropped; D62
+      #     amends D22, "Changed means the backend's pin token no longer
+      #     matches" (R2 dropped it too).
+      #   R1 2.2 (D48's changed row), 2.3 (D47's "D25's O3 actions"), 2.4 and
+      #     R2 2e (D63's "five"): dropped; the row is D34's and D25's text
+      #     D25's, both amended by the later decision (D84, D86; D87), and D91
+      #     amends D76, whose Decision states D63's check.
+      #   R2 2b (O4's list without D59): dropped; D97, which amends D59 and
+      #     restates its clause, is listed.
+      #   R2 3b, R1 3.4 (D63's "holds natively"): dropped, for review-2's
+      #     verdict on R1 3.6 (D63 takes D23's declared deviations).
+      #   R2 3c (D97 resting on finitely many requests): dropped; D97 states
+      #     the premise, and NP2 leaves a count, not finiteness, unpromised.
+      #   R2 3d (D111's reason against D74): dropped; D74's option names the
+      #     list only ("O11 names D38's full list").
+      #   R1 4.2 to 4.9, R2 4a to 4g (text of D4, D6, D9, D11, D12, D18, D19,
+      #     D38, D43, D63 no dialog asked): dropped, for the earlier reviews'
+      #     verdicts (bk-485-op-01-review.yml, review-2) or the items that
+      #     reopened them.
+      #   R1 4.10, R2 4h (D81 withdrawing D65's sentence): dropped; the
+      #     sentence is the conflict O47 named, which option (a) resolves.
+      #   R1 4.11 (D82's "the server's platform"): dropped; its option reads
+      #     "a stated property of the store's location".
+      #   R1 4.12, 4.13: dropped; D96's E17 sentence follows D88 and D89, and
+      #     the lists of D104, D105 and D108 are O69's, O70's or corrected by
+      #     D109 and D111.
+      #   R1 4.15, R2 § 4 (D36 fidelity): covered by O40, O62, D107.
+      #   Table check: D18's cancelled column (D50); E16 to E19 in D19 (D62,
+      #     D67 and D89, D86, D87) and D34 (D84, D86, D88, D88's check for
+      #     E19); D38's five gaps (D60, D98); NP9 (D71): covered.
+  - id: freeze
+    name: Step 5, the freeze verdict
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O72"
+        read_type: verify
+        extract: >-
+          Not frozen. Items in the way: O65 to O68 and O71, for a reopen of
+          this record, and the notes O69, O70 and O72, asked in it. Decided:
+          O14 to O41, O43 to O45, O47 to O64. Routed, each naming what it
+          blocks: O1 to O13, O42, O46
