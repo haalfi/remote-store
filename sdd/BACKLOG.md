@@ -522,7 +522,7 @@ no clause of the contract ships unexercised.
   step 3 built `/observe` and `sdd/observe/` (test runs in the dossier); step 4 is spec 052, 4b spec 053 (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), `/observe-review` (RFC-0028) checked it, and
   RFC-0029 orders the rest: a table check (BK-504, run), the reopen (run: D45 to D80 decide O14 to O45 bar O42), the review's re-run (run: O47 to O64), a second reopen (run: D81 to D113), its re-run (run: O65 to O72), a freeze (not waiting for BK-505's stopping rule), then
-  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: the freeze; step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O65 to O72, for a third reopen session (`/observe OP-01`, BK-501), O65 first; O42 and O46 are for other entries' sessions.
+  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: the freeze; step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O66 to O72, for the third reopen session (`/observe OP-01`, BK-501), which decided O65 (D114 to D116) and whose O66 to O69 answers reached log `07bd66b7` unrecorded (BK-510's note names them at arming); O42 and O46 are for other entries' sessions.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-502 — A reopen's ground-conflict route and `Flow done` have never run, so their remaining gaps surface only in the first ground reopen**
@@ -571,14 +571,6 @@ no clause of the contract ships unexercised.
   (D50's column for D18, D62's and D67's E16 and E17 for D19, D62's E16 for D34, D71's NP9) or by a second table (D60's
   rows for D38, five gaps); a decision never edits another's table, so every later reopen repeats this.
   Open decision: how an amendment is declared (a sidecar entry naming the amending decision, or a row the amendment states).
-
-- [ ] **BK-510 — A dialog answered into another session's log is asked again, and the two answers can disagree unnoticed**
-  spec: — · effort: S · audience: contributor.tooling, contributor.process
-  `/observe-review OP-01` of 2026-11-01, measured: worker restarts put the answers to dialogs asked in `2995e3cc`, `aa4975e6`,
-  `fa0b580f`, `58bfebbf` and `cbcf16f7` into `07bd66b7` (each event's `session_id`); the next session asked the first three
-  again, and O58's async methods ("All awaited" twice, then the opposite) and O64 got opposite answers, the record keeping
-  the last with no word of the first (OP-01/O65). `observe-dialogs` flags a repeat only where the Asked words recur; these
-  two surfaced as unpaired dialogs. BK-498 left split dialogs out of the hook's reach. Open decision: check every log for an answered question before asking it, report two answers to one question, or both.
 
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process

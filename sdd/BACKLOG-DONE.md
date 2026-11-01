@@ -476,6 +476,17 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-510 — A dialog answered into another session's log is asked again, and the two answers can disagree unnoticed**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  A worker restart files a dialog's answer under another session id (`07bd66b7` for OP-01's six split dialogs), so
+  the asking session never writes it and a later one asks again: O58's async methods and O64 got opposite answers.
+  The ground hook's `arm` and `rearm` now print, as context, every answer `sdd/decisions/` holds to the record's open
+  items that no Asked line records, since an armed session cannot read the logs; `/observe` writes such an item
+  from that answer. `observe-dialogs` adds three report sections: dialogs split across logs, dialogs asked with no
+  answer in the logs given, and items asked in more than one dialog, which `/observe-review` judges. It also no
+  longer crashes on a multi-select answer logged as a list. Run over all logs, the note names exactly OP-01's
+  stranded O66 to O69 answers. Trace: [bk-510](traces/bk-510-observe-split-answers.yml).
+
 - [x] **BK-504 — No check reads an `/observe` record's tables, so a gap or overlap in them reaches the spec unnoticed**
   spec: — · effort: M · audience: contributor.tooling, contributor.process
   `hatch run observe-tables` (`scripts/observe_tables.py`, advisory) checks a record's or a spec's tables against the

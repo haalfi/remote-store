@@ -46,9 +46,15 @@ that writes them without spelling the path passes.
 A finished record is committed after ``/clear``, by a session with no marker.
 Only the maintainer can release, by a prompt.
 
-What the hook cannot do: tell why the harness resumed a cleared session; join
-a dialog split across two session ids, whose halves the recorder files under
-each; or release a cleared session resumed in a new container or under a new
+A dialog split across two session ids, whose halves the recorder files under
+each, is not joined. Instead ``arm`` and ``rearm`` print, as context, every
+answer ``sdd/decisions/`` holds to the record's open items that no Asked line
+records (``answered_elsewhere``, BK-510), since the session cannot read the
+logs itself.
+
+What the hook cannot do: tell why the harness resumed a cleared session; name a
+stranded answer to a question that opens with no open item (an end check's); or
+release a cleared session resumed in a new container or under a new
 session_id, where no marker is found under its id and the transcript holds no
 release (``/clear`` writes none there), so ``rearm`` arms it again. ``/observe
 release`` is the way out, and once typed it holds for every later resume.
@@ -240,7 +246,16 @@ def arm(payload: dict[str, Any], root: Path) -> str | None:
         and _TOOL_USE.search(Path(transcript).read_text(encoding="utf-8", errors="replace"))
     ):
         raise Refused("/observe needs a fresh session (S2): this one already used a tool. Run /clear first.")
-    return _write_marker(payload, root, args)
+    return _armed(payload, root, args)
+
+
+def _armed(payload: dict[str, Any], root: Path, args: list[str]) -> str:
+    """Write the marker, then print what the logs hold for the record (BK-510); return the record."""
+    doc = _write_marker(payload, root, args)
+    note = answered_elsewhere(root, doc)
+    if note:
+        print(note)
+    return doc
 
 
 def rearm(payload: dict[str, Any], root: Path) -> str | None:
@@ -265,7 +280,7 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
             marker.parent.mkdir(parents=True, exist_ok=True)
             marker.write_text(json.dumps({"released": "release", "record": None}), encoding="utf-8", newline="\n")
             return None
-        return None if args is None else _write_marker(payload, root, args)
+        return None if args is None else _armed(payload, root, args)
     except Exception as exc:
         # SessionStart cannot block: a resume that cannot re-arm, refused or crashed, is locked.
         # A crash locks a transcript naming /observe, or one it cannot read: an ordinary readable one stays free.
@@ -278,6 +293,42 @@ def rearm(payload: dict[str, Any], root: Path) -> str | None:
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text(json.dumps({"locked": reason}), encoding="utf-8", newline="\n")
         raise Refused(f"session locked: {reason}. {_WAY_OUT}") from exc
+
+
+def answered_elsewhere(root: Path, record: str) -> str:
+    """A note naming the answers ``sdd/decisions/`` holds to the record's open items and the record lacks.
+
+    An armed session cannot read the logs (S3), and a worker restart files a
+    dialog's answer under another session id (BK-510), so the asking session may
+    never see it and a later one asks again. ``arm`` and ``rearm`` print this
+    note, which reaches the session as context. Never raises: a log or record it
+    cannot read is named in the note, and the session asks as usual.
+    """
+    try:
+        import observe_dialogs  # noqa: PLC0415 -- a sibling script, imported only for an armed session
+
+        text = (root / record).read_text(encoding="utf-8") if (root / record).is_file() else ""
+        errors: list[str] = []
+        logs = sorted((root / "sdd" / "decisions").rglob("*.jsonl"))
+        found = observe_dialogs.unrecorded(text, observe_dialogs.dialogs(logs, errors))
+    except Exception as exc:  # noqa: BLE001 -- a note is never worth blocking an arming
+        return (
+            f"/observe ground hook: the decision logs could not be checked for answered items ({type(exc).__name__})."
+        )
+    lines = [
+        f"- [{g.ts[:16]}Z, log {g.log}] Question: {g.question}\n  Answer: {g.answer}\n  Option: {g.description}"
+        for g in found
+    ]
+    if errors:
+        lines.append(f"- Not read: {', '.join(errors)}")
+    if not lines:
+        return ""
+    head = (
+        f"/observe ground hook (BK-510): sdd/decisions/ holds answers to open items of {record} that no Asked "
+        "line records. Write each from its answer (step 3); ask it again only if its scenario changed, or if "
+        "two answers to one item differ, naming the earlier answer."
+    )
+    return "\n".join([head, *lines])
 
 
 def _write_marker(payload: dict[str, Any], root: Path, args: list[str]) -> str:

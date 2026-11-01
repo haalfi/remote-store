@@ -64,7 +64,7 @@ CATALOGUE = """# Operation catalogue
 
 @pytest.fixture
 def repo(tmp_path: Path) -> Path:
-    for rel in (".claude/hooks/observe-ground.sh", "scripts/observe_ground.py"):
+    for rel in (".claude/hooks/observe-ground.sh", "scripts/observe_ground.py", "scripts/observe_dialogs.py"):
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(ROOT / rel, tmp_path / rel)
     files = {
@@ -497,6 +497,74 @@ def test_a_resumed_observe_session_is_armed_again(repo: Path, tmp_path: Path, fi
     state = json.loads((repo / "tmp/observe" / f"{OTHER}.json").read_text(encoding="utf-8"))
     assert state["named"] == ["sdd/research/prior.md"]
     assert _call(repo, "Bash", session=OTHER, command="ls").returncode == 2
+
+
+# --- BK-510: answers another session's log holds -------------------------------
+
+_O66 = "OP-01/O66 (AX-6): D92 puts argument checks first. Which order holds?"
+_O67 = "OP-01/O67 (AX-6): D94 says a cancelled close abandons. Released?"
+_RECORD = (
+    "# OP-01: observable semantics\n\n## Decisions\n\n## Open items\n\n"
+    "- `OP-01/O66`: a reopen of D92.\n- `OP-01/O67`: a reopen of D94. Decided by\n  OP-01/D114.\n"
+)
+
+
+def _log_answer(repo: Path, name: str, question: str, answer: str) -> None:
+    event = {
+        "event": "answered",
+        "ts": "2026-11-01T13:11:02.661816Z",
+        "tool_use_id": "toolu_01B9",
+        "tool_input": {"questions": [{"question": question, "options": [{"label": answer, "description": "io's"}]}]},
+        "tool_response": {"answers": {question: answer}},
+    }
+    log = repo / "sdd/decisions" / name
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with log.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(event) + "\n")
+
+
+def _with_answers(repo: Path) -> None:
+    (repo / "sdd/observe/records").mkdir(parents=True, exist_ok=True)
+    (repo / "sdd/observe/records/OP-01.md").write_text(_RECORD, encoding="utf-8")
+    _log_answer(repo, "07bd66b7.jsonl", _O66, "Read as D92/D93 (Recommended)")
+    _log_answer(repo, "07bd66b7.jsonl", _O67, "Released locally (Recommended)")
+
+
+def test_arm_names_answers_another_log_holds_for_open_items(repo: Path) -> None:
+    # The O66 to O69 incident: the answer reached log 07bd66b7, the asking session never wrote it.
+    _with_answers(repo)
+    result = _arm(repo, "/observe OP-01")
+    assert result.returncode == 0, result.stderr
+    assert "BK-510" in result.stdout
+    assert f"Question: {_O66}\n  Answer: Read as D92/D93 (Recommended)\n  Option: io's\n" in result.stdout
+    assert "log 07bd66b7.jsonl" in result.stdout
+    assert _O67 not in result.stdout  # decided, so the record holds it
+
+
+def test_a_resume_names_the_answers_too(repo: Path, tmp_path: Path) -> None:
+    # A worker restart is the event that strands an answer: SessionStart must say so.
+    _with_answers(repo)
+    transcript = tmp_path / "resumed.jsonl"
+    transcript.write_text(_TYPED, encoding="utf-8")
+    result = _run(repo, "rearm", {"session_id": OTHER, "source": "resume", "transcript_path": str(transcript)})
+    assert result.returncode == 0, result.stderr
+    assert f"Question: {_O66}\n" in result.stdout
+
+
+def test_no_note_without_answers_the_record_lacks(repo: Path) -> None:
+    result = _arm(repo, "/observe OP-01")
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == ""
+
+
+def test_an_unreadable_log_never_blocks_arming(repo: Path) -> None:
+    _with_answers(repo)
+    (repo / "sdd/decisions/broken.jsonl").write_text("not json\n", encoding="utf-8")
+    result = _arm(repo, "/observe OP-01")
+    assert result.returncode == 0, result.stderr
+    assert (repo / "tmp/observe" / f"{SESSION}.json").is_file()
+    assert "broken.jsonl" in result.stdout
+    assert f"Question: {_O66}\n" in result.stdout
 
 
 _SLUG = '{"type":"user","message":{"role":"user","content":"/observe read"}}\n'

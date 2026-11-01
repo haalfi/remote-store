@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-510: A dialog answered into another session's log is asked again, and the two answers can disagree unnoticed
 - BK-504: No check reads an `/observe` record's tables, so a gap or overlap in them reaches the spec unnoticed
 - BK-503: A record's spec, model and reference model have no faithfulness gate, so a misreading of the record reaches every layer built from it
 - BK-500: Two `/observe` hook messages mislead: a refused record write names the wrong file, and `/observe release.` reads as an arming

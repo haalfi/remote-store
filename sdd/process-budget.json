@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 314073,
+  "total": 314548,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -16,16 +16,16 @@
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 6552,
-    ".claude/skills/observe-review/SKILL.md": 5691,
+    ".claude/skills/observe/SKILL.md": 6777,
+    ".claude/skills/observe-review/SKILL.md": 5941,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
+    ".claude/skills/rvw-pr/SKILL.md": 23363,
     ".claude/skills/rvw-pr/measuring.md": 5482,
     ".claude/skills/rvw-pr/posting-gh.md": 2464,
     ".claude/skills/rvw-pr/posting.md": 2352,
-    ".claude/skills/rvw-pr/SKILL.md": 23363,
     ".claude/skills/ship/SKILL.md": 54247,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
@@ -258,6 +258,12 @@
       "from": 314063,
       "to": 314073,
       "reason": "PR #1197 round 5: G3 fixes in the sidecar only a declaration a re-read shows wrong, so a record defect such as a duplicated heading reaches step 4 (+10)"
+    },
+    {
+      "item": "BK-510",
+      "from": 314073,
+      "to": 314548,
+      "reason": "observe: write an item from the hook's note of a stranded answer; observe-review: judge split dialogs and one question answered two ways"
     }
   ]
 }

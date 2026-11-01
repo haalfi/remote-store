@@ -35,7 +35,11 @@ before its spec is written (RFC-0028), and after its reopen, before its freeze
    `tmp/observe-review/<entry>-pairs.md`. Each FAIL is a finding, but on a
    decision written before RFC-0028, which has no Asked line (OP-01's D1 to
    D44), "no Asked line" is not: the readers pair those decisions with the report's
-   unpaired dialogs, listed with their answers (the brief's item 4).
+   unpaired dialogs, listed with their answers (the brief's item 4). It also
+   lists split dialogs, dialogs with no answer in the logs given (add the
+   missing log, re-run) and items asked in several dialogs (BK-510): one
+   question answered two ways, with no decision naming both and which
+   stands, is a finding.
    **Tables** (G3): declare each undeclared table in
    `sdd/observe/tables/<entry>.toml` (form: `scripts/observe_tables.py`), its
    domain from the enumeration the record names, a reading, never a decision;

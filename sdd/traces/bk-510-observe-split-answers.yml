@@ -1,0 +1,152 @@
+id: BK-510
+title: "A dialog answered into another session's log is asked again, and the two answers can disagree unnoticed"
+trigger: >-
+  `/observe-review OP-01` of 2026-11-01 found O58's async methods and O64
+  answered twice, oppositely, after worker restarts filed the first answers
+  under log 07bd66b7 and a later session asked again (OP-01/O65, decided by
+  D114 to D116).
+source_items:
+  - BK-510
+audience:
+  - contributor.tooling
+  - contributor.process
+discovery_followups: []
+surprising_ripples:
+  # Reading every log, not one record's, met a multi-select answer logged as a
+  # list, which crashed dialogs()'s label lookup (TypeError: unhashable type).
+  - scripts/observe_dialogs.py
+co_shipped_items: []
+decisions:
+  # The "what next" dialog, the orient scope and the hook mechanism.
+  - sdd/decisions/05cde0a2-21c3-41f9-be52-911af8b9ecfa.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      .claude/skills/observe/SKILL.md lines 15 to 20: an armed session reads
+      only the register's active rows, axes.md, the skill, its input, named
+      paths and its record, and "Bash, Glob and Agent outright" are refused;
+      scripts/observe_ground.py `check` refuses any Read off that allowlist.
+      So an armed session cannot itself read sdd/decisions/: a check before
+      asking must run in the hook, which may hand the session the maintainer's
+      earlier answers to its own entry's items (not ground, not 0.33). Live
+      instance: the O66 to O69 dialog of 2026-11-01, asked under 0ca05c8b at
+      12:41:13Z, was answered at 13:11:02Z into 07bd66b7 ("Read as D92/D93",
+      "Released locally", "Declare, unconditioned", "Complete by rule") and
+      the record holds no decision for it (O66 to O69 carry no "Decided by").
+  - items: [BK-397]
+    verdict: unrelated
+    evidence: >-
+      BK-397's entry: pending is the `/pr` Decisions section and "one session's
+      log across two branches". Here the logs sit on one branch; the split is
+      by session_id (record_decision.py `record` names the log after the
+      payload's session_id), and neither remedy needs the recorder changed.
+phases:
+  - id: orient
+    name: Read the item, its precedent, the logs and the hooks it would touch
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-510"
+        read_type: gate
+        extract: "Open decision: check every log before asking, report two answers, or both"
+        outcome: ok
+      - file: sdd/backlog/bk-498-observe-resume-rearm.md
+        section: "(full)"
+        read_type: reference
+        extract: "Split dialogs left out of the hook's reach; the log is named by session_id"
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O65 to O72"
+        read_type: reference
+        extract: "O65 names the double answers; O66 to O72 open, none Decided by"
+        outcome: ok
+      - file: scripts/observe_dialogs.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Pairs by the Asked quote; a question asked twice pairs by its quoted
+          answer; reworded re-asks surface only as unpaired dialogs, with no
+          word of which item they share
+        outcome: ok
+      - file: scripts/record_decision.py
+        section: "(full)"
+        read_type: reference
+        extract: "Log named by the payload's session_id; tool_use_id kept on both halves"
+        outcome: ok
+      - file: scripts/observe_ground.py
+        section: "docstring, arm, rearm, check"
+        read_type: gate
+        extract: >-
+          arm and rearm run at UserPromptSubmit and SessionStart, whose stdout
+          reaches the session; check passes AskUserQuestion as neutral
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "Ground, Steps 0 to 5"
+        read_type: gate
+        extract: "Step 3 asks each item; nothing tells the session an item was answered elsewhere"
+        outcome: ok
+      - file: "sdd/decisions/{2995e3cc,aa4975e6,fa0b580f,58bfebbf,cbcf16f7,0ca05c8b,07bd66b7}*.jsonl"
+        section: "events by tool_use_id (scratchpad split.py)"
+        read_type: verify
+        extract: >-
+          Six split dialogs: each asked under its session's id and answered
+          under 07bd66b7, where the restart also logs an `asked` line for the
+          same tool_use_id within a millisecond of the answer. Re-asks followed
+          for O51/O58 (aa4975e6), O58 (fa0b580f), O57/O61/O62 (58bfebbf) and
+          O64 (cbcf16f7); O66 to O69 (0ca05c8b) is answered and unrecorded
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/scripts/test_observe_dialogs.py
+        section: "BK-510 block; multi-select answer"
+        read_type: gate
+        extract: >-
+          unrecorded(), the split, missing-answer and repeated-item sections, and
+          the list answer: each seen failing before its fix (AttributeError, a
+          missing section header, TypeError: unhashable type 'list')
+        outcome: ok
+      - file: tests/scripts/test_observe_ground.py
+        section: "BK-510 block"
+        read_type: gate
+        extract: >-
+          arm and rearm print the stranded answer, a decided item is left out,
+          an unreadable log is named and never blocks arming: seen failing on
+          an empty stdout before the hook printed anything
+        outcome: ok
+  - id: implement
+    name: The hook's note and the report's sections
+    steps:
+      - file: scripts/observe_dialogs.py
+        section: "dialogs, splits, repeats, open_items, unrecorded, main"
+        read_type: gate
+        extract: "One log reader for both; a bad log skipped and named only when the caller asks"
+        outcome: ok
+      - file: scripts/observe_ground.py
+        section: "answered_elsewhere, _armed"
+        read_type: gate
+        extract: "Printed after the marker is written; never raises, so a note never blocks arming"
+        outcome: ok
+      - file: .claude/skills/observe/SKILL.md
+        section: "Step 3, Reopen"
+        read_type: gate
+        extract: "An item the note names is written from its answer"
+        outcome: ok
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Step 1"
+        read_type: gate
+        extract: "One question answered two ways, with no decision naming both, is a finding"
+        outcome: ok
+  - id: verify
+    name: Run on the repository's own logs
+    steps:
+      - file: "sdd/decisions/*.jsonl (121 files, ls sdd/decisions | wc -l)"
+        section: "answered_elsewhere(Path('.'), 'sdd/observe/records/OP-01.md')"
+        read_type: verify
+        extract: >-
+          The note names OP-01/O66 to O69, the answers of 13:11:02Z in
+          07bd66b7, and nothing else. splits() over OP-01's eight logs names
+          six split dialogs, the ones read by hand in the orient phase, and
+          none asked without an answer; repeats() lists nine items, O58 and
+          O64 among them
+        outcome: ok

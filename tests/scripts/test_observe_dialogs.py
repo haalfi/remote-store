@@ -25,19 +25,34 @@ ROOT_Q = "AX-1, the root. Scenario: read(''). What is it?"
 SHAPE = "AX-1, the stream's shape. Scenario: copyfileobj. What object?"
 
 
-def _answered(question: str, answer: str, options: dict[str, str] | None = None, harness: str | None = None) -> str:
+def _answered(
+    question: str,
+    answer: str,
+    options: dict[str, str] | None = None,
+    harness: str | None = None,
+    tool_use_id: str | None = None,
+    ts: str = "2026-11-01T13:11:02.661816Z",
+) -> str:
     # The recorder's shape: the harness also writes into tool_input, but tool_response is authoritative (RFC-0018).
     opts = [{"label": k, "description": v} for k, v in (options or {answer: "the chosen option"}).items()]
-    return json.dumps(
-        {
-            "event": "answered",
-            "tool_input": {
-                "questions": [{"question": question, "options": opts}],
-                "answers": {question: harness or answer},
-            },
-            "tool_response": {"answers": {question: answer}},
+    event = {
+        "event": "answered",
+        "ts": ts,
+        "tool_input": {
+            "questions": [{"question": question, "options": opts}],
+            "answers": {question: harness or answer},
         },
-        ensure_ascii=False,  # as record_decision.py writes, so U+2028 and its kin stay raw
+        "tool_response": {"answers": {question: answer}},
+    }
+    if tool_use_id:
+        event["tool_use_id"] = tool_use_id
+    # As record_decision.py writes, so U+2028 and its kin stay raw.
+    return json.dumps(event, ensure_ascii=False)
+
+
+def _asked(question: str, tool_use_id: str, ts: str = "2026-11-01T12:41:13.000000Z") -> str:
+    return json.dumps(
+        {"event": "asked", "ts": ts, "tool_use_id": tool_use_id, "tool_input": {"questions": [{"question": question}]}}
     )
 
 
@@ -262,6 +277,92 @@ def test_an_answer_holding_a_quote_pairs_by_its_opening(tmp_path: Path) -> None:
     record = _record(_decision(1, ("AX-1, forms.", "Raise on read(")))
     result = _run(tmp_path, record, [_answered(FORMS, 'Raise on read("") as a caller error')])
     assert result.returncode == 0, result.stdout
+
+
+# --- BK-510: answers that reached another session's log ------------------------
+
+O5_Q = "OP-01/O5 (AX-6): D9 puts argument checks first. Which order holds?"
+O6_Q = "OP-01/O6 (AX-6): D10 says a close releases. Released or abandoned?"
+O7_Q = "OP-01/O7 (AX-15): S3 copies an object onto itself. Declare it?"
+
+
+def _open_items(*items: str) -> str:
+    return "## Open items\n\n" + "\n".join(items) + "\n"
+
+
+def test_unrecorded_lists_answers_to_open_items_no_decision_records() -> None:
+    # The O66 to O69 shape: asked by one session, answered into 07bd66b7, the record never written.
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import observe_dialogs
+
+    record = _record(_decision(2, ("OP-01/O7 (AX-15)", "Declare"))) + _open_items(
+        "- `OP-01/O5`: a reopen of D9.",
+        "- `OP-01/O6`: a reopen of D10. Decided by\n  OP-01/D3.",
+        "- `OP-01/O7`: a note on S3, written but not yet marked decided.",
+    )
+    pool = [
+        observe_dialogs.Dialog(O5_Q, "Arguments first (Recommended)", "io's order"),
+        observe_dialogs.Dialog(O6_Q, "Released locally (Recommended)", "x"),
+        observe_dialogs.Dialog(O7_Q, "Declare, unconditioned (Recommended)", "x"),
+        observe_dialogs.Dialog(FORMS, "Bytes", "x"),
+        observe_dialogs.Dialog("OP-01/O50 (scope): an item the record does not list", "x", "x"),
+    ]
+    assert [g.question for g in observe_dialogs.unrecorded(_record(), pool)] == []
+    assert [g.question for g in observe_dialogs.unrecorded(record, pool)] == [O5_Q]
+
+
+def test_the_report_names_a_dialog_split_across_logs(tmp_path: Path) -> None:
+    # A worker restart logs the answer, and a replayed asked line, under another session id.
+    record = _record(_decision(1, ("OP-01/O5", "Arguments first")))
+    first = [_asked(O5_Q, "toolu_1")]
+    restart = [
+        _asked(O5_Q, "toolu_1", ts="2026-11-01T13:11:02.5Z"),
+        _answered(O5_Q, "Arguments first", tool_use_id="toolu_1"),
+    ]
+    result = _run(tmp_path, record, first, restart)
+    assert result.returncode == 0, result.stdout
+    section = result.stdout.split("# Dialogs split across logs\n", 1)[1].split("\n# ", 1)[0]
+    assert section == f"- {O5_Q}\n  Asked in log0.jsonl, answered in log1.jsonl at 2026-11-01T13:11:02.661816Z"
+
+
+def test_the_report_names_a_dialog_whose_answer_is_in_no_given_log(tmp_path: Path) -> None:
+    # The answered half went to a log the reviewer did not pass: the report says so instead of silence.
+    result = _run(
+        tmp_path, _record(_decision(1, ("AX-1, forms.", "Bytes"))), [_asked(O5_Q, "toolu_1"), _answered(FORMS, "Bytes")]
+    )
+    section = result.stdout.split("# Asked with no answer in these logs\n", 1)[1].split("\n# ", 1)[0]
+    assert section == f"- {O5_Q}\n  Asked in log0.jsonl at 2026-11-01T12:41:13.000000Z"
+
+
+def test_the_report_lists_an_item_answered_in_two_dialogs(tmp_path: Path) -> None:
+    # O58's shape: asked again, reworded, and answered the other way.
+    first = O5_Q.replace("Which order holds?", "Which order?")
+    record = _record(_decision(1, ("OP-01/O5 (AX-6): D9 puts argument checks first. Which order holds", "State first")))
+    log = [
+        _answered(first, "Arguments first", tool_use_id="toolu_1", ts="2026-10-31T09:33:29Z"),
+        _answered(O5_Q, "State first", tool_use_id="toolu_2", ts="2026-11-01T08:09:33Z"),
+        _answered(O6_Q, "Released", tool_use_id="toolu_2", ts="2026-11-01T08:09:33Z"),
+    ]
+    result = _run(tmp_path, record, log)
+    section = result.stdout.split("# Items asked in more than one dialog\n", 1)[1].split("\n# ", 1)[0]
+    assert section == (
+        f"- OP-01/O5\n  2026-10-31T09:33:29Z: {first}\n    Answer: Arguments first\n"
+        f"  2026-11-01T08:09:33Z: {O5_Q}\n    Answer: State first"
+    )
+    assert result.stdout.endswith(
+        "# Answered questions no decision pairs with\n"
+        + f"- {first}\n  Answer: Arguments first\n  Option: the chosen option\n"
+        + f"- {O6_Q}\n  Answer: Released\n  Option: the chosen option\n"
+    )
+
+
+def test_a_multiselect_answer_logged_as_a_list_is_read(tmp_path: Path) -> None:
+    # Found running the hook over every log (BK-510): a list answer crashed the label lookup.
+    event = json.loads(_answered(FORMS, "Bytes"))
+    event["tool_response"]["answers"][FORMS] = ["Bytes", "Text"]
+    result = _run(tmp_path, _record(_decision(1, ("AX-1, forms.", "['Bytes'"))), [json.dumps(event)])
+    assert result.returncode == 0, result.stderr
+    assert "Option: (free text or several options)\n" in result.stdout
 
 
 @pytest.mark.parametrize("line", ["[1, 2]", '"text"', "3"])
