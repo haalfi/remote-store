@@ -11,16 +11,20 @@ source_items:
 audience:
   - contributor.process
   - library.maintainer
-discovery_followups: []
-decisions: []
-# The reopens' logs went to the /observe trace's decisions:, not here; this
-# review asked no dialog.
+discovery_followups:
+  - BK-510
+# The reopens' logs went to the /observe trace's decisions:, not here. This
+# review's one dialog, after its report: the next step, answered "Backlog item,
+# then reopen" (BK-510).
+decisions:
+  - sdd/decisions/5ed64b97-c396-449d-ad86-014594a1b3b1.jsonl
 surprising_ripples:
   - sdd/traces/bk-485-observe-op-01.yml
 co_shipped_items: []
 expected_ripples:
   - sdd/observe/records/OP-01.md
   - sdd/observe/tables/OP-01.toml
+  - sdd/BACKLOG.md
 orient:
   - items: [BK-505]
     verdict: constrains
