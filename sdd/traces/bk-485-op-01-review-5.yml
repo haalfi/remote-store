@@ -44,9 +44,9 @@ phases:
         section: "decisions"
         read_type: gate
         extract: >-
-          Thirteen logs listed. The reopen's 149aee02 and df68cdf4 (committed
-          in fe30a000a and c022bfc35) were in no trace; added in 46189d54f
-          with the reopen's record
+          Thirteen logs listed. The reopen's 149aee02 and df68cdf4, committed
+          on this branch, were in no trace; added in the commit that carries
+          the reopen's record
       - file: scripts/observe_dialogs.py
         section: "observe-dialogs OP-01.md with the fifteen logs"
         read_type: verify
