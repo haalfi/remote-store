@@ -1,23 +1,27 @@
 ---
 name: observe-review
-description: Check a finished /observe record before its spec is written. Pairs each decision with its dialog, checks its tables, has two unprimed readers re-check the whole record, then reviews it against backends, SDKs and the runtime, adding what holds to the record's Open items; after a reopen, says whether it can be frozen. Use only when the maintainer types /observe-review after an /observe session was cleared. Not for deciding: a reopen session decides.
-argument-hint: "<entry>"
+description: Check a finished /observe record before its spec is written. Pairs each decision with its dialog, checks its tables, has two unprimed readers re-check the whole record, then reviews it against backends, SDKs and the runtime, adding what holds to the record's Open items; after a reopen or a close-out, says whether it can be frozen. Use only when the maintainer types /observe-review after an /observe session was cleared, or /observe-review <entry> close-out after a review. Not for deciding otherwise: a reopen session decides.
+argument-hint: "<entry> [close-out]"
 disable-model-invocation: true
 ---
 
 Check `sdd/observe/records/<entry>.md`, which `/observe` left Complete,
 before its spec is written (RFC-0028), and after its reopen, before its freeze
-(RFC-0029). `$ARGUMENTS`'s first word is the entry.
+(RFC-0029), or closes it out (RFC-0030). `$ARGUMENTS`'s first word is the entry; a second word
+`close-out` runs step 6 only.
 
 ## Rules
 
-- **Never decide, never edit a decision.** Decisions, Environment rows and
+- **Never decide, never edit a decision**, but in a close-out (step 6).
+  Decisions, Environment rows and
   axis decisions stay as written. What holds goes to Open items as the next
   `<entry>/O<n>`, in `/observe` steps 3 and 4's shapes: a reopen of a
   decision (the conflict, the dependent decisions, what to decide with the
-  maintainer, what it blocks), a ground conflict, a gap, or a note. Status
-  stays Complete; each axis row lists the items that reopen, gap or depend
-  on its decisions.
+  maintainer, what it blocks), a ground conflict, a gap, or a note. A reopen,
+  ground conflict or gap blocks a freeze only if it leaves what a caller
+  observes false, two-valued or undecided; a note never does (RFC-0030 C1).
+  Status stays Complete; each axis row lists the items that reopen, gap or
+  depend on its decisions.
 - **Quote what you re-read.** Each finding cites the record's words, read
   again before quoting. A claim about a backend, SDK or runtime is marked ✓
   when confirmed by reading its source or running it in this session, else
@@ -63,13 +67,30 @@ before its spec is written (RFC-0028), and after its reopen, before its freeze
    review's trace). Write the rest as open items, opened by one line naming this
    review and its date. Commit the record, the declarations and the logs, a
    reopen's added to the `decisions:` of the `/observe` trace that wrote the
-   record, then tell the maintainer which items need a reopen session.
-5. **Freeze** (RFC-0029 R2), after a reopen only: the record can be frozen
-   when each open item is decided, routed with no `Flow done`, another
-   entry's or `shared:`, each naming what it blocks; else name the items in
+   record, then tell the maintainer which items block a freeze, for a reopen
+   session or a close-out (step 6), and which are notes.
+5. **Freeze** (RFC-0029 R2), after a reopen or a close-out only: the record
+   can be frozen when each open item is decided, routed with no `Flow done`
+   (a note to the spec flow included, RFC-0030 C1), another entry's or
+   `shared:`, each naming what it blocks; else name the items in
    the way. After the merge the maintainer tags that master commit
    `observe/<entry>/freeze-<n>` (`git tag -a`, `<n>` 1, then one past the
    last), not a release; this review never creates the tag.
+6. **Close-out** (RFC-0030 C2, C3), after a review whose items the
+   maintainer chose to close out: for each item that blocks a freeze, the
+   answer that leaves the record's behaviour closest to the decisions it
+   amends and to `io`, the SDK or the runtime as run. One dialog adopts all of
+   them and routes every note: the one in which the maintainer chose the
+   close-out, if its option said so, else one `AskUserQuestion` listing each
+   answer. No other question. Write each answer as a decision in
+   `axes.md`'s reopen form, its Asked line quoting that dialog, and one
+   decision routing the notes (`Routed to <entry>'s spec flow by
+   <entry>/D<m>.`); a Session line names the close-out, the review and the
+   log. Then step 1 over the whole record, and a re-read of each close-out
+   decision against every decision it cites or amends: correct the close-out's
+   own text before the commit, route a note. Commit with the log added to the
+   `/observe` trace's `decisions:`, and give step 5's verdict; no full
+   re-run follows a close-out.
 
 ## Reader brief
 

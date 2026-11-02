@@ -59,6 +59,8 @@ decisions:
   - sdd/decisions/8faf85fc-01c7-431e-8a2d-e8345bb0a300.jsonl
   - sdd/decisions/149aee02-7cfc-4ea2-b395-435933c49e4c.jsonl
   - sdd/decisions/df68cdf4-b797-4818-9e62-69583965e400.jsonl
+  # The close-out of 2026-11-02 (RFC-0030 C2): one dialog, D151 to D156.
+  - sdd/decisions/debeb3f4-b39e-4b2c-8a57-33040e9119ec.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:

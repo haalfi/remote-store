@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 314548,
+  "total": 316084,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -17,7 +17,7 @@
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
     ".claude/skills/observe/SKILL.md": 6777,
-    ".claude/skills/observe-review/SKILL.md": 5941,
+    ".claude/skills/observe-review/SKILL.md": 7477,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -264,6 +264,12 @@
       "from": 314073,
       "to": 314548,
       "reason": "observe: write an item from the hook's note of a stranded answer; observe-review: judge split dialogs and one question answered two ways"
+    },
+    {
+      "item": "BK-505",
+      "from": 314548,
+      "to": 316084,
+      "reason": "RFC-0030: /observe-review gains the close-out step and the blocking/note rule"
     }
   ]
 }

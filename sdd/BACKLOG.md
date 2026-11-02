@@ -521,8 +521,8 @@ no clause of the contract ships unexercised.
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset (§ 9 steps 1, 2);
   step 3 built `/observe` and `sdd/observe/` (test runs in the dossier); step 4 is spec 052, 4b spec 053 (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), `/observe-review` (RFC-0028) checked it, and
-  RFC-0029 orders the rest: a table check (BK-504, run), the reopen (run: D45 to D80 decide O14 to O45 bar O42), the review's re-run (run: O47 to O64), a second reopen (run: D81 to D113), its re-run (run: O65 to O72), a freeze (not waiting for BK-505's stopping rule), then
-  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: the freeze; step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; its open items O66 to O72, for the third reopen session (`/observe OP-01`, BK-501), which decided O65 (D114 to D116) and whose O66 to O69 answers reached log `07bd66b7` unrecorded (BK-510's note names them at arming); O42 and O46 are for other entries' sessions.
+  RFC-0029 orders the rest: a table check (BK-504, run), the reopen (run: D45 to D80 decide O14 to O45 bar O42), the review's re-run (run: O47 to O64), a second reopen (run: D81 to D113), its re-run (run: O65 to O72), two more reopens and re-runs (run: D114 to D150, O73 to O91), RFC-0030's close-out (run: D151 to D156), a freeze, then
+  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: the freeze tag `observe/OP-01/freeze-1`, which the maintainer sets on master after the close-out merges; step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; O42 and O46 are for other entries' sessions, and the notes O88 to O91 for OP-01's spec flow.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-502 — A reopen's ground-conflict route and `Flow done` have never run, so their remaining gaps surface only in the first ground reopen**
@@ -531,15 +531,6 @@ no clause of the contract ships unexercised.
   artifact's flow adds (`ground-register.md` § Artifacts). PR #1195's review rounds 3 to 7 each found a defect on this
   path (trace `review_fix_3` to `review_fix_7`), and no ground reopen has run yet. Open decision: none until OP-01/O21's
   route is asked; check the lifecycle against that first run, spec 051's flow if O21 is routed there.
-
-- [ ] **BK-505 — An `/observe` record's freeze has no stopping rule: the record-quality report's checks are neither adopted nor rejected**
-  spec: — · effort: S · audience: contributor.process
-  OP-01's failure modes sat in the record, which the faithfulness research assumed correct
-  ([`research-spec-faithfulness.md`](research/research-spec-faithfulness.md) § 3). The briefed research is kept in [`research-observe-record-quality.md`](research/research-observe-record-quality.md): mechanical
-  checks and a stopping rule calibrated by seeded defects, neither validated; unmeasured: two extractions of OP-01 plus
-  a blind restatement per claim, scored against its open items. Open decision: which of its checks and its stopping
-  rule bind, amending RFC-0029 R1, R2.
-  Detail: [dossier](backlog/bk-505-record-quality-research.md)
 
 - [ ] **BK-506 — Whether oracles derived from a record catch spec misreadings that spec-derived checks miss is unmeasured**
   spec: — · effort: L · audience: library.maintainer, contributor.process
@@ -563,7 +554,7 @@ no clause of the contract ships unexercised.
   row", OP-01's O28, O33), after a backticked ID, or with no ID ("the register's row 3", D40) goes unchecked, which is
   most of RFC-0029 R1's "each row a decision cites". A short-form definition (`| E1 |`, `` - `E1`: ``) defines
   nothing; a heading's text before its first colon is never scanned; a `source` listed twice is accepted.
-  Open decision: how a named row is resolved (a row's key cell, or a declared row name), which BK-505 may own.
+  Open decision: how a named row is resolved (a row's key cell, or a declared row name); RFC-0030 left it here.
 
 - [ ] **BK-509 — `observe-tables` reads a reopened record's tables as they stand, so amendments come back as findings**
   spec: — · effort: S · audience: contributor.tooling

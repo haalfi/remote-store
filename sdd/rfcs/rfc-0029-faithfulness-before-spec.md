@@ -15,6 +15,13 @@ reopen is followed by R2's re-run and freeze. Background: [`research-spec-faithf
 Decisions taken in this RFC's session: decision log
 `sdd/decisions/7d282f9d-8eb6-48be-8d6c-9fc7641121cf.jsonl`.
 
+Amended by [RFC-0030](rfc-0030-observe-close-out.md), accepted 2026-11-02,
+which decides BK-505: only a finding that leaves what a caller observes
+false, two-valued or undecided blocks R2's freeze, a finding on the record's
+own text going to the spec flow (C1); after a close-out, the record freezes
+on a check of what the close-out wrote, not R2's full re-run (C2, C3); the
+research report's checks and stopping rule are not adopted (C5).
+
 ## Summary
 
 **A record reaches its spec only once a table check has run on it and its

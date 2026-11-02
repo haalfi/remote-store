@@ -476,6 +476,16 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-505 — An `/observe` record's freeze has no stopping rule: the record-quality report's checks are neither adopted nor rejected**
+  spec: — · effort: S · audience: contributor.process
+  RFC-0030 (accepted) decides it, amending RFC-0029 R2 and RFC-0028 P3: only a finding that leaves what a caller
+  observes false, two-valued or undecided blocks a freeze, a note on the record's own text going to the spec flow;
+  after a review, one close-out decides the blocking items by the review's recommendation in one dialog, and the
+  record freezes on a check of what the close-out wrote, not another full review. The report's checks and seeded
+  stopping rule are not adopted. `/observe-review <entry> close-out` runs it; OP-01's first close-out wrote D151 to
+  D156. Dossier: [bk-505](backlog/bk-505-record-quality-research.md). Trace:
+  [bk-505](traces/bk-505-observe-close-out.yml).
+
 - [x] **BK-510 — A dialog answered into another session's log is asked again, and the two answers can disagree unnoticed**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   A worker restart files a dialog's answer under another session id (`07bd66b7` for OP-01's six split dialogs), so
