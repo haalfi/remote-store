@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 316084,
+  "total": 316395,
   "files": {
     "CLAUDE.md": 17882,
     ".claude/output-styles/interview.md": 2534,
@@ -17,7 +17,7 @@
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
     ".claude/skills/observe/SKILL.md": 6777,
-    ".claude/skills/observe-review/SKILL.md": 7477,
+    ".claude/skills/observe-review/SKILL.md": 7788,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -270,6 +270,12 @@
       "from": 314548,
       "to": 316084,
       "reason": "RFC-0030: /observe-review gains the close-out step and the blocking/note rule"
+    },
+    {
+      "item": "BK-505",
+      "from": 316084,
+      "to": 316395,
+      "reason": "PR #1202 review: the close-out check names its failing result; non-blocking findings are notes"
     }
   ]
 }

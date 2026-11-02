@@ -68,8 +68,10 @@ phases:
         read_type: verify
         extract: >-
           Rounds O27 to O44 (18), O47 to O64 (18), O65 to O72 (8), O73 to O83
-          (11), O84 to O91 (8); five of O84 to O91 cite a decision the reopen
-          before wrote, four change nothing a caller observes
+          (11), O84 to O91 (8); all eight of O84 to O91 cite a decision the
+          reopen before wrote (D134 to D150), four change nothing a caller
+          observes. First counted as five, missing O86, O87 and O88; PR #1202's
+          review recounted from the items' texts
   - id: close_out
     name: OP-01's close-out and its C3 check
     steps:

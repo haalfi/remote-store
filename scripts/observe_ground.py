@@ -323,6 +323,12 @@ def answered_elsewhere(root: Path, record: str) -> str:
         lines.append(f"- Not read: {', '.join(errors)}")
     if not lines:
         return ""
+    if not found:
+        head = (
+            f"/observe ground hook (BK-510): the decision logs could not all be read, so answers to open items "
+            f"of {record} that no Asked line records may be missed; none was found in the rest."
+        )
+        return "\n".join([head, *lines])
     head = (
         f"/observe ground hook (BK-510): sdd/decisions/ holds answers to open items of {record} that no Asked "
         "line records. Write each from its answer (step 3); ask it again only if its scenario changed, or if "
@@ -488,4 +494,6 @@ def main(argv: list[str], root: Path = ROOT) -> int:
 
 
 if __name__ == "__main__":
+    # The BK-510 note copies logged text ('→', '✓'); a hook's piped stdout on Windows is cp1252.
+    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
     sys.exit(main(sys.argv))

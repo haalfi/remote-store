@@ -480,7 +480,7 @@ ships them.
   spec: — · effort: S · audience: contributor.process
   RFC-0030 (accepted) decides it, amending RFC-0029 R2 and RFC-0028 P3: only a finding that leaves what a caller
   observes false, two-valued or undecided blocks a freeze, a note on the record's own text going to the spec flow;
-  after a review, one close-out decides the blocking items by the review's recommendation in one dialog, and the
+  after a review, one close-out decides the blocking items by its own recommendation in one dialog, and the
   record freezes on a check of what the close-out wrote, not another full review. The report's checks and seeded
   stopping rule are not adopted. `/observe-review <entry> close-out` runs it; OP-01's first close-out wrote D151 to
   D156. Dossier: [bk-505](backlog/bk-505-record-quality-research.md). Trace:

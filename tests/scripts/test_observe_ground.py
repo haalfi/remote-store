@@ -18,6 +18,7 @@ records for its hook: the harness needs bash and symlinks.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -86,24 +87,28 @@ def repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def _run(repo: Path, mode: str, payload: dict[str, object] | str) -> subprocess.CompletedProcess[str]:
+def _run(
+    repo: Path, mode: str, payload: dict[str, object] | str, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     stdin = payload if isinstance(payload, str) else json.dumps(payload)
     return subprocess.run(
         [BASH, str(repo / ".claude/hooks/observe-ground.sh"), mode],
         input=stdin,
         capture_output=True,
         text=True,
+        encoding="utf-8",
         check=False,
+        env=None if env is None else {**os.environ, **env},
     )
 
 
 def _arm(
-    repo: Path, prompt: str, session: str = SESSION, transcript: Path | None = None
+    repo: Path, prompt: str, session: str = SESSION, transcript: Path | None = None, env: dict[str, str] | None = None
 ) -> subprocess.CompletedProcess[str]:
     payload: dict[str, object] = {"hook_event_name": "UserPromptSubmit", "session_id": session, "prompt": prompt}
     if transcript is not None:
         payload["transcript_path"] = str(transcript)
-    return _run(repo, "arm", payload)
+    return _run(repo, "arm", payload, env)
 
 
 def _call(repo: Path, tool: str, session: str = SESSION, **tool_input: object) -> subprocess.CompletedProcess[str]:
@@ -565,6 +570,40 @@ def test_an_unreadable_log_never_blocks_arming(repo: Path) -> None:
     assert (repo / "tmp/observe" / f"{SESSION}.json").is_file()
     assert "broken.jsonl" in result.stdout
     assert f"Question: {_O66}\n" in result.stdout
+
+
+def test_an_unreadable_log_alone_claims_no_answers(repo: Path) -> None:
+    # Review of PR #1202: with no stranded answer, the note must not tell the session answers exist.
+    (repo / "sdd/decisions").mkdir(parents=True, exist_ok=True)
+    (repo / "sdd/decisions/broken.jsonl").write_text("not json\n", encoding="utf-8")
+    result = _arm(repo, "/observe OP-01")
+    assert result.returncode == 0, result.stderr
+    assert "broken.jsonl" in result.stdout
+    assert "could not all be read" in result.stdout
+    assert "holds answers" not in result.stdout
+
+
+def test_a_note_the_console_cannot_encode_never_blocks_arming(repo: Path) -> None:
+    # Review of PR #1202: logged text carries '→' and '✓', which a cp1252 hook stdout cannot encode.
+    _with_answers(repo)
+    _log_answer(repo, "07bd66b7.jsonl", "OP-01/O66 (AX-6): D92 → D93 ✓. Which?", "Yes ✓ (Recommended)")
+    result = _arm(repo, "/observe OP-01", env={"PYTHONIOENCODING": "cp1252"})
+    assert result.returncode == 0, result.stderr
+    assert (repo / "tmp/observe" / f"{SESSION}.json").is_file()
+    assert "D92 → D93 ✓" in result.stdout
+
+
+def test_a_crash_reading_the_logs_is_named_never_raised(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import observe_dialogs
+    import observe_ground
+
+    def crash(*_args: object, **_kwargs: object) -> object:
+        raise RuntimeError("log reader crashed")
+
+    monkeypatch.setattr(observe_dialogs, "dialogs", crash)
+    note = observe_ground.answered_elsewhere(repo, "sdd/observe/records/OP-01.md")
+    assert note == ("/observe ground hook: the decision logs could not be checked for answered items (RuntimeError).")
 
 
 _SLUG = '{"type":"user","message":{"role":"user","content":"/observe read"}}\n'

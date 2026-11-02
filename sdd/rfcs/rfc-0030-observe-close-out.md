@@ -14,7 +14,7 @@ Decision taken in this RFC's session: decision log
 **A review finding blocks a freeze only when it leaves what a caller
 observes false, two-valued or undecided; a finding about the record's own
 text goes to the spec flow. After a review, one close-out decides the
-blocking items by the review's recommendation, adopted in one dialog, and
+blocking items by the close-out's recommendation, adopted in one dialog, and
 the record freezes after a check scoped to what the close-out wrote, not
 another full review.**
 
@@ -26,10 +26,11 @@ loop does not end. Each review round's open items, from the record's "were
 found by" lines: `O27` to `O44` (18), `O47` to `O64` (18), `O65` to `O72`
 (8), `O73` to `O83` (11), `O84` to `O91` (8). Each reopen answers them with
 decisions that restate the text they amend (D114 to D133, then D134 to
-D150), and the next round finds the restatements disagreeing: of `O84` to
-`O91`, five cite a decision the reopen before wrote (`O84` D150, `O85` D138,
-`O89` D138, `O90` D138 and D146, `O91` D145), and four (`O88` to `O91`)
-change nothing a caller observes.
+D150), and the next round finds the restatements disagreeing: each of `O84`
+to `O91` cites a decision the reopen before wrote, D134 to D150 (`O84` D150,
+`O85` D138, `O86` D137, `O87` D134, `O88` D135 and D137, `O89` D138, `O90`
+D138 and D146, `O91` D145, read from each item's text), and four (`O88` to
+`O91`) change nothing a caller observes.
 
 No measured stopping rule exists to replace "a round finds nothing".
 [`research-observe-record-quality.md`](../research/research-observe-record-quality.md)
@@ -51,8 +52,9 @@ Every other finding is a **note**: a restated list or count, a Decided-by
 cell, a reason, provenance, a Decision's fidelity to its dialog, where the
 deciding decisions fix the behaviour. A note is routed to the entry's spec
 flow, which writes each clause once from the deciding decisions and cites
-the note it settles; it blocks nothing. `/observe-review` tags each item it
-writes as one or the other.
+the note it settles; it blocks nothing. `/observe-review` writes a finding
+that does not block as a note, whatever its kind, so an item's shape is its
+tag: a reopen, ground conflict or gap blocks, a note does not.
 
 ### C2. The close-out
 
@@ -67,11 +69,15 @@ in the pull request that carries them, and a disagreement there is a reopen.
 ### C3. The freeze after a close-out
 
 A close-out is followed by a check of what it wrote, not a full review:
-`observe-dialogs` and `observe-tables` over the whole record, both able to
-fail ([ADR-0045](../adrs/0045-close-on-a-check-that-can-fail.md)), and a
-re-read of each close-out decision against every decision it cites or
-amends. A finding on the close-out's own text is corrected before its
-commit, or routed if it is a note. The record is then frozen as R2 states
+`observe-dialogs` and `observe-tables` over the whole record, and a re-read
+of each close-out decision against every decision it cites or amends. A
+record may fail both scripts already (OP-01's D1 to D44 have no Asked line;
+BK-509's table findings), so the check is a comparison: it fails
+([ADR-0045](../adrs/0045-close-on-a-check-that-can-fail.md)) on a FAIL for
+a close-out decision, or on a FAIL or table finding that the same script,
+run on the record as the review's commit left it (`git show
+<commit>:<record>`), did not report, line numbers aside. A finding on the close-out's own text is
+corrected before its commit, or routed if it is a note. The record is then frozen as R2 states
 (each item decided or routed, each naming what it blocks; the tag after the
 merge). R2's full re-run is required after a reopen, not after a
 close-out.
@@ -102,8 +108,8 @@ Decided in the log above:
 ## Impact
 
 - **Process:** RFC-0029 and RFC-0028 carry an "Amended by RFC-0030" line.
-  `/observe-review` tags each item blocking or a note and states the
-  close-out (step 5).
+  `/observe-review` writes a finding that does not block as a note (its
+  rules) and states the close-out (step 6).
 - **Backlog:** BK-505 is decided by this RFC. OP-01's first close-out is
   BK-485's.
 - **Public API, testing:** none.

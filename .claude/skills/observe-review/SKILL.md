@@ -17,9 +17,10 @@ before its spec is written (RFC-0028), and after its reopen, before its freeze
   axis decisions stay as written. What holds goes to Open items as the next
   `<entry>/O<n>`, in `/observe` steps 3 and 4's shapes: a reopen of a
   decision (the conflict, the dependent decisions, what to decide with the
-  maintainer, what it blocks), a ground conflict, a gap, or a note. A reopen,
-  ground conflict or gap blocks a freeze only if it leaves what a caller
-  observes false, two-valued or undecided; a note never does (RFC-0030 C1).
+  maintainer, what it blocks), a ground conflict, a gap, or a note. Write a
+  reopen, ground conflict or gap only when it leaves what a caller observes
+  false, two-valued or undecided, else a note, so the shape is the item's
+  tag: the first three block a freeze, a note never does (RFC-0030 C1).
   Status stays Complete; each axis row lists the items that reopen, gap or
   depend on its decisions.
 - **Quote what you re-read.** Each finding cites the record's words, read
@@ -86,7 +87,10 @@ before its spec is written (RFC-0028), and after its reopen, before its freeze
    `axes.md`'s reopen form, its Asked line quoting that dialog, and one
    decision routing the notes (`Routed to <entry>'s spec flow by
    <entry>/D<m>.`); a Session line names the close-out, the review and the
-   log. Then step 1 over the whole record, and a re-read of each close-out
+   log. Then step 1 over the whole record, compared with step 1 run on the
+   record as the review's commit left it (`git show <commit>:<record>`): a
+   FAIL on a close-out decision, or a FAIL or table finding the earlier run
+   did not report (line numbers aside), fails the check. And a re-read of each close-out
    decision against every decision it cites or amends: correct the close-out's
    own text before the commit, route a note. Commit with the log added to the
    `/observe` trace's `decisions:`, and give step 5's verdict; no full
