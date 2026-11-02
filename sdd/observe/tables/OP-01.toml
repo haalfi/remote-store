@@ -100,6 +100,13 @@ at = "OP-01/D43"
 kind = "register"
 reason = "D43 enumerates OP-01's variation points itself; no other table fixes their set (OP-01/O31 asks whether one is missing)"
 
+# Declared 2026-11-02, after the reopen of that day: D138's one-row table is the row its
+# Decision adds to D43's register (Cancelled close), with D43's columns.
+[[table]]
+at = "OP-01/D138"
+kind = "register"
+reason = "D138's Decision: 'D43's table gains the row'; a seventh variation point, D43's register extended"
+
 [[table]]
 at = "Axis status"
 kind = "case"

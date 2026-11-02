@@ -40,6 +40,9 @@ co_shipped_items: []
 # asked again (OP-01/O65). The last four are the reopen's of 2026-11-01
 # walking O65 to O72 (D114 to D133), added by the review after it; questions
 # asked in 0ca05c8b, 38fffa4c and 440f2247 were answered into 07bd66b7.
+# The last two are the reopen's of 2026-11-02 walking O73 to O83 (D134 to
+# D150), added by the review after it; O83's questions asked in 149aee02 were
+# answered into 07bd66b7 (16:45Z), and df68cdf4 holds the end check's D150.
 decisions:
   - sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
   - sdd/decisions/f2ddab07-cc31-5c01-a396-d08c5dcec24a.jsonl
@@ -54,6 +57,8 @@ decisions:
   - sdd/decisions/38fffa4c-fe48-488a-a4d8-8e526bb31351.jsonl
   - sdd/decisions/440f2247-3240-4e07-996e-8783612d3f9b.jsonl
   - sdd/decisions/8faf85fc-01c7-431e-8a2d-e8345bb0a300.jsonl
+  - sdd/decisions/149aee02-7cfc-4ea2-b395-435933c49e4c.jsonl
+  - sdd/decisions/df68cdf4-b797-4818-9e62-69583965e400.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:
