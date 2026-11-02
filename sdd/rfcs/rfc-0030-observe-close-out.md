@@ -6,8 +6,11 @@ Accepted, 2026-11-02, by the maintainer. Tracked as **BK-505**, which it
 decides. Amends [RFC-0029](rfc-0029-faithfulness-before-spec.md) R2: what a
 freeze needs beyond R1's check. Amends [RFC-0028](rfc-0028-observe-record-review.md)
 P3: a review's items may be decided by a close-out instead of a reopen.
-Decision taken in this RFC's session: decision log
-`sdd/decisions/debeb3f4-b39e-4b2c-8a57-33040e9119ec.jsonl` ("Close-out rule").
+Decisions taken in this RFC's session: decision log
+`sdd/decisions/debeb3f4-b39e-4b2c-8a57-33040e9119ec.jsonl` ("Close-out rule"),
+and, after the pull request's review, log
+`sdd/decisions/07bd66b7-51b6-5a03-b47e-dc2fedeeeae7.jsonl` ("Fix the rule":
+one question per blocking item, C2).
 
 ## Summary
 
@@ -59,12 +62,16 @@ tag: a reopen, ground conflict or gap blocks, a note does not.
 ### C2. The close-out
 
 After an `/observe-review`, the maintainer may close the record out instead
-of reopening it. One dialog adopts, for every blocking item, the answer the
-close-out recommends, and routes every note (C1). Each blocking item is then
-written as a decision in `axes.md`'s reopen form, its Asked line quoting
-that dialog, and the notes are routed by one decision. No other question is
+of reopening it. One dialog adopts the close-out's recommended answers: one
+question per blocking item, its answer shown (four questions per call), and
+one routing every note (C1). Each blocking item is then written as a
+decision in `axes.md`'s reopen form, its Asked line quoting its own
+question, and the notes are routed by one decision. No other question is
 asked. A close-out runs once per review; the maintainer reads its decisions
 in the pull request that carries them, and a disagreement there is a reopen.
+OP-01's first close-out, D151 to D156, predates the per-item questions: the
+dialog that chose the close-out adopted them unseen, so each quotes it, and
+the maintainer accepted them on the pull request that carried them.
 
 ### C3. The freeze after a close-out
 

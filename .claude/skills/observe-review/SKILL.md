@@ -80,11 +80,11 @@ before its spec is written (RFC-0028), and after its reopen, before its freeze
 6. **Close-out** (RFC-0030 C2, C3), after a review whose items the
    maintainer chose to close out: for each item that blocks a freeze, the
    answer that leaves the record's behaviour closest to the decisions it
-   amends and to `io`, the SDK or the runtime as run. One dialog adopts all of
-   them and routes every note: the one in which the maintainer chose the
-   close-out, if its option said so, else one `AskUserQuestion` listing each
-   answer. No other question. Write each answer as a decision in
-   `axes.md`'s reopen form, its Asked line quoting that dialog, and one
+   amends and to `io`, the SDK or the runtime as run. Ask them in one
+   dialog: one question per item, the answer first and marked
+   `(Recommended)`, and one routing every note (`AskUserQuestion`, four per
+   call). No other question. Write each answer as a decision in
+   `axes.md`'s reopen form, its Asked line quoting its own question, and one
    decision routing the notes (`Routed to <entry>'s spec flow by
    <entry>/D<m>.`); a Session line names the close-out, the review and the
    log. Then step 1 over the whole record, compared with step 1 run on the

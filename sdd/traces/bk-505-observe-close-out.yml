@@ -13,6 +13,8 @@ audience:
 discovery_followups: []
 decisions:
   - sdd/decisions/debeb3f4-b39e-4b2c-8a57-33040e9119ec.jsonl
+  # After PR #1202's review: a close-out asks one question per blocking item.
+  - sdd/decisions/07bd66b7-51b6-5a03-b47e-dc2fedeeeae7.jsonl
 # BK-508's open decision named BK-505 as a possible owner of named-row
 # resolution; RFC-0030 adopts no check, so BK-508 keeps it.
 surprising_ripples:
