@@ -1,0 +1,169 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (/observe-review OP-01 after its reopen walking O65 to O72)"
+trigger: >-
+  The reopen of 2026-11-01 (`/observe OP-01`) decided O65 to O72 as D114 to
+  D133 and left the record and its last log uncommitted. The maintainer typed
+  `/observe-review OP-01`: RFC-0029 R2 freezes a record only after this review
+  re-runs on it as its last reopen left it.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+# This review asked no dialog. The reopen's four logs went to the /observe
+# trace's decisions:, not here.
+decisions: []
+surprising_ripples: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/observe/records/OP-01.md
+  - sdd/traces/bk-485-observe-op-01.yml
+orient:
+  - items: [BK-505]
+    verdict: constrains
+    evidence: >-
+      As in bk-485-op-01-review-3.yml: until BK-505 decides which checks and
+      stopping rule bind, R2 freezes on R1's check and this re-run.
+  - items: [BK-509, BK-510]
+    verdict: unrelated
+    evidence: >-
+      BK-509 names the table check's amendment findings (NP9 citations) this
+      run meets again; BK-510 names the split dialogs the pairing report lists
+      for O66, O70 and O71. Neither changes this review.
+phases:
+  - id: pairs
+    name: Step 1, pair decisions with dialogs; the table check
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "After a reopen: pairs, tables, two unprimed readers, primed review, verify, then the freeze verdict"
+      - file: sdd/traces/bk-485-observe-op-01.yml
+        section: "decisions"
+        read_type: gate
+        extract: >-
+          Nine logs listed. The reopen's 0ca05c8b, 38fffa4c, 440f2247
+          (committed) and 8faf85fc (untracked) were in no trace; step 4 adds
+          them. 05cde0a2 is bk-510's, 76bcf9f7 review-2's, 5ed64b97 review-3's
+      - file: scripts/observe_dialogs.py
+        section: "hatch run observe-dialogs OP-01.md with the thirteen logs"
+        read_type: verify
+        extract: >-
+          Exit 1, saved as tmp/observe-review/OP-01-pairs.md. D1 to D44 "FAIL
+          no Asked line" (pre-RFC-0028); D45 to D133 ok but D100, D102, D107
+          (two answers each, covered by D116 and O65). New split dialogs:
+          O66, O70, O71, each asked in its log and answered in 07bd66b7. O65
+          to O72 asked in one dialog each
+      - file: scripts/observe_tables.py
+        section: "hatch run observe-tables OP-01.md OP-01.toml"
+        read_type: verify
+        extract: >-
+          No undeclared table. 32 findings: the 14 table findings of
+          review-3, each covered by its amending decision, and 18 NP9
+          citations (D71 adds NP9 by amendment, BK-509). After writing O73 to
+          O83: 37, the five more NP9 citations those items carry
+  - id: readers
+    name: Step 2, two unprimed readers
+    steps:
+      # Two fresh general-purpose agents spawned together with the brief
+      # verbatim and nothing else. Reader A labels A1.1, reader B B1.1.
+      - file: sdd/observe/records/OP-01.md
+        section: "(full), with the pairs file, axes.md and the Session's ground"
+        read_type: gate
+        extract: >-
+          Both paired every one of D1 to D44 with an unpaired dialog. Reader
+          A: 3 under item 1, 6 under 2, 3 under 3, 6 under 4. Reader B: 5
+          under 1, 9 under 2, 4 under 3, 6 under 4
+  - id: primed
+    name: Step 3, primed review against backends, SDKs and the runtime
+    steps:
+      - file: pyproject.toml
+        section: "hatch env: io.BufferedReader at EOF; readlines(hint); closed-state methods (CPython 3.13.17)"
+        read_type: verify
+        extract: >-
+          readinto1 0 and readlines [] at the end (D132 holds). readlines(3)
+          over b'ab\ncd\nef\n' gives two lines: io stops once the total
+          exceeds hint, not reaches it (O73). readlines(10) over 1 MB with no
+          newline gives one 1 MB line (O74). Closed writable() returns False
+          on BufferedReader and a BufferedIOBase subclass (O75)
+      - file: src/remote_store/aio/_sync_adapter.py
+        section: "stream close via asyncio.to_thread; hatch env: cancelling to_thread"
+        read_type: verify
+        extract: >-
+          The cancellation propagates while the thread's close runs on, and
+          the close finishes later (O76). paramiko, SFTP's SDK, is synchronous
+          (pyproject sftp extra)
+      - file: .venv/lib/python3.13/site-packages/azure/storage/blob/_blob_client.py
+        section: "BlobClient.set_standard_blob_tier"
+        read_type: verify
+        extract: "Calls blob.set_tier, not a copy: D130's 'tier move by copy' does not cover Azure (O77)"
+      - file: sdd/decisions/440f2247-3240-4e07-996e-8783612d3f9b.jsonl
+        section: "O71's three questions and options"
+        read_type: verify
+        extract: >-
+          D125's Closed sentence and D126's one-request and 'reaches hint'
+          wording are in the answered options; D127's UnsupportedOperation
+          sentence is not; D125's and D126's options (b) differ from the
+          dialog's (O83)
+      # Primed candidates and verdicts:
+      #   P1 D126 readinto1 against D78: holds, O73 (both readers too).
+      #   P2 D126 readlines hint against io: holds, O73 (run).
+      #   P3 D125/D117 closed writable(): holds, O75 (run).
+      #   P4 D118 on a threaded close: holds, O76 (run).
+      #   P5 D121's named conflict, D124 off O9's list: holds, O78 (derived).
+      #   P6 D130 'by copy' on Azure: holds, O77 (SDK read).
+      #   P7 D133 restating NP9's scope against option (a)'s "by citation":
+      #      dropped; the answered option's text enumerates the scope itself,
+      #      and D133's check names the restatement.
+  - id: verify
+    name: Step 4, verify every candidate and file what holds
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D14 to D133 cited, re-read before quoting; Session; Axis status; Open items"
+        read_type: verify
+        extract: >-
+          O73 to O83 written, opened by a line naming this review; axis rows
+          list each reopen with its decisions and dependents (notes none); no
+          decision, Environment row or axis decision edited; Status stays
+          Complete
+      # Raw findings and verdicts.
+      #   A1.1, B1.1, primed: holds, O73.
+      #   A2.3, B2.3: holds, O74 (run).
+      #   Primed P3: holds, O75.  Primed P4: holds, O76.
+      #   A1.2, B1.5, primed P6: holds as a note, O77.
+      #   A2.2, B2.1, B2.9, primed P5: holds as a note, O78.
+      #   A2.4, B2.6, B2.7: holds as a note, O79.
+      #   A2.5, B2.5: holds as a note, O80.
+      #   A3.1, A3.3, B3.1, B3.2: holds as a note, O81.
+      #   A2.6, B2.2: holds as a note, O82 (moderate).
+      #   A4.3, B2.4, primed log read: holds as a note, O83.
+      #   A1.3, B dropped list (D64's ESTALE against D85's pin token):
+      #     dropped; a stale descriptor is Local's lost pin.
+      #   B1.2, B1.3, B1.4 (D10's, D24's, D94's options and D69's Decision
+      #     against D81, D118, D101): dropped; each decision holds as its
+      #     Amended-by decisions leave it, which restate the Decision.
+      #   B2.4's D69 part: dropped, same reason.
+      #   B2.8 (D107's list without D119): dropped; D62 is listed and D119
+      #     amends D62.
+      #   B3.4 (D38's not-found row under E17's unspecified outcome):
+      #     dropped; unspecified across backends, and no backend's repeat of
+      #     the same request varies with the store unchanged (not run).
+      #   A2.1 (D47's "E3 and E5"), A3.2, B3.3 (D63's reason), A4.1, B4.1,
+      #     B4.2 (tables no dialog asked), A4.4, B4.3, B4.4 (D104's and D108's
+      #     lists), A4.5, B4.5 (D64), A4.6, B4.6 (D11, D12, D51, D60, D82,
+      #     D119's reason sentence, the PR #1188 fidelity dialog): dropped,
+      #     for the verdicts of bk-485-op-01-review-2.yml and review-3 or the
+      #     items that reopened them (O16, O37, O40, O62, D107).
+      #   Table check: covered, as in review-3.
+  - id: freeze
+    name: Step 5, the freeze verdict
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O83"
+        read_type: verify
+        extract: >-
+          Not frozen. Items in the way: O73 to O76, for a reopen of this
+          record, and the notes O77 to O83, asked in it. Decided: O14 to O41,
+          O43 to O45, O47 to O72. Routed, each naming what it blocks: O1 to
+          O13, O42, O46

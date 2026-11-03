@@ -1,0 +1,93 @@
+id: BK-505
+title: "An `/observe` record's freeze has no stopping rule: the record-quality report's checks are neither adopted nor rejected (RFC-0030, OP-01's close-out)"
+trigger: >-
+  After `/observe-review OP-01` wrote O84 to O91, the fifth round of open
+  items, the maintainer asked how to get OP-01 closed without further
+  questions. One dialog chose the close-out rule: decide BK-505 by amending
+  RFC-0029 R2, and close OP-01 out on it.
+source_items:
+  - BK-505
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+decisions:
+  - sdd/decisions/debeb3f4-b39e-4b2c-8a57-33040e9119ec.jsonl
+  # After PR #1202's review: a close-out asks one question per blocking item.
+  - sdd/decisions/07bd66b7-51b6-5a03-b47e-dc2fedeeeae7.jsonl
+# BK-508's open decision named BK-505 as a possible owner of named-row
+# resolution; RFC-0030 adopts no check, so BK-508 keeps it.
+surprising_ripples:
+  - sdd/BACKLOG.md
+co_shipped_items: []
+expected_ripples:
+  - sdd/rfcs/rfc-0030-observe-close-out.md
+  - sdd/rfcs/rfc-0029-faithfulness-before-spec.md
+  - sdd/rfcs/rfc-0028-observe-record-review.md
+  - .claude/skills/observe-review/SKILL.md
+  - sdd/observe/records/OP-01.md
+  - sdd/traces/bk-485-observe-op-01.yml
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - CHANGELOG.md
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      OP-01 is the first record the rule applies to; its open items O84 to
+      O91 and the rounds before them are the RFC's motivation, and the
+      close-out is BK-485's next step before the freeze.
+  - items: [BK-506]
+    verdict: constrains
+    evidence: >-
+      R4's trial runs on the frozen record; RFC-0030 C4 names it among what
+      catches what a close-out leaves, and C5 defers the report's checks
+      until it reports.
+  - items: [BK-508]
+    verdict: unrelated
+    evidence: "Its named-row question was BK-505's to own only if a new check were adopted; none is."
+phases:
+  - id: orient
+    name: Orient, the rule and the evidence
+    steps:
+      - file: sdd/backlog/bk-505-record-quality-research.md
+        section: "(full)"
+        read_type: gate
+        extract: "The brief: complete, consistent, faithful, and when a record is done"
+      - file: sdd/research/research-observe-record-quality.md
+        section: "§ 2, § 3, § 4"
+        read_type: gate
+        extract: >-
+          The stopping rule needs seeded defects per reviewer kind, unvalidated;
+          capture-recapture at two readers erred by about half; on OP-01 its
+          0.2 estimate was followed by four more items
+      - file: sdd/rfcs/rfc-0029-faithfulness-before-spec.md
+        section: "R2"
+        read_type: gate
+        extract: "A freeze needs R1's check and a full re-run after the last reopen; more is BK-505's"
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items' 'were found by' lines"
+        read_type: verify
+        extract: >-
+          Rounds O27 to O44 (18), O47 to O64 (18), O65 to O72 (8), O73 to O83
+          (11), O84 to O91 (8); all eight of O84 to O91 cite a decision the
+          reopen before wrote (D134 to D150), four change nothing a caller
+          observes. First counted as five, missing O86, O87 and O88; PR #1202's
+          review recounted from the items' texts
+  - id: close_out
+    name: OP-01's close-out and its C3 check
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D10, D34, D38, D41, D78, D81, D93, D96, D117, D132, D134, D150; O84 to O91"
+        read_type: verify
+        extract: >-
+          D151 to D155 decide O84 to O87, D156 routes O88 to O91; Amended-by
+          lines, axis rows and AX-12's effect sentence updated; Session line
+      - file: scripts/observe_dialogs.py
+        section: "observe-dialogs OP-01.md with sixteen logs, debeb3f4 added"
+        read_type: verify
+        extract: "D151 to D156 ok; FAILs only D1 to D44 (no Asked line) and D100, D102, D107, as before"
+      - file: scripts/observe_tables.py
+        section: "observe-tables OP-01.md OP-01.toml"
+        read_type: verify
+        extract: "48 findings, unchanged: the 14 covered table findings and 34 NP9 citations (BK-509)"

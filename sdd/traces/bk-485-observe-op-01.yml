@@ -31,9 +31,36 @@ co_shipped_items: []
 # (from each event's session_id; not diffed). The armed session could not
 # commit either, and both go when its container is archived. No .jsonl is
 # written by hand.
+# The third log is the reopen's of 2026-10-30 (D45 to D80), added by the
+# /observe-review run after it (bk-485-op-01-review-2.yml). The rest are the
+# reopens' of 2026-10-31 and 2026-11-01 (D81 to D113), added by the review
+# after them (bk-485-op-01-review-3.yml). Worker restarts split their dialogs:
+# questions asked in 2995e3cc, aa4975e6, fa0b580f, 58bfebbf and cbcf16f7 were
+# answered into 07bd66b7 (from each event's session_id), and some were then
+# asked again (OP-01/O65). The last four are the reopen's of 2026-11-01
+# walking O65 to O72 (D114 to D133), added by the review after it; questions
+# asked in 0ca05c8b, 38fffa4c and 440f2247 were answered into 07bd66b7.
+# The last two are the reopen's of 2026-11-02 walking O73 to O83 (D134 to
+# D150), added by the review after it; O83's questions asked in 149aee02 were
+# answered into 07bd66b7 (16:45Z), and df68cdf4 holds the end check's D150.
 decisions:
   - sdd/decisions/bcb85b21-720e-5412-bc7e-32bfff75f566.jsonl
   - sdd/decisions/f2ddab07-cc31-5c01-a396-d08c5dcec24a.jsonl
+  - sdd/decisions/07bd66b7-51b6-5a03-b47e-dc2fedeeeae7.jsonl
+  - sdd/decisions/2995e3cc-b02d-43b2-bb74-69d2d19b444a.jsonl
+  - sdd/decisions/aa4975e6-aed7-4cc2-a34c-e1ba6a12fade.jsonl
+  - sdd/decisions/fa0b580f-4081-41cf-a48a-85f1cf81ac89.jsonl
+  - sdd/decisions/58bfebbf-ea24-4477-a992-26abd7bba129.jsonl
+  - sdd/decisions/cbcf16f7-7366-4d22-82ef-c7d31e98e514.jsonl
+  - sdd/decisions/02e10996-5e58-4b5c-9d59-fd3111abc4db.jsonl
+  - sdd/decisions/0ca05c8b-8205-45da-969f-42401adca283.jsonl
+  - sdd/decisions/38fffa4c-fe48-488a-a4d8-8e526bb31351.jsonl
+  - sdd/decisions/440f2247-3240-4e07-996e-8783612d3f9b.jsonl
+  - sdd/decisions/8faf85fc-01c7-431e-8a2d-e8345bb0a300.jsonl
+  - sdd/decisions/149aee02-7cfc-4ea2-b395-435933c49e4c.jsonl
+  - sdd/decisions/df68cdf4-b797-4818-9e62-69583965e400.jsonl
+  # The close-out of 2026-11-02 (RFC-0030 C2): one dialog, D151 to D156.
+  - sdd/decisions/debeb3f4-b39e-4b2c-8a57-33040e9119ec.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:

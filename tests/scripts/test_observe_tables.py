@@ -609,12 +609,20 @@ def _op01_findings(tmp_path: Path, record: str) -> set[str]:
     return set(_findings(_run(tmp_path, record, OP01_TABLES.read_text(encoding="utf-8"))))
 
 
+def _unlined(finding: str) -> str:
+    return re.sub(r" \(line \d+\)", "", finding)
+
+
 def _mutant_adds(tmp_path: Path, record: str, lines: dict[int, str | None], tail: str = "") -> set[str]:
-    """The findings *record* gains when each numbered line is replaced (None drops it) and *tail* appended."""
+    """The findings *record* gains when each numbered line is replaced (None drops it) and *tail* appended.
+
+    A finding the record already has counts as kept wherever it moves: a dropped line shifts its line number.
+    """
     text = record.split("\n")
     mutant = [lines.get(n, line) for n, line in enumerate(text, 1)]
     mutated = "\n".join(line for line in mutant if line is not None) + tail
-    return _op01_findings(tmp_path, mutated) - _op01_findings(tmp_path, record)
+    kept = {_unlined(f) for f in _op01_findings(tmp_path, record)}
+    return {f for f in _op01_findings(tmp_path, mutated) if _unlined(f) not in kept}
 
 
 def test_op01_mutant_dropping_a_partition_row_is_a_gap(tmp_path: Path) -> None:

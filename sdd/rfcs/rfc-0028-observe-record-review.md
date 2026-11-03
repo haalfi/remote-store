@@ -18,6 +18,10 @@ Amended by [RFC-0029](rfc-0029-faithfulness-before-spec.md), accepted
 record's tables (R1); P3's reopen is followed by a re-run of the review and a
 freeze before the spec cites the decisions (R2).
 
+Amended by [RFC-0030](rfc-0030-observe-close-out.md), accepted 2026-11-02:
+P3's reopen may be replaced by a close-out, one dialog adopting the
+close-out's recommendation for every item that blocks a freeze (C2).
+
 ## Summary
 
 **A record leaves its session only after the session has re-checked it whole,

@@ -72,7 +72,10 @@ any web result about it.
    `Flow done`; ask a ground conflict without one its route only, as
    axes.md's reopen form has it. Ask each as above, sourced to the item (a ✓ on 0.33's code
    shows what an SDK or OS does, never the answer); each answer, "as is"
-   too, is a new decision in axes.md's reopen form.
+   too, is a new decision in axes.md's reopen form. An item the hook's
+   note names was answered into another session's log (BK-510): write it from
+   that answer, quoted in its Asked line; re-ask only if its scenario changed
+   or two answers differ, naming the earlier one.
 4. **Ground conflict.** If a decision would contradict a ground artifact,
    stop on that point. Record a reopen decision as an open item: the artifact,
    the clause, the conflict, the dependent decisions, and any answer that

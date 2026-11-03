@@ -30,6 +30,17 @@ decision pairs with, such as the Environment's first dialog, are listed with
 their answer and option, not failed: a record older than the Asked line is
 paired by hand from them.
 
+Three more sections come before that list, also not failed (BK-510). A worker
+restart files a dialog's answer under another session id, so the asking
+session may never see it and a later one asks again. **Dialogs split across
+logs** names each dialog asked in one log and answered in another, by its
+``tool_use_id``. **Asked with no answer in these logs** names one whose answer
+is in no log given, which usually means a log is missing from the arguments.
+**Items asked in more than one dialog** lists every dialog naming one open item
+(``<entry>/O<n>`` opening the question), in answer order, so a reader can see
+two answers to one question. ``unrecorded()`` is the ground hook's half: the
+answers to the record's open items that no Asked line records.
+
 Bound: it checks that a dialog answered each decision, not what the Decision
 says beyond the answer, and a quote that is too short to be unique fails
 rather than guessing. The decisions are enumerated from the record's own
@@ -68,11 +79,25 @@ _POINTERS = ("Amends", "Amended by")
 _DISMISSED = "[User dismissed"
 
 
+# An open item a question names by its opening, e.g. "OP-01/O66 (AX-6): ..." (BK-510).
+_ITEM = re.compile(r"(?P<item>OP-\d{2}/O\d+)(?!\d)")
+_ITEM_BULLET = re.compile(r"^- `(?P<item>OP-\d{2}/O\d+)`")
+
+
 @dataclass
 class Dialog:
     question: str
     answer: str
     description: str
+    # Where the answer was logged (BK-510), empty in records built by hand.
+    ts: str = ""
+    log: str = ""
+    tool_use_id: str = ""
+
+    def item(self) -> str | None:
+        """The open item the question opens with, or None."""
+        m = _ITEM.match(self.question)
+        return m["item"] if m else None
 
 
 @dataclass
@@ -161,18 +186,39 @@ def decisions(record: str) -> list[Decision]:
     return found
 
 
-def dialogs(logs: list[Path]) -> list[Dialog]:
+def _events(log: Path) -> list[dict]:
+    """The log's events in line order; ValueError on a line that is no JSON object."""
+    events = []
+    # Split on b"\n" alone: the recorder's ensure_ascii=False leaves U+2028, U+2029 and U+0085
+    # raw inside strings, where str.splitlines() would cut a record (as check_traces.py does).
+    for raw in log.read_bytes().split(b"\n"):
+        if not raw.strip():
+            continue
+        event = json.loads(raw.decode("utf-8"))
+        if not isinstance(event, dict):
+            raise ValueError(f"{log}: a log line is no JSON object")
+        events.append(event)
+    return events
+
+
+def _readable(logs: list[Path], errors: list[str] | None) -> list[tuple[Path, list[dict]]]:
+    """Each log with its events; with *errors* a list, an unusable log is named there and skipped."""
+    read = []
+    for log in logs:
+        try:
+            read.append((log, _events(log)))
+        except (OSError, ValueError) as exc:
+            if errors is None:
+                raise
+            errors.append(f"{log.name}: {type(exc).__name__}")
+    return read
+
+
+def dialogs(logs: list[Path], errors: list[str] | None = None) -> list[Dialog]:
     """Every answered question in *logs*, duplicates (one event logged twice) dropped."""
     seen: dict[tuple[str, str], Dialog] = {}
-    for log in logs:
-        # Split on b"\n" alone: the recorder's ensure_ascii=False leaves U+2028, U+2029 and U+0085
-        # raw inside strings, where str.splitlines() would cut a record (as check_traces.py does).
-        for raw in log.read_bytes().split(b"\n"):
-            if not raw.strip():
-                continue
-            event = json.loads(raw.decode("utf-8"))
-            if not isinstance(event, dict):
-                raise ValueError(f"{log}: a log line is no JSON object")
+    for log, events in _readable(logs, errors):
+        for event in events:
             if event.get("event") != "answered":
                 continue
             given = event.get("tool_input") or {}
@@ -185,8 +231,95 @@ def dialogs(logs: list[Path]) -> list[Dialog]:
                     continue
                 labels = {o.get("label"): o.get("description", "") for o in options.get(question, [])}
                 key = (_norm(question), _norm(str(answer)))
-                seen.setdefault(key, Dialog(key[0], key[1], labels.get(answer, "(free text or several options)")))
+                # A multiSelect answer can be logged as a list, which names no single label.
+                label = labels.get(answer) if isinstance(answer, str) else None
+                found = Dialog(key[0], key[1], "(free text or several options)" if label is None else label)
+                found.ts, found.log, found.tool_use_id = (
+                    str(event.get("ts") or ""),
+                    log.name,
+                    str(event.get("tool_use_id") or ""),
+                )
+                seen.setdefault(key, found)
     return list(seen.values())
+
+
+def splits(logs: list[Path]) -> tuple[list[str], list[str]]:
+    """Dialogs answered in another log than they were asked in, and asked ones no given log answers.
+
+    A worker restart files the answer, and a replayed ``asked`` line, under another
+    session id (BK-510), so a dialog is split when any ``asked`` line of its
+    ``tool_use_id`` sits in a log other than its ``answered`` line's.
+    """
+    asked: dict[str, list[tuple[str, str, str]]] = {}
+    answered: dict[str, tuple[str, str]] = {}
+    for log, events in _readable(logs, None):
+        for event in events:
+            tid = event.get("tool_use_id")
+            if not tid:
+                continue
+            if event.get("event") == "asked":
+                questions = (event.get("tool_input") or {}).get("questions") or [{}]
+                first = _norm(str(questions[0].get("question") or "(no question)"))
+                asked.setdefault(tid, []).append((log.name, str(event.get("ts") or ""), first))
+            elif event.get("event") == "answered":
+                answered.setdefault(tid, (log.name, str(event.get("ts") or "")))
+    split, unanswered = [], []
+    for tid, lines in asked.items():
+        name, ts, first = lines[0]
+        if tid not in answered:
+            unanswered.append(f"{first}\n  Asked in {name} at {ts}")
+            continue
+        others = sorted({n for n, _, _ in lines} - {answered[tid][0]})
+        if others:
+            split.append(
+                f"{first}\n  Asked in {', '.join(others)}, answered in {answered[tid][0]} at {answered[tid][1]}"
+            )
+    return split, unanswered
+
+
+def repeats(pool: list[Dialog]) -> dict[str, list[Dialog]]:
+    """Each open item named by questions of more than one dialog, its dialogs in answer order (BK-510)."""
+    by_item: dict[str, list[Dialog]] = {}
+    for g in pool:
+        if g.item():
+            by_item.setdefault(g.item() or "", []).append(g)
+    many = {k: v for k, v in by_item.items() if len({g.tool_use_id or id(g) for g in v}) > 1}
+    return {k: sorted(v, key=lambda g: g.ts) for k, v in many.items()}
+
+
+def open_items(record: str) -> set[str]:
+    """The record's Open items no ``Decided by`` closes."""
+    section = record.split("\n## Open items\n", 1)
+    if len(section) < 2:
+        return set()
+    body = section[1].split("\n## ", 1)[0]
+    found, current = {}, None
+    for line in body.splitlines():
+        bullet = _ITEM_BULLET.match(line)
+        if bullet:
+            current = bullet["item"]
+            found[current] = line
+        elif current and line.startswith("  "):
+            found[current] += " " + line.strip()
+        elif line.strip():
+            current = None
+    return {item for item, text in found.items() if "Decided by" not in _norm(text)}
+
+
+def unrecorded(record: str, pool: list[Dialog]) -> list[Dialog]:
+    """Answered questions naming an open item that no Asked line of the record pairs with (BK-510).
+
+    These are answers the record should hold and does not: most often a dialog a
+    worker restart answered into another session's log, so the session that
+    asked never wrote its decision.
+    """
+    still_open = open_items(record)
+    asked = [qa for d in decisions(record) for qa in d.asked]
+    return [
+        g
+        for g in pool
+        if g.item() in still_open and not any(g.question.startswith(q) and g.answer.startswith(a) for q, a in asked)
+    ]
 
 
 def pair(record: str, logs: list[Path]) -> tuple[list[str], list[str], bool]:
@@ -234,13 +367,26 @@ def main(argv: list[str]) -> int:
     if len(argv) < 3:
         print(__doc__.split("\n\n")[1], file=sys.stderr)
         return 2
+    logs = [Path(p) for p in argv[2:]]
     try:
         record = Path(argv[1]).read_text(encoding="utf-8")
-        lines, unpaired, ok = pair(record, [Path(p) for p in argv[2:]])
+        lines, unpaired, ok = pair(record, logs)
+        split, unanswered = splits(logs)
+        repeated = repeats(dialogs(logs))
     except (OSError, ValueError) as exc:
         print(f"observe_dialogs: {exc}", file=sys.stderr)
         return 2
     print("\n".join(lines))
+    print("# Dialogs split across logs")
+    print("\n".join(f"- {s}" for s in split) or "none")
+    print("# Asked with no answer in these logs")
+    print("\n".join(f"- {s}" for s in unanswered) or "none")
+    print("# Items asked in more than one dialog")
+    for item, found in repeated.items():
+        print(f"- {item}")
+        print("\n".join(f"  {g.ts}: {g.question}\n    Answer: {g.answer}" for g in found))
+    if not repeated:
+        print("none")
     print("# Answered questions no decision pairs with")
     print("\n".join(f"- {q}" for q in unpaired) or "none")
     return 0 if ok else 1

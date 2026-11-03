@@ -1,0 +1,167 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (/observe-review OP-01 after its reopen walking O73 to O83)"
+trigger: >-
+  The reopen of 2026-11-02 (`/observe OP-01`) decided O73 to O83 as D134 to
+  D149, its end check added D150, and it left the record uncommitted. The
+  maintainer typed `/observe-review OP-01`: RFC-0029 R2 freezes a record only
+  after this review re-runs on it as its last reopen left it.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+# This review asked no dialog. The reopen's two new logs went to the /observe
+# trace's decisions:, not here.
+decisions: []
+surprising_ripples: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/observe/records/OP-01.md
+  - sdd/observe/tables/OP-01.toml
+  - sdd/traces/bk-485-observe-op-01.yml
+orient:
+  - items: [BK-505]
+    verdict: constrains
+    evidence: >-
+      As in bk-485-op-01-review-4.yml: until BK-505 decides which checks and
+      stopping rule bind, R2 freezes on R1's check and this re-run.
+  - items: [BK-509, BK-510]
+    verdict: unrelated
+    evidence: >-
+      BK-509 names the table check's NP9 citation findings this run meets
+      again; BK-510 names the split dialog the pairing report lists for O83.
+      Neither changes this review.
+phases:
+  - id: pairs
+    name: Step 1, pair decisions with dialogs; the table check
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "After a reopen: pairs, tables, two unprimed readers, primed review, verify, then the freeze verdict"
+      - file: sdd/traces/bk-485-observe-op-01.yml
+        section: "decisions"
+        read_type: gate
+        extract: >-
+          Thirteen logs listed. The reopen's 149aee02 and df68cdf4, committed
+          on this branch, were in no trace; added in the commit that carries
+          the reopen's record
+      - file: scripts/observe_dialogs.py
+        section: "observe-dialogs OP-01.md with the fifteen logs"
+        read_type: verify
+        extract: >-
+          Exit 1, saved as tmp/observe-review/OP-01-pairs.md. D1 to D44 "FAIL
+          no Asked line" (pre-RFC-0028); D100, D102, D107 two answers each
+          (covered by D116 and D143); D134 to D150 ok. One new split dialog,
+          O83's, asked in 149aee02 and answered in 07bd66b7, which D147 to
+          D149 name. No O73 to O83 item asked in several dialogs
+      - file: scripts/observe_tables.py
+        section: "observe-tables OP-01.md OP-01.toml"
+        read_type: verify
+        extract: >-
+          First run: D138's one-row table undeclared; declared as a register
+          extending D43's. Re-run: 48 findings, the 14 table findings of
+          review-3 and review-4, each covered by its amending decision, and 34
+          NP9 citations (BK-509)
+  - id: readers
+    name: Step 2, two unprimed readers
+    steps:
+      # Two fresh general-purpose agents spawned together with the brief
+      # verbatim and nothing else. Reader A labels A1.1, reader B B1.1.
+      - file: sdd/observe/records/OP-01.md
+        section: "(full), with the pairs file, axes.md and the Session's ground"
+        read_type: gate
+        extract: >-
+          Both paired every one of D1 to D44 with an unpaired dialog. Reader
+          A: 2 under item 1, 9 under 2, 5 under 3, 5 under 4. Reader B: 2
+          under 1, 4 under 2, 4 under 3, 11 under 4
+  - id: primed
+    name: Step 3, primed review against backends, SDKs and the runtime
+    steps:
+      - file: pyproject.toml
+        section: "hatch env (CPython 3.13.17): readlines(hint), closed writable(), read1/readinto1 sizes, closed-stream calls"
+        read_type: verify
+        extract: >-
+          readlines(3) over b'ab\ncd\nef\n': two lines from BufferedReader
+          and TextIOWrapper, one from io.BytesIO and _pyio (O88). Closed
+          BytesIO.writable() raises ValueError; closed BufferedReader and a
+          plain BufferedIOBase subclass return False (O88). read1(0) b'',
+          read1() and read1(-1) one buffer, readinto1(bytearray()) 0 (O87).
+          Closed BufferedReader: write raises UnsupportedOperation, the rest
+          ValueError; UnsupportedOperation subclasses OSError and ValueError
+          (O86)
+      - file: src/remote_store/backends/_memory.py
+        section: "MemoryBackend.read"
+        read_type: verify
+        extract: "Returns io.BytesIO: a backend's natural object gives BytesIO's values (O88)"
+      - file: src/remote_store/aio/_sync_adapter.py
+        section: "stream close via asyncio.to_thread; aio/backends listing; pyproject extras"
+        read_type: verify
+        extract: >-
+          Native async backends: Azure and Memory; the rest close through
+          to_thread. The s3 extra is s3fs (aiobotocore, async-capable), and
+          Local can close inline, so D138's SFTP-only naming is not shown
+          false (P3 dropped)
+      # Primed candidates and verdicts:
+      #   P1 io two-valued for D135 and D137: holds as a note, O88 (run).
+      #   P2 read1/readinto1 with a size that is not positive: holds, O87 (run).
+      #   P3 D138 names SFTP only: dropped; s3fs is async-capable, Local's
+      #      close can run inline, and D138's check routes the backend list to
+      #      the profile.
+      #   P4 closed write raises UnsupportedOperation in io: holds, in O86 (run).
+  - id: verify
+    name: Step 4, verify every candidate and file what holds
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D10 to D150 cited, re-read before quoting; Axis status; Open items"
+        read_type: verify
+        extract: >-
+          O84 to O91 written, opened by a line naming this review; axis rows
+          list each reopen and gap with its decisions and dependents (notes
+          none); no decision, Environment row or axis decision edited; Status
+          stays Complete
+      # Raw findings and verdicts.
+      #   A1.1, A2.1, A3.2, A4.1, B1.1, B4.1: holds, O84 (D93's enumeration).
+      #   B1.2, A3.5: holds, O85 (not run).
+      #   A2.7, A2.8, B2.4, primed P4: holds, O86.
+      #   Primed P2: holds, O87.  Primed P1: holds as a note, O88.
+      #   A2.2, B2.1: holds as a note, O89.
+      #   A2.6, A4.2, B2.2, B2.3, B4.2: holds as a note, O90.
+      #   A3.1, B3.2: holds as a note, O91.
+      #   A1.2 (D38's not-found row under E17): dropped, review-4's B3.4
+      #     verdict.
+      #   A2.3 (D47's "E3 and E5" against D87), A2.4 (D48's and D84's check's
+      #     changed row against D86), A2.5 (D123's NP9 copy against D126,
+      #     D136): dropped; each is an earlier amendment of D25, D34 or D41,
+      #     whose Amended-by order makes the later one govern.
+      #   A2.9 (Axis status and O65's deciding decisions): dropped; D113's
+      #     rule, applied by D144, decides a no-axis decision's citation.
+      #   A3.3 (D133's reason against its restatement): dropped, review-4's
+      #     P7 verdict; D136 kept the copy as answered.
+      #   A3.4 (D127, D147, D117 rewording options): dropped; D127's adopted
+      #     option names "D114's restatement amended", D117 names Decision
+      #     wording.
+      #   B3.1 (D124's reason against E4's "none of its own"): dropped; E4
+      #     surfaces nothing, so "none surfaces untyped" holds.
+      #   B3.3 (D100's reason against D132's cell): dropped; D148 decided it.
+      #   B3.4 (D147's "one list per method family"): dropped; each
+      #     unsupported method is listed once, no copy to drift.
+      #   A4.3: covered by D116 and D143.
+      #   A4.4, B4.3 to B4.6, B4.10, B4.11 (D4, D7, D9, D11, D12, D20, D38,
+      #     D43, D119): dropped, D107's no-sweep and review-2 to review-4's
+      #     verdicts.
+      #   A4.5, B4.7 to B4.9 (D134, D139, D141, D147 additions): dropped;
+      #     each follows from the adopted option or the rule it applies.
+      #   Table check: covered, as in review-4.
+  - id: freeze
+    name: Step 5, the freeze verdict
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O91"
+        read_type: verify
+        extract: >-
+          Not frozen. Items in the way: O84 to O87, for a reopen of this
+          record, and the notes O88 to O91, asked in it. Decided: O14 to O41,
+          O43 to O45, O47 to O83. Routed, each naming what it blocks: O1 to
+          O13, O42, O46
