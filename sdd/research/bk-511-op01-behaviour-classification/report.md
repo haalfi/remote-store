@@ -18,8 +18,8 @@ classified along fixed facets before spec work? On the stream lifecycle, yes:
 45 decisions become 37 behaviour clauses, each checkable against a vocabulary,
 covering every decision and every rule of the spike's freeze-1 oracle. The
 split also shows what a decision-level reading hides: one behaviour needs up
-to six decisions, five deciding decisions are reachable by citation only, and
-six behaviours are not decided. The whole record (§ 5) gives 127 clauses and
+to six decisions, 16 of the decisions the slice's clauses cite lie outside its
+`Amends:` closure, and six behaviours are not decided. The whole record (§ 5) gives 127 clauses and
 32 decisions with no behaviour of their own; 101 clauses are not a success
 path, and seven behaviours are not decided, six of them the pilot's.
 
@@ -32,23 +32,29 @@ path, and seven behaviours are not decided, six of them the pilot's.
   partly, implied, open); and two pieces of evidence: the spike's freeze-1
   rule and what 0.33 Local was observed to do (the spike's C1 to C8).
 - **Pilot set:** the slice (D2, D6, D7, D15 to D18, D20, D36), every
-  transitive amender of it from the record's `Amends:` lines (`effective.py`),
-  and five decisions that decide it without an amendment reaching it.
-- **Check:** `check_pilot.py` fails on a value outside a facet's vocabulary,
+  transitive amender of it from the record's `Amends:` lines (its closure,
+  `check.py`), and five decisions found by reading to decide it without an
+  amendment reaching it (`CITED_NOT_AMENDING`, which only widens the coverage
+  scope; § 3 measures the full set).
+- **Check:** `check.py --pilot` fails on a value outside a facet's vocabulary,
   a pilot decision no clause cites (and no `record_text` entry explains), or a
   freeze-1 rule no clause maps. It failed once while the pilot was written:
   rule G1 (collecting a Closed stream warns nothing) had no clause, now S37.
 
 ## 3. Pilot results
 
-From `check.py --pilot` on the frozen record, before § 4's decisions moved
-`open-call` to `none` and `Runtime` to E14 (the counts below are the pilot's
-as first classified).
+From `check.py --pilot` on the frozen record, with § 5's facet decisions
+applied. The pilot as first classified (`596e79d87`) differs in three
+fields only (a field-by-field comparison of the two `pilot.toml`): the
+trigger of 9 clauses (S16, S18, S19, S22 read `E8`, now D96's stream-read
+rows; S24 `E8`, now E8 and E13; S27 to S29 `Runtime`, now E14; S30 `O2`,
+now E1 and E2), the state of S01 and S02 (`open-call`, now `none`), and S33's
+gap (none, now `OP-01/O5`). Those first counts drove § 4.
 
 | Facet | Counts over 37 clauses |
 |---|---|
 | Path | success 14, release 7, storage-failure 5, caller-error 3, cancellation 3, end 2, non-promise 2, lifetime-end 1 |
-| Trigger | O1 25, a World row 5, Runtime 3, GC 3, O2 1 |
+| Trigger | the caller or the runtime 28, an Environment row 9 |
 | Form, api | stream 37; both forms 34, async only 3 |
 | Scope | portable 35; a D43 variation point 2 (Cancelled close, Overlapping mutation) |
 | Kind | lifetime 32, single call 3, environment 1, structure 1 |
@@ -62,11 +68,12 @@ What the classification shows:
   a Local gap, against 3 of 14 success clauses.
 - **A behaviour rarely has one decision.** S20 (a Failed stream raises
   again) needs D16, D52, D93, D95, D117 and D151; S13 needs five.
-- **The amendment graph does not find every deciding decision.** D49, D94,
-  D96, D118 and D138 decide the cancelled close and the failure phases with
-  no `Amends:` line reaching the slice; eleven more decisions outside the
-  closure are cited by clauses (D1, D9, D27, D28, D33, D40, D41, D71, D72,
-  D133, D153). A citation graph is needed beside the amendment graph.
+- **The amendment graph does not find every deciding decision.** 16
+  decisions the clauses cite lie outside the slice's `Amends:` closure
+  (`check.py --pilot`, "deciding, outside the slice's Amends closure"): D1,
+  D9, D27, D28, D33, D40, D41, D49, D71, D72, D94, D96, D118, D133, D138,
+  D153. A citation graph is needed beside the amendment graph. Measured on the
+  slice only.
 - **Six behaviours are not decided:** S05 `read(0)` mid-stream (F1, partly),
   S16 a failure at the last byte (F10), S17 `chunks(0)` raised at the call or
   at `next()` (F5, partly), S19 a failed read delivers no bytes (F7, implied

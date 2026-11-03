@@ -12,8 +12,9 @@ it landed. A point-in-time snapshot of the record tagged
 
 ## 1. What changed and what it shows
 
-Of the spike's eight rule assumptions, four are decided at freeze-1 and one
-in part, and the rules carried forward still check complete and judge the
+Of the spike's eight rule assumptions, four are decided at freeze-1, two in
+part (RF1, RF4) and two not at all (RF6, G2; the `assumed` fields of
+`../slice/stream_rules.toml` against `stream_rules.toml`), and the rules carried forward still check complete and judge the
 model with no divergence. Against Local they add two decided divergences (`seekable()`,
 `seek`) and expose a third, more serious one: a `readline()` that fails at the
 OS silently drops a buffered byte and reports the end, which D51 and D93

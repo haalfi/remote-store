@@ -8,8 +8,10 @@ Clause files: pilot.toml, plus whole/*.toml unless --pilot. Facets: whole/SCHEMA
 1. Vocabulary: every facet value is in its vocabulary; clause ids are unique.
 2. Coverage: every decision in scope is cited by a clause's decided_by or listed in
    record_text. Scope is the whole record, or with --pilot the stream slice, its
-   transitive amenders and CITED_NOT_AMENDING (decisions that decide the slice
-   without an Amends line reaching it).
+   transitive amenders (its Amends closure) and CITED_NOT_AMENDING, a hand list
+   that only widens the coverage scope. The deciding decisions outside the
+   closure are measured, not taken from that list: every decided_by the clauses
+   cite that the closure lacks.
 3. Rules: every rule id of the spike's freeze-1 stream_rules.toml maps to a clause.
 4. Views: counts per facet, path x form, the not-decided clauses, Local's gaps.
 Exit 1 on a vocabulary, id, coverage or rule failure.
@@ -57,7 +59,8 @@ LOCAL = re.compile(r"^(pass|untested|not-offered|C[1-8])$")
 VIEWS = ("path", "form", "api", "state", "scope", "kind", "status", "local", "axis")
 
 
-def pilot_scope(ds: dict) -> set[int]:
+def amends_closure(ds: dict) -> set[int]:
+    """The slice and every transitive amender of it, by the record's Amends lines."""
     by = collections.defaultdict(set)
     for d, v in ds.items():
         for t in v["amends"]:
@@ -68,7 +71,7 @@ def pilot_scope(ds: dict) -> set[int]:
             if a not in scope:
                 scope.add(a)
                 todo.append(a)
-    return scope | set(CITED_NOT_AMENDING)
+    return scope
 
 
 def check_clause(c: dict, ds: dict) -> list[str]:
@@ -96,7 +99,8 @@ def main(record: Path, pilot_only: bool) -> int:
     problems = [p for c in clauses for p in check_clause(c, ds)]
     ids = collections.Counter(c["id"] for c in clauses)
     problems += [f"clause id {i} is used {n} times" for i, n in ids.items() if n > 1]
-    scope = pilot_scope(ds) if pilot_only else set(ds)
+    closure = amends_closure(ds)
+    scope = closure | set(CITED_NOT_AMENDING) if pilot_only else set(ds)
     cited = {int(d[1:]) for c in clauses for d in c["decided_by"]}
     problems += [f"D{d} is in no clause and not in record_text" for d in sorted(scope - cited - set(text_only))]
     rule_ids = {r["id"] for r in tomllib.loads(RULES.read_text(encoding="utf-8"))["rule"]}
@@ -107,7 +111,8 @@ def main(record: Path, pilot_only: bool) -> int:
     print(f"files: {', '.join(f.name for f in files)}")
     print(f"decisions in scope: {len(scope)}; clauses: {len(clauses)}; record-text only: {len(text_only)}")
     if pilot_only:
-        print("cited outside the pilot set:", ", ".join(f"D{d}" for d in sorted(cited - scope)) or "-")
+        outside = sorted(cited - closure)
+        print(f"deciding, outside the slice's Amends closure: {len(outside)}:", ", ".join(f"D{d}" for d in outside))
     for facet in VIEWS:
         print(f"{facet}: {dict(collections.Counter(c[facet] for c in clauses).most_common())}")
     world = collections.Counter(

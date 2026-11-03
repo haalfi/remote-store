@@ -12,6 +12,9 @@ source_items:
 audience:
   - library.maintainer
   - contributor.process
+discovery_followups:
+  # PR #1204 review: Local's silent readline truncation (spike C8), filed as its own defect
+  - BUG-346
 decisions:
   - sdd/decisions/3f275077-1eeb-5b6f-a4a6-7377e26283e4.jsonl
 orient:
@@ -68,8 +71,9 @@ phases:
         section: "D2, D6, D7, D15 to D18, D20, D36 and their transitive amenders; D49, D94, D96, D118, D138"
         read_type: gate
         extract: >-
-          45 decisions, 37 clauses, 4 record-text only; five deciding decisions no Amends line
-          reaches; one behaviour needs up to six decisions; six behaviours not decided
+          45 decisions, 37 clauses, 4 record-text only; 16 deciding decisions outside the
+          slice's Amends closure (check.py --pilot); one behaviour needs up to six decisions;
+          six behaviours not decided
         outcome: unclear
   - id: whole
     name: Whole record by axis group

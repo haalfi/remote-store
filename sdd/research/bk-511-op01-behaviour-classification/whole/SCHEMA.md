@@ -3,7 +3,7 @@
 <!-- doc: repo-only -->
 
 One TOML file per group (`a.toml` to `d.toml`) plus `../pilot.toml`, checked
-together by `../check_whole.py`. Record: `observe/OP-01/freeze-1` (`a7de4e31`).
+together by `../check.py` (without `--pilot`). Record: `observe/OP-01/freeze-1` (`a7de4e31`).
 
 A **clause** is one observable behaviour: given (pre-state), when (call or
 trigger), then (outcome), stated as it holds after every amendment of the
