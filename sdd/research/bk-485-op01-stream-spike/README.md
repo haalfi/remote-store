@@ -5,7 +5,8 @@
 The evidence behind [`report.md`](report.md): whether OP-01's prose decisions
 can be carried, step by checkable step, to checks that run against a backend.
 One slice, the read stream's lifecycle (D6, D7, D15 to D18, D20, D36, plus D2's
-shape). A spike: no tests of its own, frozen once landed. Step 5's spec and
+shape). A spike: no tests of its own, frozen once landed; a rerun against a
+later freeze of the record lands beside it as a dated addendum (`freeze-1/`). Step 5's spec and
 model (BK-485) are written at their own paths and do not extend this folder.
 
 **Not BK-506's trial.** Everything here is derived from the record, so RFC-0029
@@ -25,6 +26,10 @@ oracles.
 | `slice/stream_rules.toml` | 2b | The slice as 17 guarded rules (guard, then effect) |
 | `slice/rules_engine.py` | 2b | Interprets the rules as an oracle; checks every call in a finite domain matches exactly one rule |
 | `slice/conform.py` | 4 | Drives the model and Local (plain, then with faults injected below the library) through the rules |
+| `freeze-1/rerun.md` | — | Addendum, 2026-11-03: the spike rerun against `observe/OP-01/freeze-1` |
+| `freeze-1/stream_rules.toml`, `rules_engine.py`, `conform.py` | 2b, 4 | The rules carried forward to freeze-1, with `read1`, `tell`, `seek`; the model is `slice/`'s |
+| `freeze-1/amends.py` | — | Which decisions amend the slice's, at a record's head |
+| `freeze-1/readline_loss.py` | — | C8's repro on CPython alone |
 
 No file here is collected, built or run by any gate: the folder is outside
 `testpaths` and `hatch run lint`'s ruff paths.
@@ -41,7 +46,8 @@ hatch run python sdd/research/bk-485-op01-stream-spike/slice/mutate.py
 hatch run python sdd/research/bk-485-op01-stream-spike/slice/conform.py
 ```
 
-Expected (2026-10-31, each under a minute): `24 rows`; `24` closed, `23`
+Expected (2026-10-31, each under a minute, on the record at `f1595ff`; at
+freeze-1 the extraction gives `135 rows`, see `freeze-1/rerun.md` § 2): `24 rows`; `24` closed, `23`
 mentioned, `10` reopened, noted or gapped; `Result: OK (0 failure(s))`; four
 `killed`; static check `OK`, then `0`, `3`, `5`, `5` rules diverged for the
 model, Local, and Local with faults (strict, protocol only). Hypothesis draws
@@ -50,6 +56,18 @@ scripts gave the same diverging rules each time (report § 5 lists them). Of
 four earlier runs, made with a wrapper that raised the cancel on close before
 the release, one showed `2` for plain Local: no `read(n < -1)` with bytes left
 was drawn before another divergence ended its example.
+
+The freeze-1 addendum:
+
+```
+hatch run python sdd/research/bk-485-op01-stream-spike/freeze-1/amends.py sdd/observe/records/OP-01.md
+hatch run python sdd/research/bk-485-op01-stream-spike/freeze-1/conform.py
+hatch run python sdd/research/bk-485-op01-stream-spike/freeze-1/readline_loss.py
+```
+
+Expected (2026-11-03): the amendment table of `freeze-1/rerun.md` § 2; static
+check `OK`, then `0`, `4`, 5 or 6, 6 or 7 rules diverged (the sets per run are
+§ 5's); `tell after failed readline: 7 (bytes delivered: 6)`.
 
 `conform.py` writes its Local stores under `tmp/op01-stream-spike/`
 (gitignored) and, for the fault runs only, shadows `open` in

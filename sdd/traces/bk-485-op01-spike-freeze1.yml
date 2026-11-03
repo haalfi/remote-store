@@ -1,0 +1,56 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour"
+trigger: >-
+  OP-01's record was reopened to D156, closed out under RFC-0030 and frozen
+  (tag observe/OP-01/freeze-1). The maintainer asked to repeat the OP-01 stream
+  spike against the frozen record, see what changed, and name next steps; the
+  rerun landed as a dated addendum in the spike's folder.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+decisions:
+  - sdd/decisions/3f275077-1eeb-5b6f-a4a6-7377e26283e4.jsonl
+orient:
+  - items: [BK-506]
+    verdict: constrains
+    evidence: >-
+      The trial runs on the frozen record and its oracle sessions may read
+      nothing derived from it (RFC-0029 R4, as read for the spike); the
+      addendum is derived from the record and stays in the spike's folder.
+  - items: [BK-489]
+    verdict: unrelated
+    evidence: >-
+      D10 is BK-489's (BK-485's index entry); the slice touches D10 only
+      through D81's amendment of D20, which the rules do not model.
+phases:
+  - id: orient
+    name: Orient on the frozen record
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-485 (hatch run backlog-show BK-485)"
+        read_type: gate
+        extract: "Reopens D45 to D150, RFC-0030 close-out D151 to D156, freeze tag on a7de4e31; not done: step 5's spec and model"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0030-observe-close-out.md
+        section: "Summary, C1 to C5"
+        read_type: gate
+        extract: "Blocking findings vs notes; the spec flow writes each clause once from the deciding decisions; R4's trial and the spec flow catch the rest"
+        outcome: ok
+  - id: rerun
+    name: Rerun the spike and carry its rules to freeze-1
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D50, D51, D52, D69, D70, D72, D80, D92 to D95, D100, D117, D118, D132, D153 to D156; O5"
+        read_type: gate
+        extract: >-
+          Amendments live in the amending decision; D18's table is not rewritten,
+          so its current meaning is D18 plus six amendments, some amended again.
+          Decided: F2, F4, F6, F8; in part: F1, F5; implied: F7; open: F3, F10
+        outcome: unclear
+      - file: "CPython io.BufferedReader (readline_loss.py, 3.13.17)"
+        section: "readline after a failing raw read"
+        read_type: verify
+        extract: "readinto(6) of 7 bytes, then a failing readline: tell() 7, next read() b''; the dropped byte is C8"
+        outcome: ok
