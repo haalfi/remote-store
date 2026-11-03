@@ -17,9 +17,10 @@ part (RF1, RF4) and two not at all (RF6, G2; the `assumed` fields of
 `../slice/stream_rules.toml` against `stream_rules.toml`), and the rules carried forward still check complete and judge the
 model with no divergence. Against Local they add two decided divergences (`seekable()`,
 `seek`) and expose a third, more serious one: a `readline()` that fails at the
-OS silently drops a buffered byte and reports the end, which D51 and D93
-forbid. Four of the spike's nine prose gaps stay open (F1 in part, F3, F5 in
-part, F10).
+OS discards every buffered byte not yet delivered, and the next read goes on
+past the gap without an error, which D51 and D93 forbid. Four of the spike's
+nine prose gaps stay open (F1 in part, F3, F5 in part, F10) and one is only
+implied (F7).
 
 ## 2. The record between the spike and the freeze
 
@@ -92,15 +93,19 @@ than in the slice's runs; K1 and T1 show in two of three.
 | C1 to C5 | as in `../report.md` § 5 | unchanged; Z2 (`tell()` on a stream a cancelled read left open) is C1 again | — |
 | C6 | D70 | `seekable()` is `True` | yes: Z1 rested on `O25`, now decided `False` |
 | C7 | D70, D153 | `seek(0)` works and returns 0 | yes: `io.UnsupportedOperation` decided |
-| C8 | D51, D93 | a `readline()` failing at the OS drops the byte it had buffered: `tell()` passes it and the next `read()` returns `b''` | yes |
+| C8 | D51, D93 | a `readline()` failing at the OS discards the bytes it had buffered: `tell()` passes them and the next `read()` resumes after them | yes |
 
 C8 is reproduced without the library or the spike's wrapper by
-`readline_loss.py`: on CPython's `io.BufferedReader`, `readinto(6)` of 7
-bytes, then a `readline()` whose raw read raises `OSError`, leaves `tell()` at
-7 and the next `read()` at `b''`. It is C2 (Failed not sticky) made silent:
-the caller sees a clean end, short by one byte. D51 makes that stream Failed,
-so the next read raises the failure again, and D93's `tell()` counts only
-bytes delivered.
+`readline_loss.py` (CPython 3.13.17), with a `readinto(6)` and then a
+`readline()` whose raw read raises `OSError`. Case 1 is conform.py's trace, 7
+bytes all in the first raw read: `tell()` 7, the next `read()` `b''`, a clean
+end short by one byte. Case 2 has 20580 bytes and no newline: the failing
+`readline()` loses the 8186 undelivered bytes of the 8192-byte buffer, so
+`tell()` reads 8192 and the next
+`read()` returns the 12388 bytes from offset 8192, a gap with no error. It is
+C2 (Failed not sticky) made silent. D51 makes that stream Failed, so the next
+read raises the failure again, and D93's `tell()` counts only bytes
+delivered.
 
 ## 6. Limits
 

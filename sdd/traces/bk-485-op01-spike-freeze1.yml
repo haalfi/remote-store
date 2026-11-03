@@ -55,5 +55,5 @@ phases:
       - file: "CPython io.BufferedReader (readline_loss.py, 3.13.17)"
         section: "readline after a failing raw read"
         read_type: verify
-        extract: "readinto(6) of 7 bytes, then a failing readline: tell() 7, next read() b''; the dropped byte is C8"
+        extract: "readinto(6), then a failing readline: 7 bytes lose 1 and end clean; 20580 bytes lose the 8186 buffered and the next read resumes at 8192 (C8, re-run in PR #1204's review)"
         outcome: ok

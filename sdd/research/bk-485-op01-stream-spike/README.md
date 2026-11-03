@@ -69,7 +69,7 @@ hatch run python sdd/research/bk-485-op01-stream-spike/freeze-1/readline_loss.py
 Expected (2026-11-03): the amendment table of `freeze-1/rerun.md` § 2;
 `closed decisions: 135`, `134 (upper bound)`, `40` (§ 2 again); static
 check `OK`, then `0`, `4`, 5 or 6, 6 or 7 rules diverged (the sets per run are
-§ 5's); `tell after failed readline: 7 (bytes delivered: 6)`.
+§ 5's); `readline_loss.py` prints `lost 1` for case 1 and `gap of 8186 bytes after offset 6` for case 2.
 
 `conform.py` writes its Local stores under `tmp/op01-stream-spike/`
 (gitignored) and, for the fault runs only, shadows `open` in

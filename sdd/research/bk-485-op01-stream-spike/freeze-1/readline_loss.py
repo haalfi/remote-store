@@ -1,7 +1,9 @@
-"""Does a failing readline() on io.BufferedReader advance the position past undelivered bytes?
+"""Does a failing readline() on io.BufferedReader lose bytes it had buffered but not delivered?
 
 Usage (repo root): hatch run python sdd/research/bk-485-op01-stream-spike/freeze-1/readline_loss.py
-CPython only, no library code: the content and call sequence of conform.py's T1 divergence.
+CPython only, no library code. Case 1 is the content and call sequence of conform.py's
+T1 divergence (7 bytes, all in the first raw read); case 2 is content larger than the
+buffer, so the failing raw read is mid-file.
 """
 
 import io
@@ -34,13 +36,24 @@ class Raw(io.RawIOBase):
         return n
 
 
-data = b"\xfbP\xf6\xa2ti\xa5"  # 7 bytes, no newline (the conform trace's content)
-s = io.BufferedReader(Raw(data, fail_on_call=2))
-buf = bytearray(6)
-print("readinto(6) ->", s.readinto(buf), bytes(buf), "tell", s.tell())
-try:
-    s.readline()
-except OSError as e:
-    print("readline() raised", e)
-print("tell after failed readline:", s.tell(), "(bytes delivered: 6)")
-print("next read():", s.read())
+def run(label: str, data: bytes, buffer_size: int) -> None:
+    s = io.BufferedReader(Raw(data, fail_on_call=2), buffer_size=buffer_size)
+    buf = bytearray(6)
+    got = s.readinto(buf)
+    try:
+        s.readline()
+        print(f"{label}: readline() did not raise")
+    except OSError as e:
+        print(f"{label}: readline() raised {e}")
+    pos = s.tell()
+    rest = s.read()
+    delivered = got + len(rest)
+    print(f"  size {len(data)}, buffer {buffer_size}: readinto(6) -> {got}; tell after failed readline: {pos}")
+    print(f"  next read() -> {len(rest)} bytes; delivered {delivered} of {len(data)}, lost {len(data) - delivered}")
+    if rest:
+        start = len(data) - len(rest)
+        print(f"  next read() starts at offset {start}: gap of {start - got} bytes after offset {got}")
+
+
+run("case 1", b"\xfbP\xf6\xa2ti\xa5", 8192)  # 7 bytes, no newline (the conform trace's content)
+run("case 2", bytes(range(11, 256)) * 84, 8192)  # 20580 bytes, no newline (byte 10 excluded)

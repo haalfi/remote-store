@@ -325,13 +325,13 @@ failure it was.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-- [ ] **BUG-346 — After a `readline()` fails at the OS, Local's stream skips a byte and then reports a clean end**
+- [ ] **BUG-346 — After a `readline()` fails mid-stream, the next read silently skips every byte that was buffered**
   spec: — · effort: S · audience: user.api
-  `io.BufferedReader` over 7 bytes, `readinto(6)`, then a `readline()` whose raw read raises `OSError`:
-  `tell()` reads 7 with 6 delivered, the next `read()` returns `b''` (`readline_loss.py`, EIO injected; Local's
-  `read()` returns this reader). OP-01 D51 and D93 decide Failed, raised again (spike C8). Open decision: Local
-  only, or every `read()` returning `io.BufferedReader` (SFTP, S3 boto3, Azure: `Grep BufferedReader\(` over
-  `src/remote_store`; not run), before or with BK-485's spec.
+  CPython's `io.BufferedReader.readline` discards its undelivered buffer when the raw read raises: on 20580 bytes,
+  `readinto(6)`, a failing `readline()`, the next `read()` resumes at 8192, an 8186-byte gap, no error
+  (`readline_loss.py` case 2; at the end of an item, case 1, a short clean end). Local, SFTP, S3 boto3 and Azure
+  return this reader (`Grep BufferedReader\(` over `src/remote_store`). OP-01 D51 and D93 decide Failed (spike
+  C8). Open decision: one wrapper over every `read()`, or a fix per backend; before or with BK-485's spec.
 
 - [ ] **BUG-341 — A returned `FileInfo.metadata` is the stored file's own dict, and `copy` shares it**
   spec: BE-019 · effort: S · audience: user.api

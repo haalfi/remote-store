@@ -119,7 +119,7 @@ covers all 156 decisions.
 | Scope | portable 98, a D43 variation point 21, one backend 4 |
 | Kind | lifetime 56, single call 39, environment 11, function 11, structure 5, liveness 1 |
 | Status | decided 116, open 3, partly 2, implied 2 |
-| Trigger | an Environment row 65, the caller or the runtime 58 |
+| Trigger | an Environment row 66, the caller or the runtime 57 |
 
 What the whole record adds to the pilot:
 
@@ -130,9 +130,9 @@ What the whole record adds to the pilot:
   survivor holds the union of both citations and triggers. The first merge
   found nine by a decided-by overlap of at least a half with the same path; a
   review found X21, and a second pass over every pair from two files sharing
-  two deciding decisions and a scope (47 pairs, each read) found three more.
-  The other 43 pairs share only D34 and D96, the category and phase tables
-  nearly every failure clause cites.
+  two deciding decisions and a scope (47 pairs, each read) found X21's pair
+  again and three more. The other 43 pairs share only D34 and D96, the
+  category and phase tables nearly every failure clause cites.
   A behaviour has no single home decision, so a spec written decision by
   decision would state these twice. One survivor's scope was corrected from
   the record: D62's metadata deviation sits in D43's Pinned resume point, not
