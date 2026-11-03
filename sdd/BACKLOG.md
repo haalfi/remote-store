@@ -521,8 +521,8 @@ no clause of the contract ships unexercised.
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset (§ 9 steps 1, 2);
   step 3 built `/observe` and `sdd/observe/` (test runs in the dossier); step 4 is spec 052, 4b spec 053 (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), `/observe-review` (RFC-0028) checked it, and
-  RFC-0029 orders the rest: a table check (BK-504, run), the reopen (run: D45 to D80 decide O14 to O45 bar O42), the review's re-run (run: O47 to O64), a second reopen (run: D81 to D113), its re-run (run: O65 to O72), two more reopens and re-runs (run: D114 to D150, O73 to O91), RFC-0030's close-out (run: D151 to D156), a freeze, then
-  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: the freeze tag `observe/OP-01/freeze-1`, which the maintainer sets on master after the close-out merges; step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; O42 and O46 are for other entries' sessions, and the notes O88 to O91 for OP-01's spec flow.
+  RFC-0029 orders the rest: a table check (BK-504, run), the reopen (run: D45 to D80 decide O14 to O45 bar O42), the review's re-run (run: O47 to O64), a second reopen (run: D81 to D113), its re-run (run: O65 to O72), two more reopens and re-runs (run: D114 to D150, O73 to O91), RFC-0030's close-out (run: D151 to D156), a freeze (run: tag `observe/OP-01/freeze-1` on PR #1202's merge, a7de4e31d), then
+  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: step 5's spec, model, profile tables and 0.33 comparison; step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; O42 and O46 are for other entries' sessions, and the notes O88 to O91 for OP-01's spec flow.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-502 — A reopen's ground-conflict route and `Flow done` have never run, so their remaining gaps surface only in the first ground reopen**
