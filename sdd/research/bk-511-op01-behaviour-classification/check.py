@@ -83,6 +83,8 @@ def check_clause(c: dict, ds: dict) -> list[str]:
         bad.append(f"{c['id']}: scope = {c['scope']!r}")
     if not LOCAL.match(c["local"]):
         bad.append(f"{c['id']}: local = {c['local']!r}")
+    if c["local"] == "pass" and c["status"] != "decided":
+        bad.append(f"{c['id']}: local = 'pass' on a {c['status']} clause (Local cannot pass what is not decided)")
     bad += [f"{c['id']}: {d} is no decision" for d in c["decided_by"] if int(d[1:]) not in ds]
     return bad
 

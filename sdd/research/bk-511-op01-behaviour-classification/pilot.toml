@@ -101,7 +101,7 @@ kind = "lifetime"
 status = "partly"
 gap = "F1"
 rule = ["RF4"]
-local = "pass"
+local = "untested"
 
 [[clause]]
 id = "S06"
@@ -297,13 +297,13 @@ path = "storage-failure"
 trigger = ["E4", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E15"]
 form = "stream"
 api = "both"
-state = "Exhausted"
+state = "Open"
 scope = "portable"
 kind = "lifetime"
 status = "open"
 gap = "F10"
 rule = ["RF6", "RF5"]
-local = "pass"
+local = "untested"
 
 # -- caller errors ------------------------------------------------------------------------
 
@@ -601,7 +601,7 @@ kind = "lifetime"
 status = "open"
 gap = "F3"
 rule = ["G2"]
-local = "pass"
+local = "untested"
 
 [[clause]]
 id = "S37"

@@ -299,23 +299,6 @@ status = "decided"
 local = "untested"
 
 [[clause]]
-id = "B17"
-given = "an Open stream on a backend that pins, the pinned content no longer served"
-when = "a read needs a resume request"
-then = "the read fails changed and the stream is Failed; no byte of another content is delivered"
-decided_by = ["D22", "D39", "D61", "D72"]
-axis = "AX-13"
-path = "concurrent"
-trigger = ["E1", "E2", "E3", "E5"]
-form = "stream"
-api = "both"
-state = "Open"
-scope = "portable"
-kind = "lifetime"
-status = "decided"
-local = "untested"
-
-[[clause]]
 id = "B19"
 given = "a call that surfaced key refused, a caller error other than a closed stream, or io.UnsupportedOperation"
 when = "the caller repeats it by a new call with the same input and configuration"

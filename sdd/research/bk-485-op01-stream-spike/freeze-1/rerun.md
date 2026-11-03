@@ -39,9 +39,14 @@ slice, from `amends.py`:
 | D20 | D50, D81 |
 | D6, D7, D17, D36 | — |
 
-The spike's stale-filter measure rerun (`extract/stale_filter.py`): 135 of the
-156 decisions carry Open items `none`; a later open item mentions 134 and is
-about 40.
+The spike's stale-filter measure rerun (`extract/stale_filter.py`), in the
+spike's terms (README: `24 rows; 24 closed, 23 mentioned, 10 reopened, noted
+or gapped`): `135 rows; 135 closed, 134 mentioned, 40 reopened, noted or
+gapped`. A row is a decision whose Open items read `none`; "mentioned" counts
+a later open item naming it anywhere (an upper bound); the 40 are those a
+later open item reopens, notes or finds a gap in. Mentioned stays near all
+(23 of 24, then 134 of 135); reopened, noted or gapped falls from 10 of 24 to
+40 of 135.
 
 ## 3. The spike's gaps at freeze-1
 

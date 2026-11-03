@@ -10,6 +10,9 @@ source_items:
 audience:
   - contributor.process
   - library.maintainer
+discovery_followups:
+  # C8, found by this rerun's conform.py and readline_loss.py; filed in PR #1204's review
+  - BUG-346
 decisions:
   - sdd/decisions/3f275077-1eeb-5b6f-a4a6-7377e26283e4.jsonl
 orient:

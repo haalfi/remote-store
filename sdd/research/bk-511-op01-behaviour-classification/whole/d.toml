@@ -47,29 +47,11 @@ gap = "OP-01/O9"
 local = "untested"
 
 [[clause]]
-id = "X03"
-given = "an accepted key whose pre-state is Absent, AbsentAncestor or BlockedByItem"
-when = "a whole read, a text read or a stream open"
-then = "not found, a FileNotFoundError; the stream open surfaces it at the open call, which makes its first backend request there; never from a stream read"
-decided_by = ["D9", "D27", "D34", "D35", "D96"]
-axis = "AX-10"
-path = "absent"
-trigger = ["O1"]
-form = "all"
-api = "both"
-state = "none"
-scope = "portable"
-kind = "single call"
-status = "decided"
-gap = "OP-01/O9"
-local = "untested"
-
-[[clause]]
 id = "X04"
 given = "an accepted key whose pre-state is Found(e, folder), the root included"
 when = "a whole read, a text read or a stream open"
-then = "not an item, an IsADirectoryError, at the call or the open; never from a stream read"
-decided_by = ["D9", "D27", "D34", "D35", "D96"]
+then = "not an item, an IsADirectoryError, at the call or the open; never from a stream read; for the root (read(''), read('a/..')), outside E17, raised after classification as for any folder key, never refused before backend contact"
+decided_by = ["D9", "D27", "D34", "D35", "D96", "D4", "D88"]
 axis = "AX-10"
 path = "absent"
 trigger = ["O1"]
@@ -229,8 +211,8 @@ local = "untested"
 id = "X16"
 given = "an Open stream on a backend that pins (D43's normal value); O2 or O3 replaces, deletes or moves the item, or puts a folder at its key"
 when = "a read that needs a new backend request whose pin check fails"
-then = "changed, a library category with no builtin parent, raised only from a stream read, never from a whole read or an open; the stream is Failed"
-decided_by = ["D22", "D31", "D34", "D48", "D61", "D85", "D96"]
+then = "changed, a library category with no builtin parent, raised only from a stream read, never from a whole read or an open; the stream is Failed; no byte of another content is delivered"
+decided_by = ["D22", "D31", "D34", "D48", "D61", "D85", "D96", "D39", "D72"]
 axis = "AX-10"
 path = "concurrent"
 trigger = ["E1", "E2", "E3", "E5"]
@@ -259,25 +241,6 @@ scope = "variation:O3 in-place modification"
 kind = "lifetime"
 status = "decided"
 local = "untested"
-
-[[clause]]
-id = "X21"
-given = "an open OP-01 read, whole or streamed, or a stream whose release a cancelled close() left pending, where D43's Overlapping mutation deviation is declared"
-when = "O2 replaces, deletes or moves that item"
-then = "the mutation may fail, leaving the state as before it; OP-01 changes nothing else"
-decided_by = ["D10", "D81", "D112", "D152"]
-axis = "AX-12"
-path = "concurrent"
-trigger = ["O2"]
-form = "all"
-api = "both"
-state = "any"
-scope = "variation:Overlapping mutation"
-kind = "environment"
-status = "decided"
-local = "untested"
-
-# -- local resources -------------------------------------------------------------------
 
 [[clause]]
 id = "X22"

@@ -327,11 +327,11 @@ no clause of the contract ships unexercised.
 
 - [ ] **BUG-346 — After a `readline()` fails at the OS, Local's stream skips a byte and then reports a clean end**
   spec: — · effort: S · audience: user.api
-  `io.BufferedReader` over a 7-byte item, `readinto(6)`, then a `readline()` whose raw read raises
-  `OSError`: `tell()` reads 7, though 6 bytes were delivered, and the next `read()` returns `b''`
-  (`readline_loss.py`, CPython only, EIO injected; Local's `read()` returns this reader). OP-01 D51 and
-  D93 decide Failed, raised again (spike C8). Open decision: fix it in Local, or in every backend
-  that wraps `io.BufferedReader` (Azure, spec 012; not run), before or with BK-485's spec.
+  `io.BufferedReader` over 7 bytes, `readinto(6)`, then a `readline()` whose raw read raises `OSError`:
+  `tell()` reads 7 with 6 delivered, the next `read()` returns `b''` (`readline_loss.py`, EIO injected; Local's
+  `read()` returns this reader). OP-01 D51 and D93 decide Failed, raised again (spike C8). Open decision: Local
+  only, or every `read()` returning `io.BufferedReader` (SFTP, S3 boto3, Azure: `Grep BufferedReader\(` over
+  `src/remote_store`; not run), before or with BK-485's spec.
 
 - [ ] **BUG-341 — A returned `FileInfo.metadata` is the stored file's own dict, and `copy` shares it**
   spec: BE-019 · effort: S · audience: user.api
@@ -527,8 +527,8 @@ no clause of the contract ships unexercised.
 - [~] **BK-511 — OP-01's decisions mix paths, forms and backends, so no list of its behaviours exists before spec work**
   spec: — · effort: M · audience: library.maintainer, contributor.process
   A decision states several behaviours, a behaviour needs several decisions, and 79 of 156 are amended in later ones
-  (D18 by 23 transitively, `effective.py`). The whole record splits into 127 classified clauses (`check.py`), 7 not
-  decided, 9 duplicated across groups and merged; on the stream slice, 16 deciding decisions lie outside its `Amends:`
+  (D18 by 23 transitively, `effective.py`). The whole record splits into 123 classified clauses (`check.py`), 7 not
+  decided, 13 duplicated across files and merged; on the stream slice, 16 deciding decisions lie outside its `Amends:`
   closure ([research](research/bk-511-op01-behaviour-classification/report.md)). Precedes BK-485's step 5 spec. Next:
   route the 7 not-decided behaviours under RFC-0030 C1, then file Local's gaps C1 to C7 (C8 is BUG-346).
 

@@ -19,8 +19,8 @@ classified along fixed facets before spec work? On the stream lifecycle, yes:
 covering every decision and every rule of the spike's freeze-1 oracle. The
 split also shows what a decision-level reading hides: one behaviour needs up
 to six decisions, 16 of the decisions the slice's clauses cite lie outside its
-`Amends:` closure, and six behaviours are not decided. The whole record (§ 5) gives 127 clauses and
-32 decisions with no behaviour of their own; 101 clauses are not a success
+`Amends:` closure, and six behaviours are not decided. The whole record (§ 5) gives 123 clauses and
+32 decisions with no behaviour of their own; 97 clauses are not a success
 path, and seven behaviours are not decided, six of them the pilot's.
 
 ## 2. Method
@@ -44,12 +44,15 @@ path, and seven behaviours are not decided, six of them the pilot's.
 ## 3. Pilot results
 
 From `check.py --pilot` on the frozen record, with § 5's facet decisions
-applied. The pilot as first classified (`596e79d87`) differs in three
+applied. The pilot as first classified (`596e79d87`) differs in four
 fields only (a field-by-field comparison of the two `pilot.toml`): the
 trigger of 9 clauses (S16, S18, S19, S22 read `E8`, now D96's stream-read
 rows; S24 `E8`, now E8 and E13; S27 to S29 `Runtime`, now E14; S30 `O2`,
-now E1 and E2), the state of S01 and S02 (`open-call`, now `none`), and S33's
-gap (none, now `OP-01/O5`). Those first counts drove § 4.
+now E1 and E2), the state of S01, S02 (`open-call`, now `none`) and S16 (`Exhausted`, now
+`Open`, as its `given` states; F10 asks the rest), S33's gap (none, now
+`OP-01/O5`), and `local` on S05, S16 and S32 (`pass`, now `untested`: Local
+passed the spike's assumed rule, not a decided behaviour, which `check.py`
+now refuses). Those first counts drove § 4.
 
 | Facet | Counts over 37 clauses |
 |---|---|
@@ -59,7 +62,7 @@ gap (none, now `OP-01/O5`). Those first counts drove § 4.
 | Scope | portable 35; a D43 variation point 2 (Cancelled close, Overlapping mutation) |
 | Kind | lifetime 32, single call 3, environment 1, structure 1 |
 | Status | decided 31, partly 2, implied 1, open 3 |
-| Local | pass 16, untested 10, not offered 1, a gap 10 (C1 to C8) |
+| Local | pass 13, untested 13, not offered 1, a gap 10 (C1 to C8) |
 
 What the classification shows:
 
@@ -109,22 +112,27 @@ behaviour (OP-01/O9's working names are a gap, not a partial decision), and
 parallel against that schema (`whole/a.toml` to `d.toml`); `check.py` then
 covers all 156 decisions.
 
-| Facet | Counts over 127 clauses (`check.py`) |
+| Facet | Counts over 123 clauses (`check.py`) |
 |---|---|
-| Path | success 26, storage-failure 26, concurrent 25, caller-error 10, configuration 9, release 7, non-promise 7, cancellation 6, absent 6, end 2, content-failure 2, lifetime-end 1 |
-| Form | stream 61, all three 51, text 5, whole 4, handle 3, whole and stream 3 |
-| Scope | portable 101, a D43 variation point 22, one backend 4 |
-| Kind | lifetime 57, single call 41, environment 12, function 11, structure 5, liveness 1 |
-| Status | decided 120, open 3, partly 2, implied 2 |
-| Trigger | an Environment row 66, the caller or the runtime 61 |
+| Path | success 26, storage-failure 26, concurrent 23, caller-error 10, configuration 9, release 7, non-promise 7, cancellation 6, absent 4, end 2, content-failure 2, lifetime-end 1 |
+| Form | stream 60, all three 48, text 5, whole 4, handle 3, whole and stream 3 |
+| Scope | portable 98, a D43 variation point 21, one backend 4 |
+| Kind | lifetime 56, single call 39, environment 11, function 11, structure 5, liveness 1 |
+| Status | decided 116, open 3, partly 2, implied 2 |
+| Trigger | an Environment row 65, the caller or the runtime 58 |
 
 What the whole record adds to the pilot:
 
-- **Nine clauses duplicated another group's and were dropped** (the `DROP`
-  set of the merge, nine ids). The same behaviour was
-  classified from different deciding decisions in two groups (A03 and X25,
-  A06 and X05, A09 and C24, C08 with B18 and X11, C10 to C13 with X10 and
-  X17 to X19); the survivor holds the union of both citations and triggers.
+- **Thirteen clauses duplicated another file's and were dropped.** The same
+  behaviour was classified from different deciding decisions in two files
+  (A03 and X25, A06 and X05, A09 with C24 and X21, C08 with B18 and X11, C10
+  to C13 with X10 and X17 to X19, A05 and X03, X04 and A04, X16 and B17); the
+  survivor holds the union of both citations and triggers. The first merge
+  found nine by a decided-by overlap of at least a half with the same path; a
+  review found X21, and a second pass over every pair from two files sharing
+  two deciding decisions and a scope (47 pairs, each read) found three more.
+  The other 43 pairs share only D34 and D96, the category and phase tables
+  nearly every failure clause cites.
   A behaviour has no single home decision, so a spec written decision by
   decision would state these twice. One survivor's scope was corrected from
   the record: D62's metadata deviation sits in D43's Pinned resume point, not
@@ -143,14 +151,15 @@ What the whole record adds to the pilot:
   deadline); D4 calls E17's success path a failure, which D67 and D88 fix;
   D76 changes D43's normal value's wording while D110 calls it a
   restatement.
-- **`environment` stays narrow:** 11 of its 12 clauses are a D43 variation
+- **`environment` stays narrow:** 10 of its 11 clauses are a D43 variation
   point's deviation; C19 is the one portable assumption.
 
 ## 6. Limits
 
 The pilot had one author, the same who wrote the spike's rules; the whole
 record's four groups had one each, normalised and deduplicated by the pilot's
-author. The clauses are readings of the record, which governs; no second
-reader has checked them. `local` is the spike's evidence, from Local with injected faults.
+author. The clauses are readings of the record, which governs. PR #1204's
+second review checked the counts and the dropped ids against the files, not
+each clause against the record. `local` is the spike's evidence, from Local with injected faults.
 Derived from the record, so RFC-0029 R4 keeps it from BK-506's oracle
 sessions.

@@ -13,7 +13,7 @@ audience:
   - library.maintainer
   - contributor.process
 discovery_followups:
-  # PR #1204 review: Local's silent readline truncation (spike C8), filed as its own defect
+  # Filed during PR #1204's review; born from BK-485's rerun (C8), listed in both traces
   - BUG-346
 decisions:
   - sdd/decisions/3f275077-1eeb-5b6f-a4a6-7377e26283e4.jsonl
@@ -82,8 +82,8 @@ phases:
         section: "Every decision outside the pilot, in four axis groups classified in parallel"
         read_type: gate
         extract: >-
-          156 decisions, 127 clauses, 32 record-text only after nine cross-group duplicates
-          were merged; seven behaviours not decided; three group agents independently lacked
+          156 decisions, 123 clauses, 32 record-text only after 13 cross-file duplicates
+          were merged (four of them found in PR #1204's second review); seven behaviours not decided; three group agents independently lacked
           a path for a strict decode, which became content-failure
         outcome: unclear
       - file: sdd/observe/records/OP-01.md

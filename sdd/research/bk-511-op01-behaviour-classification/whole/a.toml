@@ -58,28 +58,11 @@ local = "untested"
 # -- the addressed structure: root, folders, missing keys ----------------------------
 
 [[clause]]
-id = "A04"
-given = "an input p that nu accepts and reduces to the root (read(''), read('a/..')), outside E17"
-when = "a whole read, a text read or a stream open"
-then = "not an item (IsADirectoryError), raised after classification as for any folder key, never refused before backend contact"
-decided_by = ["D9", "D34", "D4", "D88"]
-axis = "AX-1"
-path = "absent"
-trigger = ["O1"]
-form = "all"
-api = "both"
-state = "none"
-scope = "portable"
-kind = "single call"
-status = "decided"
-local = "untested"
-
-[[clause]]
 id = "A05"
 given = "an accepted key k with Omega_S(k) Absent, AbsentAncestor(kj) or BlockedByItem(kj), outside E17"
 when = "a whole read, a text read or a stream open"
-then = "one category, not found (FileNotFoundError), for all three; no kj carried; on Local a BlockedByItem's native NotADirectoryError is the cause only (D27)"
-decided_by = ["D9", "D34", "D96", "D8", "D75"]
+then = "one category, not found (FileNotFoundError), for all three; no kj carried; on Local a BlockedByItem's native NotADirectoryError is the cause only (D27); the stream open surfaces it at the open call, which makes its first backend request there; never from a stream read"
+decided_by = ["D9", "D34", "D96", "D8", "D75", "D27", "D35"]
 axis = "AX-3"
 path = "absent"
 trigger = ["O1"]
@@ -150,7 +133,7 @@ id = "A09"
 given = "an OP-01 read of an item in flight (a whole read, an open, cancelled or not, a stream not Closed), where Overlapping mutation is declared (Local on Windows, SFTP on a Windows server)"
 when = "O2 replaces, deletes or moves that item through the API"
 then = "that mutation may fail, leaving the state as before it; OP-01 changes nothing else; the reader keeps its content; the mutation's category is its own entry's"
-decided_by = ["D10", "D43", "D65", "D83", "D81", "D129", "D152"]
+decided_by = ["D10", "D43", "D65", "D83", "D81", "D129", "D152", "D112"]
 axis = "AX-4"
 path = "concurrent"
 trigger = ["E1", "E2"]

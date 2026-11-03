@@ -24,10 +24,13 @@ From the repo root:
 ```
 hatch run python sdd/research/bk-511-op01-behaviour-classification/effective.py sdd/observe/records/OP-01.md tmp/op01-effective.json
 hatch run python sdd/research/bk-511-op01-behaviour-classification/check.py sdd/observe/records/OP-01.md --pilot
+hatch run python sdd/research/bk-511-op01-behaviour-classification/check.py sdd/observe/records/OP-01.md
 ```
 
-Expected (2026-11-03, on `observe/OP-01/freeze-1`): `decisions: 156; amended:
-79; amending: 95`; `pilot decisions: 45; clauses: 37; record-text only: 4`,
-then the pilot's views and `Result: OK`. Without `--pilot`: `decisions in scope: 156;
-clauses: 127; record-text only: 32`, the views of `report.md` § 5 and `Result: OK`.
+Expected (2026-11-03, on `observe/OP-01/freeze-1`), first lines of each run:
+`decisions: 156; amended: 79; amending: 95`; with `--pilot`, `decisions in
+scope: 45; clauses: 37; record-text only: 4` and `deciding, outside the
+slice's Amends closure: 16`, the views of `report.md` § 3; without it,
+`decisions in scope: 156; clauses: 123; record-text only: 32`, the views of
+`report.md` § 5. Both end `Result: OK`.
 `check.py` reads `../bk-485-op01-stream-spike/freeze-1/stream_rules.toml`.
