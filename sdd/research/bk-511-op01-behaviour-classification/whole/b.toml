@@ -178,10 +178,10 @@ then = "the cancellation propagates; nothing handed out and nothing changed, exc
 decided_by = ["D20", "D58", "D129"]
 axis = "AX-5"
 path = "cancellation"
-trigger = ["Runtime"]
+trigger = ["E14"]
 form = "all"
 api = "both"
-state = "open-call"
+state = "none"
 scope = "portable"
 kind = "single call"
 status = "decided"
@@ -316,25 +316,6 @@ status = "decided"
 local = "untested"
 
 [[clause]]
-id = "B18"
-given = "an Open stream on a backend declaring no resume (SFTP; an S3-compatible endpoint not declared to pin)"
-when = "a read needs a new backend request"
-then = "the read fails unavailable whatever happened to the content, and the stream is Failed; delivered bytes stay a prefix of the open's content"
-decided_by = ["D39", "D42", "D43", "D61", "D75"]
-axis = "AX-13"
-path = "storage-failure"
-trigger = ["E7", "E8", "E9", "E10", "E12"]
-form = "stream"
-api = "both"
-state = "Open"
-scope = "variation:Pinned resume"
-kind = "environment"
-status = "decided"
-local = "untested"
-
-# -- caller-level retry by a new call (D38's table as D60, D61, D98, D129, D153 amend it) ---
-
-[[clause]]
 id = "B19"
 given = "a call that surfaced key refused, a caller error other than a closed stream, or io.UnsupportedOperation"
 when = "the caller repeats it by a new call with the same input and configuration"
@@ -426,7 +407,7 @@ when = "the caller repeats it by a new call"
 then = "the same failure unless the content changes: a pure function of it (D5)"
 decided_by = ["D60"]
 axis = "AX-13"
-path = "caller-error"
+path = "content-failure"
 trigger = ["O1"]
 form = "text"
 api = "both"
@@ -444,7 +425,7 @@ then = "may succeed: the cancelled call left no effect (D20), except as D81 stat
 decided_by = ["D60", "D129"]
 axis = "AX-13"
 path = "cancellation"
-trigger = ["Runtime"]
+trigger = ["E14"]
 form = "all"
 api = "both"
 state = "none"

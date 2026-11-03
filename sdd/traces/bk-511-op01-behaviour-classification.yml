@@ -71,3 +71,19 @@ phases:
           45 decisions, 37 clauses, 4 record-text only; five deciding decisions no Amends line
           reaches; one behaviour needs up to six decisions; six behaviours not decided
         outcome: unclear
+  - id: whole
+    name: Whole record by axis group
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "Every decision outside the pilot, in four axis groups classified in parallel"
+        read_type: gate
+        extract: >-
+          156 decisions, 127 clauses, 32 record-text only after nine cross-group duplicates
+          were merged; seven behaviours not decided; three group agents independently lacked
+          a path for a strict decode, which became content-failure
+        outcome: unclear
+      - file: sdd/observe/records/OP-01.md
+        section: "D12 vs D97, D4 vs D67, D34 vs D61, D84 vs D119 and D139, D76 vs D110"
+        read_type: reference
+        extract: "Behaviours stated only in a check or a reason, and original wordings a later decision contradicts; report § 5"
+        outcome: misleading

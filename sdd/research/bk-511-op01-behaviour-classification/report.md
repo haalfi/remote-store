@@ -4,8 +4,8 @@
 
 **Date:** 2026-11-03
 **Backlog items:** BK-511, BK-485
-**Status:** Pilot complete; the whole-record pass waits on § 4's facet
-decisions. A point-in-time snapshot of the record tagged
+**Status:** Pilot and whole-record pass complete; routing the not-decided
+behaviours and filing Local's gaps follow. A point-in-time snapshot of the record tagged
 `observe/OP-01/freeze-1` (`a7de4e31`).
 
 ---
@@ -19,7 +19,9 @@ classified along fixed facets before spec work? On the stream lifecycle, yes:
 covering every decision and every rule of the spike's freeze-1 oracle. The
 split also shows what a decision-level reading hides: one behaviour needs up
 to six decisions, five deciding decisions are reachable by citation only, and
-six behaviours are not decided.
+six behaviours are not decided. The whole record (§ 5) gives 127 clauses and
+32 decisions with no behaviour of their own; 101 clauses are not a success
+path, and seven behaviours are not decided, six of them the pilot's.
 
 ## 2. Method
 
@@ -37,9 +39,11 @@ six behaviours are not decided.
   freeze-1 rule no clause maps. It failed once while the pilot was written:
   rule G1 (collecting a Closed stream warns nothing) had no clause, now S37.
 
-## 3. Results
+## 3. Pilot results
 
-From `check_pilot.py` on the frozen record.
+From `check.py --pilot` on the frozen record, before § 4's decisions moved
+`open-call` to `none` and `Runtime` to E14 (the counts below are the pilot's
+as first classified).
 
 | Facet | Counts over 37 clauses |
 |---|---|
@@ -88,11 +92,58 @@ Three facets need a decision before the whole-record pass:
 3. **State mixes single states and sets** (`not-Closed`, `any`); a clause per
    state would multiply clauses without new behaviour.
 
-## 5. Limits
+## 5. The whole record
 
-One author classified, the same who wrote the spike's rules; the clauses are
-readings of the record, which governs. The pilot covers one slice of one
-record: whole reads, text, concurrency (AX-8, AX-9) and the profile table are
-untried. `local` is the spike's evidence, from Local with injected faults.
+The facets as decided on 2026-11-03 (`whole/SCHEMA.md`): kind with the trigger
+apart, the trigger a set of Environment rows (a cancellation is E14), state
+sets allowed and `none` for a call before any stream, status measuring the
+behaviour (OP-01/O9's working names are a gap, not a partial decision), and
+`content-failure` for a strict decode. Four groups by axis were classified in
+parallel against that schema (`whole/a.toml` to `d.toml`); `check.py` then
+covers all 156 decisions.
+
+| Facet | Counts over 127 clauses (`check.py`) |
+|---|---|
+| Path | success 26, storage-failure 26, concurrent 25, caller-error 10, configuration 9, release 7, non-promise 7, cancellation 6, absent 6, end 2, content-failure 2, lifetime-end 1 |
+| Form | stream 61, all three 51, text 5, whole 4, handle 3, whole and stream 3 |
+| Scope | portable 101, a D43 variation point 22, one backend 4 |
+| Kind | lifetime 57, single call 41, environment 12, function 11, structure 5, liveness 1 |
+| Status | decided 120, open 3, partly 2, implied 2 |
+| Trigger | an Environment row 66, the caller or the runtime 61 |
+
+What the whole record adds to the pilot:
+
+- **Nine clauses duplicated another group's and were dropped** (the `DROP`
+  set of the merge, nine ids). The same behaviour was
+  classified from different deciding decisions in two groups (A03 and X25,
+  A06 and X05, A09 and C24, C08 with B18 and X11, C10 to C13 with X10 and
+  X17 to X19); the survivor holds the union of both citations and triggers.
+  A behaviour has no single home decision, so a spec written decision by
+  decision would state these twice. One survivor's scope was corrected from
+  the record: D62's metadata deviation sits in D43's Pinned resume point, not
+  portable.
+- **One more behaviour not decided:** C06, that an open descriptor keeps the
+  old file across an O3 replace, is stated only in D25's reason, which D64
+  limits to one host (`implied`).
+- **Behaviours the record states only outside a Decision field:** D119's
+  consistency check carries S3's outcome for E15 mid-stream (C10); D61, not
+  D34's changed row, says a stream without resume fails unavailable for
+  E1 to E5 (C08); D84 and D139 agree on S3 only through an inference the
+  record never writes (a passing resume on an archived object still fails
+  not readable).
+- **Original wording a later decision contradicts**, read as amended: D12's
+  check ("AX-13 bounds the call's total") against D97 and D128 (no total
+  deadline); D4 calls E17's success path a failure, which D67 and D88 fix;
+  D76 changes D43's normal value's wording while D110 calls it a
+  restatement.
+- **`environment` stays narrow:** 11 of its 12 clauses are a D43 variation
+  point's deviation; C19 is the one portable assumption.
+
+## 6. Limits
+
+The pilot had one author, the same who wrote the spike's rules; the whole
+record's four groups had one each, normalised and deduplicated by the pilot's
+author. The clauses are readings of the record, which governs; no second
+reader has checked them. `local` is the spike's evidence, from Local with injected faults.
 Derived from the record, so RFC-0029 R4 keeps it from BK-506's oracle
 sessions.

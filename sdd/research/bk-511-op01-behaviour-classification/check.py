@@ -36,6 +36,7 @@ VOCAB = {
         "end",
         "absent",
         "caller-error",
+        "content-failure",
         "storage-failure",
         "cancellation",
         "release",
@@ -46,7 +47,7 @@ VOCAB = {
     },
     "form": {"stream", "whole", "text", "both", "all", "handle"},
     "api": {"sync", "async", "both"},
-    "state": {"Open", "Exhausted", "Failed", "Closed", "not-Closed", "any", "open-call", "none"},
+    "state": {"Open", "Exhausted", "Failed", "Closed", "not-Closed", "any", "none"},
     "kind": {"structure", "function", "single call", "lifetime", "environment", "liveness"},
     "status": {"decided", "partly", "implied", "open"},
 }

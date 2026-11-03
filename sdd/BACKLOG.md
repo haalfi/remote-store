@@ -519,9 +519,10 @@ no clause of the contract ships unexercised.
 - [~] **BK-511 — OP-01's decisions mix paths, forms and backends, so no list of its behaviours exists before spec work**
   spec: — · effort: M · audience: library.maintainer, contributor.process
   A decision states several behaviours, a behaviour needs several decisions, and 79 of 156 are amended in later ones
-  (D18 by 23). A pilot on the stream lifecycle splits 45 decisions into 37 classified clauses, 6 not decided, and finds
-  5 deciding decisions no `Amends:` line reaches ([research](research/bk-511-op01-behaviour-classification/report.md)).
-  Precedes BK-485's step 5 spec. Open decision: the kind, trigger and state facets (report § 4), then the whole record.
+  (D18 by 23). The whole record splits into 127 classified clauses (`check.py`), 7 not decided, 9 duplicated across
+  groups and merged, and 5 deciding decisions no `Amends:` line reaches
+  ([research](research/bk-511-op01-behaviour-classification/report.md)). Precedes BK-485's step 5 spec. Next: route the
+  7 not-decided behaviours under RFC-0030 C1, then file Local's gaps C1 to C8.
 
 - [~] **BK-485 — The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour**
   spec: — · effort: L · audience: library.maintainer, contributor.process

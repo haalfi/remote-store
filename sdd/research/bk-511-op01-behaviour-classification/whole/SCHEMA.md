@@ -1,5 +1,7 @@
 # Clause schema for the whole-record pass
 
+<!-- doc: repo-only -->
+
 One TOML file per group (`a.toml` to `d.toml`) plus `../pilot.toml`, checked
 together by `../check_whole.py`. Record: `observe/OP-01/freeze-1` (`a7de4e31`).
 
@@ -35,11 +37,11 @@ reason = "..."
 
 | Facet | Vocabulary |
 |---|---|
-| path | success, end, absent, caller-error, storage-failure, cancellation, release, concurrent, non-promise, lifetime-end, configuration |
-| trigger | list of O1, O2, O3, Runtime, GC, E1..E19 (Environment rows); a World-triggered response lists the rows that reach it |
+| path | success, end, absent, caller-error, content-failure, storage-failure, cancellation, release, concurrent, non-promise, lifetime-end, configuration |
+| trigger | list of O1, O2, O3, Runtime, GC, E1..E19 (Environment rows); a row is named wherever one describes the event (a cancellation is E14), and a World-triggered response lists the rows that reach it |
 | form | stream, whole, text, both (whole and stream), all (whole, text, stream), handle |
 | api | sync, async, both |
-| state | stream: Open, Exhausted, Failed, Closed, not-Closed, any, open-call; none (no stream involved) |
+| state | stream: Open, Exhausted, Failed, Closed, not-Closed, any; none (no stream exists yet: a whole read, a stream's open) |
 | scope | portable, variation:<D43 point>, backend:<name> |
 | kind | structure, function, single call, lifetime, environment, liveness (SPEC-DESIGN Rule 2) |
 | status | decided, partly, implied, open |
@@ -53,7 +55,11 @@ Decided conventions (2026-11-03 dialog):
   about the World and D43 deviations.
 - **Trigger is a set** of rows, taken from D19's exposure table and D34/D96
   where they name rows.
+- **Status measures the behaviour**, not readiness to land: a clause whose
+  behaviour is decided is `decided`, and a landing block (OP-01/O9's category
+  names) goes in `gap`.
 - **State sets are allowed** (`not-Closed`, `any`); split a clause only where
   the outcome differs.
-- `path = absent` for a missing key or folder; `concurrent` for an overlapping
+- `path = absent` for a missing key, a folder or root where an item is asked (not an item); `content-failure`
+  for content the call cannot use (a strict decode); `concurrent` for an overlapping
   O2/O3 change; `configuration` for timeouts, defaults, retries, profiles.

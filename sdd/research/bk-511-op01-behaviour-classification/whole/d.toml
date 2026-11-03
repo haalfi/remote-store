@@ -22,7 +22,7 @@ api = "both"
 state = "any"
 scope = "portable"
 kind = "structure"
-status = "partly"
+status = "decided"
 gap = "OP-01/O9"
 local = "untested"
 
@@ -39,10 +39,10 @@ path = "caller-error"
 trigger = ["O1"]
 form = "all"
 api = "both"
-state = "open-call"
+state = "none"
 scope = "portable"
 kind = "single call"
-status = "partly"
+status = "decided"
 gap = "OP-01/O9"
 local = "untested"
 
@@ -57,10 +57,10 @@ path = "absent"
 trigger = ["O1"]
 form = "all"
 api = "both"
-state = "open-call"
+state = "none"
 scope = "portable"
 kind = "single call"
-status = "partly"
+status = "decided"
 gap = "OP-01/O9"
 local = "untested"
 
@@ -75,31 +75,12 @@ path = "absent"
 trigger = ["O1"]
 form = "all"
 api = "both"
-state = "open-call"
-scope = "portable"
-kind = "single call"
-status = "partly"
-gap = "OP-01/O9"
-local = "untested"
-
-[[clause]]
-id = "X05"
-given = "a key at or above k is both an item and a folder (object stores)"
-when = "a whole read, a text read or a stream open of k"
-then = "unspecified one of: not found, not an item, or success with the object stored at exactly k; never another key's content; a stream already open continues and its reads surface only what a stream read may"
-decided_by = ["D67", "D88", "D89", "D96"]
-axis = "AX-10"
-path = "absent"
-trigger = ["E17"]
-form = "all"
-api = "both"
-state = "open-call"
+state = "none"
 scope = "portable"
 kind = "single call"
 status = "decided"
+gap = "OP-01/O9"
 local = "untested"
-
-# -- access and readability ---------------------------------------------------------
 
 [[clause]]
 id = "X06"
@@ -115,7 +96,7 @@ api = "both"
 state = "not-Closed"
 scope = "portable"
 kind = "single call"
-status = "partly"
+status = "decided"
 gap = "OP-01/O9"
 local = "untested"
 
@@ -133,7 +114,7 @@ api = "both"
 state = "not-Closed"
 scope = "portable"
 kind = "single call"
-status = "partly"
+status = "decided"
 gap = "OP-01/O9"
 local = "untested"
 
@@ -148,10 +129,10 @@ path = "storage-failure"
 trigger = ["E15"]
 form = "all"
 api = "both"
-state = "open-call"
+state = "none"
 scope = "portable"
 kind = "single call"
-status = "partly"
+status = "decided"
 gap = "OP-01/O9"
 local = "untested"
 
@@ -173,42 +154,6 @@ status = "decided"
 local = "untested"
 
 [[clause]]
-id = "X10"
-given = "an Open stream on a backend with D62's metadata-change deviation declared (Azure; S3, whose tier move is a copy); O3 moves the item to an unreadable tier"
-when = "a read that needs a new backend request"
-then = "not readable or changed, which one unspecified; the stream is Failed"
-decided_by = ["D62", "D84", "D119", "D139"]
-axis = "AX-10"
-path = "concurrent"
-trigger = ["E15"]
-form = "stream"
-api = "both"
-state = "Open"
-scope = "variation:Pinned resume"
-kind = "lifetime"
-status = "decided"
-local = "untested"
-
-[[clause]]
-id = "X11"
-given = "an Open stream on a backend that declares no resume (SFTP; an S3-compatible endpoint not declared to pin)"
-when = "a read that needs a new backend request, whatever happened to the content (an O2 or O3 replace, delete, tier move or metadata change included)"
-then = "unavailable, never changed or not readable; the stream is Failed; a new call reads the content current at its own open"
-decided_by = ["D43", "D61", "D77", "D84"]
-axis = "AX-10"
-path = "storage-failure"
-trigger = ["E1", "E2", "E3", "E5", "E8", "E15", "E16", "E18"]
-form = "stream"
-api = "both"
-state = "Open"
-scope = "variation:Pinned resume"
-kind = "lifetime"
-status = "decided"
-local = "untested"
-
-# -- transport ------------------------------------------------------------------------
-
-[[clause]]
 id = "X12"
 given = "the backend refuses the connection or its name does not resolve, a connection is lost, the backend rejects transiently, or a transfer ends short of what the backend announced or fails an integrity check"
 when = "a whole read, a stream open or a stream read, once the library's retries are spent"
@@ -222,7 +167,7 @@ api = "both"
 state = "not-Closed"
 scope = "portable"
 kind = "single call"
-status = "partly"
+status = "decided"
 gap = "OP-01/O9"
 local = "untested"
 
@@ -240,7 +185,7 @@ api = "both"
 state = "not-Closed"
 scope = "portable"
 kind = "single call"
-status = "partly"
+status = "decided"
 gap = "OP-01/O9"
 local = "untested"
 
@@ -294,59 +239,8 @@ api = "both"
 state = "Open"
 scope = "portable"
 kind = "lifetime"
-status = "partly"
+status = "decided"
 gap = "OP-01/O9"
-local = "untested"
-
-[[clause]]
-id = "X17"
-given = "an Open stream on Azure; O3 or O2 changes only the item's metadata or system properties"
-when = "the stream makes any new backend request (resume, recycled connection, prefetch)"
-then = "changed, though the content may still be the open's; the stream is Failed"
-decided_by = ["D62", "D86", "D102", "D119", "D139"]
-axis = "AX-10"
-path = "concurrent"
-trigger = ["E16", "E18"]
-form = "stream"
-api = "both"
-state = "Open"
-scope = "backend:Azure"
-kind = "lifetime"
-status = "decided"
-local = "untested"
-
-[[clause]]
-id = "X18"
-given = "an Open stream on S3; O3 or O2 changes only the item's metadata or system properties (a copy onto itself)"
-when = "the stream makes any new backend request"
-then = "changed, or the request passes and reading goes on; which one unspecified"
-decided_by = ["D62", "D86", "D102", "D119", "D139"]
-axis = "AX-10"
-path = "concurrent"
-trigger = ["E16", "E18"]
-form = "stream"
-api = "both"
-state = "Open"
-scope = "backend:S3"
-kind = "lifetime"
-status = "decided"
-local = "untested"
-
-[[clause]]
-id = "X19"
-given = "an Open stream on a backend with no metadata-change deviation; O3 or O2 changes only the item's metadata"
-when = "the stream makes any new backend request"
-then = "nothing: the stream reads on"
-decided_by = ["D62", "D86", "D139"]
-axis = "AX-10"
-path = "concurrent"
-trigger = ["E16", "E18"]
-form = "stream"
-api = "both"
-state = "Open"
-scope = "portable"
-kind = "lifetime"
-status = "decided"
 local = "untested"
 
 [[clause]]
@@ -399,7 +293,7 @@ api = "both"
 state = "not-Closed"
 scope = "portable"
 kind = "single call"
-status = "partly"
+status = "decided"
 gap = "OP-01/O9"
 local = "untested"
 
@@ -440,23 +334,6 @@ local = "untested"
 # -- caller errors and decoding -------------------------------------------------------
 
 [[clause]]
-id = "X25"
-given = "bytes that are not valid in the encoding, errors='strict'"
-when = "a whole text read"
-then = "the builtin UnicodeDecodeError itself, not a library category; only the text form raises it"
-decided_by = ["D5", "D32", "D34", "D96"]
-axis = "AX-10"
-path = "caller-error"
-trigger = ["O1"]
-form = "text"
-api = "both"
-state = "none"
-scope = "portable"
-kind = "single call"
-status = "decided"
-local = "untested"
-
-[[clause]]
 id = "X26"
 given = "an encoding or errors handler the codec registry cannot find"
 when = "a whole text read"
@@ -484,7 +361,7 @@ path = "caller-error"
 trigger = ["O1"]
 form = "all"
 api = "both"
-state = "open-call"
+state = "none"
 scope = "portable"
 kind = "single call"
 status = "decided"
@@ -517,7 +394,7 @@ then = "any D34 category may surface at its one call except changed, a Closed st
 decided_by = ["D35", "D46", "D79", "D96", "D153"]
 axis = "AX-11"
 path = "storage-failure"
-trigger = ["O1", "Runtime", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E15", "E17"]
+trigger = ["O1", "E14", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E15", "E17"]
 form = "whole"
 api = "both"
 state = "none"
@@ -534,10 +411,10 @@ then = "key refused, not found, not an item, permission denied, authentication f
 decided_by = ["D35", "D46", "D96", "D153"]
 axis = "AX-11"
 path = "storage-failure"
-trigger = ["O1", "Runtime", "E6", "E7", "E9", "E10", "E11", "E13", "E15", "E17"]
+trigger = ["O1", "E14", "E6", "E7", "E9", "E10", "E11", "E13", "E15", "E17"]
 form = "stream"
 api = "both"
-state = "open-call"
+state = "none"
 scope = "portable"
 kind = "single call"
 status = "decided"
@@ -551,10 +428,10 @@ then = "the cancellation as raised, the builtin itself, not wrapped"
 decided_by = ["D20", "D34", "D96"]
 axis = "AX-11"
 path = "cancellation"
-trigger = ["Runtime"]
+trigger = ["E14"]
 form = "all"
 api = "both"
-state = "open-call"
+state = "none"
 scope = "portable"
 kind = "single call"
 status = "decided"
@@ -593,7 +470,7 @@ path = "non-promise"
 trigger = ["O1"]
 form = "all"
 api = "both"
-state = "open-call"
+state = "none"
 scope = "portable"
 kind = "single call"
 status = "decided"
