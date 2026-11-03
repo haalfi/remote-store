@@ -1,0 +1,497 @@
+# OP-01 group B: timeouts, defaults, Local I/O termination, retries, resume (AX-5, AX-13).
+# Record: observe/OP-01/freeze-1 (a7de4e31). Schema: SCHEMA.md. Style: ../pilot.toml.
+# Group decisions: D12 D13 D14 D38 D39 D57 D58 D59 D60 D74 D97 D98 D104 D111 D122 D128 D144 D145.
+
+# -- the timeout model (D12 as D57, D58, D59, D97, D128 amend it) ---------------------------
+
+[[clause]]
+id = "B01"
+given = "a quiet environment (no World row active)"
+when = "any OP-01 call, or any read on its stream"
+then = "returns or fails: every wait ends and a call makes finitely many requests"
+decided_by = ["D12", "D97", "D128"]
+axis = "AX-5"
+path = "configuration"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "liveness"
+status = "decided"
+gap = "OP-01/O4"
+local = "untested"
+
+[[clause]]
+id = "B02"
+given = "a network backend that accepts the connection and then sends nothing"
+when = "the library waits T_idle for the next byte of a request, and the attempt limit (B13) is spent"
+then = "the timeout category (TimeoutError, an unavailable) surfaces; on a stream read the stream is Failed (S18)"
+decided_by = ["D12", "D28", "D38", "D97", "D128"]
+axis = "AX-5"
+path = "storage-failure"
+trigger = ["E9"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O4"
+local = "untested"
+
+[[clause]]
+id = "B03"
+given = "a network backend whose connect never completes"
+when = "connecting, after name resolution, takes longer than T_connect, and the attempt limit is spent"
+then = "the timeout category (TimeoutError, an unavailable) surfaces"
+decided_by = ["D12", "D56", "D57"]
+axis = "AX-5"
+path = "storage-failure"
+trigger = ["E7"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O4"
+local = "untested"
+
+[[clause]]
+id = "B04"
+given = "an Open stream on a network backend"
+when = "the caller waits any time between two stream reads"
+then = "that time never counts toward T_idle or T_connect; no timeout arises from it"
+decided_by = ["D12"]
+axis = "AX-5"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+gap = "OP-01/O4"
+local = "untested"
+
+[[clause]]
+id = "B05"
+given = "a request that keeps receiving bytes, each within T_idle of the last, however slowly or long"
+when = "a whole read, an open or a stream read runs"
+then = "never cut: no whole-call deadline, and no figure bounds a call's or a stream's total waiting or duration (NP1)"
+decided_by = ["D12", "D59", "D97", "D128"]
+axis = "AX-5"
+path = "success"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O4"
+local = "untested"
+
+[[clause]]
+id = "B06"
+given = "a store configured with no timeouts"
+when = "a network backend's request runs"
+then = "T_connect 20 s and T_idle 60 s apply, for every network backend; both are store configuration"
+decided_by = ["D13", "D104"]
+axis = "AX-5"
+path = "configuration"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "structure"
+status = "decided"
+gap = "OP-01/O4"
+local = "untested"
+
+# -- declared termination deviations (D43's Termination row) -------------------------------
+
+[[clause]]
+id = "B07"
+given = "a Local store whose file-system I/O blocks in the kernel (an NFS server that vanished)"
+when = "any OP-01 call or stream read"
+then = "no library timeout: the call ends when the OS's I/O completes"
+decided_by = ["D14", "D43", "D145"]
+axis = "AX-5"
+path = "configuration"
+trigger = ["E9"]
+form = "all"
+api = "both"
+state = "any"
+scope = "variation:Termination"
+kind = "environment"
+status = "decided"
+gap = "OP-01/O4"
+local = "untested"
+
+[[clause]]
+id = "B08"
+given = "an SFTP store whose server keeps the channel alive while its disk hangs, the request already sent"
+when = "the library waits on that request"
+then = "it ends when the server's OS I/O completes; a channel that stops sending still meets T_idle (B02)"
+decided_by = ["D14", "D43", "D145"]
+axis = "AX-5"
+path = "configuration"
+trigger = ["E9"]
+form = "all"
+api = "both"
+state = "any"
+scope = "variation:Termination"
+kind = "environment"
+status = "decided"
+gap = "OP-01/O4"
+local = "untested"
+
+[[clause]]
+id = "B09"
+given = "a network backend whose name resolver never answers"
+when = "a request resolves the endpoint name, in either form"
+then = "resolution ends when the system resolver returns, unbounded by T_connect; a failed resolution surfaces unavailable"
+decided_by = ["D56", "D57", "D104", "D145"]
+axis = "AX-5"
+path = "configuration"
+trigger = ["E7"]
+form = "all"
+api = "both"
+state = "any"
+scope = "variation:Termination"
+kind = "environment"
+status = "decided"
+gap = "OP-01/O4"
+local = "untested"
+
+# -- a caller's own deadline --------------------------------------------------------------
+
+[[clause]]
+id = "B10"
+given = "a whole read (bytes or text) or a stream's open in flight"
+when = "the caller's own deadline cancels it (asyncio.timeout, a signal)"
+then = "the cancellation propagates; nothing handed out and nothing changed, except as D81 states; a cancelled stream read is S27"
+decided_by = ["D20", "D58", "D129"]
+axis = "AX-5"
+path = "cancellation"
+trigger = ["Runtime"]
+form = "all"
+api = "both"
+state = "open-call"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O4"
+local = "untested"
+
+# -- the library's own retries (D38 as D59, D61, D128, D145, D153 amend it) ----------------
+
+[[clause]]
+id = "B11"
+given = "a backend request meeting a transient failure"
+when = "the failure clears before the per-store attempt limit is spent"
+then = "the call succeeds as if it had not occurred; a retried whole read still returns one content at one instant of its interval (D21); request count unpromised (NP2)"
+decided_by = ["D21", "D38", "D145"]
+axis = "AX-13"
+path = "success"
+trigger = ["E7", "E8", "E9", "E10", "E12"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O11"
+local = "untested"
+
+[[clause]]
+id = "B12"
+given = "a backend request meeting a transient failure"
+when = "the failure persists through the attempt limit"
+then = "only then unavailable (E7 refused or unresolved, E8, E10, E12) or timeout (E7 connect past T_connect, E9) surfaces; on a stream read the stream is Failed (S18)"
+decided_by = ["D28", "D56", "D38"]
+axis = "AX-13"
+path = "storage-failure"
+trigger = ["E7", "E8", "E9", "E10", "E12"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O11"
+local = "untested"
+
+[[clause]]
+id = "B13"
+given = "a store"
+when = "a backend request is retried"
+then = "exponential backoff with jitter, honouring a backend's retry-after hint, up to a per-store attempt limit, default 3 attempts per backend request"
+decided_by = ["D38", "D111", "D122"]
+axis = "AX-13"
+path = "configuration"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "structure"
+status = "decided"
+gap = "OP-01/O11"
+local = "untested"
+
+[[clause]]
+id = "B14"
+given = "a call or stream read whose outcome is key refused, not found, not an item, permission denied, authentication failed, not readable or changed"
+when = "the failure is met"
+then = "surfaced at once, never retried by the library"
+decided_by = ["D38", "D74", "D111", "D122"]
+axis = "AX-13"
+path = "storage-failure"
+trigger = ["O1", "E1", "E2", "E3", "E5", "E6", "E11", "E15"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O11"
+local = "untested"
+
+# -- resuming a stream (D39 as D72 amends it) ----------------------------------------------
+
+[[clause]]
+id = "B15"
+given = "an Open stream on a backend that pins (D43's normal value), the pinned content still served"
+when = "a read meets a dropped or failed request mid-transfer"
+then = "the resume happens inside that read, under the attempt limit; it returns its full count (D6) with no gap and no repeated byte"
+decided_by = ["D6", "D39", "D72"]
+axis = "AX-13"
+path = "success"
+trigger = ["E7", "E8", "E9", "E10", "E12"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "B16"
+given = "an Open stream whose connection drops repeatedly, bytes flowing after each resume"
+when = "the stream is read on"
+then = "the attempt limit starts afresh once bytes have flowed since the last resume; the stream never fails by the number of drops, and its total waiting is unbounded"
+decided_by = ["D39", "D59", "D97", "D128"]
+axis = "AX-13"
+path = "success"
+trigger = ["E8"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "B17"
+given = "an Open stream on a backend that pins, the pinned content no longer served"
+when = "a read needs a resume request"
+then = "the read fails changed and the stream is Failed; no byte of another content is delivered"
+decided_by = ["D22", "D39", "D61", "D72"]
+axis = "AX-13"
+path = "concurrent"
+trigger = ["E1", "E2", "E3", "E5"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "B18"
+given = "an Open stream on a backend declaring no resume (SFTP; an S3-compatible endpoint not declared to pin)"
+when = "a read needs a new backend request"
+then = "the read fails unavailable whatever happened to the content, and the stream is Failed; delivered bytes stay a prefix of the open's content"
+decided_by = ["D39", "D42", "D43", "D61", "D75"]
+axis = "AX-13"
+path = "storage-failure"
+trigger = ["E7", "E8", "E9", "E10", "E12"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "variation:Pinned resume"
+kind = "environment"
+status = "decided"
+local = "untested"
+
+# -- caller-level retry by a new call (D38's table as D60, D61, D98, D129, D153 amend it) ---
+
+[[clause]]
+id = "B19"
+given = "a call that surfaced key refused, a caller error other than a closed stream, or io.UnsupportedOperation"
+when = "the caller repeats it by a new call with the same input and configuration"
+then = "the same failure: a function of input and configuration (KEY-001), of the arguments, or of the method"
+decided_by = ["D38", "D60", "D98", "D153"]
+axis = "AX-13"
+path = "caller-error"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "B20"
+given = "a call that surfaced not found or not an item"
+when = "the caller repeats it by a new call"
+then = "the same failure unless the store changes"
+decided_by = ["D38"]
+axis = "AX-13"
+path = "absent"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "B21"
+given = "a call that surfaced permission denied, authentication failed or not readable"
+when = "the caller repeats it by a new call"
+then = "the same failure until the environment changes"
+decided_by = ["D38"]
+axis = "AX-13"
+path = "storage-failure"
+trigger = ["E6", "E11", "E15"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "B22"
+given = "a call that surfaced unavailable, timeout, the base category, or a memory or descriptor failure"
+when = "the caller repeats it by a new call"
+then = "may succeed (memory or descriptors once the resource frees); on a stream, the new call reads the content current at its own open"
+decided_by = ["D38", "D60", "D61"]
+axis = "AX-13"
+path = "storage-failure"
+trigger = ["E7", "E8", "E9", "E10", "E12", "E13"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "B23"
+given = "a stream that failed changed"
+when = "the caller makes a new call"
+then = "it reads the content current at its own open"
+decided_by = ["D38"]
+axis = "AX-13"
+path = "concurrent"
+trigger = ["E1", "E2", "E3", "E5"]
+form = "stream"
+api = "both"
+state = "Failed"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "B24"
+given = "a whole text read that surfaced UnicodeDecodeError under strict"
+when = "the caller repeats it by a new call"
+then = "the same failure unless the content changes: a pure function of it (D5)"
+decided_by = ["D60"]
+axis = "AX-13"
+path = "caller-error"
+trigger = ["O1"]
+form = "text"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "B25"
+given = "a call that was cancelled"
+when = "the caller repeats it by a new call"
+then = "may succeed: the cancelled call left no effect (D20), except as D81 states"
+decided_by = ["D60", "D129"]
+axis = "AX-13"
+path = "cancellation"
+trigger = ["Runtime"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "B26"
+given = "a Closed stream whose read raised ValueError"
+when = "the caller makes a new OP-01 call"
+then = "the new call opens a new stream, which does not meet that failure"
+decided_by = ["D98", "D142"]
+axis = "AX-13"
+path = "caller-error"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Closed"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+# -- group decisions with no behaviour of their own ----------------------------------------
+
+[[record_text]]
+decision = "D74"
+reason = "rewrites OP-01/O11's summary to D38's never-retried list; the behaviour is B14"
+
+[[record_text]]
+decision = "D104"
+reason = "rewrites the summaries of OP-01/O4, O7, O9 and O5's pointer; O4's content is B01 to B10"
+
+[[record_text]]
+decision = "D111"
+reason = "states what OP-01/O11 blocks (D38's library-retry clauses, B11 to B14), not the caller-level table (B19 to B26)"
+
+[[record_text]]
+decision = "D122"
+reason = "adds D61 to D111's list of decisions amending D38's caller-level table; what O11 blocks is unchanged"
+
+[[record_text]]
+decision = "D144"
+reason = "drops D115 from the Axis status AX-13 row; a citation rule, no behaviour"
+
+[[record_text]]
+decision = "D145"
+reason = "rewrites reasons in D14, D38 and D54 to carry D57's and D81's exceptions; cited in B07, B08, B09 and B11 where the amended sentence bears on them"
