@@ -1,0 +1,514 @@
+# OP-01 group C: unreadable-now items, concurrency with O2/O3 writers, profiles and
+# variation points (AX-7, AX-8, AX-9, AX-15). Record: observe/OP-01/freeze-1 (a7de4e31).
+# Schema: SCHEMA.md. Each clause states the behaviour after every amendment of the
+# decisions it cites; amenders were taken from tmp/op01-effective.json's amended_by_all.
+
+# -- exposure ------------------------------------------------------------------------
+
+[[clause]]
+id = "C01"
+given = "any Environment row but E14 holds during the call"
+when = "an OP-01 call reduces the key (s1)"
+then = "the reduction's outcome is a function of the input and the store's configuration: no O2, O3 or World row changes it; only a cancellation reaches s1"
+decided_by = ["D19"]
+axis = "AX-7"
+path = "caller-error"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+# -- overlapping O2/O3 changes: the single instant -------------------------------------
+
+[[clause]]
+id = "C02"
+given = "O2 creates, replaces, deletes or moves the item (E1, E2), or O3 replaces, deletes or creates it in one step (E3, E5, E19), overlapping the call"
+when = "a whole read (bytes or text) of the key"
+then = "the outcome is D9's row for the pre-state at one instant t inside the read's interval, with the content the item had at t; classification and content come from that one instant, also where classification takes a GET and a listing"
+decided_by = ["D21", "D25", "D66", "D47", "D87"]
+axis = "AX-8"
+path = "concurrent"
+trigger = ["E1", "E2", "E3", "E5", "E19"]
+form = "whole"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O6"
+local = "untested"
+
+[[clause]]
+id = "C03"
+given = "O2 or O3 changes the item in one step (E1, E2, E3, E5, E19), overlapping the open"
+when = "the stream is opened"
+then = "the open classifies at one instant t0 inside the open call (D9's rows), and the stream is pinned to the content at t0"
+decided_by = ["D22", "D25", "D66", "D47", "D87"]
+axis = "AX-8"
+path = "concurrent"
+trigger = ["E1", "E2", "E3", "E5", "E19"]
+form = "stream"
+api = "both"
+state = "open-call"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C04"
+given = "an Open stream pinned to the content at t0; O2 or O3 then changes the item other than by E4"
+when = "a data read delivers bytes"
+then = "every byte delivered is the byte of the content at t0 at its position; bytes from another content, or after a gap, are never delivered"
+decided_by = ["D22", "D25", "D47", "D61", "D86"]
+axis = "AX-8"
+path = "concurrent"
+trigger = ["E1", "E2", "E3", "E5", "E15", "E16", "E18"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C05"
+given = "an Open stream on a backend that pins a new request (Pinned resume's normal value); O2 or O3 replaced, deleted or moved the item (E1, E2, E3, E5)"
+when = "a data read needs a new backend request the pinned content no longer satisfies"
+then = "the read fails changed and the stream is Failed (D16)"
+decided_by = ["D22", "D25", "D39", "D43", "D61", "D85"]
+axis = "AX-8"
+path = "concurrent"
+trigger = ["E1", "E2", "E3", "E5"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "variation:Pinned resume"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C06"
+given = "an Open Local stream; O2 or O3 on the same host replaces or removes the file"
+when = "data reads continue"
+then = "the open descriptor keeps the old file, so the reads go on delivering the open's content without failing"
+decided_by = ["D22", "D25", "D64"]
+axis = "AX-9"
+path = "concurrent"
+trigger = ["E1", "E2", "E3", "E5"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "backend:Local"
+kind = "lifetime"
+status = "implied"
+local = "untested"
+
+[[clause]]
+id = "C07"
+given = "an Open Local stream on a network file system shared across hosts; another host removes or replaces the file"
+when = "a data read"
+then = "may fail changed, the stream then Failed (D22)"
+decided_by = ["D22", "D64"]
+axis = "AX-15"
+path = "concurrent"
+trigger = ["E1", "E2", "E3", "E5"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "backend:Local"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C08"
+given = "an Open stream on a backend that declares no resume (SFTP; an S3-compatible endpoint not declared to pin)"
+when = "the connection drops and a data read needs a new backend request"
+then = "the read fails unavailable, whatever happened to the content (E15 included), and the stream is Failed (D16); a new call reads the content current at its own open"
+decided_by = ["D39", "D42", "D43", "D61", "D77", "D84"]
+axis = "AX-15"
+path = "storage-failure"
+trigger = ["E8", "E1", "E2", "E3", "E5", "E15", "E16", "E18"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "variation:Pinned resume"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+# -- E15 during a stream -------------------------------------------------------------
+
+[[clause]]
+id = "C09"
+given = "an Open stream on a backend that resumes and whose pin token survives a tier move; O3 moves the item to an archive tier or state (E15)"
+when = "data reads continue"
+then = "reads go on while the transfer under way holds; a read that needs a new backend request fails not readable and the stream is Failed (D16); bytes delivered stay a prefix of the content pinned at open"
+decided_by = ["D47", "D84"]
+axis = "AX-9"
+path = "storage-failure"
+trigger = ["E15"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "variation:Pinned resume"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C10"
+given = "an Open stream where D62's metadata deviation is declared (Azure, S3); O3 moves the item to an archive tier (E15)"
+when = "a data read needs a new backend request"
+then = "it fails not readable or changed, which one unspecified; the stream is Failed (D16)"
+decided_by = ["D47", "D84", "D119", "D130", "D140"]
+axis = "AX-9"
+path = "storage-failure"
+trigger = ["E15"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "variation:Pinned resume"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+# -- metadata-only changes (E16, E18) ------------------------------------------------
+
+[[clause]]
+id = "C11"
+given = "an Open stream on a backend without D62's deviation; O3 (E16) or O2 through OP-20 (E18) changes the item's metadata or system properties, not its content"
+when = "data reads continue, a new backend request included"
+then = "the stream meets nothing: reads go on with the pinned content"
+decided_by = ["D62", "D102", "D86", "D139"]
+axis = "AX-7"
+path = "concurrent"
+trigger = ["E16", "E18"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "variation:Pinned resume"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C12"
+given = "an Open Azure stream; O3 (E16) or O2 (E18) changes the item's metadata only"
+when = "the stream makes any new backend request (a resume, a recycled connection, a prefetch)"
+then = "the read fails changed and the stream is Failed (D16); not run"
+decided_by = ["D62", "D86", "D102", "D119", "D139"]
+axis = "AX-15"
+path = "concurrent"
+trigger = ["E16", "E18"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "backend:Azure"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C13"
+given = "an Open S3 stream; O3 (E16) or O2 (E18) changes the item's metadata only, which S3 does by copying the object onto itself"
+when = "the stream makes any new backend request"
+then = "the read fails changed (stream Failed) or passes and the stream reads on, which one unspecified; not run"
+decided_by = ["D62", "D86", "D102", "D119", "D139"]
+axis = "AX-15"
+path = "concurrent"
+trigger = ["E16", "E18"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "backend:S3"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C14"
+given = "a stream read that failed changed"
+when = "the caller interprets the failure"
+then = "not promised: that the content differs from the open's; changed means only that the backend's pin token no longer matches, and a new call reads the current content, which may equal the old"
+decided_by = ["D62", "D85"]
+axis = "AX-15"
+path = "non-promise"
+trigger = ["E16", "E18", "E15"]
+form = "stream"
+api = "both"
+state = "Failed"
+scope = "variation:Pinned resume"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+# -- O3 in-place modification (E4) -----------------------------------------------------
+
+[[clause]]
+id = "C15"
+given = "a file-system backend (Local, SFTP); O3 truncates, overwrites a range of or appends to the file (E4) during the whole read or stream"
+when = "the read delivers bytes"
+then = "no single instant and no pinning: each delivered byte is the byte the file held at that position at some instant between the open and its delivery; the read ends at the end it meets and may complete without failing; never changed; content beyond this unpromised (NP7)"
+decided_by = ["D26", "D43", "D48"]
+axis = "AX-9"
+path = "concurrent"
+trigger = ["E4"]
+form = "both"
+api = "both"
+state = "any"
+scope = "variation:O3 in-place modification"
+kind = "environment"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C16"
+given = "an object-store backend"
+when = "O3 acts on an item"
+then = "in-place modification (E4) cannot arise: O3 changes content only by replacing in one step"
+decided_by = ["D43"]
+axis = "AX-15"
+path = "concurrent"
+trigger = ["E4"]
+form = "both"
+api = "both"
+state = "none"
+scope = "variation:O3 in-place modification"
+kind = "environment"
+status = "decided"
+local = "not-offered"
+
+# -- read-after-write ------------------------------------------------------------------
+
+[[clause]]
+id = "C17"
+given = "an API mutation of the key (E1, E2) completed, or an O3 change of E3, E5 or E19 completed (its tool returned), before the read started; a backend with Read-after-write's normal value"
+when = "a whole read or a stream open of the key"
+then = "the read's instant t (or t0) lies after every such change, in real-time order: O1 reads its own completed writes"
+decided_by = ["D23", "D63", "D87"]
+axis = "AX-8"
+path = "success"
+trigger = ["E1", "E2", "E3", "E5", "E19"]
+form = "all"
+api = "both"
+state = "open-call"
+scope = "variation:Read-after-write"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O7"
+local = "untested"
+
+[[clause]]
+id = "C18"
+given = "as C17, on a store declared eventual: an S3-compatible service the configuration does not name as strong, Local where its file system is a network one shared across hosts, SFTP where the server's file system is such a one"
+when = "a whole read or a stream open of the key"
+then = "the read may see an earlier content for a bounded or unbounded time, as the backend's profile states"
+decided_by = ["D23", "D43", "D64", "D82", "D83"]
+axis = "AX-15"
+path = "concurrent"
+trigger = ["E1", "E2", "E3", "E5", "E19"]
+form = "all"
+api = "both"
+state = "open-call"
+scope = "variation:Read-after-write"
+kind = "environment"
+status = "decided"
+gap = "OP-01/O7"
+local = "untested"
+
+# -- how a variation is fixed ----------------------------------------------------------
+
+[[clause]]
+id = "C19"
+given = "any store"
+when = "its variation points' values are fixed"
+then = "statically per backend, never probed, never requested; a declaration may be conditioned on a stated property of the store's location (its file system, the server's platform); where one backend serves services that differ the configuration selects, an unnamed service taking the deviations"
+decided_by = ["D43", "D82"]
+axis = "AX-15"
+path = "configuration"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "environment"
+status = "decided"
+gap = "OP-01/O12"
+local = "untested"
+
+[[clause]]
+id = "C20"
+given = "a caller whose correctness rests on a normal value (read-after-write, pinned resume)"
+when = "it calls OP-01"
+then = "OP-01 takes no option that requests or refuses a variation; the caller learns the store's profile elsewhere (OP-18)"
+decided_by = ["D44"]
+axis = "AX-15"
+path = "configuration"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "structure"
+status = "decided"
+gap = "OP-01/O13"
+local = "untested"
+
+# -- one handle, several callers; overlapping mutation ---------------------------------
+
+[[clause]]
+id = "C21"
+given = "one Store shared by threads, or one AsyncStore by tasks on its event loop; O2 may be the same handle"
+when = "calls through the handle overlap"
+then = "permitted; each call behaves as if issued alone, except for D81's failure under Overlapping mutation"
+decided_by = ["D24", "D81", "D129"]
+axis = "AX-8"
+path = "concurrent"
+trigger = ["O1", "O2"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O8"
+local = "untested"
+
+[[clause]]
+id = "C22"
+given = "one stream"
+when = "several consumers use it concurrently"
+then = "not promised (NP6): one stream serves one consumer at a time"
+decided_by = ["D24", "D41"]
+axis = "AX-14"
+path = "non-promise"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C23"
+given = "an OP-01 read of the item is open, whole or streamed, on a store with Overlapping mutation's normal value"
+when = "O2 replaces, deletes or moves the item through the API"
+then = "the mutation succeeds; the reader keeps its content (C02, C04)"
+decided_by = ["D65", "D81"]
+axis = "AX-15"
+path = "concurrent"
+trigger = ["E1", "E2"]
+form = "both"
+api = "both"
+state = "any"
+scope = "variation:Overlapping mutation"
+kind = "environment"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C24"
+given = "an OP-01 read of the item is open, whole or streamed (a cancelled one included), where Overlapping mutation's deviation is declared (Local on Windows; SFTP where the server runs on Windows)"
+when = "O2 replaces, deletes or moves the item through the API"
+then = "the mutation may fail, leaving the state as before it; OP-01 changes nothing else, and the reader's content is kept; the category that failure surfaces is the mutating entry's"
+decided_by = ["D65", "D81", "D83", "D129", "D152"]
+axis = "AX-15"
+path = "concurrent"
+trigger = ["E1", "E2"]
+form = "both"
+api = "both"
+state = "any"
+scope = "variation:Overlapping mutation"
+kind = "environment"
+status = "partly"
+gap = "OP-01/O46"
+local = "untested"
+
+# -- a key both an item and a folder (E17) ---------------------------------------------
+
+[[clause]]
+id = "C25"
+given = "k or an ancestor key of k is both an item and a folder (E17), on a flat object store (Dual key declared)"
+when = "a whole read or a stream open of k"
+then = "unspecified, one of: the content of the object stored at exactly k, not found, not an item; never another key's content"
+decided_by = ["D67", "D89", "D90", "D91"]
+axis = "AX-7"
+path = "concurrent"
+trigger = ["E17"]
+form = "all"
+api = "both"
+state = "open-call"
+scope = "variation:Dual key"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C26"
+given = "a stream opened before or while a key at or above k is in E17's state"
+when = "data reads continue, a new backend request included"
+then = "the stream continues under its pin (C04); its reads surface only what D45 lists"
+decided_by = ["D89"]
+axis = "AX-7"
+path = "concurrent"
+trigger = ["E17"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "variation:Dual key"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "C27"
+given = "a file system or hierarchical namespace (Dual key's normal value)"
+when = "O3 acts on the store"
+then = "E17 cannot arise, and D9's partition holds unchanged"
+decided_by = ["D67", "D91"]
+axis = "AX-15"
+path = "concurrent"
+trigger = ["E17"]
+form = "all"
+api = "both"
+state = "none"
+scope = "variation:Dual key"
+kind = "environment"
+status = "decided"
+local = "untested"
+
+# -- group decisions with no behaviour of their own ------------------------------------
+
+[[record_text]]
+decision = "D76"
+reason = "restates D63 in D43's Read-after-write normal value and updates OP-01/O13's count of points; the behaviour is C17 (D110 calls it a restatement)"
+
+[[record_text]]
+decision = "D103"
+reason = "re-addresses OP-01/O46 to other entries' sessions; no OP-01 behaviour"
+
+[[record_text]]
+decision = "D105"
+reason = "D43's Decided-by column and a restatement of D87 in its Read-after-write normal value; the behaviour is C17"
+
+[[record_text]]
+decision = "D110"
+reason = "amends D104's check on O7's list; a derivation note, no behaviour"
+
+[[record_text]]
+decision = "D120"
+reason = "D43's Decided-by column by rule and D110's check; a table of citations, no behaviour"
+
+[[record_text]]
+decision = "D146"
+reason = "adds D25 and D64 to D43's Pinned resume Decided-by cell; a citation, no behaviour"
