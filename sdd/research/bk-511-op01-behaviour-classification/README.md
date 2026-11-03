@@ -1,0 +1,30 @@
+# BK-511 OP-01 behaviours classified
+
+<!-- doc: repo-only -->
+
+The evidence behind [`report.md`](report.md): OP-01's decisions split into
+behaviour clauses and classified along fixed facets, piloted on the stream
+lifecycle. Derived from the record, so RFC-0029 R4 keeps it from BK-506's
+oracle sessions. The record governs; a clause is a reading of it.
+
+| Path | Role |
+|---|---|
+| `effective.py` | Per decision: axis, Amends targets, amenders direct and transitive, keyword signals; writes JSON |
+| `pilot.toml` | The pilot: 37 behaviour clauses and 4 record-text-only decisions, facets in its header |
+| `check_pilot.py` | Vocabulary, coverage of the pilot decisions, mapping of the spike's freeze-1 rules; prints the views |
+
+No file here is collected, built or run by any gate.
+
+## Running
+
+From the repo root:
+
+```
+hatch run python sdd/research/bk-511-op01-behaviour-classification/effective.py sdd/observe/records/OP-01.md tmp/op01-effective.json
+hatch run python sdd/research/bk-511-op01-behaviour-classification/check_pilot.py sdd/observe/records/OP-01.md
+```
+
+Expected (2026-11-03, on `observe/OP-01/freeze-1`): `decisions: 156; amended:
+79; amending: 95`; `pilot decisions: 45; clauses: 37; record-text only: 4`,
+then the views of `report.md` § 3 and `Result: OK`.
+`check_pilot.py` reads `../bk-485-op01-stream-spike/freeze-1/stream_rules.toml`.
