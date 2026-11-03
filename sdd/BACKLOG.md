@@ -329,7 +329,7 @@ no clause of the contract ships unexercised.
   spec: — · effort: S · audience: user.api
   CPython's `io.BufferedReader.readline` discards its undelivered buffer when the raw read raises: on 20580 bytes,
   `readinto(6)`, a failing `readline()`, the next `read()` resumes at 8192, an 8186-byte gap, no error
-  (`readline_loss.py` case 2; at the end of an item, case 1, a short clean end). Local, SFTP, S3 boto3 and Azure
+  (`readline_loss.py` case 2, a fake raw, so any raw; at an item's end, case 1, a short clean end). Local, SFTP, S3 boto3, Azure
   return this reader (`Grep BufferedReader\(` over `src/remote_store`). OP-01 D51 and D93 decide Failed (spike
   C8). Open decision: one wrapper over every `read()`, or a fix per backend; before or with BK-485's spec.
 
