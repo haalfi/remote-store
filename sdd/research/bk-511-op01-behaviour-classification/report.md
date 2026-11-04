@@ -208,9 +208,9 @@ C6 and C7 share one row: D70 decides both, and one cause, a seekable raw
 file, produces both. The strict mode counts the injected `EIO` as unavailable,
 the spike's E8 analogue; D34 types E13's disk I/O as the base category, so
 C3 is the same gap either way: no library category. For the comparison's
-reading of 0.33: SIO-001 and SIO-008 promise a seekable `read()` stream on a
-backend that declares `SEEKABLE_READ`, as Local, SFTP and S3 boto3 do (C6,
-C7); BE-021 promises that no native exception leaks, and SIO-012 maps only
+reading of 0.33: SIO-001 disclaims seekability as a Store API contract, and
+SIO-008 is the exception, a seekable `read()` stream on a backend that
+declares `SEEKABLE_READ`, as Local, SFTP and S3 boto3 do (C6, C7); BE-021 promises that no native exception leaks, and SIO-012 maps only
 the shapes a backend's wrapper catches (C3 and C4 on Local, and Azure's
 `ServiceResponseError` mid-stream, below); no 0.33 clause speaks to C1, C2 or
 C5.
@@ -223,9 +223,13 @@ wrapper does not catch, and the next reads deliver the chunks after it: 16
 of 20 bytes, not a prefix of the content, with no error. D16 and D51 make
 that stream Failed, and D22 never delivers bytes after a gap; the unmapped
 raise is against D27 and, in 0.33, BE-021, which Azure's caught set under
-SIO-012 does not reach. The gap is
-BUG-346's symptom through the SDK's iterator, which has already taken the
-failed chunk's offset, not through `BufferedReader.readline`. The first
+SIO-012 does not reach. The gap is the symptom BUG-346 records, bytes lost
+after a mid-stream failure, by another mechanism BUG-346 does not cover: the
+SDK's iterator has already taken the failed chunk's offset, so any failed
+read, not only `readline`, is followed by reads past the gap. With 0.33
+frozen it is recorded here only; a per-backend fix of BUG-346's `readline`
+loss would leave it, and a Failed state that holds on every `read()` would
+not. The first
 part's Azure C2, `b''` after the failure, is its fake generator ending at
 its raise, not the SDK.
 

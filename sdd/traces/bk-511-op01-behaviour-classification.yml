@@ -159,7 +159,9 @@ phases:
         extract: "All three end in io.BufferedReader over the wrapper; chains.py runs each gap there"
         outcome: ok
       - file: sdd/specs/006-streaming-io.md
-        section: "SIO-001, SIO-008; 003 BE-021"
+        section: "SIO-001, SIO-008, SIO-012; 003 BE-021"
         read_type: reference
-        extract: "0.33 promises a seekable read() where SEEKABLE_READ is declared and no native exception leaks"
+        extract: >-
+          SIO-001 disclaims seekability; SIO-008 promises a seekable read() where SEEKABLE_READ is
+          declared; BE-021 promises no native exception leaks, as far as SIO-012's caught set reaches
         outcome: ok
