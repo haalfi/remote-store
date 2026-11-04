@@ -1,0 +1,715 @@
+# OP-01's stream lifecycle as classified behaviour clauses (BK-511 pilot).
+# Record: observe/OP-01/freeze-1 (a7de4e31). One clause, one observable behaviour:
+# given (pre-state), when (call or trigger), then (outcome), after every amendment.
+#
+# Facets and vocabularies: whole/SCHEMA.md (checked by check.py). Pilot-only facet:
+#   rule        freeze-1/stream_rules.toml's rule ids it maps to (optional)
+# A stream read's storage failure lists D96's stream-read rows as its trigger
+# (E4 E6 E7 to E13 E15; E7 at a resume's reconnect).
+
+# -- opening ------------------------------------------------------------------------
+
+[[clause]]
+id = "S01"
+given = "a key whose item has content"
+when = "the stream is opened"
+then = "an Open stream at position 0"
+decided_by = ["D18", "D9"]
+axis = "AX-6"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["N1"]
+local = "pass"
+
+[[clause]]
+id = "S02"
+given = "a key whose item is empty"
+when = "the stream is opened"
+then = "an Exhausted stream"
+decided_by = ["D18"]
+axis = "AX-6"
+path = "end"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+gap = "F10"
+rule = ["N1"]
+local = "pass"
+
+# -- data reads on an Open stream ---------------------------------------------------
+
+[[clause]]
+id = "S03"
+given = "an Open stream with r bytes remaining"
+when = "read(n), n >= 0"
+then = "exactly min(n, r) next bytes; Exhausted once none remain"
+decided_by = ["D6"]
+axis = "AX-2"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF7"]
+local = "pass"
+
+[[clause]]
+id = "S04"
+given = "an Open stream with r bytes remaining"
+when = "read(n), n < 0"
+then = "all r bytes"
+decided_by = ["D6"]
+axis = "AX-2"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF7", "RF4"]
+local = "C5"
+
+[[clause]]
+id = "S05"
+given = "an Open stream with bytes remaining"
+when = "read(0)"
+then = "b'', position and state unchanged, not the end"
+decided_by = ["D6"]
+axis = "AX-2"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "partly"
+gap = "F1"
+rule = ["RF4"]
+local = "untested"
+
+[[clause]]
+id = "S06"
+given = "an Open stream with r bytes remaining"
+when = "read1(n) or readinto1(b), size > 0"
+then = "1 to min(size, r) next bytes as soon as one is available; retries and resumes as read; request count unpromised"
+decided_by = ["D70", "D78", "D126", "D134", "D155"]
+axis = "AX-2"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF9"]
+local = "pass"
+
+[[clause]]
+id = "S07"
+given = "an Open stream with r > 0 bytes remaining"
+when = "read1(0), readinto1 or readinto with an empty buffer, read1(n < 0)"
+then = "b'' or 0 for a zero size, not the end; 1 to r bytes for n < 0, how many unspecified"
+decided_by = ["D155"]
+axis = "AX-2"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF4", "RF9"]
+local = "untested"
+
+[[clause]]
+id = "S08"
+given = "an Open stream with r bytes remaining"
+when = "readinto(b)"
+then = "min(len(b), r) bytes written, that count returned"
+decided_by = ["D70"]
+axis = "AX-1"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF7"]
+local = "pass"
+
+[[clause]]
+id = "S09"
+given = "an Open stream"
+when = "readline(limit), line iteration"
+then = "bytes up to and including the next newline, at most limit when limit >= 0; iteration yields readline() until b''"
+decided_by = ["D70"]
+axis = "AX-1"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF7"]
+local = "pass"
+
+[[clause]]
+id = "S10"
+given = "an Open stream"
+when = "readlines(hint)"
+then = "readline() results to the end, or stopping after the line that makes the total exceed hint > 0"
+decided_by = ["D126", "D135"]
+axis = "AX-2"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "S11"
+given = "an Open stream"
+when = "chunks(size), size > 0"
+then = "non-empty chunks of at most size bytes from the current position, concatenating to the rest"
+decided_by = ["D7"]
+axis = "AX-2"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF8"]
+local = "not-offered"
+
+# -- other calls --------------------------------------------------------------------------
+
+[[clause]]
+id = "S12"
+given = "a stream that is not Closed"
+when = "tell()"
+then = "the bytes delivered so far"
+decided_by = ["D70", "D93", "D151"]
+axis = "AX-1"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["T1"]
+local = "C8"
+
+[[clause]]
+id = "S13"
+given = "a stream that is not Closed"
+when = "readable(), seekable(), writable(), isatty(), flush()"
+then = "true, false, false, false, a no-op"
+decided_by = ["D70", "D93", "D125", "D137", "D151"]
+axis = "AX-1"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["Z1"]
+local = "C6"
+
+[[clause]]
+id = "S14"
+given = "a stream in any state but Closed (write: any state)"
+when = "seek, truncate, write, fileno, writelines, detach"
+then = "io.UnsupportedOperation"
+decided_by = ["D70", "D125", "D150", "D153", "D154"]
+axis = "AX-1"
+path = "caller-error"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["S1"]
+local = "C7"
+
+# -- the end ------------------------------------------------------------------------------
+
+[[clause]]
+id = "S15"
+given = "an Exhausted stream"
+when = "any data read"
+then = "b''; 0 for readinto and readinto1; [] for readlines; an empty iteration for lines and chunks"
+decided_by = ["D18", "D132", "D148", "D155"]
+axis = "AX-6"
+path = "end"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Exhausted"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF4"]
+local = "pass"
+
+[[clause]]
+id = "S16"
+given = "an Open stream at its last byte, the end not yet observed"
+when = "a data read reaches the backend and meets a storage failure or a cancellation"
+then = "undecided: D18 defines Exhausted as 'at end', so the record does not say whether this read may fail"
+decided_by = ["D18"]
+axis = "AX-6"
+path = "storage-failure"
+trigger = ["E4", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E14", "E15"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "open"
+gap = "F10"
+rule = ["RF6", "RF5"]
+local = "untested"
+
+# -- caller errors ------------------------------------------------------------------------
+
+[[clause]]
+id = "S17"
+given = "a stream in any state, Closed included"
+when = "a call with an invalid argument (chunks(0), read('x'))"
+then = "the caller error (TypeError, ValueError, LookupError) first; state unchanged"
+decided_by = ["D33", "D51", "D80", "D92", "D117"]
+axis = "AX-6"
+path = "caller-error"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "lifetime"
+status = "partly"
+gap = "F5"
+rule = ["RF1"]
+local = "untested"
+
+# -- storage failures ---------------------------------------------------------------------
+
+[[clause]]
+id = "S18"
+given = "an Open stream"
+when = "a data read meets a storage failure (or one raised as is) the library's recovery cannot mend"
+then = "the failure's category is raised; the stream is Failed"
+decided_by = ["D16", "D27", "D28", "D51"]
+axis = "AX-6"
+path = "storage-failure"
+trigger = ["E4", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E15"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF6"]
+local = "C3"
+
+[[clause]]
+id = "S19"
+given = "an Open stream"
+when = "a data read fails"
+then = "no bytes are delivered by that call, and tell() still counts only the bytes delivered"
+decided_by = ["D6", "D72", "D93"]
+axis = "AX-6"
+path = "storage-failure"
+trigger = ["E4", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E15"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "implied"
+gap = "F7"
+rule = ["RF6", "T1"]
+local = "C8"
+
+[[clause]]
+id = "S20"
+given = "a Failed stream"
+when = "a valid data read"
+then = "a new exception of the original's category (as raised: its type and args), the original as __cause__"
+decided_by = ["D16", "D52", "D93", "D95", "D117", "D151"]
+axis = "AX-6"
+path = "storage-failure"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Failed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF3"]
+local = "C2"
+
+[[clause]]
+id = "S21"
+given = "a Failed stream"
+when = "tell, readable, seekable, writable, isatty, flush, an unsupported method"
+then = "answers as on an Open stream"
+decided_by = ["D93", "D125", "D150", "D151"]
+axis = "AX-6"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Failed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "S22"
+given = "a stream read"
+when = "it fails"
+then = "only these may surface: permission denied, authentication failed, not readable, unavailable, timeout, changed, base category, memory or descriptors, caller error, a closed stream's ValueError, cancellation"
+decided_by = ["D96", "D153"]
+axis = "AX-11"
+path = "storage-failure"
+trigger = ["E4", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E15"]
+form = "stream"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "C3"
+
+# -- close and release --------------------------------------------------------------------
+
+[[clause]]
+id = "S23"
+given = "a stream that is not Closed"
+when = "close()"
+then = "resources released; Closed; returns nothing"
+decided_by = ["D18"]
+axis = "AX-6"
+path = "release"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["K3"]
+local = "pass"
+
+[[clause]]
+id = "S24"
+given = "a stream that is not Closed"
+when = "close() meets a failure while releasing"
+then = "swallowed (logged), never raised; only a cancellation leaves close()"
+decided_by = ["D36", "D49", "D96"]
+axis = "AX-11"
+path = "release"
+trigger = ["E8", "E13"]
+form = "stream"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["K3"]
+local = "C4"
+
+[[clause]]
+id = "S25"
+given = "a Closed stream"
+when = "close()"
+then = "a no-op"
+decided_by = ["D15", "D117"]
+axis = "AX-6"
+path = "release"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Closed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["K1"]
+local = "pass"
+
+[[clause]]
+id = "S26"
+given = "a Closed stream"
+when = "any valid call but close(), writable() and write()"
+then = "ValueError; writable() returns false; write raises io.UnsupportedOperation"
+decided_by = ["D15", "D117", "D137", "D154"]
+axis = "AX-6"
+path = "caller-error"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "Closed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF2", "Z2"]
+local = "pass"
+
+# -- cancellation -------------------------------------------------------------------------
+
+[[clause]]
+id = "S27"
+given = "a stream that is not Closed"
+when = "a data read is cancelled (task cancellation, KeyboardInterrupt)"
+then = "the cancellation propagates; the stream is released and Closed"
+decided_by = ["D20", "D50"]
+axis = "AX-7"
+path = "cancellation"
+trigger = ["E14"]
+form = "stream"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["RF5"]
+local = "C1"
+
+[[clause]]
+id = "S28"
+given = "a stream that is not Closed"
+when = "close() is cancelled"
+then = "the cancellation propagates; Closed, every local resource released, the connection aborted; a later close() a no-op"
+decided_by = ["D49", "D50", "D94", "D118"]
+axis = "AX-6"
+path = "cancellation"
+trigger = ["E14"]
+form = "stream"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+gap = "F2"
+rule = ["K2"]
+local = "pass"
+
+[[clause]]
+id = "S29"
+given = "an async stream on a backend whose close runs in a worker thread"
+when = "close() is cancelled"
+then = "Closed when the cancellation propagates; the release completes when the worker's close returns"
+decided_by = ["D138"]
+axis = "AX-15"
+path = "cancellation"
+trigger = ["E14"]
+form = "stream"
+api = "async"
+state = "not-Closed"
+scope = "variation:Cancelled close"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "S30"
+given = "a stream whose release a cancelled close() left pending, where Overlapping mutation is declared"
+when = "O2 replaces, deletes or moves the item"
+then = "that mutation may fail, leaving the state as before it"
+decided_by = ["D81", "D152"]
+axis = "AX-4"
+path = "release"
+trigger = ["E1", "E2"]
+form = "stream"
+api = "async"
+state = "Closed"
+scope = "variation:Overlapping mutation"
+kind = "environment"
+status = "decided"
+local = "untested"
+
+# -- collection and lifetime --------------------------------------------------------------
+
+[[clause]]
+id = "S31"
+given = "an Open stream nobody closed"
+when = "its last reference is collected"
+then = "released, with a ResourceWarning; when is unpromised (NP4)"
+decided_by = ["D17"]
+axis = "AX-6"
+path = "release"
+trigger = ["GC"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["G2"]
+local = "pass"
+
+[[clause]]
+id = "S32"
+given = "an Exhausted or Failed stream nobody closed"
+when = "its last reference is collected"
+then = "undecided whether a ResourceWarning is emitted (D17 says 'an open stream')"
+decided_by = ["D17"]
+axis = "AX-6"
+path = "release"
+trigger = ["GC"]
+form = "stream"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "lifetime"
+status = "open"
+gap = "F3"
+rule = ["G2"]
+local = "untested"
+
+[[clause]]
+id = "S37"
+given = "a Closed stream"
+when = "its last reference is collected"
+then = "nothing: no release left, no warning"
+decided_by = ["D17"]
+axis = "AX-6"
+path = "release"
+trigger = ["GC"]
+form = "stream"
+api = "both"
+state = "Closed"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+rule = ["G1"]
+local = "pass"
+
+[[clause]]
+id = "S33"
+given = "an Open, Exhausted or Failed stream"
+when = "its handle's lifetime ends"
+then = "open: OP-01/O5, blocked on OP-21's flow"
+decided_by = ["D18"]
+axis = "AX-6"
+path = "lifetime-end"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "lifetime"
+status = "open"
+gap = "OP-01/O5"
+rule = ["H1"]
+local = "untested"
+
+# -- the async form -------------------------------------------------------------------------
+
+[[clause]]
+id = "S34"
+given = "an async stream"
+when = "any call"
+then = "data reads and close() are coroutines, line iteration and chunks async iterators (lines, as sync), every other method plain; semantics as the sync form"
+decided_by = ["D1", "D69", "D101", "D127", "D147"]
+axis = "AX-1"
+path = "success"
+trigger = ["O1"]
+form = "stream"
+api = "async"
+state = "any"
+scope = "portable"
+kind = "structure"
+status = "decided"
+local = "untested"
+
+# -- non-promises ---------------------------------------------------------------------------
+
+[[clause]]
+id = "S35"
+given = "any stream"
+when = "chunks(size) or reads"
+then = "not promised: chunk boundaries beyond D7, buffer size, read-ahead (NP3)"
+decided_by = ["D7", "D41"]
+axis = "AX-14"
+path = "non-promise"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "S36"
+given = "any stream"
+when = "readline with a negative limit, readlines at any hint, line iteration"
+then = "not promised: the memory of a line, which holds the whole line (NP9); every other read keeps D40's bound"
+decided_by = ["D40", "D71", "D126", "D133", "D136"]
+axis = "AX-14"
+path = "non-promise"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+# -- pilot decisions with no behaviour of their own ----------------------------------------
+# Each changes only where the record states something; the behaviour sits in the clauses above.
+
+[[record_text]]
+decision = "D2"
+reason = "the stream's shape (sequential file object plus chunks), carried into S03 to S14 and S34"
+
+[[record_text]]
+decision = "D100"
+reason = "D18's column cites D93's data-read list"
+
+[[record_text]]
+decision = "D131"
+reason = "D100 cites D93's list only"
+
+[[record_text]]
+decision = "D149"
+reason = "restores D125's and D126's dialog options; the decisions are unchanged"

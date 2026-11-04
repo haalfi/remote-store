@@ -1,0 +1,93 @@
+id: BK-511
+title: "OP-01's decisions mix paths, forms and backends, so no list of its behaviours exists before spec work"
+trigger: >-
+  After the OP-01 stream spike's rerun against freeze-1, the maintainer judged
+  that the record's decisions mix happy and unhappy paths, whole and streamed
+  reads, sync and async, and backends, and asked for a sound classification of
+  its decisions, scenarios and observed behaviours before spec work or a
+  reopen. Unit, facets, scope (pilot first) and home (a new item) were decided
+  in one dialog.
+source_items:
+  - BK-511
+audience:
+  - library.maintainer
+  - contributor.process
+discovery_followups:
+  # Filed during PR #1204's review; born from BK-485's rerun (C8), listed in both traces
+  - BUG-346
+decisions:
+  - sdd/decisions/3f275077-1eeb-5b6f-a4a6-7377e26283e4.jsonl
+orient:
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      BK-485's step 5 writes OP-01's spec; the classification precedes it and
+      changes no record, spec or model (BK-485's index entry).
+  - items: [BK-509]
+    verdict: constrains
+    evidence: >-
+      Its open decision is how an amendment is declared; effective.py reads the
+      record's Amends lines mechanically, one answer for reading, and leaves
+      observe-tables alone (BK-509's index entry).
+  - items: [BK-506]
+    verdict: constrains
+    evidence: >-
+      The trial's oracle sessions may read nothing derived from the record
+      (RFC-0029 R4); the classification is derived and says so.
+  - items: [BK-507, BK-508]
+    verdict: unrelated
+    evidence: "observe-tables parsing of IDs and cited rows (their index entries); the classification reads no table cell"
+  - items: [BK-496]
+    verdict: unrelated
+    evidence: "How a store is obtained and configured (its index entry); the stream slice touches none of it"
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "§ 2 entries BK-485, BK-496, BK-502, BK-506 to BK-509"
+        read_type: gate
+        extract: "Cluster verdicts above; next safe ID BK-511 (gen_backlogid --check --remote)"
+        outcome: ok
+      - file: sdd/observe/tables/OP-01.toml
+        section: "header, D18, D19, D34, D38, D60 declarations"
+        read_type: reference
+        extract: "The sidecar reads each table as it stands, never an amending decision; BK-509 holds the fix"
+        outcome: ok
+      - file: sdd/observe/axes.md
+        section: "Axes table"
+        read_type: reference
+        extract: "Each axis already types its question (structure, value function, single call, resource life, environment, multi-observer, failures, register, profile); the classification adds a behaviour level beneath"
+        outcome: ok
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rule 2"
+        read_type: gate
+        extract: "The six kinds and the larger-kind rule; a witness needing a behaviour outside the library's control is environment, which leaves a World-triggered failure response two-valued"
+        outcome: unclear
+  - id: pilot
+    name: Pilot on the stream lifecycle
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D2, D6, D7, D15 to D18, D20, D36 and their transitive amenders; D49, D94, D96, D118, D138"
+        read_type: gate
+        extract: >-
+          45 decisions, 37 clauses, 4 record-text only; 16 deciding decisions outside the
+          slice's Amends closure (check.py --pilot); one behaviour needs up to six decisions;
+          six behaviours not decided
+        outcome: unclear
+  - id: whole
+    name: Whole record by axis group
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "Every decision outside the pilot, in four axis groups classified in parallel"
+        read_type: gate
+        extract: >-
+          156 decisions, 123 clauses, 32 record-text only after 13 cross-file duplicates
+          were merged (four of them found in PR #1204's second review); seven behaviours not decided; three group agents independently lacked
+          a path for a strict decode, which became content-failure
+        outcome: unclear
+      - file: sdd/observe/records/OP-01.md
+        section: "D12 vs D97, D4 vs D67, D34 vs D61, D84 vs D119 and D139, D76 vs D110"
+        read_type: reference
+        extract: "Behaviours stated only in a check or a reason, and original wordings a later decision contradicts; report § 5"
+        outcome: misleading

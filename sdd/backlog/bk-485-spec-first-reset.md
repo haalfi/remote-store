@@ -114,4 +114,8 @@ against Local, with faults injected below the library:
 For step 5 it offers guarded rules as a model format, nine prose gaps
 (four not among `O14` to `O45`), and five places where 0.33's Local stream is
 behind decided behaviour. It is derived from the record, so RFC-0029
-R4 keeps it from BK-506's oracle sessions.
+R4 keeps it from BK-506's oracle sessions. Its rerun against freeze-1
+([`freeze-1/rerun.md`](../research/bk-485-op01-stream-spike/freeze-1/rerun.md))
+finds three more Local gaps, one of them a `readline()` failure after which
+the next read silently skips the buffered bytes (BUG-346), four of the nine
+gaps still open and one only implied (F7).

@@ -1,0 +1,208 @@
+# Group A of OP-01's whole-record pass: forms, text, root, missing keys,
+# store frame, handle state (AX-1 to AX-4). Record: observe/OP-01/freeze-1 (a7de4e31).
+# Group decisions: D3 D4 D5 D8 D10 D11 D88 D114 D129. Schema: SCHEMA.md.
+
+# -- the text form ------------------------------------------------------------------
+
+[[clause]]
+id = "A01"
+given = "an item, read in the text form with no encoding or errors argument"
+when = "the whole text read is called on any host, whatever its locale"
+then = "decoded as encoding UTF-8, errors strict; the defaults are the library's, never the locale's, so one item reads alike on every host"
+decided_by = ["D1", "D3"]
+axis = "AX-1"
+path = "success"
+trigger = ["O1"]
+form = "text"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "A02"
+given = "an item whose bytes form would return b for the version read (AX-8)"
+when = "the whole text read with encoding enc and errors err"
+then = "exactly b.decode(enc, err): no newline translation, a BOM kept unless enc is utf-8-sig; total for any errors other than strict"
+decided_by = ["D3", "D5"]
+axis = "AX-2"
+path = "success"
+trigger = ["O1"]
+form = "text"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "function"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "A03"
+given = "an item whose bytes do not decode under enc, errors strict"
+when = "the whole text read"
+then = "UnicodeDecodeError, the builtin itself; the bytes form and the stream never raise it"
+decided_by = ["D5", "D34", "D79", "D96", "D32"]
+axis = "AX-2"
+path = "content-failure"
+trigger = ["O1"]
+form = "text"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+# -- the addressed structure: root, folders, missing keys ----------------------------
+
+[[clause]]
+id = "A05"
+given = "an accepted key k with Omega_S(k) Absent, AbsentAncestor(kj) or BlockedByItem(kj), outside E17"
+when = "a whole read, a text read or a stream open"
+then = "one category, not found (FileNotFoundError), for all three; no kj carried; on Local a BlockedByItem's native NotADirectoryError is the cause only (D27); the stream open surfaces it at the open call, which makes its first backend request there; never from a stream read"
+decided_by = ["D9", "D34", "D96", "D8", "D75", "D27", "D35"]
+axis = "AX-3"
+path = "absent"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "A06"
+given = "E17: a key at or above k is both an item and a folder (object stores)"
+when = "a whole read, a text read or a stream open of k"
+then = "unspecified, one of: the content of the object stored at exactly k, not found, not an item; never another key's content; the failures surface as those categories, at the whole read or the open only; a stream already open continues and its reads surface only what a stream read may"
+decided_by = ["D67", "D89", "D96", "D4", "D88"]
+axis = "AX-3"
+path = "absent"
+trigger = ["E17"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "not-offered"
+
+# -- the store's frame ------------------------------------------------------------------
+
+[[clause]]
+id = "A07"
+given = "any store state, no Overlapping mutation deviation in play"
+when = "any OP-01 call, successful or failed, and any use or close of its stream"
+then = "the store's state (U, F, I, r, C, name) and every property OP-09 and OP-20 report are those the environment alone leaves; so OP-09's modification time is not one a read moves (atime)"
+decided_by = ["D10", "D65", "D81", "D129", "D152"]
+axis = "AX-4"
+path = "success"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+gap = "OP-01/O2"
+local = "untested"
+
+[[clause]]
+id = "A08"
+given = "an OP-01 read of an item in flight (a whole read, an open, a stream not Closed), where Overlapping mutation is not declared"
+when = "O2 replaces, deletes or moves that item through the API"
+then = "the mutation succeeds as if no read were open"
+decided_by = ["D43", "D65"]
+axis = "AX-4"
+path = "concurrent"
+trigger = ["O2"]
+form = "all"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "A09"
+given = "an OP-01 read of an item in flight (a whole read, an open, cancelled or not, a stream not Closed), where Overlapping mutation is declared (Local on Windows, SFTP on a Windows server)"
+when = "O2 replaces, deletes or moves that item through the API"
+then = "that mutation may fail, leaving the state as before it; OP-01 changes nothing else; the reader keeps its content; the mutation's category is its own entry's"
+decided_by = ["D10", "D43", "D65", "D83", "D81", "D129", "D152", "D112"]
+axis = "AX-4"
+path = "concurrent"
+trigger = ["E1", "E2"]
+form = "all"
+api = "both"
+state = "not-Closed"
+scope = "variation:Overlapping mutation"
+kind = "environment"
+status = "decided"
+gap = "OP-01/O46"
+local = "untested"
+
+[[clause]]
+id = "A10"
+given = "any OP-01 call or stream"
+when = "it runs or is cancelled"
+then = "not promised (NP5): out-of-band effects such as atime, access logs, billing, and what a backend still holds after a cancelled close() (an SFTP file handle until the backend's close returns or its session ends)"
+decided_by = ["D10", "D41", "D118", "D152"]
+axis = "AX-14"
+path = "non-promise"
+trigger = ["O1", "E14"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+# -- the handle's state ----------------------------------------------------------------
+
+[[clause]]
+id = "A11"
+given = "a handle that has served earlier calls on k, after which O2 or O3 changed k"
+when = "a later OP-01 call on k through the same handle"
+then = "it classifies and transfers afresh: no content or metadata cache, the change seen subject to AX-8 and AX-9"
+decided_by = ["D11"]
+axis = "AX-4"
+path = "success"
+trigger = ["O1"]
+form = "handle"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+gap = "OP-01/O3"
+local = "untested"
+
+[[clause]]
+id = "A12"
+given = "two handles with the same configuration over the same store state, differing only in their history (pooled connections, refreshed credentials)"
+when = "the same OP-01 call through each"
+then = "the same outcome: between calls a handle holds only its configuration and its lifetime as outcome-changing state; pools and credential refresh change none"
+decided_by = ["D11", "D13"]
+axis = "AX-4"
+path = "success"
+trigger = ["O1"]
+form = "handle"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+gap = "OP-01/O3"
+local = "untested"
+
+# -- group decisions with no behaviour of their own ------------------------------------
+
+[[record_text]]
+decision = "D114"
+reason = "covered by S34: confirms D101 against a superseded log answer; its restatement reads as D127 and D147 set D101"

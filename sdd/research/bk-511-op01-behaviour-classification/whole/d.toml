@@ -1,0 +1,519 @@
+# OP-01 group D: error categories and typing (AX-10), failure phases (AX-11),
+# AX-6/AX-12/AX-14 remainders, a handle's start, non-promises, close-out text.
+# Record: observe/OP-01/freeze-1 (a7de4e31). Schema: SCHEMA.md. Clause ids X01..
+# Each category clause states the category as D34's table holds it after every
+# amendment (D48, D53 to D56, D61, D62, D84, D86, D88, D124, D153), and its phases
+# as D96's table holds it (D142, D153). Category names are working names until
+# the error layer names them (D27's check), so OP-01/O9 is carried as the gap.
+
+# -- the typing principle ------------------------------------------------------------
+
+[[clause]]
+id = "X01"
+given = "any OP-01 call or stream read"
+when = "it meets a storage failure (any World or O3 row D34 maps to a library category)"
+then = "a library category under one base is raised, never a backend's own exception; the native exception, where there is one, is its __cause__; a failure no named category fits is the base category"
+decided_by = ["D27", "D33", "D34"]
+axis = "AX-10"
+path = "storage-failure"
+trigger = ["E1", "E2", "E3", "E5", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E15", "E16", "E18"]
+form = "all"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "structure"
+status = "decided"
+gap = "OP-01/O9"
+local = "untested"
+
+# -- classification failures: whole read or stream open only ------------------------
+
+[[clause]]
+id = "X02"
+given = "an input that the store's key reduction refuses (e.g. '../x' from the root)"
+when = "a whole read, a text read or a stream open"
+then = "key refused, a library category under the base and also a ValueError, raised before any backend contact; never from a stream read"
+decided_by = ["D9", "D34", "D53", "D96"]
+axis = "AX-10"
+path = "caller-error"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O9"
+local = "untested"
+
+[[clause]]
+id = "X04"
+given = "an accepted key whose pre-state is Found(e, folder), the root included"
+when = "a whole read, a text read or a stream open"
+then = "not an item, an IsADirectoryError, at the call or the open; never from a stream read; for the root (read(''), read('a/..')), outside E17, raised after classification as for any folder key, never refused before backend contact"
+decided_by = ["D9", "D27", "D34", "D35", "D96", "D4", "D88"]
+axis = "AX-10"
+path = "absent"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O9"
+local = "untested"
+
+[[clause]]
+id = "X06"
+given = "the caller lacks read rights on the key, or loses them before a stream's next backend request"
+when = "a whole read, a stream open, or a stream read that makes a backend request"
+then = "permission denied, a PermissionError, distinct from authentication failed"
+decided_by = ["D27", "D29", "D34", "D96"]
+axis = "AX-10"
+path = "storage-failure"
+trigger = ["E6"]
+form = "all"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O9"
+local = "untested"
+
+[[clause]]
+id = "X07"
+given = "credentials that are rejected, or expire, mid-stream included"
+when = "a whole read, a stream open, or a stream read that makes a backend request"
+then = "authentication failed, a PermissionError, distinct from permission denied"
+decided_by = ["D27", "D29", "D34", "D96"]
+axis = "AX-10"
+path = "storage-failure"
+trigger = ["E11"]
+form = "all"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O9"
+local = "untested"
+
+[[clause]]
+id = "X08"
+given = "an item in a tier or state the backend will not read without a further step (archive tier, missing customer key)"
+when = "a whole read, a text read or a stream open"
+then = "not readable, a library category with no builtin parent; not not-found, not unavailable, not an access failure"
+decided_by = ["D19", "D30", "D34", "D96"]
+axis = "AX-10"
+path = "storage-failure"
+trigger = ["E15"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O9"
+local = "untested"
+
+[[clause]]
+id = "X09"
+given = "an Open stream on a backend that resumes pinned and whose pin token survives the move; O3 moves the item to an unreadable tier"
+when = "a read that needs a new backend request"
+then = "not readable; the stream is Failed; reads served by the transfer under way go on, and bytes delivered stay a prefix of the open's content"
+decided_by = ["D47", "D84"]
+axis = "AX-10"
+path = "concurrent"
+trigger = ["E15"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "X12"
+given = "the backend refuses the connection or its name does not resolve, a connection is lost, the backend rejects transiently, or a transfer ends short of what the backend announced or fails an integrity check"
+when = "a whole read, a stream open or a stream read, once the library's retries are spent"
+then = "unavailable, a library category with no builtin parent"
+decided_by = ["D28", "D34", "D38", "D56", "D99"]
+axis = "AX-10"
+path = "storage-failure"
+trigger = ["E7", "E8", "E10", "E12"]
+form = "all"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O9"
+local = "untested"
+
+[[clause]]
+id = "X13"
+given = "a connect that takes longer than T_connect, or no byte for T_idle while the library waits on the backend"
+when = "a whole read, a stream open or a stream read, once the library's retries are spent"
+then = "timeout, a TimeoutError and an unavailable"
+decided_by = ["D12", "D28", "D34", "D38", "D56"]
+axis = "AX-10"
+path = "storage-failure"
+trigger = ["E7", "E9"]
+form = "all"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O9"
+local = "untested"
+
+[[clause]]
+id = "X14"
+given = "a transfer that ends with fewer bytes than the backend announced, or fails an integrity check"
+when = "a whole read or a stream read"
+then = "the short or corrupt body is never returned as content"
+decided_by = ["D28", "D99"]
+axis = "AX-10"
+path = "storage-failure"
+trigger = ["E12"]
+form = "all"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "X15"
+given = "a whole read that meets a transient failure the library retries"
+when = "the retry runs"
+then = "the transfer restarts; the read still returns one content of one instant"
+decided_by = ["D38", "D79"]
+axis = "AX-11"
+path = "configuration"
+trigger = ["E7", "E8", "E9", "E10", "E12"]
+form = "whole"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+# -- concurrent change ------------------------------------------------------------------
+
+[[clause]]
+id = "X16"
+given = "an Open stream on a backend that pins (D43's normal value); O2 or O3 replaces, deletes or moves the item, or puts a folder at its key"
+when = "a read that needs a new backend request whose pin check fails"
+then = "changed, a library category with no builtin parent, raised only from a stream read, never from a whole read or an open; the stream is Failed; no byte of another content is delivered"
+decided_by = ["D22", "D31", "D34", "D48", "D61", "D85", "D96", "D39", "D72"]
+axis = "AX-10"
+path = "concurrent"
+trigger = ["E1", "E2", "E3", "E5"]
+form = "stream"
+api = "both"
+state = "Open"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+gap = "OP-01/O9"
+local = "untested"
+
+[[clause]]
+id = "X20"
+given = "a whole read or a stream on a file-system backend; O3 truncates, overwrites a range or appends to the file"
+when = "the read meets the end, or a byte, the modified file holds"
+then = "never changed and never unavailable; the read may end short of the size at open without failing; each byte is the file's byte at that position at some instant of the read"
+decided_by = ["D26", "D48", "D99", "D124"]
+axis = "AX-10"
+path = "concurrent"
+trigger = ["E4"]
+form = "all"
+api = "both"
+state = "any"
+scope = "variation:O3 in-place modification"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "X22"
+given = "the backing storage's I/O fails (EIO from a Local disk)"
+when = "a whole read, a stream open or a stream read"
+then = "the base category, the OSError as its __cause__"
+decided_by = ["D27", "D33", "D34", "D96"]
+axis = "AX-10"
+path = "storage-failure"
+trigger = ["E13"]
+form = "all"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O9"
+local = "untested"
+
+[[clause]]
+id = "X23"
+given = "the process runs out of memory"
+when = "a whole read, a stream open or a stream read"
+then = "MemoryError as raised, not wrapped in a library category"
+decided_by = ["D33", "D34", "D54", "D96"]
+axis = "AX-10"
+path = "storage-failure"
+trigger = ["E13"]
+form = "all"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "X24"
+given = "the process is at its file-descriptor limit"
+when = "a whole read, a stream open or a stream read, on any backend"
+then = "an OSError with errno EMFILE or ENFILE as raised, or unavailable after the library's retries; which one unspecified"
+decided_by = ["D33", "D34", "D54", "D96"]
+axis = "AX-10"
+path = "storage-failure"
+trigger = ["E13"]
+form = "all"
+api = "both"
+state = "not-Closed"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+# -- caller errors and decoding -------------------------------------------------------
+
+[[clause]]
+id = "X26"
+given = "an encoding or errors handler the codec registry cannot find"
+when = "a whole text read"
+then = "LookupError, raised before any backend contact"
+decided_by = ["D33", "D55"]
+axis = "AX-10"
+path = "caller-error"
+trigger = ["O1"]
+form = "text"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "X27"
+given = "an invalid argument that no store configuration decides (a non-str key, an invalid parameter value)"
+when = "a whole read, a text read or a stream open"
+then = "the builtin TypeError, ValueError or LookupError itself, raised before any backend contact, never under the store's base"
+decided_by = ["D33", "D34", "D53", "D55", "D96", "D153"]
+axis = "AX-10"
+path = "caller-error"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "X28"
+given = "a stream in any state"
+when = "a call that is neither a data read nor close() (tell, readable, seek, ...)"
+then = "only a caller error, a Closed stream's ValueError or io.UnsupportedOperation can surface; no storage category and no cancellation"
+decided_by = ["D96", "D101", "D153"]
+axis = "AX-11"
+path = "caller-error"
+trigger = ["O1"]
+form = "stream"
+api = "both"
+state = "any"
+scope = "portable"
+kind = "lifetime"
+status = "decided"
+local = "untested"
+
+# -- phases -----------------------------------------------------------------------------
+
+[[clause]]
+id = "X29"
+given = "a whole read, bytes or text"
+when = "it fails"
+then = "any D34 category may surface at its one call except changed, a Closed stream's ValueError and io.UnsupportedOperation; a decode failure only in the text form"
+decided_by = ["D35", "D46", "D79", "D96", "D153"]
+axis = "AX-11"
+path = "storage-failure"
+trigger = ["O1", "E14", "E6", "E7", "E8", "E9", "E10", "E11", "E12", "E13", "E15", "E17"]
+form = "whole"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "X30"
+given = "a stream being opened"
+when = "the open call fails"
+then = "key refused, not found, not an item, permission denied, authentication failed, not readable, unavailable, timeout, the base category, memory or descriptors as raised, caller errors or a cancellation; never changed, a decode failure, a Closed stream's ValueError or io.UnsupportedOperation"
+decided_by = ["D35", "D46", "D96", "D153"]
+axis = "AX-11"
+path = "storage-failure"
+trigger = ["O1", "E14", "E6", "E7", "E9", "E10", "E11", "E13", "E15", "E17"]
+form = "stream"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "X31"
+given = "a whole read or a stream open"
+when = "it is cancelled from outside the call"
+then = "the cancellation as raised, the builtin itself, not wrapped"
+decided_by = ["D20", "D34", "D96"]
+axis = "AX-11"
+path = "cancellation"
+trigger = ["E14"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+# -- a handle's start --------------------------------------------------------------------
+
+[[clause]]
+id = "X32"
+given = "the backend unreachable, stalled, failing or rejecting"
+when = "the caller creates a store handle"
+then = "the handle is created and usable from the moment held; creating it contacts no backend, so it never fails for E7 to E12"
+decided_by = ["D37"]
+axis = "AX-11"
+path = "success"
+trigger = ["E7", "E8", "E9", "E10", "E11", "E12"]
+form = "handle"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+gap = "OP-01/O10"
+local = "untested"
+
+# -- non-promises --------------------------------------------------------------------------
+
+[[clause]]
+id = "X33"
+given = "any read whose classification needs a folder check"
+when = "the backend tells a folder from absence"
+then = "not promised: how and when, and how many requests it takes, success path included (NP2)"
+decided_by = ["D9", "D41", "D73"]
+axis = "AX-14"
+path = "non-promise"
+trigger = ["O1"]
+form = "all"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+[[clause]]
+id = "X34"
+given = "a whole bytes or whole text read"
+when = "it runs"
+then = "not promised: its memory, which holds the whole content once, plus decoding for text (NP8); D40's bound covers the stream only"
+decided_by = ["D1", "D40", "D41", "D123"]
+axis = "AX-14"
+path = "non-promise"
+trigger = ["O1"]
+form = "whole"
+api = "both"
+state = "none"
+scope = "portable"
+kind = "single call"
+status = "decided"
+local = "untested"
+
+# -- group decisions with no behaviour of their own -------------------------------------
+
+[[record_text]]
+decision = "D45"
+reason = "covered by S22: the list of categories a stream read may surface, read as D96's table (D142, D153)"
+
+[[record_text]]
+decision = "D68"
+reason = "Session text: which formal models were read; states no behaviour"
+
+[[record_text]]
+decision = "D75"
+reason = "restores D8's and D42's dialog options; the decisions are unchanged"
+
+[[record_text]]
+decision = "D106"
+reason = "completes D68's Session line on formal models; states no behaviour"
+
+[[record_text]]
+decision = "D107"
+reason = "restores D41's and D43's dialog options; the decisions are unchanged"
+
+[[record_text]]
+decision = "D108"
+reason = "what each open item blocks in the spec flow (as D111 and D122 amend O11); a landing pointer, no behaviour"
+
+[[record_text]]
+decision = "D109"
+reason = "edits D104's O9 list of decisions shaping the error layer; a pointer"
+
+[[record_text]]
+decision = "D113"
+reason = "where D107 is cited in the Axis status; record bookkeeping"
+
+[[record_text]]
+decision = "D115"
+reason = "D108 as D111 amends it stands over an earlier logged answer; provenance only"
+
+[[record_text]]
+decision = "D116"
+reason = "adds the Session's Double answers line; provenance only"
+
+[[record_text]]
+decision = "D121"
+reason = "the rule that derives O9's list excludes D109; a pointer"
+
+[[record_text]]
+decision = "D141"
+reason = "adds D124 to O9's list and widens D121's exclusion rule; a pointer"
+
+[[record_text]]
+decision = "D142"
+reason = "rewords D96's check and D98's reason to count categories (E4's row has no phase or retry row of its own); the behaviour sits in X20, X28 to X30"
+
+[[record_text]]
+decision = "D143"
+reason = "Session provenance lines: double answers and the logs that answered D104 to D111 and O70"
+
+[[record_text]]
+decision = "D156"
+reason = "routes notes O88 to O91 to OP-01's spec flow; they block nothing"
