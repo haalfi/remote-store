@@ -16,7 +16,7 @@ decision log `sdd/decisions/2d3cd12d-fc9a-5a23-975e-07578aa00b3d.jsonl`
 
 **0.33's code and specs 001 to 050 are frozen. No item is filed against 0.33
 from spec, observe, spike, audit or review work; only an issue a user of a
-released 0.33 version reports becomes a 0.33 BUG.** A difference between v1
+released 0.33 version reports becomes a new 0.33 BUG.** A difference between v1
 and 0.33 that such work finds is evidence for its flow's 0.33 comparison
 (RFC-0024 D8), and there a break record, never a 0.33 item.
 
@@ -44,8 +44,9 @@ to code v1 replaces.
 
 ### F1. What may become a 0.33 item
 
-**A 0.33 BUG (RFC-0024 R3 class K) is an issue a user of a released 0.33
-version reports, which the maintainer admits.** Admitting it, the maintainer
+**A 0.33 BUG (RFC-0024 R3 class K) filed from this RFC on is an issue a user
+of a released 0.33 version reports, which the maintainer admits.** One filed
+before keeps its class (F3). Admitting it, the maintainer
 confirms the rating
 [`CONTRIBUTING.md` § When to bump](../../CONTRIBUTING.md#when-to-bump) gives
 its fix:
@@ -87,9 +88,9 @@ Failed state OP-01's D51 and D93 already decide for v1.
 | Clause | Becomes |
 |---|---|
 | RFC-0024 § Summary, last sentence | A difference between a v1 spec and 0.33 is evidence for the comparison and, there, a break record; never a defect in the v1 spec, and never a 0.33 item (F2). |
-| RFC-0024 D2, D9 and R2's admission list (from the cut on, RFC-0025 D5) | The fixes `release/0.33.x` takes (D2's "patch-rated fixes", R2's "bug fixes"), and so D9's "0.33 patch from `release/0.33.x`", carry only fixes of K items as F1 defines them. Floor raises, CI, docs and metadata are unchanged. |
+| RFC-0024 D2, D9 and R2's admission list (from the cut on, RFC-0025 D5) | The fixes `release/0.33.x` takes (D2's "patch-rated fixes", R2's "bug fixes"), and so D9's "0.33 patch from `release/0.33.x`", carry only fixes of K items: those F1 admits and those F3 keeps. Floor raises, CI, docs and metadata are unchanged. |
 | RFC-0024 D8 | "a difference becomes a break record or a 0.33 defect" reads "a difference becomes a break record or nothing" (F2). |
-| RFC-0024 R3, class K, with RFC-0025's row | Holds only issues F1 admits. Its disposition is RFC-0025's row's, the patch rating confirmed by the maintainer. |
+| RFC-0024 R3, class K, with RFC-0025's row | Holds the issues F1 admits and the items F3 keeps; nothing else becomes a K item. Its disposition is RFC-0025's row's, the patch rating confirmed by the maintainer. |
 | RFC-0024 R4, first paragraph | "a break record or a 0.33 defect (D8)" reads "evidence for D8's comparison, where it may become a break record" (F2). |
 | RFC-0024 R5, "D8's pass adds a row for each difference that is not a 0.33 defect; one that is a 0.33 defect becomes a K item instead" | Reads "D8's pass adds a row for each difference": one that is also a 0.33 defect gets a row too, and no K item (F2). |
 

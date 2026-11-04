@@ -11,8 +11,9 @@ elsewhere). Decisions taken in this RFC's session: decision log
 `sdd/decisions/3f9651c0-09db-5c69-8bbb-77ea5f97177e.jsonl`.
 
 Amended by [RFC-0031](rfc-0031-033-frozen.md), accepted 2026-11-04: the row
-for R3, class K holds only an issue a user of a released 0.33 version reports,
-its patch rating confirmed by the maintainer.
+for R3, class K admits a new item only for an issue a user of a released 0.33
+version reports, its patch rating confirmed by the maintainer; items filed
+before keep their class.
 
 ## Summary
 
