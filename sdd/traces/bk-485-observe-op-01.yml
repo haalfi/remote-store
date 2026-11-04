@@ -64,6 +64,12 @@ decisions:
   # The reopen of 2026-11-04 after freeze-1 (RFC-0030 C4): O92 and O93,
   # D157 and D158; added by the review after it.
   - sdd/decisions/394be2d5-4f9a-4036-834f-a906a4f58890.jsonl
+  # The reopen of 2026-11-04 walking O94 to O101 (D159 to D163); added by the
+  # review after it. O94 to O97's dialog, asked in ac1debf0, was answered into
+  # 48d1bf11 (17:58Z); c84c41bb holds D163's routing of the notes.
+  - sdd/decisions/48d1bf11-b496-5868-a622-53ce83917f68.jsonl
+  - sdd/decisions/ac1debf0-811f-4bf4-9f01-d03e8f837d95.jsonl
+  - sdd/decisions/c84c41bb-a04f-4c27-9136-ab26f7620fd8.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:
