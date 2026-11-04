@@ -119,3 +119,26 @@ R4 keeps it from BK-506's oracle sessions. Its rerun against freeze-1
 finds three more Local gaps, one of them a `readline()` failure after which
 the next read silently skips the buffered bytes (BUG-346), four of the nine
 gaps still open and one only implied (F7).
+
+## Freeze-2 reopen: 0.33-sourced evidence (RFC-0031 F2, 2026-11-04)
+
+The design half never reads 0.33 (RFC-0031 F2), and OP-01's record already
+cites 0.33 code as evidence in four open items. A Grep of
+[`OP-01.md`](../observe/records/OP-01.md) at `7eac8c5` for
+`src/remote_store|_azure\.py|_sftp\.py|_memory\.py|_local\.py|_s3_boto3\.py|_sync_adapter\.py|0\.33`
+finds them:
+
+| Item | 0.33 citation | Route before RFC-0031 |
+|---|---|---|
+| O29 | `_azure.py:685` to `:697` (HEAD before streaming) | decided by D73 |
+| O42 | `_sftp.py`'s displacing-rename fallback | other entries' sessions, amended by D108 |
+| O76 | `aio/_sync_adapter.py` as the example of `asyncio.to_thread` | decided by D138; its ✓ run probes asyncio itself |
+| O88 | `_memory.py`'s `io.BytesIO` | OP-01's spec flow, by D156 |
+
+Their 0.33 citations carry no weight. The freeze-2 reopen, besides S05 and
+S16, re-witnesses each against the SDK, OS or runtime, or drops it, before any
+route above uses it.
+
+The spike's own checks ran against `LocalBackend`. Its gaps and BUG-346's C8
+are input to the 0.33 comparison only, and a later spike checks a record
+against a reference model or the raw SDK or OS.

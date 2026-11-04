@@ -1,6 +1,6 @@
 ---
 name: observe-review
-description: Check a finished /observe record before its spec is written. Pairs each decision with its dialog, checks its tables, has two unprimed readers re-check the whole record, then reviews it against backends, SDKs and the runtime, adding what holds to the record's Open items; after a reopen or a close-out, says whether it can be frozen. Use only when the maintainer types /observe-review after an /observe session was cleared, or /observe-review <entry> close-out after a review. Not for deciding otherwise: a reopen session decides.
+description: Check a finished /observe record before its spec is written. Pairs each decision with its dialog, checks its tables, has two unprimed readers re-check the whole record, then reviews it against storage systems, SDKs and the runtime, adding what holds to the record's Open items; after a reopen or a close-out, says whether it can be frozen. Use only when the maintainer types /observe-review after an /observe session was cleared, or /observe-review <entry> close-out after a review. Not for deciding otherwise: a reopen session decides.
 argument-hint: "<entry> [close-out]"
 disable-model-invocation: true
 ---
@@ -24,9 +24,9 @@ before its spec is written (RFC-0028), and after its reopen, before its freeze
   Status stays Complete; each axis row lists the items that reopen, gap or
   depend on its decisions.
 - **Quote what you re-read.** Each finding cites the record's words, read
-  again before quoting. A claim about a backend, SDK or runtime is marked ✓
-  when confirmed by reading its source or running it in this session, else
-  `not run`. Searches run uncapped.
+  again before quoting. A claim about a storage system, SDK or runtime is marked ✓
+  when confirmed by reading its own source or running it in this session,
+  never through `src/remote_store/`, else `not run`. Searches run uncapped.
 
 ## Steps
 
@@ -57,11 +57,11 @@ before its spec is written (RFC-0028), and after its reopen, before its freeze
    this session: no finding, no suspicion, no audit. Take the union: one run
    misses what another finds (RFC-0028, Evidence).
 3. **Primed review**, yourself, while the readers run: per decision, does a
-   backend (Memory, Local, S3, SFTP, Azure), its SDK or the Python runtime on
-   a supported platform make it false, two-valued, or costly to keep? Read
-   dependency source in the hatch env, Python and platform docs, vendor docs,
-   and `src/remote_store/backends/` as evidence of what an SDK or the OS
-   does, never as the expected answer (RFC-0024 § R1).
+   storage system (local filesystem, S3, SFTP, Azure Blob), its SDK or the
+   Python runtime on a supported platform make it false, two-valued, or costly
+   to keep? Read dependency source in the hatch env, Python and platform docs
+   and vendor docs, or probe them; never 0.33's code, tests or specs
+   (RFC-0024 § R1, RFC-0031 F2).
 4. **Verify, write, commit.** Re-read every candidate, the readers' and
    yours, against what it cites, and drop what does not hold, or what an
    open item or an amending decision already covers (name which in this
