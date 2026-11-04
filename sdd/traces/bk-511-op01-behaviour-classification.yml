@@ -165,3 +165,41 @@ phases:
           SIO-001 disclaims seekability; SIO-008 promises a seekable read() where SEEKABLE_READ is
           declared; BE-021 promises no native exception leaks, as far as SIO-012's caught set reaches
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1205 --trace-block-only` at head dd65675.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1205 --trace-block-only"
+  pr: 1205
+  review_rounds: 2
+  submissions: 2
+  findings: 3
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.28
+    - round: 2
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 1, unknown: 1}
+      duration_hours: 0.18
+  by_file:
+    - path: "sdd/research/bk-511-op01-behaviour-classification/report.md"
+      findings: 3
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/2d3cd12d-fc9a-5a23-975e-07578aa00b3d.jsonl"
+    - "sdd/research/bk-511-op01-behaviour-classification/README.md"
+    - "sdd/research/bk-511-op01-behaviour-classification/chains.py"
+    - "sdd/research/bk-511-op01-behaviour-classification/local_pin.py"
+    - "sdd/traces/bk-511-op01-behaviour-classification.yml"
+  review_driven_commits:
+    - sha: "d7ef8a6"
+      subject: "BK-511: report § 7 records Azure's unmapped ServiceResponseError as a BE-021 leak"
+    - sha: "dd65675"
+      subject: "BK-511: cite SIO-008 alone for seekability; Azure gap no longer attributed to BUG-346"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
