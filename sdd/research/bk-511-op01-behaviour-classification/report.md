@@ -199,7 +199,7 @@ for SFTP's `SFTPFile`, each under its `_ErrorMappingStream` and
 |---|---|---|---|---|
 | C1 | a cancelled read leaves the stream open (RF2: `read(-1) !cancel`, then `readline() !cancel` raised the cancel, not `ValueError`) | D20, D50 | S27 | the same on all three: `KeyboardInterrupt`, stream not closed |
 | C2 | Failed is not sticky (RF3: after `read(-1) !fail`, `read1(5)` returned 5 bytes) | D16, D51, D52, D93, D117 | S20 | S3 boto3 and SFTP the same, the next read reaching the raw stream; Azure below |
-| C3 | an injected `OSError(EIO)` surfaces as `OSError` (RF6: `read(4) !fail`) | D27, D33, D34 (E13 disk I/O: the base category) | S18, S22 | mapped on all three: S3 boto3's classifier gives `RemoteStoreError`, the stub mapper `BackendUnavailable` |
+| C3 | an injected `OSError(EIO)` surfaces as `OSError` (RF6: `read(4) !fail`) | D27, D33, D34 (E13 disk I/O: the base category) | S18, S22 | an injected `OSError` is mapped on all three: S3 boto3's classifier gives `RemoteStoreError`, the stub mapper `BackendUnavailable`. Azure's own failure shape is not: azure-core's `ServiceResponseError` leaves `read()` unmapped (part 2), since `_AzureBinaryIO` converts nothing to `OSError` and Azure's wrapper has no `also_catch` (`_azure.py`'s `read()`) |
 | C4 | `close()` raises a release failure (K3: `close() !release_fail`) | D36 | S24 | SFTP's chain: `close()` returns, the wrapper suppressing the failure; S3 boto3's and Azure's raw close cannot fail here, not run |
 | C5 | `read(-2)` raises `ValueError` (RF4, RF7) | D6, D70 | S04 | `ValueError` on all three: CPython's `BufferedReader` |
 | C6, C7 | `seekable()` is `True` (Z1), `seek(0)` returns 0 (S1) | D70, D93, D153 | S13, S14 | S3 boto3 and SFTP as Local; Azure already as decided, `False` and `io.UnsupportedOperation` |
@@ -210,8 +210,10 @@ the spike's E8 analogue; D34 types E13's disk I/O as the base category, so
 C3 is the same gap either way: no library category. For the comparison's
 reading of 0.33: SIO-001 and SIO-008 promise a seekable `read()` stream on a
 backend that declares `SEEKABLE_READ`, as Local, SFTP and S3 boto3 do (C6,
-C7); BE-021 promises that no native exception leaks (C3, C4); no 0.33
-clause speaks to C1, C2 or C5.
+C7); BE-021 promises that no native exception leaks, and SIO-012 maps only
+the shapes a backend's wrapper catches (C3 and C4 on Local, and Azure's
+`ServiceResponseError` mid-stream, below); no 0.33 clause speaks to C1, C2 or
+C5.
 
 **A gap on Azure.** `chains.py`'s second part runs azure-storage-blob
 12.31.1's own `_ChunkIterator` under Azure's chain, its second chunk
@@ -219,7 +221,9 @@ download raising once (injected): that read raises, mapped for an `OSError`
 and unmapped for azure-core 1.41.0's `ServiceResponseError`, which the
 wrapper does not catch, and the next reads deliver the chunks after it: 16
 of 20 bytes, not a prefix of the content, with no error. D16 and D51 make
-that stream Failed, and D22 never delivers bytes after a gap. It is
+that stream Failed, and D22 never delivers bytes after a gap; the unmapped
+raise is against D27 and, in 0.33, BE-021, which Azure's caught set under
+SIO-012 does not reach. The gap is
 BUG-346's symptom through the SDK's iterator, which has already taken the
 failed chunk's offset, not through `BufferedReader.readline`. The first
 part's Azure C2, `b''` after the failure, is its fake generator ending at
