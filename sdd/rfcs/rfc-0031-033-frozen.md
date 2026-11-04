@@ -84,10 +84,17 @@ the design hook admits:
   (RFC-0024 R5) when the v1 clause differs from what 0.33 does, and nothing
   otherwise. This holds when 0.33 also breaks its own spec: the caller still
   meets a change.
-- **What design work recorded about 0.33 before this RFC**, BK-511's
-  [report § 7](../research/bk-511-op01-behaviour-classification/report.md) and
-  the OP-01 spike's Local gaps with BUG-346's C8, is input to D8 only, never to
-  a design decision.
+- **What design work recorded about 0.33 before this RFC** is input to D8
+  only, never to a design decision:
+    - BK-511's
+      [report § 7](../research/bk-511-op01-behaviour-classification/report.md),
+      and the OP-01 spike's Local gaps with BUG-346's C8;
+    - OP-01's open items whose evidence cites 0.33 code, found by
+      `Grep 'src/remote_store|_azure\.py|_sftp\.py|_memory\.py|_local\.py|_s3_boto3\.py|_sync_adapter\.py|0\.33'`
+      over [`OP-01.md`](../observe/records/OP-01.md) at `7eac8c5`: O29 (decided
+      by D73), O42, O76 and O88. Their 0.33 citations carry no weight. OP-01's
+      freeze-2 reopen, already running when this RFC was accepted, re-witnesses
+      each against the SDK or OS, or drops it. This RFC does not edit the record.
 
 ### F3. Items filed before this RFC
 

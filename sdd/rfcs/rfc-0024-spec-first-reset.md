@@ -40,8 +40,9 @@ frozen record before the bake-off.
 Amended by [RFC-0031](rfc-0031-033-frozen.md), accepted 2026-11-04: 0.33 is
 frozen. § Summary's last sentence, D2, D8, D9, R2's admission list, R3's class
 K, R4's first paragraph and R5's sentence on which differences get a row hold as RFC-0031 amends
-them: a difference found by spec work is evidence for D8's comparison and at
-most a break record, and only an issue a user reports becomes a new 0.33 BUG.
+them: the design half of a flow never reads 0.33, only D8's comparison does
+and makes a difference at most a break record, and only an issue a user reports
+becomes a new 0.33 BUG.
 
 It changes no spec format. [`SPEC-DESIGN.md`](../SPEC-DESIGN.md) and
 [ADR-0048](../adrs/0048-how-specs-are-designed.md) stay the authority for what

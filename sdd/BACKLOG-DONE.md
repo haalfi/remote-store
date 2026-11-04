@@ -26,7 +26,7 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
-- [x] **BUG-346 — After a `readline()` fails mid-stream, the next read silently skips every byte that was buffered** → **BK-485**, as evidence for OP-01's 0.33 comparison: filed from the spike rerun's C8, not by a user, and 0.33 is frozen (RFC-0031 F3). OP-01's D51 and D93 decide the Failed state for v1; one wrapper over every `read()` or one per backend is the spec flow's. Evidence: [BK-485's dossier](backlog/bk-485-spec-first-reset.md), § OP-01 stream spike.
+- [x] **BUG-346 — After a `readline()` fails mid-stream, the next read silently skips every byte that was buffered** → **BK-485**, as evidence for OP-01's 0.33 comparison: filed from the spike rerun's C8, not by a user, and 0.33 is frozen (RFC-0031 F3). It is input to that comparison only (RFC-0031 F2); OP-01's D51 and D93 already decide the Failed state for v1. Evidence: [BK-485's dossier](backlog/bk-485-spec-first-reset.md), § OP-01 stream spike.
 - [x] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes** → **BK-489**: its whole subject is the D3 steps, frozen by RFC-0025 D7. Dossier: [BK-390](backlog/bk-390-rfc-0017-spec-amendments.md).
 - [x] **BK-439 — `glob` on the kernel skips the store tree's flat rules, so a flat glob can match below an item** → **BK-489**: its whole subject is the kernel's `glob`, frozen by RFC-0025 D7.
 - [x] **BK-446 — No driver exercises the kernel's `glob`, because `MemoryDriver` declares no `GLOB`** → **BK-489**: its whole subject is the kernel and its Memory driver, frozen by RFC-0025 D7.
