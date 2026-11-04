@@ -40,6 +40,34 @@ orient:
   - items: [BK-496]
     verdict: unrelated
     evidence: "How a store is obtained and configured (its index entry); the stream slice touches none of it"
+  # Follow-up session (routing the not-decided behaviours, filing Local's gaps), oriented at 94a5bec
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      Its step 5 holds the destinations: the spec flow a note goes to (RFC-0030 C1), a reopen
+      a blocking finding needs (C4, the next freeze n + 1), and the 0.33 comparison, RFC-0024
+      D8's pass, where a difference becomes a break record or a 0.33 defect (R4, R5).
+  - items: [BUG-346]
+    verdict: constrains
+    evidence: >-
+      C8, not refiled. Its reader, io.BufferedReader, is read()'s on Local, SFTP, S3 boto3 and
+      Azure, the chain C1, C2, C5 to C7 run through; its open decision (one wrapper over every
+      read()) is the fix home C2 and C3 would share.
+  - items: [BK-469, BUG-334]
+    verdict: constrains
+    evidence: >-
+      Precedents for the filing class: BK-469 is D8's pass for spec 052, listing known
+      differences each to become a v1-breaks.md row or a 0.33 defect; BUG-334 files a raw
+      OSError Local leaks as a BE-021 defect.
+  - items: [BUG-310, BUG-312]
+    verdict: unrelated
+    evidence: >-
+      Azure and HTTP streams' Closed state and tell()/seek() through _ErrorMappingStream;
+      no C1 to C7 is about either. BUG-312's tell() on Azure read() is where D70's tell()
+      would next diverge, outside Local.
+  - items: [BK-506]
+    verdict: constrains
+    evidence: "RFC-0029 R4: the routing section is derived from the record, so it stays out of the trial's oracle sessions"
 phases:
   - id: orient
     name: Orient
