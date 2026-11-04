@@ -70,6 +70,11 @@ decisions:
   - sdd/decisions/48d1bf11-b496-5868-a622-53ce83917f68.jsonl
   - sdd/decisions/ac1debf0-811f-4bf4-9f01-d03e8f837d95.jsonl
   - sdd/decisions/c84c41bb-a04f-4c27-9136-ab26f7620fd8.jsonl
+  # The close-out of 2026-11-04 (RFC-0030 C2), after review 7: D164 to D167,
+  # answered in 48d1bf11 (19:43Z). Its choosing dialog was asked first in
+  # e5b55806 (18:32Z), unanswered after a worker restart, and again in
+  # 48d1bf11 (19:39Z).
+  - sdd/decisions/e5b55806-8089-4139-8ad0-91cbf1cde35d.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:

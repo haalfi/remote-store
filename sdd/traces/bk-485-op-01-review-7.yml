@@ -149,3 +149,42 @@ phases:
           and the notes O105 to O107, to be routed. Decided: O94 to O97;
           routed: O98 to O101
         outcome: ok
+  - id: close_out
+    name: Step 6, the close-out the maintainer chose (log 48d1bf11, 19:39Z)
+    steps:
+      # One dialog (48d1bf11, 19:40Z to 19:43Z), every recommendation
+      # adopted: D164 (O102, D117 holds on Closed), D165 (O103, a reason as
+      # D160), D166 (O104, size at open, NP10), D167 (O105, O106 routed;
+      # O107's 0.33 citations dropped from O29, O42, O76, O88).
+      - file: tmp/observe-review/c3_check.py
+        section: "observe-dialogs and observe-tables now against 6b1427b's record"
+        read_type: verify
+        extract: >-
+          Dialogs: 47 FAIL headers as before (D1 to D44, D100, D102, D107);
+          new lines D164 to D167 ok only. Tables: D166's NP10 table first
+          undeclared (one declaration and two NP10 citation findings),
+          declared as D41's ids table; re-run, nothing new against 6b1427b
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "D164 to D167 re-read against D6, D22, D41, D51, D52, D73, D117, D125, D138, D153, D154, D158 to D161; O29, O42, O76, O88"
+        read_type: verify
+        extract: >-
+          One correction of the close-out's own text: D166's check names
+          SFTP's procfs-like files, which its Local question did not reach,
+          left to the spec flow (not run). No other conflict. The
+          choosing dialog's option text gave "O102 as io per method" and
+          "would be routed, not re-witnessed" as examples; the close-out
+          dialog's own questions and answers decide
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O107 (step 5's verdict)"
+        read_type: verify
+        extract: >-
+          Can be frozen (tmp/observe-review/freeze_check.py over the item
+          texts, 107 items): 82 decided (O14 to O41, O43 to O45, O47 to O87,
+          O92 to O97, O102 to O104, O107); 10 routed to the spec flow with
+          no Flow done (O88 to O91, O98 to O101, O105, O106); 15 shared or
+          another entry's (O1 to O13, O42, O46), each naming what it blocks
+          in its text or by D108. Tag after merge:
+          observe/OP-01/freeze-2 (maintainer)
+        outcome: ok

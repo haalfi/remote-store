@@ -95,6 +95,13 @@ at = "OP-01/D41"
 kind = "ids"
 column = 1
 
+# Declared 2026-11-04, at the close-out: D166's one-row table is the row its Decision adds to
+# D41's register (NP10), with D41's columns.
+[[table]]
+at = "OP-01/D166"
+kind = "ids"
+column = 1
+
 [[table]]
 at = "OP-01/D43"
 kind = "register"
