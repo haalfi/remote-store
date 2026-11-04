@@ -85,18 +85,24 @@ phases:
           returns 8192 (O100); read1(), read1(-1), read1(0) at the end b''
           and readinto1 0 (O99)
         outcome: ok
-      - file: src/remote_store/backends/_sftp.py
-        section: "SFTPBackend.read, _sftp_handle_size; paramiko 5.1.0 BufferedFile.read, SFTPFile._read"
+      - file: pyproject.toml
+        section: "hatch env: paramiko 5.1.0 BufferedFile.read, SFTPFile._read; fsspec AbstractBufferedFile.read"
         read_type: verify
         extract: >-
-          The stream is a BufferedReader over SFTPFile with no size at open;
-          the end is learned from a CMD_READ answered with EOF, a request
-          that can fail (O94)
+          SFTPFile knows no size; the end is learned from a CMD_READ answered
+          with EOF, a request that can fail (O94). fsspec's read(0) returns
+          b'' without fetch, its size known at open (D157 and D158 hold on
+          S3)
         outcome: ok
-      - file: src/remote_store/backends/_s3.py
-        section: "read; fsspec AbstractBufferedFile.read"
-        read_type: verify
-        extract: "read(0) returns b'' without fetch; size known at open (D157 and D158 hold on S3)"
+      # src/remote_store/backends/_sftp.py, _s3.py and _memory.py were also
+      # read, as the skill then allowed. RFC-0031 F2 (754f94d, merged into
+      # this branch after the review's commit) gives those reads no weight:
+      # O94's citation of _sftp.py is removed in the merge, and no item rests
+      # on them.
+      - file: sdd/rfcs/rfc-0031-033-frozen.md
+        section: "F2"
+        read_type: gate
+        extract: "Design work never reads 0.33's code; SDK, OS and runtime evidence comes from their own source or a probe"
         outcome: ok
       # Primed candidates and verdicts:
       #   P1 D158's no-contact rule against its E4 sentence on Local and

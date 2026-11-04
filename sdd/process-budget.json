@@ -8,16 +8,16 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 316395,
+  "total": 316420,
   "files": {
-    "CLAUDE.md": 17882,
+    "CLAUDE.md": 17890,
     ".claude/output-styles/interview.md": 2534,
     ".claude/skills/audit/SKILL.md": 1465,
     ".claude/skills/drift/SKILL.md": 23927,
     ".claude/skills/fix-pr/SKILL.md": 14155,
     ".claude/skills/mutation/SKILL.md": 6137,
-    ".claude/skills/observe/SKILL.md": 6777,
-    ".claude/skills/observe-review/SKILL.md": 7788,
+    ".claude/skills/observe/SKILL.md": 6775,
+    ".claude/skills/observe-review/SKILL.md": 7799,
     ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5461,
     ".claude/skills/preview/SKILL.md": 955,
@@ -31,7 +31,7 @@
     ".claude/agents/extension-expert.md": 1670,
     ".claude/agents/reviewer.md": 970,
     ".claude/agents/sdd-expert.md": 1799,
-    ".claude/agents/store-backend-expert.md": 2104,
+    ".claude/agents/store-backend-expert.md": 2112,
     ".claude/agents/testing-expert.md": 1602,
     "sdd/CLAUDE-REFERENCE.md": 64668,
     "sdd/traces/_schema.yml": 31990
@@ -276,6 +276,12 @@
       "from": 316084,
       "to": 316395,
       "reason": "PR #1202 review: the close-out check names its failing result; non-blocking findings are notes"
+    },
+    {
+      "item": "BK-512",
+      "from": 316395,
+      "to": 316420,
+      "reason": "RFC-0031: the two Rule 3 copies say a ground-spec difference is at most a break record, not a 0.33 item; /observe-review's witness rule reads storage systems and SDKs, never src/remote_store/"
     }
   ]
 }
