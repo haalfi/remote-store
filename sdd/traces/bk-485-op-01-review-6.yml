@@ -11,9 +11,15 @@ audience:
   - contributor.process
   - library.maintainer
 discovery_followups: []
-# This review asked no dialog. The reopen's log, 394be2d5, went to the
-# /observe trace's decisions:, committed with the reopen's record (4fcbb03).
-decisions: []
+# The reopen's log, 394be2d5, went to the /observe trace's decisions:,
+# committed with the reopen's record (4fcbb03). This review's one dialog, the
+# next step after step 5, was asked twice: a worker restart left the first
+# asking unanswered in e1effe34; the second, in 48d1bf11 after RFC-0031's
+# merge, chose one reopen for O94 to O101 and the re-witnessing of O29, O42,
+# O76 and O88.
+decisions:
+  - sdd/decisions/e1effe34-107c-45f0-8f48-10138a980ef5.jsonl
+  - sdd/decisions/48d1bf11-b496-5868-a622-53ce83917f68.jsonl
 surprising_ripples: []
 co_shipped_items: []
 expected_ripples:
@@ -154,8 +160,9 @@ phases:
         section: "Open items O1 to O101"
         read_type: verify
         extract: >-
-          Not frozen. Items in the way: O94 to O97, for a reopen or a
-          close-out, and the notes O98 to O101, to be routed in it. Decided:
+          Not frozen. Items in the way: O94 to O97, and the notes O98 to
+          O101, to be routed, in one reopen (the maintainer's answer) that
+          also re-witnesses O29, O42, O76 and O88 (RFC-0031 F2). Decided:
           O14 to O41, O43 to O45, O47 to O87, O92, O93. Routed: O1 to O13,
           O42, O46, O88 to O91
         outcome: ok
