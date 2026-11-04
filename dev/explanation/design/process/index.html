@@ -8597,6 +8597,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfcs/rfc-0031-033-frozen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0031: RFC-0031: 0.33 is frozen; spec work files nothing against it
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12251,7 +12279,7 @@
 <ol>
 <li><strong>No code without a spec</strong>: every testable contract must have a spec section ID.</li>
 <li><a id="spec-test-traceability"></a><strong>No spec without tests</strong>: every spec section must have at least one test with <code>@pytest.mark.spec("ID")</code>.</li>
-<li><strong>The spec and its governing model are authoritative</strong>: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which <a href="#intent-attribution">Rule 7</a> qualifies: that makes the claim undecided, not the code right. Where a formal model bound to the code by a bridge governs a clause (<a href="../spec-design/#governing-layer"><code>SPEC-DESIGN.md</code> Rule 4</a>), that model is the clause's spec, as far as the bridge reaches. A spec in the reset's ground binds the code only once the flow implementing it begins; until then a difference from 0.33 is a break record or a 0.33 defect. A ground clause a binding spec incorporates by reference binds through that reference (<a href="../rfcs/rfc-0024-spec-first-reset/#r4-how-a-v1-spec-relates-to-033-code-and-to-spec-designmd">RFC-0024 § R4</a>).</li>
+<li><strong>The spec and its governing model are authoritative</strong>: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which <a href="#intent-attribution">Rule 7</a> qualifies: that makes the claim undecided, not the code right. Where a formal model bound to the code by a bridge governs a clause (<a href="../spec-design/#governing-layer"><code>SPEC-DESIGN.md</code> Rule 4</a>), that model is the clause's spec, as far as the bridge reaches. A spec in the reset's ground binds the code only once the flow implementing it begins; until then a difference from 0.33 is for that flow's 0.33 comparison to find, the one step that reads 0.33, and at most a break record there, never a 0.33 item: 0.33 is frozen, and only an issue a user reports becomes a new one (<a href="../rfcs/rfc-0031-033-frozen/">RFC-0031</a>). A ground clause a binding spec incorporates by reference binds through that reference (<a href="../rfcs/rfc-0024-spec-first-reset/#r4-how-a-v1-spec-relates-to-033-code-and-to-spec-designmd">RFC-0024 § R4</a>).</li>
 <li><strong>ADRs are immutable once Accepted</strong>: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.</li>
 <li><strong>IDs are stable</strong>: once assigned, a section ID never changes meaning. Deprecated sections are marked <code>[DEPRECATED]</code>, not removed, except a spec file RFC-0024 D7 deletes once superseded, whose IDs the ground register maps to their successors, and a spec file RFC-0025 freezes, which leaves master and whose IDs the register retires.</li>
 <li><a id="workflows"></a><strong>Workflows</strong>:<ul>
