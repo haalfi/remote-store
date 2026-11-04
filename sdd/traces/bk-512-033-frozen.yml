@@ -12,6 +12,9 @@ source_items:
 audience:
   - contributor.process
   - library.maintainer
+co_shipped_items:
+  # Absorbed into BK-485 (RFC-0031 F3); an absorbed close owes no trace of its own
+  - BUG-346
 expected_ripples:
   # Authority direction amended: rg --no-ignore --hidden -e 'code is wrong' -e 'spec is source of truth' CLAUDE.md .claude/ sdd/
   - CLAUDE.md
