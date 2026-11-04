@@ -2,11 +2,12 @@
 
 <!-- doc: repo-only -->
 
-**Date:** 2026-11-03
+**Date:** 2026-11-03; § 6 and § 7 2026-11-04
 **Backlog items:** BK-511, BK-485
-**Status:** Pilot and whole-record pass complete; routing the not-decided
-behaviours and filing Local's gaps follow. A point-in-time snapshot of the record tagged
-`observe/OP-01/freeze-1` (`a7de4e31`).
+**Status:** Complete: pilot, whole record, the not-decided behaviours routed
+(§ 6) and Local's gaps rerun at master as evidence, none filed (§ 7). A
+point-in-time snapshot of the record tagged `observe/OP-01/freeze-1`
+(`a7de4e31`).
 
 ---
 
@@ -154,12 +155,85 @@ What the whole record adds to the pilot:
 - **`environment` stays narrow:** 10 of its 11 clauses are a D43 variation
   point's deviation; C19 is the one portable assumption.
 
-## 6. Limits
+## 6. The not-decided behaviours, routed
+
+Under RFC-0030 C1, two of the seven behaviours block a freeze, four are
+notes for OP-01's spec flow, and one is an open item the record already
+routes. The record is frozen and not edited here: a blocking finding waits
+for a reopen, whose freeze takes the next number (C4), and BK-485's entry
+names it. Each verdict was read from the decisions in the table.
+
+| Clause | Behaviour | Verdict | Goes to | Deciding decisions |
+|---|---|---|---|---|
+| S05 | `read(0)` with bytes remaining | blocking: two things | a reopen | D6's Decision gives min(n, r), so `b''`, and says the bytes returned are "the whole content once `b''` is returned", so after `read(0)` a clause states that more bytes follow, or that none do. D155 settled the same question for `read1(0)` and an empty `readinto` and amends D78, D132 and D134 only, not D6 |
+| S16 | a read at the last byte, the end not yet observed, meets a storage failure or a cancellation | blocking: nothing | a reopen | D18's Exhausted is "at end"; D132, D148 and D155 set that cell's values, none says when a stream enters it. A stream that learns the end from a read returning nothing makes that read a transfer, which D16 and D51 (Failed) or D20 and D50 (Closed) govern; a stream that knows the size returns `b''`. The record does not say which a caller observes |
+| S17 | `chunks(0)` raises at the call, not at the first `next()` | note | the spec flow | D7 (a non-positive size is a caller error), D92 (argument checks first, in every state) and D117 ("`chunks(0)` on a Failed stream raises `ValueError`"): the call raises. A valid `chunks(n)` on a Closed or Failed stream raises at the call by D117 and D93's list |
+| S19 | a failed data read delivers no bytes; `tell()` is unchanged | note | the spec flow | D72 (the read "returns its full count (D6) or fails"), D93 (`tell()` is the bytes delivered) and D16 (no bytes after a gap) admit one reading. Local breaks it through C8 (BUG-346) |
+| S32 | an unclosed Exhausted or Failed stream warns when collected | note | the spec flow | D18: "dropping it unclosed releases it when collected (D17)" covers every state but Closed, and D17's adopted option releases with a `ResourceWarning`, as its source, CPython's file objects, does for any unclosed file |
+| S33 | a stream once its handle's lifetime ends | routed | OP-21's flow | `OP-01/O5`, `shared: Lifetime`; D108 has it block only the clause for D18's last column |
+| C06 | an open Local stream across a replace or delete on the same host delivers the old content | note | the spec flow's Local profile cell | D22 fails a read only when the backend can no longer serve the pinned content, D25 gives O3's E3 and E5 O2's rights, D64 limits the open descriptor to one host, D65 declares Windows' deviation. That a descriptor keeps the file is a backend fact: `local_pin.py`, Linux, Python 3.13.18, delivered all 16384 old bytes after `os.replace` and after `os.remove` |
+
+S17, S19 and S32 were `partly`, `implied` and `open` in `pilot.toml`. Each
+is a note because one reading of the deciding decisions fixes what a caller
+observes; the spec flow writes that clause and cites the spike's F5, F7 or
+F3. The classification files stay as classified.
+
+## 7. Local's gaps at master, and the other `read()` chains
+
+`conform.py` (freeze-1), rerun on master at `94a5bec` with Python 3.13.18,
+one run of 400 examples per mode, reproduces C1 to C7: plain Local RF4, RF7,
+Z1, S1; faults strict RF2, RF6, K1, K3, G1, Z2; faults protocol only RF2,
+RF3, K1, K3, G1, Z2. T1, C8's rule, did not diverge in this run (two of
+three in `rerun.md`). The faults are injected below the library
+(`../bk-485-op01-stream-spike/report.md` § 5). The 0.33 line is frozen, so
+none of these is filed as an item (the maintainer, 2026-11-04): each is
+evidence for BK-485 step 5's 0.33 comparison, which cites this section.
+
+`chains.py` runs each gap's call on `read()`'s other chains offline:
+S3 boto3's real `_S3RangeReader` with a fake client, Azure's real
+`_AzureBinaryIO` over a fake chunk iterator, and a seekable fake standing in
+for SFTP's `SFTPFile`, each under its `_ErrorMappingStream` and
+`io.BufferedReader`, faults injected in the fake.
+
+| # | Local at master (rule: shortest trace) | Decisions | Clauses | S3 boto3, Azure, SFTP chains |
+|---|---|---|---|---|
+| C1 | a cancelled read leaves the stream open (RF2: `read(-1) !cancel`, then `readline() !cancel` raised the cancel, not `ValueError`) | D20, D50 | S27 | the same on all three: `KeyboardInterrupt`, stream not closed |
+| C2 | Failed is not sticky (RF3: after `read(-1) !fail`, `read1(5)` returned 5 bytes) | D16, D51, D52, D93, D117 | S20 | S3 boto3 and SFTP the same, the next read reaching the raw stream; Azure below |
+| C3 | an injected `OSError(EIO)` surfaces as `OSError` (RF6: `read(4) !fail`) | D27, D33, D34 (E13 disk I/O: the base category) | S18, S22 | mapped on all three: S3 boto3's classifier gives `RemoteStoreError`, the stub mapper `BackendUnavailable` |
+| C4 | `close()` raises a release failure (K3: `close() !release_fail`) | D36 | S24 | SFTP's chain: `close()` returns, the wrapper suppressing the failure; S3 boto3's and Azure's raw close cannot fail here, not run |
+| C5 | `read(-2)` raises `ValueError` (RF4, RF7) | D6, D70 | S04 | `ValueError` on all three: CPython's `BufferedReader` |
+| C6, C7 | `seekable()` is `True` (Z1), `seek(0)` returns 0 (S1) | D70, D93, D153 | S13, S14 | S3 boto3 and SFTP as Local; Azure already as decided, `False` and `io.UnsupportedOperation` |
+
+C6 and C7 share one row: D70 decides both, and one cause, a seekable raw
+file, produces both. The strict mode counts the injected `EIO` as unavailable,
+the spike's E8 analogue; D34 types E13's disk I/O as the base category, so
+C3 is the same gap either way: no library category. For the comparison's
+reading of 0.33: SIO-001 and SIO-008 promise a seekable `read()` stream on a
+backend that declares `SEEKABLE_READ`, as Local, SFTP and S3 boto3 do (C6,
+C7); BE-021 promises that no native exception leaks (C3, C4); no 0.33
+clause speaks to C1, C2 or C5.
+
+**A gap on Azure.** `chains.py`'s second part runs azure-storage-blob
+12.31.1's own `_ChunkIterator` under Azure's chain, its second chunk
+download raising once (injected): that read raises, mapped for an `OSError`
+and unmapped for azure-core 1.41.0's `ServiceResponseError`, which the
+wrapper does not catch, and the next reads deliver the chunks after it: 16
+of 20 bytes, not a prefix of the content, with no error. D16 and D51 make
+that stream Failed, and D22 never delivers bytes after a gap. It is
+BUG-346's symptom through the SDK's iterator, which has already taken the
+failed chunk's offset, not through `BufferedReader.readline`. The first
+part's Azure C2, `b''` after the failure, is its fake generator ending at
+its raise, not the SDK.
+
+## 8. Limits
 
 The pilot had one author, the same who wrote the spike's rules; the whole
 record's four groups had one each, normalised and deduplicated by the pilot's
 author. The clauses are readings of the record, which governs. PR #1204's
 second review checked the counts and the dropped ids against the files, not
 each clause against the record. `local` is the spike's evidence, from Local with injected faults.
+§ 6's verdicts have the same author; § 7's other chains use the real
+wrappers and raw classes around fakes, with no network, and SFTP's
+`SFTPFile` is a stand-in.
 Derived from the record, so RFC-0029 R4 keeps it from BK-506's oracle
 sessions.

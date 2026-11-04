@@ -17,6 +17,9 @@ discovery_followups:
   - BUG-346
 decisions:
   - sdd/decisions/3f275077-1eeb-5b6f-a4a6-7377e26283e4.jsonl
+  # Routing and evidence: the first dialog (filing class) was dismissed; the maintainer then
+  # froze 0.33 for this work in prose (no item filed from it), and the second dialog was answered
+  - sdd/decisions/2d3cd12d-fc9a-5a23-975e-07578aa00b3d.jsonl
 orient:
   - items: [BK-485]
     verdict: constrains
@@ -119,3 +122,44 @@ phases:
         read_type: reference
         extract: "Behaviours stated only in a check or a reason, and original wordings a later decision contradicts; report § 5"
         outcome: misleading
+  - id: route
+    name: Route the not-decided behaviours
+    steps:
+      - file: sdd/rfcs/rfc-0030-observe-close-out.md
+        section: "C1, C4"
+        read_type: gate
+        extract: "Blocks when a clause would state something false, two things or nothing; a defect found later reopens, the next freeze n + 1"
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "D6, D7, D15 to D18, D20, D22, D25, D50 to D52, D64, D65, D70, D72, D92, D93, D108, D117, D132, D148, D155"
+        read_type: gate
+        extract: >-
+          S05 and S16 block (D6's two sentences on b''; no decision says when Exhausted is entered);
+          S17, S19, S32 and C06 are one-reading notes; S33 is O5's. report § 6
+        outcome: ok
+  - id: evidence
+    name: Local's gaps at master, and the other read() chains
+    steps:
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "R3 class K, R4, R5"
+        read_type: gate
+        extract: >-
+          A difference between a v1 decision and 0.33 is a break record or a 0.33 defect, never
+          judged against the record; the brief's "BUG- for defects against decided behaviour" did
+          not fit it, and the maintainer then froze 0.33 for this work altogether
+        outcome: ok
+      - file: sdd/research/bk-485-op01-stream-spike/freeze-1/conform.py
+        section: "run at 94a5bec"
+        read_type: reference
+        extract: "C1 to C7 reproduce; T1 (C8) not reached in this run"
+        outcome: ok
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream; read() of _s3_boto3.py, _azure.py, _sftp.py"
+        read_type: reference
+        extract: "All three end in io.BufferedReader over the wrapper; chains.py runs each gap there"
+        outcome: ok
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-001, SIO-008; 003 BE-021"
+        read_type: reference
+        extract: "0.33 promises a seekable read() where SEEKABLE_READ is declared and no native exception leaks"
+        outcome: ok

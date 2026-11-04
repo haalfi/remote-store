@@ -476,6 +476,16 @@ ships them.
 
 ## Unreleased
 
+- [x] **BK-511 — OP-01's decisions mix paths, forms and backends, so no list of its behaviours exists before spec work**
+  spec: — · effort: M · audience: library.maintainer, contributor.process
+  The frozen record split into 123 behaviour clauses along fixed facets (`check.py`), piloted on the stream lifecycle;
+  a behaviour needs up to six decisions, and 16 of the slice's deciding decisions lie outside its `Amends:` closure.
+  Its 7 not-decided behaviours are routed under RFC-0030 C1: S05 and S16 block, a reopen BK-485 names; S17, S19, S32
+  and C06 are notes for the spec flow; S33 stays `OP-01/O5`. Local's gaps C1 to C7, rerun at master, and the other
+  `read()` chains are evidence for BK-485's 0.33 comparison; 0.33 is frozen, so none is filed.
+  Research: [report](research/bk-511-op01-behaviour-classification/report.md). Trace:
+  [bk-511](traces/bk-511-op01-behaviour-classification.yml).
+
 - [x] **BK-505 — An `/observe` record's freeze has no stopping rule: the record-quality report's checks are neither adopted nor rejected**
   spec: — · effort: S · audience: contributor.process
   RFC-0030 (accepted) decides it, amending RFC-0029 R2 and RFC-0028 P3: only a finding that leaves what a caller
