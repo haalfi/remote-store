@@ -170,3 +170,76 @@ phases:
           My own F2 named an /observe session, a review and a spike as places that find 0.33
           differences, normalising the leak; rewritten as "0.33 is read at D8 only"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1207 --trace-block-only` at head 4839540.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1207 --trace-block-only"
+  pr: 1207
+  review_rounds: 7
+  submissions: 5
+  findings: 7
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.06
+    - round: 2
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.07
+    - round: 3
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.05
+    - round: 4
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.87
+    - round: 5
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.57
+  by_file:
+    - path: "sdd/rfcs/rfc-0031-033-frozen.md"
+      findings: 4
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+    - path: "sdd/rfcs/rfc-0024-spec-first-reset.md"
+      findings: 1
+  untouched_files:
+    - ".claude/agents/store-backend-expert.md"
+    - ".claude/skills/observe-review/SKILL.md"
+    - ".claude/skills/observe/SKILL.md"
+    - "CHANGELOG.md"
+    - "CLAUDE.md"
+    - "CONTRIBUTING.md"
+    - "sdd/000-process.md"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlog/bk-485-spec-first-reset.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/c51bda27-d121-5b99-9216-5f2363c5ac6e.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/rfcs/rfc-0025-freeze-kernel-line.md"
+    - "sdd/traces/bk-512-033-frozen.yml"
+  review_driven_commits:
+    - sha: "00ccb30"
+      subject: "BK-512: RFC-0031 amends R5's whole sentence, so a difference that is also a 0.33 defect gets a break row"
+    - sha: "7672afe"
+      subject: "BK-512: RFC-0031's D2/D9 row quotes D9's own words"
+    - sha: "2bd2423"
+      subject: "BK-512: the user-report rule scopes to new 0.33 items, so F3's kept K items stay fixable"
+    - sha: "151fabe"
+      subject: "BK-512: trace review block for PR #1207"
+    - sha: "7eac8c5"
+      subject: "BK-512: the design half of a flow never reads 0.33; only D8's comparison does"
+    - sha: "dc463b7"
+      subject: "BK-512: F2 lists OP-01's 0.33-sourced items for the freeze-2 reopen; BUG-346 is D8 input only"
+    - sha: "4839540"
+      subject: "BK-512: BK-485 records the freeze-2 reopen's re-witness of OP-01's 0.33-sourced items"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
