@@ -87,7 +87,7 @@ Failed state OP-01's D51 and D93 already decide for v1.
 | Clause | Becomes |
 |---|---|
 | RFC-0024 § Summary, last sentence | A difference between a v1 spec and 0.33 is evidence for the comparison and, there, a break record; never a defect in the v1 spec, and never a 0.33 item (F2). |
-| RFC-0024 D2, D9 and R2's admission list (from the cut on, RFC-0025 D5) | The fixes `release/0.33.x` takes (D2's and D9's "patch-rated fixes", R2's "bug fixes") are fixes of K items as F1 defines them. Floor raises, CI, docs and metadata are unchanged. |
+| RFC-0024 D2, D9 and R2's admission list (from the cut on, RFC-0025 D5) | The fixes `release/0.33.x` takes (D2's "patch-rated fixes", R2's "bug fixes"), and so D9's "0.33 patch from `release/0.33.x`", carry only fixes of K items as F1 defines them. Floor raises, CI, docs and metadata are unchanged. |
 | RFC-0024 D8 | "a difference becomes a break record or a 0.33 defect" reads "a difference becomes a break record or nothing" (F2). |
 | RFC-0024 R3, class K, with RFC-0025's row | Holds only issues F1 admits. Its disposition is RFC-0025's row's, the patch rating confirmed by the maintainer. |
 | RFC-0024 R4, first paragraph | "a break record or a 0.33 defect (D8)" reads "evidence for D8's comparison, where it may become a break record" (F2). |
