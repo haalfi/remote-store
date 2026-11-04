@@ -1,0 +1,139 @@
+id: BK-512
+title: "Spec work still files 0.33 defects, though 0.33's code and specs are frozen"
+trigger: >-
+  After BK-511 (PRs #1205, #1206), the maintainer froze 0.33 in prose
+  (decision log 2d3cd12d, "Freeze rule": amend RFC-0024): no new issue is filed
+  against 0.33 and no BUG comes from spec or observe work; only a user-reported
+  issue is a 0.33 BUG. RFC-0024 D8, R3 class K, R4 and R5, 000-process Rule 3
+  and BK-469 still turned a v1/0.33 difference into "a 0.33 defect" or a K item.
+source_items:
+  - BK-512
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+expected_ripples:
+  # Authority direction amended: rg --no-ignore --hidden -e 'code is wrong' -e 'spec is source of truth' CLAUDE.md .claude/ sdd/
+  - CLAUDE.md
+  - .claude/agents/store-backend-expert.md
+  - sdd/BACKLOG-DONE.md
+decisions:
+  - sdd/decisions/2d3cd12d-fc9a-5a23-975e-07578aa00b3d.jsonl
+  # Scope dialog: vehicle RFC-0031, evidence then a break row, maintainer rates, BUG-346 absorbed
+  - sdd/decisions/c51bda27-d121-5b99-9216-5f2363c5ac6e.jsonl
+orient:
+  # Found at b53bebc by:
+  #   hatch run backlog-find "0\.33 defect" --open        -> BK-469
+  #   hatch run backlog-find "K item" --open              -> none
+  #   hatch run backlog-find "release/0\.33" --open       -> BK-469
+  #   the same three with --dossiers                      -> none
+  #   hatch run backlog-find "class K|RFC-0024 R3|RFC-0025 R3" --open -> BUG-342, BUG-343
+  #   Grep "0\.33 defect|K item|class K|release/0\.33" and
+  #   "break record|0\.33 defect|K defect" over the repo, decisions/, traces/ and research/ excluded
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      Its step 5 runs the 0.33 comparison (RFC-0024 D8) and its index entry already says
+      "0.33 frozen, nothing filed" for BK-511 report § 7's evidence. The rule changes what
+      that pass may produce; the amendment must not change any recorded decision.
+  - items: [BK-469]
+    verdict: constrains
+    evidence: >-
+      Index entry: each known difference "becomes a sdd/v1-breaks.md row or a 0.33 defect,
+      read from release/0.33.x's suite". Both halves are stale: the defect outcome is what
+      the rule removes, and RFC-0025 D5 made master's suite the 0.33 record. Swept here.
+  - items: [BUG-346]
+    verdict: constrains
+    evidence: >-
+      Filed from the OP-01 spike's rerun (C8, BK-511 trace discovery_followups), not by a
+      user, before the rule; its open decision ("one wrapper over every read(), or per
+      backend; with BK-485's spec") is D8 comparison material. Fate is the maintainer's (d).
+  - items: [BUG-342, BUG-343, BUG-341]
+    verdict: constrains
+    evidence: >-
+      Open K items cite "RFC-0025 R3 class K" (BUG-342, BUG-343) or RFC-0024 R3's K table
+      (BUG-341); each was reproduced on v0.33.0 by kernel-era work, not reported by a user.
+      The rule speaks of new issues, so whether these stay is a scope boundary to state.
+  - items: [BK-489]
+    verdict: unrelated
+    evidence: >-
+      D10's host (bk-489 dossier): reviving or rewriting the frozen kernel line. It reads
+      "candidate break record" for kernel-line breaks, which the rule leaves as is.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "Summary, R1 D1/D2/D8/D9, R2, R3, R4, R5, Alternatives"
+        read_type: gate
+        extract: >-
+          Summary, D8, R4 and R5 make a v1/0.33 difference "a break record or a 0.33 defect";
+          R3 class K "Stays open. Fixed master first"; R5 "one that is a 0.33 defect becomes
+          a K item instead"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0025-freeze-kernel-line.md
+        section: "D5, What changes in RFC-0024 and elsewhere"
+        read_type: gate
+        extract: >-
+          Already amends D2, D8, D9, R2, R3 class K, R4 and R5 while master's code is 0.33:
+          release/0.33.x retired, patches tagged from master, class K fixed on master when
+          patch-rated. Any new amendment must layer on these rows, not on RFC-0024's text
+        outcome: ok
+      - file: sdd/decisions/2d3cd12d-fc9a-5a23-975e-07578aa00b3d.jsonl
+        section: "Freeze rule, Next"
+        read_type: gate
+        extract: >-
+          "Yes, amend RFC-0024": R3 class K and R5 get the rule. The rule's wording was given
+          in prose and is not in the log's questions verbatim
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rule 3"
+        read_type: gate
+        extract: "a difference from 0.33 is a break record or a 0.33 defect"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "§ Release, lead paragraph"
+        read_type: reference
+        extract: >-
+          release/0.33.x appears only as the future cut at the first v1 change to src/; patch
+          fixes from master. Nothing there files items from spec work
+        outcome: ok
+      - file: .claude/skills
+        section: "observe, observe-review, ship, pr: Grep for 0.33, break record, D8, defect"
+        read_type: reference
+        extract: >-
+          No skill promises a K item or a 0.33 BUG; observe's only 0.33 line says a check on
+          0.33's code "shows what an SDK or OS does, never the answer"
+        outcome: ok
+      - file: .claude/agents/store-backend-expert.md
+        section: "CONSTRAINTS"
+        read_type: reference
+        extract: "Rule 3 copy: 'a break record or a 0.33 defect'; CLAUDE.md principle 5 holds the same copy"
+        outcome: ok
+      - file: sdd/research/bk-511-op01-behaviour-classification/report.md
+        section: "§ 7"
+        read_type: reference
+        extract: "Azure's chunk gap recorded as evidence only: 'With 0.33 frozen it is recorded here only'"
+        outcome: ok
+  - id: write
+    name: RFC-0031 and the sweep
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Authority direction amended; Backlog item touched (pre-work and detailed)"
+        read_type: gate
+        extract: >-
+          The rg command finds the live Rule 3 copies: CLAUDE.md principle 5 and
+          store-backend-expert.md CONSTRAINTS; RFCs, research and traces are records and skipped
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works: Completing work, Absorbed"
+        read_type: gate
+        extract: >-
+          Absorbed: host sub-bullet "(was BUG-346, absorbed here)" plus a § Absorbed entry; sweep
+          rg -n 'BUG-346' and fix present-tense claims only
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "§ Release"
+        read_type: gate
+        extract: "Gains the freeze sentence without tracker IDs (published prose, ripple-check Tracker ID row)"
+        outcome: ok

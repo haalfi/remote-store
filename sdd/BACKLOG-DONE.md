@@ -26,6 +26,7 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
+- [x] **BUG-346 — After a `readline()` fails mid-stream, the next read silently skips every byte that was buffered** → **BK-485**, as evidence for OP-01's 0.33 comparison: filed from the spike rerun's C8, not by a user, and 0.33 is frozen (RFC-0031 F3). OP-01's D51 and D93 decide the Failed state for v1; one wrapper over every `read()` or one per backend is the spec flow's. Evidence: [BK-485's dossier](backlog/bk-485-spec-first-reset.md), § OP-01 stream spike.
 - [x] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes** → **BK-489**: its whole subject is the D3 steps, frozen by RFC-0025 D7. Dossier: [BK-390](backlog/bk-390-rfc-0017-spec-amendments.md).
 - [x] **BK-439 — `glob` on the kernel skips the store tree's flat rules, so a flat glob can match below an item** → **BK-489**: its whole subject is the kernel's `glob`, frozen by RFC-0025 D7.
 - [x] **BK-446 — No driver exercises the kernel's `glob`, because `MemoryDriver` declares no `GLOB`** → **BK-489**: its whole subject is the kernel and its Memory driver, frozen by RFC-0025 D7.
@@ -475,6 +476,13 @@ ships them.
 ---
 
 ## Unreleased
+
+- [x] **BK-512 — Spec work still files 0.33 defects, though 0.33's code and specs are frozen**
+  spec: — · effort: S · audience: contributor.process, library.maintainer
+  RFC-0031 (accepted) amends RFC-0024 and RFC-0025: only an issue a user of a released 0.33 version reports becomes a
+  0.33 BUG, its patch rating confirmed by the maintainer; a difference spec work finds is evidence for D8's comparison
+  and at most a `v1-breaks.md` row. `000-process.md` Rule 3, its two agent-facing copies, `CONTRIBUTING.md` § Release
+  and BK-469 say so; BUG-346 is absorbed into BK-485 as evidence. Trace: [bk-512](traces/bk-512-033-frozen.yml).
 
 - [x] **BK-511 — OP-01's decisions mix paths, forms and backends, so no list of its behaviours exists before spec work**
   spec: — · effort: M · audience: library.maintainer, contributor.process

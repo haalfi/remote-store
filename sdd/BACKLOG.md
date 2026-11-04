@@ -325,14 +325,6 @@ failure it was.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-- [ ] **BUG-346 — After a `readline()` fails mid-stream, the next read silently skips every byte that was buffered**
-  spec: — · effort: S · audience: user.api
-  CPython's `io.BufferedReader.readline` discards its undelivered buffer when the raw read raises: 20580 bytes,
-  `readinto(6)`, a failing `readline()`, the next `read()` resumes at 8192, an 8186-byte gap, no error (`readline_loss.py`
-  case 2, fake raw, 8 KiB buffer; up to the buffer size, so 1 MiB on S3 boto3, `_s3_boto3.py:94`, not run). This reader is
-  `read()`'s on SFTP, S3 boto3, Azure (`Grep BufferedReader\(`) and Local (`open(..., "rb")`, `_local.py:228`).
-  OP-01 D51, D93 decide Failed (spike C8). Open decision: one wrapper over every `read()`, or per backend; with BK-485's spec.
-
 - [ ] **BUG-341 — A returned `FileInfo.metadata` is the stored file's own dict, and `copy` shares it**
   spec: BE-019 · effort: S · audience: user.api
   On `Store(MemoryBackend())`, setting a key on `get_file_info("a.txt").metadata` changes the
@@ -529,8 +521,8 @@ no clause of the contract ships unexercised.
   Specs 001 to 050 mix what a caller observes with how 0.33 achieves it. RFC-0024 binds the reset (§ 9 steps 1, 2);
   step 3 built `/observe` and `sdd/observe/` (test runs in the dossier); step 4 is spec 052, 4b spec 053 (BK-493).
   Step 5's `/observe OP-01` wrote its [record](observe/records/OP-01.md), `/observe-review` (RFC-0028) checked it, and
-  RFC-0029 orders the rest: a table check (BK-504, run), the reopen (run: D45 to D80 decide O14 to O45 bar O42), the review's re-run (run: O47 to O64), a second reopen (run: D81 to D113), its re-run (run: O65 to O72), two more reopens and re-runs (run: D114 to D150, O73 to O91), RFC-0030's close-out (run: D151 to D156), a freeze (run: tag `observe/OP-01/freeze-1` on PR #1202's merge, a7de4e31d), a reopen for two behaviours that block under RFC-0030 C1, `read(0)` mid-stream and a failure at the last byte (BK-511's [report § 6](research/bk-511-op01-behaviour-classification/report.md), clauses S05, S16; its freeze is freeze-2), then
-  the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: that reopen; step 5's spec, model, profile tables and 0.33 comparison, whose stream evidence is that report's § 7 (Local's C1 to C7 at master, the other `read()` chains, an Azure gap; 0.33 frozen, nothing filed); step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; O42 and O46 are for other entries' sessions, and the notes O88 to O91 and BK-511's S17, S19, S32 and C06 for OP-01's spec flow.
+  RFC-0029 orders the rest: a table check (BK-504, run), the reopen (run: D45 to D80 decide O14 to O45 bar O42), the review's re-run (run: O47 to O64), a second reopen (run: D81 to D113), its re-run (run: O65 to O72), two more reopens and re-runs (run: D114 to D150, O73 to O91), RFC-0030's close-out (run: D151 to D156), a freeze (run: tag `observe/OP-01/freeze-1` on PR #1202's merge, a7de4e31d), a reopen for two behaviours that block under RFC-0030 C1, `read(0)` mid-stream and a failure at the last byte (BK-511's [report § 6](research/bk-511-op01-behaviour-classification/report.md), clauses S05, S16; its freeze is freeze-2), then the spec beside OP-01's trial (BK-506), which precedes step 6's bake-off. Not done: that reopen; step 5's spec, model, profile tables and 0.33 comparison, whose stream evidence is that report's § 7 (Local's C1 to C7 at master, the other `read()` chains, an Azure gap; 0.33 frozen, nothing filed); step 6. Open decision: § 8's open points 2 to 4 and 11 (D10 is BK-489's); where the record's `shared:` open items land; O42 and O46 are for other entries' sessions, and the notes O88 to O91 and BK-511's S17, S19, S32 and C06 for OP-01's spec flow.
+  - **(was BUG-346, absorbed here)** 0.33 evidence (RFC-0031 F3): after a failed `readline()`, `read()`'s `io.BufferedReader` skips its buffer (spike C8); one wrapper or per backend is the spec flow's.
   Detail: [dossier](backlog/bk-485-spec-first-reset.md)
 
 - [ ] **BK-502 — A reopen's ground-conflict route and `Flow done` have never run, so their remaining gaps surface only in the first ground reopen**
@@ -806,7 +798,7 @@ give them a way to absorb.
   ν climbs; at `7491289` `Store` took `"\ud800"` (Memory stored it, Local leaked `UnicodeEncodeError`)
   and Local leaked `OSError` [Errno 36] for a 300-character name; on windows-latest at `74271f9c4`
   Local stored `a `, `a.`, `d/x. ` and `a./b` under stripped names. Each becomes a `sdd/v1-breaks.md`
-  row or a 0.33 defect, read from `release/0.33.x`'s suite. Open decision: none.
+  row or nothing, read from the 0.33 record (RFC-0025 D5); 0.33 is frozen, none is filed (RFC-0031). Open decision: none.
 
 - [ ] **BK-490 — The key model's decisions on the root, parents and child stores have no flow, so 0.33's sections stand**
   spec: PATH-010, PATH-015, CHILD-001, CHILD-003, ERR-003, ERR-005 · effort: M · audience: user.api, library.maintainer

@@ -37,6 +37,12 @@ reopen and a freeze before the spec, and every v1 reference model two test
 rules, step 5 their first use; step 6 runs a faithfulness trial on OP-01's
 frozen record before the bake-off.
 
+Amended by [RFC-0031](rfc-0031-033-frozen.md), accepted 2026-11-04: 0.33 is
+frozen. § Summary's last sentence, D2, D8, D9, R2's admission list, R3's class
+K, R4's first paragraph and R5's sentence on K items hold as RFC-0031 amends
+them: a difference found by spec work is evidence for D8's comparison and at
+most a break record, and only an issue a user reports becomes a 0.33 BUG.
+
 It changes no spec format. [`SPEC-DESIGN.md`](../SPEC-DESIGN.md) and
 [ADR-0048](../adrs/0048-how-specs-are-designed.md) stay the authority for what
 a spec states and the form it takes, with one bounded exception in § R4. The
