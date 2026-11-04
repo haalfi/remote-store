@@ -5,7 +5,7 @@
 Accepted, 2026-11-04, by the maintainer. Tracked as **BK-512**, which it
 decides. Amends [RFC-0024](rfc-0024-spec-first-reset.md) § Summary's last
 sentence, R1's D2, D8 and D9 rows, R2's admission list, R3's class K, R4's
-first paragraph and R5's sentence on K items; and
+first paragraph and R5's sentence on which differences get a row; and
 [RFC-0025](rfc-0025-freeze-kernel-line.md)'s row for R3, class K (§ What
 changes in RFC-0024 and elsewhere). Decisions: the rule and its vehicle in
 decision log `sdd/decisions/2d3cd12d-fc9a-5a23-975e-07578aa00b3d.jsonl`
@@ -87,11 +87,11 @@ Failed state OP-01's D51 and D93 already decide for v1.
 | Clause | Becomes |
 |---|---|
 | RFC-0024 § Summary, last sentence | A difference between a v1 spec and 0.33 is evidence for the comparison and, there, a break record; never a defect in the v1 spec, and never a 0.33 item (F2). |
-| RFC-0024 D2, D9 and R2's admission list (from the cut on, RFC-0025 D5) | `release/0.33.x`'s "bug fixes" are fixes of K items as F1 defines them. Floor raises, CI, docs and metadata are unchanged. |
+| RFC-0024 D2, D9 and R2's admission list (from the cut on, RFC-0025 D5) | The fixes `release/0.33.x` takes (D2's and D9's "patch-rated fixes", R2's "bug fixes") are fixes of K items as F1 defines them. Floor raises, CI, docs and metadata are unchanged. |
 | RFC-0024 D8 | "a difference becomes a break record or a 0.33 defect" reads "a difference becomes a break record or nothing" (F2). |
 | RFC-0024 R3, class K, with RFC-0025's row | Holds only issues F1 admits. Its disposition is RFC-0025's row's, the patch rating confirmed by the maintainer. |
 | RFC-0024 R4, first paragraph | "a break record or a 0.33 defect (D8)" reads "evidence for D8's comparison, where it may become a break record" (F2). |
-| RFC-0024 R5, "one that is a 0.33 defect becomes a K item instead" | Withdrawn: D8's pass files no K item (F2). |
+| RFC-0024 R5, "D8's pass adds a row for each difference that is not a 0.33 defect; one that is a 0.33 defect becomes a K item instead" | Reads "D8's pass adds a row for each difference": one that is also a 0.33 defect gets a row too, and no K item (F2). |
 
 RFC-0024 and RFC-0025 each get an "Amended by RFC-0031" line; their text is
 the record and is not rewritten.
