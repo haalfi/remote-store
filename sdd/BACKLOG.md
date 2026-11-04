@@ -327,11 +327,11 @@ no clause of the contract ships unexercised.
 
 - [ ] **BUG-346 — After a `readline()` fails mid-stream, the next read silently skips every byte that was buffered**
   spec: — · effort: S · audience: user.api
-  CPython's `io.BufferedReader.readline` discards its undelivered buffer when the raw read raises: on 20580 bytes,
-  `readinto(6)`, a failing `readline()`, the next `read()` resumes at 8192, an 8186-byte gap, no error
-  (`readline_loss.py` case 2, a fake raw, so any raw; at an item's end, case 1, a short clean end). Local, SFTP, S3 boto3, Azure
-  return this reader (`Grep BufferedReader\(` over `src/remote_store`). OP-01 D51 and D93 decide Failed (spike
-  C8). Open decision: one wrapper over every `read()`, or a fix per backend; before or with BK-485's spec.
+  CPython's `io.BufferedReader.readline` discards its undelivered buffer when the raw read raises: 20580 bytes,
+  `readinto(6)`, a failing `readline()`, the next `read()` resumes at 8192, an 8186-byte gap, no error (`readline_loss.py`
+  case 2, fake raw, 8 KiB buffer; up to the buffer size, so 1 MiB on S3 boto3, `_s3_boto3.py:94`, not run). This reader is
+  `read()`'s on SFTP, S3 boto3, Azure (`Grep BufferedReader\(`) and Local (`open(..., "rb")`, `_local.py:228`).
+  OP-01 D51, D93 decide Failed (spike C8). Open decision: one wrapper over every `read()`, or per backend; with BK-485's spec.
 
 - [ ] **BUG-341 — A returned `FileInfo.metadata` is the stored file's own dict, and `copy` shares it**
   spec: BE-019 · effort: S · audience: user.api

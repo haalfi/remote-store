@@ -46,8 +46,8 @@ path, and seven behaviours are not decided, six of them the pilot's.
 From `check.py --pilot` on the frozen record, with § 5's facet decisions
 applied. The pilot as first classified (`596e79d87`) differs in four
 fields only (a field-by-field comparison of the two `pilot.toml`): the
-trigger of 9 clauses (S16, S18, S19, S22 read `E8`, now D96's stream-read
-rows; S24 `E8`, now E8 and E13; S27 to S29 `Runtime`, now E14; S30 `O2`,
+trigger of 9 clauses (S18, S19, S22 read `E8`, now D96's stream-read rows;
+S16 `E8`, now those rows and E14; S24 `E8`, now E8 and E13; S27 to S29 `Runtime`, now E14; S30 `O2`,
 now E1 and E2), the state of S01, S02 (`open-call`, now `none`) and S16 (`Exhausted`, now
 `Open`, as its `given` states; F10 asks the rest), S33's gap (none, now
 `OP-01/O5`), and `local` on S05, S16 and S32 (`pass`, now `untested`: Local
