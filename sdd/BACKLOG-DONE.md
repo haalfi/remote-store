@@ -480,8 +480,9 @@ ships them.
 - [x] **BK-512 — Spec work still files 0.33 defects, though 0.33's code and specs are frozen**
   spec: — · effort: S · audience: contributor.process, library.maintainer
   RFC-0031 (accepted) amends RFC-0024 and RFC-0025: only an issue a user of a released 0.33 version reports becomes a
-  new 0.33 BUG, its patch rating confirmed by the maintainer; a difference spec work finds is evidence for D8's comparison
-  and at most a `v1-breaks.md` row. `000-process.md` Rule 3, its two agent-facing copies, `CONTRIBUTING.md` § Release
+  new 0.33 BUG, its patch rating confirmed by the maintainer; the design half of a flow never reads 0.33, and D8's
+  comparison makes a difference at most a `v1-breaks.md` row. `000-process.md` Rule 3, its two agent-facing copies,
+  `CONTRIBUTING.md` § Release, `/observe-review`'s and `/observe`'s witness rule (SDK or OS, never `src/remote_store/`)
   and BK-469 say so; BUG-346 is absorbed into BK-485 as evidence. Trace: [bk-512](traces/bk-512-033-frozen.yml).
 
 - [x] **BK-511 — OP-01's decisions mix paths, forms and backends, so no list of its behaviours exists before spec work**

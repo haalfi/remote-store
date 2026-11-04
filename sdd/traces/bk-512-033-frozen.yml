@@ -15,6 +15,12 @@ audience:
 co_shipped_items:
   # Absorbed into BK-485 (RFC-0031 F3); an absorbed close owes no trace of its own
   - BUG-346
+surprising_ripples:
+  # After review: the maintainer asked why design work relates to 0.33 at all; the leak was in the
+  # skills, which no Authority-direction rg term reaches ("as evidence of what an SDK or the OS does")
+  - .claude/skills/observe-review/SKILL.md
+  - .claude/skills/observe/SKILL.md
+  - sdd/process-budget.json
 expected_ripples:
   # Authority direction amended: rg --no-ignore --hidden -e 'code is wrong' -e 'spec is source of truth' CLAUDE.md .claude/ sdd/
   - CLAUDE.md
@@ -140,52 +146,27 @@ phases:
         read_type: gate
         extract: "Gains the freeze sentence without tracker IDs (published prose, ripple-check Tracker ID row)"
         outcome: ok
-review:
-  # Derived by `hatch run ship-report 1207 --trace-block-only` at head 2bd2423.
-  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
-  # section review: RFC-0015 D4 makes this script the only producer.
-  derivation: "hatch run ship-report 1207 --trace-block-only"
-  pr: 1207
-  review_rounds: 3
-  submissions: 3
-  findings: 3
-  by_round:
-    - round: 1
-      findings: 1
-      origin: {original: 1}
-      triage: {must-fix: 1}
-      duration_hours: 0.06
-    - round: 2
-      findings: 1
-      origin: {loop-introduced: 1}
-      triage: {must-fix: 1}
-      duration_hours: 0.07
-    - round: 3
-      findings: 1
-      origin: {original: 1}
-      triage: {must-fix: 1}
-      duration_hours: 0.05
-  by_file:
-    - path: "sdd/rfcs/rfc-0031-033-frozen.md"
-      findings: 3
-  untouched_files:
-    - ".claude/agents/store-backend-expert.md"
-    - "CHANGELOG.md"
-    - "CLAUDE.md"
-    - "CONTRIBUTING.md"
-    - "sdd/000-process.md"
-    - "sdd/BACKLOG-DONE.md"
-    - "sdd/BACKLOG.md"
-    - "sdd/backlogid.json"
-    - "sdd/decisions/c51bda27-d121-5b99-9216-5f2363c5ac6e.jsonl"
-    - "sdd/rfcs/rfc-0024-spec-first-reset.md"
-    - "sdd/rfcs/rfc-0025-freeze-kernel-line.md"
-    - "sdd/traces/bk-512-033-frozen.yml"
-  review_driven_commits:
-    - sha: "00ccb30"
-      subject: "BK-512: RFC-0031 amends R5's whole sentence, so a difference that is also a 0.33 defect gets a break row"
-    - sha: "7672afe"
-      subject: "BK-512: RFC-0031's D2/D9 row quotes D9's own words"
-    - sha: "2bd2423"
-      subject: "BK-512: the user-report rule scopes to new 0.33 items, so F3's kept K items stay fixable"
-  ci: {verdict: GREEN, failed: 0, pending: 0}
+  - id: design_half
+    name: The design half never reads 0.33 (after the maintainer's question)
+    steps:
+      - file: sdd/observe/ground-register.md
+        section: "lead paragraph"
+        read_type: gate
+        extract: >-
+          "0.33's code, tests and specs 001 to 050 never" join the ground; the repo already said it,
+          but only for what the design hook admits, not for a spike's or a review's evidence
+        outcome: ok
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Rules (the ✓ rule), step 3 Primed review"
+        read_type: gate
+        extract: >-
+          Step 3 read src/remote_store/backends/ "as evidence of what an SDK or the OS does", and
+          /observe's reopen step cited such a ✓: the route by which 0.33 code reached design work
+        outcome: misleading
+      - file: sdd/rfcs/rfc-0031-033-frozen.md
+        section: "F2 as first written"
+        read_type: reference
+        extract: >-
+          My own F2 named an /observe session, a review and a spike as places that find 0.33
+          differences, normalising the leak; rewritten as "0.33 is read at D8 only"
+        outcome: ok

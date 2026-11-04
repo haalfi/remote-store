@@ -9,16 +9,16 @@ first paragraph and R5's sentence on which differences get a row; and
 [RFC-0025](rfc-0025-freeze-kernel-line.md)'s row for R3, class K (§ What
 changes in RFC-0024 and elsewhere). Decisions: the rule and its vehicle in
 decision log `sdd/decisions/2d3cd12d-fc9a-5a23-975e-07578aa00b3d.jsonl`
-("Freeze rule": amend RFC-0024), the four questions below in
-`sdd/decisions/c51bda27-d121-5b99-9216-5f2363c5ac6e.jsonl`.
+("Freeze rule": amend RFC-0024), the scope questions below in
+`sdd/decisions/c51bda27-d121-5b99-9216-5f2363c5ac6e.jsonl`, F2's design-half
+rule among them.
 
 ## Summary
 
-**0.33's code and specs 001 to 050 are frozen. No item is filed against 0.33
-from spec, observe, spike, audit or review work; only an issue a user of a
-released 0.33 version reports becomes a new 0.33 BUG.** A difference between v1
-and 0.33 that such work finds is evidence for its flow's 0.33 comparison
-(RFC-0024 D8), and there a break record, never a 0.33 item.
+**0.33's code and specs 001 to 050 are frozen. The design half of a flow never
+reads them; only the flow's 0.33 comparison (RFC-0024 D8), after the spec, does,
+and a difference it finds is at most a break record. Only an issue a user of a
+released 0.33 version reports becomes a new 0.33 BUG.**
 
 ## Motivation
 
@@ -38,7 +38,10 @@ The repo said the opposite, in the places the trace's orient commands found
 - BUG-346 was filed from the OP-01 spike's rerun (C8), before the rule.
 
 A session reading these files files 0.33 BUGs from every spec flow, each a fix
-to code v1 replaces.
+to code v1 replaces. They came from design work reading 0.33 at all, though the
+ground excludes it: the OP-01 spike ran its checks against `LocalBackend`, and
+`/observe-review` step 3 read `src/remote_store/backends/` "as evidence of what
+an SDK or the OS does", which `/observe`'s reopen step cited as a ✓.
 
 ## Proposal
 
@@ -57,22 +60,34 @@ its fix:
 - **minor or higher:** a candidate break for its operation's flow, as
   RFC-0025's row for R2's breaking-fix rule says.
 
-Spec, observe, spike, audit and review work, and a maintainer's own probe,
-file no item against 0.33. Rule 3's "the code is wrong" still describes 0.33
+Nothing else files an item against 0.33: not the design half of a flow, which
+never reads 0.33 (F2), nor D8's comparison, an audit, a review or a
+maintainer's own probe. Rule 3's "the code is wrong" still describes 0.33
 code that breaks its own spec; it no longer makes a backlog item of it.
 
-### F2. A difference found by spec work
+### F2. 0.33 is read at D8 only
 
-**It is evidence, then at most a break record.**
+**The design half of a flow, from its `/observe` session to its spec, never
+reads 0.33's code, tests or specs 001 to 050; D8's comparison, after the spec,
+is the one step that does.** RFC-0024 § R1 and the
+[ground register](../observe/ground-register.md) already keep them out of the
+ground. This holds that line for every step before the spec, not only for what
+the design hook admits:
 
-- **During a flow** (an `/observe` session, a review, a spike, a
-  classification), a difference from 0.33 is recorded in that flow's research
-  report, with its reproduction, as BK-511's § 7 records Local's gaps.
-- **At D8's comparison**, the pass reads that evidence with the 0.33 record
-  (master's suite while master's code is 0.33, RFC-0025 D5). A difference
-  becomes a `sdd/v1-breaks.md` row (RFC-0024 R5) when the
-  v1 clause differs from what 0.33 does, and nothing otherwise. This holds
-  when 0.33 also breaks its own spec: the caller still meets a change.
+- **A witness of the world.** `/observe`, `/observe-review`, a spike and a
+  classification learn what an SDK, the OS or the Python runtime does from that
+  SDK's, OS's or runtime's own source, docs or a probe of it, never through a
+  0.33 backend. A spike checks a record against a reference model or the raw
+  SDK or OS, never against a `remote_store` backend.
+- **The comparison.** D8 reads the 0.33 record (master's suite while master's
+  code is 0.33, RFC-0025 D5). A difference becomes a `sdd/v1-breaks.md` row
+  (RFC-0024 R5) when the v1 clause differs from what 0.33 does, and nothing
+  otherwise. This holds when 0.33 also breaks its own spec: the caller still
+  meets a change.
+- **What design work recorded about 0.33 before this RFC**, BK-511's
+  [report § 7](../research/bk-511-op01-behaviour-classification/report.md) and
+  the OP-01 spike's Local gaps with BUG-346's C8, is input to D8 only, never to
+  a design decision.
 
 ### F3. Items filed before this RFC
 
@@ -87,11 +102,11 @@ Failed state OP-01's D51 and D93 already decide for v1.
 
 | Clause | Becomes |
 |---|---|
-| RFC-0024 § Summary, last sentence | A difference between a v1 spec and 0.33 is evidence for the comparison and, there, a break record; never a defect in the v1 spec, and never a 0.33 item (F2). |
+| RFC-0024 § Summary, last sentence | A difference between a v1 spec and 0.33, which only D8's comparison looks for, is at most a break record; never a defect in the v1 spec, and never a 0.33 item (F2). |
 | RFC-0024 D2, D9 and R2's admission list (from the cut on, RFC-0025 D5) | The fixes `release/0.33.x` takes (D2's "patch-rated fixes", R2's "bug fixes"), and so D9's "0.33 patch from `release/0.33.x`", carry only fixes of K items: those F1 admits and those F3 keeps. Floor raises, CI, docs and metadata are unchanged. |
 | RFC-0024 D8 | "a difference becomes a break record or a 0.33 defect" reads "a difference becomes a break record or nothing" (F2). |
 | RFC-0024 R3, class K, with RFC-0025's row | Holds the issues F1 admits and the items F3 keeps; nothing else becomes a K item. Its disposition is RFC-0025's row's, the patch rating confirmed by the maintainer. |
-| RFC-0024 R4, first paragraph | "a break record or a 0.33 defect (D8)" reads "evidence for D8's comparison, where it may become a break record" (F2). |
+| RFC-0024 R4, first paragraph | "a break record or a 0.33 defect (D8)" reads "for D8's comparison to find, and at most a break record (D8)" (F2). |
 | RFC-0024 R5, "D8's pass adds a row for each difference that is not a 0.33 defect; one that is a 0.33 defect becomes a K item instead" | Reads "D8's pass adds a row for each difference": one that is also a 0.33 defect gets a row too, and no K item (F2). |
 
 RFC-0024 and RFC-0025 each get an "Amended by RFC-0031" line; their text is
@@ -107,6 +122,10 @@ All decided in the second log above:
 - **A difference found by spec work:** a `v1-breaks.md` row at discovery,
   before D8, with no v1 clause ID until the spec exists; or evidence plus a
   user-docs list of known 0.33 gaps, a page to keep in step with evidence.
+- **The design half and 0.33:** design work records the 0.33 differences it
+  meets as D8 evidence, which keeps 0.33 code as a witness of SDK and OS
+  behaviour; or only F2's statement, with the two skills and the spike rule
+  left to a later item.
 - **The 0.33 line:** the author's own bump-table rating, checked only in
   review; or no 0.33 fixes at all beyond security and floor patches, every
   user report waiting for 1.0.0.
@@ -124,10 +143,12 @@ All decided in the second log above:
   (the ripple-check's Authority direction command,
   `rg --no-ignore --hidden -e 'code is wrong' -e 'spec is source of truth'
   CLAUDE.md .claude/ sdd/`), and
-  [`CONTRIBUTING.md` § Release](../../CONTRIBUTING.md#release). No skill
-  under `.claude/skills/` promises a 0.33 item (case-insensitive `Grep` for
-  `0\.33|break record|K item|class K|defect` there: the 0.33 hits are
-  `/observe`'s two, which file nothing).
+  [`CONTRIBUTING.md` § Release](../../CONTRIBUTING.md#release).
+- **Skills:** `/observe-review` step 3 and its ✓ rule witness the world
+  without `src/remote_store/`, and `/observe`'s reopen step cites such a ✓
+  (F2). No skill under `.claude/skills/` promises a 0.33 item
+  (case-insensitive `Grep` for `0\.33|break record|K item|class K|defect`
+  there).
 - **Backlog:** BK-469's index entry; BUG-346 absorbed into BK-485 (F3).
 - **Testing:** none.
 

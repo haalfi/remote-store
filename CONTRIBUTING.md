@@ -552,8 +552,9 @@ takes only what [§ When to bump](#when-to-bump) rates patch or no bump; a fix
 needs no cherry-pick. **0.33's code and specs are frozen:** a new 0.33 bug is
 filed only for an issue a user reports, which the maintainer admits as a bug
 and whose patch rating the maintainer confirms; bugs filed before keep their
-place. Spec and design work files nothing
-against 0.33; a difference it finds is evidence for the v1 comparison. A fix the table rates minor or higher does not land on
+place. Design work for v1 never reads 0.33's
+code or specs and files nothing against 0.33; only the v1 comparison, after a
+spec is written, reads 0.33. A fix the table rates minor or higher does not land on
 master: it is recorded as a candidate break for the v1 design of its
 operation. A patch fix that owes a migration-guide section gets it under that
 patch's own heading, `## v0.33.0 to v0.33.1` for the next one. The first v1
