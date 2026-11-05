@@ -1,0 +1,190 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (/observe-review OP-01 after its reopen walking O94 to O101)"
+trigger: >-
+  The reopen of 2026-11-04 decided O94 to O97 as D159 to D162 and routed the
+  notes O98 to O101 by D163, and left the record and its logs uncommitted.
+  The maintainer typed `/observe-review OP-01`: RFC-0029 R2 freezes a record
+  only after this review runs on it as its last reopen left it.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+# The reopen's logs (48d1bf11's O94 to O97 answers, ac1debf0's asking of
+# them, c84c41bb's D163) went to the /observe trace's decisions:, committed
+# with the reopen's record in 6f57e48. This review asked no dialog.
+decisions: []
+surprising_ripples: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/observe/records/OP-01.md
+  - sdd/observe/tables/OP-01.toml
+  - sdd/traces/bk-485-observe-op-01.yml
+orient:
+  - items: [BK-506]
+    verdict: constrains
+    evidence: >-
+      bk-485-op-01-reopen-freeze2.yml: freeze-2 is BK-506's subject, so the
+      freeze verdict below gates it.
+  - items: [BK-509]
+    verdict: unrelated
+    evidence: >-
+      The table check's NP9 citation findings recur unchanged; this review
+      changes nothing it names.
+phases:
+  - id: pairs
+    name: Step 1, pair decisions with dialogs; the table check
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "After a reopen: pairs, tables, two unprimed readers, primed review, verify, then the freeze verdict"
+        outcome: ok
+      - file: scripts/observe_dialogs.py
+        section: "observe-dialogs OP-01.md with the /observe trace's 17 logs, 48d1bf11, ac1debf0 and c84c41bb"
+        read_type: verify
+        extract: >-
+          Saved as tmp/observe-review/OP-01-pairs.md (stdout only; no --out
+          flag). D1 to D44 "FAIL no Asked line" (pre-RFC-0028); D100, D102,
+          D107 two answers each (covered by D116 and D143); D159 to D163 ok.
+          One new split dialog, O94 to O97 asked in ac1debf0 and answered in
+          48d1bf11, as the Session line records. No new unanswered dialog or
+          item asked in several dialogs
+        outcome: ok
+      - file: scripts/observe_tables.py
+        section: "observe-tables OP-01.md OP-01.toml"
+        read_type: verify
+        extract: >-
+          One undeclared table, D162's Cancelled release row, declared as a
+          register like D138's. Re-run: no declaration finding; the rest as
+          review 6 (D18, D19, D34, D38, NP9 citations); unchanged after this
+          review's edits
+        outcome: ok
+  - id: readers
+    name: Step 2, two unprimed readers
+    steps:
+      # Two fresh general-purpose agents spawned together with the brief
+      # verbatim and nothing else. Reader A labels A1a, reader B B1a.
+      - file: sdd/observe/records/OP-01.md
+        section: "(full), with the pairs file, axes.md and the Session's ground"
+        read_type: gate
+        extract: >-
+          Both paired every one of D1 to D44 with an unpaired dialog. Reader A
+          read the pairs file in part and no ground file (context); reader B
+          read all, ground included
+        outcome: ok
+  - id: primed
+    name: Step 3, primed review against backends, SDKs and the runtime
+    steps:
+      - file: tmp/observe-review/probe_review7.py
+        section: "hatch env (CPython 3.13.18): unsupported methods on an Open and a Closed BufferedReader; procfs and sysfs sizes"
+        read_type: verify
+        extract: >-
+          Closed: seek, truncate, writelines, detach raise ValueError; write
+          and fileno io.UnsupportedOperation (O102). Open: seek raises, then
+          read(3) returns b'012' (D161 holds there). /proc/self/status
+          S_ISREG, size 0, 1417 bytes read; a sysfs file size 4096, 23 bytes
+          read (O104)
+        outcome: ok
+      - file: .venv/lib/python3.13/site-packages/azure/storage
+        section: "Grep hdi_isfolder"
+        read_type: verify
+        extract: "No match: O29's Azure claim has no SDK witness here (O107)"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0031-033-frozen.md
+        section: "F2"
+        read_type: gate
+        extract: "OP-01's freeze-2 reopen re-witnesses O29, O42, O76 and O88 against the SDK or OS, or drops them; the reopen's Session lines record neither (O107)"
+        outcome: ok
+      # Primed candidates and verdicts:
+      #   P1 D161 on a Closed stream against D117, D125, D154: holds, O102.
+      #   P2 D159's "no backend contact" against D160 and NP2: holds, O103.
+      #   P3 D159's length fixed at open on Local special files: holds, O104.
+      #   P4 F2's re-witnessing not done: holds as a note, O107.
+      #   P5 D125's fileno on a Closed stream against io: folded into O102's
+      #      evidence, the same question.
+      #   P6 D162's deviation naming SFTP only, where a Local async form
+      #      would also run in a worker thread (not run): dropped; D138's
+      #      check makes which backends declare it the profile's.
+  - id: verify
+    name: Step 4, verify every candidate and file what holds
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D6, D22, D26, D41, D51, D70, D87, D104, D117, D125, D128, D137, D138, D153, D154, D158 to D162; O4, O29, O42, O76, O88, O94 to O101; Axis status"
+        read_type: verify
+        extract: >-
+          O102 to O107 written, opened by a line naming this review; the axis
+          rows citing a decision O102 to O104 depend on list them (a script
+          over the row cells, tmp/observe-review/axis_add.py; notes none),
+          which also makes AX-10's state, left "open items explicitly open"
+          with no item by the reopen, true again; no decision, Environment
+          row or axis decision edited; Status stays Complete
+        outcome: ok
+      # Raw findings and verdicts.
+      #   A1a, A4b, B1a, B3a: holds, O102 (run).
+      #   A1b, B1b, B3b: holds, O103.
+      #   A1c, A3a, B1c: holds as a note, O105.
+      #   A2a, A2b, A4a, B2a: holds as a note, O106.
+      #   A4e: holds as a note, O107.
+      #   A2c (AX-10's state): resolved by O102 to O104's listing.
+      #   B1d (D87's s3 exposure): dropped; D87's check takes an overlapping
+      #     creation from D21's one instant, and no outcome rests on s3.
+      #   B1e (D100's "Into that column" answer): dropped; D116 and D143.
+      #   B2b (O4 lacking D128): dropped; D128 rewrites checks, and O4's
+      #     summary already says no figure bounds a call's total waiting.
+      #   A4c, A4d, B4 on D4, D7, D9, D12, D20, D24, D38, D43, D64, D70,
+      #     D104, D108, D134, D141: dropped, D107's no-sweep and reviews 2, 4,
+      #     5 and 6's verdicts.
+      #   B4 on D151 to D156 and PR #1188's "Restore both from the log":
+      #     dropped, as review 6.
+  - id: freeze
+    name: Step 5, the freeze verdict
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O107"
+        read_type: verify
+        extract: >-
+          Not frozen. Items in the way: O102 and O103 (reopens), O104 (gap),
+          and the notes O105 to O107, to be routed. Decided: O94 to O97;
+          routed: O98 to O101
+        outcome: ok
+  - id: close_out
+    name: Step 6, the close-out the maintainer chose (log 48d1bf11, 19:39Z)
+    steps:
+      # One dialog (48d1bf11, 19:40Z to 19:43Z), every recommendation
+      # adopted: D164 (O102, D117 holds on Closed), D165 (O103, a reason as
+      # D160), D166 (O104, size at open, NP10), D167 (O105, O106 routed;
+      # O107's 0.33 citations dropped from O29, O42, O76, O88).
+      - file: tmp/observe-review/c3_check.py
+        section: "observe-dialogs and observe-tables now against 6b1427b's record"
+        read_type: verify
+        extract: >-
+          Dialogs: 47 FAIL headers as before (D1 to D44, D100, D102, D107);
+          new lines D164 to D167 ok only. Tables: D166's NP10 table first
+          undeclared (one declaration and two NP10 citation findings),
+          declared as D41's ids table; re-run, nothing new against 6b1427b
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "D164 to D167 re-read against D6, D22, D41, D51, D52, D73, D117, D125, D138, D153, D154, D158 to D161; O29, O42, O76, O88"
+        read_type: verify
+        extract: >-
+          One correction of the close-out's own text: D166's check names
+          SFTP's procfs-like files, which its Local question did not reach,
+          left to the spec flow (not run). No other conflict. The
+          choosing dialog's option text gave "O102 as io per method" and
+          "would be routed, not re-witnessed" as examples; the close-out
+          dialog's own questions and answers decide
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O107 (step 5's verdict)"
+        read_type: verify
+        extract: >-
+          Can be frozen (tmp/observe-review/freeze_check.py over the item
+          texts, 107 items): 82 decided (O14 to O41, O43 to O45, O47 to O87,
+          O92 to O97, O102 to O104, O107); 10 routed to the spec flow with
+          no Flow done (O88 to O91, O98 to O101, O105, O106); 15 shared or
+          another entry's (O1 to O13, O42, O46), each naming what it blocks
+          in its text or by D108. Tag after merge:
+          observe/OP-01/freeze-2 (maintainer)
+        outcome: ok

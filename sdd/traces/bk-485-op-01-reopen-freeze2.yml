@@ -1,0 +1,106 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour"
+trigger: >-
+  BK-511 routed two of OP-01's not-decided behaviours as blocking under
+  RFC-0030 C1 (read(0) with bytes remaining; a read at the last byte meeting a
+  failure or a cancellation). RFC-0030 C4 makes such a defect a reopen of the
+  frozen record, whose next freeze is freeze-2. Phase A writes the two open
+  items; Phase B (/observe OP-01, then /observe-review OP-01) decides and
+  reviews them; Phase C records the reopen and freeze-2 in BK-485's entry.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+decisions:
+  - sdd/decisions/48d1bf11-b496-5868-a622-53ce83917f68.jsonl
+orient:
+  - items: [BK-506]
+    verdict: constrains
+    evidence: >-
+      Its trial is not pre-registered, so RFC-0029 R2's "keeps that tag" does
+      not bind it; the maintainer chose freeze-2 as its subject. R4: the
+      oracle sessions read the record as the tag holds it and nothing derived
+      from it, so the item text cites the record's decisions only, with no
+      BK-511 clause ID and no 0.33 behaviour.
+  - items: [BK-511]
+    verdict: constrains
+    evidence: >-
+      Done; its report § 6 is the finding's source, read in this normal
+      session only. The /observe session that walks O92 and O93 is unprimed
+      and never reads it.
+  - items: [BK-507, BK-508, BK-509]
+    verdict: unrelated
+    evidence: >-
+      observe-tables defects; they bear on Phase B's review, not on writing
+      the open items.
+  - items: [BUG-346]
+    verdict: unrelated
+    evidence: >-
+      A 0.33 defect under D51 and D93's Failed state (backlog-find OP-01);
+      neither item reopens D93 or the readline path.
+phases:
+  - id: orient
+    name: Find the route for an outside finding into a frozen record
+    steps:
+      - file: sdd/rfcs/rfc-0030-observe-close-out.md
+        section: "C1 to C4"
+        read_type: gate
+        extract: "C1: a finding leaving a caller's observation two-valued or undecided blocks; C4: a defect found after the freeze reopens the record, next freeze n + 1; C3: full re-run after a reopen"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0028-observe-record-review.md
+        section: "P3"
+        read_type: gate
+        extract: "The review step writes findings as open items; it cites audit-025's O17 to O26 as precedent"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0029-faithfulness-before-spec.md
+        section: "R2, R4"
+        read_type: gate
+        extract: "A later reopen ends the freeze; a pre-registered trial keeps its tag; oracle sessions read nothing derived from the record"
+        outcome: ok
+      - file: sdd/observe/axes.md
+        section: "Per-question loop: amendment and reopen forms"
+        read_type: gate
+        extract: "A reopen answers each item with a new decision; the item gains 'Decided by'. No form for how an item reaches a frozen record"
+        outcome: ok
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "Rules, steps 4 to 6"
+        read_type: gate
+        extract: "Besides /observe's own steps 3 and 4, only /observe-review's rules write open items; neither skill has a step for a finding from outside a session or review"
+        outcome: unclear
+      - file: .claude/skills/observe/SKILL.md
+        section: "Steps 2, 3 (Reopen)"
+        read_type: gate
+        extract: "Load sets a Complete record to In progress (reopen); the reopen walks Open items, so the items must exist first"
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items opening lines (O14 to O26, O45)"
+        read_type: reference
+        extract: "Precedent: PR #1188's review, audit-025 and BK-504's table check wrote items outside /observe-review, each group opened by a source line"
+        outcome: ok
+  - id: write
+    name: Write O92 and O93 from the record's decisions
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D6, D16, D18, D20, D50, D51, D96, D132, D148, D155; Axis status"
+        read_type: gate
+        extract: >-
+          D6's min(n, r) gives read(0) = b'' with bytes remaining while its
+          prefix sentence makes b'' the end; D155 settles the siblings, not
+          D6. D18's rows name Open and Exhausted but no decision says when a
+          stream enters Exhausted. Axis rows gain each item where a row cites
+          a dependent decision (a script over the row cells): AX-1, AX-2,
+          AX-6, AX-7, AX-11, AX-12, AX-14
+        outcome: ok
+  - id: record
+    name: Phase C, BK-485's entry after review 7's close-out
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-485"
+        read_type: gate
+        extract: >-
+          The entry names the second reopen (D159 to D163), review 7 (O102 to
+          O107) and the close-out (D164 to D167, the four 0.33 citations
+          dropped); not done: the freeze-2 tag, which the maintainer sets
+          after the merge
+        outcome: ok
