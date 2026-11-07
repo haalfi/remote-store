@@ -135,9 +135,12 @@ finds them:
 | O76 | `aio/_sync_adapter.py` as the example of `asyncio.to_thread` | decided by D138; its ✓ run probes asyncio itself |
 | O88 | `_memory.py`'s `io.BytesIO` | OP-01's spec flow, by D156 |
 
-Their 0.33 citations carry no weight. The freeze-2 reopen, besides S05 and
-S16, re-witnesses each against the SDK, OS or runtime, or drops it, before any
-route above uses it.
+Their 0.33 citations carry no weight. RFC-0031 F2 gave the freeze-2 reopen the
+re-witnessing or dropping of each; that reopen did neither (OP-01's `O107`).
+The close-out after review 7 dropped all four and re-witnessed none, each item
+standing on its other evidence: see OP-01's
+[D167](../observe/records/OP-01.md), which also names its departure from
+RFC-0030 C2.
 
 The spike's own checks ran against `LocalBackend`. Its gaps and BUG-346's C8
 are input to the 0.33 comparison only, and a later spike checks a record

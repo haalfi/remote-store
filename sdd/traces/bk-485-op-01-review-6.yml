@@ -1,0 +1,168 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (/observe-review OP-01 after its reopen walking O92 and O93)"
+trigger: >-
+  The reopen of 2026-11-04 after freeze-1 (`/observe OP-01`, RFC-0030 C4)
+  decided O92 and O93 as D157 and D158 and left the record uncommitted. The
+  maintainer typed `/observe-review OP-01`: RFC-0029 R2 freezes a record only
+  after this review runs on it as its last reopen left it.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+# The reopen's log, 394be2d5, went to the /observe trace's decisions:,
+# committed with the reopen's record (4fcbb03). This review's one dialog, the
+# next step after step 5, was asked twice: a worker restart left the first
+# asking unanswered in e1effe34; the second, in 48d1bf11 after RFC-0031's
+# merge, chose one reopen for O94 to O101 and the re-witnessing of O29, O42,
+# O76 and O88.
+decisions:
+  - sdd/decisions/e1effe34-107c-45f0-8f48-10138a980ef5.jsonl
+  - sdd/decisions/48d1bf11-b496-5868-a622-53ce83917f68.jsonl
+surprising_ripples: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/observe/records/OP-01.md
+  - sdd/traces/bk-485-observe-op-01.yml
+orient:
+  - items: [BK-506]
+    verdict: constrains
+    evidence: >-
+      bk-485-op-01-reopen-freeze2.yml: freeze-2 is BK-506's subject, so the
+      freeze verdict below gates it.
+  - items: [BK-509]
+    verdict: unrelated
+    evidence: >-
+      The table check's NP9 citation findings recur at shifted lines; this
+      review changes nothing it names.
+phases:
+  - id: pairs
+    name: Step 1, pair decisions with dialogs; the table check
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "After a reopen: pairs, tables, two unprimed readers, primed review, verify, then the freeze verdict"
+        outcome: ok
+      - file: scripts/observe_dialogs.py
+        section: "observe-dialogs OP-01.md with the trace's sixteen logs and 394be2d5"
+        read_type: verify
+        extract: >-
+          Saved as tmp/observe-review/OP-01-pairs.md. D1 to D44 "FAIL no Asked
+          line" (pre-RFC-0028); D100, D102, D107 two answers each (covered by
+          D116 and D143); D157 and D158 ok. No new split dialog, unanswered
+          dialog or item asked in several dialogs. 48d1bf11 (Phase A's routing
+          question, no O-item) not passed: its question is no OP-01 decision's
+        outcome: ok
+      - file: scripts/observe_tables.py
+        section: "observe-tables OP-01.md OP-01.toml, at HEAD and in the tree"
+        read_type: verify
+        extract: >-
+          No undeclared table (D157 and D158 hold none). 61 report lines in
+          both runs; the diff is line numbers of the NP9 citations only
+        outcome: ok
+  - id: readers
+    name: Step 2, two unprimed readers
+    steps:
+      # Two fresh general-purpose agents spawned together with the brief
+      # verbatim and nothing else. Reader A labels A1a, reader B B1a.
+      - file: sdd/observe/records/OP-01.md
+        section: "(full), with the pairs file, axes.md and the Session's ground"
+        read_type: gate
+        extract: >-
+          Both paired every one of D1 to D44 with an unpaired dialog. Reader
+          A: 3 under item 1, 7 under 2, 2 under 3, 11 under 4 (did not read
+          the ground register or specs). Reader B: 5 under 1, 5 under 2, 3
+          under 3, 9 under 4
+        outcome: ok
+  - id: primed
+    name: Step 3, primed review against backends, SDKs and the runtime
+    steps:
+      - file: pyproject.toml
+        section: "hatch env (CPython 3.13.18): read(0), reads after the last byte, Local append, seek then read, read1 sizes"
+        read_type: verify
+        extract: >-
+          read(0) b'' at tell 0, then read(10) all ten (D157 holds).
+          BufferedReader makes a raw read after the last byte, and read(-1)
+          two. A Local file object returns bytes appended after its last
+          byte was read (O94). After seek(0) raises UnsupportedOperation, a
+          BufferedReader's read(3) returns b'234' (O96). read1() over 10 MB
+          returns 8192 (O100); read1(), read1(-1), read1(0) at the end b''
+          and readinto1 0 (O99)
+        outcome: ok
+      - file: pyproject.toml
+        section: "hatch env: paramiko 5.1.0 BufferedFile.read, SFTPFile._read; fsspec AbstractBufferedFile.read"
+        read_type: verify
+        extract: >-
+          SFTPFile knows no size; the end is learned from a CMD_READ answered
+          with EOF, a request that can fail (O94). fsspec's read(0) returns
+          b'' without fetch, its size known at open (D157 and D158 hold on
+          S3)
+        outcome: ok
+      # src/remote_store/backends/_sftp.py, _s3.py and _memory.py were also
+      # read, as the skill then allowed. RFC-0031 F2 (754f94d, merged into
+      # the review's branch by fdbadf9) gives those reads no weight:
+      # O94's citation of _sftp.py is removed in the merge, and no item rests
+      # on them.
+      - file: sdd/rfcs/rfc-0031-033-frozen.md
+        section: "F2"
+        read_type: gate
+        extract: "Design work never reads 0.33's code; SDK, OS and runtime evidence comes from their own source or a probe"
+        outcome: ok
+      # Primed candidates and verdicts:
+      #   P1 D158's no-contact rule against its E4 sentence on Local and
+      #      SFTP: holds, O94 (run, read).
+      #   P2 D157 against io and fsspec: holds in both; no finding.
+      #   P3 a text stream's decode at the end: dropped; the stream is
+      #      binary (D5, D45's check).
+      #   P4 D158 against O5's open cell: dropped; a stream OP-21 moves
+      #      elsewhere is no longer Exhausted.
+  - id: verify
+    name: Step 4, verify every candidate and file what holds
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D6, D18, D22, D26, D40, D41, D51, D70, D78, D80, D92, D93, D99, D111, D117, D120, D122, D125, D132, D137, D138, D141, D150 to D158 re-read before quoting; Axis status; Open items"
+        read_type: verify
+        extract: >-
+          O94 to O101 written, opened by a line naming this review; the axis
+          rows citing a decision O94 to O97 depend on list them (a script over
+          the row cells; notes none); no decision, Environment row or axis
+          decision edited; Status stays Complete
+        outcome: ok
+      # Raw findings and verdicts.
+      #   Primed P1, A1b: holds, O94.   B1a: holds, O95.
+      #   A1a, A3a: holds, O96 (run).   B2d: holds, O97 (not run).
+      #   A2a, A2b, A2c, B2a, B2b, B2c: holds as a note, O98.
+      #   A2d, A2e, B1b, B1c, B1e, B3b, B3c: holds as a note, O99. B1c is
+      #     a note, not a reopen: D92's sentence cites D15, which D117 sets.
+      #   B1d, B2e (read1 with n < 0 at the end): holds as a note, in O99;
+      #     D78's "b'' at the end" gives the value, as io does (run).
+      #   A2f: holds as a note, O100 (run).   B3a: holds as a note, O101.
+      #   A1c (D127's coroutines against D151's list): dropped; the specific
+      #     clause names line iteration and chunks, as reader B also judged.
+      #   A2g (D98's "a read on a closed stream"): dropped; the row holds by
+      #     category (D142), as reader B also judged.
+      #   A3b (D152's check against NP5): dropped; D152 gives the failed
+      #     mutation to D10 and keeps the held handle itself in NP5.
+      #   A4 and B4 on D4, D7, D9, D11, D12, D20, D38, D43, D64, D141: dropped,
+      #     D107's no-sweep and review-2, review-4 and review-5's verdicts.
+      #   A4, B4 on D151 to D155's text beyond the option: dropped; RFC-0030
+      #     C2's close-out adopts recommendations written after the dialog,
+      #     and C3's re-read checked them; D155's sentence is in O99.
+      #   B4's reverse case (PR #1188's "Restore both from the log"): dropped;
+      #     a review-process answer applied to that PR's text, after which
+      #     D107 decided the sweep.
+  - id: freeze
+    name: Step 5, the freeze verdict
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O101"
+        read_type: verify
+        extract: >-
+          Not frozen. Items in the way: O94 to O97, and the notes O98 to
+          O101, to be routed, in one reopen (the maintainer's answer) that
+          also re-witnesses O29, O42, O76 and O88 (RFC-0031 F2). Decided:
+          O14 to O41, O43 to O45, O47 to O87, O92, O93. Routed: O1 to O13,
+          O42, O46, O88 to O91
+        outcome: ok

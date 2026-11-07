@@ -95,6 +95,13 @@ at = "OP-01/D41"
 kind = "ids"
 column = 1
 
+# Declared 2026-11-04, at the close-out: D166's one-row table is the row its Decision adds to
+# D41's register (NP10), with D41's columns.
+[[table]]
+at = "OP-01/D166"
+kind = "ids"
+column = 1
+
 [[table]]
 at = "OP-01/D43"
 kind = "register"
@@ -106,6 +113,13 @@ reason = "D43 enumerates OP-01's variation points itself; no other table fixes t
 at = "OP-01/D138"
 kind = "register"
 reason = "D138's Decision: 'D43's table gains the row'; a seventh variation point, D43's register extended"
+
+# Declared 2026-11-04, after that day's reopen: D162's one-row table restates D138's row renamed
+# Cancelled release, with D43's columns; no new variation point.
+[[table]]
+at = "OP-01/D162"
+kind = "register"
+reason = "D162's Decision: 'D43's row Cancelled close is renamed Cancelled release and reads'; D43's register, one row replaced"
 
 [[table]]
 at = "Axis status"
