@@ -102,7 +102,7 @@ phases:
         outcome: ok
       # src/remote_store/backends/_sftp.py, _s3.py and _memory.py were also
       # read, as the skill then allowed. RFC-0031 F2 (754f94d, merged into
-      # this branch after the review's commit) gives those reads no weight:
+      # the review's branch by fdbadf9) gives those reads no weight:
       # O94's citation of _sftp.py is removed in the merge, and no item rests
       # on them.
       - file: sdd/rfcs/rfc-0031-033-frozen.md
