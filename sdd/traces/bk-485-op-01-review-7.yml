@@ -189,7 +189,7 @@ phases:
           observe/OP-01/freeze-2 (maintainer)
         outcome: ok
   - id: pr_review
-    name: PR #1208's review (maintainer's /rvw-pr, 4 findings) and its fix pass
+    name: PR #1208's review rounds (maintainer's /rvw-pr) and their fix passes
     steps:
       # Findings, all held: (1) D166's check routed a blocking-class SFTP gap
       # to the spec flow (RFC-0030 C3 routes only notes): filed as O108,
@@ -205,8 +205,18 @@ phases:
           c3_check.py against 6b1427b: 47 FAIL headers as before, D164 to
           D168 ok, no table finding new. freeze_check.py over 108 items: 83
           decided, 10 routed, 15 shared or another entry's (O6 and O46 by
-          their "for the sessions of" text). The record can be frozen. My
-          miss: the close_out step above took SFTP's case for a correction
-          of the close-out's own text, where RFC-0030 C1 makes it a
-          blocking gap
+          their "for the sessions of" text). My miss: the close_out step
+          above took SFTP's case for a correction of the close-out's own
+          text, where RFC-0030 C1 makes it a blocking gap
+        outcome: ok
+      # The review of 1d2f289: D168 is a reopen, so R2 as C3 has it needs a
+      # full /observe-review before any freeze, and D168 itself was decided
+      # outside an /observe session (O110); an SFTP server that reports no
+      # size leaves D168's length undefined (O109, paramiko st_size None,
+      # run). The maintainer's answer (log 48d1bf11): file both, correct the
+      # freeze claims; an /observe reopen and the full re-run follow.
+      - file: sdd/rfcs/rfc-0030-observe-close-out.md
+        section: "C3, last sentence"
+        read_type: gate
+        extract: "R2's full re-run is required after a reopen, not after a close-out: the record is not frozen until /observe-review runs on it as the O109 and O110 reopen leaves it"
         outcome: ok

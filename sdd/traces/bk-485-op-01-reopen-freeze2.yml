@@ -101,6 +101,8 @@ phases:
         extract: >-
           The entry names the second reopen (D159 to D163), review 7 (O102 to
           O107), the close-out (D164 to D167, the four 0.33 citations
-          dropped) and the reopen from PR #1208's review (D168, O108); not
-          done: the freeze-2 tag, which the maintainer sets after the merge
+          dropped) and the reopen from PR #1208's review (D168, O108), after
+          which that review filed O109 and O110; not done: an /observe
+          reopen walking them, /observe-review's full re-run and the freeze-2
+          tag
         outcome: ok
