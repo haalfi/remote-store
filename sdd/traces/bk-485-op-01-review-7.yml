@@ -220,3 +220,50 @@ phases:
         read_type: gate
         extract: "R2's full re-run is required after a reopen, not after a close-out: the record is not frozen until /observe-review runs on it as the O109 and O110 reopen leaves it"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1208 --trace-block-only` at head 34f99d5.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1208 --trace-block-only"
+  pr: 1208
+  review_rounds: 3
+  submissions: 2
+  findings: 8
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 45.32
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {filed: 1, must-fix: 2, refuted: 1}
+      duration_hours: 0.2
+  by_file:
+    - path: "sdd/observe/records/OP-01.md"
+      findings: 5
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+    - path: "sdd/traces/bk-485-op-01-review-7.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/backlog/bk-485-spec-first-reset.md"
+    - "sdd/decisions/394be2d5-4f9a-4036-834f-a906a4f58890.jsonl"
+    - "sdd/decisions/48d1bf11-b496-5868-a622-53ce83917f68.jsonl"
+    - "sdd/decisions/ac1debf0-811f-4bf4-9f01-d03e8f837d95.jsonl"
+    - "sdd/decisions/c84c41bb-a04f-4c27-9136-ab26f7620fd8.jsonl"
+    - "sdd/decisions/e1effe34-107c-45f0-8f48-10138a980ef5.jsonl"
+    - "sdd/decisions/e5b55806-8089-4139-8ad0-91cbf1cde35d.jsonl"
+    - "sdd/observe/tables/OP-01.toml"
+    - "sdd/traces/bk-485-observe-op-01.yml"
+    - "sdd/traces/bk-485-op-01-reopen-freeze2.yml"
+    - "sdd/traces/bk-485-op-01-review-6.yml"
+  review_driven_commits:
+    - sha: "1d2f289"
+      subject: "fix: address PR #1208 review"
+    - sha: "09b88a1"
+      subject: "fix: address PR #1208 review"
+    - sha: "34f99d5"
+      subject: "BK-485: review-6 trace names the merge commit, not 'this branch'"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
