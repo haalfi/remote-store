@@ -100,7 +100,7 @@ phases:
         read_type: gate
         extract: >-
           The entry names the second reopen (D159 to D163), review 7 (O102 to
-          O107) and the close-out (D164 to D167, the four 0.33 citations
-          dropped); not done: the freeze-2 tag, which the maintainer sets
-          after the merge
+          O107), the close-out (D164 to D167, the four 0.33 citations
+          dropped) and the reopen from PR #1208's review (D168, O108); not
+          done: the freeze-2 tag, which the maintainer sets after the merge
         outcome: ok

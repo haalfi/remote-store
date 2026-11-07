@@ -188,3 +188,25 @@ phases:
           in its text or by D108. Tag after merge:
           observe/OP-01/freeze-2 (maintainer)
         outcome: ok
+  - id: pr_review
+    name: PR #1208's review (maintainer's /rvw-pr, 4 findings) and its fix pass
+    steps:
+      # Findings, all held: (1) D166's check routed a blocking-class SFTP gap
+      # to the spec flow (RFC-0030 C3 routes only notes): filed as O108,
+      # decided as D168 in a reopen by C2 (log 48d1bf11, 2026-11-07);
+      # (2) D167's seven Amends targets lacked 'Amended by' (axes.md § An
+      # amendment): added; (3) D167's check presented a departure from C2 as
+      # precedent: it now names F2 as authority; (4) BK-485's dossier still
+      # said the reopen re-witnesses: it now points to O107 and D167.
+      - file: sdd/observe/records/OP-01.md
+        section: "D166 to D168, O29, O42, O76, O88, O105 to O108; Axis status"
+        read_type: verify
+        extract: >-
+          c3_check.py against 6b1427b: 47 FAIL headers as before, D164 to
+          D168 ok, no table finding new. freeze_check.py over 108 items: 83
+          decided, 10 routed, 15 shared or another entry's (O6 and O46 by
+          their "for the sessions of" text). The record can be frozen. My
+          miss: the close_out step above took SFTP's case for a correction
+          of the close-out's own text, where RFC-0030 C1 makes it a
+          blocking gap
+        outcome: ok
