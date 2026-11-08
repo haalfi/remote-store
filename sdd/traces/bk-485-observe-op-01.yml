@@ -87,6 +87,11 @@ decisions:
   # The reopen of 2026-11-08 walking O118 (D176): one dialog; added by
   # review 9.
   - sdd/decisions/eed2e9a2-9eb3-4baa-9ec5-de717f633f76.jsonl
+  # The close-out of 2026-11-08 after review 9: O119 to O124, one dialog
+  # (toolu_01KXsTg4P5Djh5W79CZbVVkY) asked in 2e3b4ff4 (17:58Z) and, after a
+  # worker restart that resumed ce0b6b31 released (BK-498), answered in
+  # ce0b6b31 (18:10Z), already listed above; the decisions are written later.
+  - sdd/decisions/2e3b4ff4-8783-4a95-9611-612ab924f44e.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:
