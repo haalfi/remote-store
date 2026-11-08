@@ -75,6 +75,10 @@ decisions:
   # e5b55806 (18:32Z), unanswered after a worker restart, and again in
   # 48d1bf11 (19:39Z).
   - sdd/decisions/e5b55806-8089-4139-8ad0-91cbf1cde35d.jsonl
+  # The reopen of 2026-11-07 walking O109 and O110 (D169, D170): one dialog
+  # (one tool_use_id), its asked event logged at 15:33Z and 17:38Z, answered
+  # 17:38Z; added by review 8.
+  - sdd/decisions/ce0b6b31-a5a0-5676-ab93-a41468e170d8.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:

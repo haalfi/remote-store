@@ -121,6 +121,13 @@ at = "OP-01/D162"
 kind = "register"
 reason = "D162's Decision: 'D43's row Cancelled close is renamed Cancelled release and reads'; D43's register, one row replaced"
 
+# Declared 2026-11-08, after the reopen of 2026-11-07: D170's one-row table is the row its
+# Decision adds to D43's register (Length at open), with D43's columns.
+[[table]]
+at = "OP-01/D170"
+kind = "register"
+reason = "D170's Decision: 'D43's table gains' the row Length at open; a new variation point, D43's register extended"
+
 [[table]]
 at = "Axis status"
 kind = "case"
