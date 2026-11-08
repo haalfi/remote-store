@@ -152,3 +152,69 @@ phases:
           the notes O115 to O117, to be routed. Decided: O109 (D170), O110
           (D169)
         outcome: ok
+  - id: close_out
+    name: Step 6, the close-out the maintainer chose (log ce0b6b31, 09:42Z and 09:43Z)
+    steps:
+      # One dialog in two calls, every recommendation adopted: D171 (O111,
+      # SFTP declares Length at open unknown), D172 (O112, a size at open is
+      # no E12 announcement), D173 (O113, "none of these" covers the
+      # zero-size cases), D174 (O114, O13 names Length at open), D175 (O115
+      # to O117 routed to the spec flow).
+      - file: tmp/observe-review/c3_check.py
+        section: "observe-dialogs and observe-tables, f0b83cf's record against 292ebd5's (re-run with tmp/observe-review/cmp.py f0b83cf 292ebd5)"
+        read_type: verify
+        extract: >-
+          Dialogs: new lines D171 to D175 ok only; gone only the four
+          questions unpaired at f0b83cf (O112, O113, O114, O115 to O117),
+          now paired. Tables: 19 finding lines at both, nothing new. Saved
+          outputs: tmp/observe-review/OP-01-{dialogs,tables}-{base,head}.md
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "D171 to D175 re-read against every decision they cite or amend (D43, D44, D70, D82, D99, D120, D155, D158, D159, D166, D168, D170; O13)"
+        read_type: verify
+        extract: >-
+          Found no conflict at the time. It missed two: D171's "which the
+          deviation admits" is false where the reported size is short of the
+          content (O118), and D173's replacement sentence dropped D155's
+          not-the-end clause. Both came from PR #1209's second review. My
+          miss: I checked D171 against AX-15's counterexample (membership)
+          and not against the claim it makes (refinement), and I read D173's
+          "the rest of D155 is unchanged" without diffing the sentence it
+          replaces
+        outcome: ok
+  - id: pr_review
+    name: PR #1209's review rounds (maintainer's /rvw-pr) and their fix passes
+    steps:
+      # First review (5817767503, 11:53Z, two findings, both held): D43's
+      # Length at open Decided-by cell lacked D171 (and D172), and D173's
+      # Options (a) differed from its Decision. Corrected under C3 in
+      # b884730; route log ce0b6b31, after 11:53Z.
+      # Second review (5818518543, 15:48Z, three findings, all held): D171's
+      # "which the deviation admits" is false for a short reported size:
+      # filed as OP-01/O118, a reopen (C2), decided later in an
+      # /observe OP-01 session; D173 dropped D155's not-the-end clause:
+      # restored (C3); this trace recorded no C3 result or post-close-out
+      # verdict: the close_out phase above and this phase. Routes asked in
+      # ce0b6b31, after 15:48Z.
+      - file: tmp/observe-review/cmp.py
+        section: "observe-dialogs and observe-tables after this pass: against f0b83cf (c3_check.py) and against 292ebd5 (cmp.py 292ebd5 WORKTREE)"
+        read_type: verify
+        extract: >-
+          Against f0b83cf: new D171 to D175 ok only, gone the four questions
+          unpaired there, tables nothing new. Against 292ebd5: no finding
+          added or gone in either tool. The record text changed only in
+          D173, the Close-out line, the ten axis rows and O118 (git diff
+          292ebd5, with b884730's corrections)
+        outcome: ok
+      - file: tmp/observe-review/freeze_check.py
+        section: "Open items O1 to O118 (the freeze verdict after this pass)"
+        read_type: verify
+        extract: >-
+          Not frozen: O118 (reopen of D171) in the way. Over 118 items: 89
+          decided (O14 to O41, O43 to O45, O47 to O87, O92 to O97, O102 to
+          O104, O107 to O114); 13 routed to the spec flow (O88 to O91, O98 to
+          O101, O105, O106, O115 to O117); 15 shared or another entry's (O1
+          to O13, O42, O46); 1 in the way (O118). Axis rows listing O118, by
+          tmp/observe-review/o118_rows.py over the cells with ranges
+          expanded: AX-2, AX-6 to AX-12, AX-14, AX-15
+        outcome: ok
