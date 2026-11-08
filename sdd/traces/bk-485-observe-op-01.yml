@@ -78,7 +78,12 @@ decisions:
   # The reopen of 2026-11-07 walking O109 and O110 (D169, D170): one dialog
   # (one tool_use_id), its asked event logged at 15:33Z and 17:38Z, answered
   # 17:38Z; added by review 8.
+  # The close-out of 2026-11-08 (RFC-0030 C2), after review 8: O111 to O117,
+  # one dialog in two calls answered in ce0b6b31 (09:42Z). Its first call was
+  # asked in 7db9f5bc (09:36Z), unanswered after a worker restart that
+  # resumed ce0b6b31, released (BK-498), so the decisions are written later.
   - sdd/decisions/ce0b6b31-a5a0-5676-ab93-a41468e170d8.jsonl
+  - sdd/decisions/7db9f5bc-71e7-4acc-913f-4045d3755e50.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:
