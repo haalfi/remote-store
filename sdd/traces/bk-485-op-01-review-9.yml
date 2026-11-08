@@ -59,3 +59,94 @@ phases:
           the NP9 citations, identical to the run over e205007's record line
           numbers aside
         outcome: ok
+  - id: readers
+    name: Step 2, two unprimed readers
+    steps:
+      # Two fresh general-purpose agents spawned together with the brief
+      # verbatim and nothing else. Reader A's labels A1a, reader B's B1a.
+      - file: sdd/observe/records/OP-01.md
+        section: "(full), with the pairs file, axes.md and the Session's ground"
+        read_type: gate
+        extract: >-
+          Both read every line and the ground files, and paired every one of
+          D1 to D44 with an unpaired dialog. Counted from each report's
+          labels: A 1a to 1f, 2a to 2d, 3 (one), 4a to 4e; B 1a to 1d, 2a,
+          2b, 3a, 3b, and four bullets under 4
+        outcome: ok
+  - id: primed
+    name: Step 3, primed review against backends, SDKs and the runtime
+    steps:
+      - file: tmp/observe-review/r9 (inline python)
+        section: "/proc/self/status size and read; closed io.BufferedReader per method; write(1), seek('x'), read('x') on an open one"
+        read_type: verify
+        extract: >-
+          CPython 3.13.18: /proc/self/status size 0, 1417 bytes read (D176's
+          scenario holds). Closed BufferedReader over BytesIO: writable()
+          False, fileno() io.UnsupportedOperation, write io.UnsupportedOperation,
+          the rest ValueError. Open: write(1) io.UnsupportedOperation,
+          seek('x') and read('x') TypeError
+        outcome: ok
+      # Primed candidates and verdicts:
+      #   P1 D176's deviation against D159's normal value: the earlier of the
+      #      end met and a reported size is the normal value, so the
+      #      deviation admits it; no item.
+      #   P2 D176 against a reported size above the content (truncated after
+      #      open): the end met is the earlier; no item.
+      #   P3 D176's in-cell "where it reports one" as a per-item condition
+      #      against D82: the row's condition is "SFTP", the cell a behaviour
+      #      set; no item. Server side not run, as D168.
+  - id: verify
+    name: Step 4, verify every candidate and file what holds
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D6, D26, D35, D46, D47, D69, D73, D78, D79, D87, D89, D92, D93, D101, D117, D127, D137, D141, D147, D151, D153, D154, D161, D164, D170, D172, D176; O9, O95, O98 to O101, O103; Axis status"
+        read_type: verify
+        extract: >-
+          O119 to O124 written, opened by a line naming this review; their 31
+          double-quoted passages found as substrings of the
+          whitespace-normalised record above them
+          (tmp/observe-review/r9/quote_check.py; D78's inner quotes nested as
+          single quotes). Reopens O119 and O120 listed in the axis rows citing
+          a dependent (tmp/observe-review/r9/axis_items.py, ranges expanded;
+          notes none): O119 in AX-1, AX-2, AX-6, AX-10 to AX-13; O120 in AX-1
+          to AX-3, AX-7, AX-8, AX-10, AX-11, AX-14, AX-15; states "decided,
+          open items explicitly open". observe-dialogs and observe-tables
+          after the edit: output identical to step 1's. No decision,
+          Environment row or axis decision edited; Status stays Complete
+        outcome: ok
+      # Raw findings and verdicts.
+      #   A1e: holds, O119 (run): io orders the two per method.
+      #   B1c, B1d: hold, O120, the shape of O95 and O103 (D160, D165).
+      #   A1f, B1b: hold as a note, O121; D26 decides the E4 case.
+      #   A2c, B2a: hold as a note, O122 (O98's shape for D153).
+      #   A2a: holds as a note, O122.
+      #   A1d, B2b: hold as a note, O123; D101's own Decision makes line
+      #     iteration and chunks async iterators.
+      #   B3a: holds as a note, O124 (run).
+      #   A1a (D94, D20 against D138, D162): dropped; D43's Cancelled release
+      #     row declares the deviation from the normal value D94 states (AX-15).
+      #   A1b (D40 against NP9), B1a and B3b (D6 against NP10): dropped; a
+      #     D41 register row limits the decision (review 8, B1c).
+      #   A1c (D70, D125 against D164's fileno): dropped; D164 chose (a) over
+      #     (b) "as io", D125's Closed sentence gives ValueError (review 8, B1e).
+      #   A2b (D111 lacking D129): dropped; D129 amends D60 (review 8, B2c).
+      #   A2d (async whole read in a worker thread): dropped; no decision
+      #     states it, not run.
+      #   A3 (D163's routing reason against O100, O101): dropped; O100 and
+      #     O101 hold those texts, routed by the maintainer's D163.
+      #   A4a (D151 to D155's dialog): dropped; RFC-0030 C2, D151's check.
+      #   A4b to A4e, B4 on D4, D9, D43, D64, D82, D152, D155: dropped, D107's
+      #     no-sweep and reviews 2, 4 to 8.
+      #   B4 (D170's and D176's Decided-by cells): dropped; D120's rule
+      #     (review 8, A2e, B4e).
+  - id: freeze
+    name: Step 5, the freeze verdict
+    steps:
+      - file: tmp/observe-review/freeze_check.py
+        section: "Open items O1 to O124"
+        read_type: verify
+        extract: >-
+          Not frozen. In the way: O119, O120 (reopens) and the notes O121 to
+          O124, to be routed. Decided 90 (O118 by D176), routed 13, shared or
+          another entry's 15
+        outcome: ok
