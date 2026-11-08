@@ -1,0 +1,61 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (/observe-review OP-01 after its reopen walking O118)"
+trigger: >-
+  The /observe OP-01 reopen of 2026-11-08 decided O118 as D176, committed its
+  log eed2e9a2 in e205007 and left the record uncommitted for this review.
+  The maintainer typed `/observe-review OP-01`: O118 asks for a full
+  /observe-review after that session, and RFC-0029 R2 needs one before a
+  freeze.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+# The reopen's log eed2e9a2 goes to the /observe trace's decisions:, committed
+# with the record in this review's commit.
+decisions: []
+surprising_ripples: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/observe/records/OP-01.md
+  - sdd/traces/bk-485-observe-op-01.yml
+orient:
+  - items: [BK-506]
+    verdict: constrains
+    evidence: >-
+      bk-485-op-01-reopen-freeze2.yml: freeze-2 is BK-506's subject, so the
+      freeze verdict below gates it.
+  - items: [BK-509]
+    verdict: unrelated
+    evidence: >-
+      The table check's NP9 citation findings recur unchanged, line numbers
+      aside; this review changes nothing they name.
+phases:
+  - id: pairs
+    name: Step 1, pair decisions with dialogs; the table check
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "After a reopen: pairs, tables, two unprimed readers, primed review, verify, then the freeze verdict"
+        outcome: ok
+      - file: scripts/observe_dialogs.py
+        section: "observe-dialogs OP-01.md with the /observe trace's 23 logs and eed2e9a2 (tmp/observe-review/r9/run_pairs.py)"
+        read_type: verify
+        extract: >-
+          Saved as tmp/observe-review/OP-01-pairs.md. 47 FAIL headers, as
+          review 8: D1 to D44 "no Asked line" (pre-RFC-0028), D100, D102, D107
+          two answers each (D116, D143). D176 ok, paired with eed2e9a2's one
+          dialog. Against the same run over HEAD's record (e205007), the only
+          change is D176's entry and O118's question leaving the unpaired
+          list; no new split, unanswered or multiply asked item
+        outcome: ok
+      - file: scripts/observe_tables.py
+        section: "observe-tables OP-01.md OP-01.toml"
+        read_type: verify
+        extract: >-
+          No undeclared table (D176 adds a cell text, no table). 53 findings,
+          the NP9 citations, identical to the run over e205007's record line
+          numbers aside
+        outcome: ok

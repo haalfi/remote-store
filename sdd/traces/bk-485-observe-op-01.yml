@@ -84,6 +84,9 @@ decisions:
   # resumed ce0b6b31, released (BK-498), so the decisions are written later.
   - sdd/decisions/ce0b6b31-a5a0-5676-ab93-a41468e170d8.jsonl
   - sdd/decisions/7db9f5bc-71e7-4acc-913f-4045d3755e50.jsonl
+  # The reopen of 2026-11-08 walking O118 (D176): one dialog; added by
+  # review 9.
+  - sdd/decisions/eed2e9a2-9eb3-4baa-9ec5-de717f633f76.jsonl
 expected_ripples:
   - sdd/BACKLOG.md
 orient:
