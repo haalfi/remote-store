@@ -1,0 +1,151 @@
+id: BK-485
+title: "The v1 Store API has no observable-semantics specs, so implementation runs ahead of decided behaviour (/observe-review OP-01 after its reopen walking O109 and O110)"
+trigger: >-
+  The /observe OP-01 reopen of 2026-11-07 decided O110 and O109 as D169 and
+  D170 and left the record and its log ce0b6b31 uncommitted. The maintainer
+  typed `/observe-review OP-01`: RFC-0029 R2, as RFC-0030 C3 has it, needs a
+  full re-run on the record as that reopen left it before freeze-2.
+source_items:
+  - BK-485
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups: []
+# The reopen's log ce0b6b31 went to the /observe trace's decisions:, committed
+# with the reopen's record in 06b30a6. This review asked no dialog.
+decisions: []
+surprising_ripples: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/observe/records/OP-01.md
+  - sdd/observe/tables/OP-01.toml
+  - sdd/traces/bk-485-observe-op-01.yml
+orient:
+  - items: [BK-506]
+    verdict: constrains
+    evidence: >-
+      bk-485-op-01-reopen-freeze2.yml: freeze-2 is BK-506's subject, so the
+      freeze verdict below gates it.
+  - items: [BK-509]
+    verdict: unrelated
+    evidence: >-
+      The table check's D18, D19, D34, D38 and NP9 findings recur unchanged;
+      this review changes nothing they name.
+phases:
+  - id: pairs
+    name: Step 1, pair decisions with dialogs; the table check
+    steps:
+      - file: .claude/skills/observe-review/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: "After a reopen: pairs, tables, two unprimed readers, primed review, verify, then the freeze verdict"
+        outcome: ok
+      - file: scripts/observe_dialogs.py
+        section: "observe-dialogs OP-01.md with the /observe trace's 21 logs and ce0b6b31"
+        read_type: verify
+        extract: >-
+          Saved as tmp/observe-review/OP-01-pairs.md (stdout only, written by a
+          python subprocess wrapper; no --out flag). 47 FAIL headers as review
+          7: D1 to D44 "no Asked line" (pre-RFC-0028), D100, D102, D107 two
+          answers each (D116, D143). D169 and D170 ok. ce0b6b31 holds one
+          dialog, one tool_use_id, its asked event logged at 15:33Z and 17:38Z,
+          answered 17:38Z; no new split, unanswered or multiply asked item
+        outcome: ok
+      - file: scripts/observe_tables.py
+        section: "observe-tables OP-01.md OP-01.toml"
+        read_type: verify
+        extract: >-
+          One undeclared table, D170's Length at open row, declared as a
+          register like D138's and D162's. Re-run: no declaration finding; the
+          rest identical, line numbers aside, to the same run over HEAD's
+          record (a967634)
+        outcome: ok
+  - id: readers
+    name: Step 2, two unprimed readers
+    steps:
+      # Two fresh general-purpose agents spawned together with the brief
+      # verbatim and nothing else. Reader A's labels A1a, reader B's B1a.
+      - file: sdd/observe/records/OP-01.md
+        section: "(full), with the pairs file, axes.md and the Session's ground"
+        read_type: gate
+        extract: >-
+          Both read every line and the ground files, and paired every one of
+          D1 to D44 with an unpaired dialog
+        outcome: ok
+  - id: primed
+    name: Step 3, primed review against backends, SDKs and the runtime
+    steps:
+      - file: .venv/lib/python3.13/site-packages/paramiko/file.py
+        section: "BufferedFile.read; sftp_file.py _read, prefetch; sftp_client.py _convert_status"
+        read_type: verify
+        extract: >-
+          paramiko 5.1.0: a read at end of file sends CMD_READ and the server's
+          SSH_FX_EOF status becomes EOFError, then b'' (D170's "the read after
+          the last byte contacts the server" holds). prefetch() with no
+          file_size compares against stat().st_size, None with no size flag
+          (no decision rests on a prefetch: dropped)
+        outcome: ok
+      - file: tmp/observe-review (inline hatch run python)
+        section: "SFTPAttributes._from_msg with and without the size flag; /proc and /sys sizes; read1(-1)"
+        read_type: verify
+        extract: >-
+          Flags 0: st_size None; size flag: 0. /proc/self/status fstat size 0,
+          1417 bytes read; /sys/kernel/mm/transparent_hugepage/enabled size
+          4096, 23 bytes read (O112). BufferedReader.read1(-1) over 10 bytes:
+          10 bytes, tell() 10 (O113). CPython 3.13.18
+        outcome: ok
+      # Primed candidates and verdicts:
+      #   P1 D170's EOF read against paramiko: holds as decided, no item.
+      #   P2 D169's procfs size 0: holds as decided, no item.
+      #   P3 paramiko prefetch with st_size None: dropped, no decision names a
+      #      prefetch as the stream's mechanism.
+  - id: verify
+    name: Step 4, verify every candidate and file what holds
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "D6, D18, D28, D41, D43, D44, D45, D47, D65, D70, D82, D84, D99, D111, D125, D129, D132, D152, D155, D158, D159, D162, D164 to D170; O13, O46, O89, O90, O98 to O100, O105, O106; Axis status"
+        read_type: verify
+        extract: >-
+          O111 to O117 written, opened by a line naming this review; their 39
+          double-quoted passages checked as substrings of the
+          whitespace-normalised record above them (a script), all found but
+          D158's, whose inner quotes are nested as single quotes. The
+          axis rows citing a decision O111 to O114 depend on list them (an
+          inline script over the row cells, range-expanding D<n> to D<m>;
+          notes none): AX-1, AX-2, AX-6 to AX-12, AX-14, AX-15, their state
+          "decided, open items explicitly open". No decision, Environment row
+          or axis decision edited; Status stays Complete
+        outcome: ok
+      # Raw findings and verdicts.
+      #   A1b, B1b: holds, O111.
+      #   A1d: holds, O112 (run).
+      #   A1a: holds, O113 (run); O99 holds D155's r = 0 text, not this one.
+      #   A2a, B2a: holds, O114.
+      #   A1c, A3a, B1a, B3a: holds as a note, O115.
+      #   A2b, A2c, A2d, B2b: holds as a note, O116.
+      #   B2d: holds as a note, O117 (O56's shape).
+      #   A2e, B4e (Length at open's Decided-by cell): dropped; D170's check
+      #     applies D120's rule, and D160 and D165 change no caller-observable
+      #     outcome (NP2), the shape O90 routed.
+      #   A1e (D162/D152, D152/D118, D154/D137, D86/D48, D132/D70): dropped;
+      #     each later decision amends the text's home (D10, D41, D117, D34,
+      #     D18), which axes.md's amendment form asks.
+      #   B1c (D6 against NP10): dropped; NP10 is a D41 register row, which
+      #     limits D6 as NP7 does under E4 (D166's check).
+      #   B1d (D158, D159 options against NP2): dropped; D160, D165.
+      #   B1e (D125's io wording against D164's fileno): dropped; D125's own
+      #     Closed sentence gives ValueError, which D164's check quotes.
+      #   B2c (D111 lacking D129): dropped; D129 amends D60, which D111 names.
+      #   A4, B4 on D9, D11, D43, D64, D70, D73, D81, D84, D104, D108, D141,
+      #     D151 to D155, D152: dropped, D107's no-sweep and reviews 2, 4 to 7.
+  - id: freeze
+    name: Step 5, the freeze verdict
+    steps:
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O117"
+        read_type: verify
+        extract: >-
+          Not frozen. Items in the way: O111 to O113 (reopens), O114 (gap), and
+          the notes O115 to O117, to be routed. Decided: O109 (D170), O110
+          (D169)
+        outcome: ok
