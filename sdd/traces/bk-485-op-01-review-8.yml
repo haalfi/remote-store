@@ -12,8 +12,11 @@ audience:
   - library.maintainer
 discovery_followups: []
 # The reopen's log ce0b6b31 went to the /observe trace's decisions:, committed
-# with the reopen's record in 06b30a6. This review asked no dialog.
-decisions: []
+# with the reopen's record in 06b30a6. After the review, one dialog chose
+# the next step ("Close-out now"), logged into ce0b6b31 because this session
+# resumed the reopen's id; the close-out itself runs in a fresh session.
+decisions:
+  - sdd/decisions/ce0b6b31-a5a0-5676-ab93-a41468e170d8.jsonl
 surprising_ripples: []
 co_shipped_items: []
 expected_ripples:
