@@ -12,9 +12,14 @@ audience:
   - contributor.process
   - library.maintainer
 discovery_followups: []
-# The reopen's log eed2e9a2 goes to the /observe trace's decisions:, committed
-# with the record in this review's commit.
-decisions: []
+# The reopen's log eed2e9a2 went to the /observe trace's decisions:, committed
+# with the record in bb07380. After the review, one dialog chose the next step
+# ("Close-out now (Recommended)"); its asked event is in fb01bc24 (17:09Z), and
+# no answered event was logged, the worker having restarted while it was
+# open; the answer is in the session transcript. The close-out runs in a fresh
+# session.
+decisions:
+  - sdd/decisions/fb01bc24-c252-4ad9-94b7-6dd31a14f1c0.jsonl
 surprising_ripples: []
 co_shipped_items: []
 expected_ripples:
