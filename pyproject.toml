@@ -269,7 +269,7 @@ dev = [
   # exists to prevent (a fragile release landing silently on whichever PR
   # resolves next) wide open on the library that actually caused it.
   # All test-only; the published package constrains neither.
-  "vcrpy>=8.2,<9.3",
+  "vcrpy>=8.2,<9.5",
   "aiohttp>=3.13,<3.15",
   # Type checking & linting
   "mypy",
