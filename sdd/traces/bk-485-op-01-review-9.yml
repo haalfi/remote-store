@@ -184,13 +184,15 @@ phases:
           as D117 though the asked option says "D117 only"; its check gives
           the reason
         outcome: ok
-      - file: sdd/observe/records/OP-01.md
-        section: "Open items O1 to O124 (freeze verdict after the close-out)"
+      - file: tmp/observe-review/freeze_check.py
+        section: "Open items O1 to O124 at 43b8e02 (freeze verdict after the close-out)"
         read_type: verify
         extract: >-
-          Ready to freeze: a script over the section's 124 items finds each
-          decided, routed, shared: or another entry's; the one its pattern
-          flagged, O42, is for the sessions O6 names
+          Ready to freeze. Decided 92 (O14 to O41, O43 to O45, O47 to O87, O92
+          to O97, O102 to O104, O107 to O114, O118 to O120), routed 13 + 4 = 17
+          (O121 to O124 by D179), shared or another entry's 15 (O1 to O13,
+          O42, O46; O42 by its "a note for the sessions" opening, O6's
+          sessions), in the way 0; no item classified by hand
         outcome: ok
 review:
   # Derived by `hatch run ship-report 1209 --trace-block-only` at head 43b8e02.
