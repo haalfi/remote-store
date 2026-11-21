@@ -563,6 +563,14 @@ no clause of the contract ships unexercised.
   rows for D38, five gaps); a decision never edits another's table, so every later reopen repeats this.
   Open decision: how an amendment is declared (a sidecar entry naming the amending decision, or a row the amendment states).
 
+- [ ] **BUG-347 — The ground hook refuses a released session's Bash command that names a sibling of `tmp/observe/`, such as `tmp/observe-review/`**
+  spec: — · effort: S · audience: contributor.tooling
+  `scripts/observe_ground.py` `_check_released` tests a Bash command with `guarded.rstrip("/") in command`, a
+  substring, so `python tmp/observe-review/freeze_check.py` is refused as naming `tmp/observe/` (a released session
+  running `/observe-review`'s own freeze check, PR #1211; reproduced by calling `_check_released` on that command).
+  The same line guards `sdd/observe/records/`. Naming either directory itself stays refused, by BK-498's design.
+  Open decision: none; match the guarded path only where a path separator, quote, whitespace or the command's end follows it.
+
 - [ ] **BK-489 — The frozen kernel line has no decision: revive it, rewrite it or drop it**
   spec: — · effort: L · audience: library.maintainer, contributor.process
   RFC-0025 froze the contract kernel, the drivers, Memory on the kernel and specs 052 and 053 on
