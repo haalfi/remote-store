@@ -155,3 +155,97 @@ phases:
           O124, to be routed. Decided 90 (O118 by D176), routed 13, shared or
           another entry's 15
         outcome: ok
+  - id: close_out
+    name: Step 6, the close-out the maintainer chose (asked in 2e3b4ff4, 17:58Z; answered in ce0b6b31, 18:10Z)
+    steps:
+      # One dialog, every recommendation adopted: D177 (O119, an unsupported
+      # method checks no argument), D178 (O120, D35's and D89's request
+      # counts are reasons), D179 (O121 to O124 routed to the spec flow).
+      # The asking session resumed released (BK-498), so a later session
+      # applied tmp/observe-review/OP-01-close-out-r9-draft.md, in 43b8e02.
+      - file: tmp/observe-review/c3r9/run.py
+        section: "observe-dialogs and observe-tables, f04a429's record against 43b8e02's, logs from the /observe trace's decisions:"
+        read_type: verify
+        extract: >-
+          Dialogs: new sections D177 to D179 ok, plus three added Amended-by
+          lines; gone only the three questions split across logs at f04a429,
+          now paired. Tables: finding lines identical once line numbers are
+          normalised. Outputs: tmp/observe-review/c3r9/{dialogs,tables}-{pre,post}.txt
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "D177 to D179 re-read against D35, D80, D89, D117, D153, D154, D160, D161, D164"
+        read_type: verify
+        extract: >-
+          No conflict. The io claims behind D177 re-run on CPython 3.13.18
+          (non-seekable BufferedReader): open, write(1), seek('x') and
+          truncate('x') raise UnsupportedOperation, writelines(1) TypeError;
+          closed, write(1) and fileno() UnsupportedOperation, seek('x'),
+          truncate('x') and writelines(1) ValueError. D177 amends D80 as well
+          as D117 though the asked option says "D117 only"; its check gives
+          the reason
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "Open items O1 to O124 (freeze verdict after the close-out)"
+        read_type: verify
+        extract: >-
+          Ready to freeze: a script over the section's 124 items finds each
+          decided, routed, shared: or another entry's; the one its pattern
+          flagged, O42, is for the sessions O6 names
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1209 --trace-block-only` at head 43b8e02.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1209 --trace-block-only"
+  pr: 1209
+  review_rounds: 10
+  submissions: 2
+  findings: 5
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 1.77
+    - round: 2
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 2, unknown: 1}
+      duration_hours: 3.92
+  by_file:
+    - path: "sdd/observe/records/OP-01.md"
+      findings: 4
+    - path: "sdd/traces/bk-485-op-01-review-8.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/2e3b4ff4-8783-4a95-9611-612ab924f44e.jsonl"
+    - "sdd/decisions/7db9f5bc-71e7-4acc-913f-4045d3755e50.jsonl"
+    - "sdd/decisions/ce0b6b31-a5a0-5676-ab93-a41468e170d8.jsonl"
+    - "sdd/decisions/eed2e9a2-9eb3-4baa-9ec5-de717f633f76.jsonl"
+    - "sdd/decisions/fb01bc24-c252-4ad9-94b7-6dd31a14f1c0.jsonl"
+    - "sdd/observe/tables/OP-01.toml"
+    - "sdd/traces/bk-485-observe-op-01.yml"
+    - "sdd/traces/bk-485-op-01-review-9.yml"
+  review_driven_commits:
+    - sha: "faa2081"
+      subject: "BK-485: decision log for PR #1209's review route (C3 correction, D171 and D172 in the cell)"
+    - sha: "b884730"
+      subject: "BK-485: correct D171 to D173 after PR #1209's review"
+    - sha: "574786d"
+      subject: "BK-485: decision log for PR #1209's second review routes (O118 reopen of D171, D173 C3, C3 record)"
+    - sha: "490ba98"
+      subject: "BK-485: file O118 (D171 reopen), restore D155's not-the-end clause in D173, record C3"
+    - sha: "e205007"
+      subject: "BK-485: decision log of the /observe OP-01 session walking O118"
+    - sha: "bb07380"
+      subject: "BK-485: OP-01 reopen walking O118 (D176); review 9 step 1"
+    - sha: "f04a429"
+      subject: "BK-485: OP-01 review 9 after the O118 reopen: O119 to O124"
+    - sha: "d1246d0"
+      subject: "BK-485: decision log for review 9's next-step dialog (close-out chosen)"
+    - sha: "f4780b8"
+      subject: "BK-485: decision log of the OP-01 close-out dialog after review 9 (O119 to O124)"
+    - sha: "43b8e02"
+      subject: "BK-485: OP-01 close-out after review 9 (D177 to D179)"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
