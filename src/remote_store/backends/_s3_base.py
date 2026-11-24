@@ -565,9 +565,8 @@ class _S3Base(Backend):
                         if info.get("type") == "file":
                             rel = self.to_key(info["name"])
                             yield self._info_to_fileinfo(info, rel)
-                        elif info.get("type") == "directory":
-                            if max_depth is None or depth < max_depth:
-                                queue.append((info["name"], depth + 1))
+                        elif info.get("type") == "directory" and (max_depth is None or depth < max_depth):
+                            queue.append((info["name"], depth + 1))
             else:
                 entries: list[dict[str, Any]] = self._s3fs.ls(s3_path, detail=True)
                 for info in entries:
