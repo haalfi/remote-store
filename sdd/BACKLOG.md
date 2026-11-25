@@ -1272,3 +1272,11 @@ sessions work is measured before it becomes process.
   `python -c "import os; print(1)"`; a bare `python` fallback imports the main checkout's `src` (PR #1151:
   100+ false failures). The route lives in `rvw-pr/SKILL.md` § Review root. Open decision: script-file
   probes, naming the guard there, or widening its `os.chdir` spelling, which clears the guard, to it.
+
+- [~] **BK-513 — Durable prose has no stated foundation to be judged against, so its review compares detail with detail**
+  spec: — · effort: M · audience: contributor.process
+  Of 650 review comments on 41 PRs, 399 are on prose files, and from round 4 on 49 to 78% of a
+  round's findings come from an earlier fix (`research/token-usage/report.md` § 5). No doc says
+  what a principle or a decision is, or how one is written. RFC-0032 (Draft) proposes terms and
+  six principles for new and rewritten work; a map of each artifact kind is owed in its review.
+  Open decision: accept, amend or reject RFC-0032.

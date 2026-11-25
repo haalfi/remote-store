@@ -1,0 +1,252 @@
+id: BK-513
+title: "Durable prose has no stated foundation to be judged against, so its review compares detail with detail"
+trigger: >-
+  The maintainer said the repo must write down what principles and decisions are
+  and how to write them, having drafted a reference (v0.4) outside the repo with an
+  unprimed model. Spec 051 held because it stood on terms and axioms; OP-01's record
+  did not. No open item covered it.
+source_items:
+  - BK-513
+audience:
+  - contributor.process
+decisions:
+  - sdd/decisions/b7a95816-4b77-51cb-8393-4179d5eec51c.jsonl
+orient:
+  # Found at 93a3d39 by:
+  #   hatch run backlog-find "principle|decision record|decisions? (have|has) no home|where a decision" --max 30
+  #     -> 45 hits, the 30 shown all done entries
+  #   hatch run backlog-find "prose|ambigu|undefined term|glossary|Kernsatz|level of detail|re-raised|fix-induced|converge" --open --max 40
+  #     -> BUG-266, BK-460, BK-463, BK-509, BK-462, BK-339, ID-255, BK-361, ID-268
+  #   hatch run backlog-find "BK-485|BK-505|BK-506|BK-496|BK-465|BK-466|format RFC" --max 20
+  #   hatch run backlog-outline  (section 8's promise)
+  - items: [BK-420, BK-445]
+    verdict: constrains
+    evidence: >-
+      They are section 8's open items; the section's promise reads "A change to how
+      sessions work is measured before it becomes process", so the RFC states a measure
+      (its section 6) and leaves the threshold open. Neither item's own fix overlaps.
+  - items: [BK-485]
+    verdict: constrains
+    evidence: >-
+      In progress; OP-01's rework and the store's principles are written in another
+      session. RFC-0024 R1 fixes the flow (design, record, spec, compare). The RFC is
+      repo-wide, writes no store content and leaves a change to /observe to BK-485.
+  - items: [BK-397]
+    verdict: constrains
+    evidence: >-
+      RFC-0018 Summary: each asked and answered dialog is appended to
+      sdd/decisions/<session_id>.jsonl. That log is already a record of deciding, so the
+      RFC builds its F4 on it and adds no second capture.
+  - items: [BK-465, BK-466, BK-491]
+    verdict: constrains
+    evidence: >-
+      SPEC-DESIGN.md defects; RFC-0024 R3 keeps BK-465 and BK-466 as "the format RFC's to
+      weigh" and BK-491's open decision names the format RFC. The RFC amends no rule of
+      SPEC-DESIGN.md.
+  - items: [BK-456, BK-361, BUG-266, BK-339]
+    verdict: unrelated
+    evidence: >-
+      Index entries: the spec 003 split (its open decision is whether to close it), a
+      typography gate, one SFTP failure mapping, one docs matrix. None states what prose
+      is judged against.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules 1 to 7, Attribution inside the intent domain, Document types"
+        read_type: gate
+        extract: >-
+          Rule 4 and attribution item 4: ADRs and RFCs record decisions, not contracts.
+          Document types gives each of five kinds a purpose; "principle" and "decision"
+          are used and never defined
+        outcome: ok
+      - file: sdd/SPEC-DESIGN.md
+        section: "Rules 1 to 8, Ready, Review checklist, Exemplar"
+        read_type: gate
+        extract: >-
+          Rule 1's can-fail test; "Well founded: axioms apart from what they imply" is the
+          only stated standard for a foundation, and it covers specs
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1 to 8, How the rules interact, Provenance"
+        read_type: gate
+        extract: >-
+          Rules about a sentence or a section: longevity, Kernsatz, ownership of detail.
+          None says what a text must agree with. Rule 7 supplies the "substantially
+          rewritten" trigger
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 1 to 9"
+        read_type: reference
+        extract: "Rule 1: one normative description driving N artifacts over N-squared pairwise checks"
+        outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Rules, Where does my new file go, Directory defaults"
+        read_type: reference
+        extract: "sdd/rfcs/rfc-*.md is dual by directory default; no marker needed"
+        outcome: ok
+      - file: sdd/DOCUMENTATION.md
+        section: "Rules 1 to 9"
+        read_type: reference
+        extract: "Content homes: specs, ADRs, RFCs, research and audits live under sdd/"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format"
+        read_type: reference
+        extract: >-
+          Intent & Scope, Rules, Guides; rationale excluded. The cross-check "this would
+          force different behavior in situation X" is the nearest existing form of F3
+        outcome: ok
+      - file: sdd/adrs/0048-how-specs-are-designed.md
+        section: "Context, Decision, Consequences"
+        read_type: reference
+        extract: "Each decision carries Why and Reverse when; the form newer ADRs use"
+        outcome: ok
+      - file: sdd/specs/051-store-tree.md
+        section: "whole file"
+        read_type: gate
+        extract: >-
+          Terms, then TREE-001 to TREE-009 as axioms and the Key definition, TREE-010 to
+          TREE-012 as lemmas with their proofs named in Notes; no option, dialog or status
+        outcome: ok
+      - file: sdd/research/research-store-model-axioms.md
+        section: "1 to 5"
+        read_type: reference
+        extract: "A structure per axiom clause that satisfies every other clause and breaks that one"
+        outcome: ok
+      - file: sdd/research/research-spec-first-reset.md
+        section: "whole file"
+        read_type: gate
+        extract: >-
+          Calls itself "a point-in-time decision record"; D, S and F rows each with the
+          rejected alternative; P1 to P5 are the brief's lessons, named principles
+        outcome: ok
+      - file: sdd/rfcs/rfc-0024-spec-first-reset.md
+        section: "whole file"
+        read_type: gate
+        extract: "R1 makes D1 to D11 binding; R3 leaves BK-465 and BK-466 to the format RFC"
+        outcome: ok
+      - file: sdd/backlog/bk-485-spec-first-reset.md
+        section: "whole file"
+        read_type: gate
+        extract: >-
+          "Decisions that bind every operation have no home" from the first /observe run;
+          the F1 to F6 critique waits for the format RFC
+        outcome: ok
+      - file: sdd/observe/ground-register.md
+        section: "Artifacts, Not ground"
+        read_type: reference
+        extract: "Which files a design session may read; unrelated to how prose is written"
+        outcome: ok
+      - file: sdd/observe/shared.md
+        section: "whole file"
+        read_type: reference
+        extract: "Session is split into two terms, never written bare; no section holds a clause yet"
+        outcome: ok
+      - file: sdd/observe/axes.md
+        section: "Vocabulary, Per-question loop"
+        read_type: reference
+        extract: >-
+          "A term is a decision; 'not decided yet' is an open item"; each decision carries
+          scenario, options, recommendation, asked, decision, consistency check, open items
+        outcome: ok
+      - file: sdd/observe/records/OP-01.md
+        section: "OP-01/D26 to D30"
+        read_type: reference
+        extract: "D27 is titled 'The typing principle': one decision, named a principle"
+        outcome: ok
+      - file: sdd/research/research-observe-record-quality.md
+        section: "1 to 4"
+        read_type: gate
+        extract: "Consistency lines named 61 of 946 decision pairs, covered 4 of 27 known defect pairs, caught none"
+        outcome: ok
+      - file: sdd/research/token-usage/report.md
+        section: "Answer, What this does not establish, 4, 5, Learnings"
+        read_type: gate
+        extract: >-
+          399 of 650 comments on prose; loop-introduced 49 to 78% from round 4; 321 prose
+          findings by class, CLARITY 6; fix the decision rule before the run
+        outcome: ok
+      - file: sdd/research/token-usage/prose_classes.py
+        section: "module docstring, cls"
+        read_type: verify
+        extract: "What SCOPE, FACT, MIRROR, RULE, DESIGN and CLARITY mean"
+        outcome: ok
+      - file: sdd/research/research-id-232-detail-placement-durability.md
+        section: "8"
+        read_type: reference
+        extract: "Decision-rate, spec-rate and consequence-rate content"
+        outcome: ok
+      - file: sdd/research/research-code-abundance-goals-and-values.md
+        section: "Status, TL;DR, 1"
+        read_type: reference
+        extract: "Most of intent debt is repayable only forward (2026-10-03 correction)"
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "Status, Recommendations"
+        read_type: reference
+        extract: "Set no word count; the author's grasp is the one part checkable while writing"
+        outcome: ok
+      - file: sdd/research/research-spec-faithfulness.md
+        section: "1, 2.1 opening rows"
+        read_type: reference
+        extract: "Not used in the RFC"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Status, Summary, Motivation, D1"
+        read_type: gate
+        extract: "The dialog log already keeps question, options, recommendation and answer"
+        outcome: ok
+      - file: sdd/templates/adr-template.md
+        section: "whole file"
+        read_type: reference
+        extract: "Decision as its own scannable unit, readable alone: why, and when to reverse"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works, sections 6 and 8"
+        read_type: gate
+        extract: >-
+          Item scope of eight content lines; an item is filed under the promise it serves.
+          Section 8's promise fits; section 6's is about maintainer coordination artifacts
+        outcome: ok
+      - file: sdd/process-budget.json
+        section: "globs, total"
+        read_type: verify
+        extract: "sdd/rfcs/ is outside the ratchet's globs; total 316420"
+        outcome: ok
+  - id: plan
+    name: Plan
+    steps:
+      - file: sdd/templates/rfc-template.md
+        section: "whole file"
+        read_type: gate
+        extract: "Status, Summary, Motivation, Proposal, Alternatives Considered, Impact, Open Questions, References"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0029-faithfulness-before-spec.md
+        section: "Status, Summary, Motivation, R1"
+        read_type: reference
+        extract: "House form: a bold core claim per section, the decision log named in Status"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0031-033-frozen.md
+        section: "Status, Summary, Motivation"
+        read_type: reference
+        extract: "Highest RFC number in sdd/rfcs/ is 0031"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check, trigger list"
+        read_type: gate
+        extract: >-
+          `hatch run ref-rows "RFC"` finds no trigger: the ripple-check has no row for a new
+          RFC. Rows read instead: Backlog item touched
+        outcome: unclear
+      - file: sdd/traces/_schema.yml
+        section: "properties to review, step"
+        read_type: gate
+        extract: "orient entries need items, verdict, evidence; decisions lists the session's log"
+        outcome: ok
+      - file: sdd/traces/bk-512-033-frozen.yml
+        section: "top-level keys, orient, first steps"
+        read_type: reference
+        extract: "Form of an RFC trace"
+        outcome: ok
